@@ -7,6 +7,7 @@ Assume this is authoritative for what was actually covered in class.
 
 GOAL
 - Produce 1–2 fun facts that are tightly connected to the core of this topic and help a student say “ohhh, so that’s how it connects!”. 
+　　- Ex) Applied technology/concepts, real-life practice, history, debates, famous people/companies, issues, cross-discipline links, etc.
 - Each fun fact must clearly tie back to specific ideas in the topic_details_markdown (not just a keyword that happened to appear).
 
 HARD RULES
