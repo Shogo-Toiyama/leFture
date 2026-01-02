@@ -45,7 +45,7 @@ final class AuthStateProvider
   }
 }
 
-String _$authStateHash() => r'e5b723783d4f2bf9b3adf45827a5c85c3732b4ab';
+String _$authStateHash() => r'b847a0749c249cf099aa80b49b53501e8104aa8d';
 
 /// 👤 ログイン中のユーザー情報
 
@@ -90,7 +90,7 @@ final class CurrentUserProvider extends $FunctionalProvider<User?, User?, User?>
   }
 }
 
-String _$currentUserHash() => r'0ba56fdcef7d024fc8398c92ad804ddd3e1418fb';
+String _$currentUserHash() => r'c7726f367cbf3d6e16bada2342b5d87c048bb49e';
 
 /// ✅ ログイン済みかどうか
 
@@ -135,7 +135,7 @@ final class IsLoggedInProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isLoggedInHash() => r'd2b61f8800df877ee3b6b4198373e92bfc846b8a';
+String _$isLoggedInHash() => r'850bd4884b28e7b961418fa7da4aca5a9bb7a030';
 
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 
@@ -165,7 +165,7 @@ final class AuthControllerProvider
   AuthController create() => AuthController();
 }
 
-String _$authControllerHash() => r'9f332b7a3311ce674d4ac8359d4b6997bfc1443f';
+String _$authControllerHash() => r'1f5eccc1757ae5e0d8d2dd051a2cdf91659d68e5';
 
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 
