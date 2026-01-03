@@ -22,7 +22,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
       .select()
       .eq('owner_id', uid)
       .isFilter('parent_id', null)
-      .eq('is_deleted', false)
+      .isFilter('deleted_at', null)
       .order('sort_order', ascending: true)
       .order('created_at', ascending: true);
 
@@ -38,7 +38,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
         .select()
         .eq('owner_id', uid)
         .eq('parent_id', parentId)
-        .eq('is_deleted', false)
+        .isFilter('deleted_at', null)
         .order('sort_order', ascending: true)
         .order('created_at', ascending: true);
 
@@ -54,7 +54,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
           'name': name,
           'parent_id': parentId,
           'type': type,
-          'is_deleted': false,
+          'deleted_at': null,
         })
         .select()
         .single();
@@ -69,7 +69,6 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
         .from(_table)
         .update({
           'name': newName,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', folderId)
         .eq('owner_id', uid);
@@ -82,8 +81,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
     await supabase
         .from(_table)
         .update({
-          'is_deleted': true,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
+          'deleted_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', folderId)
         .eq('owner_id', uid);
@@ -91,11 +89,13 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
 
   @override
   Future<void> setFavorite({required String folderId, required bool isFavorite}) async {
-    _requireUid();
+    final uid = _requireUid();
+
     await supabase
         .from('lecture_folders')
         .update({'is_favorite': isFavorite})
-        .eq('id', folderId);
+        .eq('id', folderId)
+        .eq('owner_id', uid);
   }
 
 }

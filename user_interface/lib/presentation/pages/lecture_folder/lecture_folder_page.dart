@@ -1,8 +1,8 @@
 // lib/presentation/pages/lecture_folder/lecture_folder_page.dart
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-import '../../../application/lecture_folders/lecture_folder_providers.dart';
+import 'package:lecture_companion_ui/application/lecture_folders/folder_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture_folders/lecture_folder_controller.dart';
 import '../../../domain/entities/lecture_folder.dart';
 
 import 'widgets/breadcrumb_bar.dart';
@@ -28,7 +28,6 @@ class _LectureFolderPageState extends ConsumerState<LectureFolderPage> {
   static const _folderSvgPath = 'assets/images/lecture_folder_test.svg';
 
   bool loading = false;
-  List<LectureFolder> folders = [];
 
   // パンくず: Home -> A -> B ...
   final List<_Crumb> crumbs = [const _Crumb(id: null, name: 'Home')];
@@ -38,29 +37,15 @@ class _LectureFolderPageState extends ConsumerState<LectureFolderPage> {
   @override
   void initState() {
     super.initState();
-    _loadFolders();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(lectureFolderControllerProvider.notifier).bootstrapFolders();
+    });
   }
-
-  Future<void> _loadFolders() async {
-    setState(() => loading = true);
-    try {
-      final repo = ref.read(folderRepositoryProvider);
-      final data = (currentFolderId == null)
-          ? await repo.listRootFolders()
-          : await repo.listChildren(parentId: currentFolderId!);
-
-      setState(() => folders = data);
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
-  }
-
   // フォルダに入る
   Future<void> _enterFolder(LectureFolder folder) async {
     setState(() {
       crumbs.add(_Crumb(id: folder.id, name: folder.name));
     });
-    await _loadFolders();
   }
 
   // パンくず移動
@@ -69,7 +54,6 @@ class _LectureFolderPageState extends ConsumerState<LectureFolderPage> {
     setState(() {
       crumbs.removeRange(index + 1, crumbs.length);
     });
-    await _loadFolders();
   }
 
   Future<void> _createFolder() async {
@@ -83,13 +67,12 @@ class _LectureFolderPageState extends ConsumerState<LectureFolderPage> {
 
     setState(() => loading = true);
     try {
-      final repo = ref.read(folderRepositoryProvider);
-      final created = await repo.createFolder(
+      await ref.read(lectureFolderControllerProvider.notifier).createFolder(
         name: name.trim(),
         parentId: currentFolderId,
         type: 'binder',
       );
-      setState(() => folders = [created, ...folders]);
+
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -109,14 +92,11 @@ class _LectureFolderPageState extends ConsumerState<LectureFolderPage> {
 
     setState(() => loading = true);
     try {
-      final repo = ref.read(folderRepositoryProvider);
-      await repo.renameFolder(folderId: folder.id, newName: trimmed);
+      await ref.read(lectureFolderControllerProvider.notifier).renameFolder(
+        folderId: folder.id,
+        newName: trimmed,
+      );
 
-      setState(() {
-        folders = folders
-            .map((f) => f.id == folder.id ? f.copyWith(name: trimmed) : f)
-            .toList();
-      });
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -133,66 +113,38 @@ class _LectureFolderPageState extends ConsumerState<LectureFolderPage> {
 
     setState(() => loading = true);
     try {
-      final repo = ref.read(folderRepositoryProvider);
-      await repo.softDeleteFolder(folderId: folder.id);
-      setState(() => folders = folders.where((f) => f.id != folder.id).toList());
+      await ref.read(lectureFolderControllerProvider.notifier).deleteFolder(
+        folderId: folder.id,
+      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
 
+
   Future<void> _toggleFavorite(LectureFolder folder, bool newValue) async {
-  setState(() => loading = true);
-  try {
-    final repo = ref.read(folderRepositoryProvider);
+    setState(() => loading = true);
+    try {
+      await ref.read(lectureFolderControllerProvider.notifier).setFavorite(
+        folderId: folder.id,
+        isFavorite: newValue,
+      );
 
-    // Repoに toggleFavorite がある想定（後で追加する）
-    await repo.setFavorite(folderId: folder.id, isFavorite: newValue);
-
-    setState(() {
-      folders = folders
-          .map((f) => f.id == folder.id ? f.copyWith(isFavorite: newValue) : f)
-          .toList();
-    });
-  } finally {
-    if (mounted) setState(() => loading = false);
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
-}
+
 
 int _calcCrossAxisCount(double width) {
   const minTileWidth = 140.0;
   final count = (width / minTileWidth).floor();
-  return count;
+  return count < 1 ? 1 : count;
 }
-
-  Future<void> _showFolderMenu({
-    required LectureFolder folder,
-    required Offset globalPosition,
-  }) async {
-    final selected = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        globalPosition.dx,
-        globalPosition.dy,
-        globalPosition.dx,
-        globalPosition.dy,
-      ),
-      items: const [
-        PopupMenuItem(value: 'rename', child: Text('Rename')),
-        PopupMenuItem(value: 'delete', child: Text('Delete')),
-      ],
-    );
-
-    if (selected == 'rename') {
-      await _renameFolder(folder);
-    } else if (selected == 'delete') {
-      await _deleteFolder(folder);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final foldersAsync = ref.watch(folderListStreamProvider(currentFolderId));
 
     return Scaffold(
       appBar: AppBar(
@@ -218,44 +170,53 @@ int _calcCrossAxisCount(double width) {
               builder: (context, constraints) {
                 final crossAxisCount = _calcCrossAxisCount(constraints.maxWidth);
 
-                return RefreshIndicator(
-                  onRefresh: _loadFolders,
-                  child: loading && folders.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : folders.isEmpty
-                      ? EmptyState(onCreate: _createFolder)
-                      : CustomScrollView(
-                        slivers: [
-                          SliverPadding(
-                            padding: const EdgeInsets.all(16),
-                            sliver: SliverGrid(
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 1.1,
-                              ),
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final folder = folders[index];
-                                  return FolderTile(
-                                    name: folder.name,
-                                    svgAssetPath: _folderSvgPath,
-                                    isFavorite: folder.isFavorite,
-                                    onTap: () => _enterFolder(folder),
-                                    onRename: () => _renameFolder(folder),
-                                    onDelete: () => _deleteFolder(folder),
-                                    onToggleFavorite: (newValue) =>
-                                        _toggleFavorite(folder, newValue),
-                                  );
-                                },
-                                childCount: folders.length,
+                return foldersAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+
+                  error: (e, _) => Center(child: Text('Error: $e')),
+
+                  data: (folders) {return RefreshIndicator(
+                    onRefresh: () async {
+                      await ref.read(lectureFolderControllerProvider.notifier).bootstrapFolders();
+                    },
+                    child: loading && folders.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : folders.isEmpty
+                        ? EmptyState(onCreate: _createFolder)
+                        : CustomScrollView(
+                          slivers: [
+                            SliverPadding(
+                              padding: const EdgeInsets.all(16),
+                              sliver: SliverGrid(
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: 1.1,
+                                ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final folder = folders[index];
+                                    return FolderTile(
+                                      name: folder.name,
+                                      svgAssetPath: _folderSvgPath,
+                                      isFavorite: folder.isFavorite,
+                                      onTap: () => _enterFolder(folder),
+                                      onRename: () => _renameFolder(folder),
+                                      onDelete: () => _deleteFolder(folder),
+                                      onToggleFavorite: (newValue) =>
+                                          _toggleFavorite(folder, newValue),
+                                    );
+                                  },
+                                  childCount: folders.length,
+                                ),
                               ),
                             ),
-                          ),
-                          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                        ],
-                      ),
+                            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                          ],
+                        ),
+                    );
+                  }
                 );
               },
             ),

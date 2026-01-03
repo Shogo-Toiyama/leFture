@@ -54,4 +54,4 @@ final class FolderRepositoryProvider
   }
 }
 
-String _$folderRepositoryHash() => r'5959be6d2343b7823d7dd80b5f66dee34fb0b596';
+String _$folderRepositoryHash() => r'620c2a3e3667beea3ef4917d80bfbf920fafe3a7';

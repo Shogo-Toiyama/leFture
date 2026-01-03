@@ -7,7 +7,7 @@ class LectureFolder {
   final String? icon;
   final String? color;
   final bool isFavorite;
-  final bool isDeleted;
+  final DateTime? deletedAt;
   final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -21,7 +21,7 @@ class LectureFolder {
     this.icon,
     this.color,
     required this.isFavorite,
-    required this.isDeleted,
+    this.deletedAt,
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
@@ -34,7 +34,7 @@ class LectureFolder {
     String? icon,
     String? color,
     bool? isFavorite,
-    bool? isDeleted,
+    DateTime? deletedAt,
     int? sortOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -48,7 +48,7 @@ class LectureFolder {
       icon: icon ?? this.icon,
       color: color ?? this.color,
       isFavorite: isFavorite ?? this.isFavorite,
-      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -66,7 +66,7 @@ class LectureFolder {
       icon: map['icon'] as String?,
       color: map['color'] as String?,
       isFavorite: (map['is_favorite'] as bool?) ?? false,
-      isDeleted: (map['is_deleted'] as bool?) ?? false,
+      deletedAt: map['deleted_at'] == null ? null : DateTime.parse(map['deleted_at'] as String),
       sortOrder: (map['sort_order'] as int?) ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -81,7 +81,7 @@ class LectureFolder {
       'icon': icon,
       'color': color,
       'is_favorite': isFavorite,
-      'is_deleted': isDeleted,
+      'deleted_at': deletedAt,
       'sort_order': sortOrder,
     };
   }
