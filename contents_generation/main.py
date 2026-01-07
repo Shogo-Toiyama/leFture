@@ -2,44 +2,18 @@ import os, time, sys
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
 
-from scripts.lecture_audio_to_text import lecture_audio_to_text
-from scripts.role_classification import role_classification
-from scripts.lecture_segmentation import lecture_segmentation
-from scripts.generate_topic_details_from_segments import generate_topic_details
-from scripts.generate_fun_facts import generate_fun_facts
+# NEW: unified interface
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions
+
+from contents_generation.scripts.lecture_audio_to_text import lecture_audio_to_text
+from contents_generation.scripts.role_classification import role_classification
+from contents_generation.scripts.lecture_segmentation import lecture_segmentation
+from contents_generation.scripts.generate_topic_details_from_segments import generate_topic_details
+from contents_generation.scripts.generate_fun_facts import generate_fun_facts
 
 AUDIO_EXTS = {".mp3", ".m4a", ".wav", ".flac", ".aac", ".ogg", ".wma", ".aiff"}
 
-load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-gemini_2_5_flash_lite = "gemini-2.5-flash-lite"
-gemini_2_5_flash = "gemini-2.5-flash"
-
-def config_json(thinking: int = 0, google_search: bool = False):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="application/json",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def config_text(thinking: int = 0, google_search: int = 0):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="text/plain",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search > 0:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
 
 def make_lecture_dir():
     ROOT = Path(__file__).resolve().parent
@@ -52,6 +26,7 @@ def make_lecture_dir():
 
     return LECTURE_DIR
 
+
 def list_audio_files(dirpath: Path):
     files = []
     for p in dirpath.iterdir():
@@ -60,16 +35,17 @@ def list_audio_files(dirpath: Path):
                 stat = p.stat()
                 files.append((p, stat.st_size, stat.st_mtime))
             except FileNotFoundError:
-                # copy in progress or removed between listing/stat
                 pass
     return files
 
+
 def human_size(n):
-    for unit in ["B","KB","MB","GB","TB"]:
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
         if n < 1024:
             return f"{n:.1f}{unit}"
         n /= 1024
     return f"{n:.1f}PB"
+
 
 def stable_files(dirpath: Path, settle_seconds=3.0):
     snapshot1 = {p: (size, mtime) for p, size, mtime in list_audio_files(dirpath)}
@@ -83,11 +59,13 @@ def stable_files(dirpath: Path, settle_seconds=3.0):
             stable.append((p, meta2[0], meta2[1]))
     return stable
 
+
 def wait_for_uploads(audio_dir: Path, min_files=1, poll_interval=1.0, settle_seconds=3.0, timeout=None):
     print(f"\n📂 Upload destination: {audio_dir.resolve()}")
     print("⬆️  Please copy your audio file(s) into this folder.")
     print("   (We'll wait here; press Ctrl+C to abort.)")
     start = time.time()
+
     while True:
         try:
             stable = stable_files(audio_dir, settle_seconds=settle_seconds)
@@ -104,24 +82,60 @@ def wait_for_uploads(audio_dir: Path, min_files=1, poll_interval=1.0, settle_sec
                         print("💡 Aborted by user.")
                         sys.exit(0)
                     if ans in {"r", "refresh"}:
-                        break  # refresh loop to re-check
+                        break
             else:
-                # 進行中のステータス表示
                 found = list_audio_files(audio_dir)
                 names = ", ".join(p.name for p, _, _ in found) or "(none yet)"
                 print(f"\r⏳ Waiting for uploads... found: {names}", end="", flush=True)
                 time.sleep(poll_interval)
+
             if timeout is not None and (time.time() - start) > timeout:
                 print("\n⏱️  Timeout waiting for uploads.")
                 sys.exit(1)
+
         except KeyboardInterrupt:
             print("\n🛑 Interrupted.")
             sys.exit(1)
 
 
 def main():
-    LECTURE_DIR = make_lecture_dir()
+    load_dotenv()
 
+    # =========================
+    # Choose provider & models
+    # =========================
+    
+    provider = "gemini"
+    # provider = "openai"
+
+    if (provider == "gemini"):
+        MODELS = {
+            "sentence_review": "2_5_flash",
+            "role_full": "2_5_flash",
+            "role_lite": "2_5_flash_lite",
+            "seg_full": "2_5_flash",
+            "seg_lite": "2_5_flash_lite",
+            "topic_details": "2_5_flash",
+            "fun_facts": "2_5_flash",
+        }
+    elif (provider == "openai"):
+        MODELS = {
+            "sentence_review": "5_mini",
+            "role_full": "5_mini",
+            "role_lite": "5_nano",
+            "seg_full": "5_mini",
+            "seg_lite": "5_nano",
+            "topic_details": "5_mini",
+            "fun_facts": "5_mini",
+        }
+
+    llm = UnifiedLLM(provider=provider)
+
+    # Common options (Search is off)
+    json_opts = LLMOptions(output_type="json", temperature=0.2, google_search=False)
+    text_opts = LLMOptions(output_type="text", temperature=0.2, google_search=False)
+
+    LECTURE_DIR = make_lecture_dir()
     AUDIO_DIR = LECTURE_DIR / "audio"
     AUDIO_DIR.mkdir()
 
@@ -129,22 +143,48 @@ def main():
 
     start_time_total = time.time()
 
-    lecture_audio_to_text(audio_files[0], LECTURE_DIR, client, gemini_2_5_flash, config_json())
+    # 1) AssemblyAI transcription stays inside lecture_audio_to_text, sentence review uses llm
+    lecture_audio_to_text(audio_files[0], LECTURE_DIR, llm, MODELS["sentence_review"])
 
-    role_classification(client, gemini_2_5_flash, gemini_2_5_flash_lite, config_json(), LECTURE_DIR)
+    # 2) Role classification (lite for batches, full optional review)
+    role_classification(
+        llm,
+        MODELS["role_full"],
+        MODELS["role_lite"],
+        LECTURE_DIR,
+        max_batch_size=350,
+        ctx=10,
+        concurrency=6,
+    )
 
-    lecture_segmentation(client, gemini_2_5_flash, gemini_2_5_flash_lite, config_json(), LECTURE_DIR)
+    # 3) Topic segmentation
+    lecture_segmentation(
+        llm,
+        MODELS["seg_full"],
+        MODELS["seg_lite"],
+        LECTURE_DIR,
+    )
 
-    generate_topic_details(client, gemini_2_5_flash, config_json(), config_text(), LECTURE_DIR)
+    # 4) Topic details generation (text)
+    generate_topic_details(
+        llm,
+        MODELS["topic_details"],
+        LECTURE_DIR,
+        options_text=text_opts,
+    )
 
-    generate_fun_facts(client, gemini_2_5_flash, config_text(google_search=True), LECTURE_DIR)
+    # 5) Fun facts (text)
+    generate_fun_facts(
+        llm,
+        MODELS["fun_facts"],
+        LECTURE_DIR,
+        options=text_opts,
+    )
 
-    end_time_total = time.time()
-    elapsed_time_total = end_time_total - start_time_total
+    elapsed_time_total = time.time() - start_time_total
     total_minutes = int(elapsed_time_total // 60)
     total_seconds = int(elapsed_time_total % 60)
     print(f"\n⏰⏰⏰ Total elapsed time: {total_minutes} m {total_seconds} s.")
-
     print("\n🎉 All tasks completed.")
 
 

@@ -3,19 +3,21 @@ import assemblyai as aai
 from dotenv import load_dotenv
 from pathlib import Path
 
-from google import genai
-from google.genai import types
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
-def token_report(resp):
-    um = resp.usage_metadata
-    prompt_tokens = um.prompt_token_count
-    candidate_tokens = um.candidates_token_count
-    total_tokens = um.total_token_count
-    thinking_tokens = total_tokens - prompt_tokens - candidate_tokens
-    return (f"TOKEN USAGE REPORT\n  ⬆️:{prompt_tokens}, 🧠: {thinking_tokens}, ⬇️: {candidate_tokens}\n  TOTAL: {total_tokens}")
+
+def token_report_from_result(res):
+    u = res.usage
+    return (
+        "TOKEN USAGE REPORT\n"
+        f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
+        f"  TOTAL: {u.total_tokens}\n"
+        f"  Estimated cost: ${res.estimated_cost_usd:.6f}"
+    )
+
 
 def _strip_code_fence(text: str) -> str:
     if text.lstrip().startswith("```"):
@@ -29,6 +31,32 @@ def _strip_code_fence(text: str) -> str:
         text = "\n".join(lines)
     return text
 
+def _has_valid_transcript_outputs(lecture_dir: Path) -> bool:
+    """
+    AssemblyAI の成果物が存在して、最低限パースできるなら True。
+    """
+    sent_path = lecture_dir / "transcript_sentences.json"
+    if not sent_path.exists():
+        return False
+
+    try:
+        data = json.loads(sent_path.read_text(encoding="utf-8"))
+        if not isinstance(data, list) or len(data) == 0:
+            return False
+        # 最低限のキー確認（sid/text があればOK扱い）
+        first = data[0]
+        if not isinstance(first, dict):
+            return False
+        if "sid" not in first or "text" not in first:
+            return False
+        return True
+    except Exception:
+        return False
+
+
+# -------------------------
+# AssemblyAI (NO CHANGES)
+# -------------------------
 def speach_to_text(audio_file, lecture_dir: Path):
     print("\n### Lecture Audio To Text ###")
     start_time_audio_to_text = time.time()
@@ -69,27 +97,30 @@ def speach_to_text(audio_file, lecture_dir: Path):
     print(f"Cost (nano): ${duration/3600*0.12:.3f}")
     with open(lecture_dir / "transcript_sentences.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    
+
     end_time_audio_to_text = time.time()
     elapsed_time_audio_to_text = end_time_audio_to_text - start_time_audio_to_text
     print(f"⏰Transcribed audio to text: {elapsed_time_audio_to_text:.2f} seconds.")
 
-def sentence_review(client, gen_model, config_json, lecture_dir: Path):
-    # sentencesのReview
+
+# -------------------------
+# Sentence Review (UPDATED)
+# -------------------------
+def sentence_review(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, options_json: LLMOptions | None = None):
     print("\n### Sentence Review ###")
     start_time_sentence_review = time.time()
 
     REVIEWED_DIR = lecture_dir / "reviewed"
     REVIEWED_DIR.mkdir(exist_ok=True)
 
-    instr_sentence_review = Path(PROMPTS_DIR / "sentence_review.txt").read_text(encoding="utf-8")
+    instr_sentence_review = (PROMPTS_DIR / "sentence_review.txt").read_text(encoding="utf-8")
 
     with open(lecture_dir / "transcript_sentences.json", "r", encoding="utf-8") as f:
         sentences = json.load(f)
 
     ALLOWED = ["sid", "text", "confidence"]
     projected_sentences = [{k: s.get(k) for k in ALLOWED} for s in sentences]
-    low_confidence_sentences = [s for s in projected_sentences if s.get("confidence", 1.0) < 0.9]
+    low_confidence_sentences = [s for s in projected_sentences if (s.get("confidence") is not None and s.get("confidence", 1.0) < 0.9)]
     print("Low Confident Sentences: ", len(low_confidence_sentences))
 
     payload = {
@@ -100,38 +131,43 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
         }
     }
 
-    contents = [
-        "This is very important task, but I am sure that you will do this well, because you are the best data processer. Read the JSON and follow the instructions carefully.",
-        json.dumps(payload, ensure_ascii=False)
+    messages = [
+        Message(
+            role="system",
+            content="You are a careful transcript editor. Follow the instruction and return JSON only.",
+        ),
+        Message(role="user", content=json.dumps(payload, ensure_ascii=False)),
     ]
 
-    print("Waiting for response from Gemini API...")
-    response_sentence_review = client.models.generate_content(
-        model = gen_model,
-        contents = contents,
-        config = config_json,
-    )
+    options_json = options_json or LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
+
+    print(f"Waiting for response from {llm.provider} API...")
+    res = llm.generate(model=model_alias, messages=messages, options=options_json)
 
     print("saving response...")
-    raw_text = response_sentence_review.text
+    raw_text = res.output_text
     clean_text = _strip_code_fence(raw_text).strip()
-    out_review_sentence = json.loads(clean_text)
 
-    with open (lecture_dir / "reviewed/reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
+    try:
+        out_review_sentence = json.loads(clean_text)
+    except json.JSONDecodeError as e:
+        # keep raw for debug
+        (lecture_dir / "reviewed/reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
+        raise ValueError(f"Sentence Review JSON parse failed: {e}") from e
+
+    with open(lecture_dir / "reviewed/reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
         json.dump(out_review_sentence, f, ensure_ascii=False, indent=2)
 
-    sentence_reviewed_list = out_review_sentence.get("results")
+    sentence_reviewed_list = out_review_sentence.get("results") or []
 
     mods = {}
-
     for r in sentence_reviewed_list:
         sid = r.get("sid")
         modified = r.get("modified")
         if sid and isinstance(modified, str) and modified.strip():
             mods[sid] = modified.strip()
-    
-    reviewed_sentences = []
 
+    reviewed_sentences = []
     for s in sentences:
         sid = s.get("sid")
         if sid in mods:
@@ -141,54 +177,53 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
         else:
             reviewed_sentences.append(s)
 
-    with open (lecture_dir / "reviewed_sentences.json", "w", encoding="utf-8") as f:
+    with open(lecture_dir / "reviewed_sentences.json", "w", encoding="utf-8") as f:
         json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
 
-    end_time_sentence_review = time.time()
-    elapsed_time_sentence_review = end_time_sentence_review - start_time_sentence_review
-    print(token_report(response_sentence_review))
-    print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.") 
+    elapsed_time_sentence_review = time.time() - start_time_sentence_review
+    print(token_report_from_result(res))
+    if res.warnings:
+        print("  [WARN]", "; ".join(res.warnings))
+    print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.")
 
-def lecture_audio_to_text(audio_file, lecture_dir: Path, client, gen_model, config_json):
 
-    speach_to_text(audio_file, lecture_dir)
-    sentence_review(client, gen_model, config_json, lecture_dir)
+def lecture_audio_to_text(
+    audio_file,
+    lecture_dir: Path,
+    llm: UnifiedLLM,
+    model_alias: str,
+    *,
+    force_transcribe: bool = False,
+):
+    """
+    - transcript_sentences.json が既にあれば speach_to_text をスキップ
+    - force_transcribe=True のときは必ず AssemblyAI を再実行
+    """
+    if force_transcribe or not _has_valid_transcript_outputs(lecture_dir):
+        speach_to_text(audio_file, lecture_dir)
+    else:
+        print("\n### Lecture Audio To Text ###")
+        print("✅ Found existing transcript_sentences.json, skip AssemblyAI transcription.")
 
+    sentence_review(llm, model_alias, lecture_dir)
 
 
 # ------ for test -------
-def config_json(thinking: int = 0, google_search: bool = False):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="application/json",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def config_text(thinking: int = 0, google_search: int = 0):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="text/plain",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
 def main():
     load_dotenv()
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-    flash = "gemini-2.5-flash"
-    flash_lite = "gemini-2.5-flash-lite"
+    # Switch provider/model here
+    llm = UnifiedLLM(provider="gemini")
+    model_alias = "2_5_flash"
+    # llm = UnifiedLLM(provider="openai")
+    # model_alias = "5_mini"
 
     ROOT = Path(__file__).resolve().parent
     LECTURE_DIR = ROOT / "../lectures/2025-10-31-12-04-37-0700"
-    lecture_audio_to_text("", LECTURE_DIR, client, flash, config_json())
+
+    # audio_file should be an actual file path when running for real
+    lecture_audio_to_text("", LECTURE_DIR, llm, model_alias)
+
 
 if __name__ == "__main__":
     main()

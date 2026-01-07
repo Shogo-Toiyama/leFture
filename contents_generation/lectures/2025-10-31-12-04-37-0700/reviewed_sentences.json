@@ -17,7 +17,7 @@
   },
   {
     "sid": "s000003",
-    "text": "And like always, my decision, that's how that's been done.",
+    "text": "And like always my decision, that's how that's been done.",
     "start": 23200,
     "end": 28850,
     "speaker": "A",
@@ -81,7 +81,7 @@
   },
   {
     "sid": "s000011",
-    "text": "And the...",
+    "text": "And the.",
     "start": 83020,
     "end": 84780,
     "speaker": "A",
@@ -153,7 +153,7 @@
   },
   {
     "sid": "s000020",
-    "text": "You're here.",
+    "text": "Your here.",
     "start": 131470,
     "end": 132430,
     "speaker": "A",
@@ -281,7 +281,7 @@
   },
   {
     "sid": "s000036",
-    "text": "You know, instead of X and Y, I'm going to call it X and C_in.",
+    "text": "You know, instead of X and Y, I'm going to call it X and carry.",
     "start": 201250,
     "end": 206690,
     "speaker": "A",
@@ -289,7 +289,7 @@
   },
   {
     "sid": "s000037",
-    "text": "C_in, okay.",
+    "text": "CM okay.",
     "start": 207170,
     "end": 208460,
     "speaker": "A",
@@ -337,7 +337,7 @@
   },
   {
     "sid": "s000043",
-    "text": "The carry in is for the full adder.",
+    "text": "The carry-in is for the full adder.",
     "start": 230340,
     "end": 234380,
     "speaker": "A",
@@ -345,7 +345,7 @@
   },
   {
     "sid": "s000044",
-    "text": "We'll call X and Y, and C and S will work.",
+    "text": "We'll call maximum and C and S will work.",
     "start": 235020,
     "end": 239180,
     "speaker": "A",
@@ -353,7 +353,7 @@
   },
   {
     "sid": "s000045",
-    "text": "I'm getting ahead of myself.",
+    "text": "I'm getting ahead of Myself.",
     "start": 242300,
     "end": 243580,
     "speaker": "A",
@@ -425,7 +425,7 @@
   },
   {
     "sid": "s000054",
-    "text": "The carry is only one in one place.",
+    "text": "Exclusively the carry is only one in one place.",
     "start": 322470,
     "end": 328030,
     "speaker": "A",
@@ -473,7 +473,7 @@
   },
   {
     "sid": "s000060",
-    "text": "And there's our half adder.",
+    "text": "That's our half adder.",
     "start": 362520,
     "end": 372210,
     "speaker": "A",
@@ -489,7 +489,7 @@
   },
   {
     "sid": "s000062",
-    "text": "You know, usually when we add two bits, we're really adding a much bigger number, multi-bit numbers.",
+    "text": "You know, usually when we add two bits we're really adding a much bigger number, multi bit numbers.",
     "start": 379890,
     "end": 386250,
     "speaker": "A",
@@ -497,7 +497,7 @@
   },
   {
     "sid": "s000063",
-    "text": "And there's typically going to be a carry in from the previous stage.",
+    "text": "And there's typically going to be a carry-in from the previous stage.",
     "start": 386250,
     "end": 391020,
     "speaker": "A",
@@ -617,7 +617,7 @@
   },
   {
     "sid": "s000078",
-    "text": "Just, they're in a different order.",
+    "text": "Just they're in a different order.",
     "start": 487990,
     "end": 489750,
     "speaker": "A",
@@ -713,7 +713,7 @@
   },
   {
     "sid": "s000090",
-    "text": "Right, let's start with S. S is...",
+    "text": "Right, let's start with S. S is.",
     "start": 542639,
     "end": 570100,
     "speaker": "A",
@@ -841,7 +841,7 @@
   },
   {
     "sid": "s000106",
-    "text": "So that's X ended with (not Y not Z or Y Z).",
+    "text": "So that's X ended with not Y not Z or yz.",
     "start": 650060,
     "end": 656940,
     "speaker": "A",
@@ -873,7 +873,7 @@
   },
   {
     "sid": "s000110",
-    "text": "So that's Y exclusive or Z, or X.",
+    "text": "So that's Y exclusive or Z or X.",
     "start": 680270,
     "end": 685710,
     "speaker": "A",
@@ -881,7 +881,7 @@
   },
   {
     "sid": "s000111",
-    "text": "And this is an exclusive NOR.",
+    "text": "And this is an exclusive OR.",
     "start": 688350,
     "end": 690030,
     "speaker": "A",
@@ -889,7 +889,7 @@
   },
   {
     "sid": "s000112",
-    "text": "Y exclusive or Z, NOT.",
+    "text": "Y exclusive or Z naught.",
     "start": 690670,
     "end": 694590,
     "speaker": "A",
@@ -897,7 +897,7 @@
   },
   {
     "sid": "s000113",
-    "text": "If you take a step back and look at that, okay, this is actually an exclusive OR of X.",
+    "text": "If you take a step back and look at that, okay, this is actually an exclusive or of X.",
     "start": 695630,
     "end": 701900,
     "speaker": "A",
@@ -921,7 +921,7 @@
   },
   {
     "sid": "s000116",
-    "text": "Second, NOT X.",
+    "text": "Second, not X.",
     "start": 707300,
     "end": 709780,
     "speaker": "A",
@@ -929,7 +929,7 @@
   },
   {
     "sid": "s000117",
-    "text": "Then the true value here, the true value of X ended with the NOT here.",
+    "text": "Then the true value here, the true value of X ended with the not here.",
     "start": 709860,
     "end": 715060,
     "speaker": "A",
@@ -961,7 +961,7 @@
   },
   {
     "sid": "s000121",
-    "text": "To solve for C, let's see.",
+    "text": "To support C for C, let's see.",
     "start": 723920,
     "end": 733440,
     "speaker": "A",
@@ -969,7 +969,7 @@
   },
   {
     "sid": "s000122",
-    "text": "Minterm 3, 0, 1, 1, NOT X Y Z or minterm 5, 1, 0, 1, X NOT Y Z.",
+    "text": "Min term 3, 0, 1, 1, not x y z or minterm 5 1, 01 x not yz.",
     "start": 734320,
     "end": 749040,
     "speaker": "A",
@@ -977,7 +977,7 @@
   },
   {
     "sid": "s000123",
-    "text": "Minterm 6, 6 is 1, 1, 0.",
+    "text": "Minterm 6 is 1, 1, 0.",
     "start": 749830,
     "end": 751750,
     "speaker": "A",
@@ -1033,7 +1033,7 @@
   },
   {
     "sid": "s000130",
-    "text": "So what this does, that NOT Z.",
+    "text": "So what this does that, not Z.",
     "start": 804220,
     "end": 806940,
     "speaker": "A",
@@ -1057,7 +1057,7 @@
   },
   {
     "sid": "s000133",
-    "text": "Anything ORed with its complement is a one, which leaves X Y.",
+    "text": "Anything or with its complement is a one, which leaves x one.",
     "start": 812380,
     "end": 815580,
     "speaker": "A",
@@ -1089,7 +1089,7 @@
   },
   {
     "sid": "s000137",
-    "text": "And C is a slightly more complicated expression.",
+    "text": "And C is slightly more complicated expression.",
     "start": 842160,
     "end": 848160,
     "speaker": "A",
@@ -1233,7 +1233,7 @@
   },
   {
     "sid": "s000155",
-    "text": "No, Z right here coming into that AND gate.",
+    "text": "Now, Z right here coming into that AND gate.",
     "start": 933470,
     "end": 936030,
     "speaker": "A",
@@ -1241,7 +1241,7 @@
   },
   {
     "sid": "s000156",
-    "text": "And what's on the other input is X exclusive OR Y. When we OR those two together to get C_out.",
+    "text": "And what's on the other input is X exclusive-or Y; when we OR those two together we get Z.",
     "start": 936030,
     "end": 942110,
     "speaker": "A",
@@ -1305,7 +1305,7 @@
   },
   {
     "sid": "s000164",
-    "text": "And that input on Z, put zeros there.",
+    "text": "And that input on Z put zeros there.",
     "start": 982250,
     "end": 985690,
     "speaker": "A",
@@ -1353,7 +1353,7 @@
   },
   {
     "sid": "s000170",
-    "text": "Okay, coming out of this AND gate right here, that's got to be a zero, right?",
+    "text": "Okay, coming out of this and gate right here, that's got to be A right?",
     "start": 1022820,
     "end": 1033310,
     "speaker": "A",
@@ -1401,7 +1401,7 @@
   },
   {
     "sid": "s000176",
-    "text": "So Z will be a one.",
+    "text": "So Z will be a 1.",
     "start": 1067930,
     "end": 1069130,
     "speaker": "A",
@@ -1425,7 +1425,7 @@
   },
   {
     "sid": "s000179",
-    "text": "Okay, going up to that second exclusive OR, zero exclusive OR one, no real difference.",
+    "text": "Okay, going up to that second exclusive list, zero exclusive or one real difference.",
     "start": 1083370,
     "end": 1089700,
     "speaker": "A",
@@ -1473,7 +1473,7 @@
   },
   {
     "sid": "s000185",
-    "text": "The one.",
+    "text": "The 1.",
     "start": 1115050,
     "end": 1115530,
     "speaker": "A",
@@ -1521,7 +1521,7 @@
   },
   {
     "sid": "s000191",
-    "text": "So the output of that first exclusive OR (0 XOR 1) should be a 1. It's a 1 there.",
+    "text": "So the output of that first exclusive-or, 0 xor 1, should be a 1; it's a 1 there.",
     "start": 1153620,
     "end": 1160660,
     "speaker": "A",
@@ -1537,7 +1537,7 @@
   },
   {
     "sid": "s000193",
-    "text": "Puts a 0 on that last OR gate.",
+    "text": "Puts a 0 on that last.",
     "start": 1166350,
     "end": 1167630,
     "speaker": "A",
@@ -1609,7 +1609,7 @@
   },
   {
     "sid": "s000202",
-    "text": "I think we'll stick with this one to the end.",
+    "text": "I think we'll stick this one to death.",
     "start": 1190360,
     "end": 1192120,
     "speaker": "A",
@@ -1657,7 +1657,7 @@
   },
   {
     "sid": "s000208",
-    "text": "Okay, one exclusive OR one is a zero there.",
+    "text": "Okay, one exclusive or one is a one there.",
     "start": 1232050,
     "end": 1235570,
     "speaker": "A",
@@ -1713,7 +1713,7 @@
   },
   {
     "sid": "s000215",
-    "text": "But then with an OR gate we have zero OR one which is a one.",
+    "text": "But then with a XOR gate we have zero or one which is a one.",
     "start": 1276010,
     "end": 1278810,
     "speaker": "A",
@@ -1769,7 +1769,7 @@
   },
   {
     "sid": "s000222",
-    "text": "They have to be able to add two 64-bit numbers, big numbers.",
+    "text": "They have to be able to add two 64 bit numbers, big numbers.",
     "start": 1304670,
     "end": 1308350,
     "speaker": "A",
@@ -1841,7 +1841,7 @@
   },
   {
     "sid": "s000231",
-    "text": "The second full adder, A, B, and C_in. We get a sum and a carry.",
+    "text": "The second full adder, A, B and C. We get a sum and a carry.",
     "start": 1348700,
     "end": 1351980,
     "speaker": "A",
@@ -1945,7 +1945,7 @@
   },
   {
     "sid": "s000244",
-    "text": "In a real implementation, typical general-purpose computer, they'll do it just like this, but they'll add a whole bunch of really complicated combinational logic called carry.",
+    "text": "In a real implementation, typical general purpose computer, they'll do it just like this, but they'll add a whole bunch of really complicated combinational logic called carry.",
     "start": 1407500,
     "end": 1422500,
     "speaker": "A",
@@ -1961,7 +1961,7 @@
   },
   {
     "sid": "s000246",
-    "text": "And they've got a way of...",
+    "text": "And they got a way of.",
     "start": 1423580,
     "end": 1424860,
     "speaker": "A",
@@ -2001,7 +2001,7 @@
   },
   {
     "sid": "s000251",
-    "text": "Which leads us to subtraction.",
+    "text": "Which leads us to subtract.",
     "start": 1448690,
     "end": 1450850,
     "speaker": "A",
@@ -2017,7 +2017,7 @@
   },
   {
     "sid": "s000253",
-    "text": "The four-bit ripple carry adder would have C0, B0.",
+    "text": "The four bit duplicate would C0, B0.",
     "start": 1457340,
     "end": 1462700,
     "speaker": "A",
@@ -2057,7 +2057,7 @@
   },
   {
     "sid": "s000258",
-    "text": "Now we're talking about binary, where subtraction can be pretty straightforward.",
+    "text": "Now we're talking about binary, which subtraction can be pretty straightforward.",
     "start": 1489910,
     "end": 1509040,
     "speaker": "A",
@@ -2161,7 +2161,7 @@
   },
   {
     "sid": "s000271",
-    "text": "So two five-bit numbers, and I hope it's obvious to everybody that N is bigger than M. This result, whatever we got here, whatever we get from this is necessarily negative because we're subtracting a bigger number from a smaller number.",
+    "text": "So two five-bit numbers, and I hope it's obvious to everybody that M is bigger than N. This result, whatever we got here, whatever we get from this is necessarily negative because we're subtracting a bigger number from a small number.",
     "start": 1592500,
     "end": 1607800,
     "speaker": "A",
@@ -2281,7 +2281,7 @@
   },
   {
     "sid": "s000286",
-    "text": "So if we borrow from that one, that becomes a zero, making the one to the right a one zero.",
+    "text": "So if we borrow from that one, that becomes a zero, making one to the right one zero.",
     "start": 1692470,
     "end": 1699510,
     "speaker": "A",
@@ -2313,7 +2313,7 @@
   },
   {
     "sid": "s000290",
-    "text": "So, we got two minus one is one, and one minus one is zero.",
+    "text": "So, so we got two minus one one and one minus one is zero.",
     "start": 1710590,
     "end": 1714960,
     "speaker": "A",
@@ -2425,7 +2425,7 @@
   },
   {
     "sid": "s000304",
-    "text": "Well, because minus 11 is what?",
+    "text": "Well, because a minus 11 is what?",
     "start": 1755850,
     "end": 1760570,
     "speaker": "A",
@@ -2465,7 +2465,7 @@
   },
   {
     "sid": "s000309",
-    "text": "We have to do an end-borrow.",
+    "text": "We have to do an end borrow.",
     "start": 1779860,
     "end": 1781300,
     "speaker": "A",
@@ -2585,7 +2585,7 @@
   },
   {
     "sid": "s000324",
-    "text": "Let's see, we calculated this, we want...",
+    "text": "Let's see, we like this, we calculated, calculated to this, we want.",
     "start": 1850700,
     "end": 1861420,
     "speaker": "A",
@@ -2713,7 +2713,7 @@
   },
   {
     "sid": "s000340",
-    "text": "We borrow from there, that becomes a one.",
+    "text": "We borrow from there, that becomes a 1.",
     "start": 1955230,
     "end": 1957350,
     "speaker": "A",
@@ -2729,7 +2729,7 @@
   },
   {
     "sid": "s000342",
-    "text": "We borrow from there, which becomes a one.",
+    "text": "We borrow FROM there, which becomes a 1.",
     "start": 1959150,
     "end": 1961430,
     "speaker": "A",
@@ -2809,7 +2809,7 @@
   },
   {
     "sid": "s000352",
-    "text": "We're going to subtract two N-digit numbers.",
+    "text": "We're going to subtract two n digit numbers.",
     "start": 2006520,
     "end": 2009360,
     "speaker": "A",
@@ -2849,7 +2849,7 @@
   },
   {
     "sid": "s000357",
-    "text": "If we don't have to do an end-borrow, it meant the number on top is bigger.",
+    "text": "If we don't have to do it in borrow, it meant the number on top is bigger.",
     "start": 2025830,
     "end": 2029030,
     "speaker": "A",
@@ -2857,7 +2857,7 @@
   },
   {
     "sid": "s000358",
-    "text": "Or the same.",
+    "text": "We're the same.",
     "start": 2030070,
     "end": 2030870,
     "speaker": "A",
@@ -2881,7 +2881,7 @@
   },
   {
     "sid": "s000361",
-    "text": "Then we subtract it from 2 to the N, then append a minus sign. That Step three, that last step, is called taking the two's complement of a number.",
+    "text": "Well if we do it to borrow, we've computed that M minus N plus 2 to the N. Then we subtract it from 2 to the N then append a minus sign that Step three, that last step is called taking the two's complement of a number.",
     "start": 2039429,
     "end": 2053150,
     "speaker": "A",
@@ -2897,7 +2897,7 @@
   },
   {
     "sid": "s000363",
-    "text": "Two eight-bit numbers.",
+    "text": "Two eight bit numbers.",
     "start": 2069630,
     "end": 2070990,
     "speaker": "A",
@@ -2929,7 +2929,7 @@
   },
   {
     "sid": "s000367",
-    "text": "We're going to do that, and the values of these...",
+    "text": "We're going to do that and the values of these.",
     "start": 2092129,
     "end": 2094889,
     "speaker": "A",
@@ -2953,7 +2953,7 @@
   },
   {
     "sid": "s000370",
-    "text": "You probably already guessed we're not going to get the expected result when you do the initial subtraction.",
+    "text": "You probably already guessed we're not going to get when you do the initial subtraction.",
     "start": 2104400,
     "end": 2108280,
     "speaker": "A",
@@ -2977,7 +2977,7 @@
   },
   {
     "sid": "s000373",
-    "text": "So that one over there becomes a zero.",
+    "text": "So that one over there becomes zero.",
     "start": 2117360,
     "end": 2119280,
     "speaker": "A",
@@ -3097,7 +3097,7 @@
   },
   {
     "sid": "s000388",
-    "text": "So 2 to the N is a 1 followed by 8 zeros.",
+    "text": "We just calculated that this is M minus N plus 2 to the N. And then to get the correct magnitude, we need to subtract that from 2 to the n. So 2 to the n is a 1 followed by 8 zeros.",
     "start": 2179800,
     "end": 2195360,
     "speaker": "A",
@@ -3137,7 +3137,7 @@
   },
   {
     "sid": "s000393",
-    "text": "So let's see, zero minus zero is zero. Zero minus one...",
+    "text": "So let's see, zero minus zero is zero minus one.",
     "start": 2222000,
     "end": 2226160,
     "speaker": "A",
@@ -3145,7 +3145,7 @@
   },
   {
     "sid": "s000394",
-    "text": "Well, okay, we've got a problem. That goes to zero, to two, to one, to two, to one, to two, to one, to two, to one, to two.",
+    "text": "Well, okay, we've got a problem that goes to zero to two to one to two to one, to two to one to two to 1 to 2 to 1, 2 to 1 to 2.",
     "start": 2226720,
     "end": 2240310,
     "speaker": "A",
@@ -3265,7 +3265,7 @@
   },
   {
     "sid": "s000409",
-    "text": "So we're going to do all of this.",
+    "text": "So we're going to do all this.",
     "start": 2306730,
     "end": 2308090,
     "speaker": "A",
@@ -3433,7 +3433,7 @@
   },
   {
     "sid": "s000430",
-    "text": "Subtract/Add with an overscore that tells us if it's a one we're doing subtraction.",
+    "text": "Subtractadd with an overscore that tells us if it's a one we're doing subtraction.",
     "start": 2394720,
     "end": 2401880,
     "speaker": "A",
@@ -3625,7 +3625,7 @@
   },
   {
     "sid": "s000454",
-    "text": "There's also...",
+    "text": "There's also.",
     "start": 2548520,
     "end": 2549160,
     "speaker": "A",
@@ -3641,7 +3641,7 @@
   },
   {
     "sid": "s000456",
-    "text": "You know, for radix 5 we have a fives complement.",
+    "text": "You know, for Radix 5 we have a fives complement.",
     "start": 2558040,
     "end": 2562280,
     "speaker": "A",
@@ -3761,7 +3761,7 @@
   },
   {
     "sid": "s000471",
-    "text": "We look in here where it says 'Arithmetic Functions and Circuits'.",
+    "text": "We look in here where it says Arithmetic functions and Circuits.",
     "start": 2626780,
     "end": 2630380,
     "speaker": "A",
@@ -3865,7 +3865,7 @@
   },
   {
     "sid": "s000484",
-    "text": "We'll reconvene at two. Last...",
+    "text": "We'll reconvene at two o'clock.",
     "start": 2698040,
     "end": 2722760,
     "speaker": "A",
@@ -3873,7 +3873,7 @@
   },
   {
     "sid": "s000485",
-    "text": "We were talking about, in general, not complement numbers.",
+    "text": "We were talking about, in general, two's complement numbers.",
     "start": 2723570,
     "end": 2726850,
     "speaker": "A",
@@ -3929,7 +3929,7 @@
   },
   {
     "sid": "s000492",
-    "text": "For an N-digit binary number.",
+    "text": "For an n-digit binary number.",
     "start": 2760140,
     "end": 2761660,
     "speaker": "A",
@@ -3945,7 +3945,7 @@
   },
   {
     "sid": "s000494",
-    "text": "It's 2 to the N minus 1.",
+    "text": "It's 2 to the n minus 1.",
     "start": 2793700,
     "end": 2797060,
     "speaker": "A",
@@ -3953,7 +3953,7 @@
   },
   {
     "sid": "s000495",
-    "text": "But bear in mind, 2 to the N is a binary number that consists of a 1 followed by N zeros.",
+    "text": "But bear in mind 2 to the n is a binary number that consists of a 1 followed by n zeros.",
     "start": 2804500,
     "end": 2824180,
     "speaker": "A",
@@ -4097,7 +4097,7 @@
   },
   {
     "sid": "s000513",
-    "text": "It's 2 to the N minus 1 minus the number N, where N is the number of bits.",
+    "text": "It's 2 to the n minus 1, n being the number of bits.",
     "start": 2926210,
     "end": 2932260,
     "speaker": "A",
@@ -4337,7 +4337,7 @@
   },
   {
     "sid": "s000543",
-    "text": "Now let's talk about two's complement.",
+    "text": "Now let's talk about two's complements.",
     "start": 3107640,
     "end": 3109240,
     "speaker": "A",
@@ -4353,7 +4353,7 @@
   },
   {
     "sid": "s000545",
-    "text": "For an N-digit binary number N, the two's complement of N is 2 to the N minus N when N is not 0, and it's 0 when N is 0.",
+    "text": "For an n-digit binary number x, the two's complement of x is 2^n minus x when x is not 0, and it's 0 when x is 0.",
     "start": 3122610,
     "end": 3167350,
     "speaker": "A",
@@ -4361,7 +4361,7 @@
   },
   {
     "sid": "s000546",
-    "text": "That's because the result has to have N bits.",
+    "text": "That's because the result has to have n bits.",
     "start": 3168950,
     "end": 3171030,
     "speaker": "A",
@@ -4385,7 +4385,7 @@
   },
   {
     "sid": "s000549",
-    "text": "And I say we can get the two's complement by taking the one's complement and adding one.",
+    "text": "And I say we can get the one the two's complement by taking the ones complement and adding one.",
     "start": 3195350,
     "end": 3200390,
     "speaker": "A",
@@ -4409,7 +4409,7 @@
   },
   {
     "sid": "s000552",
-    "text": "The ones cancel and we're left with 2 to the N minus N. So we already know how to calculate the one's complement.",
+    "text": "The ones cancel and we're left with two to the n minus n. So we already know how to calculate the ones complement.",
     "start": 3221040,
     "end": 3232000,
     "speaker": "A",
@@ -4473,7 +4473,7 @@
   },
   {
     "sid": "s000560",
-    "text": "So first let's calculate the one's complement.",
+    "text": "So first let's calculate the ones complement.",
     "start": 3265100,
     "end": 3267260,
     "speaker": "A",
@@ -4841,7 +4841,7 @@
   },
   {
     "sid": "s000606",
-    "text": "When you strip off that leftmost bit, it gives you the magnitude.",
+    "text": "When you strip off that left number leftmost bit, it gives you the magnitude.",
     "start": 3577010,
     "end": 3580850,
     "speaker": "A",
@@ -4929,7 +4929,7 @@
   },
   {
     "sid": "s000617",
-    "text": "The one's complement is 0001.",
+    "text": "The ones complement 0,01.",
     "start": 3651280,
     "end": 3653640,
     "speaker": "A",
@@ -4937,7 +4937,7 @@
   },
   {
     "sid": "s000618",
-    "text": "The negative number with the two's complement would be the one's complement plus 1, which is four ones.",
+    "text": "The negative number with the two's complement would be the ones complement plus 1, which is 4 ones.",
     "start": 3654920,
     "end": 3663240,
     "speaker": "A",
@@ -5209,7 +5209,7 @@
   },
   {
     "sid": "s000652",
-    "text": "So 0, carry the 1.",
+    "text": "So 0 carry the 1.",
     "start": 3875350,
     "end": 3876685,
     "speaker": "A",
@@ -5225,7 +5225,7 @@
   },
   {
     "sid": "s000654",
-    "text": "1 plus 0 plus 1 is 2, 0, carry 1.",
+    "text": "It's a 1 carry the 1 which is 20 carry 1.",
     "start": 3881830,
     "end": 3885944,
     "speaker": "A",
@@ -5249,7 +5249,7 @@
   },
   {
     "sid": "s000657",
-    "text": "It's X, that's X minus Y.",
+    "text": "It's X, that's X minus 1.",
     "start": 3902039,
     "end": 3904040,
     "speaker": "A",
@@ -5417,7 +5417,7 @@
   },
   {
     "sid": "s000678",
-    "text": "We NOT every bit and we add one.",
+    "text": "We not every bit and we add one.",
     "start": 3972320,
     "end": 3974600,
     "speaker": "A",
@@ -5441,7 +5441,7 @@
   },
   {
     "sid": "s000681",
-    "text": "So zero, carry the one.",
+    "text": "So zero carry the one.",
     "start": 3978320,
     "end": 3979720,
     "speaker": "A",
@@ -5465,7 +5465,7 @@
   },
   {
     "sid": "s000684",
-    "text": "Writing down these other bits, and that's a negative X.",
+    "text": "Writing down these other bits, and that's a negative x.",
     "start": 3986040,
     "end": 3990630,
     "speaker": "A",
@@ -5585,7 +5585,7 @@
   },
   {
     "sid": "s000699",
-    "text": "Which means we're adding A_i to a complement of B_i.",
+    "text": "Which means we're adding A sub I to a complement of B sub I.",
     "start": 4097330,
     "end": 4107810,
     "speaker": "A",
@@ -5665,7 +5665,7 @@
   },
   {
     "sid": "s000709",
-    "text": "It's a negative B which we're adding to A.",
+    "text": "It's a negative V which we're adding to A.",
     "start": 4152149,
     "end": 4154309,
     "speaker": "A",
@@ -5809,7 +5809,7 @@
   },
   {
     "sid": "s000727",
-    "text": "We've got NOT B3, NOT B2, NOT B1, NOT B0.",
+    "text": "We've got not b3, not v2, not v1, not v0.",
     "start": 4284940,
     "end": 4289980,
     "speaker": "A",
@@ -5857,7 +5857,7 @@
   },
   {
     "sid": "s000733",
-    "text": "And this is in fact the most common way to do this in a general-purpose computer, except for the ripple carry part of the carries.",
+    "text": "And this is in fact the Most common way to do this in a general purpose computer, except for the ripple carry part of the carries.",
     "start": 4314420,
     "end": 4323300,
     "speaker": "A",
@@ -5889,7 +5889,7 @@
   },
   {
     "sid": "s000737",
-    "text": "It's pretty elegant.",
+    "text": "It's pretty.",
     "start": 4328830,
     "end": 4329550,
     "speaker": "A",
@@ -5937,7 +5937,7 @@
   },
   {
     "sid": "s000743",
-    "text": "Okay, so we've got this little circuit, the circuit here, which I made very small, and what we've got, oh, it's the inputs S, 4 bits of A and 4 bits of B.",
+    "text": "Okay, so we've got this little circuit, the circuit here, which I made very small and what we've got, oh, it's the part A, B, C and B.",
     "start": 4358190,
     "end": 4366830,
     "speaker": "A",
@@ -6057,7 +6057,7 @@
   },
   {
     "sid": "s000758",
-    "text": "We've got a four-bit computer.",
+    "text": "We've got a four bit computer.",
     "start": 4449500,
     "end": 4450940,
     "speaker": "A",
@@ -6097,7 +6097,7 @@
   },
   {
     "sid": "s000763",
-    "text": "It's what the hardware puts out over here on the right, S equals one.",
+    "text": "It's what's the hard way over here on the right, S equals one.",
     "start": 4464890,
     "end": 4472530,
     "speaker": "A",
@@ -6129,7 +6129,7 @@
   },
   {
     "sid": "s000767",
-    "text": "We start with B, which is 0100.",
+    "text": "We start with b which is 0100.",
     "start": 4490220,
     "end": 4497020,
     "speaker": "A",
@@ -6257,7 +6257,7 @@
   },
   {
     "sid": "s000783",
-    "text": "That's a 0, goes to 2, goes to 1, 2. 2 minus 1 is 1, 1 minus 1 is 0, 0 minus 0, 1 minus 0. And what?",
+    "text": "That's a 0 goes to 2 goes to 1, 2, 2 minus 1 is 1, 1 minus 1 is 0, 0 minus 01 minus 0 and what?",
     "start": 4566680,
     "end": 4581880,
     "speaker": "A",
@@ -6297,7 +6297,7 @@
   },
   {
     "sid": "s000788",
-    "text": "Then we add A, which is 0011.",
+    "text": "Then we add any which is 0011.",
     "start": 4609730,
     "end": 4613410,
     "speaker": "A",
@@ -6369,7 +6369,7 @@
   },
   {
     "sid": "s000797",
-    "text": "And that's what we have down the lower left, S equals a one.",
+    "text": "And that's what we've done in the lower left: S equals a one.",
     "start": 4638440,
     "end": 4644370,
     "speaker": "A",
@@ -6529,7 +6529,7 @@
   },
   {
     "sid": "s000817",
-    "text": "And one. If it's addition, S equals zero, just add.",
+    "text": "And one, if it's addition S equals zero, just add.",
     "start": 4761680,
     "end": 4769690,
     "speaker": "A",
@@ -6553,7 +6553,7 @@
   },
   {
     "sid": "s000820",
-    "text": "If you've done...",
+    "text": "If you've done.",
     "start": 4780250,
     "end": 4780970,
     "speaker": "A",
@@ -6585,7 +6585,7 @@
   },
   {
     "sid": "s000824",
-    "text": "Now we're assuming two's complement representation for negative numbers.",
+    "text": "Now we're assuming a two's-complement representation for negative numbers.",
     "start": 4792900,
     "end": 4796100,
     "speaker": "A",
@@ -6593,7 +6593,7 @@
   },
   {
     "sid": "s000825",
-    "text": "Okay, that's it.",
+    "text": "Okay, that's.",
     "start": 4796180,
     "end": 4799780,
     "speaker": "A",
@@ -6609,7 +6609,7 @@
   },
   {
     "sid": "s000827",
-    "text": "You know, if it's, in this case, a 4-bit computer, it needs 5 bits, or if it's an 8-bit computer, it needs 9 bits. That's overflow, and the result's invalid.",
+    "text": "You know, if it's a 4-bit computer, it needs 5 bits, or if it's an 8-bit computer, it needs 9 bits; that's overflow and the result's invalid.",
     "start": 4816540,
     "end": 4826520,
     "speaker": "A",
@@ -6737,7 +6737,7 @@
   },
   {
     "sid": "s000843",
-    "text": "So for example, let's say we're adding two 8-bit numbers.",
+    "text": "So for example, let's say we're adding two 8 bit numbers.",
     "start": 4898690,
     "end": 4908610,
     "speaker": "A",
@@ -6889,7 +6889,7 @@
   },
   {
     "sid": "s000862",
-    "text": "But a positive 95 in binary is 0101 followed by four ones, and a negative 95 is 10100001.",
+    "text": "But a positive 95 in binary is 0101 followed by four ones and a negative 95 is a 10100001.",
     "start": 5068780,
     "end": 5092790,
     "speaker": "A",
@@ -6905,7 +6905,7 @@
   },
   {
     "sid": "s000864",
-    "text": "Okay, so plus 95 plus 40.",
+    "text": "Okay, so plus 95 plus 4 plus a 40.",
     "start": 5120720,
     "end": 5129990,
     "speaker": "A",
@@ -6945,7 +6945,7 @@
   },
   {
     "sid": "s000869",
-    "text": "The positive 95 is 0101 and positive 40.",
+    "text": "The positive 95 is 0101 and positive 45.",
     "start": 5150070,
     "end": 5160900,
     "speaker": "A",
@@ -6953,7 +6953,7 @@
   },
   {
     "sid": "s000870",
-    "text": "Well, these are not 40s.",
+    "text": "Well, these are not 45s.",
     "start": 5164820,
     "end": 5166260,
     "speaker": "A",
@@ -6961,7 +6961,7 @@
   },
   {
     "sid": "s000871",
-    "text": "They're 0010100.",
+    "text": "They're at a 001 0100.",
     "start": 5172100,
     "end": 5178820,
     "speaker": "A",
@@ -7089,7 +7089,7 @@
   },
   {
     "sid": "s000887",
-    "text": "Look, this is going to give us a positive number, right?",
+    "text": "Look, this is going to give us a positive Number, Right?",
     "start": 5274200,
     "end": 5279200,
     "speaker": "A",
@@ -7177,7 +7177,7 @@
   },
   {
     "sid": "s000898",
-    "text": "And an exclusive OR is just about ideal for detecting.",
+    "text": "And an exclusive or is just about ideal for detecting.",
     "start": 5346900,
     "end": 5350580,
     "speaker": "A",
@@ -7209,7 +7209,7 @@
   },
   {
     "sid": "s000902",
-    "text": "When we do that, it'll give us the last two carries.",
+    "text": "When we do, that'll give us the last two carriers.",
     "start": 5359630,
     "end": 5365870,
     "speaker": "A",
@@ -7281,7 +7281,7 @@
   },
   {
     "sid": "s000911",
-    "text": "We set a flag, and it'd be up to the compiler.",
+    "text": "We set a flag and it'd be up to the compiler.",
     "start": 5392580,
     "end": 5399540,
     "speaker": "A",
@@ -7297,7 +7297,7 @@
   },
   {
     "sid": "s000913",
-    "text": "Stop your program.",
+    "text": "Stop your.",
     "start": 5406100,
     "end": 5406820,
     "speaker": "A",
@@ -7377,7 +7377,7 @@
   },
   {
     "sid": "s000923",
-    "text": "Okay, turns out an AND gate is like the ideal one-bit multiplier.",
+    "text": "Okay, turns out AND is like the ideal one-bit multiplier.",
     "start": 5449010,
     "end": 5455490,
     "speaker": "A",
@@ -7457,7 +7457,7 @@
   },
   {
     "sid": "s000933",
-    "text": "That's that, beautifully.",
+    "text": "That's that beautifully.",
     "start": 5488230,
     "end": 5489190,
     "speaker": "A",
@@ -7473,7 +7473,7 @@
   },
   {
     "sid": "s000935",
-    "text": "Now, how do you do it?",
+    "text": "Now you do it.",
     "start": 5498150,
     "end": 5499030,
     "speaker": "A",
@@ -7553,7 +7553,7 @@
   },
   {
     "sid": "s000945",
-    "text": "Right, here's A0 ANDing with the two bits of B. That's A0 and B0.",
+    "text": "Right here's a zero ending with the two bits of B that A zero and B zero.",
     "start": 5545070,
     "end": 5551630,
     "speaker": "A",
@@ -7577,7 +7577,7 @@
   },
   {
     "sid": "s000948",
-    "text": "It adds two bits, and we're adding that to A1 B0, which is this right here.",
+    "text": "It adds two bits and we're adding that to a 1, B 0, which is this right here.",
     "start": 5561310,
     "end": 5569240,
     "speaker": "A",
@@ -7585,7 +7585,7 @@
   },
   {
     "sid": "s000949",
-    "text": "You get the carry-over and carry-out, and that goes into A1 B1, and you get two bits.",
+    "text": "You get the carryover and carry out and that goes into A1, B1 and you get two bits.",
     "start": 5570200,
     "end": 5576600,
     "speaker": "A",
@@ -7601,7 +7601,7 @@
   },
   {
     "sid": "s000951",
-    "text": "If you're getting a little more bits, you might not use a half adder, you might use multi-bit adders.",
+    "text": "If you're getting a little more bits, you might not use half adder, you might use multi bit adders.",
     "start": 5580040,
     "end": 5587720,
     "speaker": "A",
@@ -7625,7 +7625,7 @@
   },
   {
     "sid": "s000954",
-    "text": "And the bits with the bits of B0. The rightmost just comes straight down, and then the next three bits...",
+    "text": "And the bits with the bits of B0, the rightmost just comes straight down and then the next three bits.",
     "start": 5596410,
     "end": 5604490,
     "speaker": "A",
@@ -7857,7 +7857,7 @@
   },
   {
     "sid": "s000983",
-    "text": "No, I'm saying...",
+    "text": "No, I'm saying.",
     "start": 5726880,
     "end": 5727660,
     "speaker": "A",

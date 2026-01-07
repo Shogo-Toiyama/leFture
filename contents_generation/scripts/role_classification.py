@@ -3,28 +3,23 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-import os
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-PROMPTS_DIR = PROJECT_ROOT / "prompts"
-
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
 SID_NUM = re.compile(r"s(\d+)")
 
-def token_report(resp):
-    um = resp.usage_metadata
-    prompt_tokens = um.prompt_token_count
-    candidate_tokens = um.candidates_token_count
-    total_tokens = um.total_token_count
-    thinking_tokens = total_tokens - prompt_tokens - candidate_tokens
-    return (f"TOKEN USAGE REPORT\n  ⬆️:{prompt_tokens}, 🧠: {thinking_tokens}, ⬇️: {candidate_tokens}\n  TOTAL: {total_tokens}")
-
+# ---- unified token report ----
+def token_report_from_result(res):
+    u = res.usage
+    return (
+        "TOKEN USAGE REPORT\n"
+        f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
+        f"  TOTAL: {u.total_tokens}\n"
+        f"  Estimated cost: ${res.estimated_cost_usd:.6f}"
+    )
 
 def split_balanced(n_items: int, max_batch: int):
     if n_items <= 0:
@@ -45,9 +40,9 @@ def split_balanced(n_items: int, max_batch: int):
 
 def save_batches(data, batch_num: int, start: int, end: int, ctx: int, batch_dir: Path):
     n = len(data)
-    main_text_chunk = data[start : end]
+    main_text_chunk = data[start:end]
     ctx_bf_mt_chunk = data[max(0, start - ctx): start]
-    ctx_af_mt_chunk = data[end : min(n, end + ctx)]
+    ctx_af_mt_chunk = data[end: min(n, end + ctx)]
     obj = [
         {
             "context_before_main_text": ctx_bf_mt_chunk,
@@ -59,59 +54,11 @@ def save_batches(data, batch_num: int, start: int, end: int, ctx: int, batch_dir
         json.dump(obj, f, ensure_ascii=False, indent=2)
     return json.dumps(obj, ensure_ascii=False, indent=2)
 
-async def run_one_role_classification(client, gen_model, config_json, prompt, batch_path: Path):
-    start_time_one_role_classification = time.time()
-    batch_dir = batch_path.parent
-    contents = [
-        prompt,
-        batch_path.read_text(encoding="utf-8"),
-        "Using the JSON data provided above, follow the instructions and return the result in JSON format.",
-    ]
-    try:
-        print(f"Waiting for response {batch_path.name} from Gemini API...")
-        resp = await client.aio.models.generate_content(
-            model = gen_model,
-            contents = contents,
-            config = config_json
-        )
-        result_path = batch_dir / f"role_classifications_batch.json"
-        result_path.write_text(resp.text, encoding="utf-8")
-        print(f"✅ Saved {result_path.name}")
-        end_time_one_role_classification = time.time()
-        elapsed_time_one_role_classification = end_time_one_role_classification - start_time_one_role_classification
-        print(token_report(resp))
-        print(f"⏰One Role Classification of {batch_path.name}: {elapsed_time_one_role_classification:.2f} seconds.")
-        return resp.text
-    except Exception as e:
-        print(f"❌ Error in {batch_dir.name}: {e}")
-        return False
-
-async def run_all_role_classification(client, gen_model, config_json, batches_dir: Path):
-    prompt = Path(PROMPTS_DIR / "role_classification.txt").read_text(encoding="utf-8")
-    sem = asyncio.Semaphore(6)
-    batch_files = sorted((batches_dir).glob("batch_*/batch_*.json"))
-    print(f"Found {len(batch_files)} batches under {batches_dir}")
-    async def sem_task(batch_file: Path):
-        async with sem:
-            out_file = batch_file.parent / "role_classifications_batch.json"
-            if out_file.exists():
-                print(f"⏭️  Skip (exists) {out_file.relative_to(Path.cwd())}")
-                return True
-            return await run_one_role_classification(
-                client, gen_model, config_json, prompt, batch_file
-            )
-
-    results = await asyncio.gather(*(sem_task(f) for f in batch_files))
-    success = sum(1 for r in results if r)
-    print(f"\n✅ Completed {success}/{len(batch_files)} batches")
-
 def _strip_code_fence(text: str) -> str:
     if text.lstrip().startswith("```"):
         lines = [ln.rstrip("\n") for ln in text.splitlines()]
-        # 先頭の```を落とす
         if lines and lines[0].startswith("```"):
             lines = lines[1:]
-        # 末尾の```を落とす
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         text = "\n".join(lines)
@@ -155,15 +102,12 @@ def merge_role_classifications(lecture_dir: Path, strict_continuity: bool = True
 
         for item in labels:
             sid = item.get("sid")
-            # 重複 sid はスキップ（コンテキスト重なり対策）
             if sid in seen_sids:
                 skipped_dups += 1
                 continue
 
-            # 連番チェック（任意）
             if strict_continuity:
                 cur = _sid_to_int(sid)
-                # ファイル頭同士の跨ぎもチェックできる
                 if prev_sid_num is not None and cur is not None:
                     expected = prev_sid_num + 1
                     if cur != expected:
@@ -189,16 +133,96 @@ def merge_role_classifications(lecture_dir: Path, strict_continuity: bool = True
     )
     return out_path
 
-def role_classification_draft(client, gen_model, config_json, lecture_dir: Path, max_batch_size: int = 300, ctx: int = 10):
-    # sentencesからrole分類
+
+# -----------------------------
+# LLM calls (async-friendly)
+# -----------------------------
+async def run_one_role_classification(
+    llm: UnifiedLLM,
+    model_alias: str,
+    options_json: LLMOptions,
+    prompt: str,
+    batch_path: Path,
+):
+    start_time = time.time()
+    batch_dir = batch_path.parent
+
+    out_file = batch_dir / "role_classifications_batch.json"
+    if out_file.exists():
+        print(f"⏭️  Skip (exists) {out_file.relative_to(Path.cwd())}")
+        return True
+
+    batch_json = batch_path.read_text(encoding="utf-8")
+
+    messages = [
+        Message(role="system", content=prompt),
+        Message(role="user", content=batch_json),
+        Message(
+            role="user",
+            content="Using the JSON data provided above, follow the instructions and return the result in JSON format.",
+        ),
+    ]
+
+    try:
+        print(f"Waiting for response {batch_path.name} from {llm.provider} API...")
+        # UnifiedLLM is sync; run it in a thread to keep asyncio structure
+        res = await asyncio.to_thread(llm.generate, model_alias, messages, options_json)
+
+        out_file.write_text(res.output_text, encoding="utf-8")
+        print(f"✅ Saved {out_file.name}")
+
+        elapsed = time.time() - start_time
+        print(token_report_from_result(res))
+        if res.warnings:
+            print("  [WARN]", "; ".join(res.warnings))
+        print(f"⏰One Role Classification of {batch_path.name}: {elapsed:.2f} seconds.")
+        return True
+    except Exception as e:
+        print(f"❌ Error in {batch_dir.name}: {e}")
+        return False
+
+
+async def run_all_role_classification(
+    llm: UnifiedLLM,
+    model_alias: str,
+    options_json: LLMOptions,
+    batches_dir: Path,
+    concurrency: int = 6,
+):
+    prompt = (PROMPTS_DIR / "role_classification.txt").read_text(encoding="utf-8")
+
+    sem = asyncio.Semaphore(concurrency)
+    batch_files = sorted(batches_dir.glob("batch_*/batch_*.json"))
+    print(f"Found {len(batch_files)} batches under {batches_dir}")
+
+    async def sem_task(batch_file: Path):
+        async with sem:
+            return await run_one_role_classification(llm, model_alias, options_json, prompt, batch_file)
+
+    results = await asyncio.gather(*(sem_task(f) for f in batch_files))
+    success = sum(1 for r in results if r)
+    print(f"\n✅ Completed {success}/{len(batch_files)} batches")
+
+
+# -----------------------------
+# Pipeline steps
+# -----------------------------
+def role_classification_draft(
+    llm: UnifiedLLM,
+    model_alias: str,
+    options_json: LLMOptions,
+    lecture_dir: Path,
+    max_batch_size: int = 300,
+    ctx: int = 10,
+    concurrency: int = 6,
+):
     print("\n### Role Classification ###")
-    start_time_role_classification = time.time()
+    start_time = time.time()
 
     with open(lecture_dir / "reviewed_sentences.json", "r", encoding="utf-8") as f:
         sentences = json.load(f)
 
     ALLOWED_CLASSIFY = ["sid", "text"]
-
     projected = [{k: s.get(k) for k in ALLOWED_CLASSIFY} for s in sentences]
 
     print("\n --> Separate Json to batches")
@@ -211,17 +235,16 @@ def role_classification_draft(client, gen_model, config_json, lecture_dir: Path,
     batches_dir.mkdir(exist_ok=True)
 
     for i, (start, end) in enumerate(ranges):
-        batch_num = i+1
+        batch_num = i + 1
         batch_dir = batches_dir / f"batch_{batch_num:02d}"
         batch_dir.mkdir(exist_ok=True, parents=True)
         save_batches(projected, batch_num, start, end, ctx, batch_dir)
-    
-    asyncio.run(run_all_role_classification(client, gen_model, config_json, batches_dir))
+
+    asyncio.run(run_all_role_classification(llm, model_alias, options_json, batches_dir, concurrency=concurrency))
+
     merge_role_classifications(lecture_dir)
 
-    with open(lecture_dir / "role_classifications.json", "r", encoding="utf-8") as f:
-        out_role_classification = json.load(f)
-    
+    out_role_classification = json.loads((lecture_dir / "role_classifications.json").read_text(encoding="utf-8"))
     labels = out_role_classification.get("labels", [])
     label_map = {lab["sid"]: lab for lab in labels}
 
@@ -235,19 +258,9 @@ def role_classification_draft(client, gen_model, config_json, lecture_dir: Path,
         lab = label_map.get(sid)
         if lab is None:
             missing.append(sid)
-            merged.append({
-                **s,
-                "role": None,
-                # "role_score": None,
-                # "role_reason": "missing label"
-            })
+            merged.append({**s, "role": None})
         else:
-            merged.append({
-                **s,
-                "role": lab.get("role"),
-                # "role_score": lab.get("role_score"),
-                # "role_reason": lab.get("role_reason"),
-            })
+            merged.append({**s, "role": lab.get("role")})
 
     sentence_sids = {s["sid"] for s in sentences}
     extra = [sid for sid in label_map.keys() if sid not in sentence_sids]
@@ -255,26 +268,29 @@ def role_classification_draft(client, gen_model, config_json, lecture_dir: Path,
     with open(lecture_dir / "sentences_final.json", "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
 
-    print(f"merged {len(merged)} sentences -> sentences_with_roles.json")
+    print(f"merged {len(merged)} sentences -> sentences_final.json")
     if missing:
         print(f"[WARN] labels missing for {len(missing)} sid(s). e.g., {missing[:5]}")
     if extra:
         print(f"[WARN] labels contain {len(extra)} extra sid(s). e.g., {extra[:5]}")
 
-    end_time_role_classification = time.time()
-    elapsed_time_role_classification = end_time_role_classification - start_time_role_classification
-    print(f"⏰Classified roles: {elapsed_time_role_classification:.2f} seconds.") 
+    elapsed = time.time() - start_time
+    print(f"⏰Classified roles: {elapsed:.2f} seconds.")
 
 
-def role_review(client, gen_model, config_json, lecture_dir: Path):
-    # roleと文章のレビュー
+def role_review(
+    llm: UnifiedLLM,
+    model_alias: str,
+    options_json: LLMOptions,
+    lecture_dir: Path,
+):
     print("\n### Role Review ###")
-    start_time_role_review = time.time()
+    start_time = time.time()
 
     REVIEWED_DIR = lecture_dir / "reviewed"
     REVIEWED_DIR.mkdir(exist_ok=True)
 
-    instr_role_review = Path(PROMPTS_DIR / "role_review.txt").read_text(encoding="utf-8")
+    instr_role_review = (PROMPTS_DIR / "role_review.txt").read_text(encoding="utf-8")
 
     with open(lecture_dir / "sentences_with_roles.json", "r", encoding="utf-8") as f:
         sentences_with_role = json.load(f)
@@ -290,7 +306,7 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
         try:
             score = float(s.get("role_score"))
         except (TypeError, ValueError):
-            continue  # None や非数値文字列は除外
+            continue
         if not math.isnan(score) and score < 0.9:
             low_confidence_sid.append(sid)
 
@@ -302,33 +318,30 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
         "data": {
             "sentences_with_role": projected,
             "low_confidence_sid": low_confidence_sid,
-        }
+        },
     }
 
-    contents = [
-        "This is very important task, but I am sure that you will do this well, because you are the best data processer. Read the JSON and follow the instructions carefully.",
-        json.dumps(payload, ensure_ascii=False)
+    messages = [
+        Message(
+            role="system",
+            content="You are a careful role auditor. Only change roles when clearly wrong. Return JSON only.",
+        ),
+        Message(role="user", content=json.dumps(payload, ensure_ascii=False)),
     ]
 
-    print("Waiting for response from Gemini API...")
-    response_role_review = client.models.generate_content(
-        model = gen_model,
-        contents = contents,
-        config = config_json,
-    )
+    print(f"Waiting for response from {llm.provider} API...")
+    res = llm.generate(model=model_alias, messages=messages, options=options_json)
 
     print("saving response...")
-    raw_text = response_role_review.text
+    raw_text = res.output_text
     clean_text = _strip_code_fence(raw_text).strip()
     out_role_review = json.loads(clean_text)
 
     with open(lecture_dir / "reviewed/reviewed_roles_raw.json", "w", encoding="utf-8") as f:
         json.dump(out_role_review, f, ensure_ascii=False, indent=2)
 
-    reviewed_role_list = out_role_review.get("results")
-
+    reviewed_role_list = out_role_review.get("results") or []
     new_roles = {}
-
     for r in reviewed_role_list:
         sid = r.get("sid")
         changed = r.get("new_role")
@@ -350,56 +363,60 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
 
     with open(lecture_dir / "sentences_final.json", "w", encoding="utf-8") as f:
         json.dump(sentences_final, f, ensure_ascii=False, indent=2)
-    
-    end_time_role_review = time.time()
-    elapsed_time_role_review = end_time_role_review - start_time_role_review
-    print(token_report(response_role_review))
-    print(f"⏰Reviewed roles: {elapsed_time_role_review:.2f} seconds.")
+
+    elapsed = time.time() - start_time
+    print(token_report_from_result(res))
+    if res.warnings:
+        print("  [WARN]", "; ".join(res.warnings))
+    print(f"⏰Reviewed roles: {elapsed:.2f} seconds.")
 
 
-def role_classification(client, gen_model, gen_model_lite, config_json, lecture_dir: Path, max_batch_size: int = 350, ctx: int = 10):
+def role_classification(
+    llm: UnifiedLLM,
+    model_alias_full: str,
+    model_alias_lite: str,
+    lecture_dir: Path,
+    max_batch_size: int = 350,
+    ctx: int = 10,
+    concurrency: int = 6,
+):
+    # Lite/cheap model for bulk classification
+    options_json = LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
 
-    role_classification_draft(client, gen_model_lite, config_json, lecture_dir, max_batch_size, ctx)
+    role_classification_draft(
+        llm,
+        model_alias_lite,
+        options_json,
+        lecture_dir,
+        max_batch_size=max_batch_size,
+        ctx=ctx,
+        concurrency=concurrency,
+    )
 
-    # role_review(client, gen_model, config_json, lecture_dir)
+    # If you want to run role review later (higher quality model):
+    # role_review(llm, model_alias_full, options_json, lecture_dir)
 
     print("\n✅All tasks of ROLE CLASSIFICATION completed.")
 
 
 # ------ for test -------
-def config_json(thinking: int = 0, google_search: bool = False):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="application/json",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def config_text(thinking: int = 0, google_search: int = 0):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="text/plain",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
 def main():
     load_dotenv()
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-    flash = "gemini-2.5-flash"
-    flash_lite = "gemini-2.5-flash-lite"
+    # Switch provider/model here
+    llm = UnifiedLLM(provider="gemini")
+    full_model = "2_5_flash"
+    lite_model = "2_5_flash_lite"
+
+    # llm = UnifiedLLM(provider="openai")
+    # full_model = "5_mini"
+    # lite_model = "5_nano"
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2025-11-11-16-38-54-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
+    LECTURE_DIR = ROOT / "../lectures/2026-01-06-02-44-09-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
 
-    role_classification(client, flash, flash_lite, config_json(), LECTURE_DIR)
+    role_classification(llm, full_model, lite_model, LECTURE_DIR, max_batch_size=350, ctx=10, concurrency=6)
+
 
 if __name__ == "__main__":
     main()
