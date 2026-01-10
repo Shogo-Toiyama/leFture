@@ -4,7 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # NEW: unified interface
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, CostCollector
 
 from contents_generation.scripts.lecture_audio_to_text import lecture_audio_to_text
 from contents_generation.scripts.role_classification import role_classification
@@ -130,6 +130,7 @@ def main():
         }
 
     llm = UnifiedLLM(provider=provider)
+    colector = CostCollector()
 
     # Common options (Search is off)
     json_opts = LLMOptions(output_type="json", temperature=0.2, google_search=False)
@@ -144,7 +145,7 @@ def main():
     start_time_total = time.time()
 
     # 1) AssemblyAI transcription stays inside lecture_audio_to_text, sentence review uses llm
-    lecture_audio_to_text(audio_files[0], LECTURE_DIR, llm, MODELS["sentence_review"])
+    lecture_audio_to_text(audio_files[0], LECTURE_DIR, llm, MODELS["sentence_review"], colector)
 
     # 2) Role classification (lite for batches, full optional review)
     role_classification(
@@ -152,6 +153,7 @@ def main():
         MODELS["role_full"],
         MODELS["role_lite"],
         LECTURE_DIR,
+        colector,
         max_batch_size=350,
         ctx=10,
         concurrency=6,
@@ -163,6 +165,7 @@ def main():
         MODELS["seg_full"],
         MODELS["seg_lite"],
         LECTURE_DIR,
+        colector,
     )
 
     # 4) Topic details generation (text)
@@ -170,6 +173,7 @@ def main():
         llm,
         MODELS["topic_details"],
         LECTURE_DIR,
+        colector,
         options_text=text_opts,
     )
 
@@ -178,6 +182,7 @@ def main():
         llm,
         MODELS["fun_facts"],
         LECTURE_DIR,
+        colector,
         options=text_opts,
     )
 
@@ -185,6 +190,7 @@ def main():
     total_minutes = int(elapsed_time_total // 60)
     total_seconds = int(elapsed_time_total % 60)
     print(f"\n⏰⏰⏰ Total elapsed time: {total_minutes} m {total_seconds} s.")
+    print(colector.report())
     print("\n🎉 All tasks completed.")
 
 

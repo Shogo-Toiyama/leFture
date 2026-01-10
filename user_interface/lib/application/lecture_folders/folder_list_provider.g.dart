@@ -66,7 +66,7 @@ final class FolderListStreamProvider
   }
 }
 
-String _$folderListStreamHash() => r'5680d21696501f068cd198652ea5dba495ee3f2a';
+String _$folderListStreamHash() => r'0d2744b208f7a87d7a272e01cd23a72b6942c415';
 
 final class FolderListStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<LectureFolder>>, String?> {

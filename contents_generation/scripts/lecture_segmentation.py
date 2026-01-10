@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
@@ -11,8 +11,9 @@ PROMPTS_DIR = PROJECT_ROOT / "prompts"
 SID_NUM = re.compile(r"s(\d+)")
 
 
-def token_report_from_result(res):
+def token_report_from_result(res, collector: CostCollector):
     u = res.usage
+    collector.add("Lecture Segmentation", res.estimated_cost_usd)
     return (
         "TOKEN USAGE REPORT\n"
         f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
@@ -28,7 +29,7 @@ def sid_to_num(sid: str):
     return None
 
 
-def topic_segmentation(llm: UnifiedLLM, model_alias: str, options_json: LLMOptions, lecture_dir: Path):
+def topic_segmentation(llm: UnifiedLLM, model_alias: str, options_json: LLMOptions, lecture_dir: Path, collector: CostCollector):
     # トピックで分割
     print("\n### Topic Segmentation ###")
     start_time = time.time()
@@ -65,13 +66,13 @@ def topic_segmentation(llm: UnifiedLLM, model_alias: str, options_json: LLMOptio
     )
 
     elapsed = time.time() - start_time
-    print(token_report_from_result(res))
+    print(token_report_from_result(res, collector))
     if res.warnings:
         print("  [WARN]", "; ".join(res.warnings))
     print(f"⏰Extracted topic: {elapsed:.2f} seconds.")
 
 
-def out_of_segment_classification(llm: UnifiedLLM, model_alias_lite: str, options_json: LLMOptions, lecture_dir: Path):
+def out_of_segment_classification(llm: UnifiedLLM, model_alias_lite: str, options_json: LLMOptions, lecture_dir: Path, colector: CostCollector):
     # セグメント外の文章分類
     print("\n### Out of Segments Classification ###")
     start_time = time.time()
@@ -132,7 +133,7 @@ def out_of_segment_classification(llm: UnifiedLLM, model_alias_lite: str, option
     )
 
     elapsed = time.time() - start_time
-    print(token_report_from_result(res))
+    print(token_report_from_result(res, colector))
     if res.warnings:
         print("  [WARN]", "; ".join(res.warnings))
     print(f"⏰Classified out of segments: {elapsed:.2f} seconds.")
@@ -143,10 +144,11 @@ def lecture_segmentation(
     model_alias_full: str,
     model_alias_lite: str,
     lecture_dir: Path,
+    collector: CostCollector,
 ):
     options_json = LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
 
-    topic_segmentation(llm, model_alias_full, options_json, lecture_dir)
+    topic_segmentation(llm, model_alias_full, options_json, lecture_dir, collector)
 
     # If you want to run later:
     # out_of_segment_classification(llm, model_alias_lite, options_json, lecture_dir)

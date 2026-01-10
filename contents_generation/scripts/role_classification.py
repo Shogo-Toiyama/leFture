@@ -4,7 +4,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
@@ -12,8 +12,9 @@ PROMPTS_DIR = PROJECT_ROOT / "prompts"
 SID_NUM = re.compile(r"s(\d+)")
 
 # ---- unified token report ----
-def token_report_from_result(res):
+def token_report_from_result(res, collector: CostCollector):
     u = res.usage
+    collector.add("Role Classification", res.estimated_cost_usd)
     return (
         "TOKEN USAGE REPORT\n"
         f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
@@ -143,6 +144,7 @@ async def run_one_role_classification(
     options_json: LLMOptions,
     prompt: str,
     batch_path: Path,
+    collector: CostCollector,
 ):
     start_time = time.time()
     batch_dir = batch_path.parent
@@ -172,7 +174,7 @@ async def run_one_role_classification(
         print(f"✅ Saved {out_file.name}")
 
         elapsed = time.time() - start_time
-        print(token_report_from_result(res))
+        print(token_report_from_result(res, collector))
         if res.warnings:
             print("  [WARN]", "; ".join(res.warnings))
         print(f"⏰One Role Classification of {batch_path.name}: {elapsed:.2f} seconds.")
@@ -187,6 +189,7 @@ async def run_all_role_classification(
     model_alias: str,
     options_json: LLMOptions,
     batches_dir: Path,
+    collector: CostCollector,
     concurrency: int = 6,
 ):
     prompt = (PROMPTS_DIR / "role_classification.txt").read_text(encoding="utf-8")
@@ -197,7 +200,7 @@ async def run_all_role_classification(
 
     async def sem_task(batch_file: Path):
         async with sem:
-            return await run_one_role_classification(llm, model_alias, options_json, prompt, batch_file)
+            return await run_one_role_classification(llm, model_alias, options_json, prompt, batch_file, collector)
 
     results = await asyncio.gather(*(sem_task(f) for f in batch_files))
     success = sum(1 for r in results if r)
@@ -212,6 +215,7 @@ def role_classification_draft(
     model_alias: str,
     options_json: LLMOptions,
     lecture_dir: Path,
+    collector: CostCollector,
     max_batch_size: int = 300,
     ctx: int = 10,
     concurrency: int = 6,
@@ -240,7 +244,7 @@ def role_classification_draft(
         batch_dir.mkdir(exist_ok=True, parents=True)
         save_batches(projected, batch_num, start, end, ctx, batch_dir)
 
-    asyncio.run(run_all_role_classification(llm, model_alias, options_json, batches_dir, concurrency=concurrency))
+    asyncio.run(run_all_role_classification(llm, model_alias, options_json, batches_dir, collector, concurrency=concurrency))
 
     merge_role_classifications(lecture_dir)
 
@@ -283,6 +287,7 @@ def role_review(
     model_alias: str,
     options_json: LLMOptions,
     lecture_dir: Path,
+    collector: CostCollector,
 ):
     print("\n### Role Review ###")
     start_time = time.time()
@@ -365,7 +370,7 @@ def role_review(
         json.dump(sentences_final, f, ensure_ascii=False, indent=2)
 
     elapsed = time.time() - start_time
-    print(token_report_from_result(res))
+    print(token_report_from_result(res, collector))
     if res.warnings:
         print("  [WARN]", "; ".join(res.warnings))
     print(f"⏰Reviewed roles: {elapsed:.2f} seconds.")
@@ -376,6 +381,7 @@ def role_classification(
     model_alias_full: str,
     model_alias_lite: str,
     lecture_dir: Path,
+    collector: CostCollector,
     max_batch_size: int = 350,
     ctx: int = 10,
     concurrency: int = 6,
@@ -388,6 +394,7 @@ def role_classification(
         model_alias_lite,
         options_json,
         lecture_dir,
+        collector,
         max_batch_size=max_batch_size,
         ctx=ctx,
         concurrency=concurrency,

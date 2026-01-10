@@ -7,10 +7,12 @@ class AppRoutes {
   static const String plans = '/plans';
 
   static const String dashboard = '/dashboard';
-  static const String lectureFolder = '/lecture-folder';
+  static const String notesEntry = '/notes-entry';
   static const String aiChat = '/ai-chat';
   static const String goalTree = '/goal-tree';
   static const String profile = '/profile';
+
+  static const String notesHome = '/notes';
 
   static const String recording = '/recording';
   static const String noteDetail = '/note-detail';

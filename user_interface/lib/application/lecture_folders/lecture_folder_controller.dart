@@ -1,3 +1,4 @@
+import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_folder.dart';
 import 'package:lecture_companion_ui/application/lecture_folders/lecture_folder_providers.dart';
@@ -109,4 +110,21 @@ class LectureFolderController extends _$LectureFolderController {
       print('⚠️ pull skipped: $e');
     }
   }
+
+  Future<void> bootstrapIfNeeded({Duration interval = const Duration(hours: 3)}) async {
+    final nav = ref.read(navStateStoreProvider);
+    final last = nav.lastFolderSyncAt;
+
+    final now = DateTime.now().toUtc();
+    final should = (last == null) || now.difference(last) >= interval;
+    if (!should) return;
+
+    try {
+      await bootstrapFolders();
+      await nav.setLastFolderSyncAt(now);
+    } catch (_) {
+      // 更新しない（次回また試す）
+    }
+  }
+
 }

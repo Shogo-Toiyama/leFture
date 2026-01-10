@@ -144,6 +144,37 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteAllLocalFolders({required String ownerId}) async {
     await (delete(localLectureFolders)..where((t) => t.ownerId.equals(ownerId))).go();
   }
+
+  Future<LocalLectureFolder?> getFolderById({
+    required String ownerId,
+    required String folderId,
+  }) {
+    return (select(localLectureFolders)
+          ..where((t) => t.ownerId.equals(ownerId) & t.id.equals(folderId)))
+        .getSingleOrNull();
+  }
+
+  Future<List<LocalLectureFolder>> getFolderAncestors({
+    required String ownerId,
+    required String folderId,
+  }) async {
+    final chain = <LocalLectureFolder>[];
+    String? current = folderId;
+    final visited = <String>{};
+
+    while (current != null && !visited.contains(current) && visited.length < 50) {
+      visited.add(current);
+
+      final row = await getFolderById(ownerId: ownerId, folderId: current);
+      if (row == null) break;
+
+      chain.add(row);
+      current = row.parentId;
+    }
+
+    return chain.reversed.toList(); // root -> ... -> current
+  }
+
 }
 
 LazyDatabase _openConnection() {

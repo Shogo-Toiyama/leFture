@@ -51,6 +51,23 @@ class LLMOptions:
     # 追加パラメータはここに入れておく（provider側で拾えるものだけ使う）
     provider_kwargs: Dict[str, Any] = field(default_factory=dict)
 
+@dataclass
+class CostCollector:
+    items: list[tuple[str, float]] = field(default_factory=list)
+
+    def add(self, label: str, cost_usd: float):
+        self.items.append((label, float(cost_usd)))
+
+    def total(self) -> float:
+        return sum(c for _, c in self.items)
+
+    def report(self) -> str:
+        lines = ["--- Cost report ---"]
+        for label, c in self.items:
+            lines.append(f"{label}: ${c:.6f}")
+        lines.append(f"TOTAL: ${self.total():.6f}")
+        return "\n".join(lines)
+
 # alias → 実モデル名
 MODEL_MAP: Dict[LLMProvider, Dict[str, str]] = {
     "gemini": {

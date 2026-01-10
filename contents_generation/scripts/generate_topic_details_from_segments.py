@@ -5,15 +5,16 @@ from functools import partial
 
 from dotenv import load_dotenv
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 _ILLEGAL_FS = re.compile(r'[\\/:*?"<>|\n\r\t]')
 
 
-def token_report_from_result(res):
+def token_report_from_result(res, collector: CostCollector):
     u = res.usage
+    collector.add("Topic Detail Generation", res.estimated_cost_usd)
     return (
         "TOKEN USAGE REPORT\n"
         f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
@@ -84,6 +85,7 @@ def _generate_one_topic_detail(
     instr_topic_details_generation: str,
     details_dir: Path,
     sentences,
+    collector: CostCollector,
     segment: dict,
 ):
     start_time = time.time()
@@ -126,7 +128,7 @@ def _generate_one_topic_detail(
     details_path.write_text(res.output_text.strip(), encoding="utf-8")
 
     elapsed = time.time() - start_time
-    print(token_report_from_result(res))
+    print(token_report_from_result(res, collector))
     if res.warnings:
         print("  [WARN]", "; ".join(res.warnings))
     print(f"  --> ⏰ Generated details for topic {idx} in {elapsed:.2f} seconds.")
@@ -183,7 +185,7 @@ def _check_one_faithfulness(
     return out_path
 
 
-def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMOptions, lecture_dir: Path):
+def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMOptions, lecture_dir: Path, collector: CostCollector):
     # トピックごとに詳細を生成
     print("\n### Topic Details Generation ###")
     start_time = time.time()
@@ -210,6 +212,7 @@ def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMO
         instr_topic_details_generation,
         DETAILS_DIR,
         sentences_final,
+        collector,
     )
 
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
@@ -282,10 +285,10 @@ def faithfulness_check_and_readablity_enhancement(
     print(f"⏰Checked and edited topic details: {elapsed:.2f} seconds.")
 
 
-def generate_topic_details(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, options_text: LLMOptions | None = None):
+def generate_topic_details(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options_text: LLMOptions | None = None):
     options_text = options_text or LLMOptions(output_type="text", temperature=0.2, google_search=False)
 
-    generate_details_draft(llm, model_alias, options_text, lecture_dir)
+    generate_details_draft(llm, model_alias, options_text, lecture_dir, collector)
 
     # If you want to run this later:
     # faithfulness_check_and_readablity_enhancement(llm, model_alias, options_text, lecture_dir)

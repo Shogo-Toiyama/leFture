@@ -5,14 +5,15 @@ from functools import partial
 
 from dotenv import load_dotenv
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
 
-def token_report_from_result(res):
+def token_report_from_result(res, collector: CostCollector):
     u = res.usage
+    collector.add("Fun Fact Generation", res.estimated_cost_usd)
     return (
         "TOKEN USAGE REPORT\n"
         f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
@@ -27,6 +28,7 @@ def _generate_one_fun_fact(
     options: LLMOptions,
     instr_fun_facts_generation: str,
     detail_file: Path,
+    collector: CostCollector,
     fun_fact_dir: Path,
 ):
     start_time_one_fun_fact = time.time()
@@ -51,13 +53,13 @@ def _generate_one_fun_fact(
     (fun_fact_dir / f"{topic_name} - fun_fact.txt").write_text(res.output_text, encoding="utf-8")
 
     elapsed_time_one_fun_fact = time.time() - start_time_one_fun_fact
-    print(token_report_from_result(res))
+    print(token_report_from_result(res, collector))
     if res.warnings:
         print("  [WARN]", "; ".join(res.warnings))
     print(f"  --> ⏰Generated fun fact for '{topic_name}': {elapsed_time_one_fun_fact:.2f} seconds.")
 
 
-def generate_fun_facts(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, options: LLMOptions | None = None):
+def generate_fun_facts(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options: LLMOptions | None = None):
     # topicsごとのfun factを生成
     print("\n### Fun Fact Generation ###")
     start_time_fun_facts = time.time()
@@ -82,6 +84,7 @@ def generate_fun_facts(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, opt
             model_alias,
             options,
             instr_fun_facts_generation,
+            collector=collector,
             fun_fact_dir=FUN_FACT_DIR,
         )
         futures = {ex.submit(submit_one, detail): detail for detail in detail_files}

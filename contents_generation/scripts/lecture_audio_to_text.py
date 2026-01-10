@@ -3,14 +3,14 @@ import assemblyai as aai
 from dotenv import load_dotenv
 from pathlib import Path
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message
+from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
-
-def token_report_from_result(res):
+def token_report_from_result(res, collector: CostCollector):
     u = res.usage
+    collector.add("Lecture Audio to Text", res.estimated_cost_usd)
     return (
         "TOKEN USAGE REPORT\n"
         f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
@@ -57,7 +57,7 @@ def _has_valid_transcript_outputs(lecture_dir: Path) -> bool:
 # -------------------------
 # AssemblyAI (NO CHANGES)
 # -------------------------
-def speach_to_text(audio_file, lecture_dir: Path):
+def speach_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
     print("\n### Lecture Audio To Text ###")
     start_time_audio_to_text = time.time()
 
@@ -95,6 +95,7 @@ def speach_to_text(audio_file, lecture_dir: Path):
     data = [sentence_to_dict(s, idx) for idx, s in enumerate(sentences, start=1)]
     duration = transcript.audio_duration
     print(f"Cost (nano): ${duration/3600*0.12:.3f}")
+    collector.add("AssemblyAI Transcription (nano)", duration/3600*0.12)
     with open(lecture_dir / "transcript_sentences.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -106,7 +107,7 @@ def speach_to_text(audio_file, lecture_dir: Path):
 # -------------------------
 # Sentence Review (UPDATED)
 # -------------------------
-def sentence_review(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, options_json: LLMOptions | None = None):
+def sentence_review(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options_json: LLMOptions | None = None):
     print("\n### Sentence Review ###")
     start_time_sentence_review = time.time()
 
@@ -181,7 +182,7 @@ def sentence_review(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, option
         json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
 
     elapsed_time_sentence_review = time.time() - start_time_sentence_review
-    print(token_report_from_result(res))
+    print(token_report_from_result(res, collector))
     if res.warnings:
         print("  [WARN]", "; ".join(res.warnings))
     print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.")
@@ -192,6 +193,7 @@ def lecture_audio_to_text(
     lecture_dir: Path,
     llm: UnifiedLLM,
     model_alias: str,
+    collector: CostCollector,
     *,
     force_transcribe: bool = False,
 ):
@@ -200,12 +202,12 @@ def lecture_audio_to_text(
     - force_transcribe=True のときは必ず AssemblyAI を再実行
     """
     if force_transcribe or not _has_valid_transcript_outputs(lecture_dir):
-        speach_to_text(audio_file, lecture_dir)
+        speach_to_text(audio_file, lecture_dir, collector)
     else:
         print("\n### Lecture Audio To Text ###")
         print("✅ Found existing transcript_sentences.json, skip AssemblyAI transcription.")
 
-    sentence_review(llm, model_alias, lecture_dir)
+    sentence_review(llm, model_alias, lecture_dir, collector)
 
 
 # ------ for test -------
