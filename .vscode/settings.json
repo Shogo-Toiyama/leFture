@@ -3,5 +3,6 @@
         "./contents_generation",
         "./contents_generation/scripts/llm"
     ],
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "cmake.sourceDirectory": "/Users/shogo/DocumentsLocal/Programming/Python/orbit-lecture-companion/user_interface/linux"
 }

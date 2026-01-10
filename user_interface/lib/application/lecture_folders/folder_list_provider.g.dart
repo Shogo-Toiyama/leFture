@@ -10,7 +10,7 @@ part of 'folder_list_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(folderListStream)
-const folderListStreamProvider = FolderListStreamFamily._();
+final folderListStreamProvider = FolderListStreamFamily._();
 
 final class FolderListStreamProvider
     extends
@@ -22,7 +22,7 @@ final class FolderListStreamProvider
     with
         $FutureModifier<List<LectureFolder>>,
         $StreamProvider<List<LectureFolder>> {
-  const FolderListStreamProvider._({
+  FolderListStreamProvider._({
     required FolderListStreamFamily super.from,
     required String? super.argument,
   }) : super(
@@ -70,7 +70,7 @@ String _$folderListStreamHash() => r'0d2744b208f7a87d7a272e01cd23a72b6942c415';
 
 final class FolderListStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<LectureFolder>>, String?> {
-  const FolderListStreamFamily._()
+  FolderListStreamFamily._()
     : super(
         retry: null,
         name: r'folderListStreamProvider',

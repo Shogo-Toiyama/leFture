@@ -46,7 +46,7 @@ class AppTheme {
       ),
 
       // カード
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: _surface,
         elevation: 2,
         margin: const EdgeInsets.all(12),
@@ -127,7 +127,7 @@ class AppTheme {
       ),
 
       // ダイアログなど
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: _surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),

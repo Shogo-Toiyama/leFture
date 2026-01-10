@@ -103,7 +103,7 @@ class MainLayout extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: _calculateSelectedIndex() == 2
+      floatingActionButton: _calculateSelectedIndex() == 0 || _calculateSelectedIndex() == 2
           ? FloatingActionButton.extended(
               onPressed: () => context.push(AppRoutes.recording),
               icon: const Icon(Icons.mic),

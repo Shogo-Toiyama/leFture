@@ -10,7 +10,7 @@ part of 'folder_breadcrumb_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(folderBreadcrumb)
-const folderBreadcrumbProvider = FolderBreadcrumbFamily._();
+final folderBreadcrumbProvider = FolderBreadcrumbFamily._();
 
 final class FolderBreadcrumbProvider
     extends
@@ -22,7 +22,7 @@ final class FolderBreadcrumbProvider
     with
         $FutureModifier<List<FolderCrumb>>,
         $FutureProvider<List<FolderCrumb>> {
-  const FolderBreadcrumbProvider._({
+  FolderBreadcrumbProvider._({
     required FolderBreadcrumbFamily super.from,
     required String? super.argument,
   }) : super(
@@ -70,7 +70,7 @@ String _$folderBreadcrumbHash() => r'7e70669c0c902121bc83d9963b5563f61d03a959';
 
 final class FolderBreadcrumbFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<FolderCrumb>>, String?> {
-  const FolderBreadcrumbFamily._()
+  FolderBreadcrumbFamily._()
     : super(
         retry: null,
         name: r'folderBreadcrumbProvider',

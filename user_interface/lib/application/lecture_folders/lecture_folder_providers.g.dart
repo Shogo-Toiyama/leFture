@@ -10,7 +10,7 @@ part of 'lecture_folder_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(folderRepository)
-const folderRepositoryProvider = FolderRepositoryProvider._();
+final folderRepositoryProvider = FolderRepositoryProvider._();
 
 final class FolderRepositoryProvider
     extends
@@ -20,7 +20,7 @@ final class FolderRepositoryProvider
           LectureFolderRepository
         >
     with $Provider<LectureFolderRepository> {
-  const FolderRepositoryProvider._()
+  FolderRepositoryProvider._()
     : super(
         from: null,
         argument: null,

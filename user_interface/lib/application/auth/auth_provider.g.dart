@@ -11,7 +11,7 @@ part of 'auth_provider.dart';
 /// 🔄 現在のセッション（ログイン状態）を監視
 
 @ProviderFor(authState)
-const authStateProvider = AuthStateProvider._();
+final authStateProvider = AuthStateProvider._();
 
 /// 🔄 現在のセッション（ログイン状態）を監視
 
@@ -20,7 +20,7 @@ final class AuthStateProvider
         $FunctionalProvider<AsyncValue<AuthState>, AuthState, Stream<AuthState>>
     with $FutureModifier<AuthState>, $StreamProvider<AuthState> {
   /// 🔄 現在のセッション（ログイン状態）を監視
-  const AuthStateProvider._()
+  AuthStateProvider._()
     : super(
         from: null,
         argument: null,
@@ -50,14 +50,14 @@ String _$authStateHash() => r'b847a0749c249cf099aa80b49b53501e8104aa8d';
 /// 👤 ログイン中のユーザー情報
 
 @ProviderFor(currentUser)
-const currentUserProvider = CurrentUserProvider._();
+final currentUserProvider = CurrentUserProvider._();
 
 /// 👤 ログイン中のユーザー情報
 
 final class CurrentUserProvider extends $FunctionalProvider<User?, User?, User?>
     with $Provider<User?> {
   /// 👤 ログイン中のユーザー情報
-  const CurrentUserProvider._()
+  CurrentUserProvider._()
     : super(
         from: null,
         argument: null,
@@ -95,14 +95,14 @@ String _$currentUserHash() => r'c7726f367cbf3d6e16bada2342b5d87c048bb49e';
 /// ✅ ログイン済みかどうか
 
 @ProviderFor(isLoggedIn)
-const isLoggedInProvider = IsLoggedInProvider._();
+final isLoggedInProvider = IsLoggedInProvider._();
 
 /// ✅ ログイン済みかどうか
 
 final class IsLoggedInProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
   /// ✅ ログイン済みかどうか
-  const IsLoggedInProvider._()
+  IsLoggedInProvider._()
     : super(
         from: null,
         argument: null,
@@ -140,13 +140,13 @@ String _$isLoggedInHash() => r'850bd4884b28e7b961418fa7da4aca5a9bb7a030';
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 
 @ProviderFor(AuthController)
-const authControllerProvider = AuthControllerProvider._();
+final authControllerProvider = AuthControllerProvider._();
 
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 final class AuthControllerProvider
     extends $AsyncNotifierProvider<AuthController, void> {
   /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
-  const AuthControllerProvider._()
+  AuthControllerProvider._()
     : super(
         from: null,
         argument: null,
@@ -174,7 +174,6 @@ abstract class _$AuthController extends $AsyncNotifier<void> {
   @$mustCallSuper
   @override
   void runBuild() {
-    build();
     final ref = this.ref as $Ref<AsyncValue<void>, void>;
     final element =
         ref.element
@@ -184,6 +183,6 @@ abstract class _$AuthController extends $AsyncNotifier<void> {
               Object?,
               Object?
             >;
-    element.handleValue(ref, null);
+    element.handleCreate(ref, build);
   }
 }
