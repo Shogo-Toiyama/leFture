@@ -1,11 +1,20 @@
+// lib/domain/entities/lecture.dart
 class Lecture {
   final String id;
   final String ownerId;
-  final String folderId;
-  final String title;
+
+  /// 録音開始直後は未分類でも良い設計にしたいなら nullable にする
+  final String? folderId;
+
+  /// タイトル未入力でも開始できるなら nullable or '' でOK
+  final String? title;
+
   final bool isDeleted;
+
+  /// DB側で採番するなら nullable か、0 を許容して trigger に任せる
   final int sortOrder;
-  final DateTime lectureDate;
+
+  final DateTime lectureDatetime;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -16,7 +25,7 @@ class Lecture {
     required this.title,
     required this.isDeleted,
     required this.sortOrder,
-    required this.lectureDate,
+    required this.lectureDatetime,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -25,23 +34,34 @@ class Lecture {
     return Lecture(
       id: map['id'] as String,
       ownerId: map['owner_id'] as String,
-      folderId: map['folder_id'] as String,
-      title: map['title'] as String,
-      isDeleted: map['is_deleted'] as bool,
-      sortOrder: map['sort_order'] as int,
-      lectureDate: DateTime.parse(map['date'] as String),
+      folderId: map['folder_id'] as String?,
+      title: map['title'] as String?,
+      isDeleted: (map['is_deleted'] as bool?) ?? false,
+      sortOrder: (map['sort_order'] as int?) ?? 0,
+      lectureDatetime: DateTime.parse(map['lecture_datetime'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 
-  Map<String, dynamic> toInsertMap() {
-    return {
-      'folder_id': folderId,
-      'title': title,
+  /// insert, upsert 用
+  /// DBに任せたいものは “送らない” のが一番安全
+  Map<String, dynamic> toUpsertMap() {
+    final m = <String, dynamic>{
+      'id': id,
+      'owner_id': ownerId,
       'is_deleted': isDeleted,
-      'sort_order': sortOrder,
-      'lecture_date': lectureDate,
+      'lecture_datetime': lectureDatetime.toIso8601String(),
+      'title': title,
     };
+
+    if (folderId != null) {
+      m['folder_id'] = folderId;
+    }
+
+    // sort_order はDBで決めるなら送らない
+    // m['sort_order'] = sortOrder;
+
+    return m;
   }
 }

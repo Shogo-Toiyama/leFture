@@ -27,11 +27,13 @@ class BreadcrumbBar extends StatelessWidget {
         child: Row(
           children: List.generate(crumbs.length, (i) {
             final isLast = i == crumbs.length - 1;
+            final canTap = !isLast || crumbs.length == 1;
             return Row(
               children: [
                 InkWell(
                   borderRadius: BorderRadius.circular(8),
-                  onTap: isLast ? null : () => onTapCrumb(i),
+                  // onTap: isLast ? null : () => onTapCrumb(i),
+                  onTap: canTap ? () => onTapCrumb(i) : null,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     child: Text(

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PendingUploadJob {
   PendingUploadJob({
-    required this.id,
+    required this.id, // ← assetId として使う
     required this.userId,
     required this.lectureId,
     required this.localPath,
@@ -20,15 +20,25 @@ class PendingUploadJob {
   final String createdAtIso;
   final int attempts;
 
-  PendingUploadJob copyWith({int? attempts}) => PendingUploadJob(
-        id: id,
-        userId: userId,
-        lectureId: lectureId,
-        localPath: localPath,
-        fileName: fileName,
-        createdAtIso: createdAtIso,
-        attempts: attempts ?? this.attempts,
-      );
+  PendingUploadJob copyWith({
+    String? id,
+    String? userId,
+    String? lectureId,
+    String? localPath,
+    String? fileName,
+    String? createdAtIso,
+    int? attempts,
+  }) {
+    return PendingUploadJob(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      lectureId: lectureId ?? this.lectureId,
+      localPath: localPath ?? this.localPath,
+      fileName: fileName ?? this.fileName,
+      createdAtIso: createdAtIso ?? this.createdAtIso,
+      attempts: attempts ?? this.attempts,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -40,41 +50,50 @@ class PendingUploadJob {
         'attempts': attempts,
       };
 
-  static PendingUploadJob fromJson(Map<String, dynamic> j) => PendingUploadJob(
-        id: j['id'] as String,
-        userId: j['userId'] as String,
-        lectureId: j['lectureId'] as String,
-        localPath: j['localPath'] as String,
-        fileName: j['fileName'] as String,
-        createdAtIso: j['createdAtIso'] as String,
-        attempts: (j['attempts'] as num?)?.toInt() ?? 0,
-      );
+  static PendingUploadJob fromJson(Map<String, dynamic> json) {
+    return PendingUploadJob(
+      id: json['id'] as String,
+      userId: json['userId'] as String,
+      lectureId: json['lectureId'] as String,
+      localPath: json['localPath'] as String,
+      fileName: json['fileName'] as String,
+      createdAtIso: json['createdAtIso'] as String,
+      attempts: (json['attempts'] as num?)?.toInt() ?? 0,
+    );
+  }
 }
 
 class PendingUploadStore {
   static const _key = 'pending_upload_jobs_v1';
 
   Future<List<PendingUploadJob>> load() async {
-    final sp = await SharedPreferences.getInstance();
-    final raw = sp.getString(_key);
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
     if (raw == null || raw.isEmpty) return [];
-    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    return list.map(PendingUploadJob.fromJson).toList();
+
+    final list = (jsonDecode(raw) as List)
+        .cast<Map>()
+        .map((e) => PendingUploadJob.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
+    list.sort((a, b) => a.createdAtIso.compareTo(b.createdAtIso));
+    return list;
   }
 
   Future<void> save(List<PendingUploadJob> jobs) async {
-    final sp = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     final raw = jsonEncode(jobs.map((e) => e.toJson()).toList());
-    await sp.setString(_key, raw);
+    await prefs.setString(_key, raw);
   }
 
   Future<void> add(PendingUploadJob job) async {
     final jobs = await load();
+    jobs.removeWhere((e) => e.id == job.id); // 同じassetIdは上書き
     jobs.add(job);
     await save(jobs);
   }
 
-  Future<void> removeById(String id) async {
+  Future<void> remove(String id) async {
     final jobs = await load();
     jobs.removeWhere((e) => e.id == id);
     await save(jobs);

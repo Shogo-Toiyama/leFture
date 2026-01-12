@@ -34,7 +34,7 @@ final class LectureFolderControllerProvider
 }
 
 String _$lectureFolderControllerHash() =>
-    r'e0dea9fae74593ca94b80856ee5af6ed926acb44';
+    r'78b849fbc4bf8b70f750600b2a6349f4c4f292f7';
 
 abstract class _$LectureFolderController extends $AsyncNotifier<void> {
   FutureOr<void> build();

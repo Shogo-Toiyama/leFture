@@ -26,7 +26,7 @@ final class AudioRecorderServiceProvider
         argument: null,
         retry: null,
         name: r'audioRecorderServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -55,7 +55,7 @@ final class AudioRecorderServiceProvider
 }
 
 String _$audioRecorderServiceHash() =>
-    r'76fc78b2e639128b697494153a841eed41968c33';
+    r'7081d9a2fae2b11c928c1cc02aed343f1be507b0';
 
 @ProviderFor(pendingUploadStore)
 final pendingUploadStoreProvider = PendingUploadStoreProvider._();
@@ -74,7 +74,7 @@ final class PendingUploadStoreProvider
         argument: null,
         retry: null,
         name: r'pendingUploadStoreProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -103,7 +103,7 @@ final class PendingUploadStoreProvider
 }
 
 String _$pendingUploadStoreHash() =>
-    r'405d82d439fac2611a29c8c9ce54e8dedc153118';
+    r'5dade295f75398e8dd830ebf1e258a9334fa3074';
 
 @ProviderFor(storageUploadService)
 final storageUploadServiceProvider = StorageUploadServiceProvider._();
@@ -122,7 +122,7 @@ final class StorageUploadServiceProvider
         argument: null,
         retry: null,
         name: r'storageUploadServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -151,7 +151,96 @@ final class StorageUploadServiceProvider
 }
 
 String _$storageUploadServiceHash() =>
-    r'bc07342b250d5f9db3164b6aa8094517edc80a4e';
+    r'bb6a0aa5c200e361253e0b6deff5933397b5ffe9';
+
+@ProviderFor(lectureWriteService)
+final lectureWriteServiceProvider = LectureWriteServiceProvider._();
+
+final class LectureWriteServiceProvider
+    extends
+        $FunctionalProvider<
+          LectureWriteService,
+          LectureWriteService,
+          LectureWriteService
+        >
+    with $Provider<LectureWriteService> {
+  LectureWriteServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'lectureWriteServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lectureWriteServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<LectureWriteService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LectureWriteService create(Ref ref) {
+    return lectureWriteService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LectureWriteService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LectureWriteService>(value),
+    );
+  }
+}
+
+String _$lectureWriteServiceHash() =>
+    r'be7c04c738076527a7c9dd7622272248db2abc07';
+
+@ProviderFor(uploadManager)
+final uploadManagerProvider = UploadManagerProvider._();
+
+final class UploadManagerProvider
+    extends $FunctionalProvider<UploadManager, UploadManager, UploadManager>
+    with $Provider<UploadManager> {
+  UploadManagerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'uploadManagerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$uploadManagerHash();
+
+  @$internal
+  @override
+  $ProviderElement<UploadManager> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UploadManager create(Ref ref) {
+    return uploadManager(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UploadManager value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UploadManager>(value),
+    );
+  }
+}
+
+String _$uploadManagerHash() => r'95a7fc61108c11969d3c7c88126adc53e4ab5d24';
 
 @ProviderFor(RecordingController)
 final recordingControllerProvider = RecordingControllerProvider._();
@@ -164,7 +253,7 @@ final class RecordingControllerProvider
         argument: null,
         retry: null,
         name: r'recordingControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -186,7 +275,7 @@ final class RecordingControllerProvider
 }
 
 String _$recordingControllerHash() =>
-    r'050be868a96dc37a0beadb6bb62eeb66a9aea451';
+    r'6276ee388528832dd8c6bac692211752cba5743f';
 
 abstract class _$RecordingController extends $Notifier<RecordingState> {
   RecordingState build();

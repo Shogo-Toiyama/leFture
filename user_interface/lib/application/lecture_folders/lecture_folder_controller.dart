@@ -4,6 +4,7 @@ import 'package:lecture_companion_ui/domain/entities/lecture_folder.dart';
 import 'package:lecture_companion_ui/application/lecture_folders/lecture_folder_providers.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/application/sync/folder_sync_service.dart';
+import 'dart:developer' as dev;
 
 part 'lecture_folder_controller.g.dart';
 
@@ -74,12 +75,12 @@ class LectureFolderController extends _$LectureFolderController {
     try {
       await sync.pushOutbox();
       // ignore: avoid_print
-      print('✅ pushOutbox success');
+      dev.log('✅ pushOutbox success');
     } catch (e, st) {
       // ignore: avoid_print
-      print('❌ pushOutbox failed: $e');
+      dev.log('❌ pushOutbox failed: $e');
       // ignore: avoid_print
-      print(st);
+      dev.log(st as String);
       rethrow; // まずは原因を見るためthrowしてOK
     }
   }
@@ -92,7 +93,7 @@ class LectureFolderController extends _$LectureFolderController {
       try {
         await sync.resetLocalToCloudBase();
       } catch (e) {
-        print('⚠️ reset skipped: $e');
+        dev.log('⚠️ reset skipped: $e');
       }
     }
 
@@ -100,14 +101,14 @@ class LectureFolderController extends _$LectureFolderController {
     try {
       await sync.pushOutbox();
     } catch (e) {
-      print('⚠️ push skipped: $e');
+      dev.log('⚠️ push skipped: $e');
     }
 
     // 2) 次に pull（クラウドの正を取ってくる）
     try {
       await sync.pull(lastPullAt: null); // まず全件でOK
     } catch (e) {
-      print('⚠️ pull skipped: $e');
+      dev.log('⚠️ pull skipped: $e');
     }
   }
 

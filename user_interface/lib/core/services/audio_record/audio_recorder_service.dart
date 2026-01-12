@@ -2,34 +2,55 @@ import 'dart:io';
 import 'package:record/record.dart';
 
 class AudioRecorderService {
-  AudioRecorderService() : _recorder = AudioRecorder();
-  final AudioRecorder _recorder;
+  final AudioRecorder _recorder = AudioRecorder();
+  bool _disposed = false;
 
-  Future<bool> isRecording() => _recorder.isRecording();
+  Future<void> start({required String outputPath}) async {
+    if (_disposed) {
+      throw StateError('AudioRecorderService is disposed.');
+    }
 
-  Future<void> start({
-    required String outputPath,
-  }) async {
-    // 出力先フォルダが無ければ作る
-    final outFile = File(outputPath);
-    await outFile.parent.create(recursive: true);
+    // Ensure parent dir exists
+    final f = File(outputPath);
+    await f.parent.create(recursive: true);
 
-    // record自体にも hasPermission はあるが、
-    // アプリ側では permission_handler で統一管理する想定
-    await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        sampleRate: 44100,
-      ),
-      path: outputPath,
+    const config = RecordConfig(
+      encoder: AudioEncoder.aacLc,
+      bitRate: 96000,
+      sampleRate: 44100,
     );
+
+    await _recorder.start(config, path: outputPath);
   }
 
-  /// 停止して、保存されたファイルパスを返す（nullなら失敗）
-  Future<String?> stop() => _recorder.stop();
+  Future<void> pause() async {
+    if (_disposed) return;
+    if (await _recorder.isRecording()) {
+      await _recorder.pause();
+    }
+  }
+
+  Future<void> resume() async {
+    if (_disposed) return;
+    if (await _recorder.isPaused()) {
+      await _recorder.resume();
+    }
+  }
+
+  /// Finalize file. (pausedでもrecordingでもOK)
+  Future<String?> stop() async {
+    if (_disposed) return null;
+
+    final recording = await _recorder.isRecording();
+    final paused = await _recorder.isPaused();
+    if (!recording && !paused) return null;
+
+    return _recorder.stop();
+  }
 
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
     await _recorder.dispose();
   }
 }

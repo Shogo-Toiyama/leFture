@@ -1,76 +1,99 @@
 import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/services/audio_record/pending_upload_store.dart';
+import '../../infrastructure/supabase/supabase_client.dart';
+import '../../infrastructure/supabase/services/lecture_write_service.dart';
 import '../../infrastructure/supabase/services/storage_upload_service.dart';
-
-final pendingUploadStoreProvider = Provider<PendingUploadStore>((ref) {
-  return PendingUploadStore();
-});
-
-final storageUploadServiceProvider = Provider<StorageUploadService>((ref) {
-  // 既存: lib/infrastructure/supabase/supabase_client.dart で作っている想定
-  // supabase_flutter を使っているなら Supabase.instance.client でOK
-  return StorageUploadService(Supabase.instance.client);
-});
-
-final uploadManagerProvider = Provider<UploadManager>((ref) {
-  final mgr = UploadManager(
-    ref.read(pendingUploadStoreProvider),
-    ref.read(storageUploadServiceProvider),
-  );
-
-  // Providerが生きている間だけ監視
-  mgr.start();
-  ref.onDispose(mgr.dispose);
-  return mgr;
-});
+import '../../core/services/audio_record/pending_upload_store.dart';
 
 class UploadManager {
-  UploadManager(this._store, this._uploader);
+  UploadManager({
+    required PendingUploadStore store,
+    required StorageUploadService uploader,
+    required LectureWriteService lectureWriter,
+  })  : _store = store,
+        _uploader = uploader,
+        _lectureWriter = lectureWriter {
+    _sub = Connectivity().onConnectivityChanged.listen((event) {
+      // event が List<ConnectivityResult> のバージョンもある
+      if (!_isOffline(event)) {
+        tryProcessQueue();
+      }
+    });
+
+    // 起動直後にも一回だけ
+    scheduleMicrotask(tryProcessQueue);
+  }
 
   final PendingUploadStore _store;
   final StorageUploadService _uploader;
+  final LectureWriteService _lectureWriter;
 
   StreamSubscription? _sub;
   bool _running = false;
 
-  void start() {
-    // 起動直後にも一回試す
-    _tryProcessQueue();
-
-    _sub = Connectivity().onConnectivityChanged.listen((_) {
-      _tryProcessQueue();
-    });
-  }
-
   void dispose() {
     _sub?.cancel();
+    _sub = null;
   }
 
-  Future<void> _tryProcessQueue() async {
+  bool _isOffline(dynamic results) {
+    if (results is List<ConnectivityResult>) {
+      return results.contains(ConnectivityResult.none);
+    }
+    if (results is ConnectivityResult) {
+      return results == ConnectivityResult.none;
+    }
+    return false;
+  }
+
+  Future<void> tryProcessQueue() async {
     if (_running) return;
     _running = true;
+
     try {
-      final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity == ConnectivityResult.none) return;
+      final results = await Connectivity().checkConnectivity();
+      if (_isOffline(results)) return;
 
       final jobs = await _store.load();
+      if (jobs.isEmpty) return;
+
       for (final job in jobs) {
+        // 念のため auth が居ない時はスキップ
+        final user = supabase.auth.currentUser;
+        if (user == null) return;
+
         try {
-          await _uploader.uploadAudioFile(
+          // lecture row は存在してる前提だけど、無い可能性もあるので最低限 upsert
+          await _lectureWriter.upsertLecture(
+            lectureId: job.lectureId,
+            ownerId: job.userId,
+            folderId: null,
+            title: null,
+            lectureDateTimeUtc: DateTime.now().toUtc(),
+          );
+
+          final remotePath = await _uploader.uploadAudioFile(
             userId: job.userId,
             lectureId: job.lectureId,
             localPath: job.localPath,
             fileName: job.fileName,
           );
-          await _store.removeById(job.id);
-        } catch (_) {
-          // 失敗したら attempts を増やして一旦止める（無限連打防止）
-          await _store.update(job.copyWith(attempts: job.attempts + 1));
-          break;
+
+          // ここが大事：キュー経由で成功しても lecture_assets を必ず作る
+          await _lectureWriter.upsertAudioAsset(
+            assetId: job.id, // job.id を assetId として扱う
+            lectureId: job.lectureId,
+            ownerId: job.userId,
+            bucket: _uploader.audioBucket,
+            path: remotePath,
+          );
+
+          await _store.remove(job.id);
+        } catch (e) {
+          final updated = job.copyWith(attempts: job.attempts + 1);
+          await _store.update(updated);
         }
       }
     } finally {

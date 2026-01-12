@@ -1,8 +1,15 @@
 // lib/presentation/widgets/layouts/main_layout.dart
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/lecture_folders/lecture_folder_controller.dart';
+import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
+import 'package:lecture_companion_ui/application/recording/recording_state.dart';
+import 'recording_mini_player.dart';
 
 final navLockProvider = NotifierProvider<NavLock, bool>(NavLock.new);
 class NavLock extends Notifier<bool> {
@@ -33,7 +40,7 @@ class MainLayout extends ConsumerWidget {
   }
   
   void _onItemTapped(BuildContext context, WidgetRef ref, int index) {
-    final locked = ref.watch(navLockProvider);
+    final locked = ref.read(navLockProvider);
     if (locked) return;
     ref.read(navLockProvider.notifier).unlock();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,9 +69,25 @@ class MainLayout extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    unawaited(ref.read(lectureFolderControllerProvider.notifier).bootstrapIfNeeded());
+    stdout.writeln('[MainLayout] Build Called');
     final locked = ref.watch(navLockProvider);
+    final recordingPhase = ref.watch(
+      recordingControllerProvider.select((state) => state.phase),
+    );
+    final showMiniPlayer = recordingPhase == RecordingPhase.recording || 
+                           recordingPhase == RecordingPhase.paused || 
+                           _calculateSelectedIndex() == 0 || 
+                           _calculateSelectedIndex() == 2;
+    stdout.writeln('[MainLayout] showMiniPlayer: $showMiniPlayer (Phase: $recordingPhase)');
+    ref.watch(uploadManagerProvider);
     return Scaffold(
-      body: child,
+      body: Stack(
+        children: [
+          child,
+          RecordingMiniPlayer(isVisible: showMiniPlayer,),
+        ],
+      ),
       bottomNavigationBar: AbsorbPointer(
         absorbing: locked,
         child: BottomNavigationBar(
@@ -103,13 +126,6 @@ class MainLayout extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: _calculateSelectedIndex() == 0 || _calculateSelectedIndex() == 2
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push(AppRoutes.recording),
-              icon: const Icon(Icons.mic),
-              label: const Text('Record'),
-            )
-          : null,
     );
   }
 }

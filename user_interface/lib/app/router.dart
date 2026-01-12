@@ -22,10 +22,13 @@ import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dar
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
 import 'package:lecture_companion_ui/presentation/widgets/layouts/main_layout.dart';
 
+final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _shellKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 final routerProvider = Provider<GoRouter>((ref) {
   final nav = ref.read(navStateStoreProvider);
 
   return GoRouter(
+    navigatorKey: _rootKey,
     initialLocation: AppRoutes.welcome,
     debugLogDiagnostics: true,
     refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
@@ -73,6 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       ShellRoute(
+        navigatorKey: _shellKey,
         builder: (context, state, child) {
           return MainLayout(currentPath: state.uri.path, child: child);
         },
@@ -122,6 +126,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
+        parentNavigatorKey: _rootKey,
         path: AppRoutes.recording,
         builder: (context, state) => const RecordingPage(),
       ),

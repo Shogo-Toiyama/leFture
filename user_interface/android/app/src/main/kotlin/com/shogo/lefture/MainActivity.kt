@@ -1,4 +1,4 @@
-package com.example.user_interface
+package com.shogo.lefture
 
 import io.flutter.embedding.android.FlutterActivity
 
