@@ -31,7 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootKey,
     initialLocation: AppRoutes.welcome,
     debugLogDiagnostics: true,
-    refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
+    // refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
 
     redirect: (context, state) {
       final session = supabase.auth.currentSession;

@@ -148,4 +148,77 @@ class RecordingRepositoryDrift {
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .watch();
   }
+/// Discard時にローカルの下書きと紐づくデータを完全に消す
+  Future<void> deleteLectureAndAssets(String lectureId) async {
+    await db.transaction(() async {
+      // 1. Jobがあれば消す
+      await (db.delete(db.localUploadJobs)
+            ..where((t) => t.lectureId.equals(lectureId)))
+          .go();
+
+      // 2. Assetがあれば消す
+      await (db.delete(db.localLectureAssets)
+            ..where((t) => t.lectureId.equals(lectureId)))
+          .go();
+
+      // 3. Lecture本体を消す
+      await (db.delete(db.localLectures)
+            ..where((t) => t.id.equals(lectureId)))
+          .go();
+    });
+  }
+
+// ついでに UploadManager が使う「ジョブ取得」機能もここに定義しておくと綺麗です
+  Stream<List<LocalUploadJob>> watchPendingJobs() {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.status.isIn(['queued', 'retry_wait']))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .watch();
+  }
+
+  // Jobの状態更新用
+  Future<void> updateJobStatus({
+    required String jobId,
+    required String status,
+    String? lastError,
+    DateTime? nextRetryAt,
+  }) async {
+    await (db.update(db.localUploadJobs)..where((t) => t.id.equals(jobId)))
+        .write(LocalUploadJobsCompanion(
+      status: Value(status),
+      lastError: Value(lastError),
+      nextRetryAt: Value(nextRetryAt),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
+  }
+  
+  // Assetの状態更新用 (Upload完了時に storagePath を入れるため)
+  Future<void> updateAssetUploaded({
+    required String assetId,
+    required String remotePath,
+  }) async {
+    await (db.update(db.localLectureAssets)..where((t) => t.id.equals(assetId)))
+        .write(LocalLectureAssetsCompanion(
+       uploadStatus: const Value('uploaded'), // 定義済みなら
+       storagePath: Value(remotePath),
+       updatedAt: Value(DateTime.now().toUtc()),
+    ));
+  }
+
+  Future<List<LocalUploadJob>> getPendingJobs() {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.status.isIn(['queued', 'retry_wait']))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
+  
+  // Lecture本体のデータ取得（Upload時にSupabaseへ送るため）
+  Future<LocalLecture?> getLecture(String lectureId) {
+     return (db.select(db.localLectures)..where((t) => t.id.equals(lectureId))).getSingleOrNull();
+  }
+  
+  // Assetのデータ取得（ファイルパスを知るため）
+  Future<LocalLectureAsset?> getAsset(String assetId) {
+     return (db.select(db.localLectureAssets)..where((t) => t.id.equals(assetId))).getSingleOrNull();
+  }
 }

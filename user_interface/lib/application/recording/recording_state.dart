@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
 
 enum RecordingPhase {
   idle,
   requestingPermission,
   recording,
   paused,
-  uploading,
-  queued,
-  uploaded,
+  uploading, // Job作成中/待機中
+  queued,    // Outboxに入った
+  uploaded,  // (以前の名残として残すか、完了状態として使用)
   error,
 }
 
@@ -16,36 +17,36 @@ class RecordingState {
   const RecordingState({
     required this.phase,
     required this.elapsedSeconds,
-    required this.title,
-    required this.folderId,
-    required this.lectureId,
-    required this.assetId,
-    required this.localPath,
-    required this.remotePath,
-    required this.errorMessage,
-    required this.metadataWarning,
+    this.currentLectureId,
+    this.lecture,
+    this.errorMessage,
   });
 
   final RecordingPhase phase;
   final int elapsedSeconds;
 
-  /// lecture metadata
-  final String? title;
-  final String? folderId;
+  /// 現在対象としている講義ID (Draft作成後にセットされる)
+  final String? currentLectureId;
 
-  /// stable ids per “one recording session”
-  final String? lectureId;
-  final String? assetId;
+  /// DBから同期された最新の講義データ (Source of Truth)
+  final LocalLecture? lecture;
 
-  /// file paths
-  final String? localPath;
-  final String? remotePath;
-
-  /// UI message
+  /// UI表示用エラーメッセージ
   final String? errorMessage;
 
-  /// metadata sync warning (non-fatal)
-  final String? metadataWarning;
+  // --- UI互換性のためのGetter (これがあればPage側の修正は最小限で済みます) ---
+
+  String get title => lecture?.title ?? '';
+  String? get folderId => lecture?.folderId;
+  String? get lectureId => currentLectureId;
+  
+  // assetIdはDB内で管理されるようになったので、UIが知る必要は基本なくなりますが、
+  // もし表示に必要なら別途持たせる必要があります。今回は一旦外します。
+  
+  /// まだファイルとして確定していない一時的なパスが必要な場合のために
+  /// Controller内で保持するか、ここに持たせるかですが、
+  /// 録音完了時のパス受け渡しはController内で行うためStateからは削除可能です。
+  /// (もし再生機能などで必要なら復活させます)
 
   bool get isBusy =>
       phase == RecordingPhase.requestingPermission ||
@@ -54,56 +55,33 @@ class RecordingState {
   bool get isRecording => phase == RecordingPhase.recording;
   bool get isPaused => phase == RecordingPhase.paused;
 
-  bool get canUpload => phase == RecordingPhase.paused && localPath != null;
+  // Uploadできる条件: Paused(録音停止中) かつ DBのデータがあること
+  bool get canUpload => phase == RecordingPhase.paused && lecture != null;
 
-  factory RecordingState.idle({
-    String? lectureId,
-    String? assetId,
-    String title = '',
-    String? folderId,
-  }) {
-    return RecordingState(
+  factory RecordingState.idle() {
+    return const RecordingState(
       phase: RecordingPhase.idle,
       elapsedSeconds: 0,
-      title: title,
-      folderId: folderId,
-      lectureId: lectureId,
-      assetId: assetId,
-      localPath: null,
-      remotePath: null,
+      currentLectureId: null,
+      lecture: null,
       errorMessage: null,
-      metadataWarning: null,
     );
   }
 
   RecordingState copyWith({
     RecordingPhase? phase,
     int? elapsedSeconds,
-    String? title,
-    String? folderId,
-    String? lectureId,
-    String? assetId,
-    String? localPath,
-    String? remotePath,
+    String? currentLectureId,
+    LocalLecture? lecture,
     String? errorMessage,
-    String? metadataWarning,
-    bool setFolderIdToNull = false,
     bool clearErrorMessage = false,
-    bool clearMetadataWarning = false,
   }) {
     return RecordingState(
       phase: phase ?? this.phase,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
-      title: title ?? this.title,
-      folderId: setFolderIdToNull ? null : (folderId ?? this.folderId),
-      lectureId: lectureId ?? this.lectureId,
-      assetId: assetId ?? this.assetId,
-      localPath: localPath ?? this.localPath,
-      remotePath: remotePath ?? this.remotePath,
+      currentLectureId: currentLectureId ?? this.currentLectureId,
+      lecture: lecture ?? this.lecture,
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
-      metadataWarning: clearMetadataWarning
-          ? null
-          : (metadataWarning ?? this.metadataWarning),
     );
   }
 }

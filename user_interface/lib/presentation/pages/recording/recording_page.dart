@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -21,15 +23,19 @@ class RecordingPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    log('[RecordingPage] Build Called');
     final state = ref.watch(recordingControllerProvider);
     final controller = ref.read(recordingControllerProvider.notifier);
 
     ref.listen<RecordingState>(recordingControllerProvider, (previous, next) {
-      if (next.phase == RecordingPhase.uploaded && previous?.phase != RecordingPhase.uploaded) {
+      final isDone = next.phase == RecordingPhase.queued; // || next.phase == RecordingPhase.uploaded;
+      final wasDone = previous?.phase == RecordingPhase.queued; // || previous?.phase == RecordingPhase.uploaded;
+      if (isDone && !wasDone) {
         // 少し余韻を持たせてから閉じる
         Future.delayed(const Duration(seconds: 2), () {
           if (context.mounted) {
             context.go(AppRoutes.dashboard); 
+            ref.invalidate(recordingControllerProvider);
           }
         });
       }
@@ -38,7 +44,7 @@ class RecordingPage extends HookConsumerWidget {
     final titleCtl = useTextEditingController(text: state.title);
     useEffect(() {
       if (titleCtl.text != state.title) {
-        titleCtl.text = state.title ?? 'New Lecture';
+        titleCtl.text = state.title;
         titleCtl.selection = TextSelection.collapsed(offset: titleCtl.text.length);
       }
       return null;
@@ -66,6 +72,8 @@ class RecordingPage extends HookConsumerWidget {
           return 'Start';
       }
     }
+
+    final isDonePhase = state.phase == RecordingPhase.queued; // || state.phase == RecordingPhase.uploaded;
 
     return PopScope(
       canPop: false,
@@ -134,18 +142,6 @@ class RecordingPage extends HookConsumerWidget {
                                       controller.setFolderId(result.folderId);
                                     },
                             ),
-
-                            if (state.metadataWarning != null) ...[
-                              const SizedBox(height: 4),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  state.metadataWarning!,
-                                  style: TextStyle(color: Theme.of(context).colorScheme.tertiary),
-                                ),
-                              ),
-                            ],
-
                             const SizedBox(height: 24),
 
                             // Timer
@@ -250,7 +246,7 @@ class RecordingPage extends HookConsumerWidget {
                 ),
               ),
 
-              if (state.phase == RecordingPhase.uploaded)
+              if (isDonePhase)
                 Positioned.fill(
                   child: Container(
                     color: Colors.black54,
@@ -300,14 +296,11 @@ class _StatusArea extends StatelessWidget {
     }
 
     if (state.phase == RecordingPhase.queued) {
-      return Text(
-        state.errorMessage ?? 'Queued, will upload when online.',
-        textAlign: TextAlign.center,
-      );
+      return const SizedBox.shrink();
     }
 
     if (state.phase == RecordingPhase.uploaded) {
-      return const Text('Uploaded!');
+      return const SizedBox.shrink();
     }
 
     if (state.phase == RecordingPhase.error) {
