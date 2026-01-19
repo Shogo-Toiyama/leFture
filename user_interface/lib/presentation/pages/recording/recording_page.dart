@@ -29,7 +29,7 @@ class RecordingPage extends HookConsumerWidget {
         // 少し余韻を持たせてから閉じる
         Future.delayed(const Duration(seconds: 2), () {
           if (context.mounted) {
-            context.pop(); 
+            context.go(AppRoutes.dashboard); 
           }
         });
       }
@@ -206,8 +206,6 @@ class RecordingPage extends HookConsumerWidget {
                               ],
                             ),
 
-                            // ★追加: Cancel / Delete ボタン
-                            // 録音中 または 一時停止中 または エラー時のみ表示
                             if (state.phase == RecordingPhase.recording || 
                                 state.phase == RecordingPhase.paused ||
                                 state.phase == RecordingPhase.error) ...[
@@ -233,7 +231,7 @@ class RecordingPage extends HookConsumerWidget {
 
                                   if (confirm == true) {
                                     await controller.cancelAndDiscard();
-                                    if (context.mounted) context.pop(); // ページを閉じる
+                                    if (context.mounted) context.go(AppRoutes.dashboard);
                                   }
                                 },
                                 icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),

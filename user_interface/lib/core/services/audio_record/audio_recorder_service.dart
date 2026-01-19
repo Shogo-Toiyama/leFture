@@ -16,8 +16,9 @@ class AudioRecorderService {
 
     const config = RecordConfig(
       encoder: AudioEncoder.aacLc,
-      bitRate: 96000,
-      sampleRate: 44100,
+      bitRate: 48000,
+      sampleRate: 24000,
+      numChannels: 1,
     );
 
     await _recorder.start(config, path: outputPath);
