@@ -1,8 +1,8 @@
 // lib/presentation/pages/lecture_folder/lecture_folder_page.dart
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 
@@ -31,16 +31,97 @@ class LectureFolderPage extends HookConsumerWidget {
     return count < 1 ? 1 : count;
   }
 
+  /// パンくずリストから「論理的な親ID」を取得するヘルパー
   String? _getParentFromBreadcrumb(
-  BuildContext context,
-  AsyncValue<List<FolderCrumb>> breadcrumbAsync,
+    AsyncValue<List<FolderCrumb>> breadcrumbAsync,
   ) {
     final chain = breadcrumbAsync.value;
+    // chainがない、またはHome(0個)か直下(1個)の場合は親はHome(null)
     if (chain == null || chain.isEmpty || chain.length == 1) return null;
-
+    // 後ろから2番目が親
     return chain[chain.length - 2].id;
   }
 
+  String? _getCurrentFolderIdFromBreadcrumb(
+    AsyncValue<List<FolderCrumb>> breadcrumbAsync,
+  ) {
+    final chain = breadcrumbAsync.value;
+    if (chain == null || chain.isEmpty) return null;
+    // 一番後ろが現在のフォルダ
+    return chain[chain.length - 1].id;
+  }
+
+  /// 共通の「戻る（親へ移動）」処理
+  /// スワイプ時と左上アイコンタップ時で共用
+  Future<void> _navigateBack(
+    BuildContext context,
+    WidgetRef ref, // refを追加
+    NavStateStore nav,
+    AsyncValue<List<FolderCrumb>> breadcrumbAsync,
+  ) async {
+    // 1. 親IDを特定
+    final currentId = _getCurrentFolderIdFromBreadcrumb(breadcrumbAsync);
+    final parentId = _getParentFromBreadcrumb(breadcrumbAsync);
+
+    if (currentId == null) {
+      log('Already at Home, cannot navigate back further.');
+      return; // Homeなら戻れない
+    }
+
+    // 2. LastLocationを更新
+    if (parentId == null) {
+      unawaited(nav.setLastNotesLocation(AppRoutes.notesHome));
+    } else {
+      unawaited(nav.setLastNotesLocation('${AppRoutes.notesHome}/f/$parentId'));
+    }
+
+    // 3. 画面遷移
+    if (Navigator.of(context).canPop()) {
+      // A. 履歴があるなら普通にPop (自然な戻る)
+      log('Navigating back to parent folder: $parentId');
+      Navigator.of(context).pop();
+    } else {
+      // B. 履歴がない（アプリ起動直後など）場合の「再構築」処理
+      
+      if (parentId == null) {
+        // 親がHomeなら、HomeをPushReplacement（または全消しPush）で開く
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const LectureFolderPage(folderId: null),
+            settings: const RouteSettings(name: '/'),
+          ),
+          (route) => false, // 履歴を全消去
+        );
+      } else {
+        // 親がフォルダの場合：
+        // 「Home」から「親フォルダ」までの道のりを再構築してスタックに積む！
+        
+        // ローディングを出すか、一瞬待つ（非同期で親のパンくずを取得）
+        // ※ folderBreadcrumbProvider は「そのフォルダまでのパス（自分含む）」を返すと想定
+        final parentCrumbs = await ref.read(folderBreadcrumbProvider(parentId).future);
+        
+        // 1. まずHomeを置いて履歴をリセット
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const LectureFolderPage(folderId: null),
+            settings: const RouteSettings(name: '/'),
+          ),
+          (route) => false,
+        );
+
+        // 2. 親までの経路（Home直下〜親自身）を順番にPush
+        // これで [Home, FolderA, FolderB(親)] というスタックが完成する
+        for (final crumb in parentCrumbs) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => LectureFolderPage(folderId: crumb.id),
+              settings: RouteSettings(name: 'f/${crumb.id}'),
+            ),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,31 +135,21 @@ class LectureFolderPage extends HookConsumerWidget {
     final foldersAsync = ref.watch(folderListStreamProvider(folderId));
     final breadcrumbAsync = ref.watch(folderBreadcrumbProvider(folderId));
     final nav = ref.read(navStateStoreProvider);
-    final bool canPop = false;  //folderId == null;
 
     return PopScope(
-      canPop: canPop,
+      canPop: false, 
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: (details) {
+          
           final vx = details.primaryVelocity ?? 0;
-          if (vx > 200) {
-            final parentId = _getParentFromBreadcrumb(context, breadcrumbAsync);
-            if (parentId == null) {
-              if (folderId != AppRoutes.notesHome) {
-                unawaited(nav.setLastNotesLocation(AppRoutes.notesHome));
-                context.go(AppRoutes.notesHome);
-              }
-            }
-            else {
-              unawaited(nav.setLastNotesLocation('/notes/f/$parentId'));
-              context.go('/notes/f/$parentId');
-            }
+          if (vx > 200) { // 右スワイプ判定
+            _navigateBack(context, ref, nav, breadcrumbAsync);
           }
         },
         child: Scaffold(
           appBar: AppBar(
-            automaticallyImplyLeading: false,
+            automaticallyImplyLeading: false, 
             title: const Text('Notes'),
             actions: [
               IconButton(
@@ -95,7 +166,7 @@ class LectureFolderPage extends HookConsumerWidget {
 
                   await ref.read(lectureFolderControllerProvider.notifier).createFolder(
                         name: name.trim(),
-                        parentId: folderId, // ✅ URLが正
+                        parentId: folderId,
                         type: 'binder',
                       );
                 },
@@ -104,24 +175,11 @@ class LectureFolderPage extends HookConsumerWidget {
           ),
           body: Column(
             children: [
-              // ✅ パンくずは DBから導出して表示。タップはURL変更だけ。
+              // パンくずリスト
               breadcrumbAsync.when(
-                loading: () => BreadcrumbBar(
-                crumbs: const ['Home'],
-                onTapCrumb: (_) async {
-                  unawaited(nav.setLastNotesLocation(AppRoutes.notesHome));
-                  context.go(AppRoutes.notesHome);
-                },
-              ),
-              error: (e, _) => BreadcrumbBar(
-                crumbs: const ['Home'],
-                onTapCrumb: (_) async {
-                  unawaited(nav.setLastNotesLocation(AppRoutes.notesHome));
-                  context.go(AppRoutes.notesHome);
-                },
-              ),
+                loading: () => const SizedBox.shrink(),
+                error: (e, _) => const SizedBox.shrink(),
                 data: (chain) {
-                  // Home + chain
                   final labels = <String>['Home', ...chain.map((r) => r.name)];
                   final ids = <String?>[null, ...chain.map((r) => r.id)];
 
@@ -130,12 +188,18 @@ class LectureFolderPage extends HookConsumerWidget {
                     onTapCrumb: (index) {
                       final targetId = ids[index];
 
+                      // 1. LastLocationを明示的に更新
                       if (targetId == null) {
                         unawaited(nav.setLastNotesLocation(AppRoutes.notesHome));
-                        context.go(AppRoutes.notesHome);
+                        // Homeに戻る -> スタック全消し
+                        Navigator.of(context).popUntil((route) => route.isFirst);
                       } else {
                         unawaited(nav.setLastNotesLocation('${AppRoutes.notesHome}/f/$targetId'));
-                        context.go('${AppRoutes.notesHome}/f/$targetId');
+                        // 特定フォルダに戻る -> popUntilでその名前のルートまで戻る
+                        // (名前が一致するルートがなければ何もしないので、保険でPushを入れる手もあり)
+                        Navigator.of(context).popUntil((route) {
+                          return route.settings.name == 'f/$targetId' || route.isFirst;
+                        });
                       }
                     },
                   );
@@ -151,8 +215,6 @@ class LectureFolderPage extends HookConsumerWidget {
                       loading: () => const Center(child: CircularProgressIndicator()),
                       error: (e, _) => Center(child: Text('Error: $e')),
                       data: (rows) {
-                        // rowsはLocalLectureFolderのはず。Domainに寄せたいなら変換Providerを作るのが綺麗。
-                        // ここでは最短で LocalLectureFolder から必要値だけ使う。
                         if (rows.isEmpty) {
                           return EmptyState(
                             onCreate: () async {
@@ -195,10 +257,21 @@ class LectureFolderPage extends HookConsumerWidget {
                                         name: row.name,
                                         svgAssetPath: _folderSvgPath,
                                         isFavorite: row.isFavorite,
+                                        
+                                        // ✅ フォルダタップ時の遷移
                                         onTap: () {
+                                          // 1. LastLocationを明示的に更新
                                           unawaited(nav.setLastNotesLocation('${AppRoutes.notesHome}/f/${row.id}'));
-                                          context.go('${AppRoutes.notesHome}/f/${row.id}');
+                                          
+                                          // 2. 画面遷移 (Navigator.push)
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => LectureFolderPage(folderId: row.id),
+                                              settings: RouteSettings(name: 'f/${row.id}'),
+                                            ),
+                                          );
                                         },
+                                        
                                         onRename: () async {
                                           final newName = await showFolderNameDialog(
                                             context: context,
@@ -227,13 +300,9 @@ class LectureFolderPage extends HookConsumerWidget {
                                           await ref.read(lectureFolderControllerProvider.notifier).deleteFolder(
                                                 folderId: row.id,
                                               );
-                                          if (!context.mounted) return;
-
-                                          // ✅ もし今見てるフォルダを消したらHomeへ戻す（保険）
-                                          if (folderId == row.id) {
-                                            unawaited(nav.setLastNotesLocation(AppRoutes.notesHome));
-                                            context.go(AppRoutes.notesHome);
-                                          }
+                                          
+                                          // 削除時のケアはリストがリアクティブなら不要ですが
+                                          // 必要なら親に戻る処理を追加
                                         },
                                         onToggleFavorite: (newValue) async {
                                           await ref.read(lectureFolderControllerProvider.notifier).setFavorite(
@@ -259,7 +328,7 @@ class LectureFolderPage extends HookConsumerWidget {
             ],
           ),
         ),
-      )
+      ),
     );
   }
 }
