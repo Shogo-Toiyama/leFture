@@ -1,91 +1,173 @@
 import shutil
 import traceback
+import json
 from pathlib import Path
+from datetime import datetime
+
+# 作成した設定とSupabaseクライアント
+from app.core.config import JobStatus, PipelineSteps, PIPELINE_STEPS_NUM, BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
-from app.core.config import JobStatus, BASE_WORK_DIR
+from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 
-# 各ロジックのクラスをImport
 from app.services.logic.transcription import TranscriptionService
-# from app.services.logic.segmentation import SegmentationService ... (他も同様に)
+from app.services.logic.sentence_review import SentenceReviewService
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, CostCollector
 
-async def run_lecture_pipeline(lecture_id: str, storage_path: str):
+async def run_lecture_pipeline(job_id: str):
+    """
+    バックグラウンドで実行されるメイン処理。
+    processing_jobs テーブルの job_id を受け取り、最後まで処理を行う。
+    """
     supabase = get_supabase_client()
     
-    # 1. 作業ディレクトリの準備 (/tmp/lecture_id)
-    work_dir = BASE_WORK_DIR / lecture_id
+    # 作業用ディレクトリの作成 (/tmp/job_id/)
+    work_dir = BASE_WORK_DIR / job_id
     if work_dir.exists():
-        shutil.rmtree(work_dir) # 残骸があれば消す
+        shutil.rmtree(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
-    
-    # LLMとコスト計算機の初期化 (全ステップで共有)
-    llm = UnifiedLLM(provider="gemini")
+
+    # 共通ツールの初期化
+    llm = UnifiedLLM(provider="gemini") # 必要に応じて openai に変更
     collector = CostCollector()
+    
+    # 成果物のパスを一時保存する辞書
+    current_artifacts = {}
 
     try:
-        # --- PHASE 0: ダウンロード ---
-        _update_status(supabase, lecture_id, JobStatus.DOWNLOADING)
-        audio_local_path = work_dir / "input_audio.m4a"
+        print(f"🚀 Job Started: {job_id}")
+
+        # ---------------------------------------------------------
+        # 0. Jobデータの取得 & Lecture情報の確認
+        # ---------------------------------------------------------
+        # Job情報を取得
+        job_res = supabase.table("processing_jobs").select("*").eq("id", job_id).single().execute()
+        job_data = job_res.data
+        lecture_id = job_data["lecture_id"]
         
-        # Supabase Storageからダウンロード ('lectures' バケットと仮定)
-        with open(audio_local_path, "wb") as f:
-            res = supabase.storage.from_("lecture_assets").download(storage_path)
+        if job_data["status"] != JobStatus.PENDING or job_data["current_step"] != PipelineSteps.PENDING:
+            print(f"Job is already executed. [Status: {job_data['status']}, Step: {job_data['current_step']}]")
+            return
+
+        # ステータスを PROCESSING に変更
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, "READY", current_artifacts)
+
+        # Lectureテーブルから音声ファイルのパスを取得
+        lecture_res = supabase.table("lectures_assets").select("storage_path").eq("lecture_id", lecture_id).single().execute()
+        storage_path = lecture_res.data["storage_path"]
+        uid = storage_path.split("/", 1)[0]
+
+
+        # ---------------------------------------------------------
+        # 1. DOWNLOADING (音声のダウンロード)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.DOWNLOADING
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+        
+        local_audio_path = work_dir / "input_audio.m4a"
+        
+        # Supabase Storage ('lectures_assets') からダウンロード
+        with open(local_audio_path, "wb") as f:
+            res = supabase.storage.from_("lectures_assets").download(storage_path)
             f.write(res)
+            
+        print(f"✅ Downloaded: {local_audio_path}")
 
-        # --- PHASE 1: 文字起こし & レビュー ---
-        _update_status(supabase, lecture_id, JobStatus.TRANSCRIBING)
+
+        # ---------------------------------------------------------
+        # 2. TRANSCRIBING (文字起こし)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.TRANSCRIBING
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+
         transcriber = TranscriptionService(llm, collector)
-        transcript_json_path = transcriber.run(audio_local_path, work_dir)
+        transcript_path = transcriber.run(local_audio_path, work_dir)
         
-        # 途中経過をアップロード (オプション)
-        _upload_artifact(supabase, lecture_id, transcript_json_path, "transcript.json")
+        # 成果物をSupabase Storageにバックアップ＆パス記録
+        remote_trans_path = _upload_artifact(supabase, uid, lecture_id, transcript_path, "transcript.json")
+        current_artifacts["transcript_json"] = remote_trans_path
 
 
-        # --- PHASE 2: Role Classification (例) ---
-        # _update_status(supabase, lecture_id, JobStatus.REVIEWING)
-        # role_classifier = RoleClassificationService(llm, collector)
-        # role_classifier.run(work_dir) 
-        # ... 以降、既存のステップを順番に呼び出していく ...
+        # ---------------------------------------------------------
+        # 3. SENTENCE_REVIEWING (文章校正)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.SENTENCE_REVIEWING
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+
+        reviewer = SentenceReviewService(llm, collector)
+        reviewed_path = reviewer.run(transcript_path, work_dir)
 
 
-        # --- PHASE FINAL: 完了 ---
-        _update_status(supabase, lecture_id, JobStatus.COMPLETED)
+        # ---------------------------------------------------------
+        # X. COMPLETED (完了処理)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.COMPLETED
+        _update_job_progress(supabase, job_id, JobStatus.DONE, step_name, current_artifacts)
         
-        # コスト情報のログ出力など
+        # 最後に lectures テーブルの final_markdown_path などを更新しても良い
+        # supabase.table("lectures").update({...}).eq("id", lecture_id).execute()
+
+        print(f"🎉 Job Completed Successfully: {job_id}")
         print(collector.report())
 
     except Exception as e:
-        # エラーハンドリング
+        # ---------------------------------------------------------
+        # ERROR HANDLING (失敗時の処理)
+        # ---------------------------------------------------------
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        print(f"❌ Job Failed: {error_msg}")
+        print(f"❌ Job Failed at {step_name}: {error_msg}")
         
-        supabase.table("lectures_assets").update({
+        # エラーログを作成
+        error_data = {
+            "message": str(error_msg),
+            "step": step_name,
+            "timestamp": datetime.now().isoformat(),
+            "traceback": traceback.format_exc()
+        }
+
+        # DB更新: Status=ERROR, Step=失敗したステップのまま
+        supabase.table("processing_jobs").update({
             "status": JobStatus.ERROR,
-            "error_message": error_msg  # DBにエラー詳細列を作っておくと便利
-        }).eq("id", lecture_id).execute()
+            "error_message": json.dumps(error_data), # JSONB対応
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", job_id).execute()
 
     finally:
-        # お掃除 (Cloud Runのディスク容量節約)
+        # クリーンアップ (Cloud Runの容量確保)
         if work_dir.exists():
             shutil.rmtree(work_dir)
 
 
-# --- Helper Functions ---
+# --- Helper Functions (コードを見やすくするための道具) ---
 
-def _update_status(supabase, lecture_id: str, status: JobStatus):
-    """DBのステータスを更新する"""
-    print(f"🔄 Status Update: {lecture_id} -> {status}")
-    supabase.table("lectures_assets").update({
-        "status": status
-    }).eq("id", lecture_id).execute()
+def _update_job_progress(supabase, job_id: str, status: JobStatus, step_name: str, artifacts: dict):
+    """
+    DBの進捗状況を更新する。
+    step_name から自動的に step_number を割り出す。
+    """
+    step_number = PIPELINE_STEPS_NUM.get(step_name, 0)
+    
+    print(f"🔄 Progress: [{step_number}] {step_name} (Status: {status})")
+    
+    supabase.table("processing_jobs").update({
+        "status": status,
+        "current_step": step_name,
+        "step_number": step_number,
+        "artifact_paths": artifacts, # 最新の成果物パスリストで上書き更新
+        "updated_at": datetime.now().isoformat()
+    }).eq("id", job_id).execute()
 
-def _upload_artifact(supabase, lecture_id: str, local_path: Path, remote_filename: str):
-    """生成ファイルをSupabase Storageに戻す"""
-    remote_path = f"{lecture_id}/artifacts/{remote_filename}"
+def _upload_artifact(supabase, uid, lecture_id: str, local_path: Path, filename: str) -> str:
+    """
+    ローカルの生成ファイルをSupabase Storageにアップロードし、そのパスを返す。
+    """
+    storage_path = f"{uid}/{lecture_id}/artifacts/{filename}"
+    bucket_name = "lectures_assets"
+
     with open(local_path, "rb") as f:
-        supabase.storage.from_("lectures").upload(
-            path=remote_path,
+        supabase.storage.from_(bucket_name).upload(
+            path=storage_path,
             file=f,
             file_options={"upsert": "true"}
         )
+    
+    return f"{bucket_name}/{storage_path}"

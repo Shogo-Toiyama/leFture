@@ -1,17 +1,17 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException
-from pydantic import BaseModel
-from app.services.pipeline import process_lecture_job
 import os
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
+from pydantic import BaseModel
+from app.services.pipeline import run_lecture_pipeline
 
 app = FastAPI()
 
-# SupabaseのWebhookから送られてくるペイロードの定義
-# (実際のSupabaseの設定に合わせて調整してください)
+# SupabaseからのWebhookペイロード構造に合わせる
 class WebhookPayload(BaseModel):
     type: str
     table: str
-    record: dict  # ここに新しいRowのデータが入る
+    record: dict
     schema: str
+    old_record: dict | None = None
 
 @app.get("/")
 def health_check():
@@ -20,22 +20,21 @@ def health_check():
 @app.post("/webhook/process-lecture")
 async def trigger_processing(payload: WebhookPayload, background_tasks: BackgroundTasks):
     """
-    Supabaseからの通知を受け取り、バックグラウンド処理を開始して、
-    即座に200 OKを返す。
+    Supabaseの processing_jobs テーブルへの INSERT をトリガーにする
     """
-    # セキュリティチェック (簡易版: 環境変数のシークレットと照合など推奨)
-    # if request.headers.get("X-Supabase-Secret") != os.environ["MY_SECRET"]:
-    #     raise HTTPException(status_code=401)
+    print(f"📩 Webhook received: {payload.type} on {payload.table}")
+
+    # INSERT時のみ反応する
+    if payload.type != "INSERT":
+        return {"message": "Ignored (not INSERT)"}
 
     record = payload.record
-    lecture_id = record.get("id")
-    file_path = record.get("file_path") # DBのカラム名に合わせる
+    job_id = record.get("id")
+    
+    if not job_id:
+        raise HTTPException(status_code=400, detail="Missing job id")
 
-    if not lecture_id or not file_path:
-        raise HTTPException(status_code=400, detail="Missing id or file_path")
+    # バックグラウンドでパイプラインを実行
+    background_tasks.add_task(run_lecture_pipeline, job_id)
 
-    # 重たい処理はバックグラウンドタスクに投げる！
-    # これにより、Supabase側にはすぐにレスポンスが返り、タイムアウトしない。
-    background_tasks.add_task(process_lecture_job, lecture_id, file_path)
-
-    return {"message": "Job received and started", "lecture_id": lecture_id}
+    return {"message": "Job started", "job_id": job_id}
