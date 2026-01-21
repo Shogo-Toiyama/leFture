@@ -16,9 +16,10 @@ class RecordingMiniPlayer extends ConsumerWidget {
   });
 
   String _formatDuration(int seconds) {
+    final h = (seconds ~/ 3600).toString();
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
+    return '$h:$m:$s';
   }
 
   @override
@@ -111,13 +112,13 @@ class RecordingMiniPlayer extends ConsumerWidget {
                           ],
                         )
                       : const Text(
-                          'Record Lecture',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.none,
-                          ),
+                        'Record Lecture',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.none,
+                        ),
                       ),
                     ),
                   ],
