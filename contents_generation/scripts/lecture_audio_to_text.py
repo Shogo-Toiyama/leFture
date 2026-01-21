@@ -54,9 +54,9 @@ def _has_valid_transcript_outputs(lecture_dir: Path) -> bool:
         return False
 
 
-# -------------------------
-# AssemblyAI (NO CHANGES)
-# -------------------------
+# -----------
+# AssemblyAI 
+# -----------
 def speach_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
     print("\n### Lecture Audio To Text ###")
     start_time_audio_to_text = time.time()

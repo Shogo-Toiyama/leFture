@@ -3,6 +3,9 @@ from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
+current_dir = Path(__file__).resolve().parent
+sys.path.append(str(current_dir.parent))
+
 # NEW: unified interface
 from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, CostCollector
 
