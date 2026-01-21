@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
 import 'dart:async';
 
 import '../../../application/recording/recording_controller.dart';
@@ -34,7 +33,7 @@ class RecordingPage extends HookConsumerWidget {
         // 少し余韻を持たせてから閉じる
         Future.delayed(const Duration(seconds: 2), () {
           if (context.mounted) {
-            context.go(AppRoutes.dashboard); 
+            Navigator.of(context).pop();
             ref.invalidate(recordingControllerProvider);
           }
         });
@@ -82,7 +81,7 @@ class RecordingPage extends HookConsumerWidget {
         onHorizontalDragEnd: (details) {
           final vx = details.primaryVelocity ?? 0;
           if (vx > 200) {
-            context.go(AppRoutes.dashboard);
+            Navigator.of(context).pop();
           }
         },
         child: Scaffold(
@@ -93,7 +92,7 @@ class RecordingPage extends HookConsumerWidget {
                   title: const Text('Record Lecture'),
                   leading: IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => context.go(AppRoutes.dashboard),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
                 body: CustomScrollView(
@@ -227,7 +226,7 @@ class RecordingPage extends HookConsumerWidget {
 
                                   if (confirm == true) {
                                     await controller.cancelAndDiscard();
-                                    if (context.mounted) context.go(AppRoutes.dashboard);
+                                    if (context.mounted) Navigator.of(context).pop();
                                   }
                                 },
                                 icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),

@@ -14,6 +14,5 @@ class AppRoutes {
 
   static const String notesHome = '/notes';
 
-  static const String recording = '/recording';
   static const String noteDetail = '/note-detail';
 }

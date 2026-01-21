@@ -4,7 +4,6 @@ import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart'; // supabase変数を使うため
 
 import '../../infrastructure/supabase/services/lecture_write_service.dart';
 import '../../infrastructure/supabase/services/storage_upload_service.dart';

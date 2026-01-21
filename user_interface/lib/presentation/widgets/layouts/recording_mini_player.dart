@@ -1,11 +1,10 @@
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
 import 'package:lecture_companion_ui/application/recording/recording_state.dart';
+import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
 
 class RecordingMiniPlayer extends ConsumerWidget {
 
@@ -38,9 +37,12 @@ class RecordingMiniPlayer extends ConsumerWidget {
           child: SafeArea(
             child: GestureDetector(
               onTap: () {
-                final location = GoRouterState.of(context).uri.path;
-                if (location == AppRoutes.recording) return;
-                context.go(AppRoutes.recording);
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (context) => const RecordingPage(),
+                    fullscreenDialog: true,
+                  ),
+                );
               },
               child: Container(
                 height: 56,

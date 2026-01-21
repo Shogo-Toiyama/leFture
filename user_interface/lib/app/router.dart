@@ -16,7 +16,6 @@ import 'package:lecture_companion_ui/presentation/pages/lecture_folder/lecture_f
 import 'package:lecture_companion_ui/presentation/pages/note_detail/note_detail_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/plan/plan_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_in/sign_in_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
@@ -31,7 +30,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootKey,
     initialLocation: AppRoutes.welcome,
     debugLogDiagnostics: true,
-    // refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
+    refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
 
     redirect: (context, state) {
       final session = supabase.auth.currentSession;
@@ -123,12 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ProfilePage(),
           ),
         ],
-      ),
-
-      GoRoute(
-        parentNavigatorKey: _rootKey,
-        path: AppRoutes.recording,
-        builder: (context, state) => const RecordingPage(),
       ),
       GoRoute(
         path: AppRoutes.noteDetail,
