@@ -5,6 +5,6 @@ python-multipart
 supabase
 requests
 assemblyai
-google-generativeai
+google-genai
 openai
 tiktoken
