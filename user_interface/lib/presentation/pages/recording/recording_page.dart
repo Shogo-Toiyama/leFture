@@ -16,7 +16,7 @@ class RecordingPage extends HookConsumerWidget {
 
   String _format(int sec) {
     final h = (sec ~/ 3600).toString();
-    final m = (sec ~/ 60).toString().padLeft(2, '0');
+    final m = ((sec ~/ 60) % 60).toString().padLeft(2, '0');
     final s = (sec % 60).toString().padLeft(2, '0');
     return '$h:$m:$s';
   }

@@ -17,7 +17,7 @@ class RecordingMiniPlayer extends ConsumerWidget {
 
   String _formatDuration(int seconds) {
     final h = (seconds ~/ 3600).toString();
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final m = ((seconds ~/ 60) % 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
     return '$h:$m:$s';
   }
