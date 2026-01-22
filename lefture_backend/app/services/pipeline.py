@@ -79,7 +79,7 @@ async def run_lecture_pipeline(job_id: str):
         step_name = PipelineSteps.TRANSCRIBING
         _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
 
-        transcriber = TranscriptionService(llm, collector)
+        transcriber = TranscriptionService(collector)
         transcript_path = transcriber.run(local_audio_path, work_dir)
         
         # 成果物をSupabase Storageにバックアップ＆パス記録
