@@ -94,7 +94,33 @@ async def run_lecture_pipeline(job_id: str):
         _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
 
         reviewer = SentenceReviewService(llm, collector)
-        reviewed_path = reviewer.run(transcript_path, work_dir)
+        reviewed_paths = reviewer.run(transcript_path, work_dir)
+        
+        final_json_path = None
+
+        for path in reviewed_paths:
+            # ファイル名で判断して振り分ける
+            filename = path.name
+            
+            if filename == "reviewed_sentences_raw.json":
+                # これは「途中経過 (Temp)」
+                remote_path = _upload_artifact(supabase, uid, lecture_id, path, filename, isTemp=True)
+                current_artifacts["reviewed_sentences_raw_json"] = remote_path
+            
+            elif filename == "reviewed_sentences.json":
+                # これが「完成品」
+                remote_path = _upload_artifact(supabase, uid, lecture_id, path, filename)
+                current_artifacts["reviewed_sentences_json"] = remote_path
+                final_json_path = path
+                
+            elif filename == "reviewed_sentences_raw_text.txt":
+                # これは「失敗時のログ (Temp)」
+                remote_path = _upload_artifact(supabase, uid, lecture_id, path, filename, isTemp=True)
+                current_artifacts["reviewed_sentences_error_text"] = remote_path
+
+        # もし完成品(final_json_path)がなければ、ここでエラーにする
+        if not final_json_path:
+            raise ValueError("Sentence Review failed to generate final JSON. Check temp artifacts for raw text.")
 
 
         # ---------------------------------------------------------
@@ -156,11 +182,13 @@ def _update_job_progress(supabase, job_id: str, status: JobStatus, step_name: st
         "updated_at": datetime.now().isoformat()
     }).eq("id", job_id).execute()
 
-def _upload_artifact(supabase, uid, lecture_id: str, local_path: Path, filename: str) -> str:
+def _upload_artifact(supabase, uid, lecture_id: str, local_path: Path, filename: str, isTemp: bool = False) -> str:
     """
     ローカルの生成ファイルをSupabase Storageにアップロードし、そのパスを返す。
     """
     storage_path = f"{uid}/{lecture_id}/artifacts/{filename}"
+    if isTemp:
+        storage_path = f"{uid}/{lecture_id}/artifacts/temp/{filename}"
     bucket_name = "lecture_assets"
 
     with open(local_path, "rb") as f:

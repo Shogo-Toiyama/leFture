@@ -1,5 +1,5 @@
-import json, os, time
-import assemblyai as aai
+import json
+import time
 from pathlib import Path
 
 from app.services.helpers.llm_unified import UnifiedLLM, CostCollector, Message, LLMOptions
@@ -19,39 +19,59 @@ class SentenceReviewService:
             
         return prompt_path.read_text(encoding="utf-8")
 
-    def run(self, work_dir: Path) -> Path:
+    def run(self, transcript_path: Path, work_dir: Path) -> Path:
         print(f"   [Logic] Starting sentence_reviewing")
-        prompt = self._load_prompt("sentence_review_prompt.txt")
-
-        self._sentence_review(
-            llm=self.llm,
-            model_alias=self.model_alias,
-            work_dir=work_dir,
-            prompt = prompt,
-            collector=self.collector,
-        )
-
-        output_json = work_dir / "reviewed_sentences.json"
         
-        if not output_json.exists():
-            raise FileNotFoundError(f"Sentence-Reviewing logic finished but {output_json} was not found.")
-            
-        print(f"   [Logic] Sentence Reveiw finished: {output_json.name}")
-        return output_json
+        prompt = self._load_prompt("sentence_review_prompt.txt")
+        try:
+            self._sentence_review(
+                llm=self.llm,
+                model_alias=self.model_alias,
+                work_dir=work_dir,
+                transcript_path=transcript_path,
+                prompt=prompt,
+            )
+        except Exception as e:
+            print(f"⚠️ Sentence Review Logic Error (Continuing to return artifacts): {e}")
+
+        reviewed_sentences_raw = work_dir / "reviewed_sentences_raw.json"
+        reviewed_sentences_raw_text = work_dir / "reviewed_sentences_raw_text.json"
+        reviewed_sentences = work_dir / "reviewed_sentences.json"
+
+        results = []
+
+        if reviewed_sentences_raw.exists():
+            results.append(reviewed_sentences_raw)
+
+        if reviewed_sentences.exists():
+            results.append(reviewed_sentences)
+
+        if not reviewed_sentences_raw.exists() and reviewed_sentences_raw_text.exists():
+            results.append(reviewed_sentences_raw_text)
+        
+        if not results:
+             raise FileNotFoundError("Sentence Review failed and no artifacts were generated.")
+        print(f"   [Logic] Sentence Review finished! Artifacts: {[p.name for p in results]}")
+
+        return results
     
-    def _sentence_review(llm: UnifiedLLM, model_alias: str, work_dir: Path, prompt, collector: CostCollector, options_json: LLMOptions | None = None):
+    def _sentence_review(self, llm: UnifiedLLM, model_alias: str, work_dir: Path, transcript_path: Path, prompt: str, options_json: LLMOptions | None = None):
         print("\n### Sentence Review ###")
-        start_time_sentence_review = time.time()
+        start_time = time.time()
 
-        REVIEWED_DIR = work_dir / "reviewed"
-        REVIEWED_DIR.mkdir(exist_ok=True)
+        if not transcript_path.exists():
+            raise FileNotFoundError(f"Input file not found: {transcript_path}")
 
-        with open(work_dir / "transcript_sentences.json", "r", encoding="utf-8") as f:
+        with open(transcript_path, "r", encoding="utf-8") as f:
             sentences = json.load(f)
 
         ALLOWED = ["sid", "text", "confidence"]
         projected_sentences = [{k: s.get(k) for k in ALLOWED} for s in sentences]
-        low_confidence_sentences = [s for s in projected_sentences if (s.get("confidence") is not None and s.get("confidence", 1.0) < 0.9)]
+        
+        low_confidence_sentences = [
+            s for s in projected_sentences 
+            if s.get("confidence") is not None and s.get("confidence", 1.0) < 0.9
+        ]
         print("Low Confident Sentences: ", len(low_confidence_sentences))
 
         payload = {
@@ -82,11 +102,10 @@ class SentenceReviewService:
         try:
             out_review_sentence = json.loads(clean_text)
         except json.JSONDecodeError as e:
-            # keep raw for debug
-            (work_dir / "reviewed/reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
-            raise ValueError(f"Sentence Review JSON parse failed: {e}") from e
+            print(f"⚠️ JSON Decode Error: {e}")
+            (work_dir / "reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
 
-        with open(work_dir / "reviewed/reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
+        with open(work_dir / "reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
             json.dump(out_review_sentence, f, ensure_ascii=False, indent=2)
 
         sentence_reviewed_list = out_review_sentence.get("results") or []
@@ -111,8 +130,9 @@ class SentenceReviewService:
         with open(work_dir / "reviewed_sentences.json", "w", encoding="utf-8") as f:
             json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
 
-        elapsed_time_sentence_review = time.time() - start_time_sentence_review
-        print(token_report_from_result(res, collector))
+        elapsed_time = time.time() - start_time
+        print(token_report_from_result(res, self.collector))
+        
         if res.warnings:
             print("  [WARN]", "; ".join(res.warnings))
-        print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.")
+        print(f"⏰Sentence Review: {elapsed_time:.2f} seconds.")
