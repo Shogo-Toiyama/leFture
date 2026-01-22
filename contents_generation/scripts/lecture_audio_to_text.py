@@ -57,7 +57,7 @@ def _has_valid_transcript_outputs(lecture_dir: Path) -> bool:
 # -----------
 # AssemblyAI 
 # -----------
-def speach_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
+def speech_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
     print("\n### Lecture Audio To Text ###")
     start_time_audio_to_text = time.time()
 
@@ -198,11 +198,11 @@ def lecture_audio_to_text(
     force_transcribe: bool = False,
 ):
     """
-    - transcript_sentences.json が既にあれば speach_to_text をスキップ
+    - transcript_sentences.json が既にあれば speech_to_text をスキップ
     - force_transcribe=True のときは必ず AssemblyAI を再実行
     """
     if force_transcribe or not _has_valid_transcript_outputs(lecture_dir):
-        speach_to_text(audio_file, lecture_dir, collector)
+        speech_to_text(audio_file, lecture_dir, collector)
     else:
         print("\n### Lecture Audio To Text ###")
         print("✅ Found existing transcript_sentences.json, skip AssemblyAI transcription.")

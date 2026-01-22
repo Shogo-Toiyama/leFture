@@ -7,15 +7,18 @@ from app.services.helpers.llm_unified import CostCollector
 class TranscriptionService:
     def __init__(self, collector: CostCollector):
         self.collector = collector
+        self.api_key = os.environ.get("ASSEMBLYAI_API_KEY")
+        if not self.api_key:
+            print("❌ ERROR: ASSEMBLYAI_API_KEY is missing!")
+            raise ValueError("ASSEMBLYAI_API_KEY is not set.")
 
 
     def run(self, audio_file_path: Path, work_dir: Path) -> Path:
         print(f"   [Logic] Starting transcription for: {audio_file_path.name}")
 
-        self._speach_to_text(
+        self._speech_to_text(
             audio_file=audio_file_path,
             work_dir=work_dir,
-            collector=self.collector,
         )
 
         output_json = work_dir / "transcript_sentences.json"
@@ -27,11 +30,11 @@ class TranscriptionService:
         return output_json
 
     
-    def _speach_to_text(audio_file, work_dir: Path, collector:CostCollector):
+    def _speech_to_text(self, audio_file, work_dir: Path):
         print("\n### Lecture Audio To Text ###")
         start_time = time.time()
 
-        aai.settings.api_key = os.environ.get("ASSEMBLYAI_API_KEY")
+        aai.settings.api_key = self.api_key
 
         aai_config = aai.TranscriptionConfig(
             speech_model=aai.SpeechModel.nano,
@@ -64,7 +67,7 @@ class TranscriptionService:
         data = [sentence_to_dict(s, idx) for idx, s in enumerate(sentences, start=1)]
         duration = transcript.audio_duration
         print(f"Cost (nano): ${duration/3600*0.12:.3f}")
-        collector.add("AssemblyAI Transcription (nano)", duration/3600*0.12)
+        self.collector.add("AssemblyAI Transcription (nano)", duration/3600*0.12)
         with open(work_dir / "transcript_sentences.json", "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
