@@ -58,12 +58,109 @@ class LocalOutbox extends Table {
   DateTimeColumn get enqueuedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-@DriftDatabase(tables: [LocalLectureFolders, LocalOutbox])
+class LocalLectures extends Table {
+  TextColumn get id => text()(); // uuid
+  TextColumn get ownerId => text()();
+
+  TextColumn get folderId => text().nullable()(); // null = Home
+  TextColumn get title => text().nullable()();
+
+  DateTimeColumn get lectureDatetime => dateTime().nullable()();
+
+  IntColumn get sortOrder => integer().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  // local_only / synced / needs_sync
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant('local_only'))();
+
+  TextColumn get lastSyncError => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id, ownerId};
+}
+
+class LocalLectureAssets extends Table {
+  TextColumn get id => text()(); // uuid
+  TextColumn get ownerId => text()();
+  TextColumn get lectureId => text()(); // uuid
+
+  TextColumn get type => text()(); // "audio"
+
+  TextColumn get localPath => text().nullable()();
+
+  TextColumn get storageBucket => text().nullable()();
+  TextColumn get storagePath => text().nullable()();
+
+  // queued / uploading / uploaded / failed
+  TextColumn get uploadStatus =>
+      text().withDefault(const Constant('queued'))();
+
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get nextRetryAt => dateTime().nullable()();
+  TextColumn get lastError => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, ownerId};
+}
+
+class LocalUploadJobs extends Table {
+  TextColumn get id => text()(); // uuid
+  TextColumn get ownerId => text()();
+
+  TextColumn get kind => text().withDefault(const Constant('audio_upload'))();
+
+  TextColumn get lectureId => text()();
+  TextColumn get assetId => text()();
+
+  // queued / uploading / done / failed
+  TextColumn get status => text().withDefault(const Constant('queued'))();
+
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get nextRetryAt => dateTime().nullable()();
+  TextColumn get lastError => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, ownerId};
+}
+
+@DriftDatabase(
+  tables: [
+    LocalLectureFolders, 
+    LocalOutbox,
+    LocalLectures,
+    LocalLectureAssets,
+    LocalUploadJobs,
+  ], 
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(localLectures);
+        await m.createTable(localLectureAssets);
+        await m.createTable(localUploadJobs);
+      }
+    }
+  );
 
   // --- Folders: read ---
   Future<List<LocalLectureFolder>> listRootFolders(String ownerId) {

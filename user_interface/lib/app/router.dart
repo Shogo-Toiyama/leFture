@@ -7,132 +7,59 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart';
 
 import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/dashboard/dashboard_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/goal_tree/goal_tree_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/lecture_folder/lecture_folder_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/note_detail/note_detail_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/plan/plan_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_in/sign_in_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
 import 'package:lecture_companion_ui/presentation/widgets/layouts/main_layout.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final _shellKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
-final routerProvider = Provider<GoRouter>((ref) {
-  final nav = ref.read(navStateStoreProvider);
 
+final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: AppRoutes.welcome,
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: true, 
     refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
 
     redirect: (context, state) {
       final session = supabase.auth.currentSession;
-      final isLoggedIn = session != null;
       final path = state.uri.path;
-
-      // 未ログインなら sign-in へ
-      if (!isLoggedIn &&
-          path != AppRoutes.signIn &&
-          path != AppRoutes.signUp &&
-          path != AppRoutes.welcome) {
-        return AppRoutes.signIn;
-      }
-
-      // ログイン済みなら welcome/signin/signup を dashboard へ
-      if (isLoggedIn &&
-          (path == AppRoutes.signIn ||
-              path == AppRoutes.signUp ||
-              path == AppRoutes.welcome)) {
-        return AppRoutes.dashboard;
-      }
+      final isAuthRoute = path == AppRoutes.welcome || path == AppRoutes.signIn || path == AppRoutes.signUp;
+      
+      if (session == null && !isAuthRoute) return AppRoutes.welcome;
+      if (session != null && isAuthRoute) return AppRoutes.home;
 
       return null;
     },
 
     routes: [
-      GoRoute(
-        path: AppRoutes.welcome,
-        builder: (context, state) => const WelcomePage(),
-      ),
-      GoRoute(
-        path: AppRoutes.signIn,
-        builder: (context, state) => const SignInPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.signUp,
-        builder: (context, state) => const SignUpPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.plans,
-        builder: (context, state) => const PlanPage(),
-      ),
+      // 1. ログイン前
+      GoRoute(path: AppRoutes.welcome, builder: (_, __) => const WelcomePage()),
+      GoRoute(path: AppRoutes.signIn, builder: (_, __) => const SignInPage()),
+      GoRoute(path: AppRoutes.signUp, builder: (_, __) => const SignUpPage()),
 
-      ShellRoute(
-        navigatorKey: _shellKey,
-        builder: (context, state, child) {
-          return MainLayout(currentPath: state.uri.path, child: child);
-        },
+      // 2. ログイン後（ここを単純化！）
+      // ShellRouteをやめて、単一の「ホーム画面」にする
+      GoRoute(
+        path: AppRoutes.home, // または '/home'
+        builder: (context, state) => const MainLayout(), // childを渡さない
         routes: [
-          GoRoute(
-            path: AppRoutes.dashboard,
-            builder: (context, state) => const DashboardPage(),
-          ),
-
-          GoRoute(
-            path: AppRoutes.notesEntry,
-            builder: (context, state) => const SizedBox.shrink(), // ここは必ずredirectされる想定
-            redirect: (context, state) {
-              final last = nav.lastNotesLocation;
-              if (last == null || last.isEmpty || last == AppRoutes.notesEntry || last == '/notes/home') return AppRoutes.notesHome;
-              return last;
-            },
-          ),
-
-          GoRoute(
-            path: AppRoutes.notesHome,
-            builder: (context, state) => const LectureFolderPage(folderId: null),
-            routes: [
-              GoRoute(
-                path: 'f/:folderId',
-                builder: (context, state) {
-                  final folderId = state.pathParameters['folderId'];
-                  return LectureFolderPage(folderId: folderId);
-                },
-              ),
-            ],
-          ),
-
-          GoRoute(
-            path: AppRoutes.aiChat,
-            builder: (context, state) => const AiChatPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.goalTree,
-            builder: (context, state) => const GoalTreePage(),
-          ),
-          GoRoute(
-            path: AppRoutes.profile,
-            builder: (context, state) => const ProfilePage(),
-          ),
-        ],
+           // MainLayoutの上に乗っかる詳細ページなどはここに定義してもOK
+           // GoRoute(path: 'detail', builder: ...),
+        ]
       ),
 
-      GoRoute(
-        parentNavigatorKey: _rootKey,
-        path: AppRoutes.recording,
-        builder: (context, state) => const RecordingPage(),
-      ),
+      // 3. 全画面系（BottomNavを隠したいやつ）
       GoRoute(
         path: AppRoutes.noteDetail,
-        builder: (context, state) => const NoteDetailPage(),
+        builder: (_, __) => const NoteDetailPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.aiChat,
+        builder: (_, __) => const AiChatPage(),
       ),
     ],
   );

@@ -1,11 +1,10 @@
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
 import 'package:lecture_companion_ui/application/recording/recording_state.dart';
+import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
 
 class RecordingMiniPlayer extends ConsumerWidget {
 
@@ -17,9 +16,10 @@ class RecordingMiniPlayer extends ConsumerWidget {
   });
 
   String _formatDuration(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final h = (seconds ~/ 3600).toString();
+    final m = ((seconds ~/ 60) % 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
+    return '$h:$m:$s';
   }
 
   @override
@@ -38,9 +38,12 @@ class RecordingMiniPlayer extends ConsumerWidget {
           child: SafeArea(
             child: GestureDetector(
               onTap: () {
-                final location = GoRouterState.of(context).uri.path;
-                if (location == AppRoutes.recording) return;
-                context.go(AppRoutes.recording);
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (context) => const RecordingPage(),
+                    fullscreenDialog: true,
+                  ),
+                );
               },
               child: Container(
                 height: 56,
@@ -109,13 +112,13 @@ class RecordingMiniPlayer extends ConsumerWidget {
                           ],
                         )
                       : const Text(
-                          'Record Lecture',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.none,
-                          ),
+                        'Record Lecture',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.none,
+                        ),
                       ),
                     ),
                   ],

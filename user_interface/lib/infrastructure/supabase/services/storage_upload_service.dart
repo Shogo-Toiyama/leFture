@@ -1,5 +1,14 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../supabase_client.dart';
+
+part 'storage_upload_service.g.dart';
+
+@Riverpod(keepAlive: true)
+StorageUploadService storageUploadService(Ref ref) {
+  return StorageUploadService(supabase);
+}
 
 class StorageUploadService {
   StorageUploadService(this._client);

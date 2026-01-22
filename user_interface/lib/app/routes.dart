@@ -6,6 +6,8 @@ class AppRoutes {
   static const String signUp = '/sign-up';
   static const String plans = '/plans';
 
+  static const String home = '/home';
+
   static const String dashboard = '/dashboard';
   static const String notesEntry = '/notes-entry';
   static const String aiChat = '/ai-chat';
@@ -14,6 +16,5 @@ class AppRoutes {
 
   static const String notesHome = '/notes';
 
-  static const String recording = '/recording';
   static const String noteDetail = '/note-detail';
 }

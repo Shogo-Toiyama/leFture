@@ -1,8 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
 import 'dart:async';
 
 import '../../../application/recording/recording_controller.dart';
@@ -14,22 +15,27 @@ class RecordingPage extends HookConsumerWidget {
   const RecordingPage({super.key});
 
   String _format(int sec) {
-    final m = (sec ~/ 60).toString().padLeft(2, '0');
+    final h = (sec ~/ 3600).toString();
+    final m = ((sec ~/ 60) % 60).toString().padLeft(2, '0');
     final s = (sec % 60).toString().padLeft(2, '0');
-    return '$m:$s';
+    return '$h:$m:$s';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    log('[RecordingPage] Build Called');
     final state = ref.watch(recordingControllerProvider);
     final controller = ref.read(recordingControllerProvider.notifier);
 
     ref.listen<RecordingState>(recordingControllerProvider, (previous, next) {
-      if (next.phase == RecordingPhase.uploaded && previous?.phase != RecordingPhase.uploaded) {
+      final isDone = next.phase == RecordingPhase.queued; // || next.phase == RecordingPhase.uploaded;
+      final wasDone = previous?.phase == RecordingPhase.queued; // || previous?.phase == RecordingPhase.uploaded;
+      if (isDone && !wasDone) {
         // 少し余韻を持たせてから閉じる
         Future.delayed(const Duration(seconds: 2), () {
           if (context.mounted) {
-            context.pop(); 
+            Navigator.of(context).pop();
+            ref.invalidate(recordingControllerProvider);
           }
         });
       }
@@ -38,7 +44,7 @@ class RecordingPage extends HookConsumerWidget {
     final titleCtl = useTextEditingController(text: state.title);
     useEffect(() {
       if (titleCtl.text != state.title) {
-        titleCtl.text = state.title ?? 'New Lecture';
+        titleCtl.text = state.title;
         titleCtl.selection = TextSelection.collapsed(offset: titleCtl.text.length);
       }
       return null;
@@ -67,6 +73,8 @@ class RecordingPage extends HookConsumerWidget {
       }
     }
 
+    final isDonePhase = state.phase == RecordingPhase.queued; // || state.phase == RecordingPhase.uploaded;
+
     return PopScope(
       canPop: false,
       child: GestureDetector(
@@ -74,7 +82,7 @@ class RecordingPage extends HookConsumerWidget {
         onHorizontalDragEnd: (details) {
           final vx = details.primaryVelocity ?? 0;
           if (vx > 200) {
-            context.go(AppRoutes.dashboard);
+            Navigator.of(context).pop();
           }
         },
         child: Scaffold(
@@ -85,7 +93,7 @@ class RecordingPage extends HookConsumerWidget {
                   title: const Text('Record Lecture'),
                   leading: IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => context.go(AppRoutes.dashboard),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
                 body: CustomScrollView(
@@ -134,18 +142,6 @@ class RecordingPage extends HookConsumerWidget {
                                       controller.setFolderId(result.folderId);
                                     },
                             ),
-
-                            if (state.metadataWarning != null) ...[
-                              const SizedBox(height: 4),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  state.metadataWarning!,
-                                  style: TextStyle(color: Theme.of(context).colorScheme.tertiary),
-                                ),
-                              ),
-                            ],
-
                             const SizedBox(height: 24),
 
                             // Timer
@@ -206,8 +202,6 @@ class RecordingPage extends HookConsumerWidget {
                               ],
                             ),
 
-                            // ★追加: Cancel / Delete ボタン
-                            // 録音中 または 一時停止中 または エラー時のみ表示
                             if (state.phase == RecordingPhase.recording || 
                                 state.phase == RecordingPhase.paused ||
                                 state.phase == RecordingPhase.error) ...[
@@ -233,7 +227,7 @@ class RecordingPage extends HookConsumerWidget {
 
                                   if (confirm == true) {
                                     await controller.cancelAndDiscard();
-                                    if (context.mounted) context.pop(); // ページを閉じる
+                                    if (context.mounted) Navigator.of(context).pop();
                                   }
                                 },
                                 icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
@@ -252,7 +246,7 @@ class RecordingPage extends HookConsumerWidget {
                 ),
               ),
 
-              if (state.phase == RecordingPhase.uploaded)
+              if (isDonePhase)
                 Positioned.fill(
                   child: Container(
                     color: Colors.black54,
@@ -302,14 +296,11 @@ class _StatusArea extends StatelessWidget {
     }
 
     if (state.phase == RecordingPhase.queued) {
-      return Text(
-        state.errorMessage ?? 'Queued, will upload when online.',
-        textAlign: TextAlign.center,
-      );
+      return const SizedBox.shrink();
     }
 
     if (state.phase == RecordingPhase.uploaded) {
-      return const Text('Uploaded!');
+      return const SizedBox.shrink();
     }
 
     if (state.phase == RecordingPhase.error) {
