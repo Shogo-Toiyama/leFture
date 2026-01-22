@@ -113,7 +113,7 @@ class UnifiedLLM:
 
     def _load_key(self, provider: LLMProvider) -> str:
         env = "GEMINI_API_KEY" if provider == "gemini" else "SHOGO_S_OPENAI_API_KEY"
-        v = os.getenv(env)
+        v = os.environ.get(env)
         if not v:
             raise RuntimeError(f"Missing {env}. Please set it in your environment.")
         return v
