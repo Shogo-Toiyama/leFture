@@ -1,0 +1,13 @@
+.gcloudignore
+.git
+.gitignore
+__pycache__/
+venv/
+.venv/
+env/
+.env
+*.pyc
+*.m4a
+*.mp3
+lectures/
+test_data/
