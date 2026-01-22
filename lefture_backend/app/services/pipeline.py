@@ -52,7 +52,7 @@ async def run_lecture_pipeline(job_id: str):
         _update_job_progress(supabase, job_id, JobStatus.PROCESSING, "READY", current_artifacts)
 
         # Lectureテーブルから音声ファイルのパスを取得
-        lecture_res = supabase.table("lectures_assets").select("storage_path").eq("lecture_id", lecture_id).single().execute()
+        lecture_res = supabase.table("lecture_assets").select("storage_path").eq("lecture_id", lecture_id).single().execute()
         storage_path = lecture_res.data["storage_path"]
         uid = storage_path.split("/", 1)[0]
 
@@ -65,9 +65,9 @@ async def run_lecture_pipeline(job_id: str):
         
         local_audio_path = work_dir / "input_audio.m4a"
         
-        # Supabase Storage ('lectures_assets') からダウンロード
+        # Supabase Storage ('lecture_assets') からダウンロード
         with open(local_audio_path, "wb") as f:
-            res = supabase.storage.from_("lectures_assets").download(storage_path)
+            res = supabase.storage.from_("lecture_assets").download(storage_path)
             f.write(res)
             
         print(f"✅ Downloaded: {local_audio_path}")
@@ -161,7 +161,7 @@ def _upload_artifact(supabase, uid, lecture_id: str, local_path: Path, filename:
     ローカルの生成ファイルをSupabase Storageにアップロードし、そのパスを返す。
     """
     storage_path = f"{uid}/{lecture_id}/artifacts/{filename}"
-    bucket_name = "lectures_assets"
+    bucket_name = "lecture_assets"
 
     with open(local_path, "rb") as f:
         supabase.storage.from_(bucket_name).upload(
