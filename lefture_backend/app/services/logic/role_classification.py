@@ -11,14 +11,14 @@ class RoleClassificationService:
         self.collector = collector
         self.model_alias = "2_5_flash_lite" 
 
-    def run(self, sentences_path: Path, work_dir: Path) -> Path:
+    async def run(self, sentences_path: Path, work_dir: Path) -> Path:
         print(f"   [Logic] Starting role_classification")
 
         prompt = _load_prompt("role_classification_prompt.txt")
         options_json = LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
 
         try:
-            self._role_classification(
+            await self._role_classification(
                 llm=self.llm,
                 model_alias=self.model_alias,
                 options_json=options_json,
@@ -52,7 +52,7 @@ class RoleClassificationService:
         print(f"   [Logic] Role classification finished. Artifacts: {[p.name for p in results]}")
         return results
 
-    def _role_classification(
+    async def _role_classification(
         self,
         llm: UnifiedLLM,
         model_alias: str,
@@ -87,7 +87,7 @@ class RoleClassificationService:
             batch_dir.mkdir(exist_ok=True, parents=True)
             self.save_batches(projected, batch_num, start, end, ctx, batch_dir)
 
-        asyncio.run(self._run_all_role_classification(llm, model_alias, options_json, batches_dir, prompt, concurrency=concurrency))
+        await self._run_all_role_classification(llm, model_alias, options_json, batches_dir, prompt, concurrency=concurrency)
 
         self.merge_role_classifications(work_dir)
 

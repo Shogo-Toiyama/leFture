@@ -133,7 +133,7 @@ async def run_lecture_pipeline(job_id: str):
         _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
 
         role_classifier = RoleClassificationService(llm, collector)
-        role_artifacts = role_classifier.run(final_json_path, work_dir)
+        role_artifacts = await role_classifier.run(final_json_path, work_dir)
 
         sentences_final_json = None
 
