@@ -11,6 +11,7 @@ from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 
 from app.services.logic.transcription import TranscriptionService
 from app.services.logic.sentence_review import SentenceReviewService
+from app.services.logic.role_classification import RoleClassificationService
 
 
 async def run_lecture_pipeline(job_id: str):
@@ -122,6 +123,34 @@ async def run_lecture_pipeline(job_id: str):
         if not final_json_path:
             raise ValueError("Sentence Review failed to generate final JSON. Check temp artifacts for raw text.")
 
+
+
+        # ---------------------------------------------------------
+        # 4. ROLE CLASSIFICATION
+        # ---------------------------------------------------------
+
+        step_name = PipelineSteps.ROLE_CLASSIFYING
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+
+        role_classifier = RoleClassificationService(llm, collector)
+        role_artifacts = role_classifier.run(final_json_path, work_dir)
+
+        sentences_final_json = None
+
+        for path in role_artifacts:
+            filename = path.name
+            
+            if filename == "sentences_final.json":
+                remote_path = _upload_artifact(supabase, uid, lecture_id, path, "sentences_final.json")
+                current_artifacts["sentences_final_json"] = remote_path
+                sentences_final_json = path
+                
+            elif filename.endswith(".zip"):
+                 remote_path = _upload_artifact(supabase, uid, lecture_id, path, filename, isTemp=True)
+                 current_artifacts["role_batches_zip"] = remote_path
+
+        if not sentences_final_json:
+             raise ValueError("Role Classification failed to generate final JSON.")
 
         # ---------------------------------------------------------
         # X. COMPLETED (完了処理)

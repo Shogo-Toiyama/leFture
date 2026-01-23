@@ -1,5 +1,8 @@
 
+import re
+from typing import Optional
 from app.services.helpers.llm_unified import CostCollector
+from app.core.config import PROMPTS_DIR
 
 
 def _strip_code_fence(text: str) -> str:
@@ -23,3 +26,18 @@ def token_report_from_result(res, collector: CostCollector):
         f"  TOTAL: {u.total_tokens}\n"
         f"  Estimated cost: ${res.estimated_cost_usd:.6f}"
     )
+
+def _load_prompt(filename: str) -> str:
+    prompt_path = PROMPTS_DIR / filename
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"Prompt file not found: {filename}")
+        
+    return prompt_path.read_text(encoding="utf-8")
+
+
+def _sid_to_int(sid: Optional[str]) -> Optional[int]:
+    SID_NUM = re.compile(r"s(\d+)")
+    if not sid:
+        return None
+    m = SID_NUM.fullmatch(sid)
+    return int(m.group(1)) if m else None

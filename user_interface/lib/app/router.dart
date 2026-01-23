@@ -29,8 +29,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.uri.path;
       final isAuthRoute = path == AppRoutes.welcome || path == AppRoutes.signIn || path == AppRoutes.signUp;
       
-      if (session == null && !isAuthRoute) return AppRoutes.welcome;
-      if (session != null && isAuthRoute) return AppRoutes.home;
+      if (session == null && !isAuthRoute) return AppRoutes.signIn;
+      if (session != null && isAuthRoute && path != AppRoutes.welcome) return AppRoutes.home;
 
       return null;
     },

@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 from app.services.helpers.llm_unified import UnifiedLLM, CostCollector, Message, LLMOptions
-from app.services.helpers.helpers import _strip_code_fence, token_report_from_result
+from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result
 from app.core.config import PROMPTS_DIR
 
 class SentenceReviewService:
@@ -11,18 +11,11 @@ class SentenceReviewService:
         self.llm = llm
         self.collector = collector
         self.model_alias = "2_5_flash" 
-
-    def _load_prompt(self, filename: str) -> str:
-        prompt_path = PROMPTS_DIR / filename
-        if not prompt_path.exists():
-            raise FileNotFoundError(f"Prompt file not found: {filename}")
-            
-        return prompt_path.read_text(encoding="utf-8")
-
+    
     def run(self, transcript_path: Path, work_dir: Path) -> Path:
         print(f"   [Logic] Starting sentence_reviewing")
         
-        prompt = self._load_prompt("sentence_review_prompt.txt")
+        prompt = _load_prompt("sentence_review_prompt.txt")
         try:
             self._sentence_review(
                 llm=self.llm,
