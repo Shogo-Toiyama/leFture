@@ -12,9 +12,9 @@ from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 from app.services.logic.transcription import TranscriptionService
 from app.services.logic.sentence_review import SentenceReviewService
 from app.services.logic.role_classification import RoleClassificationService
-from lefture_backend.app.services.logic.fun_fact_generation import FunFactGenerationService
-from lefture_backend.app.services.logic.lecture_segmentaion import LectureSegmentationService
-from lefture_backend.app.services.logic.topic_details_generation import TopicDetailGenerationService
+from app.services.logic.lecture_segmentaion import LectureSegmentationService
+from app.services.logic.topic_details_generation import TopicDetailGenerationService
+from app.services.logic.fun_fact_generation import FunFactGenerationService
 
 
 async def run_lecture_pipeline(job_id: str):
