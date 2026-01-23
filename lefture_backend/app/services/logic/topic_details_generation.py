@@ -67,15 +67,13 @@ class TopicDetailGenerationService:
         segments_obj = json.loads(segments_path.read_text(encoding="utf-8"))
         sentences_data = json.loads(sentences_path.read_text(encoding="utf-8"))
         
-        # "segments" キーの中にリストが入っている構造を想定
-        # もし segments.json がリスト直下なら segments_list = segments_obj とする
-        segments_list = segments_obj.get("segments", []) if isinstance(segments_obj, dict) else segments_obj
+        segments_list = segments_obj.get("topics", []) if isinstance(segments_obj, dict) else segments_obj
         
         print(f"Generating details for {len(segments_list)} topics...")
 
         tasks = []
         for i, seg in enumerate(segments_list):
-            topic_title = seg.get("topic_title", f"Topic {i+1}")
+            topic_title = seg.get("title", f"Topic {i+1}")
             start_sid = seg.get("start_sid")
             end_sid = seg.get("end_sid")
             
