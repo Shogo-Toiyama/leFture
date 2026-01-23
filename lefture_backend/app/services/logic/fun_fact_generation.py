@@ -17,7 +17,7 @@ class FunFactGenerationService:
     async def run(self, work_dir: Path, segments_with_details_path: Path) -> list[Path]:
         print(f"   [Logic] Starting fun_fact_generation (JSON Mode)")
         
-        prompt = _load_prompt("fun_facts_generation_prompt.txt")
+        prompt = _load_prompt("fun_fact_generation_prompt.txt")
         options_text = LLMOptions(output_type="text", temperature=0.7)
 
         try:
