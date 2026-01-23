@@ -1,7 +1,7 @@
-You are a topic segmenter and title maker for a university lecture.
+You are a lecture segmenter and title maker for a university lecture.
 
 OBJECTIVE
-Scan the transcript in order from the beginning, detect non-overlapping topic segments (contiguous ranges), and assign each segment a short, student-friendly title. 
+Scan the transcript in order from the beginning, detect non-overlapping lecture segments (contiguous ranges), and assign each segment a short, student-friendly title. 
 A segment is a coherent chunk of the lecture’s main content. 
 Segments may include some qa/announcement/chitchat lines, but the segment must contain at least one lecture line and be primarily about teaching content.
 
@@ -58,4 +58,4 @@ CONSTRAINTS & VALIDATION
  - Prefer 3–6 segments depending on lecture length and coherence.
  - Output must be valid JSON; no additional keys.
 
-BEGIN. Read the transcript, detect topic segments, and output the JSON object.
+BEGIN. Read the transcript, detect lecture segments, and output the JSON object.

@@ -12,6 +12,9 @@ from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 from app.services.logic.transcription import TranscriptionService
 from app.services.logic.sentence_review import SentenceReviewService
 from app.services.logic.role_classification import RoleClassificationService
+from lefture_backend.app.services.logic.fun_fact_generation import FunFactGenerationService
+from lefture_backend.app.services.logic.lecture_segmentaion import LectureSegmentationService
+from lefture_backend.app.services.logic.topic_details_generation import TopicDetailGenerationService
 
 
 async def run_lecture_pipeline(job_id: str):
@@ -135,7 +138,7 @@ async def run_lecture_pipeline(job_id: str):
         role_classifier = RoleClassificationService(llm, collector)
         role_artifacts = await role_classifier.run(final_json_path, work_dir)
 
-        sentences_final_json = None
+        final_sentences_path = None
 
         for path in role_artifacts:
             filename = path.name
@@ -143,14 +146,67 @@ async def run_lecture_pipeline(job_id: str):
             if filename == "sentences_final.json":
                 remote_path = _upload_artifact(supabase, uid, lecture_id, path, "sentences_final.json")
                 current_artifacts["sentences_final_json"] = remote_path
-                sentences_final_json = path
+                final_sentences_path = path
                 
             elif filename.endswith(".zip"):
                  remote_path = _upload_artifact(supabase, uid, lecture_id, path, filename, isTemp=True)
                  current_artifacts["role_batches_zip"] = remote_path
 
-        if not sentences_final_json:
+        if not final_sentences_path:
              raise ValueError("Role Classification failed to generate final JSON.")
+        
+        # ---------------------------------------------------------
+        # 5. SEGMENTING (話題分割)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.SEGMENTING
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+
+        segmenter = LectureSegmentationService(llm, collector)
+        seg_paths = await segmenter.run(final_sentences_path, work_dir)
+
+        final_segments_path = None
+        for path in seg_paths:
+            if path.name == "segments.json":
+                current_artifacts["segments_json"] = _upload_artifact(supabase, uid, lecture_id, path, "segments.json")
+                final_segments_path = path
+        
+        if not final_segments_path:
+             # Segmentation失敗しても次に進めない
+             raise ValueError("Segmentation failed.")
+        
+        # ---------------------------------------------------------
+        # 6. GENERATING_DETAILS (詳細解説生成)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.GENERATING_DETAILS
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+
+        detailer = TopicDetailGenerationService(llm, collector)
+        # 戻り値は [segments_with_details.json]
+        detail_paths = await detailer.run(final_segments_path, final_sentences_path, work_dir)
+
+        segments_with_details_path = None # 次のステップに渡す用
+
+        for path in detail_paths:
+            if path.name == "segments_with_details.json":
+                # Tempとして保存してもいいし、重要な中間データとして保存してもOK
+                current_artifacts["segments_with_details_json"] = _upload_artifact(supabase, uid, lecture_id, path, "segments_with_details.json")
+                segments_with_details_path = path
+
+
+        # ---------------------------------------------------------
+        # 7. GENERATING_FUN_FACTS (豆知識生成)
+        # ---------------------------------------------------------
+        step_name = PipelineSteps.GENERATING_FUN_FACTS
+        _update_job_progress(supabase, job_id, JobStatus.PROCESSING, step_name, current_artifacts)
+
+        # inputは work_dir 内の segments_with_details.json を勝手に見に行く仕様にしたので引数は work_dir だけでOK
+        fun_facter = FunFactGenerationService(llm, collector)
+        fun_paths = await fun_facter.run(work_dir, segments_with_details_path)
+
+        for path in fun_paths:
+            if path.name == "lecture_complete_data.json":
+                # これがアプリで使う「完全版データ」！
+                current_artifacts["lecture_complete_data_json"] = _upload_artifact(supabase, uid, lecture_id, path, "lecture_complete_data.json")
 
         # ---------------------------------------------------------
         # X. COMPLETED (完了処理)
@@ -163,6 +219,7 @@ async def run_lecture_pipeline(job_id: str):
 
         print(f"🎉 Job Completed Successfully: {job_id}")
         print(collector.report())
+
 
     except Exception as e:
         # ---------------------------------------------------------
