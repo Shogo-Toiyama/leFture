@@ -15,10 +15,11 @@ class FunFactGenerationService:
         self.model_alias = "2_5_flash"
 
     async def run(self, work_dir: Path, segments_with_details_path: Path) -> list[Path]:
-        print(f"   [Logic] Starting fun_fact_generation (JSON Mode)")
+        print(f"   [Logic] Starting fun_fact_generation")
         
+        # ユーザー指定のファイル名
         prompt = _load_prompt("fun_fact_generation_prompt.txt")
-        options_text = LLMOptions(output_type="text", temperature=0.7)
+        options_text = LLMOptions(output_type="text", temperature=0.2) # 元コードの設定
 
         try:
             await asyncio.to_thread(
@@ -35,7 +36,6 @@ class FunFactGenerationService:
             import traceback
             traceback.print_exc()
 
-        # 成果物: 完全版JSON
         output_json = work_dir / "lecture_complete_data.json"
         
         if not output_json.exists():
@@ -57,21 +57,18 @@ class FunFactGenerationService:
         print("\n### Fun Fact Generation (JSON) ###")
         start_time = time.time()
 
-        # 前のステップのJSON (segments_with_details.json) を探す
-        input_json_path = segments_with_details_path
-        if not input_json_path.exists():
-            raise FileNotFoundError(f"segments_with_details.json not found at {segments_with_details_path}")
+        if not segments_with_details_path.exists():
+            raise FileNotFoundError(f"segments_with_details.json not found")
         
-        data_obj = json.loads(input_json_path.read_text(encoding="utf-8"))
+        data_obj = json.loads(segments_with_details_path.read_text(encoding="utf-8"))
         segments_list = data_obj.get("segments", []) if isinstance(data_obj, dict) else data_obj
 
         print(f"Generating fun facts for {len(segments_list)} topics...")
 
         tasks = []
         for i, seg in enumerate(segments_list):
-            # 詳細解説のMarkdownがあればそれを使う、なければタイトルだけ
             detail_content = seg.get("detail_content", "")
-            title = seg.get("topic_title", "")
+            title = seg.get("title") or seg.get("topic_title") or ""
             
             if not detail_content:
                 print(f"   [Skip] No detail content for topic {i}")
@@ -83,7 +80,7 @@ class FunFactGenerationService:
                 "detail_content": detail_content
             })
 
-        max_workers = 5
+        max_workers = 3
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
             fn = partial(
                 self._generate_one_fun_fact,
@@ -95,13 +92,11 @@ class FunFactGenerationService:
                 idx = futures[fut]
                 try:
                     fun_fact_text = fut.result()
-                    # 豆知識をリストに追加！
                     segments_list[idx]["fun_fact"] = fun_fact_text
                 except Exception as e:
                     print(f"❌ Failed to generate fun fact for index {idx}: {e}")
                     segments_list[idx]["fun_fact"] = ""
 
-        # 最終保存
         output_path = work_dir / "lecture_complete_data.json"
         final_obj = {"segments": segments_list}
         
@@ -109,7 +104,7 @@ class FunFactGenerationService:
             json.dump(final_obj, f, ensure_ascii=False, indent=2)
 
         elapsed = time.time() - start_time
-        print(f"⏰Generated all fun facts (JSON): {elapsed:.2f} seconds.")
+        print(f"⏰Generated all fun facts: {elapsed:.2f} seconds.")
 
     def _generate_one_fun_fact(
         self,
@@ -117,17 +112,21 @@ class FunFactGenerationService:
         model_alias: str,
         options: LLMOptions,
         prompt_tmpl: str,
-        collector: CostCollector,
         task: dict
     ) -> str:
-        content = task["detail_content"]
+        # 元のコードでは system に prompt、user に markdown を渡していた
+        topic_details_markdown = task["detail_content"]
         
         messages = [
             Message(role="system", content=prompt_tmpl),
-            Message(role="user", content=f"Here is the topic detail:\n{content}")
+            Message(role="user", content=topic_details_markdown),
+            Message(
+                role="user",
+                content="Using the text provided above, follow the instructions and return the result in markdown text.",
+            ),
         ]
 
-        # print(f"   ... fun fact for: {task['title']}")
+        print(f"   ... fun fact for: {task['title']}")
         res = llm.generate(model_alias, messages, options)
-        
+        print(token_report_from_result(res, self.collector))
         return _strip_code_fence(res.output_text)

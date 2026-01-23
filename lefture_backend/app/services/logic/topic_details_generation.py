@@ -15,8 +15,9 @@ class TopicDetailGenerationService:
         self.model_alias = "2_5_flash"
 
     async def run(self, segments_path: Path, sentences_path: Path, work_dir: Path) -> list[Path]:
-        print(f"   [Logic] Starting topic_detail_generation (JSON Mode)")
+        print(f"   [Logic] Starting topic_detail_generation")
         
+        # ユーザー指定のファイル名
         prompt = _load_prompt("topic_details_generation_prompt.txt")
         options_text = LLMOptions(output_type="text", temperature=0.2)
 
@@ -33,11 +34,9 @@ class TopicDetailGenerationService:
             )
         except Exception as e:
             print(f"⚠️ Topic Details Logic Error: {e}")
-            # エラー時もログを出して続行（Pipeline側で検知させるならraiseしても良い）
             import traceback
             traceback.print_exc()
 
-        # 成果物: JSONファイル1つ
         output_json = work_dir / "segments_with_details.json"
         
         if not output_json.exists():
@@ -46,6 +45,50 @@ class TopicDetailGenerationService:
 
         print(f"   [Logic] Topic details finished: {output_json.name}")
         return [output_json]
+
+    # --- 元のコードのロジックを移植 ---
+    def _slice_by_sid(self, sentences, start_sid=None, end_sid=None):
+        if isinstance(sentences, dict):
+            seq = sorted(sentences.values(), key=lambda s: s.get("sid", ""))
+        else:
+            seq = list(sentences)
+        if not seq:
+            return []
+
+        sid_to_idx = {}
+        for i, s in enumerate(seq):
+            sid = s.get("sid")
+            if sid is not None and sid not in sid_to_idx:
+                sid_to_idx[sid] = i
+
+        if start_sid is None:
+            i0 = 0
+        else:
+            # 見つからない場合は安全策で0にするか、元の通りエラーにするか
+            # ここでは元のロジック通りエラーチェックを入れるが、処理継続のため緩和
+            if start_sid not in sid_to_idx:
+                print(f"[WARN] start_sid {start_sid} not found, using 0")
+                i0 = 0
+            else:
+                i0 = sid_to_idx[start_sid]
+
+        if end_sid is None:
+            i1 = len(seq) - 1
+        else:
+            if end_sid not in sid_to_idx:
+                print(f"[WARN] end_sid {end_sid} not found, using last")
+                i1 = len(seq) - 1
+            else:
+                i1 = sid_to_idx[end_sid]
+
+        if i0 > i1:
+            i0, i1 = i1, i0
+
+        # add context window (+/- 20 sentences) ※元のコードの仕様
+        i0 = max(0, i0 - 20)
+        i1 = min(len(seq) - 1, i1 + 20)
+
+        return seq[i0 : i1 + 1]
 
     def _generate_all_details(
         self,
@@ -63,66 +106,79 @@ class TopicDetailGenerationService:
         if not segments_path.exists() or not sentences_path.exists():
             raise FileNotFoundError("Input files not found")
 
-        # データを読み込み
-        segments_obj = json.loads(segments_path.read_text(encoding="utf-8"))
-        sentences_data = json.loads(sentences_path.read_text(encoding="utf-8"))
+        try:
+            segments_obj = json.loads(segments_path.read_text(encoding="utf-8"))
+            sentences_data = json.loads(sentences_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to load JSON inputs: {e}")
+
+        # リスト探索ロジック
+        segments_list = []
+        if isinstance(segments_obj, list):
+            segments_list = segments_obj
+        elif isinstance(segments_obj, dict):
+            for key in ["topics", "segments", "results", "items"]:
+                if key in segments_obj and isinstance(segments_obj[key], list):
+                    segments_list = segments_obj[key]
+                    break
+            if not segments_list:
+                for k, v in segments_obj.items():
+                    if isinstance(v, list) and len(v) > 0:
+                        segments_list = v
+                        break
         
-        segments_list = segments_obj.get("topics", []) if isinstance(segments_obj, dict) else segments_obj
+        if not segments_list:
+            print(f"[ERROR] Could not find any segment list.")
+            return 
         
         print(f"Generating details for {len(segments_list)} topics...")
 
         tasks = []
+        # 元のコードに合わせて必要なフィールドだけ抽出
+        ALLOWED = ["sid", "text", "role"] 
+        projected_sentences = [{k: s.get(k) for k in ALLOWED} for s in sentences_data]
+
         for i, seg in enumerate(segments_list):
-            topic_title = seg.get("title", f"Topic {i+1}")
+            # idx, title, start_sid, end_sid を取得
+            # 元のコードは seg["idx"] を使っていたが、なければ i+1
+            idx = seg.get("idx", i + 1)
+            title = seg.get("title") or seg.get("topic_title") or f"Topic {idx}"
             start_sid = seg.get("start_sid")
             end_sid = seg.get("end_sid")
-            
-            # テキスト抽出ロジック
-            # (簡易的にインデックス検索。sentencesがソートされている前提)
-            start_idx = next((k for k, s in enumerate(sentences_data) if s["sid"] == start_sid), 0)
-            end_idx = next((k for k, s in enumerate(sentences_data) if s["sid"] == end_sid), len(sentences_data)-1)
-            
-            chunk_sentences = sentences_data[start_idx : end_idx + 1]
-            source_text = "\n".join([s["text"] for s in chunk_sentences if s.get("text")])
+
+            # スライシング実行 (リストのオブジェクトのまま取得)
+            partial_sentences = self._slice_by_sid(projected_sentences, start_sid, end_sid)
 
             tasks.append({
-                "index": i, # リストのインデックスを保持
-                "title": topic_title,
-                "source_text": source_text
+                "index": i,
+                "topic_segment": seg, # segment情報丸ごと
+                "partial_sentences": partial_sentences # 抽出したリスト(dictの配列)
             })
 
-        # 並列実行用辞書: {future: task_index}
-        results_map = {}
-
-        max_workers = 5
+        max_workers = 3 # 元のコードに合わせて 3
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
             fn = partial(
                 self._generate_one_detail,
                 llm, model_alias, options_text, prompt, self.collector
             )
-            # submit
             futures = {ex.submit(fn, task): task["index"] for task in tasks}
 
             for fut in as_completed(futures):
                 idx = futures[fut]
                 try:
                     markdown_content = fut.result()
-                    # 生成されたマークダウンを元のリストに追加！
                     segments_list[idx]["detail_content"] = markdown_content
                 except Exception as e:
                     print(f"❌ Failed to generate detail for index {idx}: {e}")
-                    segments_list[idx]["detail_content"] = "" # 失敗時は空文字などで埋める
+                    segments_list[idx]["detail_content"] = "" 
 
-        # 結果をJSONとして保存
         output_path = work_dir / "segments_with_details.json"
-        
-        # もとの構造を保ったまま保存
         final_obj = {"segments": segments_list}
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(final_obj, f, ensure_ascii=False, indent=2)
 
         elapsed = time.time() - start_time
-        print(f"⏰Generated all topic details (JSON): {elapsed:.2f} seconds.")
+        print(f"⏰Generated all topic details: {elapsed:.2f} seconds.")
 
     def _generate_one_detail(
         self,
@@ -130,20 +186,35 @@ class TopicDetailGenerationService:
         model_alias: str,
         options: LLMOptions,
         prompt_tmpl: str,
-        collector: CostCollector,
         task: dict
     ) -> str:
-        title = task["title"]
-        source_text = task["source_text"]
+        segment = task["topic_segment"]
+        partial_transcript = task["partial_sentences"]
 
+        payload = {
+            "task": "Topic Detail Generation",
+            "instruction": prompt_tmpl,
+            "data": {
+                "topic": segment,
+                "partial-transcript": partial_transcript,
+            },
+        }
+
+        # メッセージ構成
         messages = [
-            Message(role="system", content=prompt_tmpl),
-            Message(role="user", content=f"## Topic Title: {title}\n\n## Transcript:\n{source_text}")
+            Message(
+                role="system",
+                content="You are a careful lecture note generator. Follow the instructions strictly and keep the professor's nuance.",
+            ),
+            Message(
+                role="user",
+                content=json.dumps(payload, ensure_ascii=False),
+            ),
         ]
 
-        print(f"   ... generating detail for: {title}")
+        print(f"   ... generating detail for: {segment.get('title', 'Unknown')}")
         res = llm.generate(model_alias, messages, options)
         
         content = _strip_code_fence(res.output_text)
-        # Markdown文字列を返すだけ
+        print(token_report_from_result(res, self.collector))
         return content
