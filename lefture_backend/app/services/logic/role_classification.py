@@ -184,7 +184,7 @@ class RoleClassificationService:
             print_log(f"✅ Saved {out_file.name}")
 
             elapsed = time.time() - start_time
-            print_log(token_report_from_result(res, self.collector))
+            print_log(token_report_from_result("Role Classification", res, self.collector))
             if res.warnings:
                 print_log("  [WARN]", "; ".join(res.warnings))
             print_log(f"⏰One Role Classification of {batch_path.name}: {elapsed:.2f} seconds.")

@@ -213,5 +213,5 @@ class TopicDetailGenerationService:
         res = llm.generate(model_alias, messages, options)
         
         content = _strip_code_fence(res.output_text)
-        print_log(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result("Topic Details Generation", res, self.collector))
         return content

@@ -21,9 +21,9 @@ def _strip_code_fence(text: str) -> str:
         text = "\n".join(lines)
     return text
 
-def token_report_from_result(res, collector: CostCollector):
+def token_report_from_result(task: str, res, collector: CostCollector):
     u = res.usage
-    collector.add("Lecture Audio to Text", res.estimated_cost_usd)
+    collector.add(task, res.estimated_cost_usd)
     return (
         "TOKEN USAGE REPORT\n"
         f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
@@ -59,10 +59,11 @@ def init_logger(work_dir: Path):
     with open(_LOG_FILE_PATH, "w", encoding="utf-8") as f:
         f.write("")
 
-def print_log(message: str):
+def print_log(*args):
     """
     コンソールに出力しつつ、ログファイルにもJSON形式で追記する
     """
+    message = " ".join(map(str, args))
     # 1. コンソール出力 (Cloud Runのログ用)
     print(message)
 

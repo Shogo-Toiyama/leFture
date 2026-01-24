@@ -90,5 +90,5 @@ class LectureSegmentationService:
             json.dump(out_obj, f, ensure_ascii=False, indent=2)
 
         elapsed = time.time() - start_time
-        print_log(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result("Lecture Segmentation", res, self.collector))
         print_log(f"⏰Segmented topics: {elapsed:.2f} seconds.")

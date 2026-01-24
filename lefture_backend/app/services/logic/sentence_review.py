@@ -124,7 +124,7 @@ class SentenceReviewService:
             json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
 
         elapsed_time = time.time() - start_time
-        print_log(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result("Sentence Review", res, self.collector))
         
         if res.warnings:
             print_log("  [WARN]", "; ".join(res.warnings))

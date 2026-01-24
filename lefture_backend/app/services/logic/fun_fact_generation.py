@@ -128,5 +128,5 @@ class FunFactGenerationService:
 
         print_log(f"   ... fun fact for: {task['title']}")
         res = llm.generate(model_alias, messages, options)
-        print_log(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result("Fun Facts Generation", res, self.collector))
         return _strip_code_fence(res.output_text)
