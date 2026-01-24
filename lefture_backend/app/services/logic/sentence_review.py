@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 from app.services.helpers.llm_unified import UnifiedLLM, CostCollector, Message, LLMOptions
-from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result
+from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result, print_log
 from app.core.config import PROMPTS_DIR
 
 class SentenceReviewService:
@@ -13,7 +13,7 @@ class SentenceReviewService:
         self.model_alias = "2_5_flash" 
     
     def run(self, transcript_path: Path, work_dir: Path) -> Path:
-        print(f"   [Logic] Starting sentence_reviewing")
+        print_log(f"   [Logic] Starting sentence_reviewing")
         
         prompt = _load_prompt("sentence_review_prompt.txt")
         try:
@@ -25,7 +25,7 @@ class SentenceReviewService:
                 prompt=prompt,
             )
         except Exception as e:
-            print(f"⚠️ Sentence Review Logic Error (Continuing to return artifacts): {e}")
+            print_log(f"⚠️ Sentence Review Logic Error (Continuing to return artifacts): {e}")
 
         reviewed_sentences_raw = work_dir / "reviewed_sentences_raw.json"
         reviewed_sentences_raw_text = work_dir / "reviewed_sentences_raw_text.json"
@@ -44,12 +44,12 @@ class SentenceReviewService:
         
         if not results:
              raise FileNotFoundError("Sentence Review failed and no artifacts were generated.")
-        print(f"   [Logic] Sentence Review finished! Artifacts: {[p.name for p in results]}")
+        print_log(f"   [Logic] Sentence Review finished! Artifacts: {[p.name for p in results]}")
 
         return results
     
     def _sentence_review(self, llm: UnifiedLLM, model_alias: str, work_dir: Path, transcript_path: Path, prompt: str, options_json: LLMOptions | None = None):
-        print("\n### Sentence Review ###")
+        print_log("\n### Sentence Review ###")
         start_time = time.time()
 
         if not transcript_path.exists():
@@ -65,7 +65,7 @@ class SentenceReviewService:
             s for s in projected_sentences 
             if s.get("confidence") is not None and s.get("confidence", 1.0) < 0.9
         ]
-        print("Low Confident Sentences: ", len(low_confidence_sentences))
+        print_log("Low Confident Sentences: ", len(low_confidence_sentences))
 
         payload = {
             "task": "Sentence Review",
@@ -85,17 +85,17 @@ class SentenceReviewService:
 
         options_json = options_json or LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
 
-        print(f"Waiting for response from {llm.provider} API...")
+        print_log(f"Waiting for response from {llm.provider} API...")
         res = llm.generate(model=model_alias, messages=messages, options=options_json)
 
-        print("saving response...")
+        print_log("saving response...")
         raw_text = res.output_text
         clean_text = _strip_code_fence(raw_text).strip()
 
         try:
             out_review_sentence = json.loads(clean_text)
         except json.JSONDecodeError as e:
-            print(f"⚠️ JSON Decode Error: {e}")
+            print_log(f"⚠️ JSON Decode Error: {e}")
             (work_dir / "reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
 
         with open(work_dir / "reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
@@ -124,8 +124,8 @@ class SentenceReviewService:
             json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
 
         elapsed_time = time.time() - start_time
-        print(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result(res, self.collector))
         
         if res.warnings:
-            print("  [WARN]", "; ".join(res.warnings))
-        print(f"⏰Sentence Review: {elapsed_time:.2f} seconds.")
+            print_log("  [WARN]", "; ".join(res.warnings))
+        print_log(f"⏰Sentence Review: {elapsed_time:.2f} seconds.")

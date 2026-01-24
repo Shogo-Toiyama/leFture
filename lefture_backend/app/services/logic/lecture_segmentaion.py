@@ -5,7 +5,7 @@ import asyncio
 from pathlib import Path
 
 from app.services.helpers.llm_unified import LLMOptions, CostCollector, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result
+from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result, print_log
 
 class LectureSegmentationService:
     def __init__(self, llm: UnifiedLLM, collector: CostCollector):
@@ -14,7 +14,7 @@ class LectureSegmentationService:
         self.model_alias = "2_5_flash"
 
     async def run(self, sentences_final_path: Path, work_dir: Path) -> list[Path]:
-        print(f"   [Logic] Starting lecture_segmentation")
+        print_log(f"   [Logic] Starting lecture_segmentation")
         
         prompt = _load_prompt("lecture_segmentation_prompt.txt")
         options_json = LLMOptions(output_type="json", temperature=0.2)
@@ -31,19 +31,19 @@ class LectureSegmentationService:
                 prompt=prompt
             )
         except Exception as e:
-            print(f"⚠️ Segmentation Logic Error: {e}")
+            print_log(f"⚠️ Segmentation Logic Error: {e}")
             import traceback
-            traceback.print_exc()
+            traceback.print_log_exc()
 
         # 成果物チェック
         segments_json = work_dir / "segments.json"
         
         if not segments_json.exists():
-            print(f"[WARN] Segmentation finished but {segments_json} was not found.")
+            print_log(f"[WARN] Segmentation finished but {segments_json} was not found.")
             # 失敗しても空リストを返してPipeline側で判断させる
             return []
 
-        print(f"   [Logic] Segmentation finished: {segments_json.name}")
+        print_log(f"   [Logic] Segmentation finished: {segments_json.name}")
         return [segments_json]
 
     def _lecture_segmentation(
@@ -55,7 +55,7 @@ class LectureSegmentationService:
         sentences_path: Path,
         prompt: str
     ):
-        print("\n### Topic Segmentation ###")
+        print_log("\n### Topic Segmentation ###")
         start_time = time.time()
 
         if not sentences_path.exists():
@@ -73,7 +73,7 @@ class LectureSegmentationService:
             Message(role="user", content="Please segment this transcript into topics according to the system instruction.")
         ]
 
-        print(f"Waiting for response from {llm.provider} API...")
+        print_log(f"Waiting for response from {llm.provider} API...")
         res = llm.generate(model_alias, messages, options_json)
 
         clean_text = _strip_code_fence(res.output_text)
@@ -90,5 +90,5 @@ class LectureSegmentationService:
             json.dump(out_obj, f, ensure_ascii=False, indent=2)
 
         elapsed = time.time() - start_time
-        print(token_report_from_result(res, self.collector))
-        print(f"⏰Segmented topics: {elapsed:.2f} seconds.")
+        print_log(token_report_from_result(res, self.collector))
+        print_log(f"⏰Segmented topics: {elapsed:.2f} seconds.")

@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 
 from app.services.helpers.llm_unified import LLMOptions, CostCollector, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result
+from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result, print_log
 
 class TopicDetailGenerationService:
     def __init__(self, llm: UnifiedLLM, collector: CostCollector):
@@ -15,7 +15,7 @@ class TopicDetailGenerationService:
         self.model_alias = "2_5_flash"
 
     async def run(self, segments_path: Path, sentences_path: Path, work_dir: Path) -> list[Path]:
-        print(f"   [Logic] Starting topic_detail_generation")
+        print_log(f"   [Logic] Starting topic_detail_generation")
         
         # ユーザー指定のファイル名
         prompt = _load_prompt("topic_details_generation_prompt.txt")
@@ -33,20 +33,19 @@ class TopicDetailGenerationService:
                 prompt=prompt
             )
         except Exception as e:
-            print(f"⚠️ Topic Details Logic Error: {e}")
+            print_log(f"⚠️ Topic Details Logic Error: {e}")
             import traceback
             traceback.print_exc()
 
         output_json = work_dir / "segments_with_details.json"
         
         if not output_json.exists():
-            print(f"[WARN] Topic details generation failed. {output_json} not found.")
+            print_log(f"[WARN] Topic details generation failed. {output_json} not found.")
             return []
 
-        print(f"   [Logic] Topic details finished: {output_json.name}")
+        print_log(f"   [Logic] Topic details finished: {output_json.name}")
         return [output_json]
 
-    # --- 元のコードのロジックを移植 ---
     def _slice_by_sid(self, sentences, start_sid=None, end_sid=None):
         if isinstance(sentences, dict):
             seq = sorted(sentences.values(), key=lambda s: s.get("sid", ""))
@@ -64,10 +63,8 @@ class TopicDetailGenerationService:
         if start_sid is None:
             i0 = 0
         else:
-            # 見つからない場合は安全策で0にするか、元の通りエラーにするか
-            # ここでは元のロジック通りエラーチェックを入れるが、処理継続のため緩和
             if start_sid not in sid_to_idx:
-                print(f"[WARN] start_sid {start_sid} not found, using 0")
+                print_log(f"[WARN] start_sid {start_sid} not found, using 0")
                 i0 = 0
             else:
                 i0 = sid_to_idx[start_sid]
@@ -76,7 +73,7 @@ class TopicDetailGenerationService:
             i1 = len(seq) - 1
         else:
             if end_sid not in sid_to_idx:
-                print(f"[WARN] end_sid {end_sid} not found, using last")
+                print_log(f"[WARN] end_sid {end_sid} not found, using last")
                 i1 = len(seq) - 1
             else:
                 i1 = sid_to_idx[end_sid]
@@ -100,7 +97,7 @@ class TopicDetailGenerationService:
         sentences_path: Path,
         prompt: str
     ):
-        print("\n### Topic Detail Generation (JSON) ###")
+        print_log("\n### Topic Detail Generation (JSON) ###")
         start_time = time.time()
 
         if not segments_path.exists() or not sentences_path.exists():
@@ -128,10 +125,10 @@ class TopicDetailGenerationService:
                         break
         
         if not segments_list:
-            print(f"[ERROR] Could not find any segment list.")
+            print_log(f"[ERROR] Could not find any segment list.")
             return 
         
-        print(f"Generating details for {len(segments_list)} topics...")
+        print_log(f"Generating details for {len(segments_list)} topics...")
 
         tasks = []
         # 元のコードに合わせて必要なフィールドだけ抽出
@@ -169,7 +166,7 @@ class TopicDetailGenerationService:
                     markdown_content = fut.result()
                     segments_list[idx]["detail_content"] = markdown_content
                 except Exception as e:
-                    print(f"❌ Failed to generate detail for index {idx}: {e}")
+                    print_log(f"❌ Failed to generate detail for index {idx}: {e}")
                     segments_list[idx]["detail_content"] = "" 
 
         output_path = work_dir / "segments_with_details.json"
@@ -178,7 +175,7 @@ class TopicDetailGenerationService:
             json.dump(final_obj, f, ensure_ascii=False, indent=2)
 
         elapsed = time.time() - start_time
-        print(f"⏰Generated all topic details: {elapsed:.2f} seconds.")
+        print_log(f"⏰Generated all topic details: {elapsed:.2f} seconds.")
 
     def _generate_one_detail(
         self,
@@ -212,9 +209,9 @@ class TopicDetailGenerationService:
             ),
         ]
 
-        print(f"   ... generating detail for: {segment.get('title', 'Unknown')}")
+        print_log(f"   ... generating detail for: {segment.get('title', 'Unknown')}")
         res = llm.generate(model_alias, messages, options)
         
         content = _strip_code_fence(res.output_text)
-        print(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result(res, self.collector))
         return content

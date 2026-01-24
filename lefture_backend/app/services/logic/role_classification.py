@@ -2,7 +2,7 @@ import json, re, time, math, asyncio, shutil
 from pathlib import Path
 
 from app.services.helpers.llm_unified import LLMOptions, CostCollector, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt, _sid_to_int, _strip_code_fence, token_report_from_result
+from app.services.helpers.helpers import _load_prompt, _sid_to_int, _strip_code_fence, token_report_from_result, print_log
 
 
 class RoleClassificationService:
@@ -12,7 +12,7 @@ class RoleClassificationService:
         self.model_alias = "2_5_flash_lite" 
 
     async def run(self, sentences_path: Path, work_dir: Path) -> Path:
-        print(f"   [Logic] Starting role_classification")
+        print_log(f"   [Logic] Starting role_classification")
 
         prompt = _load_prompt("role_classification_prompt.txt")
         options_json = LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
@@ -27,7 +27,7 @@ class RoleClassificationService:
                 prompt=prompt,
             )
         except Exception as e:
-            print(f"⚠️ Role Classification Logic Error (Continuing to return artifacts): {e}")
+            print_log(f"⚠️ Role Classification Logic Error (Continuing to return artifacts): {e}")
         
         output_json = work_dir / "sentences_final.json"
         batches_dir = work_dir / "role_batches"
@@ -37,7 +37,7 @@ class RoleClassificationService:
         if output_json.exists():
             results.append(output_json)
         else:
-            print(f"[WARN] Role classification finished but {output_json} was not found.")
+            print_log(f"[WARN] Role classification finished but {output_json} was not found.")
 
         if batches_dir.exists():
             zip_file_str = shutil.make_archive(
@@ -47,9 +47,9 @@ class RoleClassificationService:
             )
             zip_path = Path(zip_file_str)
             results.append(zip_path)
-            print(f"📦 Zipped batches to: {zip_path.name}")
+            print_log(f"📦 Zipped batches to: {zip_path.name}")
             
-        print(f"   [Logic] Role classification finished. Artifacts: {[p.name for p in results]}")
+        print_log(f"   [Logic] Role classification finished. Artifacts: {[p.name for p in results]}")
         return results
 
     async def _role_classification(
@@ -64,7 +64,7 @@ class RoleClassificationService:
         ctx: int = 10,
         concurrency: int = 6,
     ):
-        print("\n### Role Classification ###")
+        print_log("\n### Role Classification ###")
         start_time = time.time()
         with open(sentences_path, "r", encoding="utf-8") as f:
           sentences = json.load(f)
@@ -72,11 +72,11 @@ class RoleClassificationService:
         ALLOWED_CLASSIFY = ["sid", "text"]
         projected = [{k: s.get(k) for k in ALLOWED_CLASSIFY} for s in sentences]
 
-        print("\n --> Separate Json to batches")
+        print_log("\n --> Separate Json to batches")
         n = len(projected)
-        print(f"[INFO] sentences: {n}")
+        print_log(f"[INFO] sentences: {n}")
         ranges = self.split_balanced(n, max_batch_size)
-        print(f"[INFO] {len(ranges)} batches: {ranges}")
+        print_log(f"[INFO] {len(ranges)} batches: {ranges}")
 
         batches_dir = work_dir / "role_batches"
         batches_dir.mkdir(exist_ok=True)
@@ -115,14 +115,14 @@ class RoleClassificationService:
         with open(work_dir / "sentences_final.json", "w", encoding="utf-8") as f:
             json.dump(merged, f, ensure_ascii=False, indent=2)
 
-        print(f"merged {len(merged)} sentences -> sentences_final.json")
+        print_log(f"merged {len(merged)} sentences -> sentences_final.json")
         if missing:
-            print(f"[WARN] labels missing for {len(missing)} sid(s). e.g., {missing[:5]}")
+            print_log(f"[WARN] labels missing for {len(missing)} sid(s). e.g., {missing[:5]}")
         if extra:
-            print(f"[WARN] labels contain {len(extra)} extra sid(s). e.g., {extra[:5]}")
+            print_log(f"[WARN] labels contain {len(extra)} extra sid(s). e.g., {extra[:5]}")
 
         elapsed = time.time() - start_time
-        print(f"⏰Classified roles: {elapsed:.2f} seconds.")
+        print_log(f"⏰Classified roles: {elapsed:.2f} seconds.")
 
 
 
@@ -138,7 +138,7 @@ class RoleClassificationService:
 
         sem = asyncio.Semaphore(concurrency)
         batch_files = sorted(batches_dir.glob("batch_*/batch_*.json"))
-        print(f"Found {len(batch_files)} batches under {batches_dir}")
+        print_log(f"Found {len(batch_files)} batches under {batches_dir}")
 
         async def sem_task(batch_file: Path):
             async with sem:
@@ -146,7 +146,7 @@ class RoleClassificationService:
 
         results = await asyncio.gather(*(sem_task(f) for f in batch_files))
         success = sum(1 for r in results if r)
-        print(f"\n✅ Completed {success}/{len(batch_files)} batches")
+        print_log(f"\n✅ Completed {success}/{len(batch_files)} batches")
 
     async def run_one_role_classification(
         self,
@@ -161,7 +161,7 @@ class RoleClassificationService:
 
         out_file = batch_dir / "role_classifications_batch.json"
         if out_file.exists():
-            print(f"⏭️  Skip (exists) {out_file.relative_to(Path.cwd())}")
+            print_log(f"⏭️  Skip (exists) {out_file.relative_to(Path.cwd())}")
             return True
 
         batch_json = batch_path.read_text(encoding="utf-8")
@@ -176,21 +176,21 @@ class RoleClassificationService:
         ]
 
         try:
-            print(f"Waiting for response {batch_path.name} from {llm.provider} API...")
+            print_log(f"Waiting for response {batch_path.name} from {llm.provider} API...")
             # UnifiedLLM is sync; run it in a thread to keep asyncio structure
             res = await asyncio.to_thread(llm.generate, model_alias, messages, options_json)
 
             out_file.write_text(res.output_text, encoding="utf-8")
-            print(f"✅ Saved {out_file.name}")
+            print_log(f"✅ Saved {out_file.name}")
 
             elapsed = time.time() - start_time
-            print(token_report_from_result(res, self.collector))
+            print_log(token_report_from_result(res, self.collector))
             if res.warnings:
-                print("  [WARN]", "; ".join(res.warnings))
-            print(f"⏰One Role Classification of {batch_path.name}: {elapsed:.2f} seconds.")
+                print_log("  [WARN]", "; ".join(res.warnings))
+            print_log(f"⏰One Role Classification of {batch_path.name}: {elapsed:.2f} seconds.")
             return True
         except Exception as e:
-            print(f"❌ Error in {batch_dir.name}: {e}")
+            print_log(f"❌ Error in {batch_dir.name}: {e}")
             return False
         
 
@@ -269,7 +269,7 @@ class RoleClassificationService:
                     if prev_sid_num is not None and cur is not None:
                         expected = prev_sid_num + 1
                         if cur != expected:
-                            print(f"[WARN] SID continuity broken: expected s{expected:06d} after {prev_sid}, got {sid} in {f.name}")
+                            print_log(f"[WARN] SID continuity broken: expected s{expected:06d} after {prev_sid}, got {sid} in {f.name}")
                             # raise AssertionError(
                             #     f"SID continuity broken: expected s{expected:06d} after {prev_sid}, got {sid} in {f}"
                             # )
@@ -286,7 +286,7 @@ class RoleClassificationService:
             encoding="utf-8",
         )
 
-        print(
+        print_log(
             f"📦 Merged {total_files} files, {total_items} items → {len(merged_labels)} unique items "
             f"(skipped {skipped_dups} dups) -> {out_path.name}"
         )

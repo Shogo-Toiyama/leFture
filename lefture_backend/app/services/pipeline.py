@@ -7,6 +7,7 @@ from datetime import datetime
 # 作成した設定とSupabaseクライアント
 from app.core.config import JobStatus, PipelineSteps, PIPELINE_STEPS_NUM, BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
+from app.services.helpers.helpers import print_log, init_logger, finalize_log_and_get_path
 from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 
 from app.services.logic.transcription import TranscriptionService
@@ -31,6 +32,7 @@ async def run_lecture_pipeline(job_id: str):
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # 共通ツールの初期化
+    init_logger(work_dir)
     llm = UnifiedLLM(provider="gemini") # 必要に応じて openai に変更
     collector = CostCollector()
     
@@ -38,7 +40,7 @@ async def run_lecture_pipeline(job_id: str):
     current_artifacts = {}
 
     try:
-        print(f"🚀 Job Started: {job_id}")
+        print_log(f"🚀 Job Started: {job_id}")
 
         # ---------------------------------------------------------
         # 0. Jobデータの取得 & Lecture情報の確認
@@ -49,7 +51,7 @@ async def run_lecture_pipeline(job_id: str):
         lecture_id = job_data["lecture_id"]
         
         if job_data["status"] != JobStatus.PENDING or job_data["current_step"] != PipelineSteps.PENDING:
-            print(f"Job is already executed. [Status: {job_data['status']}, Step: {job_data['current_step']}]")
+            print_log(f"Job is already executed. [Status: {job_data['status']}, Step: {job_data['current_step']}]")
             return
 
         # ステータスを PROCESSING に変更
@@ -74,7 +76,7 @@ async def run_lecture_pipeline(job_id: str):
             res = supabase.storage.from_("lecture_assets").download(storage_path)
             f.write(res)
             
-        print(f"✅ Downloaded: {local_audio_path}")
+        print_log(f"✅ Downloaded: {local_audio_path}")
 
 
         # ---------------------------------------------------------
@@ -217,8 +219,8 @@ async def run_lecture_pipeline(job_id: str):
         # 最後に lectures テーブルの final_markdown_path などを更新しても良い
         # supabase.table("lectures").update({...}).eq("id", lecture_id).execute()
 
-        print(f"🎉 Job Completed Successfully: {job_id}")
-        print(collector.report())
+        print_log(f"🎉 Job Completed Successfully: {job_id}")
+        print_log(collector.report())
 
 
     except Exception as e:
@@ -226,7 +228,7 @@ async def run_lecture_pipeline(job_id: str):
         # ERROR HANDLING (失敗時の処理)
         # ---------------------------------------------------------
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        print(f"❌ Job Failed at {step_name}: {error_msg}")
+        print_log(f"❌ Job Failed at {step_name}: {error_msg}")
         
         # エラーログを作成
         error_data = {
@@ -244,6 +246,26 @@ async def run_lecture_pipeline(job_id: str):
         }).eq("id", job_id).execute()
 
     finally:
+        try:
+            # ログファイルを整形してパスを取得
+            log_path = finalize_log_and_get_path()
+            
+            if log_path and log_path.exists():
+                # lecture_assets バケットの logs フォルダに保存
+                # uid/lecture_id/logs/log.json として保存するのがおすすめ
+                # (uidはtryブロック内で取得しているので、念の為ここで再取得するか、変数のスコープに注意)
+                
+                # tryブロックの外で uid が未定義の場合の安全策
+                # (Job取得前にコケた場合はアップロードできないが、そこは許容範囲)
+                if 'uid' in locals() and 'lecture_id' in locals():
+                    _upload_artifact(supabase, uid, lecture_id, log_path, "logs/log.json", isTemp=True)
+                    print(f"📝 Log uploaded to Storage: logs/log.json")
+                else:
+                    print("⚠️ Could not upload log: uid or lecture_id not set.")
+                    
+        except Exception as log_e:
+            print(f"⚠️ Failed to upload log file: {log_e}")
+        
         # クリーンアップ (Cloud Runの容量確保)
         if work_dir.exists():
             shutil.rmtree(work_dir)
@@ -258,7 +280,7 @@ def _update_job_progress(supabase, job_id: str, status: JobStatus, step_name: st
     """
     step_number = PIPELINE_STEPS_NUM.get(step_name, 0)
     
-    print(f"🔄 Progress: [{step_number}] {step_name} (Status: {status})")
+    print_log(f"🔄 Progress: [{step_number}] {step_name} (Status: {status})")
     
     supabase.table("processing_jobs").update({
         "status": status,

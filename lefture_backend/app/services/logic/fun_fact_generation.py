@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 
 from app.services.helpers.llm_unified import LLMOptions, CostCollector, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result
+from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result, print_log
 
 class FunFactGenerationService:
     def __init__(self, llm: UnifiedLLM, collector: CostCollector):
@@ -15,7 +15,7 @@ class FunFactGenerationService:
         self.model_alias = "2_5_flash"
 
     async def run(self, work_dir: Path, segments_with_details_path: Path) -> list[Path]:
-        print(f"   [Logic] Starting fun_fact_generation")
+        print_log(f"   [Logic] Starting fun_fact_generation")
         
         # ユーザー指定のファイル名
         prompt = _load_prompt("fun_fact_generation_prompt.txt")
@@ -32,17 +32,17 @@ class FunFactGenerationService:
                 prompt=prompt
             )
         except Exception as e:
-            print(f"⚠️ Fun Facts Logic Error: {e}")
+            print_log(f"⚠️ Fun Facts Logic Error: {e}")
             import traceback
-            traceback.print_exc()
+            traceback.print_log_exc()
 
         output_json = work_dir / "lecture_complete_data.json"
         
         if not output_json.exists():
-            print(f"[WARN] Fun facts generation failed. {output_json} not found.")
+            print_log(f"[WARN] Fun facts generation failed. {output_json} not found.")
             return []
 
-        print(f"   [Logic] Fun facts finished: {output_json.name}")
+        print_log(f"   [Logic] Fun facts finished: {output_json.name}")
         return [output_json]
 
     def _generate_all_fun_facts(
@@ -54,7 +54,7 @@ class FunFactGenerationService:
         segments_with_details_path: Path,
         prompt: str
     ):
-        print("\n### Fun Fact Generation (JSON) ###")
+        print_log("\n### Fun Fact Generation (JSON) ###")
         start_time = time.time()
 
         if not segments_with_details_path.exists():
@@ -63,7 +63,7 @@ class FunFactGenerationService:
         data_obj = json.loads(segments_with_details_path.read_text(encoding="utf-8"))
         segments_list = data_obj.get("segments", []) if isinstance(data_obj, dict) else data_obj
 
-        print(f"Generating fun facts for {len(segments_list)} topics...")
+        print_log(f"Generating fun facts for {len(segments_list)} topics...")
 
         tasks = []
         for i, seg in enumerate(segments_list):
@@ -71,7 +71,7 @@ class FunFactGenerationService:
             title = seg.get("title") or seg.get("topic_title") or ""
             
             if not detail_content:
-                print(f"   [Skip] No detail content for topic {i}")
+                print_log(f"   [Skip] No detail content for topic {i}")
                 continue
 
             tasks.append({
@@ -94,7 +94,7 @@ class FunFactGenerationService:
                     fun_fact_text = fut.result()
                     segments_list[idx]["fun_fact"] = fun_fact_text
                 except Exception as e:
-                    print(f"❌ Failed to generate fun fact for index {idx}: {e}")
+                    print_log(f"❌ Failed to generate fun fact for index {idx}: {e}")
                     segments_list[idx]["fun_fact"] = ""
 
         output_path = work_dir / "lecture_complete_data.json"
@@ -104,7 +104,7 @@ class FunFactGenerationService:
             json.dump(final_obj, f, ensure_ascii=False, indent=2)
 
         elapsed = time.time() - start_time
-        print(f"⏰Generated all fun facts: {elapsed:.2f} seconds.")
+        print_log(f"⏰Generated all fun facts: {elapsed:.2f} seconds.")
 
     def _generate_one_fun_fact(
         self,
@@ -126,7 +126,7 @@ class FunFactGenerationService:
             ),
         ]
 
-        print(f"   ... fun fact for: {task['title']}")
+        print_log(f"   ... fun fact for: {task['title']}")
         res = llm.generate(model_alias, messages, options)
-        print(token_report_from_result(res, self.collector))
+        print_log(token_report_from_result(res, self.collector))
         return _strip_code_fence(res.output_text)
