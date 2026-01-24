@@ -156,7 +156,7 @@ class TopicDetailGenerationService:
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
             fn = partial(
                 self._generate_one_detail,
-                llm, model_alias, options_text, prompt, self.collector
+                llm, model_alias, options_text, prompt,
             )
             futures = {ex.submit(fn, task): task["index"] for task in tasks}
 

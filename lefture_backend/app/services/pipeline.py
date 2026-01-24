@@ -258,7 +258,7 @@ async def run_lecture_pipeline(job_id: str):
                 # tryブロックの外で uid が未定義の場合の安全策
                 # (Job取得前にコケた場合はアップロードできないが、そこは許容範囲)
                 if 'uid' in locals() and 'lecture_id' in locals():
-                    _upload_artifact(supabase, uid, lecture_id, log_path, "logs/log.json", isTemp=True)
+                    _upload_artifact(supabase, uid, lecture_id, log_path, "log.json", isLog=True)
                     print(f"📝 Log uploaded to Storage: logs/log.json")
                 else:
                     print("⚠️ Could not upload log: uid or lecture_id not set.")
@@ -290,13 +290,15 @@ def _update_job_progress(supabase, job_id: str, status: JobStatus, step_name: st
         "updated_at": datetime.now().isoformat()
     }).eq("id", job_id).execute()
 
-def _upload_artifact(supabase, uid, lecture_id: str, local_path: Path, filename: str, isTemp: bool = False) -> str:
+def _upload_artifact(supabase, uid, lecture_id: str, local_path: Path, filename: str, isTemp: bool = False, isLog: bool = False) -> str:
     """
     ローカルの生成ファイルをSupabase Storageにアップロードし、そのパスを返す。
     """
     storage_path = f"{uid}/{lecture_id}/artifacts/{filename}"
     if isTemp:
         storage_path = f"{uid}/{lecture_id}/artifacts/temp/{filename}"
+    if isLog:
+        storage_path = f"{uid}/{lecture_id}/log/{filename}"
     bucket_name = "lecture_assets"
 
     with open(local_path, "rb") as f:
