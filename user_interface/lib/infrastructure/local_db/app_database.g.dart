@@ -274,30 +274,26 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
   LocalLectureFolder map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LocalLectureFolder(
-      id:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}id'],
-          )!,
-      ownerId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}owner_id'],
-          )!,
-      name:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}name'],
-          )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
       parentId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}parent_id'],
       ),
-      type:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}type'],
-          )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
       icon: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}icon'],
@@ -306,35 +302,30 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
         DriftSqlType.string,
         data['${effectivePrefix}color'],
       ),
-      isFavorite:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}is_favorite'],
-          )!,
+      isFavorite: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_favorite'],
+      )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
-      sortOrder:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.int,
-            data['${effectivePrefix}sort_order'],
-          )!,
-      createdAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}created_at'],
-          )!,
-      updatedAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}updated_at'],
-          )!,
-      needsSync:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.bool,
-            data['${effectivePrefix}needs_sync'],
-          )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      needsSync: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}needs_sync'],
+      )!,
     );
   }
 
@@ -406,19 +397,18 @@ class LocalLectureFolder extends DataClass
       id: Value(id),
       ownerId: Value(ownerId),
       name: Value(name),
-      parentId:
-          parentId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(parentId),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
       type: Value(type),
       icon: icon == null && nullToAbsent ? const Value.absent() : Value(icon),
-      color:
-          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
       isFavorite: Value(isFavorite),
-      deletedAt:
-          deletedAt == null && nullToAbsent
-              ? const Value.absent()
-              : Value(deletedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       sortOrder: Value(sortOrder),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -505,8 +495,9 @@ class LocalLectureFolder extends DataClass
       type: data.type.present ? data.type.value : this.type,
       icon: data.icon.present ? data.icon.value : this.icon,
       color: data.color.present ? data.color.value : this.color,
-      isFavorite:
-          data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
+      isFavorite: data.isFavorite.present
+          ? data.isFavorite.value
+          : this.isFavorite,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -903,36 +894,30 @@ class $LocalOutboxTable extends LocalOutbox
   LocalOutboxData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LocalOutboxData(
-      id:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.int,
-            data['${effectivePrefix}id'],
-          )!,
-      entityType:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}entity_type'],
-          )!,
-      entityId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}entity_id'],
-          )!,
-      op:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}op'],
-          )!,
-      payloadJson:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}payload_json'],
-          )!,
-      enqueuedAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}enqueued_at'],
-          )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      op: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      enqueuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}enqueued_at'],
+      )!,
     );
   }
 
@@ -1025,14 +1010,17 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
   LocalOutboxData copyWithCompanion(LocalOutboxCompanion data) {
     return LocalOutboxData(
       id: data.id.present ? data.id.value : this.id,
-      entityType:
-          data.entityType.present ? data.entityType.value : this.entityType,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
       entityId: data.entityId.present ? data.entityId.value : this.entityId,
       op: data.op.present ? data.op.value : this.op,
-      payloadJson:
-          data.payloadJson.present ? data.payloadJson.value : this.payloadJson,
-      enqueuedAt:
-          data.enqueuedAt.present ? data.enqueuedAt.value : this.enqueuedAt,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      enqueuedAt: data.enqueuedAt.present
+          ? data.enqueuedAt.value
+          : this.enqueuedAt,
     );
   }
 
@@ -1399,16 +1387,14 @@ class $LocalLecturesTable extends LocalLectures
   LocalLecture map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LocalLecture(
-      id:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}id'],
-          )!,
-      ownerId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}owner_id'],
-          )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
       folderId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}folder_id'],
@@ -1425,25 +1411,22 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       ),
-      createdAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}created_at'],
-          )!,
-      updatedAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}updated_at'],
-          )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
-      syncStatus:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}sync_status'],
-          )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
       lastSyncError: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}last_sync_error'],
@@ -1515,31 +1498,27 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     return LocalLecturesCompanion(
       id: Value(id),
       ownerId: Value(ownerId),
-      folderId:
-          folderId == null && nullToAbsent
-              ? const Value.absent()
-              : Value(folderId),
-      title:
-          title == null && nullToAbsent ? const Value.absent() : Value(title),
-      lectureDatetime:
-          lectureDatetime == null && nullToAbsent
-              ? const Value.absent()
-              : Value(lectureDatetime),
-      sortOrder:
-          sortOrder == null && nullToAbsent
-              ? const Value.absent()
-              : Value(sortOrder),
+      folderId: folderId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(folderId),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
+      lectureDatetime: lectureDatetime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lectureDatetime),
+      sortOrder: sortOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortOrder),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      deletedAt:
-          deletedAt == null && nullToAbsent
-              ? const Value.absent()
-              : Value(deletedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
       syncStatus: Value(syncStatus),
-      lastSyncError:
-          lastSyncError == null && nullToAbsent
-              ? const Value.absent()
-              : Value(lastSyncError),
+      lastSyncError: lastSyncError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncError),
     );
   }
 
@@ -1597,15 +1576,17 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     ownerId: ownerId ?? this.ownerId,
     folderId: folderId.present ? folderId.value : this.folderId,
     title: title.present ? title.value : this.title,
-    lectureDatetime:
-        lectureDatetime.present ? lectureDatetime.value : this.lectureDatetime,
+    lectureDatetime: lectureDatetime.present
+        ? lectureDatetime.value
+        : this.lectureDatetime,
     sortOrder: sortOrder.present ? sortOrder.value : this.sortOrder,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
-    lastSyncError:
-        lastSyncError.present ? lastSyncError.value : this.lastSyncError,
+    lastSyncError: lastSyncError.present
+        ? lastSyncError.value
+        : this.lastSyncError,
   );
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
@@ -1613,20 +1594,19 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       folderId: data.folderId.present ? data.folderId.value : this.folderId,
       title: data.title.present ? data.title.value : this.title,
-      lectureDatetime:
-          data.lectureDatetime.present
-              ? data.lectureDatetime.value
-              : this.lectureDatetime,
+      lectureDatetime: data.lectureDatetime.present
+          ? data.lectureDatetime.value
+          : this.lectureDatetime,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
-      syncStatus:
-          data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
-      lastSyncError:
-          data.lastSyncError.present
-              ? data.lastSyncError.value
-              : this.lastSyncError,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      lastSyncError: data.lastSyncError.present
+          ? data.lastSyncError.value
+          : this.lastSyncError,
     );
   }
 
@@ -2127,26 +2107,22 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
   LocalLectureAsset map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LocalLectureAsset(
-      id:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}id'],
-          )!,
-      ownerId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}owner_id'],
-          )!,
-      lectureId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}lecture_id'],
-          )!,
-      type:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}type'],
-          )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      lectureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lecture_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
       localPath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}local_path'],
@@ -2159,16 +2135,14 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
         DriftSqlType.string,
         data['${effectivePrefix}storage_path'],
       ),
-      uploadStatus:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}upload_status'],
-          )!,
-      attemptCount:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.int,
-            data['${effectivePrefix}attempt_count'],
-          )!,
+      uploadStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}upload_status'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
       nextRetryAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}next_retry_at'],
@@ -2177,16 +2151,14 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
-      createdAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}created_at'],
-          )!,
-      updatedAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}updated_at'],
-          )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -2261,28 +2233,23 @@ class LocalLectureAsset extends DataClass
       ownerId: Value(ownerId),
       lectureId: Value(lectureId),
       type: Value(type),
-      localPath:
-          localPath == null && nullToAbsent
-              ? const Value.absent()
-              : Value(localPath),
-      storageBucket:
-          storageBucket == null && nullToAbsent
-              ? const Value.absent()
-              : Value(storageBucket),
-      storagePath:
-          storagePath == null && nullToAbsent
-              ? const Value.absent()
-              : Value(storagePath),
+      localPath: localPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localPath),
+      storageBucket: storageBucket == null && nullToAbsent
+          ? const Value.absent()
+          : Value(storageBucket),
+      storagePath: storagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(storagePath),
       uploadStatus: Value(uploadStatus),
       attemptCount: Value(attemptCount),
-      nextRetryAt:
-          nextRetryAt == null && nullToAbsent
-              ? const Value.absent()
-              : Value(nextRetryAt),
-      lastError:
-          lastError == null && nullToAbsent
-              ? const Value.absent()
-              : Value(lastError),
+      nextRetryAt: nextRetryAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextRetryAt),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2349,8 +2316,9 @@ class LocalLectureAsset extends DataClass
     lectureId: lectureId ?? this.lectureId,
     type: type ?? this.type,
     localPath: localPath.present ? localPath.value : this.localPath,
-    storageBucket:
-        storageBucket.present ? storageBucket.value : this.storageBucket,
+    storageBucket: storageBucket.present
+        ? storageBucket.value
+        : this.storageBucket,
     storagePath: storagePath.present ? storagePath.value : this.storagePath,
     uploadStatus: uploadStatus ?? this.uploadStatus,
     attemptCount: attemptCount ?? this.attemptCount,
@@ -2366,22 +2334,21 @@ class LocalLectureAsset extends DataClass
       lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
       type: data.type.present ? data.type.value : this.type,
       localPath: data.localPath.present ? data.localPath.value : this.localPath,
-      storageBucket:
-          data.storageBucket.present
-              ? data.storageBucket.value
-              : this.storageBucket,
-      storagePath:
-          data.storagePath.present ? data.storagePath.value : this.storagePath,
-      uploadStatus:
-          data.uploadStatus.present
-              ? data.uploadStatus.value
-              : this.uploadStatus,
-      attemptCount:
-          data.attemptCount.present
-              ? data.attemptCount.value
-              : this.attemptCount,
-      nextRetryAt:
-          data.nextRetryAt.present ? data.nextRetryAt.value : this.nextRetryAt,
+      storageBucket: data.storageBucket.present
+          ? data.storageBucket.value
+          : this.storageBucket,
+      storagePath: data.storagePath.present
+          ? data.storagePath.value
+          : this.storagePath,
+      uploadStatus: data.uploadStatus.present
+          ? data.uploadStatus.value
+          : this.uploadStatus,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      nextRetryAt: data.nextRetryAt.present
+          ? data.nextRetryAt.value
+          : this.nextRetryAt,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -2869,41 +2836,34 @@ class $LocalUploadJobsTable extends LocalUploadJobs
   LocalUploadJob map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LocalUploadJob(
-      id:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}id'],
-          )!,
-      ownerId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}owner_id'],
-          )!,
-      kind:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}kind'],
-          )!,
-      lectureId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}lecture_id'],
-          )!,
-      assetId:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}asset_id'],
-          )!,
-      status:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.string,
-            data['${effectivePrefix}status'],
-          )!,
-      attemptCount:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.int,
-            data['${effectivePrefix}attempt_count'],
-          )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      lectureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lecture_id'],
+      )!,
+      assetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
       nextRetryAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}next_retry_at'],
@@ -2912,16 +2872,14 @@ class $LocalUploadJobsTable extends LocalUploadJobs
         DriftSqlType.string,
         data['${effectivePrefix}last_error'],
       ),
-      createdAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}created_at'],
-          )!,
-      updatedAt:
-          attachedDatabase.typeMapping.read(
-            DriftSqlType.dateTime,
-            data['${effectivePrefix}updated_at'],
-          )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -2986,14 +2944,12 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
       assetId: Value(assetId),
       status: Value(status),
       attemptCount: Value(attemptCount),
-      nextRetryAt:
-          nextRetryAt == null && nullToAbsent
-              ? const Value.absent()
-              : Value(nextRetryAt),
-      lastError:
-          lastError == null && nullToAbsent
-              ? const Value.absent()
-              : Value(lastError),
+      nextRetryAt: nextRetryAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextRetryAt),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -3069,12 +3025,12 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
       lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
       assetId: data.assetId.present ? data.assetId.value : this.assetId,
       status: data.status.present ? data.status.value : this.status,
-      attemptCount:
-          data.attemptCount.present
-              ? data.attemptCount.value
-              : this.attemptCount,
-      nextRetryAt:
-          data.nextRetryAt.present ? data.nextRetryAt.value : this.nextRetryAt,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      nextRetryAt: data.nextRetryAt.present
+          ? data.nextRetryAt.value
+          : this.nextRetryAt,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -3586,18 +3542,15 @@ class $$LocalLectureFoldersTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer:
-              () => $$LocalLectureFoldersTableFilterComposer(
+          createFilteringComposer: () =>
+              $$LocalLectureFoldersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalLectureFoldersTableOrderingComposer(
                 $db: db,
                 $table: table,
               ),
-          createOrderingComposer:
-              () => $$LocalLectureFoldersTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer:
-              () => $$LocalLectureFoldersTableAnnotationComposer(
+          createComputedFieldComposer: () =>
+              $$LocalLectureFoldersTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
@@ -3665,16 +3618,9 @@ class $$LocalLectureFoldersTableTableManager
                 needsSync: needsSync,
                 rowid: rowid,
               ),
-          withReferenceMapper:
-              (p0) =>
-                  p0
-                      .map(
-                        (e) => (
-                          e.readTable(table),
-                          BaseReferences(db, table, e),
-                        ),
-                      )
-                      .toList(),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );
@@ -3857,13 +3803,12 @@ class $$LocalOutboxTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer:
-              () => $$LocalOutboxTableFilterComposer($db: db, $table: table),
-          createOrderingComposer:
-              () => $$LocalOutboxTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer:
-              () =>
-                  $$LocalOutboxTableAnnotationComposer($db: db, $table: table),
+          createFilteringComposer: () =>
+              $$LocalOutboxTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalOutboxTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalOutboxTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
@@ -3896,16 +3841,9 @@ class $$LocalOutboxTableTableManager
                 payloadJson: payloadJson,
                 enqueuedAt: enqueuedAt,
               ),
-          withReferenceMapper:
-              (p0) =>
-                  p0
-                      .map(
-                        (e) => (
-                          e.readTable(table),
-                          BaseReferences(db, table, e),
-                        ),
-                      )
-                      .toList(),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );
@@ -4161,16 +4099,12 @@ class $$LocalLecturesTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer:
-              () => $$LocalLecturesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer:
-              () =>
-                  $$LocalLecturesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer:
-              () => $$LocalLecturesTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
+          createFilteringComposer: () =>
+              $$LocalLecturesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalLecturesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalLecturesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
@@ -4227,16 +4161,9 @@ class $$LocalLecturesTableTableManager
                 lastSyncError: lastSyncError,
                 rowid: rowid,
               ),
-          withReferenceMapper:
-              (p0) =>
-                  p0
-                      .map(
-                        (e) => (
-                          e.readTable(table),
-                          BaseReferences(db, table, e),
-                        ),
-                      )
-                      .toList(),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );
@@ -4532,18 +4459,12 @@ class $$LocalLectureAssetsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer:
-              () => $$LocalLectureAssetsTableFilterComposer(
-                $db: db,
-                $table: table,
-              ),
-          createOrderingComposer:
-              () => $$LocalLectureAssetsTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer:
-              () => $$LocalLectureAssetsTableAnnotationComposer(
+          createFilteringComposer: () =>
+              $$LocalLectureAssetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalLectureAssetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalLectureAssetsTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
@@ -4611,16 +4532,9 @@ class $$LocalLectureAssetsTableTableManager
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
-          withReferenceMapper:
-              (p0) =>
-                  p0
-                      .map(
-                        (e) => (
-                          e.readTable(table),
-                          BaseReferences(db, table, e),
-                        ),
-                      )
-                      .toList(),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );
@@ -4884,19 +4798,12 @@ class $$LocalUploadJobsTableTableManager
         TableManagerState(
           db: db,
           table: table,
-          createFilteringComposer:
-              () =>
-                  $$LocalUploadJobsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer:
-              () => $$LocalUploadJobsTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer:
-              () => $$LocalUploadJobsTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
+          createFilteringComposer: () =>
+              $$LocalUploadJobsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalUploadJobsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalUploadJobsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
@@ -4953,16 +4860,9 @@ class $$LocalUploadJobsTableTableManager
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
-          withReferenceMapper:
-              (p0) =>
-                  p0
-                      .map(
-                        (e) => (
-                          e.readTable(table),
-                          BaseReferences(db, table, e),
-                        ),
-                      )
-                      .toList(),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );

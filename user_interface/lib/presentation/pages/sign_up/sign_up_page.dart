@@ -30,7 +30,7 @@ class SignUpPage extends HookConsumerWidget {
               content: Text('Account created! Please check your email to verify.'),
             ),
           );
-          context.go(AppRoutes.dashboard);
+          context.go(AppRoutes.home);
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(

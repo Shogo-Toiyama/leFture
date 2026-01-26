@@ -20,7 +20,7 @@ class SignInPage extends HookConsumerWidget {
     // エラーハンドリング
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
-        data: (_) => context.go(AppRoutes.dashboard),
+        data: (_) => context.go(AppRoutes.home),
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(error.toString())),

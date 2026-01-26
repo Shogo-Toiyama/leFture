@@ -118,9 +118,8 @@ class RecordingController extends _$RecordingController {
       _startWatchingLecture(lectureId);
 
       // C. 録音ファイルのパス決定
-      //    (まだ確定ではないのでtempパスでも良いが、Repositoryの実装に合わせてIDベースのパスにする)
       final dir = await getApplicationDocumentsDirectory();
-      final tempPath = p.join(dir.path, 'recordings', lectureId, 'audio', 'recording.m4a');
+      final tempPath = p.join(dir.path, 'lectures', lectureId, 'audio', 'recording.m4a');
       
       // D. 録音開始
       await _recorder.start(outputPath: tempPath);
@@ -204,9 +203,7 @@ class RecordingController extends _$RecordingController {
       //    (UploadManagerは裏で動くので、UIとしては "Queued" か "Done" に遷移)
       state = state.copyWith(phase: RecordingPhase.queued);
 
-      // 4. UploadManagerに通知 (Step 2で自動化するが、念のため呼んでおく)
-      //    ※今のUploadManagerはSharedPrefsを見ているのでまだ動かないが、
-      //    次のステップでDBを見るように直せば動くようになる。
+      // 4. UploadManagerに通知
       _uploadMgr.tryProcessQueue();
 
       // UI側で少し待ってから閉じる処理が入っているため、uploadedへの遷移も可

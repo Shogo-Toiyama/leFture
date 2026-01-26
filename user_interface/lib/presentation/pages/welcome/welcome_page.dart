@@ -24,7 +24,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     
     // ルーティングのredirectが自動判定
     if (mounted) {
-      context.go(AppRoutes.dashboard);
+      context.go(AppRoutes.home);
     }
   }
   

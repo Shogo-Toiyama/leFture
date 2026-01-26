@@ -191,6 +191,20 @@ class AppDatabase extends _$AppDatabase {
         .watch();
   }
 
+  Stream<List<LocalLecture>> watchLectures(String ownerId, String? folderId) {
+    final query = select(localLectures)
+      ..where((t) => t.ownerId.equals(ownerId) & t.deletedAt.isNull())
+      ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
+
+    if (folderId == null) {
+      query.where((t) => t.folderId.isNull());
+    } else {
+      query.where((t) => t.folderId.equals(folderId));
+    }
+
+    return query.watch();
+  }
+
   // --- Folders: upsert from cloud ---
   Future<void> upsertFoldersFromCloud(List<LocalLectureFoldersCompanion> rows) async {
     await batch((b) {

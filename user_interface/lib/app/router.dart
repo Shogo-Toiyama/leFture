@@ -44,7 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 2. ログイン後（ここを単純化！）
       // ShellRouteをやめて、単一の「ホーム画面」にする
       GoRoute(
-        path: AppRoutes.home, // または '/home'
+        path: AppRoutes.home, 
         builder: (context, state) => const MainLayout(), // childを渡さない
         routes: [
            // MainLayoutの上に乗っかる詳細ページなどはここに定義してもOK

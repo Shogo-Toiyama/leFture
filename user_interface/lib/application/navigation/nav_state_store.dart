@@ -30,6 +30,15 @@ class NavStateStore {
     if (ms == null) return null;
     return DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
   }
+
+  DateTime? get lastLectureSyncAt {
+    final str = prefs.getString('lastLectureSyncAt');
+    return str != null ? DateTime.tryParse(str) : null;
+  }
+
+  Future<void> setLastLectureSyncAt(DateTime time) async {
+    await prefs.setString('lastLectureSyncAt', time.toIso8601String());
+  }
 }
 
 final navStateStoreProvider = Provider<NavStateStore>((ref) {
