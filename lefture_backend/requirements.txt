@@ -8,3 +8,4 @@ assemblyai
 google-genai
 openai
 tiktoken
+google-cloud-tasks
