@@ -7,10 +7,11 @@ import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 
 import 'package:lecture_companion_ui/application/lecture_folders/folder_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart'; // Step 3で作成したProvider
+import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture_folders/folder_breadcrumb_provider.dart';
 import 'package:lecture_companion_ui/application/lecture_folders/lecture_folder_controller.dart';
 import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
 
 import 'widgets/breadcrumb_bar.dart';
 import 'widgets/delete_confirm_dialog.dart';
@@ -223,7 +224,6 @@ class LectureFolderPage extends HookConsumerWidget {
                       );
                     }
 
-                    // コンテンツがある場合：CustomScrollViewでGridとListを結合
                     return RefreshIndicator(
                       onRefresh: () async {
                         await ref.read(lectureFolderControllerProvider.notifier).bootstrapFolders();
@@ -329,12 +329,10 @@ class LectureFolderPage extends HookConsumerWidget {
                                     return LectureTile(
                                       lecture: lecture,
                                       onTap: () {
-                                        // TODO: Step 4 - Navigate to LectureViewerPage
-                                        // unawaited(nav.setLastNotesLocation('${AppRoutes.notesHome}/f/$folderId/l/${lecture.id}'));
-                                        // Navigator.of(context).push(...);
-                                        
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Open lecture: ${lecture.title}')),
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => LectureViewerPage(lecture: lecture),
+                                          ),
                                         );
                                       },
                                     );

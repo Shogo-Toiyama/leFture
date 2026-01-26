@@ -16,5 +16,6 @@ class AppRoutes {
 
   static const String notesHome = '/notes';
 
-  static const String noteDetail = '/note-detail';
+  static const String lectureNote = '/lecture-note';
+  static const String lectureViewer = '/lecture-viewer';
 }

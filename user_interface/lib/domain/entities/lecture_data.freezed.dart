@@ -116,10 +116,7 @@ return $default(_that);case _:
 final _that = this;
 switch (_that) {
 case _LectureCompleteData():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -178,10 +175,7 @@ return $default(_that.segments);case _:
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<LectureSegment> segments)  $default,) {final _that = this;
 switch (_that) {
 case _LectureCompleteData():
-return $default(_that.segments);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that.segments);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -395,10 +389,7 @@ return $default(_that);case _:
 final _that = this;
 switch (_that) {
 case _LectureSegment():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -457,10 +448,7 @@ return $default(_that.idx,_that.title,_that.startSid,_that.endSid,_that.detailCo
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int idx,  String title, @JsonKey(name: 'start_sid')  String startSid, @JsonKey(name: 'end_sid')  String endSid, @JsonKey(name: 'detail_content')  String detailContent, @JsonKey(name: 'fun_fact')  String? funFact)  $default,) {final _that = this;
 switch (_that) {
 case _LectureSegment():
-return $default(_that.idx,_that.title,_that.startSid,_that.endSid,_that.detailContent,_that.funFact);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that.idx,_that.title,_that.startSid,_that.endSid,_that.detailContent,_that.funFact);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -677,10 +665,7 @@ return $default(_that);case _:
 final _that = this;
 switch (_that) {
 case _TranscriptSentence():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -739,10 +724,7 @@ return $default(_that.sid,_that.text,_that.start,_that.end,_that.role);case _:
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sid,  String text,  int start,  int end,  String role)  $default,) {final _that = this;
 switch (_that) {
 case _TranscriptSentence():
-return $default(_that.sid,_that.text,_that.start,_that.end,_that.role);case _:
-  throw StateError('Unexpected subclass');
-
-}
+return $default(_that.sid,_that.text,_that.start,_that.end,_that.role);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///

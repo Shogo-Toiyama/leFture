@@ -20,7 +20,7 @@ class BreadcrumbBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.3))),
+        border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3))),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

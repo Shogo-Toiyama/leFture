@@ -1,6 +1,6 @@
-// lib/domain/entities/lecture_data.dart
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+// 生成されるファイル名を指定
 part 'lecture_data.freezed.dart';
 part 'lecture_data.g.dart';
 
@@ -10,7 +10,7 @@ part 'lecture_data.g.dart';
 // -----------------------------------------------------------------------------
 
 @freezed
-class LectureCompleteData with _$LectureCompleteData {
+sealed class LectureCompleteData with _$LectureCompleteData {
   const factory LectureCompleteData({
     // "segments" 配列の中身
     required List<LectureSegment> segments,
@@ -21,7 +21,7 @@ class LectureCompleteData with _$LectureCompleteData {
 }
 
 @freezed
-class LectureSegment with _$LectureSegment {
+sealed class LectureSegment with _$LectureSegment {
   const factory LectureSegment({
     required int idx,
     required String title,
@@ -47,7 +47,7 @@ class LectureSegment with _$LectureSegment {
 // -----------------------------------------------------------------------------
 
 @freezed
-class TranscriptSentence with _$TranscriptSentence {
+sealed class TranscriptSentence with _$TranscriptSentence {
   const factory TranscriptSentence({
     required String sid,
     required String text,

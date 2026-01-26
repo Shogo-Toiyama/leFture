@@ -14,14 +14,12 @@ class LectureTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 日付フォーマット (例: Oct 24, 2023)
-    // 端末のロケールに合わせるなら DateFormat.yMMMd(Localizations.localeOf(context).toString())
     final dateStr = DateFormat.yMMMd().format(lecture.lectureDatetime);
 
     return Card(
       elevation: 0,
       // 表面の色を少し変えて階層感を出す (Theme依存)
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -73,7 +71,7 @@ class LectureTile extends StatelessWidget {
               // 右端の矢印
               Icon(
                 Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
           ),

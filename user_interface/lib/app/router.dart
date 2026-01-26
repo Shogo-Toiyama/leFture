@@ -8,8 +8,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
-import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/note_detail/note_detail_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_in/sign_in_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
@@ -50,16 +48,6 @@ final routerProvider = Provider<GoRouter>((ref) {
            // MainLayoutの上に乗っかる詳細ページなどはここに定義してもOK
            // GoRoute(path: 'detail', builder: ...),
         ]
-      ),
-
-      // 3. 全画面系（BottomNavを隠したいやつ）
-      GoRoute(
-        path: AppRoutes.noteDetail,
-        builder: (_, __) => const NoteDetailPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.aiChat,
-        builder: (_, __) => const AiChatPage(),
       ),
     ],
   );

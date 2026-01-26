@@ -55,7 +55,7 @@ class RecordingMiniPlayer extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     )
@@ -68,8 +68,8 @@ class RecordingMiniPlayer extends ConsumerWidget {
                       height: 32,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: state.phase == RecordingPhase.recording ? Colors.red.withOpacity(0.2) :
-                               state.phase == RecordingPhase.paused ? Colors.amber.withOpacity(0.2) :
+                        color: state.phase == RecordingPhase.recording ? Colors.red.withValues(alpha: 0.2) :
+                               state.phase == RecordingPhase.paused ? Colors.amber.withValues(alpha: 0.2) :
                                Colors.white,
                       ),
                       child: Icon(
