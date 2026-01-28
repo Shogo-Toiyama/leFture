@@ -1,7 +1,7 @@
 // lib/infrastructure/repositories/job_repository.dart
 import 'dart:developer' as dev;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../domain/entities/processing_jobs.dart'; // クラス名を確認してください
+import '../../domain/entities/processing_jobs.dart';
 
 class JobRepository {
   final SupabaseClient _supabase;
@@ -9,7 +9,7 @@ class JobRepository {
   JobRepository(this._supabase);
 
   Stream<ProcessingJobs?> watchJob(String lectureId) {
-    dev.log('👀 Start watching Job for: $lectureId');
+    // dev.log('👀 Start watching Job for: $lectureId');
     
     return _supabase
         .from('processing_jobs')
@@ -17,7 +17,7 @@ class JobRepository {
         .eq('lecture_id', lectureId)
         .map((maps) {
           if (maps.isEmpty) {
-            dev.log('📭 Job list is empty');
+            // dev.log('📭 Job list is empty');
             return null;
           }
 
@@ -29,7 +29,7 @@ class JobRepository {
           });
 
           final latestMap = maps.first;
-          dev.log('📄 Processing map: $latestMap'); // ★ここ重要：生データを見る
+          // dev.log('📄 Processing map: $latestMap'); // ★ここ重要：生データを見る
 
           try {
             // ここで変換エラーが起きているはず！

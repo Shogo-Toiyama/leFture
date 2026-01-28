@@ -39,8 +39,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.signIn, builder: (_, _) => const SignInPage()),
       GoRoute(path: AppRoutes.signUp, builder: (_, _) => const SignUpPage()),
 
-      // 2. ログイン後（ここを単純化！）
-      // ShellRouteをやめて、単一の「ホーム画面」にする
       GoRoute(
         path: AppRoutes.home, 
         builder: (context, state) => const MainLayout(), // childを渡さない

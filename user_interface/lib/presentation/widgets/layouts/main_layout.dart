@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_folder/navigator/notes_tab.dart';
 import 'package:lecture_companion_ui/presentation/widgets/layouts/recording_mini_player.dart';
+import 'dart:developer' as dev;
 
 import 'package:lecture_companion_ui/presentation/pages/dashboard/dashboard_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
@@ -17,13 +18,20 @@ class MainLayout extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = useState(2); // 初期値: Dashboard (2)
 
-    final pages = useMemoized(() => [
-      const NotesTab(), // 0: Notes
+    dev.log('🎨 [MainLayout] Build. Current Index: ${selectedIndex.value}');
+    if (selectedIndex.value == 0) {
+      dev.log('👉 [MainLayout] NotesTab is ACTIVE');
+    } else {
+      dev.log('👉 [MainLayout] NotesTab is INACTIVE (Hidden)');
+    }
+
+    final pages = [
+      NotesTab(isActive: selectedIndex.value == 0,), // 0: Notes
       const AiChatPage(),                      // 1: Chat
       const DashboardPage(),                   // 2: Dashboard
       const GoalTreePage(),                    // 3: Goals
       const ProfilePage(),                     // 4: Profile
-    ]);
+    ];
 
     final showMiniPlayer = true;
 
@@ -40,7 +48,10 @@ class MainLayout extends HookConsumerWidget {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex.value,
-        onTap: (index) => selectedIndex.value = index, // GoRouterを使わずState更新のみ
+        onTap: (index) {
+          dev.log('👆 [MainLayout] Tap Tab: $index');
+          selectedIndex.value = index;
+        },
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color.fromARGB(255, 255, 235, 191),
         selectedItemColor: Theme.of(context).primaryColor,

@@ -75,200 +75,185 @@ class RecordingPage extends HookConsumerWidget {
 
     final isDonePhase = state.phase == RecordingPhase.queued; // || state.phase == RecordingPhase.uploaded;
 
-    return PopScope(
-      canPop: false,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onHorizontalDragEnd: (details) {
-          final vx = details.primaryVelocity ?? 0;
-          if (vx > 200) {
-            Navigator.of(context).pop();
-          }
-        },
-        child: Scaffold(
-          body: Stack(
-            children: [
-              Scaffold(
-                appBar: AppBar(
-                  title: const Text('Record Lecture'),
-                  leading: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-                body: CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            // Title
-                            TextField(
-                              controller: titleCtl,
-                              enabled: !isBusy,
-                              decoration: const InputDecoration(
-                                labelText: 'Lecture title',
-                                hintText: 'e.g., CS 101 - Week 3',
-                              ),
-                              onChanged: controller.setTitle,
-                            ),
-                            const SizedBox(height: 12),
+    return Scaffold(
+      body: Stack(
+        children: [
+          Scaffold(
+            appBar: AppBar(
+              title: const Text('Record Lecture'),
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            body: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        // Title
+                        TextField(
+                          controller: titleCtl,
+                          enabled: !isBusy,
+                          decoration: const InputDecoration(
+                            labelText: 'Lecture title',
+                            hintText: 'e.g., CS 101 - Week 3',
+                          ),
+                          onChanged: controller.setTitle,
+                        ),
+                        const SizedBox(height: 12),
 
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.folder_outlined),
-                              title: const Text('Folder'),
-                              subtitle: Text(
-                                folderLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: const Icon(Icons.arrow_drop_down),
-                              onTap: isBusy
-                                  ? null
-                                  : () async {
-                                      final result =
-                                          await showModalBottomSheet<FolderPickerResult>(
-                                        context: context,
-                                        isScrollControlled: true,
-                                        builder: (_) => FolderPickerSheet(
-                                          initialSelectedFolderId: state.folderId,
-                                        ),
-                                      );
-
-                                      if (result == null || !result.confirmed) return;
-                                      controller.setFolderId(result.folderId);
-                                    },
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Timer
-                            Text(
-                              _format(state.elapsedSeconds),
-                              style: Theme.of(context).textTheme.displaySmall,
-                            ),
-                            const SizedBox(height: 18),
-
-                            // Mic icon
-                            Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isRecording
-                                    ? const Color.fromARGB(35, 244, 67, 54)
-                                    : const Color.fromARGB(20, 33, 150, 243),
-                              ),
-                              child: Icon(
-                                isRecording ? Icons.mic : Icons.mic_none,
-                                size: 60,
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-
-                            // Status
-                            _StatusArea(state: state, controller: controller),
-
-                            const Spacer(),
-
-                            // Buttons (2)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: isBusy || (state.phase != RecordingPhase.idle && state.phase != RecordingPhase.recording && state.phase != RecordingPhase.paused)
-                                        ? null
-                                        : () => controller.toggleStartStopResume(),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: state.phase == RecordingPhase.recording ? Colors.red : 
-                                                      state.phase == RecordingPhase.paused ? Theme.of(context).colorScheme.secondary :
-                                                      Theme.of(context).colorScheme.primary,
-                                    ),
-                                    child: Text(primaryLabel()),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    // Uploadは Paused のときだけ有効
-                                    onPressed: state.canUpload && !isBusy
-                                        ? () => controller.upload()
-                                        : null,
-                                    child: const Text('Upload'),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            if (state.phase == RecordingPhase.recording || 
-                                state.phase == RecordingPhase.paused ||
-                                state.phase == RecordingPhase.error) ...[
-                              const SizedBox(height: 16),
-                              TextButton.icon(
-                                onPressed: () async {
-                                  // 確認ダイアログを出す
-                                  final confirm = await showDialog<bool>(
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.folder_outlined),
+                          title: const Text('Folder'),
+                          subtitle: Text(
+                            folderLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: const Icon(Icons.arrow_drop_down),
+                          onTap: isBusy
+                              ? null
+                              : () async {
+                                  final result =
+                                      await showModalBottomSheet<FolderPickerResult>(
                                     context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Discard Recording?'),
-                                      content: const Text('This will delete the current recording. This action cannot be undone.'),
-                                      actions: [
-                                        TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-                                        TextButton(
-                                          onPressed: () => ctx.pop(true),
-                                          style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                          child: const Text('Discard'),
-                                        ),
-                                      ],
+                                    isScrollControlled: true,
+                                    builder: (_) => FolderPickerSheet(
+                                      initialSelectedFolderId: state.folderId,
                                     ),
                                   );
 
-                                  if (confirm == true) {
-                                    await controller.cancelAndDiscard();
-                                    if (context.mounted) Navigator.of(context).pop();
-                                  }
+                                  if (result == null || !result.confirmed) return;
+                                  controller.setFolderId(result.folderId);
                                 },
-                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                label: const Text('Discard Recording', style: TextStyle(color: Colors.grey)),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Timer
+                        Text(
+                          _format(state.elapsedSeconds),
+                          style: Theme.of(context).textTheme.displaySmall,
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Mic icon
+                        Container(
+                          width: 110,
+                          height: 110,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isRecording
+                                ? const Color.fromARGB(35, 244, 67, 54)
+                                : const Color.fromARGB(20, 33, 150, 243),
+                          ),
+                          child: Icon(
+                            isRecording ? Icons.mic : Icons.mic_none,
+                            size: 60,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Status
+                        _StatusArea(state: state, controller: controller),
+
+                        const Spacer(),
+
+                        // Buttons (2)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: isBusy || (state.phase != RecordingPhase.idle && state.phase != RecordingPhase.recording && state.phase != RecordingPhase.paused)
+                                    ? null
+                                    : () => controller.toggleStartStopResume(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: state.phase == RecordingPhase.recording ? Colors.red : 
+                                                  state.phase == RecordingPhase.paused ? Theme.of(context).colorScheme.secondary :
+                                                  Theme.of(context).colorScheme.primary,
+                                ),
+                                child: Text(primaryLabel()),
                               ),
-                            ],
-                            
-                            // ★削除: "New Recording" ボタンのブロックは削除しました。
-                            
-                            const SizedBox(height: 12),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                // Uploadは Paused のときだけ有効
+                                onPressed: state.canUpload && !isBusy
+                                    ? () => controller.upload()
+                                    : null,
+                                child: const Text('Upload'),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    )
-                  ],
-                ),
-              ),
 
-              if (isDonePhase)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black54,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.white, size: 64),
+                        if (state.phase == RecordingPhase.recording || 
+                            state.phase == RecordingPhase.paused ||
+                            state.phase == RecordingPhase.error) ...[
                           const SizedBox(height: 16),
-                          Text(
-                            'Recording Done!',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                          TextButton.icon(
+                            onPressed: () async {
+                              // 確認ダイアログを出す
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Discard Recording?'),
+                                  content: const Text('This will delete the current recording. This action cannot be undone.'),
+                                  actions: [
+                                    TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
+                                    TextButton(
+                                      onPressed: () => ctx.pop(true),
+                                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                      child: const Text('Discard'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                await controller.cancelAndDiscard();
+                                if (context.mounted) Navigator.of(context).pop();
+                              }
+                            },
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                            label: const Text('Discard Recording', style: TextStyle(color: Colors.grey)),
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 12),
+                      ],
                     ),
                   ),
-                ),
-            ],
+                )
+              ],
+            ),
           ),
-        ),
-      )
+
+          if (isDonePhase)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white, size: 64),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Recording Done!',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
