@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart'
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_note/lecture_note_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/widgets/topic_preview_card.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
@@ -38,8 +39,14 @@ class LectureViewerPage extends HookConsumerWidget {
       ),
       body: completeDataAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        error: (err, stack) => Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: Center(child: Text('Error: $err')),
+        ),
         data: (data) {
+          if (data == null) {
+            return LectureStatusScaffold(lecture: lecture);
+          }
           return SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -94,7 +101,7 @@ class LectureViewerPage extends HookConsumerWidget {
                   // 4. Summary (Dummy)
                   _buildSectionHeader(context, 'Summary'),
                   const Text(
-                    'This lecture covers the fundamental concepts of Python programming, focusing on functional programming paradigms. Key topics include lambda functions, map/reduce, and list comprehensions.',
+                    'This section presents a brief summary of the lecture, helping you quickly grasp its main themes and overall structure.',
                   ),
                   const SizedBox(height: 24),
 
@@ -111,7 +118,7 @@ class LectureViewerPage extends HookConsumerWidget {
                         Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onTertiaryContainer),
                         const SizedBox(width: 12),
                         const Expanded(
-                          child: Text('Midterm exam will be held next Tuesday. Please review Chapter 4.'),
+                          child: Text('• This section displays important course announcements. \n• Details about midterms, assignments, and other class-related information are listed in bullet points.'),
                         ),
                       ],
                     ),

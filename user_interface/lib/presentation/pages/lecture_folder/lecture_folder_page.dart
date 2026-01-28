@@ -14,7 +14,7 @@ import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
 
 import 'widgets/breadcrumb_bar.dart';
-import 'widgets/delete_confirm_dialog.dart';
+import '../../widgets/delete_confirm_dialog.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/folder_tile.dart';
 import 'widgets/lecture_tile.dart';
@@ -88,22 +88,25 @@ class LectureFolderPage extends HookConsumerWidget {
         );
       } else {
         final parentCrumbs = await ref.read(folderBreadcrumbProvider(parentId).future);
-        
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => const LectureFolderPage(folderId: null),
-            settings: const RouteSettings(name: '/'),
-          ),
-          (route) => false,
-        );
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => const LectureFolderPage(folderId: null),
+              settings: const RouteSettings(name: '/'),
+            ),
+            (route) => false,
+          );
+        }
 
         for (final crumb in parentCrumbs) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => LectureFolderPage(folderId: crumb.id),
-              settings: RouteSettings(name: 'f/${crumb.id}'),
-            ),
-          );
+          if (context.mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LectureFolderPage(folderId: crumb.id),
+                settings: RouteSettings(name: 'f/${crumb.id}'),
+              ),
+            );
+          }
         }
       }
     }

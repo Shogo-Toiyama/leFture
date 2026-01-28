@@ -63,13 +63,13 @@ final lectureCompleteDataProvider = LectureCompleteDataFamily._();
 final class LectureCompleteDataProvider
     extends
         $FunctionalProvider<
-          AsyncValue<LectureCompleteData>,
-          LectureCompleteData,
-          FutureOr<LectureCompleteData>
+          AsyncValue<LectureCompleteData?>,
+          LectureCompleteData?,
+          FutureOr<LectureCompleteData?>
         >
     with
-        $FutureModifier<LectureCompleteData>,
-        $FutureProvider<LectureCompleteData> {
+        $FutureModifier<LectureCompleteData?>,
+        $FutureProvider<LectureCompleteData?> {
   LectureCompleteDataProvider._({
     required LectureCompleteDataFamily super.from,
     required ({String uid, String lectureId}) super.argument,
@@ -93,12 +93,12 @@ final class LectureCompleteDataProvider
 
   @$internal
   @override
-  $FutureProviderElement<LectureCompleteData> $createElement(
+  $FutureProviderElement<LectureCompleteData?> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<LectureCompleteData> create(Ref ref) {
+  FutureOr<LectureCompleteData?> create(Ref ref) {
     final argument = this.argument as ({String uid, String lectureId});
     return lectureCompleteData(
       ref,
@@ -119,12 +119,12 @@ final class LectureCompleteDataProvider
 }
 
 String _$lectureCompleteDataHash() =>
-    r'ed417092975690e39926cb73f33091125c66ba43';
+    r'a5b4c02397ad93a254bc5524bf94b52b0add45e5';
 
 final class LectureCompleteDataFamily extends $Family
     with
         $FunctionalFamilyOverride<
-          FutureOr<LectureCompleteData>,
+          FutureOr<LectureCompleteData?>,
           ({String uid, String lectureId})
         > {
   LectureCompleteDataFamily._()
@@ -154,13 +154,13 @@ final transcriptProvider = TranscriptFamily._();
 final class TranscriptProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<TranscriptSentence>>,
-          List<TranscriptSentence>,
-          FutureOr<List<TranscriptSentence>>
+          AsyncValue<List<TranscriptSentence>?>,
+          List<TranscriptSentence>?,
+          FutureOr<List<TranscriptSentence>?>
         >
     with
-        $FutureModifier<List<TranscriptSentence>>,
-        $FutureProvider<List<TranscriptSentence>> {
+        $FutureModifier<List<TranscriptSentence>?>,
+        $FutureProvider<List<TranscriptSentence>?> {
   TranscriptProvider._({
     required TranscriptFamily super.from,
     required ({String uid, String lectureId}) super.argument,
@@ -184,12 +184,12 @@ final class TranscriptProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<TranscriptSentence>> $createElement(
+  $FutureProviderElement<List<TranscriptSentence>?> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<TranscriptSentence>> create(Ref ref) {
+  FutureOr<List<TranscriptSentence>?> create(Ref ref) {
     final argument = this.argument as ({String uid, String lectureId});
     return transcript(ref, uid: argument.uid, lectureId: argument.lectureId);
   }
@@ -205,12 +205,12 @@ final class TranscriptProvider
   }
 }
 
-String _$transcriptHash() => r'38500abcfa3102966c98628825b802b603f01bd7';
+String _$transcriptHash() => r'b1b5d54d48f1f3f7cfaebaac389dab221d1eef59';
 
 final class TranscriptFamily extends $Family
     with
         $FunctionalFamilyOverride<
-          FutureOr<List<TranscriptSentence>>,
+          FutureOr<List<TranscriptSentence>?>,
           ({String uid, String lectureId})
         > {
   TranscriptFamily._()

@@ -21,7 +21,7 @@ LectureArtifactRepository lectureArtifactRepository(Ref ref) {
 // 読む授業データを取得するProvider
 // ref.watch(lectureCompleteDataProvider((uid: '...', lectureId: '...'))) で使います
 @riverpod
-Future<LectureCompleteData> lectureCompleteData(
+Future<LectureCompleteData?> lectureCompleteData(
   Ref ref, {
   required String uid,
   required String lectureId,
@@ -33,7 +33,7 @@ Future<LectureCompleteData> lectureCompleteData(
 
 // トランスクリプトを取得するProvider
 @riverpod
-Future<List<TranscriptSentence>> transcript(
+Future<List<TranscriptSentence>?> transcript(
   Ref ref, {
   required String uid,
   required String lectureId,

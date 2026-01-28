@@ -28,16 +28,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = path == AppRoutes.welcome || path == AppRoutes.signIn || path == AppRoutes.signUp;
       
       if (session == null && !isAuthRoute) return AppRoutes.signIn;
-      if (session != null && isAuthRoute && path != AppRoutes.welcome) return AppRoutes.home;
+      if (session != null && isAuthRoute) return AppRoutes.home;
 
       return null;
     },
 
     routes: [
       // 1. ログイン前
-      GoRoute(path: AppRoutes.welcome, builder: (_, __) => const WelcomePage()),
-      GoRoute(path: AppRoutes.signIn, builder: (_, __) => const SignInPage()),
-      GoRoute(path: AppRoutes.signUp, builder: (_, __) => const SignUpPage()),
+      GoRoute(path: AppRoutes.welcome, builder: (_, _) => const WelcomePage()),
+      GoRoute(path: AppRoutes.signIn, builder: (_, _) => const SignInPage()),
+      GoRoute(path: AppRoutes.signUp, builder: (_, _) => const SignUpPage()),
 
       // 2. ログイン後（ここを単純化！）
       // ShellRouteをやめて、単一の「ホーム画面」にする

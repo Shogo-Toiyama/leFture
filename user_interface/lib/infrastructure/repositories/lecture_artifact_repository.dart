@@ -18,43 +18,61 @@ class LectureArtifactRepository {
   // ---------------------------------------------------------------------------
   // 1. 読む授業 (LectureCompleteData) を取得
   // ---------------------------------------------------------------------------
-  Future<LectureCompleteData> getLectureCompleteData({
+  Future<LectureCompleteData?> getLectureCompleteData({
     required String uid,
     required String lectureId,
   }) async {
     const fileName = 'lecture_complete_data.json';
     
-    // 1. ファイルを取得（ローカルにあればそれを、なければDL）
-    final file = await _downloadOrGetLocalFile(
-      uid: uid,
-      lectureId: lectureId,
-      fileName: fileName,
-    );
+    try{
+      // 1. ファイルを取得（ローカルにあればそれを、なければDL）
+      final file = await _downloadOrGetLocalFile(
+        uid: uid,
+        lectureId: lectureId,
+        fileName: fileName,
+      );
 
-    // 2. JSON文字列を読み込む
-    final jsonString = await file.readAsString();
+      // 2. JSON文字列を読み込む
+      final jsonString = await file.readAsString();
 
-    // 3. 重いパース処理は別スレッド(compute)で行う
-    return compute(_parseLectureCompleteData, jsonString);
+      // 3. 重いパース処理は別スレッド(compute)で行う
+      return compute(_parseLectureCompleteData, jsonString);
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('404') || msg.contains('Object not found') || msg.contains('not_found')) {
+        return null;
+      }
+      
+      rethrow;
+    }
   }
 
   // ---------------------------------------------------------------------------
   // 2. トランスクリプト (List<TranscriptSentence>) を取得
   // ---------------------------------------------------------------------------
-  Future<List<TranscriptSentence>> getTranscript({
+  Future<List<TranscriptSentence>?> getTranscript({
     required String uid,
     required String lectureId,
   }) async {
     const fileName = 'sentences_final.json';
 
-    final file = await _downloadOrGetLocalFile(
-      uid: uid,
-      lectureId: lectureId,
-      fileName: fileName,
-    );
+    try {
+      final file = await _downloadOrGetLocalFile(
+        uid: uid,
+        lectureId: lectureId,
+        fileName: fileName,
+      );
 
-    final jsonString = await file.readAsString();
-    return compute(_parseTranscript, jsonString);
+      final jsonString = await file.readAsString();
+      return compute(_parseTranscript, jsonString);
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('404') || msg.contains('Object not found') || msg.contains('not_found')) {
+        return null;
+      }
+      
+      rethrow;
+    }
   }
 
   // ===========================================================================
