@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/presentation/pages/galaxy/galaxy_view.dart';
 
 class GoalTreePage extends StatelessWidget {
   const GoalTreePage({super.key});
@@ -9,30 +10,7 @@ class GoalTreePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Goal Tree'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.account_tree_outlined,
-              size: 64,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Coming Soon',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Goal Tree feature is under development',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
+      body: SizedBox.expand(child: GalaxyView()),
     );
   }
 }
