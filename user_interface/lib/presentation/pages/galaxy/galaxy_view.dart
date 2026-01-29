@@ -11,6 +11,10 @@ class GalaxyView extends StatefulWidget {
 
 class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateMixin {
   late final AnimationController _ticker;
+  late final List<_NebulaPuff> nebula;
+  late final List<_BgStar> bgStars;
+  double t = 0.0;
+
 
   // Camera / controls
   double zoom = 2.0;    // 0.5..3.0 recommended
@@ -28,18 +32,39 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
   void initState() {
     super.initState();
 
+    final seed = 42;
+    final count = 2000;
+    final arms = 3;
+    final radius = 1.0;
+    final thickness = 0.05;
+
     stars = _generateSpiralGalaxy(
-      seed: 42,
-      count: 20000, // <- まず固定（引きで銀河っぽくするなら 10k〜30k 推奨）
-      arms: 3,
-      radius: 1.5,
-      thickness: 0.07,
+      seed: seed,
+      count: count, // <- まず固定（引きで銀河っぽくするなら 10k〜30k 推奨）
+      arms: arms,  
+      radius: radius,
+      thickness: thickness,
     );
+
+    nebula = _generateNebula(
+      seed: seed,
+      count: (count/500).toInt(),
+      arms: arms,
+      radius: radius*0.8,
+      thickness: thickness,
+    );
+
+    bgStars = _generateBgStars(
+      seed: 123,
+      count: 3200,
+    );
+
 
     _ticker = AnimationController(vsync: this, duration: const Duration(days: 99))
       ..addListener(() {
+        t += 1 / 60;
         if (!userInteracting) {
-        const spin = 0.001; // 好みで
+        const spin = 0.002; // 好みで
         final worldUp = v.Vector3(0, 1, 0);
         final q = v.Quaternion.axisAngle(worldUp, spin);
         camRot = q * camRot;
@@ -56,60 +81,12 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails d, Size size) {
-    // ズームがある程度近い時だけピック
-    if (zoom < 6.0) return;
-
-    const double pickPx = 16; // タップ許容半径
-    final Offset p = d.localPosition;
-
-    _ProjectedStar? best;
-    double bestDist = double.infinity;
-
-    for (final ps in projected) {
-      final dx = ps.screen.dx - p.dx;
-      final dy = ps.screen.dy - p.dy;
-      final dist2 = dx * dx + dy * dy;
-      if (dist2 < pickPx * pickPx && dist2 < bestDist) {
-        bestDist = dist2;
-        best = ps;
-      }
-    }
-
-    if (best == null) return;
-
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: DefaultTextStyle(
-          style: Theme.of(context).textTheme.bodyMedium!,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("⭐️ Star info", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              Text("id: ${best?.star.id}"),
-              Text("type: ${best?.star.type}"),
-              Text("brightness: ${best?.star.bright.toStringAsFixed(3)}"),
-              Text("size: ${best?.star.size.toStringAsFixed(3)}"),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, c) {
-        final size = Size(c.maxWidth, c.maxHeight);
 
         return GestureDetector(
-          onTapDown: (d) => _onTapDown(d, size),
           onScaleStart: (_) => setState(() => userInteracting = true),
           onScaleEnd: (_) => setState(() => userInteracting = false),
           onScaleUpdate: (d) {
@@ -145,6 +122,9 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
           child: CustomPaint(
             painter: _GalaxyPainter(
               stars: stars,
+              nebula: nebula,
+              bgStars: bgStars,
+              time: t,
               camRot: camRot,
               zoom: zoom,
               onProjected: (list) => projected = list,
@@ -183,15 +163,70 @@ class _ProjectedStar {
 
 typedef _ProjectedCallback = void Function(List<_ProjectedStar> list);
 
+class _NebulaPuff {
+  _NebulaPuff({
+    required this.pos,
+    required this.radius,
+    required this.alpha,
+    required this.colorIndex,
+  });
+
+  final v.Vector3 pos;      // 銀河ローカル座標
+  final double radius;      // 画面上の基準半径（あとでdepth/zoomで調整）
+  final double alpha;       // 0..1
+  final int colorIndex;     // 色選択用
+}
+
+class _BgStar {
+  _BgStar(this.x01, this.y01, this.r, this.baseA, this.phase, this.speed);
+  final double x01;   // 0..1
+  final double y01;   // 0..1
+  final double r;     // px
+  final double baseA; // 0..1
+  final double phase; // 0..2pi
+  final double speed; // 0..?
+}
+
+List<_BgStar> _generateBgStars({required int seed, required int count}) {
+  final rnd = math.Random(seed);
+  final stars = <_BgStar>[];
+
+  for (int i = 0; i < count; i++) {
+    final x = rnd.nextDouble();
+    final y = rnd.nextDouble();
+
+    // ✅ ほぼ極小（0.25〜1.2pxくらいに集中）
+    final r = (0.25 + math.pow(rnd.nextDouble(), 3.4) * 1.2).toDouble();
+
+    // ✅ ほぼ薄い（たまに少し明るい）
+    final baseA = (0.12 + math.pow(rnd.nextDouble(), 2.5) * 0.80).toDouble();
+
+    // ちらつき用
+    final phase = rnd.nextDouble() * 2 * math.pi;
+    final speed = 0.6 + rnd.nextDouble() * 1.4; // 0.6..2.0
+
+    stars.add(_BgStar(x, y, r, baseA, phase, speed));
+  }
+  return stars;
+}
+
+
+
 class _GalaxyPainter extends CustomPainter {
   _GalaxyPainter({
     required this.stars,
+    required this.nebula,
+    required this.bgStars,
+    required this.time,
     required this.camRot,
     required this.zoom,
     required this.onProjected,
   });
 
   final List<_Star> stars;
+  final List<_NebulaPuff> nebula;
+  final List<_BgStar> bgStars;
+  final double time;
   final v.Quaternion camRot;
   final double zoom;
   final _ProjectedCallback onProjected;
@@ -204,21 +239,62 @@ class _GalaxyPainter extends CustomPainter {
 
     // center glow (cheap, effective)
     final center = Offset(size.width * 0.5, size.height * 0.52);
-    final zoomT = ((zoom - 0.6) / (3.0 - 0.6)).clamp(0.0, 1.0);
-    final haze = 1.35 - 0.55 * zoomT; // 引きほど大きく、寄りほど小さく
+    const minZoom = 0.6;
+    const maxZoom = 8.0;
+    final z01 = ((zoom - minZoom) / (maxZoom - minZoom)).clamp(0.0, 1.0).toDouble();
+
+    // --- Background stars (dense + tiny + twinkle) ---
+    final bgPaint = Paint()..blendMode = BlendMode.srcOver;
+
+    final avoidR = math.min(size.width, size.height) * 0.14; // 0.22→0.14（抑制範囲を狭く）
+
+
+    for (final s in bgStars) {
+      final x = s.x01 * size.width;
+      final y = s.y01 * size.height;
+
+      // avoid center (don’t fight the galaxy)
+      final dx = x - center.dx;
+      final dy = y - center.dy;
+      final dist2 = dx * dx + dy * dy;
+      final avoid = (dist2 / (avoidR * avoidR)).clamp(0.55, 1.0).toDouble(); // 0.25→0.55
+
+      // ✅ ここ重要：s.a じゃなく s.baseA
+      final a = (s.baseA * avoid).clamp(0.01, 0.28);
+      bgPaint.color = const Color(0xFFFFFFFF).withValues(alpha: a);
+      canvas.drawCircle(Offset(x, y), s.r, bgPaint);
+
+    }
+
+    // --- center glow (cheap, effective) ---
+    final haze = 1.35 - 0.55 * z01;
     final coreRadius = math.min(size.width, size.height) * 0.18 * zoom * haze;
 
     final glowPaint = Paint()
       ..shader = RadialGradient(
-        colors: [
-          const Color(0xE6D8F3FF), // core (強)
-          const Color(0x7A6BCBFF), // mid
-          const Color(0x001E1B2E), // out
+        colors: const [
+          Color(0xE6D8F3FF),
+          Color(0x7A6BCBFF),
+          Color(0x001E1B2E),
         ],
-        stops: const [0.0, 0.18, 1.0],
+        stops: const [0.0, 0.15, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: coreRadius));
 
     canvas.drawCircle(center, coreRadius, glowPaint);
+
+
+    final warmCore = Paint()
+      ..blendMode = BlendMode.screen
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0x66FFB26B),
+          const Color(0x33FF4FA2),
+          const Color(0x00FF4FA2),
+        ],
+        stops: const [0.0, 0.3, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: coreRadius * 0.55));
+
+    canvas.drawCircle(center, coreRadius * 0.55, warmCore);
 
     // Build rotation matrix from yaw/pitch
     final rot = v.Matrix4.identity()..setRotation(camRot.asRotationMatrix());
@@ -230,6 +306,56 @@ class _GalaxyPainter extends CustomPainter {
     // Project + depth sort (optional)
     final List<_ProjectedStar> proj = [];
     proj.length = 0;
+
+    // --- Nebula layer ---
+    final nebulaColors = <Color>[
+      const Color(0xFFFF5FA2), // pink
+      const Color(0xFFFF9A3D), // orange
+      const Color(0xFFB86BFF), // purple
+      const Color(0xFF4FA8FF), // blue
+    ];
+
+    // ズームアウトは薄く・減らす
+    final zoomFade = (0.55 + 0.65 * math.pow(z01, 1.2)).toDouble(); // 引きでかなり薄い
+    // final stride = (z01 < 0.5) ? (1/(z01+0.05)).toInt().clamp(1, 12) : 1;          // 引きは描画数も減らす
+
+    for (int i = 0; i < nebula.length; i += 1) {
+      final puff = nebula[i];
+
+      final p = puff.pos;
+      final v4 = rot.transform(v.Vector4(p.x, p.y, p.z, 1.0));
+
+      final z = v4.z + 2.5;
+      if (z <= 0.2) continue;
+
+      final x2 = (v4.x / (z * fov)) * scale + center.dx;
+      final y2 = (v4.y / (z * fov)) * scale + center.dy;
+
+      if (x2 < -120 || x2 > size.width + 120 || y2 < -120 || y2 > size.height + 120) continue;
+
+      // ✅ ズームアウトほど「小さく」する（ポイント）
+      final sizeFade = (0.55 + 0.45 * z01).toDouble();
+      final rPx = (((puff.radius / z) * 2.4) * sizeFade).clamp(10.0, 120.0);
+      if (rPx < 2.0) continue;
+
+      final c = nebulaColors[puff.colorIndex];
+
+      // ✅ ズームアウトほど「薄く」
+      final a = (puff.alpha * zoomFade).clamp(0.01, 1);
+
+      final paint = Paint()
+        ..blendMode = BlendMode.screen
+        ..shader = RadialGradient(
+          colors: [
+            c.withValues(alpha: a * 0.70), // 中心は薄め
+            c.withValues(alpha: a * 0.35),
+            c.withValues(alpha: 0.0),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ).createShader(Rect.fromCircle(center: Offset(x2, y2), radius: rPx));
+
+      canvas.drawCircle(Offset(x2, y2), rPx, paint);
+    }
 
     for (final s in stars) {
       final p = v.Vector3.copy(s.pos);
@@ -286,33 +412,11 @@ class _GalaxyPainter extends CustomPainter {
 
       canvas.drawCircle(ps.screen, sizePx, paint);
     }
-
-    // optional: subtle dust band (cheap “density feels thicker”)
-    final dustPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: const [
-          Color(0x001A2C58),
-          Color(0x221A2C58),
-          Color(0x001A2C58),
-        ],
-        stops: const [0.0, 0.5, 1.0],
-      ).createShader(Rect.fromCenter(center: center, width: size.width, height: size.height * 0.35));
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(0.0);
-    canvas.translate(-center.dx, -center.dy);
-    canvas.drawRect(
-      Rect.fromCenter(center: center, width: size.width, height: size.height * 0.35),
-      dustPaint,
-    );
-    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant _GalaxyPainter oldDelegate) {
-    return oldDelegate.camRot != camRot || oldDelegate.zoom != zoom || oldDelegate.stars != stars;
+    return oldDelegate.camRot != camRot || oldDelegate.zoom != zoom || oldDelegate.stars != stars || oldDelegate.nebula != nebula;
   }
 }
 
@@ -322,7 +426,12 @@ List<_Star> _generateSpiralGalaxy({
   required int arms,
   required double radius,
   required double thickness,
+
+  int bulgeCount = 8000,
+  double bulgeRadiusNorm = 0.18,
+  double innerDiskHoleNorm = 0.14,
 }) {
+
   final rnd = math.Random(seed);
 
   double randNorm() {
@@ -333,12 +442,53 @@ List<_Star> _generateSpiralGalaxy({
   }
 
   final stars = <_Star>[];
+
+  // --- Bulge: dense central spheroid ---
+  for (int i = 0; i < bulgeCount; i++) {
+    // 0..1 (中心に強く寄せる)
+    final u = math.pow(rnd.nextDouble(), 2.8).toDouble();
+    final r = radius * bulgeRadiusNorm * u;
+
+    // 等方的に球っぽく
+    final theta = math.acos(2 * rnd.nextDouble() - 1); // 0..pi
+    final phi = rnd.nextDouble() * 2 * math.pi;
+
+    // バルジは少し縦に潰す（楕円体っぽく）
+    final flatten = 0.75;
+
+    final x = r * math.sin(theta) * math.cos(phi);
+    final y = r * math.sin(theta) * math.sin(phi);
+    final z = r * math.cos(theta) * flatten;
+
+    // バルジの星の明るさとサイズ
+    final bright = (0.35 + 0.65 * math.pow(1 - u, 0.7) + rnd.nextDouble() * 0.15)
+        .clamp(0.0, 1.0)
+        .toDouble();
+
+    final size = (0.5 + bright * 0.9 + rnd.nextDouble() * 0.35);
+
+    // 色は白〜黄寄りが多い（古い星の雰囲気）
+    final p = rnd.nextDouble();
+    final type = (p < 0.55) ? 2 : (p < 0.95) ? 0 : 1;
+
+    stars.add(_Star(
+      id: "bulge_$i",
+      pos: v.Vector3(x, z, y),
+      size: size,
+      bright: bright,
+      type: type,
+    ));
+  }
+
   stars.reserveCapacity(count);
 
   for (int i = 0; i < count; i++) {
     // r: bias towards center (more dense core)
     final t = rnd.nextDouble();
-    final rNorm = math.pow(t, 0.85).toDouble();
+    // final rNorm = math.pow(t, 0.85).toDouble();
+    // final r = radius * rNorm;
+    final rNormRaw = math.pow(t, 0.85).toDouble(); // 0..1
+    final rNorm = innerDiskHoleNorm + (1.0 - innerDiskHoleNorm) * rNormRaw; // hole..1
     final r = radius * rNorm;
 
     // pick arm and angle
@@ -403,6 +553,66 @@ List<_Star> _generateSpiralGalaxy({
 
   return stars;
 }
+
+List<_NebulaPuff> _generateNebula({
+  required int seed,
+  required int count,       // 例: 400
+  required int arms,        // starsと同じ
+  required double radius,   // starsと同じ
+  required double thickness,
+  double innerStartNorm = 0.10, // 中心は濃いけど、腕のモヤは少し外から
+}) {
+  final rnd = math.Random(seed + 999);
+
+  double randNorm() {
+    final u1 = math.max(rnd.nextDouble(), 1e-9);
+    final u2 = rnd.nextDouble();
+    return math.sqrt(-2.0 * math.log(u1)) * math.cos(2 * math.pi * u2);
+  }
+
+  final puffs = <_NebulaPuff>[];
+
+  for (int i = 0; i < count; i++) {
+    // 腕に沿う半径（中心寄り多め）
+    final t = rnd.nextDouble();
+    final rNormRaw = math.pow(t, 0.55).toDouble(); // 0..1（中心寄り）
+    final rNorm = innerStartNorm + (1 - innerStartNorm) * rNormRaw;
+    final r = radius * rNorm;
+
+    // 腕を選ぶ
+    final arm = rnd.nextInt(arms);
+    final baseAngle = (arm / arms) * 2 * math.pi;
+
+    // 腕に沿って巻く
+    final spiralTightness = 5.0;
+    final angleNoise = 0.12 + 0.40 * rNorm; // 外側ほど広がる
+    final angle = baseAngle + r * spiralTightness + randNorm() * angleNoise;
+
+    // 腕の幅（位置ノイズ）
+    final posNoise = 0.015 + 0.06 * rNorm;
+    final x = r * math.cos(angle) + randNorm() * posNoise;
+    final y = r * math.sin(angle) + randNorm() * posNoise;
+    final z = randNorm() * thickness * (0.4 + 0.8 * (1 - rNorm)); // 中心ほど厚い
+
+    // puffの大きさ（外側ほど大きく、薄く）
+    final baseR = 14.0 + 38.0 * rNorm; // px
+    final alpha = (0.10 + 0.22 * (1 - rNorm) + rnd.nextDouble() * 0.08).clamp(0.04, 0.32);
+
+    // 色：ピンク/オレンジ/紫/青を混ぜる
+    final p = rnd.nextDouble();
+    final colorIndex = (p < 0.45) ? 0 : (p < 0.75) ? 1 : (p < 0.92) ? 2 : 3;
+
+    puffs.add(_NebulaPuff(
+      pos: v.Vector3(x, z, y),
+      radius: baseR * (0.7 + rnd.nextDouble() * 0.9),
+      alpha: alpha.toDouble(),
+      colorIndex: colorIndex,
+    ));
+  }
+
+  return puffs;
+}
+
 
 extension<T> on List<T> {
   void reserveCapacity(int n) {
