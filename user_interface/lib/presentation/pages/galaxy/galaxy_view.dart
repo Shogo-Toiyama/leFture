@@ -1,6 +1,11 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as v;
+
+final minZoom = 1.0;
+final maxZoom = 8.0;
 
 class GalaxyView extends StatefulWidget {
   const GalaxyView({super.key});
@@ -33,7 +38,7 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
     super.initState();
 
     final seed = 42;
-    final count = 2000;
+    final count = 20000;
     final arms = 3;
     final radius = 1.0;
     final thickness = 0.05;
@@ -58,11 +63,13 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
       seed: 123,
       count: 3200,
     );
-
+    
+    int frame = 0;
 
     _ticker = AnimationController(vsync: this, duration: const Duration(days: 99))
       ..addListener(() {
-        t += 1 / 60;
+        if ((frame++ & 1) == 1) return;
+        t += 1 / 30;
         if (!userInteracting) {
         const spin = 0.002; // 好みで
         final worldUp = v.Vector3(0, 1, 0);
@@ -92,10 +99,10 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
           onScaleUpdate: (d) {
             setState(() {
               // zoom
-              const zoomSensitivity = 0.05; // 0.15〜0.35くらいで調整
+              const zoomSensitivity = 0.05;
               final s = math.pow(d.scale, zoomSensitivity).toDouble();
               zoom *= s;
-              zoom = zoom.clamp(0.6, 8.0);
+              zoom = zoom.clamp(minZoom, maxZoom);
 
               // rotation (camera-relative)
               final dx = d.focalPointDelta.dx;
@@ -178,13 +185,11 @@ class _NebulaPuff {
 }
 
 class _BgStar {
-  _BgStar(this.x01, this.y01, this.r, this.baseA, this.phase, this.speed);
+  _BgStar(this.x01, this.y01, this.r, this.baseA);
   final double x01;   // 0..1
   final double y01;   // 0..1
   final double r;     // px
   final double baseA; // 0..1
-  final double phase; // 0..2pi
-  final double speed; // 0..?
 }
 
 List<_BgStar> _generateBgStars({required int seed, required int count}) {
@@ -196,16 +201,12 @@ List<_BgStar> _generateBgStars({required int seed, required int count}) {
     final y = rnd.nextDouble();
 
     // ✅ ほぼ極小（0.25〜1.2pxくらいに集中）
-    final r = (0.25 + math.pow(rnd.nextDouble(), 3.4) * 1.2).toDouble();
+    final r = (0.25 + math.pow(rnd.nextDouble(), 3.4) * 0.9).toDouble();
 
     // ✅ ほぼ薄い（たまに少し明るい）
-    final baseA = (0.12 + math.pow(rnd.nextDouble(), 2.5) * 0.80).toDouble();
+    final baseA = (0.3 + math.pow(rnd.nextDouble(), 2.5) * 0.70).toDouble();
 
-    // ちらつき用
-    final phase = rnd.nextDouble() * 2 * math.pi;
-    final speed = 0.6 + rnd.nextDouble() * 1.4; // 0.6..2.0
-
-    stars.add(_BgStar(x, y, r, baseA, phase, speed));
+    stars.add(_BgStar(x, y, r, baseA));
   }
   return stars;
 }
@@ -239,8 +240,6 @@ class _GalaxyPainter extends CustomPainter {
 
     // center glow (cheap, effective)
     final center = Offset(size.width * 0.5, size.height * 0.52);
-    const minZoom = 0.6;
-    const maxZoom = 8.0;
     final z01 = ((zoom - minZoom) / (maxZoom - minZoom)).clamp(0.0, 1.0).toDouble();
 
     // --- Background stars (dense + tiny + twinkle) ---
@@ -259,8 +258,7 @@ class _GalaxyPainter extends CustomPainter {
       final dist2 = dx * dx + dy * dy;
       final avoid = (dist2 / (avoidR * avoidR)).clamp(0.55, 1.0).toDouble(); // 0.25→0.55
 
-      // ✅ ここ重要：s.a じゃなく s.baseA
-      final a = (s.baseA * avoid).clamp(0.01, 0.28);
+      final a = (s.baseA * avoid).clamp(0.01, 0.5);
       bgPaint.color = const Color(0xFFFFFFFF).withValues(alpha: a);
       canvas.drawCircle(Offset(x, y), s.r, bgPaint);
 
@@ -277,7 +275,7 @@ class _GalaxyPainter extends CustomPainter {
           Color(0x7A6BCBFF),
           Color(0x001E1B2E),
         ],
-        stops: const [0.0, 0.15, 1.0],
+        stops: const [0.0, 0.3, 0.8],
       ).createShader(Rect.fromCircle(center: center, radius: coreRadius));
 
     canvas.drawCircle(center, coreRadius, glowPaint);
@@ -291,7 +289,7 @@ class _GalaxyPainter extends CustomPainter {
           const Color(0x33FF4FA2),
           const Color(0x00FF4FA2),
         ],
-        stops: const [0.0, 0.3, 1.0],
+        stops: const [0.0, 0.5, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: coreRadius * 0.55));
 
     canvas.drawCircle(center, coreRadius * 0.55, warmCore);
@@ -315,9 +313,8 @@ class _GalaxyPainter extends CustomPainter {
       const Color(0xFF4FA8FF), // blue
     ];
 
-    // ズームアウトは薄く・減らす
-    final zoomFade = (0.55 + 0.65 * math.pow(z01, 1.2)).toDouble(); // 引きでかなり薄い
-    // final stride = (z01 < 0.5) ? (1/(z01+0.05)).toInt().clamp(1, 12) : 1;          // 引きは描画数も減らす
+    // ズームアウトは薄く
+    final zoomFade = (math.log(20 * z01 + 0.8)/2).toDouble(); // 引きでかなり薄い
 
     for (int i = 0; i < nebula.length; i += 1) {
       final puff = nebula[i];
@@ -333,15 +330,14 @@ class _GalaxyPainter extends CustomPainter {
 
       if (x2 < -120 || x2 > size.width + 120 || y2 < -120 || y2 > size.height + 120) continue;
 
-      // ✅ ズームアウトほど「小さく」する（ポイント）
-      final sizeFade = (0.55 + 0.45 * z01).toDouble();
-      final rPx = (((puff.radius / z) * 2.4) * sizeFade).clamp(10.0, 120.0);
+      // ✅ ズームアウトほど「小さく」する
+      final sizeFade = (0.35 + 0.65 * z01).toDouble();
+      final rPx = (((puff.radius / z) * 2.4) * sizeFade).clamp(2.0, 120.0);
       if (rPx < 2.0) continue;
-
       final c = nebulaColors[puff.colorIndex];
 
       // ✅ ズームアウトほど「薄く」
-      final a = (puff.alpha * zoomFade).clamp(0.01, 1);
+      final a = (puff.alpha * zoomFade).clamp(0.1, 1.0);
 
       final paint = Paint()
         ..blendMode = BlendMode.screen
@@ -378,12 +374,19 @@ class _GalaxyPainter extends CustomPainter {
         depth: z,
       ));
     }
-
-    // Far to near: draw far first
-    proj.sort((a, b) => b.depth.compareTo(a.depth));
+    
     onProjected(proj);
 
-    // Draw stars (use a few paints only)
+    // --- Stars: small ones via drawRawPoints, big ones via drawCircle ---
+
+    // 小星の閾値（ここ未満はポイント描画にまとめる）
+    const smallThreshold = 0.95; // 0.8〜1.2くらいで調整
+
+    // 小星を詰める（x,y,x,y,...）
+    final small = Float32List(proj.length * 2);
+    int k = 0;
+
+    // 大きい星はいつも通り（色付き）
     final paints = <int, Paint>{
       0: Paint()..color = const Color(0xCCFFFFFF),
       1: Paint()..color = const Color(0xCCB7D8FF),
@@ -391,27 +394,62 @@ class _GalaxyPainter extends CustomPainter {
       3: Paint()..color = const Color(0xCCFFB7B7),
     };
 
-    // A tiny trick: far stars smaller/dimmer
+    // 小星用ペイント（白だけ、点を丸く）
+    final smallPaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withValues(alpha: 0.18) // 全体の薄さ（0.10〜0.30）
+      ..strokeWidth = 1.0 // 点の太さ（0.8〜1.4）
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+
+    // 大星用ペイント（使い回し。毎回newしない）
+    final bigPaint = Paint()..isAntiAlias = true;
+
+    final zoomT = ((zoom - 0.6) / (3.0 - 0.6)).clamp(0.0, 1.0); // 0..1
+    final zoomBoost = 0.55+ 0.9 * math.pow(zoomT, 2.2); // ズームアウトは抑える
+
+    final circleZoomScale = 0.35 + 0.65 * z01; // 引き:0.35 寄り:1.0
+    final minCircleR = 0.55 + 0.35 * z01;
+
     for (final ps in proj) {
       final s = ps.star;
       final depth = ps.depth;
 
-      final zoomT = ((zoom - 0.6) / (3.0 - 0.6)).clamp(0.0, 1.0); // 0..1
-      final zoomBoost = 0.55 + 0.95 * math.pow(zoomT, 2.2);       // ズームアウトは抑える
       final sizePx = (s.size / depth) * zoomBoost;
-
       if (sizePx < 0.25) continue;
 
-      final alpha = (s.bright / math.pow(depth, 0.8)).clamp(0.03, 0.9);
+      // 明るさ（小星もこれで薄くして遠いほど消える）
+      final alpha = (s.bright / math.pow(depth, 0.8)).clamp(0.03, 0.9).toDouble();
+
+      // 小星 → RawPoints に詰める（白一択）
+      if (sizePx < smallThreshold) {
+        // alpha が薄すぎる星はポイント化しても見えないので捨てる（軽くなる）
+        if (alpha < 0.06) continue;
+
+        small[k++] = ps.screen.dx;
+        small[k++] = ps.screen.dy;
+        continue;
+      }
+
+      // 大星 → circle（色あり）
       final base = paints[s.type] ?? paints[0]!;
-
-      final paint = Paint()
+      bigPaint
         ..color = base.color.withValues(alpha: alpha)
-        ..blendMode = base.blendMode
-        ..isAntiAlias = base.isAntiAlias;
+        ..blendMode = base.blendMode;
 
-      canvas.drawCircle(ps.screen, sizePx, paint);
+      final r = math.max(minCircleR, sizePx * circleZoomScale);
+
+      canvas.drawCircle(ps.screen, r, bigPaint);
     }
+
+    // 小星まとめ描画（k>0 のときだけ）
+    if (k > 0) {
+      // 使う分だけ切り出し（sublistはコピーになるので、できれば避けたい）
+      // ここは軽さ優先で “drawRawPointsが受ける範囲” を渡すために sublist します
+      final pts = small.sublist(0, k);
+      canvas.drawRawPoints(PointMode.points, pts, smallPaint);
+    }
+
+
   }
 
   @override
@@ -427,8 +465,8 @@ List<_Star> _generateSpiralGalaxy({
   required double radius,
   required double thickness,
 
-  int bulgeCount = 8000,
-  double bulgeRadiusNorm = 0.18,
+  int bulgeCount = 5000,
+  double bulgeRadiusNorm = 0.2,
   double innerDiskHoleNorm = 0.14,
 }) {
 
@@ -445,25 +483,35 @@ List<_Star> _generateSpiralGalaxy({
 
   // --- Bulge: dense central spheroid ---
   for (int i = 0; i < bulgeCount; i++) {
-    // 0..1 (中心に強く寄せる)
-    final u = math.pow(rnd.nextDouble(), 2.8).toDouble();
-    final r = radius * bulgeRadiusNorm * u;
+  // 外側寄りにしつつ殻っぽさを避ける
+  const mix = 0.28; // 内部を残す割合（0.20〜0.35）
 
-    // 等方的に球っぽく
-    final theta = math.acos(2 * rnd.nextDouble() - 1); // 0..pi
-    final phi = rnd.nextDouble() * 2 * math.pi;
+  final uOuter = 0.75*(1 - math.pow(rnd.nextDouble(), 2.6)).toDouble(); // 外側寄り
+  final uInner = math.pow(rnd.nextDouble(), 1.7).toDouble();       // 内部寄り
+  final u = (rnd.nextDouble() < mix) ? uInner : uOuter;
 
-    // バルジは少し縦に潰す（楕円体っぽく）
-    final flatten = 0.75;
+  final maxR = radius * bulgeRadiusNorm;
+  final r = maxR * u;
 
-    final x = r * math.sin(theta) * math.cos(phi);
-    final y = r * math.sin(theta) * math.sin(phi);
-    final z = r * math.cos(theta) * flatten;
+  // 半径ジッタで“殻”感を壊す
+  final rJ = (r + randNorm() * (maxR * 0.06)).clamp(0.0, maxR).toDouble();
+
+  // 以降、r の代わりに rJ を使う
+  final theta = math.acos(2 * rnd.nextDouble() - 1);
+  final phi = rnd.nextDouble() * 2 * math.pi;
+
+  final flatten = 0.75;
+
+  final x = rJ * math.sin(theta) * math.cos(phi);
+  final y = rJ * math.sin(theta) * math.sin(phi);
+  final z = rJ * math.cos(theta) * flatten;
 
     // バルジの星の明るさとサイズ
-    final bright = (0.35 + 0.65 * math.pow(1 - u, 0.7) + rnd.nextDouble() * 0.15)
-        .clamp(0.0, 1.0)
-        .toDouble();
+    // final bright = (0.35 + 0.65 * math.pow(1 - u, 0.7) + rnd.nextDouble() * 0.15)
+    //     .clamp(0.0, 1.0)
+    //     .toDouble();
+    
+    final bright = 1.0;
 
     final size = (0.5 + bright * 0.9 + rnd.nextDouble() * 0.35);
 
