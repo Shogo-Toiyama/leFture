@@ -4,7 +4,10 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
+# for main.py
 from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
+# for direct use
+# from llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
@@ -419,10 +422,12 @@ def main():
     # full_model = "5_mini"
     # lite_model = "5_nano"
 
-    ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-01-06-02-44-09-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
+    collector = CostCollector()
 
-    role_classification(llm, full_model, lite_model, LECTURE_DIR, max_batch_size=350, ctx=10, concurrency=6)
+    ROOT = Path(__file__).resolve().parent
+    LECTURE_DIR = ROOT / "../lectures/2026-02-03-14-38-23-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
+
+    role_classification(llm, full_model, lite_model, LECTURE_DIR, collector, max_batch_size=350, ctx=10, concurrency=6)
 
 
 if __name__ == "__main__":

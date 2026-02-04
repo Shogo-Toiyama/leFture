@@ -99,7 +99,7 @@ def estimate_cost(provider: LLMProvider, model_name: str, usage: Usage) -> float
     if not price:
         return 0.0
     return (usage.input_tokens / 1_000_000.0) * price.get("input", 0.0) + \
-           (usage.output_tokens / 1_000_000.0) * price.get("output", 0.0)
+           ((usage.reasoning_tokens + usage.output_tokens) / 1_000_000.0) * price.get("output", 0.0)
 
 class UnifiedLLM:
     """
