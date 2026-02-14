@@ -3,7 +3,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# for main.py
 from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
+# for direct use
+# from llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
@@ -161,18 +164,20 @@ def main():
     load_dotenv()
 
     # Switch provider/model here
-    llm = UnifiedLLM(provider="gemini")
-    full_model = "2_5_flash"
-    lite_model = "2_5_flash_lite"
+    # llm = UnifiedLLM(provider="gemini")
+    # full_model = "2_5_flash"
+    # lite_model = "2_5_flash_lite"
 
-    # llm = UnifiedLLM(provider="openai")
-    # full_model = "5_mini"
-    # lite_model = "5_nano"
+    llm = UnifiedLLM(provider="openai")
+    full_model = "5_mini"
+    lite_model = "5_nano"
+
+    collector = CostCollector()
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-01-06-02-44-09-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
+    LECTURE_DIR = ROOT / "../lectures/2026-02-03-14-38-23-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
 
-    lecture_segmentation(llm, full_model, lite_model, LECTURE_DIR)
+    lecture_segmentation(llm, full_model, lite_model, LECTURE_DIR, collector)
 
 
 if __name__ == "__main__":

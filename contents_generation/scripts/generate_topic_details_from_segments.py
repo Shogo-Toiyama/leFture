@@ -5,7 +5,10 @@ from functools import partial
 
 from dotenv import load_dotenv
 
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
+# for main.py
+#from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
+# for direct use
+from llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
@@ -307,11 +310,13 @@ def main():
     # model_alias = "5_mini"  # recommended for topic details quality
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-01-06-02-44-09-0800"
+    LECTURE_DIR = ROOT / "../lectures/2026-02-03-20-28-16-0800"
+
+    collector = CostCollector()
 
     options_text = LLMOptions(output_type="text", temperature=0.2, google_search=False, reasoning_effort="low")
 
-    generate_topic_details(llm, model_alias, LECTURE_DIR, options_text=options_text)
+    generate_topic_details(llm, model_alias, LECTURE_DIR, collector, options_text=options_text)
 
 
 if __name__ == "__main__":
