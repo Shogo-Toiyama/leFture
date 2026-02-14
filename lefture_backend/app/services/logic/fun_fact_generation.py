@@ -34,7 +34,7 @@ class FunFactGenerationService:
         except Exception as e:
             print_log(f"⚠️ Fun Facts Logic Error: {e}")
             import traceback
-            traceback.print_log_exc()
+            traceback.print_exc()
 
         output_json = work_dir / "lecture_complete_data.json"
         

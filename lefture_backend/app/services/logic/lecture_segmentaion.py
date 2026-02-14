@@ -33,7 +33,7 @@ class LectureSegmentationService:
         except Exception as e:
             print_log(f"⚠️ Segmentation Logic Error: {e}")
             import traceback
-            traceback.print_log_exc()
+            traceback.print_exc()
 
         # 成果物チェック
         segments_json = work_dir / "segments.json"
