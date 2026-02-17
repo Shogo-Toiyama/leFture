@@ -1,4 +1,4 @@
-import os, json, time, re
+import os, json, time, re, sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
@@ -9,6 +9,10 @@ from google.genai import types
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
+
+# ルートディレクトリのモジュールをインポート
+sys.path.append(str(PROJECT_ROOT))
+from cost_tracker import CostCollector, calculate_and_track
  
 def sanitize_filename(name):
     name = name.strip()
@@ -21,7 +25,6 @@ def sanitize_filename(name):
 def _strip_code_fence(text: str) -> str:
     t = text.strip()
     if t.startswith("```"):
-        # 先頭行の```... を落として末尾の ``` を落とす
         lines = t.splitlines()
         if lines and lines[0].startswith("```"):
             lines = lines[1:]
@@ -34,7 +37,8 @@ def _generate_one_topic_detail(
     client, gen_model, config_text,
     instr_topic_details_generation: str,
     by_sid: dict, topic: dict,
-    evidence_dir: Path, draft_dir: Path
+    evidence_dir: Path, draft_dir: Path,
+    collector: CostCollector
 ):
     start_time_one_topic_detail_generation = time.time()
     idx   = topic.get("idx")
@@ -85,6 +89,10 @@ def _generate_one_topic_detail(
         config=config_text
     )
 
+    # --- コスト集計 ---
+    calculate_and_track(collector, f"Detail Gen ({base})", gen_model, response_topic_detail)
+    # ----------------
+
     print("saving response...")
     draft_path = draft_dir / f"{base} - details.txt"
     draft_path.write_text(response_topic_detail.text, encoding="utf-8")
@@ -103,11 +111,11 @@ def _generate_one_topic_detail(
 def _check_one_faithfulness(
     client, gen_model, config_text,
     instr_faithfulness_check: str,
-    evidence_path: Path, draft_path: Path, edited_dir: Path
+    evidence_path: Path, draft_path: Path, edited_dir: Path,
+    collector: CostCollector
 ):
     start = time.time()
 
-    # 名前の整合を確認
     if evidence_path.stem.split(" - ")[0] != draft_path.stem.split(" - ")[0]:
         raise ValueError(f"Name mismatch: {evidence_path} vs {draft_path}")
 
@@ -128,6 +136,10 @@ def _check_one_faithfulness(
         config=config_text
     )
 
+    # --- コスト集計 ---
+    calculate_and_track(collector, f"Faithfulness ({draft_path.name})", gen_model, resp)
+    # ----------------
+
     out_path = edited_dir / draft_path.name
     out_path.write_text(resp.text, encoding="utf-8")
 
@@ -135,8 +147,7 @@ def _check_one_faithfulness(
     print(f"  --> ⏰ Checked and edited details for {draft_path.name} in {elapsed:.2f} seconds.")
     return out_path
 
-def evidence_selection(client, gen_model, config_json, lecture_dir: Path):
-    # topicsごとのsidを生成
+def evidence_selection(client, gen_model, config_json, lecture_dir: Path, collector: CostCollector):
     print("\n### Topic Evidence Selection ###")
 
     start_time_topic_evidence_selection = time.time()
@@ -160,6 +171,10 @@ def evidence_selection(client, gen_model, config_json, lecture_dir: Path):
         config = config_json
     )
 
+    # --- コスト集計 ---
+    calculate_and_track(collector, "Evidence Selection", gen_model, response_topic_evidence_selection)
+    # ----------------
+
     print("saving response...")
     raw = response_topic_evidence_selection.text
     clean = _strip_code_fence(raw)
@@ -172,8 +187,7 @@ def evidence_selection(client, gen_model, config_json, lecture_dir: Path):
     elapsed_time_topic_evidence_selection = end_time_topic_evidence_selection - start_time_topic_evidence_selection
     print(f"⏰Selected topic evidence: {elapsed_time_topic_evidence_selection:.2f} seconds.")
 
-def generate_details_drafts(client, gen_model, config_text, lecture_dir: Path):
-# トピックごとに詳細を生成
+def generate_details_drafts(client, gen_model, config_text, lecture_dir: Path, collector: CostCollector):
     print("\n### Topic Details Generation ###")
 
     start_time_topic_details_generation = time.time()
@@ -212,7 +226,8 @@ def generate_details_drafts(client, gen_model, config_text, lecture_dir: Path):
             instr_topic_details_generation,
             by_sid,
             evidence_dir=EVIDENCE_DIR,
-            draft_dir=DETAIL_DRAFT_DIR
+            draft_dir=DETAIL_DRAFT_DIR,
+            collector=collector
         )
         futures = {ex.submit(submit_one, topic): topic for topic in topic_evidence}
 
@@ -229,8 +244,7 @@ def generate_details_drafts(client, gen_model, config_text, lecture_dir: Path):
     elapsed_time_topic_details_generation = end_time_topic_details_generation - start_time_topic_details_generation
     print(f"⏰Generated topic details: {elapsed_time_topic_details_generation:.2f} seconds.")
 
-def faithfulness_check_and_minimal_edit(client, gen_model, config_text, lecture_dir: Path):
-    # 生成された詳細の忠実性チェックと最小限の修正
+def faithfulness_check_and_minimal_edit(client, gen_model, config_text, lecture_dir: Path, collector: CostCollector):
     print("\n### Faithfulness Check and Minimal Edit###")
     start_time_faithfulness_check = time.time()
     max_workers = 5
@@ -262,7 +276,8 @@ def faithfulness_check_and_minimal_edit(client, gen_model, config_text, lecture_
             _check_one_faithfulness,
             client, gen_model, config_text,
             instr_faithfulness_check,
-            edited_dir=DETAIL_EDITED_DIR
+            edited_dir=DETAIL_EDITED_DIR,
+            collector=collector
         )
         futures = {
             ex.submit(submit_one, ev_by_prefix[k], dt_by_prefix[k]): k
@@ -281,50 +296,12 @@ def faithfulness_check_and_minimal_edit(client, gen_model, config_text, lecture_
     print(f"⏰Checked and edited topic details: {elapsed_time_faithfulness_check:.2f} seconds.")
 
 
-def generate_topic_details(client, gen_model, config_json, config_text, lecture_dir: Path):
+def generate_topic_details(client, gen_model, config_json, config_text, lecture_dir: Path, collector: CostCollector):
     
-    evidence_selection(client, gen_model, config_json, lecture_dir)
+    evidence_selection(client, gen_model, config_json, lecture_dir, collector)
     
-    generate_details_drafts(client, gen_model, config_text, lecture_dir)
+    generate_details_drafts(client, gen_model, config_text, lecture_dir, collector)
     
-    faithfulness_check_and_minimal_edit(client, gen_model, config_text, lecture_dir)
+    faithfulness_check_and_minimal_edit(client, gen_model, config_text, lecture_dir, collector)
 
     print("\n✅All tasks of TOPIC DETAIL GENERATION completed.")
-
-
-# ------ for test -------
-def config_json(thinking: int = 0, google_search: bool = False):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="application/json",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def config_text(thinking: int = 0, google_search: int = 0):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="text/plain",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def main():
-    load_dotenv()
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-    GEN_MODEL = "gemini-2.5-flash"
-
-    ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2025-10-28-00-36-18-0700"
-
-    generate_topic_details(client, GEN_MODEL, config_json(), config_text(), LECTURE_DIR)
-
-if __name__ == "__main__":
-    main()

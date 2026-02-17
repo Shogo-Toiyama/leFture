@@ -4,6 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from cost_tracker import CostCollector
 
 from scripts.lecture_audio_to_text import lecture_audio_to_text
 from scripts.topic_extraction_for_long_audio import topic_extraction_for_long_audio
@@ -119,6 +120,9 @@ def wait_for_uploads(audio_dir: Path, min_files=1, poll_interval=1.0, settle_sec
 
 
 def main():
+    collector = CostCollector()
+    print("💰 Cost collector initialized.")
+
     LECTURE_DIR = make_lecture_dir()
 
     AUDIO_DIR = LECTURE_DIR / "audio"
@@ -128,19 +132,46 @@ def main():
 
     start_time_total = time.time()
 
-    lecture_audio_to_text(audio_files[0], LECTURE_DIR)
+    # 1. 音声文字起こし (AssemblyAI)
+    lecture_audio_to_text(audio_files[0], LECTURE_DIR, collector)
 
-    topic_extraction_for_long_audio(client, gemini_2_5_flash, gemini_2_5_flash_lite, config_json(), config_text(), LECTURE_DIR)
+    # 2. トピック抽出 (Gemini)
+    topic_extraction_for_long_audio(
+        client, 
+        gemini_2_5_flash, 
+        gemini_2_5_flash_lite, 
+        config_json(), 
+        config_text(), 
+        LECTURE_DIR, 
+        collector  # <--- 追加
+    )
 
-    generate_topic_details(client, gemini_2_5_flash_lite, config_json(), config_text(), LECTURE_DIR)
+    # 3. 詳細記事作成 (Gemini Lite)
+    generate_topic_details(
+        client, 
+        gemini_2_5_flash_lite, 
+        config_json(), 
+        config_text(), 
+        LECTURE_DIR, 
+        collector  # <--- 追加
+    )
 
-    generate_fun_facts(client, gemini_2_5_flash, config_text(google_search=True), LECTURE_DIR)
+    # 4. Fun Fact作成 (Gemini Flash + Google Search)
+    generate_fun_facts(
+        client, 
+        gemini_2_5_flash, 
+        config_text(google_search=True), 
+        LECTURE_DIR, 
+        collector  # <--- 追加
+    )
 
     end_time_total = time.time()
     elapsed_time_total = end_time_total - start_time_total
     total_minutes = int(elapsed_time_total // 60)
     total_seconds = int(elapsed_time_total % 60)
     print(f"\n⏰⏰⏰ Total elapsed time: {total_minutes} m {total_seconds} s.")
+
+    print(collector.report())
 
     print("\n🎉 All tasks completed.")
 

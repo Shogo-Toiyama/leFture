@@ -1,1 +1,5 @@
 /.env
+/lectures
+/scripts/__pycache__/
+*.pyc
+.DS_Stone

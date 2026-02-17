@@ -1,14 +1,22 @@
-import os, json, time
+import os, json, time, sys
 import assemblyai as aai
 from dotenv import load_dotenv
 from pathlib import Path
 
-def lecture_audio_to_text(audio_file, lecture_dir: Path):
-    print("\n### Leccure Audio To Text ###")
+# ルートディレクトリのモジュールをインポートできるようにパスを通す
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+# 型ヒント用 (実行時にはダックタイピングで動くので必須ではないですが念のため)
+from cost_tracker import CostCollector
+
+def lecture_audio_to_text(audio_file, lecture_dir: Path, collector: CostCollector):
+    print("\n### Lecture Audio To Text ###")
     start_time_audio_to_text = time.time()
 
     load_dotenv()
     aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
+
+    # Universal model ($0.15/h) + Speaker Diarization ($0.02/h) = $0.17/h
+    HOURLY_RATE = 0.17
 
     aai_config = aai.TranscriptionConfig(
         speech_model=aai.SpeechModel.universal,
@@ -20,6 +28,16 @@ def lecture_audio_to_text(audio_file, lecture_dir: Path):
 
     if transcript.status == "error":
         raise RuntimeError(f"Transcription failed: {transcript.error}")
+
+    # --- コスト計算 & 集計 ---
+    duration_sec = getattr(transcript, "audio_duration", 0) or 0
+    cost_usd = (duration_sec / 3600.0) * HOURLY_RATE
+    
+    collector.add("AssemblyAI Transcription", cost_usd)
+    print(f"\n[Usage: AssemblyAI]")
+    print(f"  ⏳ Duration: {duration_sec:.2f} sec")
+    print(f"  💵 Cost    : ${cost_usd:.6f} (@ ${HOURLY_RATE}/h)")
+    # -----------------------
 
     print("saving response...")
     with open(lecture_dir / "transcript_raw.json", "w", encoding="utf-8") as f:

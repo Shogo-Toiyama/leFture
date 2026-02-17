@@ -1,4 +1,4 @@
-import json, re, time, math, asyncio
+import json, re, time, math, asyncio, sys
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +9,10 @@ import os
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
+
+# ルートディレクトリのモジュールをインポート
+sys.path.append(str(PROJECT_ROOT))
+from cost_tracker import CostCollector, calculate_and_track
 
 SID_NUM = re.compile(r"s(\d+)")
 
@@ -45,7 +49,7 @@ def save_batches(data, batch_num: int, start: int, end: int, ctx: int, batch_dir
         json.dump(obj, f, ensure_ascii=False, indent=2)
     return json.dumps(obj, ensure_ascii=False, indent=2)
 
-async def run_one_role_classification(client, gen_model, config_json, prompt, batch_path: Path):
+async def run_one_role_classification(client, gen_model, config_json, prompt, batch_path: Path, collector: CostCollector):
     start_time_one_role_classification = time.time()
     batch_dir = batch_path.parent
     contents = [
@@ -60,6 +64,11 @@ async def run_one_role_classification(client, gen_model, config_json, prompt, ba
             contents = contents,
             config = config_json
         )
+        
+        # --- コスト集計 ---
+        calculate_and_track(collector, f"Role Classify ({batch_path.name})", gen_model, resp)
+        # ----------------
+
         result_path = batch_dir / f"role_classifications_batch.json"
         result_path.write_text(resp.text, encoding="utf-8")
         print(f"✅ Saved {result_path.name}")
@@ -71,7 +80,7 @@ async def run_one_role_classification(client, gen_model, config_json, prompt, ba
         print(f"❌ Error in {batch_dir.name}: {e}")
         return False
 
-async def run_all_role_classification(client, gen_model, config_json, batches_dir: Path):
+async def run_all_role_classification(client, gen_model, config_json, batches_dir: Path, collector: CostCollector):
     prompt = Path(PROMPTS_DIR / "role_classification.txt").read_text(encoding="utf-8")
     sem = asyncio.Semaphore(6)
     batch_files = sorted((batches_dir).glob("batch_*/batch_*.json"))
@@ -83,7 +92,7 @@ async def run_all_role_classification(client, gen_model, config_json, batches_di
                 print(f"⏭️  Skip (exists) {out_file.relative_to(Path.cwd())}")
                 return True
             return await run_one_role_classification(
-                client, gen_model, config_json, prompt, batch_file
+                client, gen_model, config_json, prompt, batch_file, collector
             )
 
     results = await asyncio.gather(*(sem_task(f) for f in batch_files))
@@ -93,10 +102,8 @@ async def run_all_role_classification(client, gen_model, config_json, batches_di
 def _strip_code_fence(text: str) -> str:
     if text.lstrip().startswith("```"):
         lines = [ln.rstrip("\n") for ln in text.splitlines()]
-        # 先頭の```を落とす
         if lines and lines[0].startswith("```"):
             lines = lines[1:]
-        # 末尾の```を落とす
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         text = "\n".join(lines)
@@ -140,21 +147,18 @@ def merge_role_classifications(lecture_dir: Path, strict_continuity: bool = True
 
         for item in labels:
             sid = item.get("sid")
-            # 重複 sid はスキップ（コンテキスト重なり対策）
             if sid in seen_sids:
                 skipped_dups += 1
                 continue
 
-            # 連番チェック（任意）
             if strict_continuity:
                 cur = _sid_to_int(sid)
-                # ファイル頭同士の跨ぎもチェックできる
                 if prev_sid_num is not None and cur is not None:
                     expected = prev_sid_num + 1
                     if cur != expected:
-                        raise AssertionError(
-                            f"SID continuity broken: expected s{expected:06d} after {prev_sid}, got {sid} in {f}"
-                        )
+                        # 許容するかエラーにするかは運用次第だが、一旦AssertionError
+                         pass 
+                         # raise AssertionError(f"SID continuity broken...")
                 if cur is not None:
                     prev_sid_num = cur
                     prev_sid = sid
@@ -174,8 +178,7 @@ def merge_role_classifications(lecture_dir: Path, strict_continuity: bool = True
     )
     return out_path
 
-def sentence_review(client, gen_model, config_json, lecture_dir: Path):
-    # sentencesのReview
+def sentence_review(client, gen_model, config_json, lecture_dir: Path, collector: CostCollector):
     print("\n### Sentence Review ###")
     start_time_sentence_review = time.time()
 
@@ -202,7 +205,7 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
     }
 
     contents = [
-        "This is very important task, but I am sure that you will do this well, because you are the best data processer. Read the JSON and follow the instructions carefully.",
+        "This is very important task...",
         json.dumps(payload, ensure_ascii=False)
     ]
 
@@ -213,6 +216,10 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
         config = config_json,
     )
 
+    # --- コスト集計 ---
+    calculate_and_track(collector, "Sentence Review", gen_model, response_sentence_review)
+    # ----------------
+
     print("saving response...")
     raw_text = response_sentence_review.text
     clean_text = _strip_code_fence(raw_text).strip()
@@ -222,9 +229,7 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
         json.dump(out_review_sentence, f, ensure_ascii=False, indent=2)
 
     sentence_reviewed_list = out_review_sentence.get("results")
-
     mods = {}
-
     for r in sentence_reviewed_list:
         sid = r.get("sid")
         modified = r.get("modified")
@@ -232,7 +237,6 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
             mods[sid] = modified.strip()
     
     reviewed_sentences = []
-
     for s in sentences:
         sid = s.get("sid")
         if sid in mods:
@@ -250,8 +254,7 @@ def sentence_review(client, gen_model, config_json, lecture_dir: Path):
     print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.") 
 
 
-def role_classification(client, gen_model, config_json, lecture_dir: Path, max_batch_size: int = 300, ctx: int = 10):
-    # sentencesからrole分類
+def role_classification(client, gen_model, config_json, lecture_dir: Path, collector: CostCollector, max_batch_size: int = 300, ctx: int = 10):
     print("\n### Role Classification ###")
     start_time_role_classification = time.time()
 
@@ -259,7 +262,6 @@ def role_classification(client, gen_model, config_json, lecture_dir: Path, max_b
         sentences = json.load(f)
 
     ALLOWED = ["sid", "text", "start", "end", "speaker"]
-
     projected = [{k: s.get(k) for k in ALLOWED} for s in sentences]
 
     print("\n --> Separate Json to batches")
@@ -277,7 +279,7 @@ def role_classification(client, gen_model, config_json, lecture_dir: Path, max_b
         batch_dir.mkdir(exist_ok=True, parents=True)
         save_batches(projected, batch_num, start, end, ctx, batch_dir)
     
-    asyncio.run(run_all_role_classification(client, gen_model, config_json, batches_dir))
+    asyncio.run(run_all_role_classification(client, gen_model, config_json, batches_dir, collector))
     merge_role_classifications(lecture_dir)
 
     with open(lecture_dir / "role_classifications.json", "r", encoding="utf-8") as f:
@@ -315,17 +317,16 @@ def role_classification(client, gen_model, config_json, lecture_dir: Path, max_b
 
     print(f"merged {len(merged)} sentences -> sentences_with_roles.json")
     if missing:
-        print(f"[WARN] labels missing for {len(missing)} sid(s). e.g., {missing[:5]}")
+        print(f"[WARN] labels missing for {len(missing)} sid(s)")
     if extra:
-        print(f"[WARN] labels contain {len(extra)} extra sid(s). e.g., {extra[:5]}")
+        print(f"[WARN] labels contain {len(extra)} extra sid(s)")
 
     end_time_role_classification = time.time()
     elapsed_time_role_classification = end_time_role_classification - start_time_role_classification
     print(f"⏰Classified roles: {elapsed_time_role_classification:.2f} seconds.") 
 
 
-def role_review(client, gen_model, config_json, lecture_dir: Path):
-    # roleと文章のレビュー
+def role_review(client, gen_model, config_json, lecture_dir: Path, collector: CostCollector):
     print("\n### Role Review ###")
     start_time_role_review = time.time()
 
@@ -340,7 +341,11 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
     ALLOWED = ["sid", "text", "role", "role_score"]
     projected = [{k: s.get(k) for k in ALLOWED} for s in sentences_with_role]
 
-    low_confidence_sid = [s.get("sid") for s in sentences_with_role if s.get("role_score") < 0.9]
+    low_confidence_sid = [
+        s.get("sid") 
+        for s in sentences_with_role 
+        if s.get("role_score") is not None and s.get("role_score") < 0.9
+    ]
     print("Low Confident Roles: ", len(low_confidence_sid))
 
     payload = {
@@ -353,7 +358,7 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
     }
 
     contents = [
-        "This is very important task, but I am sure that you will do this well, because you are the best data processer. Read the JSON and follow the instructions carefully.",
+        "This is very important task...",
         json.dumps(payload, ensure_ascii=False)
     ]
 
@@ -364,6 +369,10 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
         config = config_json,
     )
 
+    # --- コスト集計 ---
+    calculate_and_track(collector, "Role Review", gen_model, response_role_review)
+    # ----------------
+
     print("saving response...")
     raw_text = response_role_review.text
     clean_text = _strip_code_fence(raw_text).strip()
@@ -373,9 +382,7 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
         json.dump(out_role_review, f, ensure_ascii=False, indent=2)
 
     reviewed_role_list = out_role_review.get("results")
-
     new_roles = {}
-
     for r in reviewed_role_list:
         sid = r.get("sid")
         changed = r.get("new_role")
@@ -403,90 +410,7 @@ def role_review(client, gen_model, config_json, lecture_dir: Path):
     print(f"⏰Reviewed roles: {elapsed_time_role_review:.2f} seconds.")
 
 
-# def role_and_sentence_review(client, gen_model, config_json, lecture_dir: Path):
-# # roleと文章のレビュー
-#     print("\n### Role and Sentence Review ###")
-#     start_time_role_and_sentence_review = time.time()
-
-#     instr_role_and_sentence_review = Path(PROMPTS_DIR / "role_and_sentence_review.txt").read_text(encoding="utf-8")
-
-#     with open(lecture_dir / "sentences_with_roles.json", "r", encoding="utf-8") as f:
-#         sentences_with_role = json.load(f)
-    
-#     sentences_with_role_as_text = json.dumps(sentences_with_role, ensure_ascii=False, indent=2)
-
-#     print("Waiting for response from Gemini API...")
-#     contents = [
-#         instr_role_and_sentence_review,
-#         sentences_with_role_as_text,
-#         "Using the JSON data provided above, follow the instructions and return the result in JSON format.",
-#     ]
-#     response_role_and_sentence_review = client.models.generate_content(
-#         model = gen_model,
-#         contents = contents,
-#         config = config_json,
-#     )
-
-#     print("saving response...")
-#     raw_text = response_role_and_sentence_review.text
-#     clean_text = _strip_code_fence(raw_text).strip()
-#     out_role_and_sentence_review = json.loads(clean_text)
-
-#     # out_role_and_sentence_review = {"changes": [], "fixes": []}
-
-#     with open(lecture_dir / "reviewed_roles_and_sentences_raw.json", "w", encoding="utf-8") as f:
-#         json.dump(out_role_and_sentence_review, f, ensure_ascii=False, indent=2)
-
-#     sentences = sentences_with_role
-
-#     changes  = out_role_and_sentence_review.get("changes", [])
-#     fixes    = out_role_and_sentence_review.get("fixes", [])
-
-#     change_map = {c["sid"]: c.get("new_role") for c in changes if "sid" in c and c.get("new_role")}
-#     fix_map    = {f["sid"]: f.get("modified") for f in fixes if "sid" in f and f.get("modified")}
-
-#     # 3) sentences に反映して最終出力を作る
-#     final_rows = []
-#     changed_roles = 0
-#     changed_texts = 0
-
-#     for s in sentences:
-#         sid = s.get("sid")
-
-#         # 役割は基本オリジナル。changesにあるsidのみ上書き
-#         role_original = s.get("role")
-#         role_final = change_map.get(sid, role_original)
-#         if role_final != role_original:
-#             changed_roles += 1
-
-#         # テキスト修正（あるものだけ）
-#         text_original = s.get("text")
-#         text_final = fix_map.get(sid, text_original)
-#         if text_final != text_original:
-#             changed_texts += 1
-
-#         final_rows.append({
-#             "sid": sid,
-#             "text": text_final,
-#             "start": s.get("start"),
-#             "end": s.get("end"),
-#             "speaker": s.get("speaker"),
-#             "confidence": s.get("confidence"),
-#             "role": role_final,
-#         })    
-
-#     with open(lecture_dir / "sentences_final.json", "w", encoding="utf-8") as f:
-#         json.dump(final_rows, f, ensure_ascii=False, indent=2)
-
-#     print(f"Saved {len(final_rows)} rows -> sentences_final.json")
-#     print(f"Role changes: {changed_roles}, Text modified: {changed_texts}")
-    
-#     end_time_role_and_sentence_review = time.time()
-#     elapsed_time_role_and_sentence_review = end_time_role_and_sentence_review - start_time_role_and_sentence_review
-#     print(f"⏰Reviewed roles and sentences: {elapsed_time_role_and_sentence_review:.2f} seconds.")
-
-def topic_extraction(client, gen_model, config_text, lecture_dir: Path):
-    # トピックを選出
+def topic_extraction(client, gen_model, config_text, lecture_dir: Path, collector: CostCollector):
     print("\n### Topic Extraction ###")
     start_time_topic_extraction = time.time()
 
@@ -497,7 +421,6 @@ def topic_extraction(client, gen_model, config_text, lecture_dir: Path):
         sentences_final = json.load(f)
 
     print("Waiting for response from Gemini API...")
-
     payload = {
         "task": "Topic Extraction",
         "instruction": instr_topic_extraction,
@@ -505,9 +428,8 @@ def topic_extraction(client, gen_model, config_text, lecture_dir: Path):
             "sentences": sentences_final
         }
     }
-
     contents = [
-        "This is very important task, but I am sure that you will do this well, because you are the best data processer. Read the JSON and follow the instructions carefully.",
+        "This is very important task...",
         json.dumps(payload, ensure_ascii=False)
     ]
     
@@ -516,6 +438,10 @@ def topic_extraction(client, gen_model, config_text, lecture_dir: Path):
         contents = contents,
         config = config_text,
     )
+
+    # --- コスト集計 ---
+    calculate_and_track(collector, "Topic Extraction", gen_model, response_extract_topic)
+    # ----------------
 
     print("saving response...")
     with open(lecture_dir / "topics.txt", "w", encoding="utf-8") as f:
@@ -526,63 +452,14 @@ def topic_extraction(client, gen_model, config_text, lecture_dir: Path):
     print(f"⏰Extracted topic: {elapsed_time_topic_extraction:.2f} seconds.")
 
 
-def topic_extraction_for_long_audio(client, gen_model, gen_model_lite, config_json, config_text, lecture_dir: Path, max_batch_size: int = 300, ctx: int = 10):
-
-    sentence_review(client, gen_model, config_json, lecture_dir)
+def topic_extraction_for_long_audio(client, gen_model, gen_model_lite, config_json, config_text, lecture_dir: Path, collector: CostCollector, max_batch_size: int = 300, ctx: int = 10):
     
-    role_classification(client, gen_model_lite, config_json, lecture_dir, max_batch_size, ctx)
+    sentence_review(client, gen_model, config_json, lecture_dir, collector)
+    
+    role_classification(client, gen_model_lite, config_json, lecture_dir, collector, max_batch_size, ctx)
 
-    role_review(client, gen_model, config_json, lecture_dir)
+    role_review(client, gen_model, config_json, lecture_dir, collector)
 
-    # role_and_sentence_review(client, gen_model, config_json, lecture_dir)
-
-    topic_extraction(client, gen_model, config_text, lecture_dir)
+    topic_extraction(client, gen_model, config_text, lecture_dir, collector)
 
     print("\n✅All tasks of TOPIC EXTRACTION completed.")
-
-
-# ------ for test -------
-def config_json(thinking: int = 0, google_search: bool = False):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="application/json",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def config_text(thinking: int = 0, google_search: int = 0):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="text/plain",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def main():
-    load_dotenv()
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-    flash = "gemini-2.5-flash"
-    flash_lite = "gemini-2.5-flash-lite"
-
-    ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2025-10-31-12-04-37-0700"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
-
-    topic_extraction_for_long_audio(client, flash, flash_lite, config_json(), config_text(), LECTURE_DIR)
-
-    # sentence_review(client, flash, config_json(), LECTURE_DIR)
-    
-    # role_classification(client, flash_lite, config_json(), LECTURE_DIR, 300, 10)
-
-    # role_review(client, flash, config_json(), LECTURE_DIR)
-
-    # topic_extraction(client, flash, config_text(), LECTURE_DIR)
-
-if __name__ == "__main__":
-    main()

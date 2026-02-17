@@ -1,4 +1,4 @@
-import time
+import time, sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
@@ -11,10 +11,15 @@ from google.genai import types
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
+# ルートディレクトリのモジュールをインポート
+sys.path.append(str(PROJECT_ROOT))
+from cost_tracker import CostCollector, calculate_and_track
+
 def _generate_one_fun_fact(
     client, gen_model, config_text,
     instr_fun_facts_generation: str,
-    detail_file: Path, fun_fact_dir: Path
+    detail_file: Path, fun_fact_dir: Path,
+    collector: CostCollector
 ):
     start_time_one_fun_fact = time.time()
     topic_name = detail_file.stem.replace(" - details", "")
@@ -34,6 +39,10 @@ def _generate_one_fun_fact(
         config = config_text,
     )
 
+    # --- コスト集計 ---
+    calculate_and_track(collector, f"Fun Fact ({topic_name})", gen_model, response_fun_facts)
+    # ----------------
+
     print("saving response...")
 
     with open(fun_fact_dir / f"{topic_name} - fun_fact.txt", "w", encoding="utf-8") as f:
@@ -43,7 +52,7 @@ def _generate_one_fun_fact(
     elapsed_time_one_fun_fact = end_time_one_fun_fact - start_time_one_fun_fact
     print(f"  --> ⏰Generated fun fact for '{topic_name}': {elapsed_time_one_fun_fact:.2f} seconds.")
 
-def generate_fun_facts(client, gen_model, config_text, lecture_dir: Path):
+def generate_fun_facts(client, gen_model, config_text, lecture_dir: Path, collector: CostCollector):
     # topicsごとのfun factを生成
     print("\n### Fun Fact Generation ###")
 
@@ -62,7 +71,8 @@ def generate_fun_facts(client, gen_model, config_text, lecture_dir: Path):
         submit_one = partial(
             _generate_one_fun_fact,
             client, gen_model, config_text,
-            instr_fun_facts_generation, fun_fact_dir = FUN_FACT_DIR
+            instr_fun_facts_generation, fun_fact_dir = FUN_FACT_DIR,
+            collector=collector
         )
         futures = {ex.submit(submit_one, detail): detail for detail in detail_files}
 
@@ -78,41 +88,3 @@ def generate_fun_facts(client, gen_model, config_text, lecture_dir: Path):
     print(f"⏰Generated all fun facts: {elapsed_time_fun_facts:.2f} seconds.")
 
     print("\n✅All tasks of FUN FACT GENERATION completed.")
-
-
-# ------ for test -------
-def config_json(thinking: int = 0, google_search: bool = False):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="application/json",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def config_text(thinking: int = 0, google_search: int = 0):
-    kwargs = dict(
-        temperature=0.2,
-        response_mime_type="text/plain",
-    )
-    if thinking > 0:
-        kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking)
-    if google_search:
-        kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
-    return types.GenerateContentConfig(**kwargs)
-
-def main():
-    load_dotenv()
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-    GEN_MODEL = "gemini-2.5-flash"
-
-    ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2025-10-07-21-27-43-0700"
-
-    generate_fun_facts(client, GEN_MODEL, config_text(google_search=True), LECTURE_DIR)
-
-if __name__ == "__main__":
-    main()
