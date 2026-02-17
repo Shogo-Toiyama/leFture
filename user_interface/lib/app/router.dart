@@ -8,50 +8,127 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
+// Pages
 import 'package:lecture_companion_ui/presentation/pages/sign_in/sign_in_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
-import 'package:lecture_companion_ui/presentation/widgets/layouts/main_layout.dart';
+import 'package:lecture_companion_ui/presentation/pages/home/home_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/learning_galaxy/learning_galaxy_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_folder/lecture_folder_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: AppRoutes.welcome,
-    debugLogDiagnostics: true, 
+    // ★ 常にHomeからスタート！復元ロジックなし！
+    initialLocation: AppRoutes.home,
+    debugLogDiagnostics: true,
     refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
 
     redirect: (context, state) {
       final session = supabase.auth.currentSession;
       final path = state.uri.path;
-      final isAuthRoute = path == AppRoutes.welcome || path == AppRoutes.signIn || path == AppRoutes.signUp;
-      
+
+      // Auth関連のパスかどうか
+      final isAuthRoute = path == AppRoutes.welcome ||
+          path == AppRoutes.signIn ||
+          path == AppRoutes.signUp;
+
+      // 1. 未ログインならサインインへ強制移動
       if (session == null && !isAuthRoute) return AppRoutes.signIn;
+      
+      // 2. ログイン済みなのにAuth画面に来たらホームへ飛ばす
       if (session != null && isAuthRoute) return AppRoutes.home;
 
+      // ★ 保存ロジックも削除しました。シンプル！
       return null;
     },
 
     routes: [
-      // 1. ログイン前
-      GoRoute(path: AppRoutes.welcome, builder: (_, _) => const WelcomePage()),
-      GoRoute(path: AppRoutes.signIn, builder: (_, _) => const SignInPage()),
-      GoRoute(path: AppRoutes.signUp, builder: (_, _) => const SignUpPage()),
+      // =================================================================
+      // Auth Routes
+      // =================================================================
+      GoRoute(path: AppRoutes.welcome, builder: (_, __) => const WelcomePage()),
+      GoRoute(path: AppRoutes.signIn, builder: (_, __) => const SignInPage()),
+      GoRoute(path: AppRoutes.signUp, builder: (_, __) => const SignUpPage()),
 
+      // =================================================================
+      // Main Routes (Single Stack)
+      // =================================================================
+      
+      // 1. Home (Dashboard) - 宇宙のコックピット
       GoRoute(
-        path: AppRoutes.home, 
-        builder: (context, state) => const MainLayout(), // childを渡さない
+        path: AppRoutes.home,
+        builder: (context, state) => const HomePage(),
+      ),
+
+      // 2. Notes System
+      GoRoute(
+        path: AppRoutes.notesRoot, // '/notes'
+        builder: (context, state) => const LectureFolderPage(folderId: null), // Root Folder
         routes: [
-           // MainLayoutの上に乗っかる詳細ページなどはここに定義してもOK
-           // GoRoute(path: 'detail', builder: ...),
-        ]
+          // サブフォルダ: /notes/f/:folderId
+          GoRoute(
+            path: AppRoutes.noteFolder, 
+            builder: (context, state) {
+              final id = state.pathParameters['folderId'];
+              return LectureFolderPage(folderId: id);
+            },
+          ),
+          // 授業ビューワー: /notes/v/:lectureId
+          GoRoute(
+            path: AppRoutes.noteViewer,
+            builder: (context, state) {
+              final id = state.pathParameters['lectureId'];
+              // TODO: nullチェックやエラーハンドリングは後で追加
+              return LectureViewerPage(lectureId: id!); 
+            },
+          ),
+        ],
+      ),
+
+      // 3. Features
+      GoRoute(
+        path: AppRoutes.aiChat,
+        builder: (context, state) => const AiChatPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.learningGalaxy,
+        builder: (context, state) => const LearningGalaxyPage(),
+      ),
+      
+      // =================================================================
+      // Modals (Fullscreen)
+      // =================================================================
+      GoRoute(
+        path: AppRoutes.recording,
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) {
+          // ★ クエリパラメータを受け取る例
+          // /recording?tab=note で呼ばれたら、Noteタブを開くように渡す
+          final initialTab = state.uri.queryParameters['tab'];
+          
+          return MaterialPage(
+            fullscreenDialog: true, // これで下から出てくるモーダルになります
+            // child: RecordingPage(initialTab: initialTab),
+            child: RecordingPage(),
+          );
+        },
       ),
     ],
   );
 });
 
-/// Supabase auth stream → GoRouterのrefreshに使う
+/// 認証状態の監視用（変更なし）
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     _sub = stream.asBroadcastStream().listen((_) => notifyListeners());

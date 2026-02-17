@@ -72,7 +72,7 @@ class NotesTab extends HookConsumerWidget {
 
     // 3. Navigator構築
     return PopScope(
-      canPop: false, 
+      canPop: true, 
       onPopInvokedWithResult: (didPop, result) {
         
         final nav = navigatorKey.currentState;

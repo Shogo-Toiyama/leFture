@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class SignUpPage extends HookConsumerWidget {
   const SignUpPage({super.key});
@@ -28,13 +29,17 @@ class SignUpPage extends HookConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Account created! Please check your email to verify.'),
+              backgroundColor: AppColors.starGold,
             ),
           );
           context.go(AppRoutes.home);
         },
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.toString())),
+            SnackBar(
+              content: Text(error.toString()),
+              backgroundColor: AppColors.correctionRed,
+            ),
           );
         },
       );
@@ -51,16 +56,47 @@ class SignUpPage extends HookConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please agree to the Terms and Conditions'),
+            backgroundColor: AppColors.alertAmber,
           ),
         );
       }
     }
+
+    // 共通のInputDecorationスタイル
+    InputDecoration inputDecoration(String label, IconData icon) {
+      return InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: AppColors.universe.textComet),
+        prefixIcon: Icon(icon, color: AppColors.universe.textComet),
+        filled: true,
+        fillColor: AppColors.universe.glassWhiteLow,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.universe.glassBorder),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: AppColors.starGold),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: AppColors.correctionRed),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: AppColors.correctionRed),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      );
+    }
     
     return Scaffold(
+      backgroundColor: AppColors.universe.voidBackground,
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: Text('Create Account', style: TextStyle(color: AppColors.universe.textStarlight)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),
         ),
       ),
@@ -77,13 +113,14 @@ class SignUpPage extends HookConsumerWidget {
                   'Join leFture',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: AppColors.universe.textStarlight,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Start your learning journey today',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[600],
+                    color: AppColors.universe.textComet,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -91,11 +128,9 @@ class SignUpPage extends HookConsumerWidget {
                 // ユーザーネーム
                 TextFormField(
                   controller: usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outlined),
-                  ),
+                  style: TextStyle(color: AppColors.universe.textStarlight),
+                  cursorColor: AppColors.starGold,
+                  decoration: inputDecoration('Username', Icons.person_outlined),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a username';
@@ -111,11 +146,9 @@ class SignUpPage extends HookConsumerWidget {
                 // メールアドレス
                 TextFormField(
                   controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
+                  style: TextStyle(color: AppColors.universe.textStarlight),
+                  cursorColor: AppColors.starGold,
+                  decoration: inputDecoration('Email', Icons.email_outlined),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -132,11 +165,11 @@ class SignUpPage extends HookConsumerWidget {
                 // パスワード
                 TextFormField(
                   controller: passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock_outlined),
+                  style: TextStyle(color: AppColors.universe.textStarlight),
+                  cursorColor: AppColors.starGold,
+                  decoration: inputDecoration('Password', Icons.lock_outlined).copyWith(
                     helperText: 'At least 8 characters',
+                    helperStyle: TextStyle(color: AppColors.universe.textComet),
                   ),
                   obscureText: true,
                   validator: (value) {
@@ -154,11 +187,9 @@ class SignUpPage extends HookConsumerWidget {
                 // パスワード確認
                 TextFormField(
                   controller: confirmPasswordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock_outlined),
-                  ),
+                  style: TextStyle(color: AppColors.universe.textStarlight),
+                  cursorColor: AppColors.starGold,
+                  decoration: inputDecoration('Confirm Password', Icons.lock_outlined),
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -178,6 +209,9 @@ class SignUpPage extends HookConsumerWidget {
                   children: [
                     Checkbox(
                       value: agreedToTerms.value,
+                      activeColor: AppColors.starGold,
+                      checkColor: Colors.white,
+                      side: BorderSide(color: AppColors.universe.glassBorder, width: 2),
                       onChanged: (value) {
                         agreedToTerms.value = value ?? false;
                       },
@@ -188,20 +222,19 @@ class SignUpPage extends HookConsumerWidget {
                         child: RichText(
                           text: TextSpan(
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color: AppColors.universe.textComet,
                               fontSize: 14,
                             ),
                             children: [
                               const TextSpan(text: 'I agree to the '),
                               TextSpan(
                                 text: 'Terms and Conditions',
-                                style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
+                                style: const TextStyle(
+                                  color: AppColors.starGold,
                                   decoration: TextDecoration.underline,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
-                                    // TODO: 利用規約ページへ遷移
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('Terms page - Coming soon'),
@@ -212,13 +245,12 @@ class SignUpPage extends HookConsumerWidget {
                               const TextSpan(text: ' and '),
                               TextSpan(
                                 text: 'Privacy Policy',
-                                style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
+                                style: const TextStyle(
+                                  color: AppColors.starGold,
                                   decoration: TextDecoration.underline,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
-                                    // TODO: プライバシーポリシーページへ遷移
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('Privacy Policy page - Coming soon'),
@@ -237,10 +269,12 @@ class SignUpPage extends HookConsumerWidget {
                 
                 // サインアップボタン
                 authState.isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.starGold))
                     : ElevatedButton(
                         onPressed: signUp,
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.starGold,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 56),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -248,7 +282,7 @@ class SignUpPage extends HookConsumerWidget {
                         ),
                         child: const Text(
                           'Create Account',
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
                 const SizedBox(height: 16),
@@ -259,11 +293,14 @@ class SignUpPage extends HookConsumerWidget {
                   children: [
                     Text(
                       'Already have an account? ',
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(color: AppColors.universe.textComet),
                     ),
                     TextButton(
                       onPressed: () => context.pop(),
-                      child: const Text('Sign In'),
+                      child: const Text(
+                        'Sign In',
+                        style: TextStyle(color: AppColors.starGold),
+                      ),
                     ),
                   ],
                 ),

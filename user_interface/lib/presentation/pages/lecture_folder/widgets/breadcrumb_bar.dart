@@ -1,5 +1,5 @@
-// lib/presentation/pages/lecture_folder/widgets/breadcrumb_bar.dart
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class BreadcrumbBar extends StatelessWidget {
   const BreadcrumbBar({
@@ -13,14 +13,13 @@ class BreadcrumbBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3))),
+        // 背景は透明、下のボーダーだけ薄く引く
+        color: Colors.transparent, 
+        border: Border(bottom: BorderSide(color: AppColors.universe.glassBorder)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -32,15 +31,16 @@ class BreadcrumbBar extends StatelessWidget {
               children: [
                 InkWell(
                   borderRadius: BorderRadius.circular(8),
-                  // onTap: isLast ? null : () => onTapCrumb(i),
                   onTap: canTap ? () => onTapCrumb(i) : null,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     child: Text(
                       crumbs[i],
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: isLast ? theme.colorScheme.primary : null,
+                      style: TextStyle(
+                        // 最後（現在地）はゴールド、それ以外はComet色
+                        color: isLast ? AppColors.starGold : AppColors.universe.textComet,
                         fontWeight: isLast ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -48,7 +48,7 @@ class BreadcrumbBar extends StatelessWidget {
                 if (!isLast)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Icon(Icons.chevron_right, size: 18, color: theme.hintColor),
+                    child: Icon(Icons.chevron_right, size: 18, color: AppColors.universe.textComet),
                   ),
               ],
             );

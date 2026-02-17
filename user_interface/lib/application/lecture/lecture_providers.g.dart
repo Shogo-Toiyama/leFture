@@ -57,6 +57,76 @@ final class LectureArtifactRepositoryProvider
 String _$lectureArtifactRepositoryHash() =>
     r'bd716409738b2114684a5442b088d34e9f2b5fc0';
 
+@ProviderFor(lecture)
+final lectureProvider = LectureFamily._();
+
+final class LectureProvider
+    extends
+        $FunctionalProvider<AsyncValue<Lecture?>, Lecture?, Stream<Lecture?>>
+    with $FutureModifier<Lecture?>, $StreamProvider<Lecture?> {
+  LectureProvider._({
+    required LectureFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'lectureProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$lectureHash();
+
+  @override
+  String toString() {
+    return r'lectureProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<Lecture?> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<Lecture?> create(Ref ref) {
+    final argument = this.argument as String;
+    return lecture(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LectureProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$lectureHash() => r'db41e0468b2cd7844d10f75425ce7f9f1329696b';
+
+final class LectureFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<Lecture?>, String> {
+  LectureFamily._()
+    : super(
+        retry: null,
+        name: r'lectureProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  LectureProvider call(String id) =>
+      LectureProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'lectureProvider';
+}
+
 @ProviderFor(lectureCompleteData)
 final lectureCompleteDataProvider = LectureCompleteDataFamily._();
 

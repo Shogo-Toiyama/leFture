@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class SignInPage extends HookConsumerWidget {
   const SignInPage({super.key});
@@ -14,16 +15,17 @@ class SignInPage extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     
-    // Auth状態を監視
     final authState = ref.watch(authControllerProvider);
     
-    // エラーハンドリング
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
         data: (_) => context.go(AppRoutes.home),
         error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.toString())),
+            SnackBar(
+              content: Text(error.toString()),
+              backgroundColor: AppColors.correctionRed,
+            ),
           );
         },
       );
@@ -35,9 +37,34 @@ class SignInPage extends HookConsumerWidget {
         passwordController.text,
       );
     }
+
+    // 共通のInputDecorationスタイル
+    InputDecoration inputDecoration(String label, IconData icon) {
+      return InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: AppColors.universe.textComet),
+        prefixIcon: Icon(icon, color: AppColors.universe.textComet),
+        filled: true,
+        fillColor: AppColors.universe.glassWhiteLow,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.universe.glassBorder),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: AppColors.starGold),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      );
+    }
   
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign In')),
+      backgroundColor: AppColors.universe.voidBackground,
+      appBar: AppBar(
+        title: Text('Sign In', style: TextStyle(color: AppColors.universe.textStarlight)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -45,32 +72,35 @@ class SignInPage extends HookConsumerWidget {
           children: [
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
+              style: TextStyle(color: AppColors.universe.textStarlight),
+              cursorColor: AppColors.starGold,
+              decoration: inputDecoration('Email', Icons.email_outlined),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-              ),
+              style: TextStyle(color: AppColors.universe.textStarlight),
+              cursorColor: AppColors.starGold,
+              decoration: inputDecoration('Password', Icons.lock_outlined),
               obscureText: true,
             ),
             const SizedBox(height: 24),
             authState.isLoading
-                ? const CircularProgressIndicator()
+                ? const CircularProgressIndicator(color: AppColors.starGold)
                 : Column(
                     children: [
                       ElevatedButton(
                         onPressed: signIn,
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.starGold,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        child: const Text('Sign In'),
+                        child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -78,11 +108,14 @@ class SignInPage extends HookConsumerWidget {
                         children: [
                           Text(
                             "Don't have an account? ",
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: AppColors.universe.textComet),
                           ),
                           TextButton(
                             onPressed: () => context.push(AppRoutes.signUp),
-                            child: const Text('Create Account'),
+                            child: const Text(
+                              'Create Account',
+                              style: TextStyle(color: AppColors.starGold),
+                            ),
                           ),
                         ],
                       ),

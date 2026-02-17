@@ -150,20 +150,25 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
               camRot.normalize();
             });
           },
-          child: CustomPaint(
-            painter: _GalaxyPainter(
-              stars: stars,
-              nebula: nebula,
-              bgStars: bgStars,
-              time: t,
-              camRot: camRot,
-              zoom: zoom,
-              onProjected: (list) => projected = list,
-              sprite: _spriteTexture!,
+          child: RepaintBoundary(
+            // 2. ClipRect: 画用紙からはみ出したインク（drawColor）をカットする
+            child: ClipRect(
+              child: CustomPaint(
+                painter: _GalaxyPainter(
+                  stars: stars,
+                  nebula: nebula,
+                  bgStars: bgStars,
+                  time: t,
+                  camRot: camRot,
+                  zoom: zoom,
+                  onProjected: (list) => projected = list,
+                  sprite: _spriteTexture!,
+                ),
+                isComplex: true,
+                willChange: true,
+                size: Size.infinite, 
+              ),
             ),
-            isComplex: true,
-            willChange: true,
-            size: Size.infinite, // LayoutBuilder内ならこれで最大サイズを取れる
           ),
         );
       },

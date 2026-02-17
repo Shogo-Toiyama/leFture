@@ -1,6 +1,7 @@
 // lib/presentation/pages/lecture_viewer/lecture_status_scaffold.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
@@ -100,7 +101,7 @@ class LectureStatusScaffold extends ConsumerWidget {
                   );
                   if (ok == true) {
                     await ref.read(lectureControllerProvider.notifier).deleteLecture(lecture.id);
-                    if (context.mounted) Navigator.of(context).pop();
+                    if (context.mounted) context.pop();
                   }
                 },
               );

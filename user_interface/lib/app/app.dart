@@ -13,9 +13,8 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'leFture',
-      theme: AppTheme.light,
-      // darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      theme: AppTheme.main,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
