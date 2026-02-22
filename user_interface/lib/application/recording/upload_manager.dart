@@ -182,26 +182,24 @@ class UploadManager {
     );
 
     // B) Storageへファイルアップロード
-    //    Assetテーブルにある storagePath 予定地を使う
-    //    (ファイル名は assetId.m4a のはず)
-    final fileName = '${job.assetId}.m4a'; 
-    
-    // uploadAudioFileは内部で upsert: true になっているので冪等
+    final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
+    final fileName = 'chunk_$seqStr.wav'; 
+    final storagePath = 'chunks/$fileName';
     final remotePath = await _uploader.uploadAudioFile(
       userId: lecture.ownerId,
       lectureId: lecture.id,
       localPath: localPath,
-      fileName: fileName,
+      fileName: storagePath,
     );
 
     // C) LectureAssetsテーブル
-    await _lectureWriter.upsertAudioAsset(
-      assetId: asset.id,
-      lectureId: lecture.id,
-      ownerId: lecture.ownerId,
-      bucket: _uploader.audioBucket,
-      path: remotePath,
-    );
+    // await _lectureWriter.upsertAudioAsset(
+    //   assetId: asset.id,
+    //   lectureId: lecture.id,
+    //   ownerId: lecture.ownerId,
+    //   bucket: _uploader.audioBucket,
+    //   path: remotePath,
+    // );
 
     // D) ローカルのAsset情報も更新（storagePathが入る）
     await _repo.updateAssetUploaded(

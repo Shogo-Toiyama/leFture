@@ -20,24 +20,25 @@ class RecordingState {
     this.currentLectureId,
     this.lecture,
     this.errorMessage,
+    this.draftTitle,
+    this.draftFolderId,
   });
 
   final RecordingPhase phase;
   final int elapsedSeconds;
 
-  /// 現在対象としている講義ID (Draft作成後にセットされる)
   final String? currentLectureId;
 
-  /// DBから同期された最新の講義データ (Source of Truth)
   final LocalLecture? lecture;
 
-  /// UI表示用エラーメッセージ
   final String? errorMessage;
 
+  final String? draftTitle;
+  final String? draftFolderId;
   // --- UI互換性のためのGetter (これがあればPage側の修正は最小限で済みます) ---
 
-  String get title => lecture?.title ?? '';
-  String? get folderId => lecture?.folderId;
+  String get title => lecture?.title ?? draftTitle ?? '';
+  String? get folderId => lecture != null ? lecture!.folderId : draftFolderId;
   String? get lectureId => currentLectureId;
   
   // assetIdはDB内で管理されるようになったので、UIが知る必要は基本なくなりますが、
@@ -75,6 +76,9 @@ class RecordingState {
     LocalLecture? lecture,
     String? errorMessage,
     bool clearErrorMessage = false,
+    String? title,
+    String? folderId,
+    bool forceClearFolderId = false,
   }) {
     return RecordingState(
       phase: phase ?? this.phase,
@@ -82,6 +86,8 @@ class RecordingState {
       currentLectureId: currentLectureId ?? this.currentLectureId,
       lecture: lecture ?? this.lecture,
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      draftTitle: title ?? draftTitle,
+      draftFolderId: forceClearFolderId ? null : (folderId ?? draftFolderId),
     );
   }
 }

@@ -90,6 +90,8 @@ class LocalLectureAssets extends Table {
 
   TextColumn get type => text()(); // "audio"
 
+  IntColumn get sequenceIndex => integer().withDefault(const Constant(0))();
+
   TextColumn get localPath => text().nullable()();
 
   TextColumn get storageBucket => text().nullable()();

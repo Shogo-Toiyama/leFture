@@ -3,3 +3,5 @@
 contents_generation/lectures
 *.pyc
 __pycache__/
+*.png
+*.jpg

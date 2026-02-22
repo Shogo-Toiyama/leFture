@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:typed_data';
+import 'package:lecture_companion_ui/core/services/audio_record/audio_chunker.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -24,6 +26,9 @@ AudioRecorderService audioRecorderService(Ref ref) {
 class RecordingController extends _$RecordingController {
   StreamSubscription? _dbSubscription;
   Timer? _timer;
+  AudioChunker? _chunker;
+  StreamSubscription? _audioStreamSub;
+  int _currentChunkIndex = 0;
 
   // 依存サービス
   RecordingRepositoryDrift get _repo => ref.read(recordingRepositoryDriftProvider);
@@ -55,6 +60,15 @@ class RecordingController extends _$RecordingController {
 
   /// 新規録音セッションの開始準備（Startボタン押下）
   Future<void> toggleStartStopResume() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      state = state.copyWith(
+        phase: RecordingPhase.error,
+        errorMessage: 'You must be signed in to record.',
+      );
+      return;
+    }
+
     // 1. Idle -> Start (新規作成)
     if (state.phase == RecordingPhase.idle) {
       await _startRecordingSession();
@@ -63,8 +77,23 @@ class RecordingController extends _$RecordingController {
 
     // 2. Recording -> Pause (一時停止)
     if (state.phase == RecordingPhase.recording) {
-      await _recorder.pause();
+      // ストリームは一旦止まる（または一時停止する）
+      await _recorder.pause(); 
       _timer?.cancel();
+
+      // ここでバケツの中身を安全にFlush（保存＆キュー追加）
+      final pausedChunk = _chunker?.flush();
+      if (pausedChunk != null && pausedChunk.isNotEmpty) {
+        final path = await _recorder.savePcmAsWav(pausedChunk, state.currentLectureId!);
+        await _repo.attachAudioAndEnqueueUpload(
+          ownerId: user.id,
+          lectureId: state.currentLectureId!,
+          localPath: path,
+          sequenceIndex: _currentChunkIndex,
+        );
+        _currentChunkIndex++; // ちゃんと番号も進める
+      }
+
       state = state.copyWith(phase: RecordingPhase.paused);
       return;
     }
@@ -110,21 +139,49 @@ class RecordingController extends _$RecordingController {
       //    (Step 0の RecordingRepositoryDrift を使用)
       final lectureId = await _repo.createDraftLecture(
         ownerId: user.id,
-        // UI側で初期フォルダ指定があれば引数に追加しても良い
+        presetFolderId: state.folderId, // ← Getter経由で draftFolderId が渡される
+        presetTitle: state.title.isNotEmpty ? state.title : null,
       );
 
       // B. DB監視開始
       state = state.copyWith(currentLectureId: lectureId);
       _startWatchingLecture(lectureId);
 
-      // C. 録音ファイルのパス決定
-      final dir = await getApplicationDocumentsDirectory();
-      final tempPath = p.join(dir.path, 'lectures', lectureId, 'audio', 'recording.m4a');
-      
-      // D. 録音開始
-      await _recorder.start(outputPath: tempPath);
+      _currentChunkIndex = 0; // 録音開始時にチャンク番号をリセット
 
-      // E. タイマー開始
+      // C. Chunker（分割職人）の準備と、分割完了時のルールを決める
+      _chunker = AudioChunker(
+        onChunkReady: (Uint8List chunkData) async {
+          log('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length}');
+          
+          // ① チャンクデータをWAVとして保存（Serviceに追加したメソッドを呼ぶ）
+          final path = await _recorder.savePcmAsWav(chunkData, lectureId);
+          
+          // ② DBのキューに積む（順番も記録する！）
+          await _repo.attachAudioAndEnqueueUpload(
+            ownerId: user.id,
+            lectureId: lectureId,
+            localPath: path,
+            sequenceIndex: _currentChunkIndex,
+          );
+          
+          _currentChunkIndex++; // 次のチャンクのために番号を増やす
+          
+          // ③ アップロードのキューを回す
+          _uploadMgr.tryProcessQueue();
+        },
+      );
+
+      // D. マイクのStream（川の流れ）を開通させる
+      // ※ Service側の start() を startStream() に変更した想定
+      final audioStream = await _recorder.startStream();
+
+      // E. 川の流れを監視して、データを随時Chunkerに流し込む
+      _audioStreamSub = audioStream.listen((data) {
+        _chunker!.processAudioStream(data);
+      });
+
+      // F. タイマー開始
       _startTimer();
       state = state.copyWith(phase: RecordingPhase.recording);
 
@@ -143,28 +200,31 @@ class RecordingController extends _$RecordingController {
 
   /// タイトル変更 (DB即時反映)
   Future<void> setTitle(String newTitle) async {
+    state = state.copyWith(title: newTitle);
     final lecture = state.lecture;
-    if (lecture == null) return;
-
-    // Stateを直接いじらず、DBを更新する。
-    // -> _watchLecture が検知して state.lecture を更新してくれる。
-    await _repo.updateLectureTitle(
-      ownerId: lecture.ownerId,
-      lectureId: lecture.id,
-      title: newTitle,
-    );
+    if (lecture != null) {
+      await _repo.updateLectureTitle(
+        ownerId: lecture.ownerId,
+        lectureId: lecture.id,
+        title: newTitle,
+      );
+    }
   }
 
   /// フォルダ変更 (DB即時反映)
   Future<void> setFolderId(String? folderId) async {
-    final lecture = state.lecture;
-    if (lecture == null) return;
-
-    await _repo.updateLectureFolder(
-      ownerId: lecture.ownerId,
-      lectureId: lecture.id,
+    state = state.copyWith(
       folderId: folderId,
+      forceClearFolderId: folderId == null,
     );
+    final lecture = state.lecture;
+    if (lecture != null) {
+      await _repo.updateLectureFolder(
+        ownerId: lecture.ownerId,
+        lectureId: lecture.id,
+        folderId: folderId,
+      );
+    }
   }
 
   /// Uploadボタン押下時: 録音停止 -> DBにJob作成 -> UploadManagerキック
@@ -174,40 +234,40 @@ class RecordingController extends _$RecordingController {
     final lecture = state.lecture;
     if (lecture == null) return;
 
-    // バリデーション: タイトルが空ならデフォルトを入れるなど
     if (lecture.title?.isEmpty ?? true) {
-      // 必須ならエラーにするか、自動で名前をつける
       await setTitle('Untitled Lecture'); 
     }
 
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
 
     try {
-      // 1. 録音停止 & ファイル確定
-      final path = await _recorder.stop();
+      // 1. 川の流れ（Stream）の監視をストップし、マイク自体も止める
+      await _audioStreamSub?.cancel();
+      await _recorder.stop();
       _timer?.cancel();
 
-      if (path == null) {
-        throw Exception('Recording file not found.');
+      // 2. Chunkerのバケツに残っている最後のデータを絞り出す (Flush)
+      final finalChunk = _chunker?.flush();
+      
+      // 3. もし端数データが残っていたら、最後のファイルとして保存してキューに積む
+      if (finalChunk != null && finalChunk.isNotEmpty) {
+        log('[Chunker] Final chunk is ready! Size: ${finalChunk.length} bytes');
+        
+        final path = await _recorder.savePcmAsWav(finalChunk, lecture.id);
+        
+        await _repo.attachAudioAndEnqueueUpload(
+          ownerId: lecture.ownerId,
+          lectureId: lecture.id,
+          localPath: path,
+          sequenceIndex: _currentChunkIndex, // 最後の番号を付ける
+        );
       }
 
-      // 2. DBトランザクション実行 (Step 0の成果)
-      //    Asset情報とUploadJobを一括登録
-      await _repo.attachAudioAndEnqueueUpload(
-        ownerId: lecture.ownerId,
-        lectureId: lecture.id,
-        localPath: path,
-      );
-
-      // 3. 完了状態へ
-      //    (UploadManagerは裏で動くので、UIとしては "Queued" か "Done" に遷移)
+      // 4. キューに入れたので、完了状態（Queued）にする
       state = state.copyWith(phase: RecordingPhase.queued);
 
-      // 4. UploadManagerに通知
+      // 5. UploadManagerを叩いて、溜まっているファイルの送信を始める
       _uploadMgr.tryProcessQueue();
-
-      // UI側で少し待ってから閉じる処理が入っているため、uploadedへの遷移も可
-      // state = state.copyWith(phase: RecordingPhase.uploaded);
 
     } catch (e) {
       state = state.copyWith(
@@ -219,13 +279,18 @@ class RecordingController extends _$RecordingController {
 
   /// キャンセル・破棄
   Future<void> cancelAndDiscard() async {
-    // 録音停止
+    // ストリームの監視を解除して録音停止
+    await _audioStreamSub?.cancel();
     await _recorder.stop();
     _timer?.cancel();
     _dbSubscription?.cancel();
 
-    // 実際のファイル削除やDBの論理削除などはここで行う
-    // (Repositoryに deleteLecture などのメソッドがあれば呼ぶ)
+    // ※ Discardなので、_chunker?.flush() は呼ばずにバケツの中身は捨てます！
+    
+    // DBからこのLectureと、今までキューに積んだチャンクを全削除
+    if (state.currentLectureId != null) {
+      await _repo.deleteLectureAndAssets(state.currentLectureId!);
+    }
     
     // アイドルに戻す
     state = RecordingState.idle();

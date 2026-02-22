@@ -87,6 +87,7 @@ class RecordingRepositoryDrift {
     required String lectureId,
     required String localPath,
     String? presetAssetId,
+    int sequenceIndex = 0,
   }) async {
     final now = DateTime.now().toUtc();
 
@@ -109,6 +110,7 @@ class RecordingRepositoryDrift {
               ownerId: Value(ownerId),
               lectureId: Value(lectureId),
               type: const Value('audio'),
+              sequenceIndex: Value(sequenceIndex),
               localPath: Value(localPath),
               storageBucket: const Value(audioBucket),
               storagePath: Value(storagePath),

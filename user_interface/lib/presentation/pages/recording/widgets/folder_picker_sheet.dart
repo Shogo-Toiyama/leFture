@@ -1,4 +1,4 @@
-import 'dart:developer';
+//import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -146,7 +146,7 @@ class FolderPickerSheet extends HookConsumerWidget {
                         return Container(
                           decoration: BoxDecoration(
                             color: isSelected 
-                                ? AppColors.starGold.withOpacity(0.2) 
+                                ? AppColors.starGold.withValues(alpha:0.2) 
                                 : AppColors.universe.glassWhiteLow,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(

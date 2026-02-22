@@ -1,4 +1,4 @@
-import 'dart:developer';
+// import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -168,11 +168,56 @@ class RecordingPage extends HookConsumerWidget {
                             child: ListTile(
                               leading: Icon(Icons.folder_outlined, color: AppColors.universe.textComet),
                               title: Text('Folder', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
-                              subtitle: Text(
-                                folderLabel,
-                                maxLines: 1, 
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: AppColors.universe.textStarlight, fontWeight: FontWeight.bold),
+                              subtitle: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  // 1. テキストのスタイル定義
+                                  final style = TextStyle(
+                                    color: AppColors.universe.textStarlight,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  );
+
+                                  // 2. 幅に入りきるか計算する関数
+                                  bool checkFit(String text) {
+                                    final textPainter = TextPainter(
+                                      text: TextSpan(text: text, style: style),
+                                      maxLines: 1,
+                                      textDirection: TextDirection.ltr,
+                                    )..layout(maxWidth: double.infinity);
+                                    
+                                    // コンテナの幅より小さければOK
+                                    return textPainter.size.width <= constraints.maxWidth;
+                                  }
+
+                                  // A. そのままで入るならそのまま表示
+                                  if (checkFit(folderLabel)) {
+                                    return Text(folderLabel, style: style, maxLines: 1);
+                                  }
+
+                                  // B. 入らない場合、パス区切り「 / 」で分解して、左から削っていく
+                                  // 例: "Home / A / B / C" -> ["Home", "A", "B", "C"]
+                                  final parts = folderLabel.split(' / ');
+                                  
+                                  // 左端から1つずつ削って「... / 」に置き換えて試す
+                                  for (int i = 1; i < parts.length; i++) {
+                                    // 候補作成: "... / B / C"
+                                    final candidate = '... / ${parts.sublist(i).join(' / ')}';
+                                    
+                                    if (checkFit(candidate)) {
+                                      return Text(candidate, style: style, maxLines: 1);
+                                      // 見つかったらループ終了＆表示
+                                    }
+                                  }
+
+                                  // C. それでも入らない場合（最後の1フォルダすら長い場合）
+                                  // 最後のフォルダ名だけで標準のellipsisを使う
+                                  return Text(
+                                    parts.isNotEmpty ? parts.last : folderLabel,
+                                    style: style,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                                },
                               ),
                               trailing: const Icon(Icons.arrow_drop_down, color: Colors.white),
                               onTap: isBusy ? null : openFolderPicker,
@@ -214,7 +259,7 @@ class RecordingPage extends HookConsumerWidget {
                                 boxShadow: [
                                   if (isRecording)
                                     BoxShadow(
-                                      color: AppColors.correctionRed.withOpacity(0.5),
+                                      color: AppColors.correctionRed.withValues(alpha:0.5),
                                       blurRadius: 30,
                                       spreadRadius: 5,
                                     ),
@@ -284,7 +329,7 @@ class RecordingPage extends HookConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
-                      color: AppColors.universe.voidBackground.withOpacity(0.8),
+                      color: AppColors.universe.voidBackground.withValues(alpha:0.8),
                     ),
                     child: ElevatedButton(
                       onPressed: state.canUpload && !isBusy ? () => controller.upload() : null,
@@ -375,7 +420,7 @@ class RecordingPage extends HookConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
-                      color: AppColors.universe.voidBackground.withOpacity(0.8),
+                      color: AppColors.universe.voidBackground.withValues(alpha:0.8),
                     ),
                     child: ElevatedButton(
                       onPressed: memoCtl.text.trim().isNotEmpty ? () {
