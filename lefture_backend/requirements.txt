@@ -4,7 +4,7 @@ python-dotenv
 python-multipart
 supabase
 requests
-assemblyai
+groq
 google-genai
 openai
 tiktoken
