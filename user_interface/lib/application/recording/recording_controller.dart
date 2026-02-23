@@ -3,15 +3,13 @@ import 'dart:developer';
 import 'dart:typed_data';
 import 'package:lecture_companion_ui/core/services/audio_record/audio_chunker.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/audio_record/audio_recorder_service.dart';
 import '../../infrastructure/local_db/repositories/recording_repository_drift.dart';
 import 'recording_state.dart';
-import 'upload_manager.dart'; // Step 2で修正しますが、今はトリガー用として残します
+import 'upload_manager.dart';
 
 part 'recording_controller.g.dart';
 
@@ -261,13 +259,20 @@ class RecordingController extends _$RecordingController {
           localPath: path,
           sequenceIndex: _currentChunkIndex, // 最後の番号を付ける
         );
+        _currentChunkIndex++;
       }
+
+      await _repo.finishLectureRecording(
+        lectureId: lecture.id,
+        expectedChunks: _currentChunkIndex,
+      );
 
       // 4. キューに入れたので、完了状態（Queued）にする
       state = state.copyWith(phase: RecordingPhase.queued);
 
       // 5. UploadManagerを叩いて、溜まっているファイルの送信を始める
       _uploadMgr.tryProcessQueue();
+
 
     } catch (e) {
       state = state.copyWith(

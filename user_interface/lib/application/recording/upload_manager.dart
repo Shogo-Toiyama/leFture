@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../infrastructure/supabase/services/lecture_write_service.dart';
@@ -82,12 +83,11 @@ class UploadManager {
   Future<void> _processQueue() async {
     // 二重実行防止
     if (_isProcessing) return;
+    _isProcessing = true;
 
     // オフラインなら何もしない
     final connectivity = await Connectivity().checkConnectivity();
     if (_isOffline(connectivity)) return;
-
-    _isProcessing = true;
 
     try {
       while (true) {
@@ -128,9 +128,34 @@ class UploadManager {
             lastError: null,
           );
           
-          // Jobを物理削除してもいいが、履歴として残すなら 'done' でOK
-          // ここでは「成功したらキューから消す」運用にするなら deleteJob を呼ぶ
-
+          // Q1. この授業の未送信ジョブはまだ残っているか？
+          final remainingJobs = await _repo.getPendingJobsForLecture(job.lectureId);
+          
+          // Q2. この授業はすでに録音終了（Done）しているか？
+          final lecture = await _repo.getLecture(job.lectureId);
+          if (lecture == null) {
+            print('Lecture not found (maybe discarded?)');
+            continue;
+          }
+          final expectedChunks = lecture.expectedChunks;
+          
+          // A. もし「未送信がゼロ」かつ「録音が終了している」なら、全部送り切った証拠！！
+          if (remainingJobs.isEmpty && expectedChunks != null) {
+            print('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
+            
+            try {
+              // SupabaseのEdge Functionを呼び出す
+              await supabase.functions.invoke('start_analysis', body: {
+                'lecture_id': lecture.id,
+                'expected_chunks': expectedChunks, 
+              });
+              print('🚀 start_analysis の呼び出し成功！');
+            } catch (invokeError) {
+              print('❌ start_analysis の呼び出しでエラー: $invokeError');
+              // ※ ここでエラーが起きても、データはStorageに安全に保管されているので、
+              // 画面上から「再分析」ボタンなどでリトライできる作りにすれば完璧です！
+            }
+          }
         } catch (e) {
           // 失敗...
           // リトライ回数を増やし、次のリトライ時刻を設定

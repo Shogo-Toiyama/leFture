@@ -65,6 +65,8 @@ class LocalLectures extends Table {
   TextColumn get folderId => text().nullable()(); // null = Home
   TextColumn get title => text().nullable()();
 
+  IntColumn get expectedChunks => integer().nullable()();
+
   DateTimeColumn get lectureDatetime => dateTime().nullable()();
 
   IntColumn get sortOrder => integer().nullable()();

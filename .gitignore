@@ -5,3 +5,4 @@ contents_generation/lectures
 __pycache__/
 *.png
 *.jpg
+supabase/.temp/

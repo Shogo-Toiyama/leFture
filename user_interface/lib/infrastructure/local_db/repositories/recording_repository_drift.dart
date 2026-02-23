@@ -150,7 +150,8 @@ class RecordingRepositoryDrift {
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .watch();
   }
-/// Discard時にローカルの下書きと紐づくデータを完全に消す
+
+  /// Discard時にローカルの下書きと紐づくデータを完全に消す
   Future<void> deleteLectureAndAssets(String lectureId) async {
     await db.transaction(() async {
       // 1. Jobがあれば消す
@@ -170,7 +171,7 @@ class RecordingRepositoryDrift {
     });
   }
 
-// ついでに UploadManager が使う「ジョブ取得」機能もここに定義しておくと綺麗です
+  // ついでに UploadManager が使う「ジョブ取得」機能もここに定義しておくと綺麗です
   Stream<List<LocalUploadJob>> watchPendingJobs() {
     return (db.select(db.localUploadJobs)
           ..where((t) => t.status.isIn(['queued', 'retry_wait']))
@@ -222,5 +223,25 @@ class RecordingRepositoryDrift {
   // Assetのデータ取得（ファイルパスを知るため）
   Future<LocalLectureAsset?> getAsset(String assetId) {
      return (db.select(db.localLectureAssets)..where((t) => t.id.equals(assetId))).getSingleOrNull();
+  }
+
+  // 録音終了時(Done)に、総チャンク数をローカルDBに保存する
+  Future<void> finishLectureRecording({
+    required String lectureId,
+    required int expectedChunks,
+  }) async {
+    await (db.update(db.localLectures)..where((t) => t.id.equals(lectureId)))
+        .write(LocalLecturesCompanion(
+      expectedChunks: Value(expectedChunks),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
+  }
+  
+  // UploadManager用：特定の授業の「未送信ジョブ」をすべて取得する
+  Future<List<LocalUploadJob>> getPendingJobsForLecture(String lectureId) {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+        .get();
   }
 }

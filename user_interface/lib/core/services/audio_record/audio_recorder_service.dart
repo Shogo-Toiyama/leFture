@@ -74,7 +74,7 @@ class AudioRecorderService {
       sampleRate: 16000,               // 16kHz (Whisperの推奨サンプリングレート)
       numChannels: 1,                  // モノラル (データ量を半分にするため)
     );
-    print("Audio Stream呼び出します！");
+    // print("Audio Stream呼び出します！");
     return await _recorder.startStream(config);
   }
 
