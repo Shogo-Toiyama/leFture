@@ -1,7 +1,19 @@
 import math
 from pathlib import Path
+import wave
+import contextlib
 from groq import Groq
 from app.services.helpers.helpers import print_log
+
+def get_wav_duration(file_path: Path) -> float:
+    try:
+        with contextlib.closing(wave.open(str(file_path), 'r')) as f:
+            frames = f.getnframes()
+            rate = f.getframerate()
+            return frames / float(rate)
+    except Exception as e:
+        print_log(f"⚠️ Failed to get audio duration: {e}")
+        return 0.0
 
 class TranscriptionService:
     def __init__(self, collector=None):
@@ -17,6 +29,9 @@ class TranscriptionService:
         Flutter表示用のテキストと、後続処理用のJSON配列を返す。
         """
         print_log(f"   [Logic] Starting Groq transcription for chunk {chunk_index}")
+
+        actual_duration = get_wav_duration(audio_path)
+        print_log(f"   [Logic] Audio duration: {actual_duration:.2f}s")
         
         # 1. Groqに投げて verbose_json (詳細データ) で受け取る
         with open(audio_path, "rb") as f:
@@ -45,12 +60,12 @@ class TranscriptionService:
                 confidence = max(0.0, min(1.0, math.exp(logprob)))
 
                 segments_data.append({
-                    "sid": f"s{i+1:06d}",          # 🌟 シンプルに s000001 からスタート
+                    "sid": f"s{i+1:06d}",
                     "text": seg_text.strip(),
-                    "confidence": round(confidence, 4), # confidenceは表示/計算用なので丸めてOK
+                    "confidence": round(confidence, 4),
                     "start": start,
                     "end": end,
-                    "chunk_index": chunk_index     # 🌟 どのチャンクか記録しておく！
+                    "chunk_index": chunk_index
                 })
 
         # 音声が短すぎてセグメントが分かれなかった場合の安全策
@@ -60,12 +75,13 @@ class TranscriptionService:
                 "text": full_text,
                 "confidence": 0.99,
                 "start": 0.0,
-                "end": 0.0,
+                "end": actual_duration,
                 "chunk_index": chunk_index
             })
 
         # 3. 結果を現場監督に返す
         return {
             "text": full_text,
-            "segments": segments_data
+            "segments": segments_data,
+            "audio_duration": actual_duration
         }

@@ -12,6 +12,7 @@ from app.services.helpers.helpers import print_log, init_logger, finalize_log_an
 from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 
 from app.services.logic.transcription import TranscriptionService
+from app.services.logic.assemble_transcript import AssembleTranscriptService
 from app.services.logic.sentence_review import SentenceReviewService
 from app.services.logic.role_classification import RoleClassificationService
 from app.services.logic.lecture_segmentaion import LectureSegmentationService
@@ -38,7 +39,7 @@ def _update_task_status(task_id: str, status: str, payload: dict = None, error_m
 
 def _get_job_context(job_id: str) -> dict:
     supabase = get_supabase_client()
-    res = supabase.table("processing_jobs").select("lecture_id, owner_id").eq("id", job_id).single().execute()
+    res = supabase.table("processing_jobs").select("lecture_id, owner_id, expected_chunks").eq("id", job_id).single().execute()
     return res.data
 
 def _get_dependency_payload(job_id: str, target_task_type: str) -> dict:
@@ -100,6 +101,7 @@ async def run_transcribe_chunk_worker(record: dict):
 
         # 4. DBを DONE に更新し、真実のテキストを書き込む
         supabase.table("lecture_transcripts").update({
+            "audio_duration": result["audio_duration"],
             "status": "DONE",
             "text": result["text"],
             "segments": result["segments"], 
@@ -144,54 +146,38 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             raise ValueError("expected_chunks is 0. Nothing to assemble!")
 
         # ---------------------------------------------------------
-        # リアルタイム職人の進捗をDBで確認 (CHECK)
+        # 1. リアルタイム職人の進捗をDBで確認 (CHECK)
         # ---------------------------------------------------------
-        # 例: lecture_transcripts テーブルに保存された、この授業のチャンク数を数える
+        # 💥 ここを修正！ segments と audio_duration, status を取得する！
         res = supabase.table("lecture_transcripts")\
-            .select("chunk_index, text, confidence, start_time, end_time")\
+            .select("chunk_index, segments, status, audio_duration")\
             .eq("lecture_id", lecture_id)\
             .order("chunk_index")\
             .execute()
             
-        completed_chunks = res.data
+        all_chunks = res.data
         
-        # 💥 ここが賢い待ち合わせロジック！
+        # DONEになっているものだけを抽出
+        completed_chunks = [c for c in all_chunks if c.get("status") == "DONE"]
+        
+        # 待ち合わせロジック
         if len(completed_chunks) < expected_chunks:
             error_msg = f"⏳ Waiting for real-time transcripts... ({len(completed_chunks)}/{expected_chunks})"
             print_log(error_msg)
-            # わざとエラーを投げることで、Cloud Tasksに「まだだから後でもう一回呼んで！」と伝える
+            # わざとエラーを投げることでリトライさせる
             raise Exception(error_msg)
 
         # ---------------------------------------------------------
-        # 全て揃っていたら、1つのJSONに組み立てる (ASSEMBLE)
+        # 2. 全て揃っていたら、専用職人を呼んで組み立てる (ASSEMBLE)
         # ---------------------------------------------------------
         print_log(f"🎉 All {expected_chunks} chunks transcribed! Assembling...")
         
-        assembled_transcript = []
-        global_sid = 1
-        
-        # チャンクごとにテキストを整理（sentence_review が読みやすい形にする）
-        for chunk in completed_chunks:
-            # チャンク内のテキストをさらに「。」などで分割してsidを振る処理などをここで行うか、
-            # もしくはリアルタイム職人がすでにsid単位で保存してくれていれば、そのまま結合する。
-            
-            # (※仮のシンプルな結合例)
-            assembled_transcript.append({
-                "sid": f"s{global_sid:06d}",
-                "text": chunk["text"],
-                "confidence": chunk.get("confidence", 1.0),
-                "start": chunk.get("start_time"),
-                "end": chunk.get("end_time")
-            })
-            global_sid += 1
-
-        # JSONファイルとして保存
-        local_transcript_path = work_dir / "transcript.json"
-        with open(local_transcript_path, "w", encoding="utf-8") as f:
-            json.dump(assembled_transcript, f, ensure_ascii=False, indent=2)
+        # 💥 ここで新しく作った職人に丸投げする！
+        assembler = AssembleTranscriptService()
+        local_transcript_path = assembler.run(completed_chunks, work_dir)
 
         # ---------------------------------------------------------
-        # 出荷 (Storage保存 ＆ DB更新)
+        # 3. 出荷 (Storage保存 ＆ DB更新)
         # ---------------------------------------------------------
         remote_transcript_path = _upload_artifact(uid, lecture_id, local_transcript_path, "transcript.json")
         result_payload = {"transcript_json": remote_transcript_path}
@@ -201,7 +187,6 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         print_log(f"✅ CHECK_AND_ASSEMBLE Completed!")
 
     except Exception as e:
-        # ※ "Waiting for real-time..." のExceptionはリトライ用なので、FAILEDにはせずにそのまま投げるのがベスト
         if "Waiting for real-time" in str(e):
             _update_task_status(task_id, "PENDING") # リトライ待ち状態に戻す
             raise e
