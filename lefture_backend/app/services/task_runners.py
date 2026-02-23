@@ -78,7 +78,7 @@ def _download_artifact(storage_path: str, save_to: Path):
 async def run_transcribe_chunk_worker(record: dict):
     transcript_id = record["id"]
     storage_path = record["storage_path"]
-    lecture_id = record["lecture_id"]
+    chunk_index = record.get("chunk_index", 0)
     
     supabase = get_supabase_client()
     
