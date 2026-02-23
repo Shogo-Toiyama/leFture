@@ -1,77 +1,71 @@
-import json, os, time
-import assemblyai as aai
+import math
 from pathlib import Path
-
-from app.services.helpers.llm_unified import CostCollector
+from groq import Groq
 from app.services.helpers.helpers import print_log
 
 class TranscriptionService:
-    def __init__(self, collector: CostCollector):
+    def __init__(self, collector=None):
+        # APIキーは環境変数 GROQ_API_KEY から自動で読み込まれます
+        self.client = Groq()
+        self.model = "whisper-large-v3-turbo"
+        # 旧コードとの互換性のため、使わなくても引数として受け取れるようにしておく
         self.collector = collector
-        self.api_key = os.environ.get("ASSEMBLYAI_API_KEY")
-        if not self.api_key:
-            print_log("❌ ERROR: ASSEMBLYAI_API_KEY is missing!")
-            raise ValueError("ASSEMBLYAI_API_KEY is not set.")
 
-
-    def run(self, audio_file_path: Path, work_dir: Path) -> Path:
-        print_log(f"   [Logic] Starting transcription for: {audio_file_path.name}")
-
-        self._speech_to_text(
-            audio_file=audio_file_path,
-            work_dir=work_dir,
-        )
-
-        output_json = work_dir / "transcript_sentences.json"
+    def run(self, audio_path: Path, chunk_index: int) -> dict:
+        """
+        WAVファイルを受け取り、Groqで文字起こしを行い、
+        Flutter表示用のテキストと、後続処理用のJSON配列を返す。
+        """
+        print_log(f"   [Logic] Starting Groq transcription for chunk {chunk_index}")
         
-        if not output_json.exists():
-            raise FileNotFoundError(f"Transcription logic finished but {output_json} was not found.")
-            
-        print_log(f"   [Logic] Transcription finished: {output_json.name}")
-        return output_json
+        # 1. Groqに投げて verbose_json (詳細データ) で受け取る
+        with open(audio_path, "rb") as f:
+            res = self.client.audio.transcriptions.create(
+                file=(audio_path.name, f.read()),
+                model=self.model,
+                response_format="verbose_json",
+                language="ja"
+            )
 
-    
-    def _speech_to_text(self, audio_file, work_dir: Path):
-        print_log("\n### Lecture Audio To Text ###")
-        start_time = time.time()
+        full_text = res.text.strip()
+        segments_data = []
 
-        aai.settings.api_key = self.api_key
+        # 2. データの整形
+        if hasattr(res, 'segments') and res.segments:
+            for i, seg in enumerate(res.segments):
+                seg_text = seg.get('text', '') if isinstance(seg, dict) else getattr(seg, 'text', '')
+                
+                # 🌟 丸めない！返ってきた生のfloat値をそのまま使う
+                start = seg.get('start', 0.0) if isinstance(seg, dict) else getattr(seg, 'start', 0.0)
+                end = seg.get('end', 0.0) if isinstance(seg, dict) else getattr(seg, 'end', 0.0)
+                
+                logprob = seg.get('avg_logprob', 0) if isinstance(seg, dict) else getattr(seg, 'avg_logprob', 0)
 
-        aai_config = aai.TranscriptionConfig(
-            speech_model=aai.SpeechModel.nano,
-            punctuate=True,
-            format_text=True,
-            disfluencies=False,
-        )
+                # 対数確率(logprob) を 0.0〜1.0 の確率(confidence) に変換
+                confidence = max(0.0, min(1.0, math.exp(logprob)))
 
-        print_log("Waiting for response from AssemblyAI API...")
-        transcript = aai.Transcriber(config=aai_config).transcribe(str(audio_file))
+                segments_data.append({
+                    "sid": f"s{i+1:06d}",          # 🌟 シンプルに s000001 からスタート
+                    "text": seg_text.strip(),
+                    "confidence": round(confidence, 4), # confidenceは表示/計算用なので丸めてOK
+                    "start": start,
+                    "end": end,
+                    "chunk_index": chunk_index     # 🌟 どのチャンクか記録しておく！
+                })
 
-        if transcript.status == "error":
-            raise RuntimeError(f"Transcription failed: {transcript.error}")
+        # 音声が短すぎてセグメントが分かれなかった場合の安全策
+        if not segments_data and full_text:
+            segments_data.append({
+                "sid": "s000001",
+                "text": full_text,
+                "confidence": 0.99,
+                "start": 0.0,
+                "end": 0.0,
+                "chunk_index": chunk_index
+            })
 
-        print_log("saving response...")
-        with open(work_dir / "transcript_raw.json", "w", encoding="utf-8") as f:
-            json.dump(transcript.json_response, f, ensure_ascii=False, indent=2)
-
-        sentences = transcript.get_sentences()
-
-        def sentence_to_dict(s, idx):
-            return {
-                "sid": f"s{idx:06d}",
-                "text": getattr(s, "text", None),
-                "start": getattr(s, "start", None),
-                "end": getattr(s, "end", None),
-                "confidence": getattr(s, "confidence", None),
-            }
-
-        data = [sentence_to_dict(s, idx) for idx, s in enumerate(sentences, start=1)]
-        duration = transcript.audio_duration
-        print_log(f"Cost (nano): ${duration/3600*0.12:.3f}")
-        self.collector.add("AssemblyAI Transcription (nano)", duration/3600*0.12)
-        with open(work_dir / "transcript_sentences.json", "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print_log(f"⏰Transcribed audio to text: {elapsed_time:.2f} seconds.")
+        # 3. 結果を現場監督に返す
+        return {
+            "text": full_text,
+            "segments": segments_data
+        }

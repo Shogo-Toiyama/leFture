@@ -181,13 +181,12 @@ class UploadManager {
   }
 
   Future<void> _performUpload(LocalUploadJob job) async {
-    // 1. 必要なデータを集める
+    // 1. 必要なデータをローカルDBから集める
     final lecture = await _repo.getLecture(job.lectureId);
     final asset = await _repo.getAsset(job.assetId);
 
-    // データがない場合（Discardされた？）
+    // データがない場合（ユーザーが途中でDiscardして消した等）
     if (lecture == null || asset == null) {
-      // 復旧不可能なので例外を投げて失敗扱いにする（またはここでJob削除）
       throw Exception('Lecture or Asset not found (maybe discarded?)');
     }
 
@@ -197,7 +196,7 @@ class UploadManager {
     }
 
     // 2. Supabaseへの書き込み
-    // A) Lecturesテーブル (FK制約のため親から)
+    // A) Lecturesテーブル (親データ)
     await _lectureWriter.upsertLecture(
       lectureId: lecture.id,
       ownerId: lecture.ownerId,
@@ -206,10 +205,11 @@ class UploadManager {
       lectureDateTimeUtc: lecture.lectureDatetime,
     );
 
-    // B) Storageへファイルアップロード
+    // B) StorageへWAVファイルをアップロード
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
     final fileName = 'chunk_$seqStr.wav'; 
     final storagePath = 'chunks/$fileName';
+    
     final remotePath = await _uploader.uploadAudioFile(
       userId: lecture.ownerId,
       lectureId: lecture.id,
@@ -217,16 +217,21 @@ class UploadManager {
       fileName: storagePath,
     );
 
-    // C) LectureAssetsテーブル
-    // await _lectureWriter.upsertAudioAsset(
-    //   assetId: asset.id,
-    //   lectureId: lecture.id,
-    //   ownerId: lecture.ownerId,
-    //   bucket: _uploader.audioBucket,
-    //   path: remotePath,
-    // );
+    // C) lecture_transcripts テーブルに「PENDING」を登録
+    try {
+      await supabase.from('lecture_transcripts').insert({
+        'lecture_id': lecture.id,
+        'chunk_index': asset.sequenceIndex,
+        'storage_path': remotePath, 
+        'status': 'PENDING',
+      });
+      print('📝 [UploadManager] 受付票(PENDING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
+    } catch (e) {
+      print('❌ [UploadManager] DBへの受付票登録に失敗: $e');
+      rethrow; // 失敗時はリトライ対象にするため rethrow する
+    }
 
-    // D) ローカルのAsset情報も更新（storagePathが入る）
+    // D) ローカルのAsset情報も更新（アップロード完了の目印）
     await _repo.updateAssetUploaded(
       assetId: asset.id, 
       remotePath: remotePath,

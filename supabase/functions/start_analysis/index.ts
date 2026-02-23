@@ -72,16 +72,16 @@ serve(async (req) => {
     const tasks: Array<{ task_type: string, dependencies: string[] }> = []
 
     // 🎯 一番最初は絶対にこれ！「全てのチャンクの文字起こしが完了するのを待って、合体させる」
-    tasks.push({ task_type: 'MERGE_TRANSCRIPTS', dependencies: [] })
+    tasks.push({ task_type: 'CHECK_AND_ASSEMBLE', dependencies: [] })
 
     // 🌟 課金状態によるルート分岐
     if (isPremium) {
       // 課金ユーザー：マージが終わったらAI校正へ
-      tasks.push({ task_type: 'SENTENCE_REVIEW', dependencies: ['MERGE_TRANSCRIPTS'] })
+      tasks.push({ task_type: 'SENTENCE_REVIEW', dependencies: ['CHECK_AND_ASSEMBLE'] })
       tasks.push({ task_type: 'ROLE_CLASSIFICATION', dependencies: ['SENTENCE_REVIEW'] })
     } else {
       // 無料ユーザー：校正をスキップして直接ラベル付けへ
-      tasks.push({ task_type: 'ROLE_CLASSIFICATION', dependencies: ['MERGE_TRANSCRIPTS'] })
+      tasks.push({ task_type: 'ROLE_CLASSIFICATION', dependencies: ['CHECK_AND_ASSEMBLE'] })
     }
 
     // 🚀 並列処理の嵐！（依存先が終われば同時に発火する）
