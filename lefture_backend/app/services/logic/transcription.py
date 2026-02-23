@@ -24,7 +24,7 @@ class TranscriptionService:
                 file=(audio_path.name, f.read()),
                 model=self.model,
                 response_format="verbose_json",
-                language="ja"
+                language="en"
             )
 
         full_text = res.text.strip()
