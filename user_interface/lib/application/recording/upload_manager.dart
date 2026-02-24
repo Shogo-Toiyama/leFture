@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:http/http.dart' as http;
 
 import '../../infrastructure/supabase/services/lecture_write_service.dart';
 import '../../infrastructure/supabase/services/storage_upload_service.dart';
@@ -195,8 +196,7 @@ class UploadManager {
       throw Exception('Local file not found at $localPath');
     }
 
-    // 2. Supabaseへの書き込み
-    // A) Lecturesテーブル (親データ)
+    // 2. Supabaseへの書き込み (Lecturesテーブル)
     await _lectureWriter.upsertLecture(
       lectureId: lecture.id,
       ownerId: lecture.ownerId,
@@ -205,36 +205,83 @@ class UploadManager {
       lectureDateTimeUtc: lecture.lectureDatetime,
     );
 
-    // B) StorageへWAVファイルをアップロード
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
     final fileName = 'chunk_$seqStr.wav'; 
     final storagePath = 'chunks/$fileName';
-    
-    final remotePath = await _uploader.uploadAudioFile(
-      userId: lecture.ownerId,
-      lectureId: lecture.id,
-      localPath: localPath,
-      fileName: storagePath,
-    );
 
-    // C) lecture_transcripts テーブルに「PENDING」を登録
+    // 3. lecture_transcripts テーブルに「PROCESSING」を登録
     try {
-      await supabase.from('lecture_transcripts').insert({
+      await supabase.from('lecture_transcripts').upsert({
         'lecture_id': lecture.id,
         'chunk_index': asset.sequenceIndex,
-        'storage_path': remotePath, 
-        'status': 'PENDING',
+        'storage_path': storagePath, // 予測されるパスを先に入れておく
+        'status': 'PROCESSING',
       });
-      print('📝 [UploadManager] 受付票(PENDING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
+      print('📝 [UploadManager] 処理開始(PROCESSING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
     } catch (e) {
       print('❌ [UploadManager] DBへの受付票登録に失敗: $e');
-      rethrow; // 失敗時はリトライ対象にするため rethrow する
+      rethrow; 
     }
 
-    // D) ローカルのAsset情報も更新（アップロード完了の目印）
-    await _repo.updateAssetUploaded(
-      assetId: asset.id, 
-      remotePath: remotePath,
-    );
+    // 4. Cloud RunへのPOST と Storageへのアップロードを「並列」で実行
+    String? remotePath;
+    try {
+      await Future.wait([
+        // A) StorageへWAVファイルをアップロード (終わったら remotePath に代入)
+        _uploader.uploadAudioFile(
+          userId: lecture.ownerId,
+          lectureId: lecture.id,
+          localPath: localPath,
+          fileName: storagePath,
+        ).then((path) => remotePath = path),
+        
+        // B) Cloud Runに直接POSTして文字起こしを開始
+        _postToCloudRun(
+          localPath: localPath,
+          lectureId: lecture.id,
+          chunkIndex: asset.sequenceIndex,
+        ),
+      ]);
+    } catch (e) {
+      print('❌ [UploadManager] 通信エラー、後でリトライします: $e');
+      rethrow; 
+    }
+
+    // 5. 両方成功したら、ローカルのAsset情報も更新（アップロード完了の目印）
+    if (remotePath != null) {
+      await _repo.updateAssetUploaded(
+        assetId: asset.id, 
+        remotePath: remotePath!,
+      );
+    }
+  }
+
+  /// Cloud RunのFastAPIへ直接WAVファイルを投げるメソッド
+  Future<void> _postToCloudRun({
+    required String localPath,
+    required String lectureId,
+    required int chunkIndex,
+  }) async {
+    // Cloud RunのURL
+    final uri = Uri.parse('https://lefture-511705914929.us-west1.run.app/worker/transcribe-chunk');
+    
+    final request = http.MultipartRequest('POST', uri);
+    
+    // Cloud Run側が「どのデータか」分かるようにメタデータを送る
+    request.fields['lecture_id'] = lectureId;
+    request.fields['chunk_index'] = chunkIndex.toString();
+    
+    // WAVファイルをバイナリとして添付
+    request.files.add(await http.MultipartFile.fromPath('file', localPath));
+
+    // 送信してレスポンスを待つ
+    final response = await request.send();
+    
+    if (response.statusCode != 200) {
+      final respStr = await response.stream.bytesToString();
+      throw Exception('Cloud Run error (${response.statusCode}): $respStr');
+    }
+    
+    print('🚀 [UploadManager] Cloud RunにChunk $chunkIndex を送信完了！');
   }
 }

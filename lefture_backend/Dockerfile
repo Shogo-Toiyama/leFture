@@ -13,6 +13,8 @@ WORKDIR /app
 # 依存関係ファイルのコピーとインストール
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m nltk.downloader punkt punkt_tab
+RUN wget -qO silero_vad.onnx https://github.com/snakers4/silero-vad/raw/master/src/silero_vad/data/silero_vad.onnx
 
 # コードをコピー
 COPY . .

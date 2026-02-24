@@ -76,48 +76,50 @@ def _download_artifact(storage_path: str, save_to: Path):
 # 0. Transcribe Chunk （Groqでリアルタイム文字起こし）
 # ---------------------------------------------------------
 
-async def run_transcribe_chunk_worker(record: dict):
-    transcript_id = record["id"]
-    storage_path = record["storage_path"]
-    chunk_index = record.get("chunk_index", 0)
-    
+async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_bytes: bytes):
+    """
+    Flutterから直接送られてきたWAVバイナリ(audio_bytes)をメモリ上で処理する。
+    ダウンロード時間がゼロになるため、爆速で処理が完了する。
+    """
     supabase = get_supabase_client()
     
     try:
-        # 1. PROCESSING に更新
-        supabase.table("lecture_transcripts").update({"status": "PROCESSING"}).eq("id", transcript_id).execute()
+        # DBへの PROCESSING の書き込みはFlutter側で既にやってくれているので省略！
         
-        # 2. StorageからWAVをダウンロード
-        work_dir = BASE_WORK_DIR / f"chunk_{transcript_id}"
-        work_dir.mkdir(parents=True, exist_ok=True)
-        local_path = work_dir / "chunk.wav"
-        _download_artifact(storage_path, local_path)
+        print_log(f"🎤 [In-Memory] Transcribing chunk {chunk_index} for lecture {lecture_id}")
         
-        # 3. Groq (Whisper) に投げる
-        print_log(f"🎤 Transcribing chunk with Groq: {storage_path}")
-        
+        # 1. 職人を呼んで、メモリ上の音声バイナリを直接渡す
         transcriber = TranscriptionService()
-        result = transcriber.run(local_path, chunk_index)
+        
+        # 💡 [作戦1の準備] ここで将来的に「過去の文脈」や「CS用語」をprompt_keywordsとして渡せます
+        result = transcriber.run_in_memory(
+            audio_bytes=audio_bytes, 
+            chunk_index=chunk_index,
+        )
 
-        # 4. DBを DONE に更新し、真実のテキストを書き込む
+        # 2. DBを DONE に更新し、真実のテキストを書き込む
+        # idではなく、lecture_idとchunk_indexの組み合わせでレコードを特定して更新する
         supabase.table("lecture_transcripts").update({
             "audio_duration": result["audio_duration"],
             "status": "DONE",
             "text": result["text"],
             "segments": result["segments"], 
-            "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.99
-        }).eq("id", transcript_id).execute()
+            "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0
+        }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         
-        print_log(f"✅ Chunk transcription completed: {transcript_id}")
-        print_log(f"📝 Text: {result['text'][:20]}...")
-        
+        print_log(f"✅ Chunk transcription completed: Chunk {chunk_index}")
+        if result["text"]:
+            print_log(f"📝 Text: {result['text'][:30]}...")
+        else:
+            print_log(f"🔇 Text: (No speech detected, skipped Groq)")
+            
     except Exception as e:
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
         print_log(f"❌ Chunk transcription failed: {error_msg}")
-        supabase.table("lecture_transcripts").update({"status": "ERROR"}).eq("id", transcript_id).execute()
-    finally:
-        if 'work_dir' in locals() and work_dir.exists():
-            shutil.rmtree(work_dir)
+        supabase.table("lecture_transcripts").update({
+            "status": "ERROR",
+            "error_message": str(e)
+        }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
 
 # ---------------------------------------------------------
 # 1. Check and Assemble (文字起こしの待ち合わせ＆組み立て)

@@ -9,3 +9,7 @@ google-genai
 openai
 tiktoken
 google-cloud-tasks
+nltk
+pydub
+onnxruntime
+numpy

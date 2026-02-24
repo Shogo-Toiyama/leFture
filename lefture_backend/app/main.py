@@ -1,6 +1,7 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks
+from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
 from app.services.task_runners import (
@@ -27,7 +28,7 @@ app = FastAPI(title="leFture Backend Worker", version="2.0.0")
 # ---------------------------------------------------------
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = os.getenv("GCP_REGION", "us-central1")
-QUEUE_NAME = os.getenv("QUEUE_NAME", "lecture-processing-queue")
+QUEUE_NAME = os.getenv("QUEUE_NAME", "lecture-analyzing-queue")
 CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL") 
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
 
@@ -49,23 +50,36 @@ class WorkerPayload(BaseModel):
     task_id: str
 
 # ---------------------------------------------------------
-# リアルタイム・トランスクライブ受付（Webhook直結）
+# 【変更】リアルタイム・トランスクライブ受付（ダイレクトPOST）
 # ---------------------------------------------------------
 @app.post("/worker/transcribe-chunk")
-async def worker_transcribe_chunk(payload: dict):
+async def worker_transcribe_chunk(
+    background_tasks: BackgroundTasks, # ← これが即時レスポンスの魔法
+    lecture_id: str = Form(...),       # ← Flutterから送られるメタデータ
+    chunk_index: int = Form(...),      # ← Flutterから送られるメタデータ
+    file: UploadFile = File(...)       # ← WAVファイル本体
+):
     """
-    SupabaseのWebhooksから直接呼ばれる。
-    payload['record'] に lecture_transcripts の1行が入っている。
+    FlutterからWAVファイルを直接受け取るエンドポイント。
+    ダウンロード待ち時間をゼロにし、即座に200を返して裏で処理を回す。
     """
-    record = payload.get("record")
-    if not record:
-        raise HTTPException(status_code=400, detail="No record found")
+    if not file:
+        raise HTTPException(status_code=400, detail="No audio file provided")
+
+    # 1. WAVファイルをメモリ上(bytes)に直接読み込む（ディスクに保存しないため爆速）
+    audio_bytes = await file.read()
     
-    # 非同期で職人を走らせる
-    # ※Webhookを待たせないために、ここではバックグラウンドタスクとして回すのが理想
-    await run_transcribe_chunk_worker(record)
+    # 2. バックグラウンドタスクとして職人を走らせる
+    # こうすることで、このHTTPリクエスト自体は次の行の return で瞬時に終了し、Flutterを待たせない
+    background_tasks.add_task(
+        run_transcribe_chunk_worker, # ← 今までの職人関数
+        lecture_id=lecture_id,
+        chunk_index=chunk_index,
+        audio_bytes=audio_bytes
+    )
     
-    return {"status": "accepted"}
+    # 3. Flutterには即座に成功を返す
+    return {"status": "success", "message": f"Chunk {chunk_index} received."}
 
 # ---------------------------------------------------------
 # 🗺️ タスクの種類と、呼び出す裏口 (URL) のマッピング辞書

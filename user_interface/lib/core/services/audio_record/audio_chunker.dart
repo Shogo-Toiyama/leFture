@@ -40,15 +40,15 @@ class AudioChunker {
     if (currentDurationSec >= 120.0) {
       shouldCut = true; 
       cutReason = '2分強制カット';
-    } else if (currentDurationSec >= 90.0 && silenceDurationSec >= 0.2) {
+    } else if (currentDurationSec >= 90.0 && silenceDurationSec >= 0.3) {
       shouldCut = true; 
-      cutReason = '1分半 ＆ 0.2秒無音';
-    } else if (currentDurationSec >= 60.0 && silenceDurationSec >= 0.4) {
+      cutReason = '1分半 ＆ 0.3秒無音';
+    } else if (currentDurationSec >= 60.0 && silenceDurationSec >= 0.6) {
       shouldCut = true; 
-      cutReason = '1分 ＆ 0.4秒無音';
-    } else if (currentDurationSec >= 30.0 && silenceDurationSec >= 0.6) {
+      cutReason = '1分 ＆ 0.6秒無音';
+    } else if (currentDurationSec >= 30.0 && silenceDurationSec >= 1.0) {
       shouldCut = true; 
-      cutReason = '30秒 ＆ 0.6秒無音';
+      cutReason = '30秒 ＆ 1.0秒無音';
     }
 
     if (shouldCut) {
@@ -74,14 +74,12 @@ class AudioChunker {
   }
 }
 
-// 修正版：振幅（最大音量）を計算して返す関数
 int _getMaxAmplitude(Uint8List data) {
   int maxAmplitude = 0;
   
   for (int i = 0; i < data.length - 1; i += 2) {
     int sample = (data[i] & 0xFF) | ((data[i + 1] & 0xFF) << 8);
     
-    // 【重要】16ビットの符号付き整数（マイナスの波）に変換する処理
     if (sample >= 32768) {
       sample -= 65536; 
     }
