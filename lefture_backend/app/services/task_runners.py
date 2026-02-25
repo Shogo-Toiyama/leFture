@@ -172,7 +172,6 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_b
         print_log(f"❌ Chunk transcription failed: {error_msg}")
         supabase.table("lecture_transcripts").update({
             "status": "ERROR",
-            "error_message": str(e)
         }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
 
 # ---------------------------------------------------------

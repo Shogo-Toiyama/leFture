@@ -80,8 +80,7 @@ class TranscriptionService:
         samples = np.array(audio_16k.get_array_of_samples(), dtype=np.float32) / 32768.0
         
         window_size = 512 # 1回の判定サイズ (16000Hzで32ms)
-        h = np.zeros((2, 1, 64), dtype=np.float32)
-        c = np.zeros((2, 1, 64), dtype=np.float32)
+        state = np.zeros((2, 1, 128), dtype=np.float32)
         
         probs = []
         # 音声を32msごとに区切って「声の確率(0.0~1.0)」を計算
@@ -93,12 +92,11 @@ class TranscriptionService:
             inputs = {
                 "input": chunk.reshape(1, window_size),
                 "sr": np.array([16000], dtype=np.int64),
-                "h": h,
-                "c": c
+                "state": state  # 💡 [変更] h, c の代わりに state を渡す
             }
             ort_outs = self.vad_session.run(None, inputs)
-            probs.append(ort_outs[0][0][0]) # 確率を保存
-            h, c = ort_outs[1], ort_outs[2] # 次の文脈に引き継ぐ
+            probs.append(ort_outs[0][0][0]) 
+            state = ort_outs[1]
 
         # [ヒステリシス・ロジック] 0.5を超えたら開始、最後に0.15を上回った場所を終了とする
         start_idx = -1

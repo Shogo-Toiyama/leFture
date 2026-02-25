@@ -39,15 +39,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
 
     if (authError || !user) {
-      // 💥 エラーの「本当の理由」をログに出力させる
       console.error("🚨 Auth Error details:", authError)
       throw new Error(`Unauthorized user: ${authError?.message || 'No user found'}`)
     }
 
     const ownerId = user.id
-
-    // TODO: 本当はここで profiles テーブルなどを引いてサブスク状態を確認する
-    const isPremium = true; 
 
     // 4. 親ジョブを作成 (processing_jobs)
     const { data: job, error: jobError } = await supabaseClient
@@ -68,24 +64,11 @@ serve(async (req) => {
     
     const jobId = job.id
 
-    // 5. タスクの設計図（DAG）を定義！
+    // 5. タスクの設計図（DAG）を定義
     const tasks: Array<{ task_type: string, dependencies: string[] }> = []
-
-    // 🎯 一番最初は絶対にこれ！「全てのチャンクの文字起こしが完了するのを待って、合体させる」
-    tasks.push({ task_type: 'CHECK_AND_ASSEMBLE', dependencies: [] })
-
-    // 🌟 課金状態によるルート分岐
-    if (isPremium) {
-      // 課金ユーザー：マージが終わったらAI校正へ
-      tasks.push({ task_type: 'SENTENCE_REVIEW', dependencies: ['CHECK_AND_ASSEMBLE'] })
-      tasks.push({ task_type: 'ROLE_CLASSIFICATION', dependencies: ['SENTENCE_REVIEW'] })
-    } else {
-      // 無料ユーザー：校正をスキップして直接ラベル付けへ
-      tasks.push({ task_type: 'ROLE_CLASSIFICATION', dependencies: ['CHECK_AND_ASSEMBLE'] })
-    }
-
-    // 🚀 並列処理の嵐！（依存先が終われば同時に発火する）
     tasks.push(
+      { task_type: 'CHECK_AND_ASSEMBLE', dependencies: [] },
+      { task_type: 'ROLE_CLASSIFICATION', dependencies: ['CHECK_AND_ASSEMBLE'] },
       { task_type: 'CORE_EXTRACTION', dependencies: ['ROLE_CLASSIFICATION'] },
       { task_type: 'ANNOUNCEMENT_GENERATION', dependencies: ['ROLE_CLASSIFICATION'] },
       

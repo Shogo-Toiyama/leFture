@@ -85,7 +85,6 @@ async def worker_transcribe_chunk(
 # ---------------------------------------------------------
 TASK_ROUTES = {
     "CHECK_AND_ASSEMBLE": "/worker/check-and-assemble",
-    "SENTENCE_REVIEW": "/worker/sentence-review",
     "ROLE_CLASSIFICATION": "/worker/role-classification",
     "CORE_EXTRACTION": "/worker/core-extraction",
     "ANNOUNCEMENT_GENERATION": "/worker/announcement-generation",
@@ -159,11 +158,6 @@ async def enqueue_task(payload: EnqueuePayload):
 @app.post("/worker/check-and-assemble")
 async def worker_check_and_assemble(payload: WorkerPayload):
     await run_check_and_assemble_transcript_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
-
-@app.post("/worker/sentence-review")
-async def worker_sentence_review(payload: WorkerPayload):
-    await run_sentence_review_task(payload.job_id, payload.task_id)
     return {"status": "success"}
 
 @app.post("/worker/role-classification")
