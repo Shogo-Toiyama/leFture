@@ -82,18 +82,18 @@ class TranscriptionDebugService:
         self._upload_debug_audio(lecture_id, chunk_index, "1_original", audio)
         
         # ⏱️ 2. 帯域通過フィルターの計測
-        print_log(f"   [Logic] Applying Bandpass Filter (100Hz - 4000Hz)...")
-        t0 = time.perf_counter()
-        audio = audio.high_pass_filter(100).low_pass_filter(4000)
-        timings["2_bandpass_filter"] = time.perf_counter() - t0
-        self._upload_debug_audio(lecture_id, chunk_index, "2_bandpass", audio)
+        # print_log(f"   [Logic] Applying Bandpass Filter (100Hz - 4000Hz)...")
+        # t0 = time.perf_counter()
+        # audio = audio.high_pass_filter(100).low_pass_filter(4000)
+        # timings["2_bandpass_filter"] = time.perf_counter() - t0
+        # self._upload_debug_audio(lecture_id, chunk_index, "2_bandpass", audio)
         
         # ⏱️ 3. ノーマライズの計測
-        print_log(f"   [Logic] Applying Normalization...")
-        t0 = time.perf_counter()
-        audio = effects.normalize(audio)
-        timings["3_normalization"] = time.perf_counter() - t0
-        self._upload_debug_audio(lecture_id, chunk_index, "3_normalized", audio)
+        # print_log(f"   [Logic] Applying Normalization...")
+        # t0 = time.perf_counter()
+        # audio = effects.normalize(audio)
+        # timings["3_normalization"] = time.perf_counter() - t0
+        # self._upload_debug_audio(lecture_id, chunk_index, "3_normalized", audio)
 
         # ⏱️ 4. Silero VAD (v5) の計測
         print_log(f"   [Logic] Running Silero VAD...")
