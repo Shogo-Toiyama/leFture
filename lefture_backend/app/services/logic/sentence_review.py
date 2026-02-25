@@ -5,15 +5,14 @@ from collections import defaultdict
 from groq import Groq
 from nltk.tokenize import sent_tokenize
 
-from app.services.helpers.helpers import print_log
+from app.services.helpers.helpers import _load_prompt, print_log
 
 class SentenceReviewService:
     def __init__(self):
         self.client = Groq()
         self.model = "openai/gpt-oss-120b"
         
-        # プロンプトファイルのパス解決 (logicディレクトリの1つ上のpromptディレクトリ)
-        self.prompt_path = Path(__file__).parent.parent / "prompt" / "sentence_review_prompt.txt"
+        prompt = _load_prompt("sentence_review_prompt.txt")
 
     def _load_prompt_template(self) -> str:
         if not self.prompt_path.exists():
