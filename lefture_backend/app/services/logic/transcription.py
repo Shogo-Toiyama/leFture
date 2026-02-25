@@ -11,7 +11,7 @@ from pydub import AudioSegment, effects
 from app.services.helpers.helpers import print_log
 
 # =========================================================
-# 🛠️ ヘルパー: Silero VAD (ONNX) の初期化
+# 🛠️ ヘルパー: Silero VAD (ONNX) の初期化とダウンロード
 # =========================================================
 def get_silero_vad_session():
     model_path = "silero_vad.onnx"
@@ -42,7 +42,7 @@ class TranscriptionService:
         # コンテナ起動時にVADモデルをメモリにロード（コールドスタート対策）
         self.vad_session = get_silero_vad_session()
 
-    def run_in_memory(self, audio_bytes: bytes, chunk_index: int) -> dict:
+    def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
         """
         [最強の音声処理パイプライン]
         1. 帯域通過フィルター (Bandpass)
@@ -132,14 +132,6 @@ class TranscriptionService:
         cropped_audio = audio[start_ms:end_ms]
         
         print_log(f"   [Logic] ✂️ Cropped audio: {start_ms:.0f}ms to {end_ms:.0f}ms (Offset: +{offset_seconds:.2f}s)")
-
-        # ---------------------------------------------------------
-        # Promptを加工
-        # ---------------------------------------------------------
-
-        # いまは一旦固定キーワード
-        prompt_keywords = "UCLA, lecture, Computer Science, Architecture, Programming Languages, Git, Turring Machine"
-
         
         # ---------------------------------------------------------
         # ✨ Groq Whisper への送信

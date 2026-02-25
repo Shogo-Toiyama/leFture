@@ -73,7 +73,7 @@ def _download_artifact(storage_path: str, save_to: Path):
 # =========================================================
 
 # ---------------------------------------------------------
-# 0. Transcribe Chunk （Groqでリアルタイム文字起こし）
+# 1. Transcribe Chunk （Groqでリアルタイム文字起こし）
 # ---------------------------------------------------------
 
 async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_bytes: bytes):
@@ -84,24 +84,24 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_b
     supabase = get_supabase_client()
     
     try:
-        # DBへの PROCESSING の書き込みはFlutter側で既にやってくれているので省略！
-        
         print_log(f"🎤 [In-Memory] Transcribing chunk {chunk_index} for lecture {lecture_id}")
         
         # 1. 職人を呼んで、メモリ上の音声バイナリを直接渡す
         transcriber = TranscriptionService()
         
-        # 💡 [作戦1の準備] ここで将来的に「過去の文脈」や「CS用語」をprompt_keywordsとして渡せます
         result = transcriber.run_in_memory(
             audio_bytes=audio_bytes, 
             chunk_index=chunk_index,
+            prompt_keywords = "UCLA, lecture, Computer Science, Architecture, Programming Languages, Git, Turing Machine"
         )
 
         # 2. DBを DONE に更新し、真実のテキストを書き込む
         # idではなく、lecture_idとchunk_indexの組み合わせでレコードを特定して更新する
+        is_silent = len(result["segments"]) == 0
+        new_status = "REVIEWED" if is_silent else "TRANSCRIBED"
         supabase.table("lecture_transcripts").update({
             "audio_duration": result["audio_duration"],
-            "status": "DONE",
+            "status": new_status,
             "text": result["text"],
             "segments": result["segments"], 
             "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0
@@ -112,6 +112,60 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_b
             print_log(f"📝 Text: {result['text'][:30]}...")
         else:
             print_log(f"🔇 Text: (No speech detected, skipped Groq)")
+
+        # =========================================================
+        # Sentence Review のトリガー
+        # =========================================================
+        
+        # 1. 現在 TRANSCRIBED 状態になっているチャンクを全て取得
+        res = supabase.table("lecture_transcripts")\
+            .select("*")\
+            .eq("lecture_id", lecture_id)\
+            .eq("status", "TRANSCRIBED")\
+            .order("chunk_index")\
+            .execute()
+        
+        pending_chunks = res.data
+        
+        # 2. 4つ以上溜まっていたらReview
+        if len(pending_chunks) >= 4:
+            # 今回レビューする4つを切り出す
+            chunks_to_review = pending_chunks[:4]
+            first_chunk_index = chunks_to_review[0]["chunk_index"]
+            chunk_ids = [c["id"] for c in chunks_to_review]
+            supabase.table("lecture_transcripts").update({"status": "REVIEWING"}).in_("id", chunk_ids).execute()
+            
+            # 3. 文脈を繋ぐため、1つ前のチャンク（REVIEWED）を取得
+            prev_chunk = None
+            if first_chunk_index > 0:
+                prev_res = supabase.table("lecture_transcripts")\
+                    .select("*")\
+                    .eq("lecture_id", lecture_id)\
+                    .eq("chunk_index", first_chunk_index - 1)\
+                    .execute()
+                if prev_res.data:
+                    prev_chunk = prev_res.data[0]
+            
+            print_log(f"🚀 Triggering Sentence Review for chunks {first_chunk_index} to {first_chunk_index + 3}")
+            
+            # 4. SentenceReviewService を呼び出し
+            reviewer = SentenceReviewService()
+            reviewed_chunks = reviewer.run(
+                chunks_to_review=chunks_to_review,
+                previous_chunk=prev_chunk,
+                course_title="Computer Science",  # TODO
+                keywords_list=""
+            )
+            
+            # 5. 返ってきた綺麗なデータを DB に UPSERT (上書き)
+            for rc in reviewed_chunks:
+                supabase.table("lecture_transcripts").update({
+                    "status": "REVIEWED",
+                    "text": rc["text"],
+                    "segments": rc["segments"]
+                }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
+                
+            print_log("✅ 4 chunks successfully REVIEWED and updated in DB!")
             
     except Exception as e:
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
@@ -122,14 +176,15 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_b
         }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
 
 # ---------------------------------------------------------
-# 1. Check and Assemble (文字起こしの待ち合わせ＆組み立て)
+# 2. Check and Assemble (文字起こしの待ち合わせ＆組み立て)
 # ---------------------------------------------------------
 
 async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
     """
     [タスク: CHECK_AND_ASSEMBLE_TRANSCRIPT]
     リアルタイム文字起こしが全て完了するのを「待ち」、
-    揃ったら1つの transcript.json に組み立てて次の工程に渡す。
+    端数のチャンクがあれば最後の Sentence Review を行い、
+    全てが REVIEWED に揃ったら1つの transcript.json に組み立てる。
     """
     print_log(f"▶️ Starting CHECK_AND_ASSEMBLE (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -148,48 +203,100 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             raise ValueError("expected_chunks is 0. Nothing to assemble!")
 
         # ---------------------------------------------------------
-        # 1. リアルタイム職人の進捗をDBで確認 (CHECK)
+        # A. リアルタイム職人の進捗をDBで確認 (CHECK)
         # ---------------------------------------------------------
-        # 💥 ここを修正！ segments と audio_duration, status を取得する！
         res = supabase.table("lecture_transcripts")\
-            .select("chunk_index, segments, status, audio_duration")\
+            .select("*")\
             .eq("lecture_id", lecture_id)\
             .order("chunk_index")\
             .execute()
             
         all_chunks = res.data
         
-        # DONEになっているものだけを抽出
-        completed_chunks = [c for c in all_chunks if c.get("status") == "DONE"]
+        # 処理済みのチャンク（Whisperが終わっているもの）をカウント
+        processed_chunks = [c for c in all_chunks if c.get("status") in ["TRANSCRIBED", "REVIEWED"]]
         
         # 待ち合わせロジック
-        if len(completed_chunks) < expected_chunks:
-            error_msg = f"⏳ Waiting for real-time transcripts... ({len(completed_chunks)}/{expected_chunks})"
+        if len(processed_chunks) < expected_chunks:
+            error_msg = f"⏳ Waiting for Whisper transcripts... ({len(processed_chunks)}/{expected_chunks})"
             print_log(error_msg)
             # わざとエラーを投げることでリトライさせる
             raise Exception(error_msg)
 
         # ---------------------------------------------------------
-        # 2. 全て揃っていたら、専用職人を呼んで組み立てる (ASSEMBLE)
+        # B. 端数の Sentence Review
         # ---------------------------------------------------------
-        print_log(f"🎉 All {expected_chunks} chunks transcribed! Assembling...")
+        # まだ REVIEWED になっていない（LLMを通っていない）端数チャンクを抽出
+        chunks_to_review = [c for c in all_chunks if c.get("status") == "TRANSCRIBED"]
+
+        if chunks_to_review:
+            first_leftover_idx = chunks_to_review[0]["chunk_index"]
+            chunk_ids = [c["id"] for c in chunks_to_review]
+            supabase.table("lecture_transcripts").update({"status": "REVIEWING"}).in_("id", chunk_ids).execute()
+            print_log(f"🧹 Running final Sentence Review for {len(chunks_to_review)} leftover chunks (Starting at {first_leftover_idx})...")
+            
+            # 1つ前のチャンク（REVIEWED）を取得して文脈として渡す
+            prev_chunk = None
+            if first_leftover_idx > 0:
+                prev_res = supabase.table("lecture_transcripts")\
+                    .select("*")\
+                    .eq("lecture_id", lecture_id)\
+                    .eq("chunk_index", first_leftover_idx - 1)\
+                    .execute()
+                if prev_res.data and prev_res.data[0].get("status") == "REVIEWED":
+                    prev_chunk = prev_res.data[0]
+
+            # LLM職人を呼び出す
+            reviewer = SentenceReviewService()
+            reviewed_leftovers = reviewer.run(
+                chunks_to_review=chunks_to_review,
+                previous_chunk=prev_chunk,
+                course_title="Computer Science", # ※必要に応じてjob_ctxから取得
+                keywords_list=""
+            )
+            
+            # レビュー結果をDBに書き込み、REVIEWED に昇格
+            for rc in reviewed_leftovers:
+                supabase.table("lecture_transcripts").update({
+                    "status": "REVIEWED",
+                    "text": rc["text"],
+                    "segments": rc["segments"]
+                }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
+                
+            print_log("✅ Final leftover chunks successfully REVIEWED!")
+
+        # ---------------------------------------------------------
+        # C. 全て揃っていたら、専用職人を呼んで組み立てる (ASSEMBLE)
+        # ---------------------------------------------------------
+        # 最新のデータをDBから再度取得し、すべてが REVIEWED になっているか確認
+        final_res = supabase.table("lecture_transcripts")\
+            .select("*")\
+            .eq("lecture_id", lecture_id)\
+            .order("chunk_index")\
+            .execute()
+            
+        completed_chunks = [c for c in final_res.data if c.get("status") == "REVIEWED"]
         
-        # 💥 ここで新しく作った職人に丸投げする！
+        if len(completed_chunks) < expected_chunks:
+             raise Exception(f"Mismatch in expected chunks after review. ({len(completed_chunks)}/{expected_chunks})")
+
+        print_log(f"🎉 All {expected_chunks} chunks REVIEWED! Assembling transcript.json...")
+        
+        # 組み立てる (AssembleTranscriptService には completed_chunks をそのまま渡せばOK)
         assembler = AssembleTranscriptService()
         local_transcript_path = assembler.run(completed_chunks, work_dir)
 
         # ---------------------------------------------------------
-        # 3. 出荷 (Storage保存 ＆ DB更新)
+        # D. Storage保存 ＆ DB更新
         # ---------------------------------------------------------
         remote_transcript_path = _upload_artifact(uid, lecture_id, local_transcript_path, "transcript.json")
         result_payload = {"transcript_json": remote_transcript_path}
         
-        # 次の Sentence Review にバトンタッチ！
         _update_task_status(task_id, "COMPLETED", payload=result_payload)
         print_log(f"✅ CHECK_AND_ASSEMBLE Completed!")
 
     except Exception as e:
-        if "Waiting for real-time" in str(e):
+        if "Waiting for" in str(e):
             _update_task_status(task_id, "PENDING") # リトライ待ち状態に戻す
             raise e
             
@@ -199,71 +306,6 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         raise e
         
     finally:
-        if work_dir.exists():
-            shutil.rmtree(work_dir)
-
-
-# ---------------------------------------------------------
-# 2. Sentence Review (文章校正)
-# ---------------------------------------------------------
-
-async def run_sentence_review_task(job_id: str, task_id: str):
-    
-    print_log(f"▶️ Starting SENTENCE_REVIEW (Task: {task_id})")
-    
-    # 1. 状態を RUNNING にする
-    _update_task_status(task_id, "RUNNING")
-    
-    # 作業用ディレクトリ (Taskごとに分けるので安全！)
-    work_dir = BASE_WORK_DIR / task_id
-    work_dir.mkdir(parents=True, exist_ok=True)
-    
-    try:
-        # 2. 親Jobの情報と、前工程のデータパスを取得
-        job_ctx = _get_job_context(job_id)
-        uid = job_ctx["owner_id"]
-        lecture_id = job_ctx["lecture_id"]
-        
-        # 「CHECK_AND_ASSEMBLE」が終わった時に書き込まれたパスを取得する
-        prev_payload = _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE")
-        remote_transcript_path = prev_payload.get("transcript_json")
-        
-        if not remote_transcript_path:
-            raise ValueError("Dependency data (transcript_json) not found!")
-
-        # 3. 前工程のデータをダウンロード (仕入れ)
-        local_transcript_path = work_dir / "transcript.json"
-        _download_artifact(remote_transcript_path, local_transcript_path)
-
-        # 4. 純粋な職人（AIロジック）を呼び出す！
-        llm = UnifiedLLM(provider="gemini")
-        collector = CostCollector()
-        reviewer = SentenceReviewService(llm, collector)
-        
-        reviewed_paths = reviewer.run(local_transcript_path, work_dir)
-
-        # 5. 結果をStorageにアップロード (出荷)
-        result_payload = {}
-        for path in reviewed_paths:
-            is_temp = "raw" in path.name
-            remote_path = _upload_artifact(uid, lecture_id, path, path.name, is_temp=is_temp)
-            
-            # 完成品だけを payload にメモする (次の工程に渡すため)
-            if path.name == "reviewed_sentences.json":
-                result_payload["reviewed_sentences_json"] = remote_path
-
-        # 6. 大成功！DBを COMPLETED にして payload を残す (👉 指揮者が目を覚ます！)
-        _update_task_status(task_id, "COMPLETED", payload=result_payload)
-        print_log(f"✅ SENTENCE_REVIEW Completed!")
-
-    except Exception as e:
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        print_log(f"❌ SENTENCE_REVIEW Failed: {error_msg}")
-        _update_task_status(task_id, "FAILED", error_msg=error_msg)
-        raise e  # Cloud Tasks にエラーを知らせるために再送出
-        
-    finally:
-        # お掃除
         if work_dir.exists():
             shutil.rmtree(work_dir)
 

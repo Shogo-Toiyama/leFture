@@ -1,131 +1,163 @@
-import json
-import time
+import os
+import re
 from pathlib import Path
+from collections import defaultdict
+from groq import Groq
+from nltk.tokenize import sent_tokenize
 
-from app.services.helpers.llm_unified import UnifiedLLM, CostCollector, Message, LLMOptions
-from app.services.helpers.helpers import _load_prompt, _strip_code_fence, token_report_from_result, print_log
-from app.core.config import PROMPTS_DIR
+from app.services.helpers.helpers import print_log
 
 class SentenceReviewService:
-    def __init__(self, llm: UnifiedLLM, collector: CostCollector):
-        self.llm = llm
-        self.collector = collector
-        self.model_alias = "2_5_flash" 
-    
-    def run(self, transcript_path: Path, work_dir: Path) -> Path:
-        print_log(f"   [Logic] Starting sentence_reviewing")
+    def __init__(self):
+        self.client = Groq()
+        self.model = "openai/gpt-oss-120b"
         
-        prompt = _load_prompt("sentence_review_prompt.txt")
-        try:
-            self._sentence_review(
-                llm=self.llm,
-                model_alias=self.model_alias,
-                work_dir=work_dir,
-                transcript_path=transcript_path,
-                prompt=prompt,
-            )
-        except Exception as e:
-            print_log(f"⚠️ Sentence Review Logic Error (Continuing to return artifacts): {e}")
+        # プロンプトファイルのパス解決 (logicディレクトリの1つ上のpromptディレクトリ)
+        self.prompt_path = Path(__file__).parent.parent / "prompt" / "sentence_review_prompt.txt"
 
-        reviewed_sentences_raw = work_dir / "reviewed_sentences_raw.json"
-        reviewed_sentences_raw_text = work_dir / "reviewed_sentences_raw_text.json"
-        reviewed_sentences = work_dir / "reviewed_sentences.json"
+    def _load_prompt_template(self) -> str:
+        if not self.prompt_path.exists():
+            raise FileNotFoundError(f"Prompt file not found at {self.prompt_path}")
+        with open(self.prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
 
-        results = []
+    def run(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
+        """
+        4つ溜まったチャンク（未校正）を受け取り、LLMで文脈・句読点を修正して返す。
+        """
+        print_log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
 
-        if reviewed_sentences_raw.exists():
-            results.append(reviewed_sentences_raw)
-
-        if reviewed_sentences.exists():
-            results.append(reviewed_sentences)
-
-        if not reviewed_sentences_raw.exists() and reviewed_sentences_raw_text.exists():
-            results.append(reviewed_sentences_raw_text)
+        # ==========================================
+        # 1. データの準備（LLMに投げるテキストの構築）
+        # ==========================================
+        orig_map = {}
+        target_xml = ""
         
-        if not results:
-             raise FileNotFoundError("Sentence Review failed and no artifacts were generated.")
-        print_log(f"   [Logic] Sentence Review finished! Artifacts: {[p.name for p in results]}")
+        # 前回のチャンクの最後の一部
+        if previous_chunk and previous_chunk.get("segments"):
+            last_segs = previous_chunk["segments"][-3:]
+            for seg in last_segs:
+                sid = seg["sid"]
+                orig_map[sid] = seg
+                target_xml += f"<{sid}>{seg['text']}</{sid}>"
 
-        return results
-    
-    def _sentence_review(self, llm: UnifiedLLM, model_alias: str, work_dir: Path, transcript_path: Path, prompt: str, options_json: LLMOptions | None = None):
-        print_log("\n### Sentence Review ###")
-        start_time = time.time()
+        # 今回の修正対象チャンクを追加
+        for chunk in chunks_to_review:
+            for seg in chunk.get("segments", []):
+                sid = seg["sid"]
+                orig_map[sid] = seg
+                target_xml += f"<{sid}>{seg['text']}</{sid}>"
 
-        if not transcript_path.exists():
-            raise FileNotFoundError(f"Input file not found: {transcript_path}")
+        # ==========================================
+        # 2. プロンプトの生成と LLM 呼び出し
+        # ==========================================
+        prompt_template = self._load_prompt_template()
+        prompt = prompt_template.format(
+            course_title=course_title,
+            keywords_list=keywords_list,
+            target_xml_text=target_xml
+        )
 
-        with open(transcript_path, "r", encoding="utf-8") as f:
-            sentences = json.load(f)
+        print_log(f"   [LLM] Calling Groq API ({self.model})...")
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1 # フォーマット遵守のため低めに設定
+        )
+        llm_output = response.choices[0].message.content
 
-        ALLOWED = ["sid", "text", "confidence"]
-        projected_sentences = [{k: s.get(k) for k in ALLOWED} for s in sentences]
-        
-        low_confidence_sentences = [
-            s for s in projected_sentences 
-            if s.get("confidence") is not None and s.get("confidence", 1.0) < 0.9
-        ]
-        print_log("Low Confident Sentences: ", len(low_confidence_sentences))
+        # ==========================================
+        # 3. LLM出力の堅牢なパース (フェイルセーフ設計)
+        # ==========================================
+        # おしゃべりやマークダウン(```xml)を無視し、純粋にタグの中身だけを抽出
+        matches = re.findall(r'<s(\d{6})>(.*?)</s\1>', llm_output, re.DOTALL)
+        parsed_dict = {f"s{sid}": text.strip() for sid, text in matches}
 
-        payload = {
-            "task": "Sentence Review",
-            "instruction": prompt,
-            "data": {
-                "low_confidence_sentences": low_confidence_sentences
-            }
-        }
+        merged_segments = []
+        last_non_empty_seg = None
 
-        messages = [
-            Message(
-                role="system",
-                content="You are a careful transcript editor. Follow the instruction and return JSON only.",
-            ),
-            Message(role="user", content=json.dumps(payload, ensure_ascii=False)),
-        ]
+        # 元のSIDの順番通りに処理する（LLMがタグを消したり順番を狂わせても無視して安全に処理する）
+        for sid in orig_map.keys():
+            text = parsed_dict.get(sid, "")
+            orig_seg = orig_map[sid]
 
-        options_json = options_json or LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
+            if text:
+                # テキストが入っている場合、新しいセグメントとして追加
+                new_seg = {
+                    "text": text,
+                    "start": orig_seg["start"],
+                    "end": orig_seg["end"],
+                    "chunk_index": orig_seg["chunk_index"],
+                    "confidence": orig_seg["confidence"]
+                }
+                
+                # もし最初のタグが空にされてしまっていた場合の救済措置
+                if not merged_segments and orig_seg["start"] > orig_map[list(orig_map.keys())[0]]["start"]:
+                    new_seg["start"] = orig_map[list(orig_map.keys())[0]]["start"]
 
-        print_log(f"Waiting for response from {llm.provider} API...")
-        res = llm.generate(model=model_alias, messages=messages, options=options_json)
-
-        print_log("saving response...")
-        raw_text = res.output_text
-        clean_text = _strip_code_fence(raw_text).strip()
-
-        try:
-            out_review_sentence = json.loads(clean_text)
-        except json.JSONDecodeError as e:
-            print_log(f"⚠️ JSON Decode Error: {e}")
-            (work_dir / "reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
-
-        with open(work_dir / "reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
-            json.dump(out_review_sentence, f, ensure_ascii=False, indent=2)
-
-        sentence_reviewed_list = out_review_sentence.get("results") or []
-
-        mods = {}
-        for r in sentence_reviewed_list:
-            sid = r.get("sid")
-            modified = r.get("modified")
-            if sid and isinstance(modified, str) and modified.strip():
-                mods[sid] = modified.strip()
-
-        reviewed_sentences = []
-        for s in sentences:
-            sid = s.get("sid")
-            if sid in mods:
-                new_s = dict(s)
-                new_s["text"] = mods[sid]
-                reviewed_sentences.append(new_s)
+                merged_segments.append(new_seg)
+                last_non_empty_seg = new_seg
             else:
-                reviewed_sentences.append(s)
+                # LLMが空にした（前のタグに吸収させた）場合、時間を前のタグに結合(マージ)する
+                if last_non_empty_seg is not None:
+                    last_non_empty_seg["end"] = max(last_non_empty_seg["end"], orig_seg["end"])
 
-        with open(work_dir / "reviewed_sentences.json", "w", encoding="utf-8") as f:
-            json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
+        # ==========================================
+        # 4. NLTKによる複数文の分割とタイムスタンプ按分
+        # ==========================================
+        final_segments = []
+        for seg in merged_segments:
+            sentences = sent_tokenize(seg["text"])
+            sentences = [s.strip() for s in sentences if s.strip()]
 
-        elapsed_time = time.time() - start_time
-        print_log(token_report_from_result("Sentence Review", res, self.collector))
-        
-        if res.warnings:
-            print_log("  [WARN]", "; ".join(res.warnings))
-        print_log(f"⏰Sentence Review: {elapsed_time:.2f} seconds.")
+            if not sentences:
+                continue
+
+            if len(sentences) == 1:
+                final_segments.append(seg)
+            else:
+                # 複数文入っていた場合、文字数ベースでタイムスタンプを計算（Proportional interpolation）
+                total_chars = sum(len(s) for s in sentences)
+                total_duration = seg["end"] - seg["start"]
+                
+                curr_start = seg["start"]
+                for s in sentences:
+                    ratio = len(s) / total_chars if total_chars > 0 else 0
+                    dur = total_duration * ratio
+                    
+                    final_segments.append({
+                        "text": s,
+                        "start": round(curr_start, 3),
+                        "end": round(curr_start + dur, 3),
+                        "chunk_index": seg["chunk_index"],
+                        "confidence": seg["confidence"]
+                    })
+                    curr_start += dur
+
+        # ==========================================
+        # 5. SIDの再採番と、チャンクごとの再梱包
+        # ==========================================
+        updated_chunks_dict = defaultdict(lambda: {"segments": [], "text": ""})
+        counters = defaultdict(int)
+
+        for seg in final_segments:
+            c_idx = seg["chunk_index"]
+            counters[c_idx] += 1
+            # SIDを綺麗に付け直す
+            seg["sid"] = f"s{c_idx:03d}{counters[c_idx]:03d}"
+            
+            updated_chunks_dict[c_idx]["segments"].append(seg)
+            # そのチャンクの全文(text)も結合して更新しておく
+            updated_chunks_dict[c_idx]["text"] += seg["text"] + " "
+
+        # リストの形に戻して返す
+        result_chunks = []
+        for c_idx in sorted(updated_chunks_dict.keys()):
+            updated_chunks_dict[c_idx]["text"] = updated_chunks_dict[c_idx]["text"].strip()
+            updated_chunks_dict[c_idx]["chunk_index"] = c_idx
+            result_chunks.append(updated_chunks_dict[c_idx])
+
+        print_log(f"✅ [Sentence Review] Review completed perfectly. Ready to update DB.")
+        return result_chunks
