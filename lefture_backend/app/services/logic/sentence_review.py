@@ -55,7 +55,10 @@ class SentenceReviewService:
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1 # フォーマット遵守のため低めに設定
+            reasoning_effort="low",
+            include_reasoning=False,
+            temperature=0.5,
+            max_completion_tokens=2048,
         )
         llm_output = response.choices[0].message.content
 
@@ -132,6 +135,10 @@ class SentenceReviewService:
         # ==========================================
         updated_chunks_dict = defaultdict(lambda: {"segments": [], "text": ""})
         counters = defaultdict(int)
+
+        for chunk in chunks_to_review:
+            c_idx = chunk["chunk_index"]
+            updated_chunks_dict[c_idx] = {"segments": [], "text": "", "chunk_index": c_idx}
 
         for seg in final_segments:
             c_idx = seg["chunk_index"]

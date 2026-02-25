@@ -26,8 +26,8 @@ app = FastAPI(title="leFture Backend Worker", version="2.0.0")
 # 環境変数の読み込み
 # ---------------------------------------------------------
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-REGION = os.getenv("GCP_REGION", "us-central1")
-QUEUE_NAME = os.getenv("QUEUE_NAME", "lecture-analyzing-queue")
+REGION = os.getenv("GCP_REGION", "us-west1")
+QUEUE_NAME = os.getenv("QUEUE_NAME", "lefture-processing-queue")
 CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL") 
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
 
