@@ -25,4 +25,5 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
 
 [TARGET TEXT TO CORRECT]
 Correct the following text according to the rules above. Output ONLY the corrected XML string.
+
 {target_xml_text}

@@ -11,14 +11,6 @@ class SentenceReviewService:
     def __init__(self):
         self.client = Groq()
         self.model = "openai/gpt-oss-120b"
-        
-        prompt = _load_prompt("sentence_review_prompt.txt")
-
-    def _load_prompt_template(self) -> str:
-        if not self.prompt_path.exists():
-            raise FileNotFoundError(f"Prompt file not found at {self.prompt_path}")
-        with open(self.prompt_path, "r", encoding="utf-8") as f:
-            return f.read()
 
     def run(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
         """
@@ -50,7 +42,7 @@ class SentenceReviewService:
         # ==========================================
         # 2. プロンプトの生成と LLM 呼び出し
         # ==========================================
-        prompt_template = self._load_prompt_template()
+        prompt_template = _load_prompt("sentence_review_prompt.txt")
         prompt = prompt_template.format(
             course_title=course_title,
             keywords_list=keywords_list,
