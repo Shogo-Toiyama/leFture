@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
@@ -53,32 +53,31 @@ class WorkerPayload(BaseModel):
 # ---------------------------------------------------------
 @app.post("/worker/transcribe-chunk")
 async def worker_transcribe_chunk(
-    background_tasks: BackgroundTasks, # ← これが即時レスポンスの魔法
-    lecture_id: str = Form(...),       # ← Flutterから送られるメタデータ
-    chunk_index: int = Form(...),      # ← Flutterから送られるメタデータ
-    file: UploadFile = File(...)       # ← WAVファイル本体
+    lecture_id: str = Form(...),       
+    chunk_index: int = Form(...),      
+    file: UploadFile = File(...)       
 ):
     """
-    FlutterからWAVファイルを直接受け取るエンドポイント。
-    ダウンロード待ち時間をゼロにし、即座に200を返して裏で処理を回す。
+    FlutterからWAVファイルを受け取り、そのまま同期的に処理する。
+    通信が繋がっている間はCloud RunがCPUを100%割り当ててくれるため、
+    「リクエスト処理中のみCPUを割り当てる（コスト最小）」設定のまま爆速で完了する。
     """
     if not file:
         raise HTTPException(status_code=400, detail="No audio file provided")
 
-    # 1. WAVファイルをメモリ上(bytes)に直接読み込む（ディスクに保存しないため爆速）
+    # 1. WAVファイルをメモリ上(bytes)に直接読み込む
     audio_bytes = await file.read()
     
-    # 2. バックグラウンドタスクとして職人を走らせる
-    # こうすることで、このHTTPリクエスト自体は次の行の return で瞬時に終了し、Flutterを待たせない
-    background_tasks.add_task(
-        run_transcribe_chunk_worker, # ← 今までの職人関数
+    # 2. 💡 ここで await して、文字起こしが完全に終わるまで待機する！
+    # （この待機中、Cloud Runは「通信中」と判定し、CPUを100%割り当て続けます）
+    await run_transcribe_chunk_worker(
         lecture_id=lecture_id,
         chunk_index=chunk_index,
         audio_bytes=audio_bytes
     )
     
-    # 3. Flutterには即座に成功を返す
-    return {"status": "success", "message": f"Chunk {chunk_index} received."}
+    # 3. 処理がすべて終わったら、Flutterに成功レスポンスを返す
+    return {"status": "success", "message": f"Chunk {chunk_index} fully processed."}
 
 # ---------------------------------------------------------
 # 🗺️ タスクの種類と、呼び出す裏口 (URL) のマッピング辞書

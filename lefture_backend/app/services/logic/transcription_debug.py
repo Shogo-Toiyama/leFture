@@ -98,7 +98,7 @@ class TranscriptionDebugService:
         # ⏱️ 4. Silero VAD (v5) の計測
         print_log(f"   [Logic] Running Silero VAD...")
         t0 = time.perf_counter()
-        audio_16k = audio.set_frame_rate(16000).set_channels(1)
+        audio_16k = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
         samples = np.array(audio_16k.get_array_of_samples(), dtype=np.float32) / 32768.0
         
         window_size = 512
