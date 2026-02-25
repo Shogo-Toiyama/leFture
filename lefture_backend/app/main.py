@@ -7,7 +7,6 @@ from google.cloud import tasks_v2
 from app.services.task_runners import (
     run_transcribe_chunk_worker,
     run_check_and_assemble_transcript_task,
-    run_sentence_review_task,
     run_role_classification_task,
     run_core_extraction_task,
     run_announcement_generation_task,
