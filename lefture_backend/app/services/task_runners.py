@@ -12,6 +12,7 @@ from app.services.helpers.helpers import print_log, init_logger, finalize_log_an
 from app.services.helpers.llm_unified import UnifiedLLM, CostCollector
 
 from app.services.logic.transcription import TranscriptionService
+from app.services.logic.transcription_debug import TranscriptionDebugService
 from app.services.logic.assemble_transcript import AssembleTranscriptService
 from app.services.logic.sentence_review import SentenceReviewService
 from app.services.logic.role_classification import RoleClassificationService
@@ -87,9 +88,11 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_b
         print_log(f"🎤 [In-Memory] Transcribing chunk {chunk_index} for lecture {lecture_id}")
         
         # 1. 職人を呼んで、メモリ上の音声バイナリを直接渡す
-        transcriber = TranscriptionService()
+        # transcriber = TranscriptionService()
+        transcriber = TranscriptionDebugService()
         
-        result = transcriber.run_in_memory(
+        result = transcriber.run_in_memory_debug(
+            lecture_id=lecture_id,
             audio_bytes=audio_bytes, 
             chunk_index=chunk_index,
             prompt_keywords = "UCLA, lecture, Computer Science, Architecture, Programming Languages, Git, Turing Machine"
