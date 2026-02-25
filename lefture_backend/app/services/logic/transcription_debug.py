@@ -98,26 +98,38 @@ class TranscriptionDebugService:
         # ⏱️ 4. Silero VAD (v5) の計測
         print_log(f"   [Logic] Running Silero VAD...")
         t0 = time.perf_counter()
+        
+        # 確実に 16kHz, モノラル, 16-bit PCM に変換し、スケールを -1.0~1.0 にする
         audio_16k = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
         samples = np.array(audio_16k.get_array_of_samples(), dtype=np.float32) / 32768.0
         
         window_size = 512
+        context_size = 64  # 💡 [v5の超重要仕様] 過去の文脈を引き継ぐサイズ
+        
         state = np.zeros((2, 1, 128), dtype=np.float32)
+        context = np.zeros(context_size, dtype=np.float32) # 初期文脈はゼロ
         probs = []
         
         for i in range(0, len(samples), window_size):
             chunk = samples[i:i+window_size]
+            # 端数のパディング
             if len(chunk) < window_size:
                 chunk = np.pad(chunk, (0, window_size - len(chunk)))
-                
+            
+            # 💡 [v5の超重要ロジック] 前のチャンクの末尾64を先頭にくっつけて「576」にする！
+            chunk_with_context = np.concatenate([context, chunk])
+            
             inputs = {
-                "input": chunk.reshape(1, window_size),
-                "sr": np.array([16000], dtype=np.int64),
+                "input": chunk_with_context.reshape(1, window_size + context_size), # (1, 576) で渡す！
+                "sr": np.array(16000, dtype=np.int64), 
                 "state": state
             }
             ort_outs = self.vad_session.run(None, inputs)
             probs.append(ort_outs[0][0][0])
+            
+            # 💡 次のループのために、今回のデータの「最後の64サンプル」を文脈として保存
             state = ort_outs[1]
+            context = chunk_with_context[-context_size:]
             
         timings["4_vad_inference"] = time.perf_counter() - t0
 
