@@ -61,6 +61,8 @@ class RecordingRepository {
   Future<String> attachAudioAndEnqueueUpload({
     required String lectureId,
     required String localPath,
+    required double startTime,
+    int sequenceIndex = 0,
     String? presetAssetId,
   }) {
     final uid = _requireUid();
@@ -68,6 +70,8 @@ class RecordingRepository {
       ownerId: uid,
       lectureId: lectureId,
       localPath: localPath,
+      startTime: startTime,
+      sequenceIndex: sequenceIndex,
       presetAssetId: presetAssetId,
     );
   }

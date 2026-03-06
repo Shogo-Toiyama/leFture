@@ -1,23 +1,39 @@
 // core/services/audio_record/audio_chunker.dart
 
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 class AudioChunker {
   final BytesBuilder _buffer = BytesBuilder();
   int _silenceBytesCount = 0; 
-  
-  // デバッグ用：ログの出力頻度を下げるためのカウンター
   int _logCounter = 0;
 
-  final void Function(Uint8List chunkData) onChunkReady;
-  AudioChunker({required this.onChunkReady});
+  static const int BYTES_PER_SEC = 32000;
+  static const int OVERLAP_BYTES = 2 * BYTES_PER_SEC; // 2秒
+
+  int _mainChunkStartIndex = 0; 
+  bool _isWaitingForTail = false; 
+  int _cutPointIndex = 0; 
+  int _absoluteBufferStartOffset = 0; // マスター録音の先頭から何バイト目か
+
+  final void Function(Uint8List chunkData, double startTimeSec) onChunkReady;
+  
+  final void Function(Uint8List masterData)? onMasterDataReady;
+
+  AudioChunker({
+    required this.onChunkReady,
+    this.onMasterDataReady,
+  });
 
   void processAudioStream(Uint8List newData) {
+    if (onMasterDataReady != null) {
+      onMasterDataReady!(newData);
+    }
+
     _buffer.add(newData);
     
-    // 1. 今回のデータの「最大音量」を取得する
     int maxAmp = _getMaxAmplitude(newData);
-    bool isSilent = maxAmp < 1000; // 1000は実際のログを見て調整してね！
+    bool isSilent = maxAmp < 1000; 
 
     if (isSilent) {
       _silenceBytesCount += newData.length;
@@ -25,66 +41,98 @@ class AudioChunker {
       _silenceBytesCount = 0; 
     }
 
-    double currentDurationSec = _buffer.length / 32000.0;
-    double silenceDurationSec = _silenceBytesCount / 32000.0;
+    if (_isWaitingForTail) {
+      int targetLength = _cutPointIndex + OVERLAP_BYTES;
+      if (_buffer.length >= targetLength) {
+        _extractAndEmitChunk(targetLength);
+      }
+      return; // 待機中は新たなカット判定はしない
+    }
 
-    // 💡 [デバッグログ] 定期的に現在の状態を出力（大体0.2〜0.5秒に1回出ます）
+    double currentMainDurationSec = (_buffer.length - _mainChunkStartIndex) / BYTES_PER_SEC;
+    double silenceDurationSec = _silenceBytesCount / BYTES_PER_SEC;
+
     _logCounter++;
     if (_logCounter % 10 == 0) {
-      // print('[Chunker] ⏱ ${currentDurationSec.toStringAsFixed(1)}s | 🔊 音量: $maxAmp | 🔇 無音: ${silenceDurationSec.toStringAsFixed(1)}s');
+      // print('[Chunker] ⏱ メイン長: ${currentMainDurationSec.toStringAsFixed(1)}s | 🔊 音量: $maxAmp | 🔇 無音: ${silenceDurationSec.toStringAsFixed(1)}s');
     }
 
     bool shouldCut = false;
-    String cutReason = ''; // デバッグ用に理由を保存
+    String cutReason = ''; 
 
-    if (currentDurationSec >= 120.0) {
+    if (currentMainDurationSec >= 120.0) {
       shouldCut = true; 
       cutReason = '2分強制カット';
-    } else if (currentDurationSec >= 90.0 && silenceDurationSec >= 0.3) {
+    } else if (currentMainDurationSec >= 90.0 && silenceDurationSec >= 0.3) {
       shouldCut = true; 
       cutReason = '1分半 ＆ 0.3秒無音';
-    } else if (currentDurationSec >= 60.0 && silenceDurationSec >= 0.6) {
+    } else if (currentMainDurationSec >= 60.0 && silenceDurationSec >= 0.6) {
       shouldCut = true; 
       cutReason = '1分 ＆ 0.6秒無音';
-    } else if (currentDurationSec >= 30.0 && silenceDurationSec >= 1.0) {
+    } else if (currentMainDurationSec >= 30.0 && silenceDurationSec >= 1.0) {
       shouldCut = true; 
       cutReason = '30秒 ＆ 1.0秒無音';
     }
 
     if (shouldCut) {
-      // 💡 [デバッグログ] カットされた瞬間の理由と時間をドンと出す！
-      // print('✂️ [Chunker] カット実行！理由: $cutReason (録音時間: ${currentDurationSec.toStringAsFixed(2)}s)');
-      
-      final chunkData = _buffer.takeBytes();
-      onChunkReady(chunkData);
-      
-      _silenceBytesCount = 0;
+      // print('✂️ [Chunker] カット判定！あと2秒の尻尾を待ちます。理由: $cutReason');
+      _isWaitingForTail = true;
+      _cutPointIndex = _buffer.length; 
     }
   }
 
-  Uint8List? flush() {
+  void _extractAndEmitChunk(int targetLength) {
+    Uint8List allBytes = _buffer.takeBytes();
+
+    int startExtract = math.max(0, _mainChunkStartIndex - OVERLAP_BYTES);
+    int endExtract = math.min(targetLength, allBytes.length);
+
+    Uint8List chunk = allBytes.sublist(startExtract, endExtract);
+    
+    double absoluteStartTimeSec = (_absoluteBufferStartOffset + startExtract) / BYTES_PER_SEC;
+
+    onChunkReady(chunk, absoluteStartTimeSec);
+
+    int keepStart = math.max(0, _cutPointIndex - OVERLAP_BYTES);
+    Uint8List retainedBytes = allBytes.sublist(keepStart);
+    _buffer.add(retainedBytes);
+
+    _absoluteBufferStartOffset += keepStart;
+    
+    _mainChunkStartIndex = _cutPointIndex - keepStart;
+    _isWaitingForTail = false;
+    _silenceBytesCount = 0;
+  }
+
+  ({Uint8List data, double startTimeSec})? flush() {
     if (_buffer.isEmpty) return null; 
     
-    // 💡 [デバッグログ] Flushが呼ばれたことを確認
-    // print('🧹 [Chunker] Flush（絞り出し）実行！(残量: ${(_buffer.length / 32000.0).toStringAsFixed(2)}s)');
+    Uint8List allBytes = _buffer.takeBytes();
     
-    final chunkData = _buffer.takeBytes();
-    _silenceBytesCount = 0; 
-    return chunkData;
+    int startExtract = math.max(0, _mainChunkStartIndex - OVERLAP_BYTES);
+    if (startExtract >= allBytes.length) return null;
+
+    Uint8List chunk = allBytes.sublist(startExtract);
+    
+    double absoluteStartTimeSec = (_absoluteBufferStartOffset + startExtract) / BYTES_PER_SEC;
+
+    _silenceBytesCount = 0;
+    _isWaitingForTail = false;
+    _mainChunkStartIndex = 0; 
+    _absoluteBufferStartOffset = 0;
+    
+    return (data: chunk, startTimeSec: absoluteStartTimeSec);
   }
 }
 
 int _getMaxAmplitude(Uint8List data) {
   int maxAmplitude = 0;
-  
   for (int i = 0; i < data.length - 1; i += 2) {
     int sample = (data[i] & 0xFF) | ((data[i + 1] & 0xFF) << 8);
-    
     if (sample >= 32768) {
       sample -= 65536; 
     }
-    
-    int amplitude = sample.abs(); // 絶対値で音の大きさを取る
+    int amplitude = sample.abs();
     if (amplitude > maxAmplitude) {
       maxAmplitude = amplitude;
     }

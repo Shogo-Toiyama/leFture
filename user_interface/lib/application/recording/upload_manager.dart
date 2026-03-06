@@ -240,6 +240,7 @@ class UploadManager {
           localPath: localPath,
           lectureId: lecture.id,
           chunkIndex: asset.sequenceIndex,
+          startTime: asset.startTime,
         ),
       ]);
     } catch (e) {
@@ -261,6 +262,7 @@ class UploadManager {
     required String localPath,
     required String lectureId,
     required int chunkIndex,
+    required double startTime,
   }) async {
     // Cloud RunのURL
     final uri = Uri.parse('https://lefture-511705914929.us-west1.run.app/worker/transcribe-chunk');
@@ -270,6 +272,8 @@ class UploadManager {
     // Cloud Run側が「どのデータか」分かるようにメタデータを送る
     request.fields['lecture_id'] = lectureId;
     request.fields['chunk_index'] = chunkIndex.toString();
+
+    request.fields['start_time'] = startTime.toString();
     
     // WAVファイルをバイナリとして添付
     request.files.add(await http.MultipartFile.fromPath('file', localPath));

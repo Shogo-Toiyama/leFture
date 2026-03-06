@@ -24,7 +24,6 @@ class LocalLectureFolders extends Table {
 
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
 
-  // deleted_at (nullなら生きてる)
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
@@ -91,6 +90,8 @@ class LocalLectureAssets extends Table {
   TextColumn get lectureId => text()(); // uuid
 
   TextColumn get type => text()(); // "audio"
+
+  RealColumn get startTime => real().withDefault(const Constant(0.0))();
 
   IntColumn get sequenceIndex => integer().withDefault(const Constant(0))();
 

@@ -35,28 +35,22 @@ class RecordingController extends _$RecordingController {
 
   @override
   RecordingState build() {
-    // Controller破棄時に監視系をストップ
     ref.onDispose(() {
       _dbSubscription?.cancel();
       _timer?.cancel();
     });
-
     return RecordingState.idle();
   }
 
-  // --- 内部メソッド: DB監視開始 ---
   void _startWatchingLecture(String lectureId) {
     _dbSubscription?.cancel();
     _dbSubscription = _repo.watchLecture(lectureId).listen((localLecture) {
-      // DBが更新されるたびにStateを更新
-      // これにより setTitle などを呼んだ直後にここが反応してUIが変わる
       state = state.copyWith(lecture: localLecture);
     });
   }
 
   // --- User Actions ---
 
-  /// 新規録音セッションの開始準備（Startボタン押下）
   Future<void> toggleStartStopResume() async {
     final user = supabase.auth.currentUser;
     if (user == null) {
@@ -67,36 +61,36 @@ class RecordingController extends _$RecordingController {
       return;
     }
 
-    // 1. Idle -> Start (新規作成)
+    // 1. Idle -> Start
     if (state.phase == RecordingPhase.idle) {
       await _startRecordingSession();
       return;
     }
 
-    // 2. Recording -> Pause (一時停止)
+    // 2. Recording -> Pause
     if (state.phase == RecordingPhase.recording) {
-      // ストリームは一旦止まる（または一時停止する）
       await _recorder.pause(); 
       _timer?.cancel();
 
-      // ここでバケツの中身を安全にFlush（保存＆キュー追加）
-      final pausedChunk = _chunker?.flush();
-      if (pausedChunk != null && pausedChunk.isNotEmpty) {
-        final path = await _recorder.savePcmAsWav(pausedChunk, state.currentLectureId!);
+      final flushed = _chunker?.flush();
+      if (flushed != null && flushed.data.isNotEmpty) {
+        final path = await _recorder.savePcmAsWav(flushed.data, state.currentLectureId!);
+        
         await _repo.attachAudioAndEnqueueUpload(
           ownerId: user.id,
           lectureId: state.currentLectureId!,
           localPath: path,
           sequenceIndex: _currentChunkIndex,
+          startTime: flushed.startTimeSec,
         );
-        _currentChunkIndex++; // ちゃんと番号も進める
+        _currentChunkIndex++; 
       }
 
       state = state.copyWith(phase: RecordingPhase.paused);
       return;
     }
 
-    // 3. Paused -> Resume (再開)
+    // 3. Paused -> Resume
     if (state.phase == RecordingPhase.paused) {
       await _recorder.resume();
       _startTimer();
@@ -115,13 +109,11 @@ class RecordingController extends _$RecordingController {
       return;
     }
 
-    // マイク＆通知権限チェック
     Map<Permission, PermissionStatus> statuses = await [
       Permission.microphone,
       Permission.notification,
     ].request();
 
-    // マイク権限チェック
     if (statuses[Permission.microphone] != PermissionStatus.granted) {
       state = state.copyWith(
         phase: RecordingPhase.error,
@@ -133,53 +125,42 @@ class RecordingController extends _$RecordingController {
     state = state.copyWith(phase: RecordingPhase.requestingPermission, clearErrorMessage: true);
 
     try {
-      // A. DBにDraft作成 (ここでIDが確定)
-      //    (Step 0の RecordingRepositoryDrift を使用)
       final lectureId = await _repo.createDraftLecture(
         ownerId: user.id,
-        presetFolderId: state.folderId, // ← Getter経由で draftFolderId が渡される
+        presetFolderId: state.folderId, 
         presetTitle: state.title.isNotEmpty ? state.title : null,
       );
 
-      // B. DB監視開始
       state = state.copyWith(currentLectureId: lectureId);
       _startWatchingLecture(lectureId);
 
-      _currentChunkIndex = 0; // 録音開始時にチャンク番号をリセット
+      _currentChunkIndex = 0; 
 
-      // C. Chunker（分割職人）の準備と、分割完了時のルールを決める
       _chunker = AudioChunker(
-        onChunkReady: (Uint8List chunkData) async {
-          log('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length}');
+        onChunkReady: (Uint8List chunkData, double startTimeSec) async {
+          log('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length} (Start: ${startTimeSec}s)');
           
-          // ① チャンクデータをWAVとして保存（Serviceに追加したメソッドを呼ぶ）
           final path = await _recorder.savePcmAsWav(chunkData, lectureId);
           
-          // ② DBのキューに積む（順番も記録する！）
           await _repo.attachAudioAndEnqueueUpload(
             ownerId: user.id,
             lectureId: lectureId,
             localPath: path,
             sequenceIndex: _currentChunkIndex,
+            startTime: startTimeSec,
           );
           
-          _currentChunkIndex++; // 次のチャンクのために番号を増やす
-          
-          // ③ アップロードのキューを回す
+          _currentChunkIndex++; 
           _uploadMgr.tryProcessQueue();
         },
       );
 
-      // D. マイクのStream（川の流れ）を開通させる
-      // ※ Service側の start() を startStream() に変更した想定
       final audioStream = await _recorder.startStream();
 
-      // E. 川の流れを監視して、データを随時Chunkerに流し込む
       _audioStreamSub = audioStream.listen((data) {
         _chunker!.processAudioStream(data);
       });
 
-      // F. タイマー開始
       _startTimer();
       state = state.copyWith(phase: RecordingPhase.recording);
 
@@ -196,7 +177,6 @@ class RecordingController extends _$RecordingController {
     });
   }
 
-  /// タイトル変更 (DB即時反映)
   Future<void> setTitle(String newTitle) async {
     state = state.copyWith(title: newTitle);
     final lecture = state.lecture;
@@ -209,7 +189,6 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  /// フォルダ変更 (DB即時反映)
   Future<void> setFolderId(String? folderId) async {
     state = state.copyWith(
       folderId: folderId,
@@ -225,7 +204,6 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  /// Uploadボタン押下時: 録音停止 -> DBにJob作成 -> UploadManagerキック
   Future<void> upload() async {
     if (!state.canUpload) return;
 
@@ -239,25 +217,23 @@ class RecordingController extends _$RecordingController {
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
 
     try {
-      // 1. 川の流れ（Stream）の監視をストップし、マイク自体も止める
       await _audioStreamSub?.cancel();
       await _recorder.stop();
       _timer?.cancel();
 
-      // 2. Chunkerのバケツに残っている最後のデータを絞り出す (Flush)
-      final finalChunk = _chunker?.flush();
+      final finalFlushed = _chunker?.flush();
       
-      // 3. もし端数データが残っていたら、最後のファイルとして保存してキューに積む
-      if (finalChunk != null && finalChunk.isNotEmpty) {
-        log('[Chunker] Final chunk is ready! Size: ${finalChunk.length} bytes');
+      if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
+        log('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
         
-        final path = await _recorder.savePcmAsWav(finalChunk, lecture.id);
+        final path = await _recorder.savePcmAsWav(finalFlushed.data, lecture.id);
         
         await _repo.attachAudioAndEnqueueUpload(
           ownerId: lecture.ownerId,
           lectureId: lecture.id,
           localPath: path,
-          sequenceIndex: _currentChunkIndex, // 最後の番号を付ける
+          sequenceIndex: _currentChunkIndex, 
+          startTime: finalFlushed.startTimeSec,
         );
         _currentChunkIndex++;
       }
@@ -267,12 +243,8 @@ class RecordingController extends _$RecordingController {
         expectedChunks: _currentChunkIndex,
       );
 
-      // 4. キューに入れたので、完了状態（Queued）にする
       state = state.copyWith(phase: RecordingPhase.queued);
-
-      // 5. UploadManagerを叩いて、溜まっているファイルの送信を始める
       _uploadMgr.tryProcessQueue();
-
 
     } catch (e) {
       state = state.copyWith(
@@ -282,22 +254,16 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  /// キャンセル・破棄
   Future<void> cancelAndDiscard() async {
-    // ストリームの監視を解除して録音停止
     await _audioStreamSub?.cancel();
     await _recorder.stop();
     _timer?.cancel();
     _dbSubscription?.cancel();
-
-    // ※ Discardなので、_chunker?.flush() は呼ばずにバケツの中身は捨てます！
     
-    // DBからこのLectureと、今までキューに積んだチャンクを全削除
     if (state.currentLectureId != null) {
       await _repo.deleteLectureAndAssets(state.currentLectureId!);
     }
     
-    // アイドルに戻す
     state = RecordingState.idle();
   }
 

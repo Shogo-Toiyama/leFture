@@ -1925,6 +1925,18 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _startTimeMeta = const VerificationMeta(
+    'startTime',
+  );
+  @override
+  late final GeneratedColumn<double> startTime = GeneratedColumn<double>(
+    'start_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
   static const VerificationMeta _sequenceIndexMeta = const VerificationMeta(
     'sequenceIndex',
   );
@@ -2046,6 +2058,7 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
     ownerId,
     lectureId,
     type,
+    startTime,
     sequenceIndex,
     localPath,
     storageBucket,
@@ -2097,6 +2110,12 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
       );
     } else if (isInserting) {
       context.missing(_typeMeta);
+    }
+    if (data.containsKey('start_time')) {
+      context.handle(
+        _startTimeMeta,
+        startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta),
+      );
     }
     if (data.containsKey('sequence_index')) {
       context.handle(
@@ -2201,6 +2220,10 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
+      startTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}start_time'],
+      )!,
       sequenceIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sequence_index'],
@@ -2256,6 +2279,7 @@ class LocalLectureAsset extends DataClass
   final String ownerId;
   final String lectureId;
   final String type;
+  final double startTime;
   final int sequenceIndex;
   final String? localPath;
   final String? storageBucket;
@@ -2271,6 +2295,7 @@ class LocalLectureAsset extends DataClass
     required this.ownerId,
     required this.lectureId,
     required this.type,
+    required this.startTime,
     required this.sequenceIndex,
     this.localPath,
     this.storageBucket,
@@ -2289,6 +2314,7 @@ class LocalLectureAsset extends DataClass
     map['owner_id'] = Variable<String>(ownerId);
     map['lecture_id'] = Variable<String>(lectureId);
     map['type'] = Variable<String>(type);
+    map['start_time'] = Variable<double>(startTime);
     map['sequence_index'] = Variable<int>(sequenceIndex);
     if (!nullToAbsent || localPath != null) {
       map['local_path'] = Variable<String>(localPath);
@@ -2318,6 +2344,7 @@ class LocalLectureAsset extends DataClass
       ownerId: Value(ownerId),
       lectureId: Value(lectureId),
       type: Value(type),
+      startTime: Value(startTime),
       sequenceIndex: Value(sequenceIndex),
       localPath: localPath == null && nullToAbsent
           ? const Value.absent()
@@ -2351,6 +2378,7 @@ class LocalLectureAsset extends DataClass
       ownerId: serializer.fromJson<String>(json['ownerId']),
       lectureId: serializer.fromJson<String>(json['lectureId']),
       type: serializer.fromJson<String>(json['type']),
+      startTime: serializer.fromJson<double>(json['startTime']),
       sequenceIndex: serializer.fromJson<int>(json['sequenceIndex']),
       localPath: serializer.fromJson<String?>(json['localPath']),
       storageBucket: serializer.fromJson<String?>(json['storageBucket']),
@@ -2371,6 +2399,7 @@ class LocalLectureAsset extends DataClass
       'ownerId': serializer.toJson<String>(ownerId),
       'lectureId': serializer.toJson<String>(lectureId),
       'type': serializer.toJson<String>(type),
+      'startTime': serializer.toJson<double>(startTime),
       'sequenceIndex': serializer.toJson<int>(sequenceIndex),
       'localPath': serializer.toJson<String?>(localPath),
       'storageBucket': serializer.toJson<String?>(storageBucket),
@@ -2389,6 +2418,7 @@ class LocalLectureAsset extends DataClass
     String? ownerId,
     String? lectureId,
     String? type,
+    double? startTime,
     int? sequenceIndex,
     Value<String?> localPath = const Value.absent(),
     Value<String?> storageBucket = const Value.absent(),
@@ -2404,6 +2434,7 @@ class LocalLectureAsset extends DataClass
     ownerId: ownerId ?? this.ownerId,
     lectureId: lectureId ?? this.lectureId,
     type: type ?? this.type,
+    startTime: startTime ?? this.startTime,
     sequenceIndex: sequenceIndex ?? this.sequenceIndex,
     localPath: localPath.present ? localPath.value : this.localPath,
     storageBucket: storageBucket.present
@@ -2423,6 +2454,7 @@ class LocalLectureAsset extends DataClass
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
       type: data.type.present ? data.type.value : this.type,
+      startTime: data.startTime.present ? data.startTime.value : this.startTime,
       sequenceIndex: data.sequenceIndex.present
           ? data.sequenceIndex.value
           : this.sequenceIndex,
@@ -2455,6 +2487,7 @@ class LocalLectureAsset extends DataClass
           ..write('ownerId: $ownerId, ')
           ..write('lectureId: $lectureId, ')
           ..write('type: $type, ')
+          ..write('startTime: $startTime, ')
           ..write('sequenceIndex: $sequenceIndex, ')
           ..write('localPath: $localPath, ')
           ..write('storageBucket: $storageBucket, ')
@@ -2475,6 +2508,7 @@ class LocalLectureAsset extends DataClass
     ownerId,
     lectureId,
     type,
+    startTime,
     sequenceIndex,
     localPath,
     storageBucket,
@@ -2494,6 +2528,7 @@ class LocalLectureAsset extends DataClass
           other.ownerId == this.ownerId &&
           other.lectureId == this.lectureId &&
           other.type == this.type &&
+          other.startTime == this.startTime &&
           other.sequenceIndex == this.sequenceIndex &&
           other.localPath == this.localPath &&
           other.storageBucket == this.storageBucket &&
@@ -2511,6 +2546,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   final Value<String> ownerId;
   final Value<String> lectureId;
   final Value<String> type;
+  final Value<double> startTime;
   final Value<int> sequenceIndex;
   final Value<String?> localPath;
   final Value<String?> storageBucket;
@@ -2527,6 +2563,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     this.ownerId = const Value.absent(),
     this.lectureId = const Value.absent(),
     this.type = const Value.absent(),
+    this.startTime = const Value.absent(),
     this.sequenceIndex = const Value.absent(),
     this.localPath = const Value.absent(),
     this.storageBucket = const Value.absent(),
@@ -2544,6 +2581,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     required String ownerId,
     required String lectureId,
     required String type,
+    this.startTime = const Value.absent(),
     this.sequenceIndex = const Value.absent(),
     this.localPath = const Value.absent(),
     this.storageBucket = const Value.absent(),
@@ -2564,6 +2602,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     Expression<String>? ownerId,
     Expression<String>? lectureId,
     Expression<String>? type,
+    Expression<double>? startTime,
     Expression<int>? sequenceIndex,
     Expression<String>? localPath,
     Expression<String>? storageBucket,
@@ -2581,6 +2620,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
       if (ownerId != null) 'owner_id': ownerId,
       if (lectureId != null) 'lecture_id': lectureId,
       if (type != null) 'type': type,
+      if (startTime != null) 'start_time': startTime,
       if (sequenceIndex != null) 'sequence_index': sequenceIndex,
       if (localPath != null) 'local_path': localPath,
       if (storageBucket != null) 'storage_bucket': storageBucket,
@@ -2600,6 +2640,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     Value<String>? ownerId,
     Value<String>? lectureId,
     Value<String>? type,
+    Value<double>? startTime,
     Value<int>? sequenceIndex,
     Value<String?>? localPath,
     Value<String?>? storageBucket,
@@ -2617,6 +2658,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
       ownerId: ownerId ?? this.ownerId,
       lectureId: lectureId ?? this.lectureId,
       type: type ?? this.type,
+      startTime: startTime ?? this.startTime,
       sequenceIndex: sequenceIndex ?? this.sequenceIndex,
       localPath: localPath ?? this.localPath,
       storageBucket: storageBucket ?? this.storageBucket,
@@ -2645,6 +2687,9 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
+    }
+    if (startTime.present) {
+      map['start_time'] = Variable<double>(startTime.value);
     }
     if (sequenceIndex.present) {
       map['sequence_index'] = Variable<int>(sequenceIndex.value);
@@ -2689,6 +2734,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
           ..write('ownerId: $ownerId, ')
           ..write('lectureId: $lectureId, ')
           ..write('type: $type, ')
+          ..write('startTime: $startTime, ')
           ..write('sequenceIndex: $sequenceIndex, ')
           ..write('localPath: $localPath, ')
           ..write('storageBucket: $storageBucket, ')
@@ -4320,6 +4366,7 @@ typedef $$LocalLectureAssetsTableCreateCompanionBuilder =
       required String ownerId,
       required String lectureId,
       required String type,
+      Value<double> startTime,
       Value<int> sequenceIndex,
       Value<String?> localPath,
       Value<String?> storageBucket,
@@ -4338,6 +4385,7 @@ typedef $$LocalLectureAssetsTableUpdateCompanionBuilder =
       Value<String> ownerId,
       Value<String> lectureId,
       Value<String> type,
+      Value<double> startTime,
       Value<int> sequenceIndex,
       Value<String?> localPath,
       Value<String?> storageBucket,
@@ -4377,6 +4425,11 @@ class $$LocalLectureAssetsTableFilterComposer
 
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get startTime => $composableBuilder(
+    column: $table.startTime,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4460,6 +4513,11 @@ class $$LocalLectureAssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sequenceIndex => $composableBuilder(
     column: $table.sequenceIndex,
     builder: (column) => ColumnOrderings(column),
@@ -4531,6 +4589,9 @@ class $$LocalLectureAssetsTableAnnotationComposer
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<double> get startTime =>
+      $composableBuilder(column: $table.startTime, builder: (column) => column);
 
   GeneratedColumn<int> get sequenceIndex => $composableBuilder(
     column: $table.sequenceIndex,
@@ -4619,6 +4680,7 @@ class $$LocalLectureAssetsTableTableManager
                 Value<String> ownerId = const Value.absent(),
                 Value<String> lectureId = const Value.absent(),
                 Value<String> type = const Value.absent(),
+                Value<double> startTime = const Value.absent(),
                 Value<int> sequenceIndex = const Value.absent(),
                 Value<String?> localPath = const Value.absent(),
                 Value<String?> storageBucket = const Value.absent(),
@@ -4635,6 +4697,7 @@ class $$LocalLectureAssetsTableTableManager
                 ownerId: ownerId,
                 lectureId: lectureId,
                 type: type,
+                startTime: startTime,
                 sequenceIndex: sequenceIndex,
                 localPath: localPath,
                 storageBucket: storageBucket,
@@ -4653,6 +4716,7 @@ class $$LocalLectureAssetsTableTableManager
                 required String ownerId,
                 required String lectureId,
                 required String type,
+                Value<double> startTime = const Value.absent(),
                 Value<int> sequenceIndex = const Value.absent(),
                 Value<String?> localPath = const Value.absent(),
                 Value<String?> storageBucket = const Value.absent(),
@@ -4669,6 +4733,7 @@ class $$LocalLectureAssetsTableTableManager
                 ownerId: ownerId,
                 lectureId: lectureId,
                 type: type,
+                startTime: startTime,
                 sequenceIndex: sequenceIndex,
                 localPath: localPath,
                 storageBucket: storageBucket,
