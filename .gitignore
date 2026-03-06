@@ -5,4 +5,6 @@ contents_generation/lectures
 __pycache__/
 *.png
 *.jpg
+*.wav
 supabase/.temp/
+contents_generation/test_codes/deberta/labeled_transcripts/
