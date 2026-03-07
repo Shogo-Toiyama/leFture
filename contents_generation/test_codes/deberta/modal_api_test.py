@@ -49,20 +49,14 @@ if response.status_code == 200:
     print(f"⚡ API内部での純粋なGPU計算時間: {result.get('processing_time_seconds', 0):.2f} 秒")
     print(f"📊 処理完了した文章数: {result.get('count', 0)} 文")
     print("-" * 70)
-    
-    # 全部出力すると長すぎるので、最初の10件だけサンプル表示
-    print("【判定結果サンプル（最初の10件）】")
+
     returned_data = result.get("transcript_data", [])
+    output_file_path = "transcript_with_role.json"
     
-    for item in returned_data[:10]:
-        role = item.get("role", "UNKNOWN")
-        conf = item.get("role_confidence", 0) * 100
-        text = item.get("text", "")
-        # 長い文は切り詰めて表示
-        short_text = text if len(text) < 50 else text[:47] + "..."
-        print(f"[{role}] ({conf:5.1f}%) : {short_text}")
+    with open(output_file_path, "w", encoding="utf-8") as f:
+        json.dump(returned_data, f, ensure_ascii=False, indent=2)
         
-    print(f"\n...他 {len(returned_data) - 10} 件のデータも全て正常にタグ付けされて返ってきました！")
+    print(f"💾 完璧です！すべてのデータに 'role' を付与して '{output_file_path}' に保存しました！")
     
 else:
     print(f"❌ エラー (ステータスコード: {response.status_code})")
