@@ -86,6 +86,7 @@ class RecordingRepositoryDrift {
     required String ownerId,
     required String lectureId,
     required String localPath,
+    required double startTime,
     String? presetAssetId,
     int sequenceIndex = 0,
   }) async {
@@ -114,6 +115,7 @@ class RecordingRepositoryDrift {
               localPath: Value(localPath),
               storageBucket: const Value(audioBucket),
               storagePath: Value(storagePath),
+              startTime: Value(startTime),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
