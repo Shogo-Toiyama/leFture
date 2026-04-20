@@ -1,13 +1,10 @@
-
 import re
 import json
 from datetime import datetime
 from pathlib import Path
-from datetime import datetime
-from typing import Optional
-from app.services.helpers.llm_unified import CostCollector
-from app.core.config import PROMPTS_DIR
+from typing import Optional, List, Dict, Any
 
+from app.core.config import PROMPTS_DIR
 
 def _strip_code_fence(text: str) -> str:
     if text.lstrip().startswith("```"):
@@ -20,16 +17,6 @@ def _strip_code_fence(text: str) -> str:
             lines = lines[:-1]
         text = "\n".join(lines)
     return text
-
-def token_report_from_result(task: str, res, collector: CostCollector):
-    u = res.usage
-    collector.add(task, res.estimated_cost_usd)
-    return (
-        "TOKEN USAGE REPORT\n"
-        f"  ⬆️:{u.input_tokens}, 🧠: {u.reasoning_tokens}, ⬇️: {u.output_tokens}\n"
-        f"  TOTAL: {u.total_tokens}\n"
-        f"  Estimated cost: ${res.estimated_cost_usd:.6f}"
-    )
 
 def _load_prompt(filename: str) -> str:
     prompt_path = PROMPTS_DIR / filename
@@ -46,66 +33,64 @@ def _sid_to_int(sid: Optional[str]) -> Optional[int]:
     m = SID_NUM.fullmatch(sid)
     return int(m.group(1)) if m else None
 
-_LOG_FILE_PATH: Path | None = None
 
-def init_logger(work_dir: Path):
-    """
-    ジョブの開始時にログファイルを初期化する
-    """
-    global _LOG_FILE_PATH
-    _LOG_FILE_PATH = work_dir / "log.json"
-    
-    # ファイルを空で作成しておく
-    with open(_LOG_FILE_PATH, "w", encoding="utf-8") as f:
-        f.write("")
+# =========================================================
+# 📝 新しいロギング・システム (TaskLogger)
+# =========================================================
 
-def print_log(*args):
+class TaskLogger:
     """
-    コンソールに出力しつつ、ログファイルにもJSON形式で追記する
+    タスクごとに独立してログを保持するクラス。
+    グローバル変数の競合を防ぎ、Cloud Runでの並列処理を安全にします。
     """
-    message = " ".join(map(str, args))
-    # 1. コンソール出力 (Cloud Runのログ用)
-    print(message)
-
-    # 2. ファイル出力 (追記モード)
-    if _LOG_FILE_PATH:
+    def __init__(self, uid: str, lecture_id: str, task_name: str):
+        self.uid = uid
+        self.lecture_id = lecture_id
+        self.task_name = task_name
+        self.logs: List[Dict[str, str]] = []
+        
+    def log(self, *args):
+        """コンソールに出力しつつ、メモリ内のリストに保存"""
+        message = " ".join(map(str, args))
+        
+        # コンソールではどのタスクのログか分かりやすいようにプレフィックスをつける
+        print(f"[{self.task_name}] {message}") 
+        
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        entry = {
+        self.logs.append({
             "timestamp": timestamp,
-            "message": str(message)
+            "message": message
+        })
+        
+    def save_to_r2(self, storage_service) -> str:
+        """
+        タスクの最後に呼び出し、R2にコンソールログJSONを保存する。
+        """
+        if not self.logs:
+            return ""
+        
+        final_data = {
+            "task_name": self.task_name, 
+            "logs": self.logs
         }
         
-        try:
-            # 追記モード('a')で開く
-            with open(_LOG_FILE_PATH, "a", encoding="utf-8") as f:
-                # 後で読みやすいように、1行に1つのJSONを書く (JSON Lines形式)
-                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except Exception as e:
-            # ログ出力自体がコケると本末転倒なので、エラーはコンソールに出してスルー
-            print(f"⚠️ Failed to write log: {e}")
+        # 例: uid/lecture_id/pipeline_logs/core_extraction_console.json に保存
+        r2_path = storage_service.save_json_log(
+            self.uid, 
+            self.lecture_id, 
+            f"{self.task_name}_console", 
+            final_data
+        )
+        return r2_path
 
-def finalize_log_and_get_path() -> Path | None:
+
+# ---------------------------------------------------------
+# 下位互換性用のヘルパー (※一部の職人クラスでまだ呼ばれている場合のため)
+# ---------------------------------------------------------
+def print_log(*args):
     """
-    JSON Lines形式で書かれたログを、正しいJSON配列形式に変換して保存し直す
-    戻り値: 完成したファイルのパス
+    [非推奨] 
+    今後は各タスク内で生成した logger.log() を使用してください。
+    この関数は純粋なコンソール出力のみを行い、ファイルには保存されません。
     """
-    if not _LOG_FILE_PATH or not _LOG_FILE_PATH.exists():
-        return None
-    
-    logs = []
-    try:
-        # 1行ずつ読み込んでリストにする
-        with open(_LOG_FILE_PATH, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    logs.append(json.loads(line))
-        
-        final_data = {"logs": logs}
-        
-        with open(_LOG_FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(final_data, f, ensure_ascii=False, indent=2)
-            
-        return _LOG_FILE_PATH
-    except Exception as e:
-        print(f"⚠️ Failed to finalize log: {e}")
-        return None
+    print(" ".join(map(str, args)))

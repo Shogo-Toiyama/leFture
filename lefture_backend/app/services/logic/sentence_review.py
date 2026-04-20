@@ -1,47 +1,53 @@
-import os
 import re
-from pathlib import Path
 from collections import defaultdict
-from groq import Groq
 from nltk.tokenize import sent_tokenize
 
-from app.services.helpers.helpers import _load_prompt, print_log
+from app.services.helpers.helpers import _load_prompt, TaskLogger
+from app.services.helpers.llm_unified import UnifiedLLM, Message, LLMOptions
 
 class SentenceReviewService:
-    def __init__(self):
-        self.client = Groq()
-        self.model = "openai/gpt-oss-120b"
+    def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
+        self.llm = llm
+        self.logger = logger
+        # LiteLLM 経由で呼び出すモデル
+        self.model_alias = "groq/openai/gpt-oss-120b" 
 
-    def run(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
-        """
-        4つ溜まったチャンク（未校正）を受け取り、LLMで文脈・句読点を修正して返す。
-        """
-        print_log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
+    async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
+        self.logger.log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
 
-        # ==========================================
-        # 1. データの準備（LLMに投げるテキストの構築）
-        # ==========================================
         orig_map = {}
         target_xml = ""
         
-        # 前回のチャンクの最後の一部
+        # 前回のチャンク
         if previous_chunk and previous_chunk.get("segments"):
+            prev_start_time = previous_chunk.get("start_time", 0.0)
             last_segs = previous_chunk["segments"][-3:]
             for seg in last_segs:
                 sid = seg["sid"]
-                orig_map[sid] = seg
+                orig_map[sid] = {
+                    "text": seg["text"],
+                    "start": seg["start"] + prev_start_time,
+                    "end": seg["end"] + prev_start_time,
+                    "chunk_index": previous_chunk.get("chunk_index"),
+                    "confidence": seg.get("confidence", 0.99)
+                }
                 target_xml += f"<{sid}>{seg['text']}</{sid}>"
 
-        # 今回の修正対象チャンクを追加
+        # 今回のチャンク
         for chunk in chunks_to_review:
+            chunk_start_time = chunk.get("start_time", 0.0)
             for seg in chunk.get("segments", []):
                 sid = seg["sid"]
-                orig_map[sid] = seg
+                orig_map[sid] = {
+                    "text": seg["text"],
+                    "start": seg["start"] + chunk_start_time,
+                    "end": seg["end"] + chunk_start_time,
+                    "chunk_index": chunk.get("chunk_index"),
+                    "confidence": seg.get("confidence", 0.99)
+                }
                 target_xml += f"<{sid}>{seg['text']}</{sid}>"
 
-        # ==========================================
-        # 2. プロンプトの生成と LLM 呼び出し
-        # ==========================================
+        # プロンプト生成
         prompt_template = _load_prompt("sentence_review_prompt.txt")
         prompt = prompt_template.format(
             course_title=course_title,
@@ -49,36 +55,27 @@ class SentenceReviewService:
             target_xml_text=target_xml
         )
 
-        print_log(f"   [LLM] Calling Groq API ({self.model})...")
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            reasoning_effort="low",
-            include_reasoning=False,
-            temperature=0.5,
-            max_completion_tokens=2048,
-        )
-        llm_output = response.choices[0].message.content
+        self.logger.log(f"   [LLM] Calling LiteLLM API ({self.model_alias})...")
+        
+        messages = [Message(role="user", content=prompt)]
+        options = LLMOptions(temperature=0.2)
+        
+        # 💡 UnifiedLLM を使って非同期実行！
+        res = await self.llm.generate(model=self.model_alias, messages=messages, options=options)
+        llm_output = res.output_text
 
-        # ==========================================
-        # 3. LLM出力の堅牢なパース (フェイルセーフ設計)
-        # ==========================================
-        # おしゃべりやマークダウン(```xml)を無視し、純粋にタグの中身だけを抽出
+        # パース処理 (元のロジックのまま)
         matches = re.findall(r'<s(\d{6})>(.*?)</s\1>', llm_output, re.DOTALL)
         parsed_dict = {f"s{sid}": text.strip() for sid, text in matches}
 
         merged_segments = []
         last_non_empty_seg = None
 
-        # 元のSIDの順番通りに処理する（LLMがタグを消したり順番を狂わせても無視して安全に処理する）
         for sid in orig_map.keys():
             text = parsed_dict.get(sid, "")
             orig_seg = orig_map[sid]
 
             if text:
-                # テキストが入っている場合、新しいセグメントとして追加
                 new_seg = {
                     "text": text,
                     "start": orig_seg["start"],
@@ -87,20 +84,16 @@ class SentenceReviewService:
                     "confidence": orig_seg["confidence"]
                 }
                 
-                # もし最初のタグが空にされてしまっていた場合の救済措置
                 if not merged_segments and orig_seg["start"] > orig_map[list(orig_map.keys())[0]]["start"]:
                     new_seg["start"] = orig_map[list(orig_map.keys())[0]]["start"]
 
                 merged_segments.append(new_seg)
                 last_non_empty_seg = new_seg
             else:
-                # LLMが空にした（前のタグに吸収させた）場合、時間を前のタグに結合(マージ)する
                 if last_non_empty_seg is not None:
                     last_non_empty_seg["end"] = max(last_non_empty_seg["end"], orig_seg["end"])
 
-        # ==========================================
-        # 4. NLTKによる複数文の分割とタイムスタンプ按分
-        # ==========================================
+        # NLTK分割
         final_segments = []
         for seg in merged_segments:
             sentences = sent_tokenize(seg["text"])
@@ -112,7 +105,6 @@ class SentenceReviewService:
             if len(sentences) == 1:
                 final_segments.append(seg)
             else:
-                # 複数文入っていた場合、文字数ベースでタイムスタンプを計算（Proportional interpolation）
                 total_chars = sum(len(s) for s in sentences)
                 total_duration = seg["end"] - seg["start"]
                 
@@ -130,9 +122,6 @@ class SentenceReviewService:
                     })
                     curr_start += dur
 
-        # ==========================================
-        # 5. SIDの再採番と、チャンクごとの再梱包
-        # ==========================================
         updated_chunks_dict = defaultdict(lambda: {"segments": [], "text": ""})
         counters = defaultdict(int)
 
@@ -143,19 +132,16 @@ class SentenceReviewService:
         for seg in final_segments:
             c_idx = seg["chunk_index"]
             counters[c_idx] += 1
-            # SIDを綺麗に付け直す
             seg["sid"] = f"s{c_idx:03d}{counters[c_idx]:03d}"
             
             updated_chunks_dict[c_idx]["segments"].append(seg)
-            # そのチャンクの全文(text)も結合して更新しておく
             updated_chunks_dict[c_idx]["text"] += seg["text"] + " "
 
-        # リストの形に戻して返す
         result_chunks = []
         for c_idx in sorted(updated_chunks_dict.keys()):
             updated_chunks_dict[c_idx]["text"] = updated_chunks_dict[c_idx]["text"].strip()
             updated_chunks_dict[c_idx]["chunk_index"] = c_idx
             result_chunks.append(updated_chunks_dict[c_idx])
 
-        print_log(f"✅ [Sentence Review] Review completed perfectly. Ready to update DB.")
+        self.logger.log(f"✅ [Sentence Review] Review completed perfectly.")
         return result_chunks

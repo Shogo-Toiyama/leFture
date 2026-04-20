@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -145,12 +146,35 @@ class UploadManager {
             print('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
             
             try {
-              // SupabaseのEdge Functionを呼び出す
-              await supabase.functions.invoke('start_analysis', body: {
-                'lecture_id': lecture.id,
-                'expected_chunks': expectedChunks, 
-              });
-              print('🚀 start_analysis の呼び出し成功！');
+              // 1. Supabaseから現在のユーザーのJWTトークンを取得
+              final session = supabase.auth.currentSession;
+              final jwt = session?.accessToken;
+
+              if (jwt == null) {
+                throw Exception('ログインしていません。分析を開始できません。');
+              }
+
+              // 2. Cloud RunのURL (_postToCloudRunで使っているのと同じドメイン)
+              final url = Uri.parse('https://lefture-511705914929.us-west1.run.app/start-analysis');
+
+              // 3. 直接Cloud RunへHTTP POSTリクエスト！
+              final response = await http.post(
+                url,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $jwt', // 👈 ここでトークンを渡す！
+                },
+                body: jsonEncode({
+                  'lecture_id': lecture.id,
+                  'expected_chunks': expectedChunks,
+                }),
+              );
+
+              if (response.statusCode == 200 || response.statusCode == 202) {
+                print('🚀 start_analysis (Cloud Run) の呼び出し成功！');
+              } else {
+                throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
+              }
             } catch (invokeError) {
               print('❌ start_analysis の呼び出しでエラー: $invokeError');
               // ※ ここでエラーが起きても、データはStorageに安全に保管されているので、

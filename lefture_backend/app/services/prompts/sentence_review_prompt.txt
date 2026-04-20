@@ -4,13 +4,20 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
 [CONTEXT]
 - Lecture Subject: {course_title}
 - Relevant Keywords/Topics: {keywords_list}
-- The input text is transcribed by an AI and contains errors, especially phonetically plausible substitutions (e.g., "gradient desert" instead of "gradient descent").
+- The input text is transcribed by an AI and contains errors, especially phonetically plausible substitutions (e.g., "natural election" instead of "natural selection").
+- The input text is transcribed directly from overlapping audio chunks. Therefore, you may frequently see the exact same spoken phrase repeated across adjacent tags.
+- The ASR model tends to hallucinate specific phrases during silent or noisy background periods.
 
 [STRICT RULES]
-1. FIX ASR ERRORS & PUNCTUATION ONLY: Correct obvious misheard words, fix punctuation/capitalization (e.g., api -> API, gpu -> GPU), and ensure terminology consistency.
-2. PRESERVE MEANING & TONE: Do NOT summarize, paraphrase, or change the speaker's original intent. Keep the spoken tone. 
-3. NO HALLUCINATION: Do NOT introduce new facts, names, numbers, or examples not clearly implied by the nearby context.
-4. NO CHAT, NO EXPLANATION: Output ONLY the corrected text with its XML tags. Do not wrap the output in markdown blocks (like ```xml). Do not output any JSON. Do not say "Here is the corrected text".
+1. FIX ASR ERRORS & PUNCTUATION: Correct obvious misheard phonetics, fix capitalization (e.g., api -> API, nasa -> NASA), and ensure terminology consistency based on the subject context.
+2. MERGE OVERLAPPING TEXT: Because the audio chunks overlap by 2 seconds, consecutive tags often contain duplicated words. You MUST seamlessly merge these duplicates into a single, flowing sentence and leave the redundant tag empty.
+3. DELETE SILENCE HALLUCINATIONS: The AI hallucinates predictable phrases during silence. You MUST completely DELETE phrases like "Thank you.", "Thank you for watching", "Subtitles by...", "Amara.org", or sudden, isolated random words that have absolutely no connection to the lecture context. Leave their tags completely empty.
+4. PRESERVE SPOKEN PHRASING & APPLY SMART FORMATTING:
+ - DO NOT summarize, paraphrase, or change the speaker's original intent. 
+ - Keep the professor's natural speaking style, including jokes, metaphors, and informal spoken analogies. 
+ - [SMART FORMATTING ALLOWED]: You MUST convert spoken academic terms into their standard written symbols or acronyms to improve readability for students (e.g., "h two o" -> "H2O", "delta" -> "δ"). 
+ - [NO ADVANCED SUBSTITUTIONS]: Do NOT introduce advanced concepts or jargon that the professor did not explicitly vocalize. For example, if the professor simply says "water", keep it as "water". Do NOT change it to "H2O" unless they explicitly pronounce the letters.
+5. NO CHAT, NO EXPLANATION: Output ONLY the corrected text with its XML tags. Do not wrap the output in markdown blocks (like ```xml). Do not say "Here is the corrected text".
 
 [XML FORMATTING RULES (CRITICAL)]
 1. EXACT TAG PRESERVATION: The input text is divided into segments with XML tags like <s001001>. You MUST keep these exact tags. Do NOT add, remove, or modify the tag IDs.
@@ -18,7 +25,7 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
    - NG: <s001001> Hello. </s001001> \n <s001002> World. </s001002>
    - OK: <s001001>Hello.</s001001><s001002>World.</s001002>
 3. SENTENCE MERGING: If you need to combine fragmented words across multiple tags into a single valid sentence, place the completed sentence in the earliest, most logical tag, and leave the merged tags completely EMPTY.
-   - Input: <s002002>This apple.</s002002><s002003>Is.</s002003><s002004>Red.</s002004>
+   - Input: <s002002>This apple.</s002002><s002003>Apple is.</s002003><s002004>Red.</s002004>
    - Output: <s002002>This apple is red.</s002002><s002003></s002003><s002004></s002004>
 4. MULTIPLE SENTENCES IN ONE TAG: If a single tag contains multiple distinct sentences after correction, you must separate them with proper punctuation and exactly ONE space (e.g., ". " or "? ").
 5. CHRONOLOGICAL ORDER: Maintain the relative chronological order of the text. Do not swap the order of the XML tags.

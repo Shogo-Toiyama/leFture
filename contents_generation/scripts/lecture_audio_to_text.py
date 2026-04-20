@@ -65,7 +65,7 @@ def speech_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
     aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
 
     aai_config = aai.TranscriptionConfig(
-        speech_model=aai.SpeechModel.nano,
+        speech_models=["universal-2"],
         punctuate=True,
         format_text=True,
         disfluencies=False,
@@ -94,8 +94,8 @@ def speech_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
 
     data = [sentence_to_dict(s, idx) for idx, s in enumerate(sentences, start=1)]
     duration = transcript.audio_duration
-    print(f"Cost (nano): ${duration/3600*0.12:.3f}")
-    collector.add("AssemblyAI Transcription (nano)", duration/3600*0.12)
+    print(f"Cost (universal-2): ${duration/3600*0.15:.3f}")
+    collector.add("AssemblyAI Transcription (universal-2)", duration/3600*0.15)
     with open(lecture_dir / "transcript_sentences.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -107,57 +107,83 @@ def speech_to_text(audio_file, lecture_dir: Path, collector:CostCollector):
 # -------------------------
 # Sentence Review (UPDATED)
 # -------------------------
-def sentence_review(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options_json: LLMOptions | None = None):
-    print("\n### Sentence Review ###")
-    start_time_sentence_review = time.time()
+def sentence_review(
+    llm: UnifiedLLM, 
+    model_alias: str, 
+    lecture_dir: Path, 
+    collector: CostCollector, 
+    options_json: LLMOptions | None = None,
+    force_review: bool = False
+):
 
-    REVIEWED_DIR = lecture_dir / "reviewed"
-    REVIEWED_DIR.mkdir(exist_ok=True)
-
-    instr_sentence_review = (PROMPTS_DIR / "sentence_review.txt").read_text(encoding="utf-8")
-
-    with open(lecture_dir / "transcript_sentences.json", "r", encoding="utf-8") as f:
+    REVIEWED_RAW_PATH = lecture_dir / "reviewed" / "reviewed_sentences_raw.json"
+    TRANSCRIPT_SENTENCES_PATH = lecture_dir / "transcript_sentences.json"
+    
+    # 1. 共通で必要な「元の文章」をまず読み込む
+    with open(TRANSCRIPT_SENTENCES_PATH, "r", encoding="utf-8") as f:
         sentences = json.load(f)
 
-    ALLOWED = ["sid", "text", "confidence"]
-    projected_sentences = [{k: s.get(k) for k in ALLOWED} for s in sentences]
-    low_confidence_sentences = [s for s in projected_sentences if (s.get("confidence") is not None and s.get("confidence", 1.0) < 0.9)]
-    print("Low Confident Sentences: ", len(low_confidence_sentences))
+    # 2. スキップ判定
+    is_skipped = not force_review and REVIEWED_RAW_PATH.exists()
 
-    payload = {
-        "task": "Sentence Review",
-        "instruction": instr_sentence_review,
-        "data": {
-            "low_confidence_sentences": low_confidence_sentences
+    if is_skipped:
+        print("\n### Sentence Review ###")
+        print(f"✅ Found existing {REVIEWED_RAW_PATH.name}, loading from file...")
+        # すでに実行済みなら、その結果をロードする
+        with open(REVIEWED_RAW_PATH, "r", encoding="utf-8") as f:
+            out_review_sentence = json.load(f)
+    else:
+
+        print("\n### Sentence Review ###")
+        start_time_sentence_review = time.time()
+
+        REVIEWED_DIR = lecture_dir / "reviewed"
+        REVIEWED_DIR.mkdir(exist_ok=True)
+
+        instr_sentence_review = (PROMPTS_DIR / "sentence_review.txt").read_text(encoding="utf-8")
+
+        with open(lecture_dir / "transcript_sentences.json", "r", encoding="utf-8") as f:
+            sentences = json.load(f)
+
+        ALLOWED = ["sid", "text", "confidence"]
+        projected_sentences = [{k: s.get(k) for k in ALLOWED} for s in sentences]
+        low_confidence_sentences = [s for s in projected_sentences if (s.get("confidence") is not None and s.get("confidence", 1.0) < 0.7)]
+        print("Low Confident Sentences: ", len(low_confidence_sentences))
+
+        payload = {
+            "task": "Sentence Review",
+            "instruction": instr_sentence_review,
+            "data": {
+                "low_confidence_sentences": low_confidence_sentences
+            }
         }
-    }
 
-    messages = [
-        Message(
-            role="system",
-            content="You are a careful transcript editor. Follow the instruction and return JSON only.",
-        ),
-        Message(role="user", content=json.dumps(payload, ensure_ascii=False)),
-    ]
+        messages = [
+            Message(
+                role="system",
+                content="You are a careful transcript editor. Follow the instruction and return JSON only.",
+            ),
+            Message(role="user", content=json.dumps(payload, ensure_ascii=False)),
+        ]
 
-    options_json = options_json or LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
+        options_json = options_json or LLMOptions(output_type="json", temperature=0.2, google_search=False, reasoning_effort="low")
 
-    print(f"Waiting for response from {llm.provider} API...")
-    res = llm.generate(model=model_alias, messages=messages, options=options_json)
+        print(f"Waiting for response from {llm.provider} API...")
+        res = llm.generate(model=model_alias, messages=messages, options=options_json)
 
-    print("saving response...")
-    raw_text = res.output_text
-    clean_text = _strip_code_fence(raw_text).strip()
+        print("saving response...")
+        raw_text = res.output_text
+        clean_text = _strip_code_fence(raw_text).strip()
 
-    try:
-        out_review_sentence = json.loads(clean_text)
-    except json.JSONDecodeError as e:
-        # keep raw for debug
-        (lecture_dir / "reviewed/reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
-        raise ValueError(f"Sentence Review JSON parse failed: {e}") from e
+        try:
+            out_review_sentence = json.loads(clean_text)
+        except json.JSONDecodeError as e:
+            # keep raw for debug
+            (lecture_dir / "reviewed/reviewed_sentences_raw_text.txt").write_text(raw_text, encoding="utf-8")
+            raise ValueError(f"Sentence Review JSON parse failed: {e}") from e
 
-    with open(lecture_dir / "reviewed/reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
-        json.dump(out_review_sentence, f, ensure_ascii=False, indent=2)
+        with open(lecture_dir / "reviewed/reviewed_sentences_raw.json", "w", encoding="utf-8") as f:
+            json.dump(out_review_sentence, f, ensure_ascii=False, indent=2)
 
     sentence_reviewed_list = out_review_sentence.get("results") or []
 
@@ -181,11 +207,12 @@ def sentence_review(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collec
     with open(lecture_dir / "reviewed_sentences.json", "w", encoding="utf-8") as f:
         json.dump(reviewed_sentences, f, ensure_ascii=False, indent=2)
 
-    elapsed_time_sentence_review = time.time() - start_time_sentence_review
-    print(token_report_from_result(res, collector))
-    if res.warnings:
-        print("  [WARN]", "; ".join(res.warnings))
-    print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.")
+    if not is_skipped:
+        elapsed_time_sentence_review = time.time() - start_time_sentence_review
+        print(token_report_from_result(res, collector))
+        if res.warnings:
+            print("  [WARN]", "; ".join(res.warnings))
+        print(f"⏰Sentence Review: {elapsed_time_sentence_review:.2f} seconds.")
 
 
 def lecture_audio_to_text(

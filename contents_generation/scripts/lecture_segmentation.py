@@ -175,7 +175,7 @@ def main():
     collector = CostCollector()
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-02-03-14-38-23-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
+    LECTURE_DIR = ROOT / "../lectures/2026-03-17-01-50-05-0700"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
 
     lecture_segmentation(llm, full_model, lite_model, LECTURE_DIR, collector)
 

@@ -60,6 +60,9 @@ def _generate_one_fun_fact(
 
 
 def generate_fun_facts(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options: LLMOptions | None = None):
+    print("\n### Fun Fact Generation (SKIPPED) ###")
+    print("Skipping fun fact generation as it is currently disabled.")
+    return
     # topicsごとのfun factを生成
     print("\n### Fun Fact Generation ###")
     start_time_fun_facts = time.time()

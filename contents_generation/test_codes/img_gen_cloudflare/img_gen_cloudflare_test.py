@@ -25,9 +25,11 @@ def generate_and_save_image():
     }
     
     payload = {
-        "prompt": "A photograph of a rustic chalkboard menu standing outside a restaurant. Written in handwritten white chalk script is the long phrase: \"TODAY'S SPECIAL: HOMEMADE LASAGNA WITH GARLIC BREAD & A GLASS OF RED WINE - $15.99. ENJOY!\". There are small chalk drawings of grapes and bread around the text.",
+        "prompt": "Japanese Instant Miso Ramen with thick noodles, rich broth, and a perfectly boiled egg on top. The word “ramen” is engraved on the side of the bowl.",
         "width": 512,
         "height": 512,
+        # "width": 1024,
+        # "height": 1024,
         "num_steps": 4,
         # "guidance": 1.0
     }

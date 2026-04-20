@@ -13,3 +13,7 @@ nltk
 pydub
 onnxruntime
 numpy
+httpx
+boto3
+litellm
+tavily-python

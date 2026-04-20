@@ -209,6 +209,43 @@ async def run_all_role_classification(
     success = sum(1 for r in results if r)
     print(f"\n✅ Completed {success}/{len(batch_files)} batches")
 
+def generate_sentences_final_only(lecture_dir: Path):
+    print(f"\n### Generating sentences_final.json for: {lecture_dir.name} ###")
+    
+    # 1. 各バッチの実行結果をマージして role_classifications.json を作成
+    # (strict_continuity=False にしておくとエラーで止まりにくいです)
+    merge_role_classifications(lecture_dir, strict_continuity=False)
+
+    # 2. マージされたラベルを読み込む
+    role_json_path = lecture_dir / "role_classifications.json"
+    out_role_classification = json.loads(role_json_path.read_text(encoding="utf-8"))
+    labels = out_role_classification.get("labels", [])
+    label_map = {lab["sid"]: lab for lab in labels}
+
+    # 3. 元の文章データを読み込む
+    with open(lecture_dir / "reviewed_sentences.json", "r", encoding="utf-8") as f:
+        sentences = json.load(f)
+
+    # 4. ラベルを結合して最終形式にする
+    ALLOWED_FINAL = ["sid", "text", "start", "end"]
+    merged = []
+    for s in sentences:
+        sid = s.get("sid")
+        lab = label_map.get(sid)
+        # ラベルがあればそのroleを、なければ None を入れる
+        role = lab.get("role") if lab else None
+        
+        item = {k: s.get(k) for k in ALLOWED_FINAL}
+        item["role"] = role
+        merged.append(item)
+
+    # 5. 保存
+    out_path = lecture_dir / "sentences_final.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(merged, f, ensure_ascii=False, indent=2)
+
+    print(f"✅ Successfully created: {out_path}")
+    print(f"Total sentences: {len(merged)}")
 
 # -----------------------------
 # Pipeline steps
@@ -222,7 +259,16 @@ def role_classification_draft(
     max_batch_size: int = 300,
     ctx: int = 10,
     concurrency: int = 6,
+    force_classify: bool = False, 
 ):
+    FINAL_PATH = lecture_dir / "sentences_final.json"
+    
+    # すでにファイルが存在し、強制実行でもない場合はスキップ
+    if not force_classify and FINAL_PATH.exists():
+        print("\n### Role Classification ###")
+        print(f"✅ Found existing {FINAL_PATH.name}, skip entire Role Classification process.")
+        return
+
     print("\n### Role Classification ###")
     start_time = time.time()
 
@@ -249,7 +295,7 @@ def role_classification_draft(
 
     asyncio.run(run_all_role_classification(llm, model_alias, options_json, batches_dir, collector, concurrency=concurrency))
 
-    merge_role_classifications(lecture_dir)
+    merge_role_classifications(lecture_dir, strict_continuity=False)
 
     out_role_classification = json.loads((lecture_dir / "role_classifications.json").read_text(encoding="utf-8"))
     labels = out_role_classification.get("labels", [])
@@ -432,3 +478,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# if __name__ == "__main__":
+#     ROOT = Path(__file__).resolve().parent
+#     LECTURE_DIR = ROOT / "../lectures/2026-03-17-01-50-05-0700" 
+    
+#     generate_sentences_final_only(LECTURE_DIR)

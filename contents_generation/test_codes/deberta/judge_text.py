@@ -135,11 +135,11 @@ def test_real_transcript_smart_batched(start_sid, end_sid, theme="Computer Syste
         original_idx, current_item, predicted_id, probs = res
         target_text = current_item["text"]
         
-        # print(f"\n[{current_item['sid']}] 🎯 '{target_text}'")
-        # print(f"🏆 判定: 【 {id2label[predicted_id]} 】")
-        # probs_str = " | ".join([f"{id2label[k]}: {probs[k].item() * 100:.1f}%" for k in range(4)])
-        # print(f"📊 脳内: {probs_str}")
-        # print("-" * 70)
+        print(f"\n[{current_item['sid']}] 🎯 '{target_text}'")
+        print(f"🏆 判定: 【 {id2label[predicted_id]} 】")
+        probs_str = " | ".join([f"{id2label[k]}: {probs[k].item() * 100:.1f}%" for k in range(4)])
+        print(f"📊 脳内: {probs_str}")
+        print("-" * 70)
 
     # 時間計測ストップ
     end_time = time.time()
@@ -152,4 +152,4 @@ def test_real_transcript_smart_batched(start_sid, end_sid, theme="Computer Syste
 # 4. いざ、実行！！！
 # ==========================================
 # バッチ処理関数を呼び出す（16文ずつ処理）
-test_real_transcript_smart_batched(start_sid="s000001", end_sid="s000704", batch_size=16)
+test_real_transcript_smart_batched(start_sid="s000001", end_sid="s000010", batch_size=16)
