@@ -71,7 +71,7 @@ def _download_from_r2_to_memory(storage_path: str) -> Any:
 # 1. Transcribe Chunk （Groqでリアルタイム文字起こし）
 # ---------------------------------------------------------
 
-async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, audio_bytes: bytes):
+async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_time: float, audio_bytes: bytes):
     """
     Flutterから直接送られてきたWAVバイナリ(audio_bytes)をメモリ上で処理する。
     ダウンロード時間がゼロになるため、爆速で処理が完了する。

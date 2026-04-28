@@ -471,9 +471,10 @@ def main():
     collector = CostCollector()
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-02-03-14-38-23-0800"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
+    LECTURE_DIR = ROOT / "../lectures/2026-04-26-12-44-46-070"  # ⚠️ CHANGE FOLDER NAME!!! 🛑
 
     role_classification(llm, full_model, lite_model, LECTURE_DIR, collector, max_batch_size=350, ctx=10, concurrency=6)
+    # merge_role_classifications(lecture_dir=LECTURE_DIR, strict_continuity=False)
 
 
 if __name__ == "__main__":
@@ -482,6 +483,6 @@ if __name__ == "__main__":
 
 # if __name__ == "__main__":
 #     ROOT = Path(__file__).resolve().parent
-#     LECTURE_DIR = ROOT / "../lectures/2026-03-17-01-50-05-0700" 
+#     LECTURE_DIR = ROOT / "../lectures/2026-04-26-12-44-46-0700" 
     
 #     generate_sentences_final_only(LECTURE_DIR)

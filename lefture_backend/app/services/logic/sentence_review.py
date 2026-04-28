@@ -20,7 +20,9 @@ class SentenceReviewService:
         
         # 前回のチャンク
         if previous_chunk and previous_chunk.get("segments"):
-            prev_start_time = previous_chunk.get("start_time", 0.0)
+            prev_start_time = previous_chunk.get("start_time")
+            if prev_start_time is None:
+                raise ValueError(f"CRITICAL: prev_chunk (index={previous_chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
             last_segs = previous_chunk["segments"][-3:]
             for seg in last_segs:
                 sid = seg["sid"]
@@ -35,7 +37,9 @@ class SentenceReviewService:
 
         # 今回のチャンク
         for chunk in chunks_to_review:
-            chunk_start_time = chunk.get("start_time", 0.0)
+            chunk_start_time = chunk.get("start_time")
+            if chunk_start_time is None:
+                raise ValueError(f"CRITICAL: chunk (index={chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
             for seg in chunk.get("segments", []):
                 sid = seg["sid"]
                 orig_map[sid] = {

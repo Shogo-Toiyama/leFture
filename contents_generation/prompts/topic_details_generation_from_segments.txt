@@ -38,7 +38,7 @@ STRUCTURE & SECTIONS (Markdown)
 Return Markdown ONLY, with this structure (omit sections that are not applicable; prefer to explain in the same order as it appeared in class; combine titles when natural; Do NOT make subtopics with little content, include 3 or more sentences for each subtopic.):
 # <idx>. <Topic Title>
 
-_After the H1, write a brief 1–3 sentence overview that summarizes the topic at a high level before subtopics.
+_After the H1, write a brief 1–3 sentence overview that summarizes the topic at a high level before subtopics as if writing an encyclopedia entry or textbook.
 
 ## Definition / Meaning
 - Explain the core idea in simple language.
@@ -72,7 +72,9 @@ _After the H1, write a brief 1–3 sentence overview that summarizes the topic a
 
 
 MINI-SUMMARY REQUIREMENT
-- Immediately after the H1, include a 1–3 sentence mini-summary tailored to THIS topic and THIS segment (no outside facts).
+- Immediately after the H1, include a 1–3 sentence mini-summary that directly explains the core idea of the topic (no outside facts).
+- STRICT RULE FOR SUMMARY: Write directly about the subject matter. Do NOT write meta-descriptions of the classroom event. NEVER use phrases like "In this lecture...", "The professor explains...", "We will learn...", or "This segment covers...".
+- Instead, describe WHAT the concept is, not HOW it was taught.
 
 SUBTOPICS NAMING POLICY
 - You MUST organize the explanation into subtopics (use meaningful subsection headings),  but you should invent **meaningful, topic-specific headings** based on the actual content.

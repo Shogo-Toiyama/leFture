@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
 from supabase import create_client, ClientOptions
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
@@ -38,6 +38,7 @@ CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL")
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET") # 追加: Supabase Webhookからのリクエストを検証するシークレット
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -157,7 +158,12 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 # 司令塔 (orchestrator)
 # ---------------------------------------------------------
 @app.post("/webhook/orchestrator")
-async def orchestrator_webhook(request: Request):
+async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(None)):
+    # 0. セキュリティチェック: SupabaseのWebhookからのリクエストか検証
+    if WEBHOOK_SECRET and x_webhook_secret != WEBHOOK_SECRET:
+        print("🔒 Unauthorized webhook attempt blocked.")
+        raise HTTPException(status_code=401, detail="Unauthorized webhook")
+
     payload = await request.json()
     event_type = payload.get("type")
     record = payload.get("record", {})
@@ -235,7 +241,8 @@ async def orchestrator_webhook(request: Request):
 # ---------------------------------------------------------
 @app.post("/worker/transcribe-chunk")
 async def worker_transcribe_chunk(
-    lecture_id: str = Form(...),       
+    lecture_id: str = Form(...),
+    start_time: float = Form(...),
     chunk_index: int = Form(...),      
     file: UploadFile = File(...)       
 ):
@@ -254,6 +261,7 @@ async def worker_transcribe_chunk(
     # （この待機中、Cloud Runは「通信中」と判定し、CPUを100%割り当て続けます）
     await run_transcribe_chunk_worker(
         lecture_id=lecture_id,
+        start_time=start_time,
         chunk_index=chunk_index,
         audio_bytes=audio_bytes
     )

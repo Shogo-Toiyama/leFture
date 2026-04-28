@@ -4,28 +4,29 @@ from app.services.helpers.helpers import TaskLogger
 class AssembleTranscriptService:
     def __init__(self, logger: TaskLogger):
         self.logger = logger
-        pass
 
-    # 戻り値を Path から list に変更！
     def run(self, completed_chunks: list) -> list:
         self.logger.log("   [Logic] Starting AssembleTranscriptService")
         
         assembled_transcript = []
         global_sid_counter = 1
-        running_offset = 0.0  
 
         for chunk in completed_chunks:
             chunk_index = chunk.get("chunk_index")
             segments = chunk.get("segments") or []
-            actual_duration = chunk.get("audio_duration", 0.0)
+            
+            # 💡 Flutterが計算した完璧な絶対時間を使う！(running_offsetは廃止)
+            chunk_start_time = chunk.get("start_time")
+            if chunk_start_time is None:
+                raise ValueError(f"CRITICAL: chunk (index={chunk.get('chunk_index')}) is missing start_time. Cannot assemble transcript.")
             
             if not segments:
-                running_offset += actual_duration
                 continue
 
             for seg in segments:
-                absolute_start = running_offset + seg.get("start", 0.0)
-                absolute_end = running_offset + seg.get("end", 0.0)
+                # チャンク内の相対時間(0.0~34.0)に、チャンクの絶対開始時間を足すだけ！
+                absolute_start = chunk_start_time + seg.get("start", 0.0)
+                absolute_end = chunk_start_time + seg.get("end", 0.0)
 
                 assembled_transcript.append({
                     "sid": f"s{global_sid_counter:06d}",
@@ -38,9 +39,5 @@ class AssembleTranscriptService:
                 
                 global_sid_counter += 1
 
-            running_offset += actual_duration
-
-        self.logger.log(f"   [Logic] Assembled {len(assembled_transcript)} sentences. Total audio length: {running_offset:.2f}s")
-        
-        # 💡 ファイルに保存せず、組み立てたリストをそのまま返す！
+        self.logger.log(f"   [Logic] Assembled {len(assembled_transcript)} sentences.")
         return assembled_transcript

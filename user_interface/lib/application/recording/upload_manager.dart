@@ -240,6 +240,7 @@ class UploadManager {
         'chunk_index': asset.sequenceIndex,
         'storage_path': storagePath, // 予測されるパスを先に入れておく
         'status': 'PROCESSING',
+        'start_time': asset.startTime,
       });
       print('📝 [UploadManager] 処理開始(PROCESSING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
     } catch (e) {
