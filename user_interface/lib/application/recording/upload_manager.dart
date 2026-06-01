@@ -9,7 +9,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../infrastructure/supabase/services/lecture_write_service.dart';
-import '../../infrastructure/supabase/services/storage_upload_service.dart';
 import '../../infrastructure/local_db/repositories/recording_repository_drift.dart';
 import '../../infrastructure/local_db/app_database.dart';
 
@@ -19,7 +18,6 @@ part 'upload_manager.g.dart';
 UploadManager uploadManager(Ref ref) {
   final mgr = UploadManager(
     repo: ref.read(recordingRepositoryDriftProvider),
-    uploader: ref.read(storageUploadServiceProvider),
     lectureWriter: ref.read(lectureWriteServiceProvider),
   );
   
@@ -33,14 +31,11 @@ UploadManager uploadManager(Ref ref) {
 class UploadManager {
   UploadManager({
     required RecordingRepositoryDrift repo,
-    required StorageUploadService uploader,
     required LectureWriteService lectureWriter,
   })  : _repo = repo,
-        _uploader = uploader,
         _lectureWriter = lectureWriter;
 
   final RecordingRepositoryDrift _repo;
-  final StorageUploadService _uploader;
   final LectureWriteService _lectureWriter;
 
   StreamSubscription? _jobSubscription;
@@ -231,7 +226,7 @@ class UploadManager {
 
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
     final fileName = 'chunk_$seqStr.wav'; 
-    final storagePath = 'chunks/$fileName';
+    final storagePath = '${lecture.ownerId}/${lecture.id}/audio_chunks/$fileName';
 
     // 3. lecture_transcripts テーブルに「PROCESSING」を登録
     try {
@@ -248,37 +243,17 @@ class UploadManager {
       rethrow; 
     }
 
-    // 4. Cloud RunへのPOST と Storageへのアップロードを「並列」で実行
-    String? remotePath;
+    // 4. Cloud Run に直接 POST して文字起こしを開始（バックエンドが R2 に保存する）
     try {
-      await Future.wait([
-        // A) StorageへWAVファイルをアップロード (終わったら remotePath に代入)
-        _uploader.uploadAudioFile(
-          userId: lecture.ownerId,
-          lectureId: lecture.id,
-          localPath: localPath,
-          fileName: storagePath,
-        ).then((path) => remotePath = path),
-        
-        // B) Cloud Runに直接POSTして文字起こしを開始
-        _postToCloudRun(
-          localPath: localPath,
-          lectureId: lecture.id,
-          chunkIndex: asset.sequenceIndex,
-          startTime: asset.startTime,
-        ),
-      ]);
+      await _postToCloudRun(
+        localPath: localPath,
+        lectureId: lecture.id,
+        chunkIndex: asset.sequenceIndex,
+        startTime: asset.startTime,
+      );
     } catch (e) {
       print('❌ [UploadManager] 通信エラー、後でリトライします: $e');
-      rethrow; 
-    }
-
-    // 5. 両方成功したら、ローカルのAsset情報も更新（アップロード完了の目印）
-    if (remotePath != null) {
-      await _repo.updateAssetUploaded(
-        assetId: asset.id, 
-        remotePath: remotePath!,
-      );
+      rethrow;
     }
   }
 
