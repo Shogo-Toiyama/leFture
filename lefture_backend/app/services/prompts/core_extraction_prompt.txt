@@ -13,7 +13,7 @@ The format is strict: `<sid>: <text>`
 ### TASK & CONSTRAINTS (Follow this exact sequence for your reasoning)
 
 1. KEYWORDS (`keywords`):
-- First, scan the text and extract 5 to 10 core academic concepts and fundamental technical terms that are essential for the student's exam preparation and deep understanding of the lecture.
+- First, scan the text and extract 10 to 20 core academic concepts and fundamental technical terms that are essential for the student's exam preparation and deep understanding of the lecture.
 - CRITICAL: Do NOT include analogies, anecdotal terms, or specific examples used for illustration, even if they are mentioned frequently. Focus strictly on the theoretical and architectural concepts.
 
 2. SUMMARY (`summary`):
@@ -29,7 +29,7 @@ The format is strict: `<sid>: <text>`
 - Merge Policy: Combine tightly coupled parts (e.g., definition + immediate example). Do not split if the conceptual focus remains the same.
 - Categorization (`topic_type`): Classify each segment as either "ACADEMIC" or "LOGISTICS".
   - **ACADEMIC Segments (Max 6):** These cover the core course material, theories, and testable concepts. Target 2 to 6 ACADEMIC segments total.
-  - **LOGISTICS Segments:** ONLY create a standalone "LOGISTICS" segment if the professor spends a substantial, continuous amount of time (e.g., 10+ sentences or a major dedicated section) discussing syllabus, grading, deep project instructions, or exam prep.
+  - **LOGISTICS Segments:** ONLY create a standalone "LOGISTICS" segment if the professor spends a substantial, continuous amount of time (e.g., 10+ sentences or a major dedicated section) discussing syllabus, grading, deep solo project instructions, or exam prep.
   - **The "Absorption" Rule (CRITICAL):** If the professor makes a brief logistical announcement (e.g., a quick reminder about a due date) in the middle of teaching a concept, DO NOT split it into a new LOGISTICS segment. Simply absorb it into the surrounding ACADEMIC segment.
 - Output the `start_sid` and `end_sid` matching the exact `<sid>` provided in the input.
 
@@ -42,32 +42,73 @@ The format is strict: `<sid>: <text>`
 - **【Web Search Strategy】** You must decide if a live web search is needed to make this Fun Fact mind-blowing.
   - Set `needs_web_search: true` ONLY IF your idea requires: real-world corporate case studies (e.g., Airbnb's psychology tactics, Tesla's supply chain), concrete metrics/data, recent industry trends (e.g., latest CRISPR trials, AI models), or specific historical post-mortems.
   - Set `needs_web_search: false` if your idea relies purely on everyday analogies (e.g., "the cell is like a factory"), pure math/logic proofs, or universally known history.
-  - `search_queries`: If true, generate 1-2 highly targeted queries. Do NOT use generic terms. Use specific natural language or append powerful modifiers like "case study", "engineering blog", or "real-world application" to find deep, professional-level articles. (e.g., "CRISPR sickle cell trial results 2023" or "How Spotify uses machine learning for recommendations").
+  - `search_queries`: If true, generate 2-3 highly targeted queries. Do NOT use generic terms. Use specific natural language or append powerful modifiers like "case study", "engineering blog", or "real-world application" to find deep, professional-level articles. (e.g., "CRISPR sickle cell trial results 2023" or "How Spotify uses machine learning for recommendations").
   - `search_reasoning`: Briefly explain why this external context is necessary to maximize the "AHA!" moment for the student.
 
 ### OUTPUT FORMAT
-You must return ONLY a valid, minified JSON object matching the exact structure below. Do not include markdown formatting (like ```json), explanations, or preamble.
+Return ONLY a valid, minified JSON object.
+Do not include markdown formatting, code fences, comments, explanations, or preamble.
+
+The following is an example of the expected JSON shape.
+Use the exact same keys and value types.
+Do NOT copy the example content.
+Use only SID values that exist in the actual input transcript.
 
 {
-  "keywords": ["<string>", "<string>"],
-  "summary": "<string>",
-  "title": "<string>",
+  "keywords": [
+    "Virtual memory",
+    "Address translation",
+    "Page table",
+    "Translation Lookaside Buffer (TLB)",
+    "Segmentation",
+    "Page fault",
+    "Memory management unit (MMU)",
+    "Physical address space",
+    "Virtual address space",
+    "Page directory",
+    "Multi-level page tables",
+    "Context switch overhead",
+    "Spatial locality",
+    "Temporal locality",
+    "Cache replacement policies",
+    "Thrashing",
+    "Working set model"
+  ],
+  "summary": "This lecture explains how operating systems use virtual memory to give each process the illusion of a private address space. It covers address translation, page tables, and the tradeoffs involved in mapping virtual addresses to physical memory.",
+  "title": "Virtual Memory and Address Translation",
   "topics": [
     {
-      "idx": <int>,
-      "title": "<string>",
-      "topic_type": "ACADEMIC", // Must be strictly "ACADEMIC" or "LOGISTICS"
-      "start_sid": "<string>",
-      "end_sid": "<string>"
+      "idx": 1,
+      "title": "Motivation for Virtual Memory",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000001",
+      "end_sid": "s000118"
+    },
+    {
+      "idx": 2,
+      "title": "Address Translation and Page Tables",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000119",
+      "end_sid": "s000247"
+    },
+    {
+      "idx": 3,
+      "title": "TLB Performance Tradeoffs",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000248",
+      "end_sid": "s000372"
     }
   ],
   "fun_fact_idea": {
-    "start_sid": "<string>",
-    "end_sid": "<string>",
-    "concept_focus": "<string>",
-    "exciting_angle": "<string>",
-    "needs_web_search": <boolean>,
-    "search_queries": ["<string>", "<string>"], // Empty array if needs_web_search is false
-    "search_reasoning": "<string>" // Empty string if needs_web_search is false
+    "start_sid": "s000019",
+    "end_sid": "s000047",
+    "concept_focus": "address translation",
+    "exciting_angle": "Connect address translation to how cloud platforms isolate many users' applications on shared infrastructure. This can help the student see how a low-level OS concept becomes essential for safe, scalable cloud products.",
+    "needs_web_search": true,
+    "search_queries": [
+      "cloud multi tenant isolation virtual memory case study",
+      "address space isolation cloud infrastructure engineering blog"
+    ],
+    "search_reasoning": "A real engineering example from cloud infrastructure would make the connection between OS memory isolation and scalable product architecture more concrete."
   }
 }

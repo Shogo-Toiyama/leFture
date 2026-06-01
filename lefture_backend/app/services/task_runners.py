@@ -79,7 +79,7 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
     supabase = get_supabase_client()
     res = supabase.table("lectures").select("owner_id").eq("id", lecture_id).single().execute()
     uid = res.data["owner_id"] if res.data else "unknown_user"
-    logger = TaskLogger(uid, lecture_id, f"TRANSCRIBE_CHUNK_{chunk_index}")
+    logger = TaskLogger(uid, lecture_id, f"TRANSCRIBE_CHUNK_{chunk_index:03d}")
     billing = BillingEngine()
     
     try:
@@ -94,7 +94,18 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
             prompt_keywords = "UCLA, lecture, Computer Science"
         )
 
-        # 2. DBを DONE に更新し、真実のテキストを書き込む
+        # 2. 受け取った音声バイナリをそのまま R2 に保存（バックアップ＆参照用）
+        seqStr = str(chunk_index).zfill(3)
+        audio_r2_path = storage_service.save_binary(
+            uid=uid,
+            lecture_id=lecture_id,
+            file_name=f"audio_chunks/chunk_{seqStr}.wav",
+            data=audio_bytes,
+            content_type="audio/wav"
+        )
+        logger.log(f"💾 Audio chunk saved to R2: {audio_r2_path}")
+
+        # 3. DBを DONE に更新し、真実のテキストを書き込む
         # idではなく、lecture_idとchunk_indexの組み合わせでレコードを特定して更新する
         is_silent = len(result["segments"]) == 0
         new_status = "REVIEWED" if is_silent else "TRANSCRIBED"
@@ -103,7 +114,8 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
             "status": new_status,
             "text": result["text"],
             "segments": result["segments"], 
-            "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0
+            "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0,
+            "storage_path": audio_r2_path,
         }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         
         logger.log(f"✅ Chunk transcription completed: Chunk {chunk_index}")

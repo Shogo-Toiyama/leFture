@@ -1,5 +1,5 @@
-from pathlib import Path
 from app.services.helpers.helpers import TaskLogger
+
 
 class AssembleTranscriptService:
     def __init__(self, logger: TaskLogger):
@@ -7,19 +7,33 @@ class AssembleTranscriptService:
 
     def run(self, completed_chunks: list) -> list:
         self.logger.log("   [Logic] Starting AssembleTranscriptService")
-        
+
         assembled_transcript = []
+
+        # SID is intentionally 1-indexed.
+        # Downstream tasks parse SID with int(sid[1:]) and expect IDs like:
+        #   s000001, s000002, ...
+        # Do not change this to 0-indexed unless all downstream SID parsing is updated.
         global_sid_counter = 1
 
         for chunk in completed_chunks:
             chunk_index = chunk.get("chunk_index")
             segments = chunk.get("segments") or []
-            
-            # 💡 Flutterが計算した完璧な絶対時間を使う！(running_offsetは廃止)
+
+            if not isinstance(segments, list):
+                raise ValueError(
+                    f"CRITICAL: chunk (index={chunk_index}) has invalid segments type: "
+                    f"{type(segments).__name__}. Expected list."
+                )
+
+            # Flutterが計算した完璧な絶対時間を使う！(running_offsetは廃止)
             chunk_start_time = chunk.get("start_time")
             if chunk_start_time is None:
-                raise ValueError(f"CRITICAL: chunk (index={chunk.get('chunk_index')}) is missing start_time. Cannot assemble transcript.")
-            
+                raise ValueError(
+                    f"CRITICAL: chunk (index={chunk_index}) is missing start_time. "
+                    "Cannot assemble transcript."
+                )
+
             if not segments:
                 continue
 
@@ -36,7 +50,7 @@ class AssembleTranscriptService:
                     "end": round(absolute_end, 2),
                     "chunk_index": chunk_index
                 })
-                
+
                 global_sid_counter += 1
 
         self.logger.log(f"   [Logic] Assembled {len(assembled_transcript)} sentences.")
