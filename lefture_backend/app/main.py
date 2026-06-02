@@ -89,6 +89,9 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     
     owner_id = user_res.user.id
 
+    # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
+    admin_client = get_supabase_client()
+
     # 4. 親ジョブを作成 (processing_jobs)
     job_data = {
         "lecture_id": payload.lecture_id,
@@ -96,7 +99,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
         "expected_chunks": payload.expected_chunks,
         "status": "PENDING"
     }
-    job_res = user_client.table("processing_jobs").insert(job_data).execute()
+    job_res = admin_client.table("processing_jobs").insert(job_data).execute()
     job_id = job_res.data[0]["id"]
 
     # 5. タスクの設計図（DAG）を定義
@@ -149,7 +152,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     ]
 
     # 7. 子タスクを一気に登録 (processing_tasks)
-    user_client.table("processing_tasks").insert(insert_data).execute()
+    admin_client.table("processing_tasks").insert(insert_data).execute()
 
     # 大成功！
     return {"message": "Analysis started successfully", "job_id": job_id}
