@@ -91,11 +91,16 @@ class SentenceReviewService:
         self.logger.log(f"   [LLM] Calling LiteLLM API ({self.model_alias})...")
         
         messages = [Message(role="user", content=prompt)]
-        options = LLMOptions(temperature=0.2, max_completion_tokens=8192, reasoning_effort="low")
+        options = LLMOptions(temperature=0.2, max_completion_tokens=4000, reasoning_effort="low")
         
         # 💡 UnifiedLLM を使って非同期実行！
-        res = await self.llm.generate(model=self.model_alias, messages=messages, options=options)
-        llm_output = res.output_text
+        try:
+            res = await self.llm.generate(model=self.model_alias, messages=messages, options=options)
+            llm_output = res.output_text
+        except Exception as e:
+            self.logger.log(f"⚠️ [Sentence Review] LLM call failed: {e}")
+            self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch due to API error.")
+            return chunks_to_review
 
         # パース処理 (元のロジックのまま)
         matches = re.findall(r'<s(\d{6})>(.*?)</s\1>', llm_output, re.DOTALL)
