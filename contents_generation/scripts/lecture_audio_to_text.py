@@ -228,6 +228,17 @@ def lecture_audio_to_text(
     - transcript_sentences.json が既にあれば speech_to_text をスキップ
     - force_transcribe=True のときは必ず AssemblyAI を再実行
     """
+    if audio_file is None:
+        print("\n### Lecture Audio To Text (Transcript Mode) ###")
+        print("✅ Skipping AssemblyAI transcription and Sentence Review.")
+        # Ensure reviewed_sentences.json exists
+        src = lecture_dir / "transcript_sentences.json"
+        dst = lecture_dir / "reviewed_sentences.json"
+        if src.exists() and not dst.exists():
+            import shutil
+            shutil.copy(str(src), str(dst))
+        return
+
     if force_transcribe or not _has_valid_transcript_outputs(lecture_dir):
         speech_to_text(audio_file, lecture_dir, collector)
     else:

@@ -1,4 +1,4 @@
-import os, time, sys
+import os, time, sys, json
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
@@ -50,10 +50,22 @@ def human_size(n):
     return f"{n:.1f}PB"
 
 
-def stable_files(dirpath: Path, settle_seconds=3.0):
-    snapshot1 = {p: (size, mtime) for p, size, mtime in list_audio_files(dirpath)}
+def stable_files(dirpath: Path, settle_seconds=3.0, pattern="*"):
+    """Check files matching a pattern inside a directory for stability."""
+    def get_matching_files():
+        files = []
+        for p in dirpath.glob(pattern):
+            if p.is_file() and p.name != ".DS_Store":
+                try:
+                    stat = p.stat()
+                    files.append((p, stat.st_size, stat.st_mtime))
+                except FileNotFoundError:
+                    pass
+        return files
+
+    snapshot1 = {p: (size, mtime) for p, size, mtime in get_matching_files()}
     time.sleep(settle_seconds)
-    snapshot2 = {p: (size, mtime) for p, size, mtime in list_audio_files(dirpath)}
+    snapshot2 = {p: (size, mtime) for p, size, mtime in get_matching_files()}
 
     stable = []
     for p, meta1 in snapshot1.items():
@@ -61,6 +73,121 @@ def stable_files(dirpath: Path, settle_seconds=3.0):
         if meta2 and meta1 == meta2:
             stable.append((p, meta2[0], meta2[1]))
     return stable
+
+
+def parse_time_to_ms(t_str: str) -> int:
+    """Convert timestamp format (e.g. '2:24' or '1:03:08') to milliseconds."""
+    parts = list(map(int, t_str.strip().split(":")))
+    if len(parts) == 2:
+        minutes, seconds = parts
+        return (minutes * 60 + seconds) * 1000
+    elif len(parts) == 3:
+        hours, minutes, seconds = parts
+        return (hours * 3600 + minutes * 60 + seconds) * 1000
+    raise ValueError(f"Unknown timestamp format: {t_str}")
+
+
+def parse_raw_transcript(txt_path: Path) -> list[dict]:
+    """
+    Parse a raw transcript text file where lines alternate between sentence text and timestamp.
+    Example:
+    So today I want to talk about distributed file systems.
+    2:24
+    Which of course are a subset of distributed systems in general.
+    2:35
+    """
+    lines = [line.strip() for line in txt_path.read_text(encoding="utf-8").splitlines()]
+    
+    parsed = []
+    idx = 1
+    
+    # We iterate looking for a text line followed by a timestamp line
+    i = 0
+    prev_ms = 0
+    
+    while i < len(lines):
+        text = lines[i]
+        if not text:
+            i += 1
+            continue
+            
+        # The next non-empty line should be a timestamp (e.g., '2:24' or '2:24\n')
+        timestamp_str = None
+        j = i + 1
+        while j < len(lines) and not lines[j]:
+            j += 1
+            
+        if j < len(lines):
+            # Check if it looks like a timestamp (contains colon, e.g., '2:24')
+            if ":" in lines[j]:
+                timestamp_str = lines[j]
+                i = j + 1
+            else:
+                # If there's no timestamp, we just treat it as a sentence with no timestamp
+                i += 1
+        else:
+            i += 1
+            
+        current_ms = None
+        if timestamp_str:
+            try:
+                current_ms = parse_time_to_ms(timestamp_str)
+            except ValueError:
+                pass
+                
+        # Generate item
+        parsed.append({
+            "sid": f"s{idx:06d}",
+            "text": text,
+            "start": prev_ms,
+            "end": current_ms if current_ms is not None else prev_ms + 2000, # fallback to +2s if no end ts
+            "confidence": 1.0,
+        })
+        
+        if current_ms is not None:
+            prev_ms = current_ms
+            
+        idx += 1
+        
+    return parsed
+
+
+def wait_for_transcript(transcript_path: Path, poll_interval=1.0, settle_seconds=2.0, timeout=None):
+    print(f"\n📂 Raw transcript file: {transcript_path.resolve()}")
+    print("⬆️  Please paste/save your transcript text into this file.")
+    print("   (We'll wait here; press Ctrl+C to abort.)")
+    start = time.time()
+
+    while True:
+        try:
+            if transcript_path.exists() and transcript_path.stat().st_size > 0:
+                # Settle check
+                size1 = transcript_path.stat().st_size
+                time.sleep(settle_seconds)
+                size2 = transcript_path.stat().st_size
+                if size1 == size2:
+                    print("\n✅ Detected transcript input!")
+                    while True:
+                        ans = input("\nProceed with this transcript? [Y/n/r] "
+                                    "(Y: continue, n: quit, r: refresh/wait again) ").strip().lower()
+                        if ans in {"", "y", "yes"}:
+                            return
+                        if ans in {"n", "no", "q", "quit"}:
+                            print("💡 Aborted by user.")
+                            sys.exit(0)
+                        if ans in {"r", "refresh"}:
+                            break
+            else:
+                print(f"\r⏳ Waiting for transcript data in {transcript_path.name}... (empty or doesn't exist)", end="", flush=True)
+                time.sleep(poll_interval)
+
+            if timeout is not None and (time.time() - start) > timeout:
+                print("\n⏱️  Timeout waiting for transcript.")
+                sys.exit(1)
+
+        except KeyboardInterrupt:
+            print("\n🛑 Interrupted.")
+            sys.exit(1)
 
 
 def wait_for_uploads(audio_dir: Path, min_files=1, poll_interval=1.0, settle_seconds=3.0, timeout=None):
@@ -71,16 +198,18 @@ def wait_for_uploads(audio_dir: Path, min_files=1, poll_interval=1.0, settle_sec
 
     while True:
         try:
-            stable = stable_files(audio_dir, settle_seconds=settle_seconds)
-            if len(stable) >= min_files:
-                print(f"\n✅ Detected {len(stable)} stable file(s):")
-                for p, size, _ in stable:
+            stable = stable_files(audio_dir, settle_seconds=settle_seconds, pattern="*")
+            # Filter stable files to only include audio extensions
+            stable_audio = [item for item in stable if item[0].suffix.lower() in AUDIO_EXTS]
+            if len(stable_audio) >= min_files:
+                print(f"\n✅ Detected {len(stable_audio)} stable file(s):")
+                for p, size, _ in stable_audio:
                     print(f" - {p.name}  [{human_size(size)}]")
                 while True:
                     ans = input("\nProceed with these file(s)? [Y/n/r] "
                                 "(Y: continue, n: quit, r: refresh list) ").strip().lower()
                     if ans in {"", "y", "yes"}:
-                        return [p for p, _, _ in stable]
+                        return [p for p, _, _ in stable_audio]
                     if ans in {"n", "no", "q", "quit"}:
                         print("💡 Aborted by user.")
                         sys.exit(0)
@@ -103,6 +232,25 @@ def wait_for_uploads(audio_dir: Path, min_files=1, poll_interval=1.0, settle_sec
 
 def main():
     load_dotenv()
+
+    # =========================
+    # Choose mode
+    # =========================
+    print("=== Orbit Lecture Companion: Note Generation ===")
+    print("Select input mode:")
+    print("  1. Audio file (Standard)")
+    print("  2. Transcript text file (Skip transcription & sentence review)")
+    
+    while True:
+        mode_choice = input("Enter selection [1/2, default: 1]: ").strip()
+        if mode_choice in {"", "1"}:
+            mode = "audio"
+            break
+        elif mode_choice == "2":
+            mode = "transcript"
+            break
+        else:
+            print("Invalid selection. Please choose 1 or 2.")
 
     # =========================
     # Choose provider & models
@@ -140,15 +288,35 @@ def main():
     text_opts = LLMOptions(output_type="text", temperature=0.2, google_search=False)
 
     LECTURE_DIR = make_lecture_dir()
-    AUDIO_DIR = LECTURE_DIR / "audio"
-    AUDIO_DIR.mkdir()
 
-    audio_files = wait_for_uploads(AUDIO_DIR)
+    if mode == "audio":
+        AUDIO_DIR = LECTURE_DIR / "audio"
+        AUDIO_DIR.mkdir()
+        audio_files = wait_for_uploads(AUDIO_DIR)
+        audio_file_param = audio_files[0]
+    else:
+        # Create empty transcript txt file
+        transcript_txt = LECTURE_DIR / "raw_transcript.txt"
+        transcript_txt.touch()
+        wait_for_transcript(transcript_txt)
+        
+        # Parse text into JSON
+        print("\nParsing raw transcript text...")
+        parsed_sentences = parse_raw_transcript(transcript_txt)
+        
+        # Write transcript_sentences.json and reviewed_sentences.json directly
+        with open(LECTURE_DIR / "transcript_sentences.json", "w", encoding="utf-8") as f:
+            json.dump(parsed_sentences, f, ensure_ascii=False, indent=2)
+        with open(LECTURE_DIR / "reviewed_sentences.json", "w", encoding="utf-8") as f:
+            json.dump(parsed_sentences, f, ensure_ascii=False, indent=2)
+        print("✅ Saved parsed sentences directly.")
+        audio_file_param = None
 
     start_time_total = time.time()
 
-    # 1) AssemblyAI transcription stays inside lecture_audio_to_text, sentence review uses llm
-    lecture_audio_to_text(audio_files[0], LECTURE_DIR, llm, MODELS["sentence_review"], collector)
+    # 1) AssemblyAI transcription / sentence review
+    # If audio_file_param is None, this will be bypassed
+    lecture_audio_to_text(audio_file_param, LECTURE_DIR, llm, MODELS["sentence_review"], collector)
 
     # 2) Role classification (lite for batches, full optional review)
     role_classification(

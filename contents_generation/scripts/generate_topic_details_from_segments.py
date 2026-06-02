@@ -310,7 +310,7 @@ def main():
     # model_alias = "5_mini"  # recommended for topic details quality
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-03-17-01-50-05-070"
+    LECTURE_DIR = ROOT / "../lectures/2026-04-28-14-16-25-0700"
 
     collector = CostCollector()
 
