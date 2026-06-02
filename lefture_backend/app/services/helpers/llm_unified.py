@@ -230,6 +230,9 @@ class Message:
 class LLMOptions:
     temperature: float = 0.2
     output_type: Literal["text", "json"] = "text"
+    max_tokens: Optional[int] = None
+    max_completion_tokens: Optional[int] = None
+    reasoning_effort: Optional[Literal["low", "medium", "high"]] = None
 
 
 @dataclass
@@ -262,6 +265,15 @@ class UnifiedLLM:
             "messages": litellm_messages,
             "temperature": options.temperature,
         }
+
+        if options.max_tokens is not None:
+            kwargs["max_tokens"] = options.max_tokens
+
+        if options.max_completion_tokens is not None:
+            kwargs["max_completion_tokens"] = options.max_completion_tokens
+
+        if options.reasoning_effort is not None:
+            kwargs["reasoning_effort"] = options.reasoning_effort
 
         # JSONモードの指定
         if options.output_type == "json":

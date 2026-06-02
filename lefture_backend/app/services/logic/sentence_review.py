@@ -51,6 +51,35 @@ class SentenceReviewService:
                 }
                 target_xml += f"<{sid}>{seg['text']}</{sid}>"
 
+        # 前回と今回のチャンクの時間境界を記録
+        chunk_boundaries = []
+        if previous_chunk and previous_chunk.get("start_time") is not None:
+            chunk_boundaries.append({
+                "chunk_index": previous_chunk["chunk_index"],
+                "start_time": previous_chunk["start_time"]
+            })
+        for chunk in chunks_to_review:
+            if chunk.get("start_time") is not None:
+                chunk_boundaries.append({
+                    "chunk_index": chunk["chunk_index"],
+                    "start_time": chunk["start_time"]
+                })
+        
+        # start_timeでソート
+        chunk_boundaries.sort(key=lambda x: x["start_time"])
+
+        def get_assigned_chunk_index(seg_abs_start: float, orig_idx: int) -> int:
+            if not chunk_boundaries:
+                return orig_idx
+            # 一番近い過去のチャンクインデックスを探す
+            assigned_idx = chunk_boundaries[0]["chunk_index"]
+            for boundary in chunk_boundaries:
+                if seg_abs_start >= boundary["start_time"]:
+                    assigned_idx = boundary["chunk_index"]
+                else:
+                    break
+            return assigned_idx
+
         # プロンプト生成
         prompt_template = _load_prompt("sentence_review_prompt.txt")
         prompt = prompt_template.format(
@@ -62,7 +91,7 @@ class SentenceReviewService:
         self.logger.log(f"   [LLM] Calling LiteLLM API ({self.model_alias})...")
         
         messages = [Message(role="user", content=prompt)]
-        options = LLMOptions(temperature=0.2)
+        options = LLMOptions(temperature=0.2, max_completion_tokens=8192, reasoning_effort="low")
         
         # 💡 UnifiedLLM を使って非同期実行！
         res = await self.llm.generate(model=self.model_alias, messages=messages, options=options)
@@ -71,6 +100,18 @@ class SentenceReviewService:
         # パース処理 (元のロジックのまま)
         matches = re.findall(r'<s(\d{6})>(.*?)</s\1>', llm_output, re.DOTALL)
         parsed_dict = {f"s{sid}": text.strip() for sid, text in matches}
+
+        # --- Fallback Mechanism ---
+        total_orig = len(orig_map)
+        parsed_count = len(parsed_dict)
+        success_rate = parsed_count / total_orig if total_orig > 0 else 1.0
+
+        if total_orig > 0 and success_rate < 0.3:
+            snippet = llm_output[-500:] if len(llm_output) > 500 else llm_output
+            self.logger.log(f"⚠️ [Sentence Review] PARSING FAILURE! Success rate: {success_rate:.1%} ({parsed_count}/{total_orig}). Output may be truncated.")
+            self.logger.log(f"   [LLM Output Snippet]: {snippet}")
+            self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch.")
+            return chunks_to_review
 
         merged_segments = []
         last_non_empty_seg = None
@@ -107,6 +148,7 @@ class SentenceReviewService:
                 continue
 
             if len(sentences) == 1:
+                seg["chunk_index"] = get_assigned_chunk_index(seg["start"], seg["chunk_index"])
                 final_segments.append(seg)
             else:
                 total_chars = sum(len(s) for s in sentences)
@@ -121,7 +163,7 @@ class SentenceReviewService:
                         "text": s,
                         "start": round(curr_start, 3),
                         "end": round(curr_start + dur, 3),
-                        "chunk_index": seg["chunk_index"],
+                        "chunk_index": get_assigned_chunk_index(curr_start, seg["chunk_index"]),
                         "confidence": seg["confidence"]
                     })
                     curr_start += dur
@@ -131,7 +173,9 @@ class SentenceReviewService:
 
         for chunk in chunks_to_review:
             c_idx = chunk["chunk_index"]
-            updated_chunks_dict[c_idx] = {"segments": [], "text": "", "chunk_index": c_idx}
+            updated_chunks_dict[c_idx] = chunk.copy()
+            updated_chunks_dict[c_idx]["segments"] = []
+            updated_chunks_dict[c_idx]["text"] = ""
 
         for seg in final_segments:
             c_idx = seg["chunk_index"]
