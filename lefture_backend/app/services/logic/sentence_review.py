@@ -15,6 +15,26 @@ class SentenceReviewService:
     async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
         self.logger.log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
 
+        # 💡 Helper to convert relative timestamps in chunks to absolute if they are not already absolute
+        def make_chunks_absolute(chunks: list) -> list:
+            absolute_chunks = []
+            for chunk in chunks:
+                if chunk.get("status") == "REVIEWED":
+                    # Already absolute
+                    absolute_chunks.append(chunk)
+                    continue
+                c_start = chunk.get("start_time", 0.0)
+                new_chunk = chunk.copy()
+                new_segs = []
+                for seg in chunk.get("segments", []):
+                    new_seg = seg.copy()
+                    new_seg["start"] = seg["start"] + c_start
+                    new_seg["end"] = seg["end"] + c_start
+                    new_segs.append(new_seg)
+                new_chunk["segments"] = new_segs
+                absolute_chunks.append(new_chunk)
+            return absolute_chunks
+
         orig_map = {}
         target_xml = ""
         
@@ -24,12 +44,18 @@ class SentenceReviewService:
             if prev_start_time is None:
                 raise ValueError(f"CRITICAL: prev_chunk (index={previous_chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
             last_segs = previous_chunk["segments"][-3:]
+            is_absolute = previous_chunk.get("status") == "REVIEWED"
             for seg in last_segs:
                 sid = seg["sid"]
+                seg_start = seg["start"]
+                seg_end = seg["end"]
+                if not is_absolute:
+                    seg_start += prev_start_time
+                    seg_end += prev_start_time
                 orig_map[sid] = {
                     "text": seg["text"],
-                    "start": seg["start"] + prev_start_time,
-                    "end": seg["end"] + prev_start_time,
+                    "start": seg_start,
+                    "end": seg_end,
                     "chunk_index": previous_chunk.get("chunk_index"),
                     "confidence": seg.get("confidence", 0.99)
                 }
@@ -40,12 +66,18 @@ class SentenceReviewService:
             chunk_start_time = chunk.get("start_time")
             if chunk_start_time is None:
                 raise ValueError(f"CRITICAL: chunk (index={chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
+            is_absolute = chunk.get("status") == "REVIEWED"
             for seg in chunk.get("segments", []):
                 sid = seg["sid"]
+                seg_start = seg["start"]
+                seg_end = seg["end"]
+                if not is_absolute:
+                    seg_start += chunk_start_time
+                    seg_end += chunk_start_time
                 orig_map[sid] = {
                     "text": seg["text"],
-                    "start": seg["start"] + chunk_start_time,
-                    "end": seg["end"] + chunk_start_time,
+                    "start": seg_start,
+                    "end": seg_end,
                     "chunk_index": chunk.get("chunk_index"),
                     "confidence": seg.get("confidence", 0.99)
                 }
@@ -100,7 +132,7 @@ class SentenceReviewService:
         except Exception as e:
             self.logger.log(f"⚠️ [Sentence Review] LLM call failed: {e}")
             self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch due to API error.")
-            return chunks_to_review
+            return make_chunks_absolute(chunks_to_review)
 
         # パース処理 (元のロジックのまま)
         matches = re.findall(r'<s(\d{6})>(.*?)</s\1>', llm_output, re.DOTALL)
@@ -116,7 +148,7 @@ class SentenceReviewService:
             self.logger.log(f"⚠️ [Sentence Review] PARSING FAILURE! Success rate: {success_rate:.1%} ({parsed_count}/{total_orig}). Output may be truncated.")
             self.logger.log(f"   [LLM Output Snippet]: {snippet}")
             self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch.")
-            return chunks_to_review
+            return make_chunks_absolute(chunks_to_review)
 
         merged_segments = []
         last_non_empty_seg = None

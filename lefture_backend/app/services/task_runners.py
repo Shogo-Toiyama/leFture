@@ -260,7 +260,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             # LLM職人を呼び出す
             llm = UnifiedLLM(billing)
             reviewer = SentenceReviewService(llm, logger)
-            reviewed_leftovers = reviewer.run(
+            reviewed_leftovers = await reviewer.run_from_memory(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
                 course_title="Computer Science", # ※必要に応じてjob_ctxから取得

@@ -37,10 +37,16 @@ class AssembleTranscriptService:
             if not segments:
                 continue
 
+            is_absolute = chunk.get("status") == "REVIEWED"
             for seg in segments:
-                # チャンク内の相対時間(0.0~34.0)に、チャンクの絶対開始時間を足すだけ！
-                absolute_start = chunk_start_time + seg.get("start", 0.0)
-                absolute_end = chunk_start_time + seg.get("end", 0.0)
+                if is_absolute:
+                    # REVIEWEDなチャンクはすでに絶対時間になっているため、そのまま使用する！
+                    absolute_start = seg.get("start", 0.0)
+                    absolute_end = seg.get("end", 0.0)
+                else:
+                    # チャンク内の相対時間(0.0~34.0)に、チャンクの絶対開始時間を足す！
+                    absolute_start = chunk_start_time + seg.get("start", 0.0)
+                    absolute_end = chunk_start_time + seg.get("end", 0.0)
 
                 assembled_transcript.append({
                     "sid": f"s{global_sid_counter:06d}",
