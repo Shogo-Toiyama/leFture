@@ -188,14 +188,14 @@ def _check_one_faithfulness(
     return out_path
 
 
-def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMOptions, lecture_dir: Path, collector: CostCollector):
+def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMOptions, lecture_dir: Path, collector: CostCollector, details_dirname: str = "details"):
     # トピックごとに詳細を生成
     print("\n### Topic Details Generation ###")
     start_time = time.time()
 
     max_workers = 3
 
-    DETAILS_DIR = Path(lecture_dir / "details")
+    DETAILS_DIR = Path(lecture_dir / details_dirname)
     DETAILS_DIR.mkdir(exist_ok=True, parents=True)
 
     instr_topic_details_generation = (PROMPTS_DIR / "topic_details_generation_from_segments.txt").read_text(
@@ -288,15 +288,34 @@ def faithfulness_check_and_readablity_enhancement(
     print(f"⏰Checked and edited topic details: {elapsed:.2f} seconds.")
 
 
-def generate_topic_details(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options_text: LLMOptions | None = None):
+def generate_topic_details(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options_text: LLMOptions | None = None, details_dirname: str = "details"):
     options_text = options_text or LLMOptions(output_type="text", temperature=0.2, google_search=False)
 
-    generate_details_draft(llm, model_alias, options_text, lecture_dir, collector)
+    generate_details_draft(llm, model_alias, options_text, lecture_dir, collector, details_dirname=details_dirname)
 
     # If you want to run this later:
     # faithfulness_check_and_readablity_enhancement(llm, model_alias, options_text, lecture_dir)
 
     print("\n✅All tasks of TOPIC DETAIL GENERATION completed.")
+
+
+def test_deepseek():
+    load_dotenv()
+
+    # Initialize client for DeepSeek V4 Flash
+    llm = UnifiedLLM(provider="deepseek")
+    model_alias = "v4_pro"
+
+    ROOT = Path(__file__).resolve().parent
+    LECTURE_DIR = ROOT / "../lectures/2026-04-28-14-16-25-0700"
+
+    collector = CostCollector()
+
+    options_text = LLMOptions(output_type="text", temperature=0.2, google_search=False, reasoning_effort="low")
+
+    print(f"Starting A/B test with DeepSeek {model_alias} for lecture: {LECTURE_DIR.name}")
+    generate_topic_details(llm, model_alias, LECTURE_DIR, collector, options_text=options_text, details_dirname="deepseek_details")
+    print(collector.report())
 
 
 # ------ for test -------
@@ -316,8 +335,11 @@ def main():
 
     options_text = LLMOptions(output_type="text", temperature=0.2, google_search=False, reasoning_effort="low")
 
+    print(f"Starting detail generation with Gemini 2.5 Flash for lecture: {LECTURE_DIR.name}")
     generate_topic_details(llm, model_alias, LECTURE_DIR, collector, options_text=options_text)
+    print(collector.report())
 
 
 if __name__ == "__main__":
     main()
+

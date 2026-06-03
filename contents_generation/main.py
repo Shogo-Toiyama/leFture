@@ -258,6 +258,7 @@ def main():
     
     provider = "gemini"
     # provider = "openai"
+    # provider = "deepseek"
 
     if (provider == "gemini"):
         MODELS = {
@@ -278,6 +279,16 @@ def main():
             "seg_lite": "5_nano",
             "topic_details": "5_mini",
             "fun_facts": "5_mini",
+        }
+    elif (provider == "deepseek"):
+        MODELS = {
+            "sentence_review": "v4_flash",
+            "role_full": "v4_flash",
+            "role_lite": "v4_flash",
+            "seg_full": "v4_flash",
+            "seg_lite": "v4_flash",
+            "topic_details": "v4_flash",
+            "fun_facts": "v4_flash",
         }
 
     llm = UnifiedLLM(provider=provider)

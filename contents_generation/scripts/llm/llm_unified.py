@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Literal, Union
 import json
 import os
 
-LLMProvider = Literal["gemini", "openai"]
+LLMProvider = Literal["gemini", "openai", "deepseek"]
 OutputType = Literal["text", "json"]
 ReasoningEffort = Literal["low", "medium", "high"]
 
@@ -78,6 +78,10 @@ MODEL_MAP: Dict[LLMProvider, Dict[str, str]] = {
         "5_mini": "gpt-5-mini",
         "5_nano": "gpt-5-nano",
         "4_1_mini": "gpt-4.1-mini",
+    },
+    "deepseek": {
+        "v4_flash": "deepseek-v4-flash",
+        "v4_pro": "deepseek-v4-pro",
     }
 }
 
@@ -91,6 +95,10 @@ PRICING_PER_1M: Dict[LLMProvider, Dict[str, Dict[str, float]]] = {
     "gemini": {
         "gemini-2.5-flash": {"input": 0.30, "output": 2.50},
         "gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
+    },
+    "deepseek": {
+        "deepseek-v4-flash": {"input": 0.14, "output": 0.28},
+        "deepseek-v4-pro": {"input": 0.435, "output": 0.87},
     }
 }
 
@@ -112,7 +120,12 @@ class UnifiedLLM:
         self.client = self._init_client()
 
     def _load_key(self, provider: LLMProvider) -> str:
-        env = "GEMINI_API_KEY" if provider == "gemini" else "SHOGO_S_OPENAI_API_KEY"
+        if provider == "gemini":
+            env = "GEMINI_API_KEY"
+        elif provider == "deepseek":
+            env = "DEEPSEEK_API_KEY"
+        else:
+            env = "SHOGO_S_OPENAI_API_KEY"
         v = os.getenv(env)
         if not v:
             raise RuntimeError(f"Missing {env}. Please set it in your environment.")
@@ -122,6 +135,9 @@ class UnifiedLLM:
         if self.provider == "gemini":
             from google import genai
             return genai.Client(api_key=self.api_key)
+        elif self.provider == "deepseek":
+            from openai import OpenAI
+            return OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com")
         else:
             from openai import OpenAI
             return OpenAI(api_key=self.api_key)
@@ -140,6 +156,8 @@ class UnifiedLLM:
 
         if self.provider == "gemini":
             res = self._gen_gemini(model_name, messages, options)
+        elif self.provider == "deepseek":
+            res = self._gen_deepseek(model_name, messages, options)
         else:
             res = self._gen_openai(model_name, messages, options)
 
@@ -210,6 +228,62 @@ class UnifiedLLM:
                 out_json = None
 
         return LLMResult(output_text=text, output_json=out_json, usage=usage, warnings=warnings, raw=resp)
+
+    # -------- DeepSeek adapter (Chat Completions API) --------
+    def _gen_deepseek(self, model_name: str, messages: List[Message], options: LLMOptions) -> LLMResult:
+        warnings: List[str] = []
+
+        formatted_messages = []
+        for m in messages:
+            formatted_messages.append({"role": m.role, "content": m.content})
+
+        kwargs: Dict[str, Any] = {
+            "model": model_name,
+            "messages": formatted_messages,
+            "temperature": options.temperature,
+        }
+
+        if options.output_type == "json":
+            kwargs["response_format"] = {"type": "json_object"}
+
+        # Toggle thinking config if requested
+        extra_body = {}
+        if options.thinking_budget > 0 or options.reasoning_effort is not None:
+            extra_body["thinking"] = {"type": "enabled"}
+            kwargs["extra_body"] = extra_body
+            if options.reasoning_effort is not None:
+                kwargs["reasoning_effort"] = options.reasoning_effort
+
+        resp = self.client.chat.completions.create(**kwargs)
+
+        choice = resp.choices[0]
+        text = choice.message.content or ""
+
+        usage = Usage()
+        um = getattr(resp, "usage", None)
+        if um is not None:
+            prompt_tokens = int(getattr(um, "prompt_tokens", 0) or 0)
+            out_tokens = int(getattr(um, "completion_tokens", 0) or 0)
+            
+            # Extract reasoning tokens if present
+            completion_details = getattr(um, "completion_tokens_details", None)
+            reasoning_tokens = 0
+            if completion_details is not None:
+                reasoning_tokens = int(getattr(completion_details, "reasoning_tokens", 0) or 0)
+            
+            total = int(getattr(um, "total_tokens", prompt_tokens + out_tokens) or 0)
+            usage = Usage(prompt_tokens, out_tokens, reasoning_tokens, total)
+
+        out_json = None
+        if options.output_type == "json":
+            try:
+                out_json = json.loads(text) if text.strip() else None
+            except Exception:
+                warnings.append("JSON parse failed. output_json is None.")
+                out_json = None
+
+        return LLMResult(output_text=text, output_json=out_json, usage=usage, warnings=warnings, raw=resp)
+
 
     # -------- OpenAI adapter (Responses API) --------
     def _gen_openai(self, model_name: str, messages: List[Message], options: LLMOptions) -> LLMResult:
