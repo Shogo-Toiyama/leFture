@@ -1,0 +1,10 @@
+{
+  "model_name": "gemini-2.5-flash",
+  "elapsed_seconds": 24.389776945114136,
+  "output_length_chars": 8387,
+  "input_tokens": 9287,
+  "output_tokens": 2387,
+  "reasoning_tokens": 2500,
+  "total_tokens": 14174,
+  "finish_reason": "FinishReason.STOP"
+}

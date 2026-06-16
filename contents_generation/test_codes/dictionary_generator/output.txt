@@ -1,0 +1,656 @@
+Symbols
+. (Dot) ...... 11-4
+.. (Dot-dot) ...... 11-4
+/dev/null ...... 11-6
+/dev/sda1 ...... 14-5
+/dev/zero ...... 14-5
+
+A
+Abort Record ...... 13-2
+Absolute Path ...... 11-4
+Access Control ...... 16-6
+Access Control List (ACL) ...... 16-5, 16-6, 17-1, 17-4
+Access Matrix ...... 16-6
+ACL (Access Control List) ...... 16-5, 16-6, 17-1, 17-4
+acquire (Primitive) ...... 9-2
+Acquire Read Lock (R_lock) ...... 8-4
+Acquire Write Lock (W_lock) ...... 8-4
+Address Space Layout Randomization (ASLR) ...... 17-6
+Android Security ...... 17-5
+Anticipatory Scheduling ...... 10-1
+Append Command ...... 10-3
+ASLR (Address Space Layout Randomization) ...... 17-6
+Asynchronous Call ...... 15-3
+At Least Once RPC ...... 15-3
+At Most Once RPC ...... 15-3
+AT_SYMLINK_NOFOLLOW ...... 11-5
+Atomic Load ...... 8-3
+Atomic Operation ...... 13-1, 13-2
+Atomic Store ...... 8-3
+Atomic Write Unit Normal (AWUN) ...... 12-3
+Atomic Write Unit Power Fail (AWUPF) ...... 12-3
+Atomicity ...... 8-2, 12-2, 13-1
+Attack Surface ...... 17-5
+Auditing ...... 16-5, 17-2
+Authentication ...... 16-5
+Authorization ...... 16-5, 16-6
+Automated Analysis ...... 17-2
+Availability ...... 16-3
+AWUN (Atomic Write Unit Normal) ...... 12-3
+AWUPF (Atomic Write Unit Power Fail) ...... 12-3
+
+B
+B-tree ...... 11-2
+Backdoor ...... 17-6
+Bakery Algorithm ...... 8-2
+Base-Bounds Register ...... 13-4
+Batching ...... 9-5, 9-6, 10-1
+Bathtub Curve ...... 16-3
+Behavioral Analytics ...... 17-3
+Belady's Anomaly ...... 14-3, 14-4
+Berkeley Fast File System (FFS) ...... 11-6
+Binary Semaphore ...... 8-4
+Bind Mount ...... 12-1
+Block ...... 9-3, 10-5
+Block (Flash) ...... 10-2
+Block Bitmap ...... 11-6, 12-4, 13-3
+Block Cache ...... 9-3, 9-5
+Block Device ...... 9-3
+Block Level ...... 12-1
+Block Size ...... 11-2
+Blockchain ...... 17-3
+Blocking Mutex ...... 8-4, 9-1
+Blocking Signals ...... 8-2
+Boot Sector ...... 10-6, 11-6
+Bootstrapping (Authentication) ...... 16-5
+Botnet ...... 16-4
+Buffer Overrun ...... 16-4
+
+C
+C-SCAN (Circular Elevator Algorithm) ...... 10-1
+Cache Coherence ...... 9-6, 15-3
+Cache Line ...... 8-3
+Call by Value ...... 15-3
+Capability ...... 16-6
+Capability (File Access) ...... 17-1
+CAS (Compare and Swap) ...... 8-3
+Cascading Abort ...... 13-2
+Cell Storage ...... 13-2, 16-1
+Centralized Logging ...... 17-2
+Centralized Name Node ...... 15-2
+Character Special File ...... 11-6
+chdir (System Call) ...... 11-4
+Chicken-and-Egg Problem ...... 14-5
+chmod (Command) ...... 17-1
+chroot (System Call) ...... 11-4, 12-1
+Circular Dependency ...... 9-2
+Circular Elevator Algorithm (C-SCAN) ...... 10-1
+Circular Wait ...... 9-1, 9-2
+Client ...... 15-1
+Client-Side Caching ...... 15-3
+Clock Interrupt ...... 14-4
+clock_gettime (Function) ...... 17-3
+Close-to-Open Consistency ...... 15-4
+Coarse-Grained Lock ...... 8-3, 8-4
+Commit Record ...... 12-2, 13-1, 13-2, 13-3
+Common Vulnerabilities and Exposures (CVE) ...... 17-5
+Compare and Swap (CAS) ...... 8-3
+Compensating Action ...... 13-2
+Concatenation ...... 16-1
+Concurrent ...... 8-1
+Condition Variable ...... 8-4
+Configuration Error ...... 17-5
+Consistency ...... 14-6, 15-2
+Contiguous Allocation ...... 10-5, 10-6, 11-1
+copy (System Call) ...... 9-1
+Covert Channel ...... 17-4
+CPU Load (Covert Channel) ...... 17-4
+CPU Scheduling ...... 9-3
+CPU Trap ...... 10-4
+CR3 (Register) ...... 14-1, 14-2
+Crash Recovery ...... 12-4, 13-1
+Critical Section ...... 8-2, 8-3, 9-1
+CVE (Common Vulnerabilities and Exposures) ...... 17-5
+Cycle (Directory) ...... 11-3
+Cyclic Symbolic Link ...... 11-5
+Cylinder ...... 9-4
+
+D
+Dallying ...... 9-5, 9-6, 10-1
+Dangling Link ...... 12-4
+Dangling Symbolic Link ...... 11-5
+Data Block ...... 10-6
+Data Consistency ...... 8-1
+Data Node ...... 15-1
+Data Persistence ...... 9-6
+Deadlock ...... 8-1, 8-4, 8-5, 9-1
+Deadlock Prevention ...... 9-2
+Deadly Embrace ...... 8-5
+Decentralized Identity ...... 17-2, 17-3
+Demagnetization ...... 13-3
+Demand Paging ...... 14-5
+Denial of Service (DoS) ...... 16-4, 16-5
+Device Attack ...... 16-4
+Device Number ...... 12-1
+DFS (Distributed File System) ...... 15-1
+Differential Privacy ...... 17-3
+Direct Access ...... 17-4
+Direct Block ...... 11-2
+Direct Memory Access (DMA) ...... 10-4
+Directory ...... 10-5, 11-1
+Directory Entry ...... 10-6, 11-2, 11-3
+Directory Hierarchy ...... 10-5, 10-6
+Directory Traversal ...... 11-4
+Dirty Bit ...... 14-5
+Dirty Block ...... 9-6
+Disk Drive ...... 9-4
+Disk Quota ...... 11-5
+Distributed File System ...... 14-6
+Distributed File System (DFS) ...... 15-1
+Distributed Ledger ...... 17-3
+Distributed Parity ...... 16-3
+DMA (Direct Memory Access) ...... 10-4
+Done Record ...... 13-2
+DoS (Denial of Service) ...... 16-4
+Double Indirect Block ...... 11-2
+Downtime ...... 16-3
+DRAM Buffer ...... 10-2
+Drive-Side FTL ...... 10-3
+Durability ...... 12-2, 13-1
+Dynamic Allocation ...... 11-2
+Dynamic Deadlock Detection ...... 9-2
+
+E
+E_STALE ...... 15-4
+ECC (Error Correcting Code) ...... 12-2, 12-3
+ECC (Error Correction Code) ...... 10-2
+EDA (Electronic Design Automation) ...... 15-5
+Eight Fallacies of Network Computing ...... 15-3
+Electronic Design Automation (EDA) ...... 15-5
+Elevator Algorithm (SCAN) ...... 10-1
+Encrypted Capability ...... 16-6
+Encrypted Disk ...... 13-3
+Endianness ...... 15-3
+Erase-Before-Write ...... 10-2
+Error ...... 12-2
+Error Correcting Code (ECC) ...... 12-2, 12-3
+Error Correction Code (ECC) ...... 10-2
+Escape Sequence Attack ...... 17-5
+Exactly Once RPC ...... 15-3
+Exchange Quad (XCHGQ) ...... 8-3
+Exclusive OR (XOR) ...... 16-2
+EXT3 ...... 11-3
+ext4 ...... 11-6
+External Authentication ...... 16-5
+External Fragmentation ...... 10-5, 10-6, 11-1, 11-2
+
+F
+Failure ...... 12-2
+False Negative ...... 17-3
+False Positive ...... 17-3
+FAT (File Allocation Table) ...... 10-5, 10-6, 11-1
+FAT16 ...... 10-6
+FAT32 ...... 10-6
+Fault ...... 12-2
+Fault Tolerance ...... 15-2, 16-2, 16-3
+FCFS (First-Come, First-Serve) ...... 10-1
+fd (File Descriptor) ...... 14-5
+fdatasync (System Call) ...... 9-6
+FDP (Flexible Data Placement) ...... 10-3
+FFS (Berkeley Fast File System) ...... 11-6
+FIFO (First-In, First-Out) ...... 8-2, 11-6, 14-3, 14-4
+File Allocation Table (FAT) ...... 10-5, 10-6, 11-1
+File Descriptor ...... 9-6, 11-3, 16-6, 17-1
+File Handle ...... 15-4
+File Permissions ...... 11-2
+File System ...... 10-5
+File System Abstraction Layers ...... 12-1
+File System Check (fsck) ...... 12-4
+File System Invariant ...... 12-4
+File Type (Directory Entry) ...... 11-3
+File with Holes (Sparse File) ...... 11-2
+Fine-Grained Lock ...... 8-4
+First-Come, First-Serve (FCFS) ...... 10-1
+First-In, First-Out (FIFO) ...... 8-2, 11-6, 14-3, 14-4
+Flash Controller ...... 10-2
+Flash Drive ...... 10-2
+Flash Translation Layer (FTL) ...... 10-3
+Flash Wear ...... 16-3
+Flexibility ...... 14-6, 15-2
+Flexible Data Placement (FDP) ...... 10-3
+Force (Attack) ...... 16-4
+Format String Vulnerability ...... 17-5, 17-6
+Fraud (Attack) ...... 16-4
+Free Memory is Wasted Memory ...... 9-3
+fsck (File System Check) ...... 12-4, 13-2
+fstat (System Call) ...... 11-5
+fsync (System Call) ...... 9-6
+FTL (Flash Translation Layer) ...... 10-3
+
+G
+Garbage Collection ...... 10-2, 10-3, 11-3
+getchar ...... 9-6
+getfacl (Command) ...... 16-6
+GIL (Global Interpreter Lock) ...... 8-4
+Global Interpreter Lock (GIL) ...... 8-4
+Global Offset Table (GOT) ...... 17-6
+Google Play Protect ...... 17-6
+GOT (Global Offset Table) ...... 17-6
+GPU Device Driver ...... 17-5
+
+H
+Hall of Mirrors ...... 12-1
+Hard Disk Drive (HDD) ...... 10-1
+Hard Link ...... 11-3, 11-4, 11-5
+Hard Modularity ...... 15-3
+Hardware-Assisted Atomicity ...... 8-2, 8-3
+HDD (Hard Disk Drive) ...... 10-1
+Heap Execution ...... 17-5
+Hierarchical System ...... 15-2
+Hold and Wait ...... 9-1, 9-2
+Host-Side FTL ...... 10-3
+Huge Page ...... 13-5, 13-6
+
+I
+I/O (Input/Output) ...... 9-3
+I/O Reordering ...... 13-3
+I/O Scheduling ...... 9-3, 9-4, 9-5, 10-1
+I/O-Bound ...... 9-3
+Idempotence ...... 13-2
+Idempotent Operation ...... 15-3
+Immutability ...... 11-5
+INB (Instruction) ...... 13-4
+Indirect Access ...... 17-4
+Indirect Block ...... 15-1
+Infant Mortality ...... 16-3
+Inode ...... 11-1, 11-2
+Inode Number ...... 11-2, 11-3, 11-4, 12-1
+Inode Table ...... 11-2, 11-6, 12-4
+Input/Output (I/O) ...... 9-3
+Insider Attack ...... 16-4, 17-5
+Integrity (Security) ...... 16-5
+Integrity Attack ...... 16-4
+Internal Authentication ...... 16-5
+Internal Fragmentation ...... 11-1, 11-2
+Interrupt ...... 10-4
+Interrupt Handler ...... 9-2
+Isolation Coordination ...... 8-2
+
+J
+Journal ...... 13-2
+Journaling ...... 13-2, 13-3, 16-1
+
+K
+Kerckhoffs's Principle ...... 17-3
+Kernel Mode ...... 14-1
+Kernel-Stored Capability ...... 16-6
+
+L
+L2P Mapping (Logical-to-Physical Mapping) ...... 10-2, 10-3
+LAM (Linear Address Mapping) ...... 13-5
+Lampson and Sturges Assumptions ...... 12-3
+LAN (Local Area Network) ...... 14-6
+Latency ...... 10-4, 14-6, 15-2, 15-5
+Least Recently Used (LRU) ...... 14-4
+Level of Indirection ...... 11-1
+Linear Address Mapping (LAM) ...... 13-5
+Link Count ...... 11-3, 11-4, 12-4, 13-3
+Linked List (FAT) ...... 10-6, 11-1
+Livelock ...... 9-2
+ln -s (Command) ...... 11-5
+Load Balancing ...... 15-2
+Load-Modify-Store ...... 8-2
+Local Area Network (LAN) ...... 14-6
+Locality of Reference ...... 9-5, 14-2, 14-3
+Lock ...... 8-1, 8-2, 9-1
+LOCK INCQ (Lock Increment Quad) ...... 8-3
+Lock Increment Quad (LOCK INCQ) ...... 8-3
+Lock Ordering ...... 9-2
+Logical Block Addressing ...... 10-3
+Logical Block Mapping ...... 9-4
+Logical-to-Physical Mapping (L2P Mapping) ...... 10-2, 10-3
+Lookup (NFS Operation) ...... 15-4
+lost+found (Directory) ...... 12-4
+LRU (Least Recently Used) ...... 14-4
+ls -L (Command) ...... 11-2
+lseek (System Call) ...... 11-1, 11-2
+
+M
+Machine Learning (Security) ...... 17-3
+Major Device Number ...... 11-6
+Majority Rule ...... 12-2, 12-3
+malloc ...... 14-5
+Marshaling ...... 15-3, 15-4
+Masquerading ...... 16-5
+Mean Time Between Failure (MTBF) ...... 16-3
+Mean Time To Failure (MTTF) ...... 16-3
+Memory Alignment ...... 8-2
+Memory Object ...... 11-6
+Memory Protection ...... 13-4
+Message Passing ...... 8-1
+Metadata ...... 9-6, 10-5
+Metadata Node ...... 15-1
+Micro-segmentation ...... 17-2
+Microcode ...... 8-3
+Minor Device Number ...... 11-6
+Mirroring (RAID 1) ...... 16-2
+mknod (Command/System Call) ...... 11-6
+mmap (System Call) ...... 14-5
+mount (Command) ...... 12-1
+Mount Table ...... 12-1
+MTBF (Mean Time Between Failure) ...... 16-3
+MTTF (Mean Time To Failure) ...... 16-3
+Multi-Factor Authentication ...... 16-5
+Multi-Level Indirection ...... 11-2
+Multi-Level Page Table ...... 13-5, 14-1
+Multiprocessor ...... 8-2
+Mutex (mutex_t) ...... 8-2
+mutex_t (Mutex) ...... 8-2
+Mutual Exclusion ...... 9-1, 9-2
+mv (Command) ...... 11-3
+
+N
+Name Node ...... 15-1
+Named Pipe (FIFO) ...... 11-6
+namei (Function) ...... 11-4, 11-5, 12-1
+NDA (Non-Disclosure Agreement) ...... 17-5
+Network Appliance (NetApp) ...... 15-5
+Network Attack ...... 16-4
+Network File System (NFS) ...... 15-4
+NFS (Network File System) ...... 15-4
+No Preemption of Locks ...... 9-1, 9-2
+Noise (Differential Privacy) ...... 17-3
+Non-Disclosure Agreement (NDA) ...... 17-5
+notify (Condition Variable) ...... 8-4
+NVMe ...... 10-3, 10-4, 12-3, 15-5
+
+O
+Object (Access Control) ...... 16-6
+Observability ...... 14-6
+OPT (Optimal Page Replacement Algorithm) ...... 14-3, 14-4
+Optimal Page Replacement Algorithm (OPT) ...... 14-3, 14-4
+Ordering Constraint ...... 13-3
+Orphan File ...... 12-4
+OUTB (Instruction) ...... 13-4
+
+P
+P/E Cycle (Program-Erase Cycle) ...... 10-2
+Page ...... 13-4
+Page (Flash) ...... 10-2
+Page Fault ...... 13-5, 13-6, 14-1, 14-2, 14-3, 14-4, 14-5
+Page Global Directory (PGD) ...... 13-5
+Page Middle Directory (PMD) ...... 13-5
+Page Number ...... 13-5
+Page Offset ...... 13-5, 14-1
+Page Replacement ...... 13-6
+Page Replacement Policy ...... 14-2, 14-3, 14-5
+Page Table ...... 13-4, 13-5, 14-1
+Page Table Entry (PTE) ...... 13-5, 13-6
+Page Upper Directory (PUD) ...... 13-5
+Paging ...... 13-5
+Parity Drive ...... 16-2, 16-3
+Partition Level ...... 12-1
+Password Guessing ...... 16-5
+PBAC (Perimeter-Based Access Control) ...... 17-1, 17-2
+Peer-to-Peer System ...... 15-2
+Perimeter-Based Access Control (PBAC) ...... 17-1, 17-2
+Persistent Data ...... 10-5
+PGD (Page Global Directory) ...... 13-5
+PHA (Potentially Harmful App) ...... 17-6
+Physical Address ...... 13-4
+Physical Address (PA) ...... 13-5, 14-1
+Physical Layer ...... 12-1
+Physical Memory ...... 13-6
+Pipe ...... 9-1
+Platter ...... 9-4
+pmap (Function) ...... 14-1
+PMD (Page Middle Directory) ...... 13-5
+Polling ...... 10-4
+Potentially Harmful App (PHA) ...... 17-6
+Pre-allocation ...... 11-1
+Prefetching ...... 9-5, 9-6, 15-3
+Principal ...... 16-5, 16-6
+Principle of Least Privilege ...... 17-2, 17-4
+Privacy Attack ...... 16-4
+Private Page ...... 14-5
+Privileged Bit ...... 14-1
+Privileged User Error ...... 17-5
+Process Table ...... 11-4, 14-2
+Program-Erase Cycle (P/E Cycle) ...... 10-2
+Programmed I/O ...... 10-4
+prot (Protection Flags) ...... 14-5
+PTE (Page Table Entry) ...... 13-5, 13-6
+PUD (Page Upper Directory) ...... 13-5
+putchar ...... 9-6
+
+Q
+QLC (Quad-Layer Cell) ...... 10-2
+Quad-Layer Cell (QLC) ...... 10-2
+
+R
+R_lock (Acquire Read Lock) ...... 8-4
+R_unlock (Release Read Lock) ...... 8-4
+Race Condition ...... 8-1, 8-2, 8-3, 9-1
+RAID (Redundant Arrays of Inexpensive/Independent Disks) ...... 16-1
+RAID 0 ...... 16-1
+RAID 1 (Mirroring) ...... 16-2
+RAID 4 ...... 16-3
+RAID 4 (Parity) ...... 16-2
+RAID 5 ...... 16-3
+RAM Cache ...... 9-3
+Random Access ...... 9-4, 9-5, 10-5
+Random Access Latency ...... 9-4
+Random Write ...... 10-3
+RBAC (Role-Based Access Control) ...... 17-4
+Re-striping ...... 16-1
+Read Performance ...... 16-2
+Read-Modify-Write ...... 8-2, 8-3
+Read-Only Page ...... 14-5
+Read-to-Write Consistency ...... 15-4
+Read-Write Lock ...... 8-4
+Read-Write-Execute Permissions ...... 13-4
+Read/Write Head ...... 9-4
+Real-Time OS (RT-11) ...... 10-5
+Rebuild Process ...... 16-2
+Receive Livelock ...... 9-2
+Recovery ...... 13-2
+Redundant Arrays of Inexpensive Disks (RAID) ...... 16-1
+Reference String ...... 14-3, 14-4
+Referenced Block ...... 12-4
+Relative Path ...... 11-4
+Release Read Lock (R_unlock) ...... 8-4
+Release Write Lock (W_unlock) ...... 8-4
+Relocatability ...... 13-4
+Relocation Read-Only (Relro) ...... 17-6
+Relro (Relocation Read-Only) ...... 17-6
+Remote Procedure Call (RPC) ...... 15-3
+Removal Policy ...... 14-2
+rename (Operation) ...... 12-4
+Request for Comments (RFC) ...... 15-4
+Resource Graph ...... 9-2
+Response Queue ...... 10-4
+Response Time ...... 14-5
+RFC (Request for Comments) ...... 15-4
+Ring Buffer ...... 10-4
+rm (Command) ...... 11-3, 13-3
+Robustness ...... 14-6, 15-2
+Role-Based Access Control (RBAC) ...... 17-4
+Rollback Protection ...... 17-6
+Root Directory ...... 10-6, 11-4
+Root File System ...... 12-1
+Rotational Latency ...... 9-4
+Rotations Per Minute (RPM) ...... 9-4
+RPC (Remote Procedure Call) ...... 15-3
+RPM (Rotations Per Minute) ...... 9-4
+RT-11 (Real-Time OS) ...... 10-5
+RT11 (File System) ...... 11-1
+
+S
+Scalability ...... 14-6, 15-2
+SCAN (Elevator Algorithm) ...... 10-1
+schedule() ...... 8-4
+seccomp BPF ...... 17-6
+Secondary Storage ...... 10-5
+Sector ...... 10-6
+Secure Deletion ...... 13-3
+Security Boundary ...... 17-4
+Security-Enhanced Linux (SELinux) ...... 17-6
+Seek Latency (Seek Time) ...... 9-4
+Seek Time ...... 10-1
+Seek Time (Seek Latency) ...... 9-4
+SEEK_CUR ...... 11-2
+Segment Number ...... 13-4
+Segment Table ...... 13-4
+Segmented Memory ...... 13-4
+SELinux (Security-Enhanced Linux) ...... 17-6
+Semaphore ...... 8-4
+Sequence Coordination ...... 8-1, 8-2
+Sequence Number ...... 15-3
+Sequential Access ...... 9-4, 9-5
+Sequential Read ...... 10-5
+Sequential Write ...... 10-3
+Serial Number (File Handle) ...... 15-4
+Serializability ...... 14-6
+setfacl (Command) ...... 16-6
+setUID (System Call) ...... 16-5
+setuid (System Call) ...... 17-6
+setUID Bit ...... 16-6
+Shared Memory ...... 8-1, 13-4
+Shared Memory Queue ...... 10-4
+Shared Page ...... 14-5
+Shortest Seek Time First (SSTF) ...... 10-1
+shred (Command) ...... 13-3
+Signal Handler ...... 13-6
+SIGSEGV ...... 13-6, 14-2
+Single Indirect Block ...... 11-2
+Single Point of Failure ...... 15-2
+Single Purpose for Blocks ...... 12-4
+Single-Layer Cell (SLC) ...... 10-2
+size_t ...... 14-1
+SLC (Single-Layer Cell) ...... 10-2
+Smart Contract ...... 17-3
+Social Engineering ...... 16-4
+Socket ...... 11-6
+Soft Link (Symbolic Link) ...... 11-5
+Solid State Drive (SSD) ...... 10-1
+Sparse File (File with Holes) ...... 11-2
+Spatial Locality ...... 9-5, 9-6, 10-1, 14-2
+Speculation ...... 9-5
+Spin Lock ...... 8-2, 8-3, 8-4
+Spontaneous Decay ...... 12-3
+SSD (Solid State Drive) ...... 10-1
+SSH Key ...... 16-5
+SSTF (Shortest Seek Time First) ...... 10-1
+st_dev ...... 12-1
+Stack Execution ...... 17-5
+Stack Overflow Attack ...... 17-5, 17-6
+Stale File Handle ...... 15-4
+Starvation ...... 10-1
+Stateless Server ...... 15-4
+Storage Leak ...... 12-4
+Storage Overhead ...... 16-2
+Stripe ...... 16-1
+Striping ...... 16-1
+struct file ...... 12-1
+struct file_operations ...... 12-1
+struct inode ...... 12-1
+struct inode_operations ...... 12-1
+struct task ...... 12-1
+Submit Queue ...... 10-4
+sudo (Program) ...... 16-5
+Superblock ...... 10-6, 11-1, 11-6
+Swap Map (swap_map) ...... 14-2
+Swap Space ...... 13-6, 14-2, 14-5
+Symbolic Link ...... 11-3
+Symbolic Link (Soft Link) ...... 11-5
+symlink (System Call) ...... 11-5
+sync (System Call) ...... 9-6
+Synchronization ...... 8-1
+System Bus ...... 8-3
+
+T
+Tagged Pointer ...... 13-5
+TBW (Terabytes Written) ...... 10-2
+TCP (Transmission Control Protocol) ...... 15-3
+Temporal Locality ...... 9-5, 9-6, 10-1, 14-2, 14-4
+Terabytes Written (TBW) ...... 10-2
+Thrashing ...... 14-2
+Threading ...... 8-1
+Threat Modeling ...... 16-4
+Throughput ...... 10-1, 10-4, 14-6, 15-2, 15-5
+Timestamps ...... 11-2
+Timing Attack ...... 17-4
+TLB (Translation Lookaside Buffer) ...... 14-1
+Track ...... 9-4
+Transaction ...... 13-2
+Transfer Rate ...... 9-4
+Translation Lookaside Buffer (TLB) ...... 14-1
+Transmission Control Protocol (TCP) ...... 15-3
+Transparency ...... 14-6, 15-2
+Triple Indirect Block ...... 11-2
+Triple Redundancy ...... 12-2, 12-3
+Trusting Trust Attack ...... 17-6
+
+U
+UAM (Upper Linear Address Mapping) ...... 13-5
+UDP (User Datagram Protocol) ...... 15-3
+UID (User ID) ...... 16-5
+uintptr_t ...... 14-1
+Unforgeability ...... 16-6
+Uni-processor ...... 8-2
+Unified Cache ...... 9-6
+Unix/Linux Permissions ...... 16-6
+unlink (System Call) ...... 11-3, 11-5
+Unlock ...... 8-2
+Unmarshaling ...... 15-4
+Unmarshaling (Deserialization) ...... 15-3
+Unreferenced Block ...... 12-4
+Upper Linear Address Mapping (UAM) ...... 13-5
+User Datagram Protocol (UDP) ...... 15-3
+User ID (UID) ...... 16-5
+User Mode ...... 14-1
+
+V
+Variable-Length Directory Entry ...... 11-3
+Verified Boot ...... 17-6
+VFAT ...... 10-6
+VFS (Virtual File System) ...... 12-1, 15-4
+Victim Page ...... 14-2, 14-3, 14-4
+Virtual Address ...... 13-4
+Virtual Address (VA) ...... 13-5, 14-1
+Virtual Drive ...... 16-1
+Virtual File System (VFS) ...... 12-1, 15-4
+Virtual Memory ...... 13-4, 13-6
+Virtual Page Number ...... 14-1
+Virtual Page Number (VPN) ...... 14-3
+Volatile Cell Storage ...... 13-2
+Volatile Memory ...... 9-6
+VPN (Virtual Page Number) ...... 14-3
+
+W
+W_lock (Acquire Write Lock) ...... 8-4
+W_unlock (Release Write Lock) ...... 8-4
+wait (Condition Variable) ...... 8-4
+WAL (Write-Ahead Log) ...... 13-2
+Wear Leveling ...... 10-2, 10-3, 13-3
+Wear Out ...... 10-2
+Wear-Out ...... 16-3
+Working Directory ...... 11-4
+Working Set ...... 14-2, 14-3
+Write Amplification ...... 10-2, 10-3
+Write Command ...... 10-3
+Write Performance ...... 16-2
+Write-Ahead Log (WAL) ...... 13-2
+Write-Behind Log ...... 13-2
+
+X
+XCHGQ (Exchange Quad) ...... 8-3
+XOR (Exclusive OR) ...... 16-2, 16-3
+
+Z
+Zero Trust Architecture (ZTA) ...... 17-1, 17-2, 17-4
+Zero-Knowledge Proof ...... 17-3
+ZNS (Zone Name System) ...... 10-3
+Zone ...... 10-3
+Zone Name System (ZNS) ...... 10-3
+ZTA (Zero Trust Architecture) ...... 17-1, 17-2, 17-4

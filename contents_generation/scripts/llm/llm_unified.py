@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Literal, Union
 import json
 import os
+import time
 
 LLMProvider = Literal["gemini", "openai", "deepseek"]
 OutputType = Literal["text", "json"]
@@ -48,6 +49,9 @@ class LLMOptions:
     # OpenAI (Reasoning)
     reasoning_effort: Optional[ReasoningEffort] = None
 
+    # Max output tokens limit
+    max_output_tokens: Optional[int] = None
+
     # 追加パラメータはここに入れておく（provider側で拾えるものだけ使う）
     provider_kwargs: Dict[str, Any] = field(default_factory=dict)
 
@@ -73,6 +77,8 @@ MODEL_MAP: Dict[LLMProvider, Dict[str, str]] = {
     "gemini": {
         "2_5_flash": "gemini-2.5-flash",
         "2_5_flash_lite": "gemini-2.5-flash-lite",
+        "3_1_flash_lite": "gemini-3.1-flash-lite",
+        "3_5_flash": "gemini-3.5-flash",
     },
     "openai": {
         "5_mini": "gpt-5-mini",
@@ -95,6 +101,8 @@ PRICING_PER_1M: Dict[LLMProvider, Dict[str, Dict[str, float]]] = {
     "gemini": {
         "gemini-2.5-flash": {"input": 0.30, "output": 2.50},
         "gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
+        "gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50},
+        "gemini-3.5-flash": {"input": 1.50, "output": 9.00},
     },
     "deepseek": {
         "deepseek-v4-flash": {"input": 0.14, "output": 0.28},
@@ -137,10 +145,10 @@ class UnifiedLLM:
             return genai.Client(api_key=self.api_key)
         elif self.provider == "deepseek":
             from openai import OpenAI
-            return OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com")
+            return OpenAI(api_key=self.api_key, base_url="https://api.deepseek.com", timeout=90.0)
         else:
             from openai import OpenAI
-            return OpenAI(api_key=self.api_key)
+            return OpenAI(api_key=self.api_key, timeout=90.0)
 
     def resolve_model(self, model: str) -> str:
         return MODEL_MAP[self.provider].get(model, model)
@@ -150,21 +158,41 @@ class UnifiedLLM:
         model: str,
         messages: List[Message],
         options: Optional[LLMOptions] = None,
+        fallback: bool = True,
     ) -> LLMResult:
         options = options or LLMOptions()
         model_name = self.resolve_model(model)
 
-        if self.provider == "gemini":
-            res = self._gen_gemini(model_name, messages, options)
-        elif self.provider == "deepseek":
-            res = self._gen_deepseek(model_name, messages, options)
-        else:
-            res = self._gen_openai(model_name, messages, options)
+        max_attempts = options.provider_kwargs.get("attempts", 3)
+        delay = 2.0
+        backoff = 2.0
 
-        res.provider = self.provider
-        res.model_name = model_name
-        res.estimated_cost_usd = estimate_cost(self.provider, model_name, res.usage)
-        return res
+        for attempt in range(1, max_attempts + 1):
+            current_model = model_name
+            if fallback and attempt > 1 and self.provider == "gemini" and model_name == "gemini-2.5-flash":
+                current_model = "gemini-2.5-flash-lite"
+                print(f"🔄 Switching fallback model to {current_model} due to previous failure...")
+
+            try:
+                if self.provider == "gemini":
+                    res = self._gen_gemini(current_model, messages, options)
+                elif self.provider == "deepseek":
+                    res = self._gen_deepseek(current_model, messages, options)
+                else:
+                    res = self._gen_openai(current_model, messages, options)
+                
+                res.provider = self.provider
+                res.model_name = current_model
+                res.estimated_cost_usd = estimate_cost(self.provider, current_model, res.usage)
+                return res
+            except Exception as e:
+                if attempt == max_attempts:
+                    print(f"❌ API call failed after {max_attempts} attempts: {e}")
+                    raise
+                
+                print(f"⚠️ [Attempt {attempt}/{max_attempts}] API call failed: {e}. Retrying in {delay}s...")
+                time.sleep(delay)
+                delay *= backoff
 
     # -------- Gemini adapter --------
     def _gen_gemini(self, model_name: str, messages: List[Message], options: LLMOptions) -> LLMResult:
@@ -191,6 +219,9 @@ class UnifiedLLM:
         else:
             kwargs["response_mime_type"] = "text/plain"
 
+        if options.max_output_tokens is not None:
+            kwargs["max_output_tokens"] = options.max_output_tokens
+
         # Gemini固有
         if options.thinking_budget and options.thinking_budget > 0:
             kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=options.thinking_budget)
@@ -202,8 +233,22 @@ class UnifiedLLM:
             warnings.append("json_schema is ignored for gemini (currently).")
 
         # provider_kwargsから拾えるものだけ拾う（基本無視、必要なら後で拡張）
-        if options.provider_kwargs:
-            warnings.append(f"provider_kwargs ignored for gemini: {list(options.provider_kwargs.keys())}")
+        gemini_keys = {"timeout_ms", "attempts"}
+        ignored_keys = [k for k in options.provider_kwargs.keys() if k not in gemini_keys]
+        if ignored_keys:
+            warnings.append(f"provider_kwargs ignored for gemini: {ignored_keys}")
+
+        # default timeout of 90 seconds (90,000 ms) and 3 retries
+        timeout_ms = options.provider_kwargs.get("timeout_ms", 90000)
+        attempts = options.provider_kwargs.get("attempts", 3)
+        kwargs["http_options"] = types.HttpOptions(
+            timeout=timeout_ms,
+            retry_options=types.HttpRetryOptions(
+                attempts=attempts,
+                initial_delay=2.0,
+                max_delay=10.0,
+            )
+        )
 
         config = types.GenerateContentConfig(**kwargs)
         resp = self.client.models.generate_content(model=model_name, contents=contents, config=config)
@@ -245,6 +290,9 @@ class UnifiedLLM:
 
         if options.output_type == "json":
             kwargs["response_format"] = {"type": "json_object"}
+
+        if options.max_output_tokens is not None:
+            kwargs["max_tokens"] = options.max_output_tokens
 
         # Toggle thinking config if requested
         extra_body = {}
@@ -338,6 +386,9 @@ class UnifiedLLM:
         )
         if reasoning_cfg is not None:
             req["reasoning"] = reasoning_cfg
+
+        if options.max_output_tokens is not None:
+            req["max_output_tokens"] = options.max_output_tokens
 
         resp = self.client.responses.create(**req)
 

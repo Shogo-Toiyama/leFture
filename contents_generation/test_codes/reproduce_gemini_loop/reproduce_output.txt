@@ -1,0 +1,92 @@
+# 4. RBAC, Direct Access & Covert Channels
+
+This section explores advanced security concepts beyond basic Access Control Lists (ACLs), introducing Role-Based Access Control (RBAC) to better enforce the principle of least privilege. It also differentiates between direct and indirect resource access, highlighting their security implications, and delves into the challenging problem of covert channels, where information can leak between isolated processes.
+
+## 🛡️ Improving Access Control with RBAC
+
+Traditional Access Control Lists (ACLs) can sometimes violate the **Principle of Least Privilege**, which states that a system entity should only be granted the minimum necessary permissions to perform its function ⟦s000388-s000390⟧.
+
+### ⚠️ The Problem with ACLs: Over-Privilege
+
+Consider a scenario where a user, like Dr. Eggert, logs into a system (e.g., CSNET) ⟦s000392⟧. As Dr. Eggert, he has broad privileges, such as installing software in `/user/local/cs` and editing the grading directory ⟦s000393-s000402⟧. If he then runs a program, such as a "Super Grader" application, this program inherits *all* of Dr. Eggert's permissions ⟦s000410-s000411⟧. This means the Super Grader program, which only needs to access the grading directory, also gains the ability to install system software ⟦s000413-s000415⟧. This grants the program more privileges than it requires for its specific task, violating the principle of least privilege ⟦s000412⟧.
+
+### ⚙️ How Role-Based Access Control (RBAC) Works
+
+**Role-Based Access Control (RBAC)** is a technique that improves upon ACLs by addressing this over-privilege issue ⟦s000416⟧. While not universally supported (e.g., not on Linux by default, but on some Linux-like systems or web applications like Bruin Learn), it offers a more granular approach to access control ⟦s000417-s000419⟧.
+
+Unlike ordinary access control, which directly links principals (users) to actions on objects ⟦s000420-s000422⟧, RBAC introduces an intermediary layer: **roles** ⟦s000423-s000424⟧.
+
+*   **Roles Defined:** Permissions (actions on objects) are assigned to specific roles (e.g., "software maintenance" or "grading") ⟦s000427-s000429⟧.
+*   **User Assignment:** Principals (users) are assigned one or more roles ⟦s000426⟧.
+*   **Dynamic Privilege:** When a user logs in, they don't automatically activate all their assigned roles. Instead, they explicitly "put on a hat" (activate a role) to gain the capabilities associated with that role ⟦s000431-s000432⟧. Once the task is complete, they "take off the hat," losing those specific capabilities ⟦s000433-s000434⟧.
+
+This mechanism ensures that a program like the Super Grader only operates with the "grading" role's permissions, preventing it from accessing or modifying system software ⟦s000435-s000436⟧.
+
+### 📊 RBAC: Benefits and Drawbacks
+
+| Aspect | Description | Evidence |
+| :----- | :---------- | :------- |
+| **Benefits** | More fine-grained control over permissions. | ⟦s000439⟧ |
+| | Better matches how people actually operate by associating tasks with specific roles. | ⟦s000439⟧ |
+| **Drawbacks** | Adds complexity to system configuration. | ⟦s000440-s000441⟧ |
+| | Requires users and administrators to understand a new concept ("what's a role?"). | ⟦s000442-s000444⟧ |
+| | Makes the system harder to maintain, explain, and manage due to increased complexity. | ⟦s000445-s000446⟧ |
+
+## 🚀 Direct vs. Indirect Resource Access
+
+Another important distinction in security implementation is how processes access resources ⟦s000449-s000450⟧.
+
+| Feature | Direct Access | Indirect Access |
+| :------ | :------------ | :-------------- |
+| **Mechanism** | The operating system maps the resource directly into the process's address space, providing a pointer to the object. | The process issues service requests (e.g., via system calls or handlers) to the operating system to interact with the resource. |
+| **Efficiency** | Very efficient because access is direct and hardware-managed. | Slower due to the overhead of repeated service requests and checks. |
+| **Access Checks** | Performed only once when the resource is initially mapped or made visible to the process. | Performed on each individual access request. |
+| **Security Implications** | Once access is granted, the process can do "whatever it wants" with the resource without further checks. | Fits better with a Zero Trust Architecture (ZTA) because access is continuously verified. |
+| | Violates ZTA because access persists once granted (e.g., if access was granted five seconds ago, it's still available). | Allows for immediate revocation of permissions; if permissions are removed, the next access attempt will fail. |
+| | Resource is more easily corrupted if the process has write access and is buggy or malicious. | Resource is less susceptible to corruption from a continuously privileged process, as each action is mediated. |
+| **Use Case** | Preferred in local environments where speed is critical. | More suitable for network environments where latency is already a factor, or local environments prioritizing security and revocation. |
+| **Evidence** | ⟦s000452, s000454-s000461, s000472-s000475⟧ | ⟦s000463-s000471⟧ |
+
+## 🕵️‍♀️ Covert Channels: Bypassing Security Walls
+
+Operating systems often aim to create an "absolute wall" between processes or virtual machines (VMs) to prevent information leakage ⟦s000477-s000483⟧. For example, modern web browsers run each tab in a separate process to contain security breaches ⟦s000486-s000489⟧. However, this isolation is not always absolute due to **covert channels** ⟦s000490-s000491⟧.
+
+### 🔍 What Covert Channels Are
+
+A covert channel exists when malicious code within one process (Process 1) attempts to leak sensitive information (e.g., a password or secret key) to another process (Process 2), even when no formal communication channels (like pipes or shared files) are allowed by the operating system's security model ⟦s000492-s000497⟧. This is a significant and persistent problem that keeps security designers "up at night" ⟦s000500-s000502⟧.
+
+### 💡 Example: Leaking a Bit via CPU Activity
+
+A simple, old-fashioned example of a covert channel involves two cooperating processes trying to send a single bit of information ⟦s000505-s000510⟧:
+
+*   **Sending Process (Process 1):**
+    ```
+    if (bit_is_true) {
+        // Make the CPU core busy
+        for (I = 0; I < a_zillion_squared; I++) {
+            // Do nothing
+        }
+    } else {
+        // Make the CPU core idle
+        sleep(1_second);
+    }
+    ```
+    This makes the CPU core busy if the bit is `true` (sending a '1') and idle if the bit is `false` (sending a '0') ⟦s000512-s000517⟧.
+
+*   **Receiving Process (Process 2):**
+    This process monitors an "innocent" system metric that is indirectly affected by Process 1's CPU usage ⟦s000518-s000522⟧. Examples include:
+    *   **CPU temperature:** If Process 1 is busy, the CPU temperature rises ⟦s000519, s000523-s000524⟧.
+    *   **CPU time consumed:** Process 2 can query the operating system for CPU time consumed by Process 1 (e.g., using `ps` command) ⟦s000520-s000521, s000524-s000525⟧.
+    *   **Time of day:** Subtle timing variations can also be exploited ⟦s000522⟧.
+
+By observing these metrics, Process 2 can infer the bit being sent by Process 1 ⟦s000523-s000526⟧.
+
+### 🕵️‍♀️ Covert Channels Without Cooperation (Timing Attacks)
+
+While the above example requires intentional cooperation between processes ⟦s000533-s000537⟧, covert channels can also exist without explicit cooperation by exploiting bugs in a process ⟦s000538⟧.
+
+For instance, if a password-checking algorithm in Process 1 takes longer to verify longer passwords, Process 2 could time the password check and infer the length of the password ⟦s000541-s000542⟧. Although knowing only the length isn't enough, this type of timing attack can sometimes be extended to deduce the entire password in poorly designed algorithms ⟦s000543-s000545⟧.
+
+### 🚧 Challenges in Defense
+
+Covert channels are extremely difficult to defend against, to the point where many security designers have "given up" on solving the problem for local systems ⟦s000527-s000528⟧. While they might be mitigated in network environments by placing each computation on a separate physical machine, virtual machines (VMs) rented from cloud providers like AWS are still vulnerable to these types of attacks ⟦s000529-s000530⟧.

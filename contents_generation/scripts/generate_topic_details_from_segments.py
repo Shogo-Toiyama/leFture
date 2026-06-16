@@ -6,9 +6,9 @@ from functools import partial
 from dotenv import load_dotenv
 
 # for main.py
-from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
+# from contents_generation.scripts.llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 # for direct use
-# from llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
+from llm.llm_unified import UnifiedLLM, LLMOptions, Message, CostCollector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
@@ -198,7 +198,7 @@ def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMO
     DETAILS_DIR = Path(lecture_dir / details_dirname)
     DETAILS_DIR.mkdir(exist_ok=True, parents=True)
 
-    instr_topic_details_generation = (PROMPTS_DIR / "topic_details_generation_from_segments.txt").read_text(
+    instr_topic_details_generation = (PROMPTS_DIR / "topic_details_generation_ver2.txt").read_text(
         encoding="utf-8"
     )
 
@@ -219,7 +219,16 @@ def generate_details_draft(llm: UnifiedLLM, model_alias: str, options_text: LLMO
     )
 
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        futures = {ex.submit(submit_one, topic): topic for topic in topic_segments}
+        futures = {}
+        for topic in topic_segments:
+            idx = topic.get("idx")
+            title = topic.get("title", f"Topic {idx}")
+            details_path = DETAILS_DIR / f"{idx} - {_safe_filename(title)} - details.txt"
+            if details_path.exists():
+                print(f"Topic {idx} details already exist ({details_path.name}). Skipping.")
+                continue
+            futures[ex.submit(submit_one, topic)] = topic
+
         for fut in as_completed(futures):
             seg = futures[fut]
             idx = seg.get("idx")
@@ -290,6 +299,8 @@ def faithfulness_check_and_readablity_enhancement(
 
 def generate_topic_details(llm: UnifiedLLM, model_alias: str, lecture_dir: Path, collector: CostCollector, options_text: LLMOptions | None = None, details_dirname: str = "details"):
     options_text = options_text or LLMOptions(output_type="text", temperature=0.2, google_search=False)
+    if options_text.max_output_tokens is None:
+        options_text.max_output_tokens = 3500
 
     generate_details_draft(llm, model_alias, options_text, lecture_dir, collector, details_dirname=details_dirname)
 
@@ -325,18 +336,21 @@ def main():
     # Switch provider/model here
     llm = UnifiedLLM(provider="gemini")
     model_alias = "2_5_flash"
-    # llm = UnifiedLLM(provider="openai")
-    # model_alias = "5_mini"  # recommended for topic details quality
+    # llm = UnifiedLLM(provider="deepseek")
+    # model_alias = "v4_flash"
+
+    # details_folder = "details"
+    details_folder = "details_ver2"
 
     ROOT = Path(__file__).resolve().parent
-    LECTURE_DIR = ROOT / "../lectures/2026-04-28-14-16-25-0700"
+    LECTURE_DIR = ROOT / "../lectures/2026-06-04-22-45-07-0700"
 
     collector = CostCollector()
 
     options_text = LLMOptions(output_type="text", temperature=0.2, google_search=False, reasoning_effort="low")
 
-    print(f"Starting detail generation with Gemini 2.5 Flash for lecture: {LECTURE_DIR.name}")
-    generate_topic_details(llm, model_alias, LECTURE_DIR, collector, options_text=options_text)
+    print(f"Starting detail generation with {llm.provider} {model_alias} for lecture: {LECTURE_DIR.name}")
+    generate_topic_details(llm, model_alias, LECTURE_DIR, collector, options_text=options_text, details_dirname=details_folder)
     print(collector.report())
 
 

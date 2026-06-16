@@ -1,0 +1,813 @@
+8-1: Synchronization
+8-1: Race Condition
+8-1: Shared Memory
+8-1: Deadlock
+8-1: Lock
+8-1: Threading
+8-1: Message Passing
+8-1: Sequence Coordination
+8-1: Concurrent
+8-1: Data Consistency
+8-2: Atomicity
+8-2: Isolation Coordination
+8-2: Sequence Coordination
+8-2: Critical Section
+8-2: Mutex (mutex_t)
+8-2: Spin Lock
+8-2: Lock
+8-2: Unlock
+8-2: Race Condition
+8-2: Uni-processor
+8-2: Multiprocessor
+8-2: Blocking Signals
+8-2: Load-Modify-Store
+8-2: Bakery Algorithm
+8-2: Hardware-Assisted Atomicity
+8-2: Read-Modify-Write
+8-2: Memory Alignment
+8-2: Atomicity
+8-2: Isolation Coordination
+8-2: Sequence Coordination
+8-2: Critical Section
+8-2: Mutex (mutex_t)
+8-2: mutex_t (Mutex)
+8-2: Spin Lock
+8-2: Lock
+8-2: Unlock
+8-2: Race Condition
+8-2: Uni-processor
+8-2: Multiprocessor
+8-2: Blocking Signals
+8-2: Load-Modify-Store
+8-2: Bakery Algorithm
+8-2: Hardware-Assisted Atomicity
+8-2: Read-Modify-Write
+8-2: Memory Alignment
+8-2: FIFO (First-In, First-Out)
+8-2: First-In, First-Out (FIFO)
+8-3: Hardware-Assisted Atomicity
+8-3: LOCK INCQ (Lock Increment Quad)
+8-3: Lock Increment Quad (LOCK INCQ)
+8-3: XCHGQ (Exchange Quad)
+8-3: Exchange Quad (XCHGQ)
+8-3: CAS (Compare and Swap)
+8-3: Compare and Swap (CAS)
+8-3: Spin Lock
+8-3: Cache Line
+8-3: System Bus
+8-3: Race Condition
+8-3: Atomic Load
+8-3: Atomic Store
+8-3: Read-Modify-Write
+8-3: Coarse-Grained Lock
+8-3: Critical Section
+8-3: Microcode
+8-4: Coarse-Grained Lock
+8-4: Fine-Grained Lock
+8-4: GIL (Global Interpreter Lock)
+8-4: Global Interpreter Lock (GIL)
+8-4: Read-Write Lock
+8-4: R_lock (Acquire Read Lock)
+8-4: Acquire Read Lock (R_lock)
+8-4: R_unlock (Release Read Lock)
+8-4: Release Read Lock (R_unlock)
+8-4: W_lock (Acquire Write Lock)
+8-4: Acquire Write Lock (W_lock)
+8-4: W_unlock (Release Write Lock)
+8-4: Release Write Lock (W_unlock)
+8-4: Blocking Mutex
+8-4: Semaphore
+8-4: Binary Semaphore
+8-4: Condition Variable
+8-4: wait (Condition Variable)
+8-4: notify (Condition Variable)
+8-4: Deadlock
+8-4: Spin Lock
+8-4: schedule()
+8-5: Deadlock
+8-5: Deadly Embrace
+9-1: Deadlock
+9-1: Race Condition
+9-1: Mutual Exclusion
+9-1: Circular Wait
+9-1: No Preemption of Locks
+9-1: Hold and Wait
+9-1: Critical Section
+9-1: Blocking Mutex
+9-1: copy (System Call)
+9-1: Lock
+9-1: Pipe
+9-2: Deadlock Prevention
+9-2: Dynamic Deadlock Detection
+9-2: Resource Graph
+9-2: Circular Dependency
+9-2: Lock Ordering
+9-2: Livelock
+9-2: Receive Livelock
+9-2: Interrupt Handler
+9-2: acquire (Primitive)
+9-2: Mutual Exclusion
+9-2: Circular Wait
+9-2: Hold and Wait
+9-2: No Preemption of Locks
+9-3: Block Device
+9-3: Block
+9-3: I/O (Input/Output)
+9-3: Input/Output (I/O)
+9-3: RAM Cache
+9-3: Block Cache
+9-3: I/O Scheduling
+9-3: Free Memory is Wasted Memory
+9-3: CPU Scheduling
+9-3: I/O-Bound
+9-4: Disk Drive
+9-4: Platter
+9-4: Track
+9-4: Cylinder
+9-4: Seek Time (Seek Latency)
+9-4: Seek Latency (Seek Time)
+9-4: Rotational Latency
+9-4: RPM (Rotations Per Minute)
+9-4: Rotations Per Minute (RPM)
+9-4: Random Access Latency
+9-4: Transfer Rate
+9-4: Sequential Access
+9-4: Random Access
+9-4: Logical Block Mapping
+9-4: Read/Write Head
+9-4: I/O Scheduling
+9-5: Prefetching
+9-5: Speculation
+9-5: Block Cache
+9-5: Dallying
+9-5: Batching
+9-5: Locality of Reference
+9-5: Spatial Locality
+9-5: Temporal Locality
+9-5: Sequential Access
+9-5: Random Access
+9-5: I/O Scheduling
+9-6: Cache Coherence
+9-6: Data Persistence
+9-6: Dirty Block
+9-6: Dallying
+9-6: Batching
+9-6: Spatial Locality
+9-6: Temporal Locality
+9-6: sync (System Call)
+9-6: fsync (System Call)
+9-6: fdatasync (System Call)
+9-6: Unified Cache
+9-6: Metadata
+9-6: Prefetching
+9-6: getchar
+9-6: putchar
+9-6: File Descriptor
+9-6: Volatile Memory
+10-1: I/O Scheduling
+10-1: FCFS (First-Come, First-Serve)
+10-1: First-Come, First-Serve (FCFS)
+10-1: SSTF (Shortest Seek Time First)
+10-1: Shortest Seek Time First (SSTF)
+10-1: Elevator Algorithm (SCAN)
+10-1: SCAN (Elevator Algorithm)
+10-1: C-SCAN (Circular Elevator Algorithm)
+10-1: Circular Elevator Algorithm (C-SCAN)
+10-1: Anticipatory Scheduling
+10-1: Starvation
+10-1: Throughput
+10-1: Seek Time
+10-1: Spatial Locality
+10-1: Temporal Locality
+10-1: Batching
+10-1: Dallying
+10-1: HDD (Hard Disk Drive)
+10-1: Hard Disk Drive (HDD)
+10-1: SSD (Solid State Drive)
+10-1: Solid State Drive (SSD)
+10-2: Flash Drive
+10-2: Page (Flash)
+10-2: Block (Flash)
+10-2: Erase-Before-Write
+10-2: SLC (Single-Layer Cell)
+10-2: Single-Layer Cell (SLC)
+10-2: QLC (Quad-Layer Cell)
+10-2: Quad-Layer Cell (QLC)
+10-2: ECC (Error Correction Code)
+10-2: Error Correction Code (ECC)
+10-2: P/E Cycle (Program-Erase Cycle)
+10-2: Program-Erase Cycle (P/E Cycle)
+10-2: Wear Out
+10-2: DRAM Buffer
+10-2: L2P Mapping (Logical-to-Physical Mapping)
+10-2: Logical-to-Physical Mapping (L2P Mapping)
+10-2: Garbage Collection
+10-2: Wear Leveling
+10-2: Write Amplification
+10-2: TBW (Terabytes Written)
+10-2: Terabytes Written (TBW)
+10-2: Flash Controller
+10-3: Flash Translation Layer (FTL)
+10-3: FTL (Flash Translation Layer)
+10-3: Host-Side FTL
+10-3: Drive-Side FTL
+10-3: Write Amplification
+10-3: ZNS (Zone Name System)
+10-3: Zone Name System (ZNS)
+10-3: FDP (Flexible Data Placement)
+10-3: Flexible Data Placement (FDP)
+10-3: Zone
+10-3: Append Command
+10-3: Write Command
+10-3: Wear Leveling
+10-3: Garbage Collection
+10-3: L2P Mapping (Logical-to-Physical Mapping)
+10-3: Logical-to-Physical Mapping (L2P Mapping)
+10-3: NVMe
+10-3: Sequential Write
+10-3: Random Write
+10-3: Logical Block Addressing
+10-4: Programmed I/O
+10-4: DMA (Direct Memory Access)
+10-4: Direct Memory Access (DMA)
+10-4: Submit Queue
+10-4: Response Queue
+10-4: Ring Buffer
+10-4: Shared Memory Queue
+10-4: Polling
+10-4: NVMe
+10-4: CPU Trap
+10-4: Interrupt
+10-4: Throughput
+10-4: Latency
+10-5: File System
+10-5: Secondary Storage
+10-5: Persistent Data
+10-5: Contiguous Allocation
+10-5: External Fragmentation
+10-5: Metadata
+10-5: Directory
+10-5: Directory Hierarchy
+10-5: FAT (File Allocation Table)
+10-5: File Allocation Table (FAT)
+10-5: RT-11 (Real-Time OS)
+10-5: Real-Time OS (RT-11)
+10-5: Sequential Read
+10-5: Random Access
+10-5: Block
+10-6: FAT (File Allocation Table)
+10-6: File Allocation Table (FAT)
+10-6: FAT16
+10-6: FAT32
+10-6: VFAT
+10-6: Boot Sector
+10-6: Superblock
+10-6: Root Directory
+10-6: Directory Entry
+10-6: Linked List (FAT)
+10-6: External Fragmentation
+10-6: Directory Hierarchy
+10-6: Contiguous Allocation
+10-6: Sector
+10-6: Data Block
+11-1: RT11 (File System)
+11-1: FAT (File Allocation Table)
+11-1: File Allocation Table (FAT)
+11-1: External Fragmentation
+11-1: Internal Fragmentation
+11-1: Contiguous Allocation
+11-1: Linked List (FAT)
+11-1: Superblock
+11-1: lseek (System Call)
+11-1: Directory
+11-1: Inode
+11-1: Pre-allocation
+11-1: Level of Indirection
+11-2: Inode
+11-2: Inode Table
+11-2: Inode Number
+11-2: Direct Block
+11-2: Single Indirect Block
+11-2: Double Indirect Block
+11-2: Triple Indirect Block
+11-2: Multi-Level Indirection
+11-2: lseek (System Call)
+11-2: Sparse File (File with Holes)
+11-2: File with Holes (Sparse File)
+11-2: Internal Fragmentation
+11-2: External Fragmentation
+11-2: Dynamic Allocation
+11-2: Directory Entry
+11-2: Block Size
+11-2: B-tree
+11-2: SEEK_CUR
+11-2: ls -L (Command)
+11-2: Timestamps
+11-2: File Permissions
+11-3: Directory Entry
+11-3: Hard Link
+11-3: Link Count
+11-3: unlink (System Call)
+11-3: mv (Command)
+11-3: rm (Command)
+11-3: Inode Number
+11-3: File Descriptor
+11-3: EXT3
+11-3: Symbolic Link
+11-3: File Type (Directory Entry)
+11-3: Variable-Length Directory Entry
+11-3: Cycle (Directory)
+11-3: Garbage Collection
+11-4: namei (Function)
+11-4: Directory Traversal
+11-4: Absolute Path
+11-4: Relative Path
+11-4: Working Directory
+11-4: Root Directory
+11-4: chdir (System Call)
+11-4: chroot (System Call)
+11-4: . (Dot)
+11-4: .. (Dot-dot)
+11-4: Link Count
+11-4: Inode Number
+11-4: Process Table
+11-4: Hard Link
+11-5: Symbolic Link (Soft Link)
+11-5: Soft Link (Symbolic Link)
+11-5: Hard Link
+11-5: symlink (System Call)
+11-5: ln -s (Command)
+11-5: Dangling Symbolic Link
+11-5: Cyclic Symbolic Link
+11-5: namei (Function)
+11-5: unlink (System Call)
+11-5: AT_SYMLINK_NOFOLLOW
+11-5: fstat (System Call)
+11-5: Disk Quota
+11-5: Immutability
+11-6: Character Special File
+11-6: Major Device Number
+11-6: Minor Device Number
+11-6: mknod (Command/System Call)
+11-6: FIFO (First-In, First-Out)
+11-6: First-In, First-Out (FIFO)
+11-6: Named Pipe (FIFO)
+11-6: Socket
+11-6: Memory Object
+11-6: FFS (Berkeley Fast File System)
+11-6: Berkeley Fast File System (FFS)
+11-6: Boot Sector
+11-6: Superblock
+11-6: Block Bitmap
+11-6: Inode Table
+11-6: /dev/null
+11-6: ext4
+12-1: File System Abstraction Layers
+12-1: Physical Layer
+12-1: Block Level
+12-1: Partition Level
+12-1: Mount Table
+12-1: mount (Command)
+12-1: Root File System
+12-1: Inode Number
+12-1: Device Number
+12-1: st_dev
+12-1: namei (Function)
+12-1: VFS (Virtual File System)
+12-1: Virtual File System (VFS)
+12-1: Bind Mount
+12-1: Hall of Mirrors
+12-1: struct task
+12-1: struct file
+12-1: struct inode
+12-1: struct file_operations
+12-1: struct inode_operations
+12-1: chroot (System Call)
+12-2: Error
+12-2: Fault
+12-2: Failure
+12-2: Durability
+12-2: Atomicity
+12-2: Commit Record
+12-2: Triple Redundancy
+12-2: Majority Rule
+12-2: ECC (Error Correcting Code)
+12-2: Error Correcting Code (ECC)
+12-3: AWUN (Atomic Write Unit Normal)
+12-3: Atomic Write Unit Normal (AWUN)
+12-3: AWUPF (Atomic Write Unit Power Fail)
+12-3: Atomic Write Unit Power Fail (AWUPF)
+12-3: Lampson and Sturges Assumptions
+12-3: NVMe
+12-3: Triple Redundancy
+12-3: Majority Rule
+12-3: Spontaneous Decay
+12-3: ECC (Error Correcting Code)
+12-3: Error Correcting Code (ECC)
+12-4: File System Invariant
+12-4: Crash Recovery
+12-4: fsck (File System Check)
+12-4: File System Check (fsck)
+12-4: Block Bitmap
+12-4: Storage Leak
+12-4: Orphan File
+12-4: lost+found (Directory)
+12-4: Link Count
+12-4: Inode Table
+12-4: Dangling Link
+12-4: Single Purpose for Blocks
+12-4: Referenced Block
+12-4: Unreferenced Block
+12-4: rename (Operation)
+13-1: Commit Record
+13-1: Atomicity
+13-1: Crash Recovery
+13-1: Durability
+13-1: Atomic Operation
+13-2: Journaling
+13-2: Transaction
+13-2: Journal
+13-2: Cell Storage
+13-2: Commit Record
+13-2: Done Record
+13-2: Abort Record
+13-2: Idempotence
+13-2: Write-Ahead Log (WAL)
+13-2: WAL (Write-Ahead Log)
+13-2: Write-Behind Log
+13-2: Volatile Cell Storage
+13-2: Cascading Abort
+13-2: Compensating Action
+13-2: Recovery
+13-2: Atomic Operation
+13-2: fsck (File System Check)
+13-3: I/O Reordering
+13-3: Ordering Constraint
+13-3: Commit Record
+13-3: rm (Command)
+13-3: shred (Command)
+13-3: Secure Deletion
+13-3: Block Bitmap
+13-3: Journaling
+13-3: Wear Leveling
+13-3: Encrypted Disk
+13-3: Link Count
+13-3: Demagnetization
+13-4: Memory Protection
+13-4: Base-Bounds Register
+13-4: Segmented Memory
+13-4: Segment Table
+13-4: Segment Number
+13-4: Virtual Memory
+13-4: Page Table
+13-4: Physical Address
+13-4: Virtual Address
+13-4: OUTB (Instruction)
+13-4: INB (Instruction)
+13-4: Relocatability
+13-4: Shared Memory
+13-4: Read-Write-Execute Permissions
+13-4: Page
+13-5: Paging
+13-5: Virtual Address (VA)
+13-5: Physical Address (PA)
+13-5: Page Table
+13-5: Page Number
+13-5: Page Offset
+13-5: Page Fault
+13-5: Multi-Level Page Table
+13-5: PTE (Page Table Entry)
+13-5: Page Table Entry (PTE)
+13-5: PMD (Page Middle Directory)
+13-5: Page Middle Directory (PMD)
+13-5: PUD (Page Upper Directory)
+13-5: Page Upper Directory (PUD)
+13-5: PGD (Page Global Directory)
+13-5: Page Global Directory (PGD)
+13-5: Huge Page
+13-5: LAM (Linear Address Mapping)
+13-5: Linear Address Mapping (LAM)
+13-5: UAM (Upper Linear Address Mapping)
+13-5: Upper Linear Address Mapping (UAM)
+13-5: Tagged Pointer
+13-6: Page Fault
+13-6: Swap Space
+13-6: SIGSEGV
+13-6: Page Replacement
+13-6: Page Table Entry (PTE)
+13-6: PTE (Page Table Entry)
+13-6: Physical Memory
+13-6: Virtual Memory
+13-6: Signal Handler
+13-6: Huge Page
+14-1: Page Table
+14-1: Virtual Address (VA)
+14-1: Physical Address (PA)
+14-1: CR3 (Register)
+14-1: Virtual Page Number
+14-1: Page Offset
+14-1: Page Fault
+14-1: Privileged Bit
+14-1: TLB (Translation Lookaside Buffer)
+14-1: Translation Lookaside Buffer (TLB)
+14-1: pmap (Function)
+14-1: Kernel Mode
+14-1: User Mode
+14-1: size_t
+14-1: uintptr_t
+14-1: Multi-Level Page Table
+14-2: Page Fault
+14-2: Swap Space
+14-2: Swap Map (swap_map)
+14-2: Page Replacement Policy
+14-2: Removal Policy
+14-2: Victim Page
+14-2: Working Set
+14-2: Thrashing
+14-2: Spatial Locality
+14-2: Temporal Locality
+14-2: SIGSEGV
+14-2: Process Table
+14-2: CR3 (Register)
+14-2: Locality of Reference
+14-3: Page Replacement Policy
+14-3: FIFO (First-In, First-Out)
+14-3: First-In, First-Out (FIFO)
+14-3: Belady's Anomaly
+14-3: Reference String
+14-3: VPN (Virtual Page Number)
+14-3: Virtual Page Number (VPN)
+14-3: Page Fault
+14-3: Victim Page
+14-3: OPT (Optimal Page Replacement Algorithm)
+14-3: Optimal Page Replacement Algorithm (OPT)
+14-3: Working Set
+14-3: Locality of Reference
+14-4: OPT (Optimal Page Replacement Algorithm)
+14-4: Optimal Page Replacement Algorithm (OPT)
+14-4: LRU (Least Recently Used)
+14-4: Least Recently Used (LRU)
+14-4: Temporal Locality
+14-4: Belady's Anomaly
+14-4: FIFO (First-In, First-Out)
+14-4: First-In, First-Out (FIFO)
+14-4: Clock Interrupt
+14-4: Page Fault
+14-4: Victim Page
+14-4: Reference String
+14-5: Dirty Bit
+14-5: Demand Paging
+14-5: mmap (System Call)
+14-5: Page Replacement Policy
+14-5: Page Fault
+14-5: Swap Space
+14-5: Read-Only Page
+14-5: Response Time
+14-5: /dev/zero
+14-5: /dev/sda1
+14-5: Private Page
+14-5: Shared Page
+14-5: prot (Protection Flags)
+14-5: fd (File Descriptor)
+14-5: malloc
+14-5: Chicken-and-Egg Problem
+14-6: Distributed File System
+14-6: LAN (Local Area Network)
+14-6: Local Area Network (LAN)
+14-6: Latency
+14-6: Throughput
+14-6: Scalability
+14-6: Flexibility
+14-6: Robustness
+14-6: Transparency
+14-6: Consistency
+14-6: Serializability
+14-6: Observability
+15-1: Distributed File System (DFS)
+15-1: DFS (Distributed File System)
+15-1: Name Node
+15-1: Data Node
+15-1: Metadata Node
+15-1: Indirect Block
+15-1: Client
+15-2: Throughput
+15-2: Latency
+15-2: Scalability
+15-2: Flexibility
+15-2: Robustness
+15-2: Fault Tolerance
+15-2: Single Point of Failure
+15-2: Transparency
+15-2: Consistency
+15-2: Load Balancing
+15-2: Centralized Name Node
+15-2: Hierarchical System
+15-2: Peer-to-Peer System
+15-3: RPC (Remote Procedure Call)
+15-3: Remote Procedure Call (RPC)
+15-3: Eight Fallacies of Network Computing
+15-3: Marshaling
+15-3: Unmarshaling (Deserialization)
+15-3: Endianness
+15-3: At Least Once RPC
+15-3: At Most Once RPC
+15-3: Exactly Once RPC
+15-3: Idempotent Operation
+15-3: Asynchronous Call
+15-3: Client-Side Caching
+15-3: Prefetching
+15-3: Cache Coherence
+15-3: Sequence Number
+15-3: UDP (User Datagram Protocol)
+15-3: User Datagram Protocol (UDP)
+15-3: TCP (Transmission Control Protocol)
+15-3: Transmission Control Protocol (TCP)
+15-3: Call by Value
+15-3: Hard Modularity
+15-4: NFS (Network File System)
+15-4: Network File System (NFS)
+15-4: File Handle
+15-4: Stale File Handle
+15-4: Stateless Server
+15-4: Close-to-Open Consistency
+15-4: VFS (Virtual File System)
+15-4: Virtual File System (VFS)
+15-4: Lookup (NFS Operation)
+15-4: RFC (Request for Comments)
+15-4: Request for Comments (RFC)
+15-4: Serial Number (File Handle)
+15-4: Marshaling
+15-4: Unmarshaling
+15-4: E_STALE
+15-4: Read-to-Write Consistency
+15-5: EDA (Electronic Design Automation)
+15-5: Electronic Design Automation (EDA)
+15-5: NVMe
+15-5: Latency
+15-5: Throughput
+15-5: Network Appliance (NetApp)
+16-1: RAID (Redundant Arrays of Inexpensive/Independent Disks)
+16-1: Redundant Arrays of Inexpensive Disks (RAID)
+16-1: RAID 0
+16-1: Concatenation
+16-1: Striping
+16-1: Stripe
+16-1: Virtual Drive
+16-1: Re-striping
+16-1: Journaling
+16-1: Cell Storage
+16-2: RAID 1 (Mirroring)
+16-2: Mirroring (RAID 1)
+16-2: RAID 4 (Parity)
+16-2: Parity Drive
+16-2: XOR (Exclusive OR)
+16-2: Exclusive OR (XOR)
+16-2: Fault Tolerance
+16-2: Rebuild Process
+16-2: Read Performance
+16-2: Write Performance
+16-2: Storage Overhead
+16-3: MTTF (Mean Time To Failure)
+16-3: Mean Time To Failure (MTTF)
+16-3: MTBF (Mean Time Between Failure)
+16-3: Mean Time Between Failure (MTBF)
+16-3: Availability
+16-3: Downtime
+16-3: Bathtub Curve
+16-3: Infant Mortality
+16-3: Wear-Out
+16-3: RAID 4
+16-3: RAID 5
+16-3: Parity Drive
+16-3: Distributed Parity
+16-3: XOR (Exclusive OR)
+16-3: Fault Tolerance
+16-3: Flash Wear
+16-4: Threat Modeling
+16-4: Privacy Attack
+16-4: Integrity Attack
+16-4: Denial of Service (DoS)
+16-4: DoS (Denial of Service)
+16-4: Insider Attack
+16-4: Social Engineering
+16-4: Network Attack
+16-4: Device Attack
+16-4: Buffer Overrun
+16-4: Botnet
+16-4: Force (Attack)
+16-4: Fraud (Attack)
+16-5: Authentication
+16-5: Authorization
+16-5: Integrity (Security)
+16-5: Auditing
+16-5: ACL (Access Control List)
+16-5: Access Control List (ACL)
+16-5: Multi-Factor Authentication
+16-5: Principal
+16-5: External Authentication
+16-5: Internal Authentication
+16-5: UID (User ID)
+16-5: User ID (UID)
+16-5: setUID (System Call)
+16-5: sudo (Program)
+16-5: Bootstrapping (Authentication)
+16-5: Masquerading
+16-5: SSH Key
+16-5: Password Guessing
+16-5: Denial of Service (DoS)
+16-6: Authorization
+16-6: Access Control
+16-6: Access Control List (ACL)
+16-6: ACL (Access Control List)
+16-6: Capability
+16-6: Access Matrix
+16-6: Unix/Linux Permissions
+16-6: setfacl (Command)
+16-6: getfacl (Command)
+16-6: Unforgeability
+16-6: Kernel-Stored Capability
+16-6: Encrypted Capability
+16-6: File Descriptor
+16-6: setUID Bit
+16-6: Principal
+16-6: Object (Access Control)
+17-1: File Descriptor
+17-1: Capability (File Access)
+17-1: PBAC (Perimeter-Based Access Control)
+17-1: Perimeter-Based Access Control (PBAC)
+17-1: ZTA (Zero Trust Architecture)
+17-1: Zero Trust Architecture (ZTA)
+17-1: ACL (Access Control List)
+17-1: Access Control List (ACL)
+17-1: chmod (Command)
+17-2: Zero Trust Architecture (ZTA)
+17-2: ZTA (Zero Trust Architecture)
+17-2: Principle of Least Privilege
+17-2: Micro-segmentation
+17-2: Centralized Logging
+17-2: Decentralized Identity
+17-2: Automated Analysis
+17-2: Auditing
+17-2: Perimeter-Based Access Control (PBAC)
+17-2: PBAC (Perimeter-Based Access Control)
+17-3: Blockchain
+17-3: Distributed Ledger
+17-3: Smart Contract
+17-3: Behavioral Analytics
+17-3: False Positive
+17-3: False Negative
+17-3: Differential Privacy
+17-3: Zero-Knowledge Proof
+17-3: Kerckhoffs's Principle
+17-3: Decentralized Identity
+17-3: Machine Learning (Security)
+17-3: Noise (Differential Privacy)
+17-3: clock_gettime (Function)
+17-4: RBAC (Role-Based Access Control)
+17-4: Role-Based Access Control (RBAC)
+17-4: Principle of Least Privilege
+17-4: Direct Access
+17-4: Indirect Access
+17-4: Covert Channel
+17-4: ACL (Access Control List)
+17-4: Access Control List (ACL)
+17-4: ZTA (Zero Trust Architecture)
+17-4: Zero Trust Architecture (ZTA)
+17-4: CPU Load (Covert Channel)
+17-4: Timing Attack
+17-4: Security Boundary
+17-5: CVE (Common Vulnerabilities and Exposures)
+17-5: Common Vulnerabilities and Exposures (CVE)
+17-5: Configuration Error
+17-5: Insider Attack
+17-5: Privileged User Error
+17-5: NDA (Non-Disclosure Agreement)
+17-5: Non-Disclosure Agreement (NDA)
+17-5: Stack Overflow Attack
+17-5: Format String Vulnerability
+17-5: Escape Sequence Attack
+17-5: Attack Surface
+17-5: GPU Device Driver
+17-5: Android Security
+17-5: Heap Execution
+17-5: Stack Execution
+17-6: SELinux (Security-Enhanced Linux)
+17-6: Security-Enhanced Linux (SELinux)
+17-6: ASLR (Address Space Layout Randomization)
+17-6: Address Space Layout Randomization (ASLR)
+17-6: Relro (Relocation Read-Only)
+17-6: Relocation Read-Only (Relro)
+17-6: GOT (Global Offset Table)
+17-6: Global Offset Table (GOT)
+17-6: Verified Boot
+17-6: Google Play Protect
+17-6: Rollback Protection
+17-6: seccomp BPF
+17-6: Trusting Trust Attack
+17-6: Backdoor
+17-6: Stack Overflow Attack
+17-6: Format String Vulnerability
+17-6: ASLR (Address Space Layout Randomization)
+17-6: Potentially Harmful App (PHA)
+17-6: PHA (Potentially Harmful App)
+17-6: setuid (System Call)
