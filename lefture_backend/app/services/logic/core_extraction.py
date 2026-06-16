@@ -11,13 +11,13 @@ class CoreExtractionService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "groq/openai/gpt-oss-120b"
+        self.model_alias = "together_ai/openai/gpt-oss-120b"
 
     async def run_from_memory(self, transcript_data: list[dict]) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Core Extraction with {self.model_alias}")
 
         prompt = _load_prompt("core_extraction_prompt.txt")
-        options_json = LLMOptions(output_type="json", temperature=0.2)
+        options_json = LLMOptions(output_type="json", temperature=0.4, reasoning_effort="medium")
 
         # データの整形 (<sid>: <text> のプレーンテキストを作成)
         # 同時に、LLMが返したSIDを後で検証できるように、実在SID一覧も作る。

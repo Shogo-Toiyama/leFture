@@ -1,4 +1,5 @@
 import os
+import asyncio
 from typing import Any, Dict, List
 from tavily import TavilyClient
 from app.services.helpers.helpers import TaskLogger
@@ -30,7 +31,11 @@ class WebSearchService:
             try:
                 self.logger.log(f"   [Logic] Searching for: '{q}'")
                 # シンプルな検索を実行 (必要に応じて search_depth="advanced" も可能)
-                response = self.client.search(query=q, max_results=3)
+                response = await asyncio.to_thread(
+                    self.client.search,
+                    query=q,
+                    max_results=3
+                )
                 
                 # 検索1回ごとにコストを記録
                 self.billing.add_count_cost("tavily/search", 1, note=f"Search query: {q}")

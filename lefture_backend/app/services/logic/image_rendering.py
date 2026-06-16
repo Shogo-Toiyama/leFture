@@ -19,8 +19,14 @@ class ImageRenderingService:
     async def render_single_image(self, uid: str, lecture_id: str, topic: dict, client: httpx.AsyncClient) -> dict:
         topic_idx = topic.get("topic_idx", "unknown")
         
-        # IMAGE_PROMPT_GENERATIONで生成されたプロンプトを取得（キー名はLLMの出力に合わせて調整してください）
-        prompt_text = topic.get("visual_prompt") or topic.get("prompt") or "A beautiful abstract representation of learning."
+        # IMAGE_PROMPT_GENERATIONで生成されたプロンプトを取得
+        prompt_text = (
+            topic.get("flux_prompt")
+            or topic.get("visual_prompt")
+            or topic.get("prompt")
+        )
+        if not prompt_text:
+            raise ValueError(f"No image prompt found for Topic {topic_idx}. Expected flux_prompt.")
         
         # 💡 パラメーター設定 (デフォルト 1024x1024, 4 Steps)
         width = 1024

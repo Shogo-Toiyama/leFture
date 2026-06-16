@@ -31,29 +31,44 @@ class TopicDetailGenerationService:
                 end_num = int(end_sid[1:])
             except: continue
 
-            # このトピック範囲の文を抽出
-            segment_sentences = [
-                s for s in role_classified_data 
-                if start_num <= int(s["sid"][1:]) <= end_num
-            ]
+            # BUFFER = 20 の文脈付きで抽出する
+            BUFFER = 20
+            context_start_num = max(1, start_num - BUFFER)
+            context_end_num = end_num + BUFFER
+
+            segment_sentences = []
+            for s in role_classified_data:
+                sid = s.get("sid", "")
+                try:
+                    sid_num = int(sid[1:])
+                except Exception as e:
+                    self.logger.log(f"⚠️ Invalid SID in role_classified_data: {sid}. Error: {e}")
+                    continue
+
+                if context_start_num <= sid_num <= context_end_num:
+                    segment_sentences.append({
+                        **s,
+                        "_sid_num": sid_num,
+                        "_scope": "topic" if start_num <= sid_num <= end_num else "context"
+                    })
 
             if not segment_sentences: continue
 
             # 💡 確率ベースでフィルタリング (CONTENTS 10%以上 OR INTERACTION 50%以上)
             trimmed_lines = []
             for s in segment_sentences:
-                probs = s.get("all_probabilities", {})
+                probs = s.get("all_probabilities")
                 
                 if not probs:
                     if s.get("role") in ["CONTENT", "INTERACTION"]:
-                        trimmed_lines.append(f"{s['sid']}: {s['text']}")
+                        trimmed_lines.append(f"{s['sid']} [{s['_scope']}]: {s['text']}")
                     continue
                 
                 content_prob = probs.get("CONTENT", 0.0)
                 interaction_prob = probs.get("INTERACTION", 0.0)
                 
                 if content_prob >= 0.10 or interaction_prob >= 0.50:
-                    trimmed_lines.append(f"{s['sid']}: {s['text']}")
+                    trimmed_lines.append(f"{s['sid']} [{s['_scope']}]: {s['text']}")
 
             if not trimmed_lines:
                 self.logger.log(f"   [Logic] Skipping Topic Detail {topic_idx} (No valid sentences)")
@@ -66,7 +81,9 @@ class TopicDetailGenerationService:
                 Message(role="system", content=prompt_template),
                 Message(role="user", content=(
                     f"Topic segment:\n{json.dumps(topic, ensure_ascii=False)}\n\n"
-                    f"Partial transcript:\n{trimmed_transcript}"
+                    f"Partial transcript with scope markers:\n{trimmed_transcript}\n\n"
+                    "Use [topic] lines as the primary content. "
+                    "Use [context] lines only when they clarify the topic."
                 ))
             ]
 
@@ -78,5 +95,10 @@ class TopicDetailGenerationService:
                     "topic_idx": topic_idx,
                     "content": res.output_text
                 })
+            else:
+                self.logger.log(
+                    f"❌ Failed to generate detail contents for Topic {topic_idx}: {topic_title}. "
+                    f"Output text was empty or failed."
+                )
 
         return all_details

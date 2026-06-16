@@ -394,12 +394,10 @@ async def run_role_classification_task(job_id: str, task_id: str):
         # 2. 新しい職人を呼ぶ
         classifier = RoleClassificationService(billing, logger)
         
-        # 💡 メモリ上で直接実行 (ファイル入出力ゼロ！)
         classified_data = await classifier.run_from_memory(
             transcript_data=transcript_data, 
             core_data=core_data,
-            # TODO: レクチャー情報を取得
-            theme="Computer Science"
+            theme=core_data.get("title") or "Computer Science"
         )
 
         # 3. フルログをR2に保存
@@ -588,16 +586,25 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
         core_payload = _get_dependency_payload(job_id, "CORE_EXTRACTION")
         core_data = _download_from_r2_to_memory(core_payload["core_extraction_path"])
         
-        # 今日のマクロトピック（ACADEMICのみ）を抽出して整形
+        # 今日のマクロトピック（ACADEMICのみ）を抽出
+        academic_topics = [t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"]
+        
+        # 最初の週 (Week 1, Lecture 1) と仮定し、ACADEMICトピックのみの連番で node_wk1_i を付与
+        # (元データを汚さないようにコピーを作って加工)
+        todays_topics_list = []
+        for i, t in enumerate(academic_topics, start=1):
+            topic_copy = t.copy()
+            topic_copy["topic_id"] = f"node_wk1_{i}"
+            todays_topics_list.append(topic_copy)
+            
         todays_macro_topics = {
             "lecture_title": core_data.get("title"),
-            "topics": [t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"]
+            "topics": todays_topics_list
         }
 
         # 2. TODO: 過去のグラフ状態の取得
-        # 現時点では保存・取得ロジックが未実装のため、空の配列を持つTODOオブジェクトを作成
+        # 現時点では保存・取得ロジックが未実装のため、空の配列を持つオブジェクトを作成
         current_graph_state = {
-            "TODO": "DBからの過去グラフ取得ロジックをここに実装予定",
             "clusters": [],
             "nodes": [],
             "edges": [],
@@ -806,12 +813,23 @@ async def run_fun_facts_task(job_id: str, task_id: str):
         classified_payload = _get_dependency_payload(job_id, "ROLE_CLASSIFICATION")
         classified_data = _download_from_r2_to_memory(classified_payload["role_classification_path"])
 
+        # FUN_FACT_SEARCH の結果を読み込む
+        search_payload = _get_dependency_payload(job_id, "FUN_FACT_SEARCH")
+        search_results = []
+        search_results_path = search_payload.get("search_results_path")
+        if search_results_path:
+            search_results = _download_from_r2_to_memory(search_results_path)
+
         # 職人を呼んで丸投げ
         llm = UnifiedLLM(billing)
         service = FunFactGenerationService(llm, logger)
         
-        # 💡 メモリ上の分類済みデータをそのまま渡す！
-        fun_fact = await service.run_from_memory(classified_data, core_data)
+        # 💡 メモリ上の分類済みデータと検索結果を渡す！
+        fun_fact = await service.run_from_memory(
+            role_classified_data=classified_data,
+            core_data=core_data,
+            search_results=search_results
+        )
 
         r2_path = storage_service.save_json_log(uid, lecture_id, "fun_fact", fun_fact)
         _update_task_status(task_id, "COMPLETED", payload={"fun_fact_path": r2_path, "billing_records": [vars(r) for r in billing.records]})

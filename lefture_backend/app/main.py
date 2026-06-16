@@ -175,8 +175,9 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
     # 1. 反応すべきイベントかチェック
     is_new = (event_type == "INSERT" and record.get("status") == "PENDING")
     is_newly_completed = (event_type == "UPDATE" and record.get("status") == "COMPLETED" and old_record.get("status") != "COMPLETED")
+    is_manually_retried = (event_type == "UPDATE" and record.get("status") == "PENDING" and old_record.get("status") != "PENDING")
 
-    if not (is_new or is_newly_completed):
+    if not (is_new or is_newly_completed or is_manually_retried):
         return {"message": "Not a triggerable state. Ignoring."}
 
     print(f"🎼 Orchestrator waking up! Triggered by Task: {record.get('task_type')} ({event_type})")

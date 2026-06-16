@@ -29,7 +29,7 @@ The format is strict: `<sid>: <text>`
 - Merge Policy: Combine tightly coupled parts (e.g., definition + immediate example). Do not split if the conceptual focus remains the same.
 - Categorization (`topic_type`): Classify each segment as either "ACADEMIC" or "LOGISTICS".
   - **ACADEMIC Segments (Max 6):** These cover the core course material, theories, and testable concepts. Target 2 to 6 ACADEMIC segments total.
-  - **LOGISTICS Segments:** ONLY create a standalone "LOGISTICS" segment if the professor spends a substantial, continuous amount of time (e.g., 10+ sentences or a major dedicated section) discussing syllabus, grading, deep solo project instructions, or exam prep.
+  - **LOGISTICS Segments:** ONLY create a standalone "LOGISTICS" segment if the professor spends a substantial, continuous amount of time (e.g., 10+ sentences or a major dedicated section) discussing syllabus, grading, due dates, submission rules, exam logistics, or administrative project requirements.
   - **The "Absorption" Rule (CRITICAL):** If the professor makes a brief logistical announcement (e.g., a quick reminder about a due date) in the middle of teaching a concept, DO NOT split it into a new LOGISTICS segment. Simply absorb it into the surrounding ACADEMIC segment.
 - Output the `start_sid` and `end_sid` matching the exact `<sid>` provided in the input.
 

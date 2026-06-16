@@ -18,8 +18,9 @@ ${TRANSCRIPT_INPUT}
 - Extract actionable items only. Ignore casual chitchat.
 - title: Keep it concise (max 5 words).
 - description: Write a clear, standalone sentence explaining the item. Resolve pronouns (e.g., "This" -> "Memory Allocation").
-- start_sid / end_sid: The exact `<sid>` values spanning the announcement.
+- start_sid / end_sid: The exact `<sid>` values spanning the announcement. They must keep the original format, such as "s000105".
 - related_topic_title: For HINT only, include the `<Topic Title>` from the `[Topic: xxx]` tag. Otherwise, null.
+- location: Extract the place, platform, or submission destination if explicitly mentioned, such as "online portal", "Gradescope", "Canvas", "Room 120", or "Zoom". If no location or destination is explicitly mentioned, use null.
 
 ### EXTRACTION RULES (DATETIME PARAMETERS)
 If time or date is mentioned, populate the `datetime_parameters` object based ONLY on the text. DO NOT perform calendar math (e.g., do not calculate what date "next Friday" is).
@@ -54,8 +55,8 @@ Return ONLY a valid, minified JSON object matching the structure below. Do not i
       "title": "Submit Assignment 3",
       "description": "Students must submit Assignment 3 to the online portal.",
       "location": "online portal",
-      "start_sid": "105",
-      "end_sid": "108",
+      "start_sid": "s000105",
+      "end_sid": "s000108",
       "related_topic_title": null,
       "datetime_parameters": {
         "raw_time_text": "next Friday by midnight",

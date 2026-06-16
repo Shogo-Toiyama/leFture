@@ -98,5 +98,11 @@ class ReviewCardGenerationService:
                 result = res.output_json
                 result["topic_idx"] = topic_idx # 紐付け用
                 all_review_results.append(result)
+            else:
+                self.logger.log(
+                    f"❌ Failed to generate review cards for Topic {topic_idx}: {topic_title}. "
+                    f"JSON parse error: {res.json_parse_error}. "
+                    f"Output text snippet: {res.output_text[:500] if res.output_text else 'None'}"
+                )
 
         return all_review_results

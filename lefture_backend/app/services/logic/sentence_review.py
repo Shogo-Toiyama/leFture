@@ -10,7 +10,7 @@ class SentenceReviewService:
         self.llm = llm
         self.logger = logger
         # LiteLLM 経由で呼び出すモデル
-        self.model_alias = "groq/openai/gpt-oss-120b" 
+        self.model_alias = "together_ai/openai/gpt-oss-120b"
 
     async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
         self.logger.log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
@@ -123,7 +123,7 @@ class SentenceReviewService:
         self.logger.log(f"   [LLM] Calling LiteLLM API ({self.model_alias})...")
         
         messages = [Message(role="user", content=prompt)]
-        options = LLMOptions(temperature=0.2, max_completion_tokens=4000, reasoning_effort="low")
+        options = LLMOptions(temperature=0.4, max_completion_tokens=4000, reasoning_effort="low")
         
         # 💡 UnifiedLLM を使って非同期実行！
         try:

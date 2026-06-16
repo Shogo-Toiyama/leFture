@@ -23,20 +23,24 @@ class FunFactGenerationService:
         # 💡 全トランスクリプトから確率ベースでノイズを除去
         trimmed_lines = []
         for s in role_classified_data:
-            probs = s.get("all_probabilities", {})
+            probs = s.get("all_probabilities")
+            
+            # Role Classification で確率データが無い場合のフォールバック
+            if not probs:
+                if s.get("role") in ["CONTENT", "INTERACTION"]:
+                    trimmed_lines.append(f"{s['sid']}: {s['text']}")
+                continue
+                
             content_prob = probs.get("CONTENT", 0.0)
             interaction_prob = probs.get("INTERACTION", 0.0)
             
-            # フォールバック処理
-            if not probs and s.get("role") in ["CONTENT", "INTERACTION"]:
-                trimmed_lines.append(f"{s['sid']}: {s['text']}")
-                continue
-                
             if content_prob >= 0.10 or interaction_prob >= 0.50:
                 trimmed_lines.append(f"{s['sid']}: {s['text']}")
 
         transcript_segment = "\n".join(trimmed_lines)
-        seed_idea = core_data.get("fun_fact_idea", "No seed idea found.")
+        seed_idea = core_data.get("fun_fact_idea") or {}
+        if not seed_idea:
+            self.logger.log("   [Logic] ⚠️ No fun_fact_idea found in core_data. Continuing with empty seed.")
 
         # TODO: 学生プロフィール (※将来はDBやPersonal Contextツールから動的に取得可能)
         student_profile = (
@@ -60,4 +64,12 @@ class FunFactGenerationService:
         ]
 
         res = await self.llm.generate(model=self.model_alias, messages=messages, options=options_json)
+
+        if res.json_parse_error:
+            self.logger.log(f"❌ Fun Fact JSON parse failed. Raw output:\n{res.output_text}")
+            raise ValueError(f"Fun Fact JSON parse failed: {res.json_parse_error}")
+
+        if not isinstance(res.output_json, dict):
+            raise ValueError("Fun Fact output must be a JSON object.")
+
         return res.output_json

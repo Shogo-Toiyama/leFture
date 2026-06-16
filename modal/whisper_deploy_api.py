@@ -24,6 +24,7 @@ image = (
     gpu="T4",
     scaledown_window=2,
     enable_memory_snapshot=True,
+    experimental_options={"enable_gpu_snapshot": True},
 )
 class WhisperAPI:
     

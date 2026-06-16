@@ -12,19 +12,19 @@ ${TRANSCRIPT_SEGMENT}
 </transcript_segment>
 
 ### TOPIC EVALUATION (The Mapping & Synthesis Engine)
-Before generating any cards, you MUST evaluate the transcript segment. This acts as both your "Semantic Zoom" data for the Course Map and your Chain-of-Thought for card generation. Follow this exact sequence:
+Before generating any cards, you MUST evaluate the transcript segment. This acts as both your "Semantic Zoom" data for the Course Map and a concise planning summary for card generation. Follow this exact sequence:
 
 1. **Filter out noise:** If this topic segment is mostly administrative fluff without testable concepts (e.g., course logistics, chitchat, etc), set `"is_academic_content": false` and return empty arrays (set "micro_topics": [] and "review_cards": []).
 2. **Deconstruct the Flow (`micro_topics`):** Break down the chronological flow of this segment into exactly 3 to 5 logical "Micro-Topics". 
    - Each must have a `title` (Max 5 words), a `summary` (1 concise sentence), and the exact `start_sid` and `end_sid` for that specific micro-topic boundary ( **non-overlapping** ).
 3. **Card Mapping Strategy (`card_mapping_strategy`):** Formulate a ruthless editorial strategy to fit this entire segment into just 4 mobile-friendly Review Cards ("Short, Fun, Solid"). 
-   - **Identify the Climax:** Which part did the professor spend the most time/energy building up to? 
-   - **Be Ruthless (The Mobile Constraint):** You CANNOT fit every detail, proof, lengthy code snippet, or tedious step. Explicitly state what dense materials you will intentionally OMIT and relegate to the "Next Action" card to keep cognitive load low.
+   - **Identify the Core Concept(s):** What is the fundamental mental model or overarching lesson the professor is trying to convey across this segment?
+   - **Be Ruthless (The Mobile Constraint):** You CANNOT fit every detail. Explicitly state what dense materials you will intentionally OMIT (e.g., specific math proofs, minor caveats, tangential anecdotes, or tedious steps) and relegate them to the "Next Action" card to keep cognitive load low.
    - **Combine & Assign:** Explain how you will map the `micro_topics` into the 4 cards (e.g., "Combine Micro-topics 2 and 3 for the 'Core Why', use Micro-topic 4 for the 'Gotcha', and drop the mathematical proof from Micro-topic 5 into 'Next Action'").
 4. **Synthesize the Core Narrative (`core_concept_identified`):** Based on your strategy above, define the absolute central theme of this segment in a punchy phrase (Max 5-7 words). This is the "North Star" for your cards.
 
 ### CARD TYPES & CRITERIA
-You will generate a strictly sequenced set of 4 cards per core mental model (Card 1->2->3->4). Do NOT try to evenly summarize the whole lecture. Focus entirely on finding the professor's "Climax" (where they spent the most time, used the most emphasis, or explained the most complex algorithm) and unpack it deeply.
+You will generate a strictly sequenced set of 4 cards that capture the **Primary Mental Model** of the segment. Do NOT try to evenly summarize every minor detail, tangent, or specific calculation. Focus on unpacking the overarching core concept—the essential "What" and "Why"—while intentionally stripping away dense algorithms, mathematical proofs, and minor caveats to unpack the main idea deeply.
 
 1. **"hook" (Hook & Analogy)**
    - Goal: Drop cognitive load to zero. Give an intuitive "Aha!" moment.
@@ -46,8 +46,11 @@ You will generate a strictly sequenced set of 4 cards per core mental model (Car
 
 ### WRITING RULES
 - **Tone:** Casual, enthusiastic, and easy to understand (like a top-tier Tech Blog). No dry, academic textbook language.
+- **Deep but Friendly:** Separate the *Concept (What/Why)* from the *Calculation (How)*. Explain deep concepts using simple language in the cards, but confidently push complex step-by-step calculations to the "Next Action" list.
+- **Personification & Physicality:** Whenever possible, give abstract concepts "character" (e.g., "The CPU hates waiting") or use physical verbs (e.g., "smash", "fly", "rewind") to make the mechanics feel tangible. 
+- **The Escape Hatch:** If trying to be funny, analogical, or personified makes the concept *harder* to understand, abandon it immediately. Clarity is king. Be direct and simple.
 - **Faithfulness:** Base the core concepts ONLY on what the professor taught. 
-- **Citations:** You MUST append evidence to every text/block using `⟦sXXXX⟧` or `⟦sXXXX-sYYYY⟧`.
+- **Citations:** You MUST append evidence to every text/block using `⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`.
 - **Formatting:** Use inline Markdown `**bold**` to highlight the most critical 1-2 phrases per text block if applicable. 
 - **Code/Math:** If the professor speaks pseudo-code or math, you MUST format it into clean, syntactically correct code blocks or LaTeX.
 
@@ -67,74 +70,133 @@ Use these specific block types to make the UI rich and engaging. To explain deep
 - `list`: Bullet points. Perfect for breaking down multi-step processes or algorithms chronologically.
   - Required fields: `"type": "list"`, `"items": ["<string>", "<string>"]` (Array of strings)
 
-### OUTPUT FORMAT (JSON ONLY)
+OUTPUT FORMAT (JSON ONLY)
 Return a valid JSON object matching this schema.
+
+SCHEMA DEFINITIONS & CONSTRAINTS:
+
+is_academic_content: Boolean. Set to false if the segment is mostly logistics or chitchat. If false, you MUST return empty arrays for both "micro_topics" and "review_cards".
+
+review_cards: Array of objects. If is_academic_content is true, you MUST STRICTLY generate exactly 4 cards in this exact order: hook, core_why, gotcha, next_action.
+
+EXAMPLE JSON STRUCTURE:
+(Use the exact keys below. Provide only pure JSON without comments or trailing commas.)
 
 {
   "topic_evaluation": {
-    "is_academic_content": true, // false if mostly logistics/chitchat (If false, return "micro_topics": [] and "review_cards": []).
+    "is_academic_content": true,
     "micro_topics": [
       {
         "idx": 1,
         "title": "Naive Branch Handling",
         "summary": "Stalling the fetch stage is the simplest but slowest solution for branches.",
-        "start_sid": "s00279",
-        "end_sid": "s00298"
+        "start_sid": "s000279",
+        "end_sid": "s000298"
       },
       {
         "idx": 2,
         "title": "Intro to Branch Prediction",
         "summary": "Using BTB and gshare tables to speculate on the next PC to avoid stalls.",
-        "start_sid": "s00299",
-        "end_sid": "s00313"
+        "start_sid": "s000299",
+        "end_sid": "s000313"
       },
       {
         "idx": 3,
         "title": "Out-of-Order Execution",
         "summary": "Letting the program execute ahead of time based on the speculation",
-        "start_sid": "s00314",
-        "end_sid": "s00378"
+        "start_sid": "s000314",
+        "end_sid": "s000378"
       },
       {
         "idx": 4,
         "title": "The Misprediction Disaster",
         "summary": "Identifying how wrong guesses create a mess in the out-of-order pipeline.",
-        "start_sid": "s00379",
-        "end_sid": "s00395"
+        "start_sid": "s000379",
+        "end_sid": "s000395"
       }
     ],
-    "card_mapping_strategy": "Micro-topic 1 is just the hook. The climax is the 'The Misprediction Disaster' (Micro-topic 4). I will use Micro-topic 1 as the hook. A part of Micro-topic 2 and 3 will form the 'Core Why'. For the mobile format, I must completely drop the complex 'Phase Bit' calculation steps and the 'RAT snapshot' algorithms—they are too dense. I will feature the pipeline mess as the 'Gotcha', and explicitly list the Phase Bit and RAT algorithms in the 'Next Action' card for self-study.",
+    "card_mapping_strategy": "Micro-topic 1 is just the hook. The core concept is 'Branch Speculation & Pipeline Recovery'. I will use Micro-topic 1 as the hook. A part of Micro-topic 2 and 3 will form the 'Core Why'. For the mobile format, I must completely drop the complex 'Phase Bit' calculation steps and the 'RAT snapshot' algorithms—they are too dense. I will feature the pipeline mess as the 'Gotcha', and explicitly list the Phase Bit and RAT algorithms in the 'Next Action' card for self-study.",
     "core_concept_identified": "Branch Speculation & Pipeline Recovery"
   },
   "review_cards": [
-    // If is_academic_content is true, STRICTLY generate exactly 4 cards (hook, core_why, gotcha, next_action).
     {
-      "card_type": "core_why", 
-      "hero_emoji": "🏎️", 
-      "title": "Why Speculate?", 
+      "card_type": "hook",
+      "hero_emoji": "🚦",
+      "title": "Guess The Road",
+      "content_blocks": [
+        {
+          "type": "quote",
+          "text": "Branch prediction is like waiting at a red light, guessing it'll turn green, and hitting the gas before checking! ⟦s000279-s000283⟧"
+        },
+        {
+          "type": "paragraph",
+          "text": "The CPU absolutely hates sitting still. Instead of waiting for an if statement to finish calculating, it makes a highly educated guess so the pipeline can keep zooming forward. ⟦s000284-s000298⟧"
+        }
+      ]
+    },
+    {
+      "card_type": "core_why",
+      "hero_emoji": "🏎️",
+      "title": "The Need for Speed",
       "content_blocks": [
         {
           "type": "paragraph",
-          "text": "Stalling the fetch stage is **way too slow** ⟦s00283⟧."
+          "text": "Stalling the fetch stage just to wait for a branch outcome is a massive waste of CPU cycles. ⟦s000283⟧"
         },
         {
           "type": "callout",
           "alert_type": "info",
-          "text": "The fix: Install a branch predictor and let the program fly! ⟦s00300-s00303⟧"
+          "text": "The fix: We use hardware \"cheat sheets\" to predict the future and let the program fly out-of-order! ⟦s000300-s000303⟧"
+        },
+        {
+          "type": "paragraph",
+          "text": "Instead of waiting, the CPU looks at history. It asks the **BTB (Branch Target Buffer)** \"Where are we jumping to?\" ⟦s000306⟧ and asks the **gshare table** \"Will we actually take this jump?\" ⟦s000311⟧."
         },
         {
           "type": "code",
           "language": "cpp",
-          "code_string": "PC = predicted_PC;",
-          "explanation": "We guess the next PC. ⟦s00309⟧" 
+          "code_string": "PC = BTB.get_predicted_target(); // Go fast, ask questions later!",
+          "explanation": "We literally force the PC to our best guess and keep fetching. ⟦s000309⟧"
+        }
+      ]
+    },
+    {
+      "card_type": "gotcha",
+      "hero_emoji": "💥",
+      "title": "The \"Oops\" Moment & Time Travel",
+      "content_blocks": [
+        {
+          "type": "callout",
+          "alert_type": "warning",
+          "text": "Guessing is easy. The real nightmare is **recovering cleanly when the CPU guesses wrong**. ⟦s000379-s000386⟧"
+        },
+        {
+          "type": "paragraph",
+          "text": "If we mispredict, the CPU has executed \"ghost\" instructions that shouldn't exist! It must instantly undo the mess. ⟦s000387-s000395⟧"
+        },
+        {
+          "type": "paragraph",
+          "text": "To survive this, the CPU uses **RAT snapshots** to \"rewind time\" back to exactly how things were before the bad guess ⟦s000360-s000378⟧. Then, it flips a **Phase Bit** to instantly flash-clear all the garbage instructions still stuck in the pipeline. It’s a hardware Ctrl+Z! ⟦s000340-s000352⟧"
+        }
+      ]
+    },
+    {
+      "card_type": "next_action",
+      "hero_emoji": "🧭",
+      "title": "Master the Mechanics",
+      "content_blocks": [
+        {
+          "type": "paragraph",
+          "text": "We've covered *why* we speculate and *how* we survive wrong guesses. Now, it's time to see the actual gears turn. Dive into these core algorithms: ⟦s000314-s000378⟧"
         },
         {
           "type": "list",
           "items": [
-            "BTB for target PC ⟦s00306⟧",
-            "gshare for condition ⟦s00311⟧"
+            "Calculating the XOR hashes for the **gshare predictor** ⟦s000311⟧",
+            "The step-by-step logic of toggling **Phase Bits** ⟦s000340-s000352⟧",
+            "How the **RAT (Register Alias Table)** restores its snapshot perfectly without losing data ⟦s000360-s000378⟧"
           ]
-        },
+        }
       ]
     }
   ]

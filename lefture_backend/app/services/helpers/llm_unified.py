@@ -18,6 +18,8 @@ PRICE_MATRIX = {
     "tokens": {  # $ per 1,000,000 tokens
         "groq/openai/gpt-oss-120b": {"input": 0.15, "output": 0.60},
         "groq/openai/gpt-oss-20b": {"input": 0.075, "output": 0.30},
+        "together_ai/openai/gpt-oss-120b": {"input": 0.15, "output": 0.60},
+        "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "deepinfra/openai/gpt-oss-120b": {"input": 0.039, "output": 0.19},
         "deepinfra/deepseek-ai/DeepSeek-V3.2": {"input": 0.26, "output": 0.38},
         "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},

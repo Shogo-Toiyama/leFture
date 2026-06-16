@@ -1,6 +1,7 @@
 # app/services/logic/role_classification.py
 import os
 import time
+import re
 import httpx
 from typing import Any, Dict, List
 
@@ -31,18 +32,31 @@ class RoleClassificationService:
         logistics_ranges = []
         for topic in core_data.get("topics", []):
             if topic.get("topic_type") == "LOGISTICS":
+                start_sid = topic.get("start_sid")
+                end_sid = topic.get("end_sid")
+                if not (
+                    isinstance(start_sid, str)
+                    and isinstance(end_sid, str)
+                    and re.fullmatch(r"s\d{6}", start_sid)
+                    and re.fullmatch(r"s\d{6}", end_sid)
+                ):
+                    raise ValueError(f"Invalid LOGISTICS SID range in core_data: {topic}")
                 try:
                     # "s000015" のような文字列から数値(15)だけを取り出す
-                    start_idx = int(topic["start_sid"][1:])
-                    end_idx = int(topic["end_sid"][1:])
+                    start_idx = int(start_sid[1:])
+                    end_idx = int(end_sid[1:])
+                    if start_idx > end_idx:
+                        raise ValueError(f"Invalid LOGISTICS range order: {topic}")
                     logistics_ranges.append((start_idx, end_idx))
                 except (ValueError, KeyError, TypeError):
-                    continue
+                    raise
 
         # ==========================================
         # 2. データの仕分け (ACADEMIC vs LOGISTICS)
         # ==========================================
         academic_data = []
+        academic_sids = set()
+        logistics_sids = set()
         
         for item in transcript_data:
             sid_str = item.get("sid", "")
@@ -59,6 +73,9 @@ class RoleClassificationService:
             # DeBERTaで推論すべき(ACADEMICな)文だけを抽出
             if not is_logistics:
                 academic_data.append(item)
+                academic_sids.add(sid_str)
+            else:
+                logistics_sids.add(sid_str)
 
         self.logger.log(f"📦 Total sentences: {len(transcript_data)} | Academic (Sending to Modal): {len(academic_data)} | Logistics (Skipped): {len(transcript_data) - len(academic_data)}")
 
@@ -76,7 +93,7 @@ class RoleClassificationService:
 
             start_time = time.perf_counter()
             
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=300.0) as client:
                 response = await client.post(self.modal_url, json=payload)
                 response.raise_for_status()
                 result = response.json()
@@ -90,7 +107,37 @@ class RoleClassificationService:
 
             # 帰ってきたデータを sid をキーにした辞書に変換しておく（爆速で検索するため）
             returned_academic = result.get("transcript_data", [])
+
+            if not isinstance(returned_academic, list):
+                raise ValueError("Modal response field 'transcript_data' must be a list.")
+
             academic_map = {item["sid"]: item for item in returned_academic if "sid" in item}
+
+            returned_sids = set(academic_map.keys())
+            missing_sids = academic_sids - returned_sids
+            unexpected_sids = returned_sids - academic_sids
+
+            if missing_sids:
+                sample = sorted(missing_sids)[:10]
+                raise ValueError(
+                    f"Modal response is missing {len(missing_sids)} classified academic sentences. "
+                    f"Sample missing SIDs: {sample}"
+                )
+
+            if unexpected_sids:
+                sample = sorted(unexpected_sids)[:10]
+                raise ValueError(
+                    f"Modal response returned {len(unexpected_sids)} unexpected SIDs. "
+                    f"Sample unexpected SIDs: {sample}"
+                )
+
+            for sid, classified_item in academic_map.items():
+                role = classified_item.get("role")
+                if not isinstance(role, str) or not role:
+                    raise ValueError(f"Modal response item for {sid} is missing a valid role.")
+                role_confidence = classified_item.get("role_confidence", 0.0)
+                if not isinstance(role_confidence, (int, float)):
+                    raise ValueError(f"Modal response item for {sid} has invalid role_confidence.")
 
         # ==========================================
         # 4. データの合体 (マージ)
@@ -109,9 +156,13 @@ class RoleClassificationService:
                     new_item["all_probabilities"] = academic_map[sid_str]["all_probabilities"]
             
             # Modalに送らなかったデータ（LOGISTICS）なら、直接ラベルを付与
-            else:
+            elif sid_str in logistics_sids:
                 new_item["role"] = "LOGISTICS"
                 new_item["role_confidence"] = 1.0 # Core Extractionが丸ごと指定したので確度100%とする
+            else:
+                raise ValueError(
+                    f"SID {sid_str} was neither classified by Modal nor marked as LOGISTICS."
+                )
 
             final_transcript.append(new_item)
 
