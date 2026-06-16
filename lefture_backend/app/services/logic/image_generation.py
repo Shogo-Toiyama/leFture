@@ -18,7 +18,7 @@ class ImageGenerationService:
             return []
             
         prompt_template = _load_prompt("image_generation_prompt.txt")
-        options_json = LLMOptions(output_type="json", temperature=1.0, reasoning_effort="medium")
+        options_json = LLMOptions(output_type="json", temperature=0.5, reasoning_effort="medium")
 
         # LLMに渡すインプットを最小化 (タイトルとHookのみ)
         minimized_topics = []

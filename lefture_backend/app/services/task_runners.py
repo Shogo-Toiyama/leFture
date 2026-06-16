@@ -922,9 +922,7 @@ async def run_finalize_job_task(job_id: str, task_id: str):
 
         # 4. Job全体の統計を更新 (オプション: processing_jobsテーブルに直接書き込む)
         supabase.table("processing_jobs").update({
-            "total_cost_usd": master_billing.total_usd(),
-            "status": "COMPLETED",
-            "completed_at": datetime.now().isoformat()
+            "status": "COMPLETED"
         }).eq("id", job_id).execute()
 
         _update_task_status(task_id, "COMPLETED", payload={"report_path": report_storage_path})
