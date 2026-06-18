@@ -1,0 +1,89 @@
+{
+  "keywords": [
+    "Access control",
+    "Capability",
+    "Access Control List (ACL)",
+    "Per-process capabilities",
+    "Zero Trust Architecture (ZTA)",
+    "Principle of Least Privilege",
+    "Micro-segmentation",
+    "Centralized logging",
+    "Differential privacy",
+    "Zero-knowledge proof",
+    "Distributed ledger",
+    "Smart contracts",
+    "Behavioral analytics",
+    "Machine learning for security",
+    "Covert channels",
+    "Timing side‑channel attacks",
+    "Address Space Layout Randomization (ASLR)",
+    "RELRO",
+    "SELinux",
+    "Role‑Based Access Control (RBAC)"
+  ],
+  "summary": "The lecture surveys modern security models, contrasting traditional ACLs and capabilities with Zero Trust Architecture and related principles such as least privilege and micro‑segmentation. It then explores advanced protection techniques—including centralized logging, differential privacy, zero‑knowledge proofs, blockchain, smart contracts, and machine‑learning‑based behavioral analytics—followed by practical OS hardening measures like ASLR, RELRO, and SELinux.",
+  "title": "Modern Security Models and Advanced Protection Techniques",
+  "topics": [
+    {
+      "idx": 1,
+      "title": "Access Control: ACLs vs Capabilities",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000007",
+      "end_sid": "s000068"
+    },
+    {
+      "idx": 2,
+      "title": "Zero Trust Architecture and Least Privilege",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000069",
+      "end_sid": "s000115"
+    },
+    {
+      "idx": 3,
+      "title": "Logging, Privacy, Differential Privacy",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000116",
+      "end_sid": "s000225"
+    },
+    {
+      "idx": 4,
+      "title": "Blockchain, Distributed Ledger, Smart Contracts, Behavioral Analytics",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000226",
+      "end_sid": "s000447"
+    },
+    {
+      "idx": 5,
+      "title": "Role‑Based Access Control and Direct vs Indirect Access",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000496",
+      "end_sid": "s000560"
+    },
+    {
+      "idx": 6,
+      "title": "Android Security Mechanisms and Advanced OS Protections",
+      "topic_type": "ACADEMIC",
+      "start_sid": "s000561",
+      "end_sid": "s001045"
+    },
+    {
+      "idx": 7,
+      "title": "Exam Logistics",
+      "topic_type": "LOGISTICS",
+      "start_sid": "s001046",
+      "end_sid": "s001052"
+    }
+  ],
+  "fun_fact_idea": {
+    "start_sid": "s000069",
+    "end_sid": "s000115",
+    "concept_focus": "Zero Trust Architecture",
+    "exciting_angle": "Show how Zero Trust principles can be the backbone of a SaaS startup, enabling secure multi‑tenant isolation the way cloud providers like Google protect billions of users, turning a theoretical model into a marketable security advantage.",
+    "needs_web_search": true,
+    "search_queries": [
+      "Google Cloud zero trust architecture case study",
+      "Zero trust multi‑tenant security design blog"
+    ],
+    "search_reasoning": "Concrete examples from leading cloud providers illustrate how Zero Trust is applied in real products, making the connection vivid for a student interested in building secure cloud‑based startups."
+  }
+}

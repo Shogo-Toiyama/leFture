@@ -14,7 +14,7 @@ class ImageRenderingService:
         self.billing = billing
         self.account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
         self.api_token = os.getenv("CLOUDFLARE_API_KEY")
-        self.model = "@cf/black-forest-labs/flux-1-schnell"
+        self.model = "@cf/black-forest-labs/flux-2-klein-4b"
 
     async def render_single_image(self, uid: str, lecture_id: str, topic: dict, client: httpx.AsyncClient) -> dict:
         topic_idx = topic.get("topic_idx", "unknown")
@@ -28,29 +28,29 @@ class ImageRenderingService:
         if not prompt_text:
             raise ValueError(f"No image prompt found for Topic {topic_idx}. Expected flux_prompt.")
         
-        # 💡 パラメーター設定 (デフォルト 1024x1024, 4 Steps)
-        width = 1024
-        height = 1024
+        # 💡 パラメーター設定 (デフォルト 横384, 縦512)
+        width = 384
+        height = 512
         steps = 4
-        tiles = (width // 512) * (height // 512) # 1024x1024なら4タイル
+        # 切り上げでタイル数を計算
+        tiles = ((width + 511) // 512) * ((height + 511) // 512)
 
         url = f"https://api.cloudflare.com/client/v4/accounts/{self.account_id}/ai/run/{self.model}"
         headers = {
-            "Authorization": f"Bearer {self.api_token}",
-            "Content-Type": "application/json"
+            "Authorization": f"Bearer {self.api_token}"
         }
-        payload = {
-            "prompt": prompt_text,
-            "width": width,
-            "height": height,
-            "num_steps": steps
+        # flux-2-klein-4b requires multipart/form-data
+        files = {
+            "prompt": (None, prompt_text),
+            "width": (None, str(width)),
+            "height": (None, str(height))
         }
 
-        self.logger.log(f"   [Logic] Requesting image for Topic {topic_idx} (Tiles: {tiles}, Steps: {steps})")
+        self.logger.log(f"   [Logic] Requesting image for Topic {topic_idx} (Tiles: {tiles})")
         
         try:
             # タイムアウトは長め(60秒)に設定
-            response = await client.post(url, headers=headers, json=payload, timeout=60.0)
+            response = await client.post(url, headers=headers, files=files, timeout=60.0)
             response.raise_for_status()
 
             content_type = response.headers.get("Content-Type", "")
@@ -68,8 +68,8 @@ class ImageRenderingService:
             else:
                 raise ValueError(f"Unknown response format: {content_type}")
 
-            # 💰 コストの記録 (Tile数とStep数で計算)
-            self.billing.add_image_cost("cloudflare/flux-1-schnell", tiles=tiles, steps=steps, note=f"Topic {topic_idx}")
+            # 💰 コストの記録 (Tile数で計算)
+            self.billing.add_image_cost("cloudflare/flux-2-klein-4b", tiles=tiles, steps=steps, note=f"Topic {topic_idx}")
 
             # 💾 R2にバイナリデータとして保存 (※storage_serviceにsave_binary系のメソッドが必要)
             file_name = f"images/topic_{topic_idx}.jpg"

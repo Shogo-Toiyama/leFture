@@ -1,0 +1,39 @@
+{
+  "world_building": {
+    "recurring_motif": "A massive, interlocking stone puzzle box with nested chambers and rotating hinges, each chamber holding a different key or lock",
+    "world_setting": "A dimly lit, ancient stone workshop where a master craftsman assembles the puzzle box, surrounded by shelves of etched maps and glowing runes",
+    "flux_style_suffix": "A high‑detail, realistic rendering with warm amber lighting, subtle shadows, and a slightly cinematic depth of field"
+  },
+  "image_prompts": [
+    {
+      "topic_idx": 1,
+      "core_concept_translation": "The concept of persistent access via capabilities is visualised by showing a user who, after unlocking the outer lock (ACL), receives a brass key that can open an inner chamber. The key represents the persistent, process‑specific access granted by a capability, while the outer lock remains a gate that must be passed each time.",
+      "flux_scene_description": "Low angle close‑up over a weathered hand reaching into a partially opened stone puzzle box. The hand pulls out a brass key that fits into a hidden inner lock. The outer lock remains closed. Behind, shelves of etched maps and glowing runes."
+    },
+    {
+      "topic_idx": 2,
+      "core_concept_translation": "Zero Trust requires verification of every interaction, even within the system. The scene shows a hand turning a tiny brass lock on the puzzle box, with a faint blue glow indicating that the lock is being authenticated each time, illustrating the principle of trusting no one, even inside.",
+      "flux_scene_description": "Mid‑shot from the side of a hand turning a tiny brass lock on the puzzle box. A faint blue light glows from the lock, indicating verification. The outer lock is still closed, and a faint mist surrounds the lock."
+    },
+    {
+      "topic_idx": 3,
+      "core_concept_translation": "The idea of logging and differential privacy is represented by a translucent veil sliding over a scroll inside the puzzle box, obscuring the ink and showing only blurred outlines. This demonstrates how information can be logged while still protecting individual privacy.",
+      "flux_scene_description": "Top‑down close‑up of a translucent veil sliding over a parchment scroll inside the puzzle box. The scroll's ink is blurred, revealing only faint outlines. The puzzle box's outer shell is visible in the background."
+    },
+    {
+      "topic_idx": 4,
+      "core_concept_translation": "Blockchain’s immutable ledger is visualised as a stone tablet etched with a continuous line of runes inside the puzzle box. A hand presses onto the tablet, and a steady amber glow shows that the marks cannot be erased, embodying the permanence of a distributed ledger.",
+      "flux_scene_description": "Close‑up of a hand pressing onto a stone tablet etched with a continuous line of runes inside the puzzle box. The tablet glows with a steady amber light, showing that the marks cannot be erased."
+    },
+    {
+      "topic_idx": 5,
+      "core_concept_translation": "Role‑Based Access Control is illustrated by a rack of colored brass keys hanging on the puzzle box. A hand selects a red key for admin, a blue key for user, and a green key for guest, showing how roles act as an intermediate layer of access control between users and resources.",
+      "flux_scene_description": "Wide shot of a rack of colored brass keys hanging on the puzzle box. A hand reaches for a red key labeled \"admin\", a blue key labeled \"user\", and a green key labeled \"guest\". The puzzle box's outer lock remains closed."
+    },
+    {
+      "topic_idx": 6,
+      "core_concept_translation": "The covert channel is depicted by a hidden panel of the puzzle box sliding open to reveal a narrow cavity with a faint silver glow, symbolising a covert path for information that bypasses normal channels.",
+      "flux_scene_description": "Low angle close‑up of a hand sliding a hidden panel of the puzzle box. The panel opens to reveal a narrow cavity with a faint silver glow, representing a covert channel."
+    }
+  ]
+}

@@ -1,137 +1,99 @@
 import os
 import json
-from groq import Groq
-from pydantic import BaseModel, ConfigDict
-from typing import List
+import time
+from pathlib import Path
 from dotenv import load_dotenv
+import litellm
 
+# Load environment variables
+current_dir = Path(__file__).resolve().parent
+
+# Load local .env first
 load_dotenv()
 
-class Topic(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    idx: int
-    title: str
-    start_sid: str
-    end_sid: str
+# Load contents_generation/.env if exists
+parent_env = current_dir.parent.parent / ".env"
+if parent_env.exists():
+    print(f"Loading environment from: {parent_env}")
+    load_dotenv(dotenv_path=parent_env)
 
-class FunFactIdea(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    start_sid: str
-    end_sid: str
-    concept_focus: str
-    exciting_angle: str
+# Verify API Keys
+gemini_key = os.getenv("GEMINI_API_KEY")
+together_key = os.getenv("TOGETHER_AI_API_KEY") or os.getenv("TOGETHERAI_API_KEY") or os.getenv("TOGETHER_API_KEY")
+print(f"GEMINI_API_KEY: {'Found' if gemini_key else 'Not Found'}")
+print(f"TOGETHER_AI_API_KEY / TOGETHERAI_API_KEY: {'Found' if together_key else 'Not Found'}")
 
-class LectureAnalysis(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    keywords: List[str]
-    summary: str
-    title: str
-    topics: List[Topic]
-    fun_fact_idea: FunFactIdea
+# Ensure Together API key is set for LiteLLM
+if together_key:
+    os.environ["TOGETHER_AI_API_KEY"] = together_key
+    os.environ["TOGETHERAI_API_KEY"] = together_key
 
-# ファイル名の設定
-input_file = 'transcript_data.json'
-transcript_file = 'simple_transcript.txt'
-output_file = 'core_extractions.json'
+# Drop unsupported params
+litellm.drop_params = True
 
-def simplify_transcript():
+# File paths
+input_file = current_dir / 'transcript_data.json'
+prompt_file = current_dir / 'prompt.txt'
+
+def format_transcript_from_json():
     try:
-        # JSONファイルの読み込み
-        with open(input_file, 'r', encoding='utf-8') as f_in:
-            data = json.load(f_in)
+        with open(input_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        # テキストファイルへの書き出し
-        with open(transcript_file, 'w', encoding='utf-8') as f_out:
-            for item in data:
-                # sidとtextを取得（万が一欠損していてもエラーにならないようにgetを使用）
-                sid = item.get('sid', '')
-                text = item.get('text', '')
-                
-                # 指定されたフォーマットで書き込み
-                f_out.write(f"{sid}: {text}\n")
-                
-        print(f"大成功！無事に '{transcript_file}' が作成されました！")
+        lines = []
+        for item in data:
+            sid = item.get('sid', '')
+            text = item.get('text', '')
+            if sid:
+                lines.append(f"{sid}: {text}")
         
+        return "\n".join(lines)
     except FileNotFoundError:
-        print(f"エラー: '{input_file}' が見つかりません。同じ階層にあるか確認してください！")
+        print(f"Error: '{input_file}' not found.")
+        return None
     except json.JSONDecodeError:
-        print(f"エラー: '{input_file}' のJSONフォーマットが崩れているようです。")
+        print(f"Error: Failed to parse '{input_file}' as JSON.")
+        return None
 
 def test_core_extraction():
+    # Read prompt
     try:
-        with open(transcript_file, 'r', encoding='utf-8') as f:
-            transcript_text = f.read()
+        with open(prompt_file, 'r', encoding='utf-8') as f:
+            system_prompt = f.read().strip()
     except FileNotFoundError:
-        print(f"エラー: {input_file} が見つかりません。先に抽出プログラムを実行してください！")
+        print(f"Error: '{prompt_file}' not found.")
         return
-    
-    system_prompt = """You are an expert academic content analyzer and metadata extractor. 
-Your objective is to read a complete university lecture transcript and extract highly structured metadata in a single pass. 
 
-### <STUDENT_PROFILE>
-The user consuming this output is a university student majoring in Computer Science, actively developing their own applications, and aiming for Software Engineer internships. They have a strong interest in AI, cloud technologies, and entrepreneurship (like bootstrapping a startup). 
-*(Note: Use this profile ONLY to tailor the "fun_fact_idea" section).*
-### </STUDENT_PROFILE>
+    # Format transcript
+    transcript_text = format_transcript_from_json()
+    if not transcript_text:
+        print("Error: No transcript text available.")
+        return
 
-### INPUT FORMAT
-A plain text transcript where each line represents a sentence or utterance. 
-The format is strict: `<sid>: <text>`
+    # Models to test
+    models = [
+        "together_ai/openai/gpt-oss-120b",
+        # "gemini/gemini-2.5-flash-lite",
+        # "gemini/gemini-2.5-flash"
+    ]
 
-### TASK & CONSTRAINTS (Follow this exact sequence for your reasoning)
-
-1. KEYWORDS (`keywords`):
-- First, scan the text and extract 5 to 10 core academic concepts and fundamental technical terms that are essential for the student's exam preparation and deep understanding of the lecture.
-- CRITICAL: Do NOT include analogies, anecdotal terms, or specific examples used for illustration, even if they are mentioned frequently. Focus strictly on the theoretical and architectural concepts.
-
-2. SUMMARY (`summary`):
-- Based on the key concepts, write exactly 2-3 sentences summarizing the overall lecture.
-
-3. LECTURE TITLE (`title`):
-- Condense the summary into a concise, highly specific title for the entire lecture (max 10 words).
-
-4. TOPIC SEGMENTATION (`topics`):
-- Now, understanding the full context, partition the transcript into 2 to 6 balanced, non-overlapping segments.
-- Partition the transcript into 2 to 6 balanced, non-overlapping segments (topics).
-- Target Count: NEVER exceed 6 topics unless the professor explicitly declares a higher number at the start.
-- Boundary Detection: Look for rhetorical transitions ("Moving on to..."), sustained role+content shifts, or clear conceptual changes (e.g., theory -> application).
-- Merge Policy: Combine tightly coupled parts (e.g., definition + immediate example). Do not split if the conceptual focus remains the same.
-- Output the `start_sid` and `end_sid` matching the exact `<sid>` provided in the input.
-
-5. FUN FACT IDEA (`fun_fact_idea`):
-- Finally, review the <STUDENT_PROFILE> and find ONE specific concept from the topics that can be creatively connected to the student's interests.
-- Goal: Generate an *idea* (not the full final text) that will make the student say, "Wow, this lecture connects to what I want to do!"
-- `start_sid` & `end_sid`: Identify the exact segment where this concept is taught.
-- `concept_focus`: The specific term/concept from the lecture.
-- `exciting_angle`: 1-2 sentences explaining *how* to connect this concept to the student's interests (CS, App Dev, AI, Entrepreneurship) in a way that provides a new perspective or excites them about their future career/projects.
-
-### OUTPUT FORMAT
-You must return ONLY a valid, minified JSON object matching the exact structure below. Do not include markdown formatting (like ```json), explanations, or preamble.
-
-{
-  "keywords": ["<string>", "<string>"],
-  "summary": "<string>",
-  "title": "<string>",
-  "topics": [
-    {
-      "idx": <int>,
-      "title": "<string>",
-      "start_sid": "<string>",
-      "end_sid": "<string>"
+    # Model Pricing per 1,000,000 tokens (Standard pricing)
+    PRICING_PER_1M = {
+        "together_ai/openai/gpt-oss-120b": {"input": 0.15, "output": 0.60},
+        "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
+        "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
+        "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50}
     }
-  ],
-  "fun_fact_idea": {
-    "start_sid": "<string>",
-    "end_sid": "<string>",
-    "concept_focus": "<string>",
-    "exciting_angle": "<string>"
-  }
-}
-"""
-    
-    client = Groq()
-    completion = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=[
+
+    total_cost = 0.0
+    total_time = 0.0
+
+    for model in models:
+        print(f"\n==================================================")
+        print(f"🤖 Starting extraction for model: {model}")
+        print(f"==================================================")
+        
+        messages = [
             {
                 "role": "system",
                 "content": system_prompt
@@ -140,34 +102,70 @@ You must return ONLY a valid, minified JSON object matching the exact structure 
                 "role": "user",
                 "content": f"Here is the transcript data:\n\n{transcript_text}"
             }
-        ],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "lecture_analysis_schema",
-                "strict": True,
-                "schema": LectureAnalysis.model_json_schema()
-            }
+        ]
+
+        kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.4,
+            "response_format": {"type": "json_object"}
         }
-    )
-    result_json_str = completion.choices[0].message.content
 
-    try:
-        result_dict = json.loads(result_json_str)
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(result_dict, f, ensure_ascii=False, indent=2)
+        # Handle reasoning effort for GPT-OSS models
+        if "gpt-oss" in model:
+            kwargs["reasoning_effort"] = "medium"
 
-    except json.JSONDecodeError:
-        txt_output_file = output_file.replace('.json', '.txt')
-        with open(txt_output_file, 'w', encoding='utf-8') as f:
-            f.write(result_json_str)
-        print(f"JSONじゃなかったのでtxtとして保存しました: {txt_output_file}")
+        start_time = time.perf_counter()
+        try:
+            response = litellm.completion(**kwargs)
+            elapsed_time = time.perf_counter() - start_time
+            result_json_str = response.choices[0].message.content or ""
+            
+            # Extract tokens
+            usage = getattr(response, 'usage', None)
+            in_tokens = getattr(usage, 'prompt_tokens', 0) if usage else 0
+            out_tokens = getattr(usage, 'completion_tokens', 0) if usage else 0
+            total_tokens = getattr(usage, 'total_tokens', 0) if usage else 0
+            
+            # Estimate cost
+            price = PRICING_PER_1M.get(model, {"input": 0.0, "output": 0.0})
+            cost = (in_tokens / 1_000_000.0) * price["input"] + (out_tokens / 1_000_000.0) * price["output"]
+            
+            total_cost += cost
+            total_time += elapsed_time
 
-    print(f"大成功！分析結果が {output_file} に保存されました！")
-    print("\n--- 出力プレビュー（一部） ---")
-    print(f"タイトル: {result_dict.get('title')}")
-    print(f"トピック数: {len(result_dict.get('topics', []))}個")
+            print(f"⏱️ Done in {elapsed_time:.2f} seconds.")
+            print(f"📊 Token usage - Input: {in_tokens}, Output: {out_tokens}, Total: {total_tokens}")
+            print(f"💰 Estimated Cost: ${cost:.6f}")
+
+            # Define output filename based on model name
+            model_safe_name = model.split('/')[-1]
+            output_file_json = current_dir / f"core_extractions_{model_safe_name}.json"
+            output_file_txt = current_dir / f"core_extractions_{model_safe_name}.txt"
+
+            try:
+                result_dict = json.loads(result_json_str)
+                with open(output_file_json, 'w', encoding='utf-8') as f:
+                    json.dump(result_dict, f, ensure_ascii=False, indent=2)
+                print(f"✅ Saved JSON to: {output_file_json.name}")
+                print(f"📝 Title: {result_dict.get('title')}")
+                print(f"📚 Topics extracted: {len(result_dict.get('topics', []))}")
+            except json.JSONDecodeError:
+                with open(output_file_txt, 'w', encoding='utf-8') as f:
+                    f.write(result_json_str)
+                print(f"⚠️ Response is not valid JSON. Saved raw text to: {output_file_txt.name}")
+                print("Raw response preview:")
+                print(result_json_str[:300])
+
+        except Exception as e:
+            elapsed_time = time.perf_counter() - start_time
+            print(f"❌ Failed model {model} after {elapsed_time:.2f}s: {e}")
+
+    print(f"\n==================================================")
+    print(f"🏁 Execution Summary")
+    print(f"==================================================")
+    print(f"⏱️ Total Time: {total_time:.2f} seconds")
+    print(f"💰 Total Cost: ${total_cost:.6f}")
 
 if __name__ == "__main__":
-    # simplify_transcript()
     test_core_extraction()

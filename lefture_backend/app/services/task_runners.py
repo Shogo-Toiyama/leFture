@@ -32,6 +32,48 @@ from app.services.logic.topic_details_generation import TopicDetailGenerationSer
 # 🛠️ 共通ヘルパー関数
 # =========================================================
 
+def reconstruct_chunk_start_times(chunks: list[dict]) -> list[dict]:
+    """
+    Reconstructs the absolute start_time of chunks in case of client-side timer resets.
+    If a chunk's start_time drops to 0 or is less than the previous chunk's start_time,
+    we compute the expected start time based on the previous chunk's start_time and duration.
+    """
+    if not chunks:
+        return chunks
+
+    # Sort chunks by chunk_index to ensure chronological order
+    sorted_chunks = sorted(chunks, key=lambda x: x.get("chunk_index", 0))
+
+    adjusted_chunks = []
+    current_offset = 0.0
+
+    for i, chunk in enumerate(sorted_chunks):
+        new_chunk = chunk.copy()
+        raw_start = chunk.get("start_time")
+        if raw_start is None:
+            raw_start = 0.0
+            
+        if i > 0:
+            prev_chunk = adjusted_chunks[i-1]
+            prev_raw_start = sorted_chunks[i-1].get("start_time")
+            if prev_raw_start is None:
+                prev_raw_start = 0.0
+            prev_duration = sorted_chunks[i-1].get("audio_duration")
+            if prev_duration is None:
+                prev_duration = 0.0
+            
+            # Detect timer reset: current start_time is 0 or drops below previous raw start_time
+            if raw_start == 0.0 or raw_start < prev_raw_start:
+                # Accumulate the offset
+                expected_start = prev_chunk.get("start_time", 0.0) + prev_duration
+                current_offset = expected_start - raw_start
+        
+        new_chunk["start_time"] = raw_start + current_offset
+        adjusted_chunks.append(new_chunk)
+        
+    return adjusted_chunks
+
+
 def _update_task_status(task_id: str, status: str, payload: dict = None, error_msg: str = None):
     supabase = get_supabase_client()
     update_data = {
@@ -80,7 +122,7 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
     res = supabase.table("lectures").select("owner_id").eq("id", lecture_id).single().execute()
     uid = res.data["owner_id"] if res.data else "unknown_user"
     logger = TaskLogger(uid, lecture_id, f"TRANSCRIBE_CHUNK_{chunk_index:03d}")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="TRANSCRIBE_CHUNK")
     
     try:
         logger.log(f"🎤 [In-Memory] Transcribing chunk {chunk_index} for lecture {lecture_id}")
@@ -146,16 +188,21 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
             chunk_ids = [c["id"] for c in chunks_to_review]
             supabase.table("lecture_transcripts").update({"status": "REVIEWING"}).in_("id", chunk_ids).execute()
             
-            # 3. 文脈を繋ぐため、1つ前のチャンク（REVIEWED）を取得
-            prev_chunk = None
-            if first_chunk_index > 0:
-                prev_res = supabase.table("lecture_transcripts")\
-                    .select("*")\
-                    .eq("lecture_id", lecture_id)\
-                    .eq("chunk_index", first_chunk_index - 1)\
-                    .execute()
-                if prev_res.data:
-                    prev_chunk = prev_res.data[0]
+            # 3. タイムライン再構築のために、このバッチまでのすべての履歴を取得
+            history_res = supabase.table("lecture_transcripts")\
+                .select("*")\
+                .eq("lecture_id", lecture_id)\
+                .lte("chunk_index", first_chunk_index + 3)\
+                .order("chunk_index")\
+                .execute()
+            
+            adjusted_history = reconstruct_chunk_start_times(history_res.data or [])
+            
+            # 補正済みのリストから chunks_to_review と prev_chunk を抽出
+            adjusted_review_map = {c["chunk_index"]: c for c in adjusted_history}
+            chunks_to_review = [adjusted_review_map[c["chunk_index"]] for c in chunks_to_review if c["chunk_index"] in adjusted_review_map]
+            
+            prev_chunk = adjusted_review_map.get(first_chunk_index - 1) if first_chunk_index > 0 else None
             
             logger.log(f"🚀 Triggering Sentence Review for chunks {first_chunk_index} to {first_chunk_index + 3}")
             
@@ -201,7 +248,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
     
     logger = TaskLogger(uid, lecture_id, "CHECK_AND_ASSEMBLE")
     logger.log(f"▶️ Starting CHECK_AND_ASSEMBLE (Task: {task_id})")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="CHECK_AND_ASSEMBLE")
     _update_task_status(task_id, "RUNNING")
     work_dir = BASE_WORK_DIR / task_id
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -222,7 +269,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             .order("chunk_index")\
             .execute()
             
-        all_chunks = res.data
+        all_chunks = reconstruct_chunk_start_times(res.data or [])
         
         # 処理済みのチャンク（Whisperが終わっているもの）をカウント
         processed_chunks = [c for c in all_chunks if c.get("status") in ["TRANSCRIBED", "REVIEWED"]]
@@ -247,15 +294,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             logger.log(f"🧹 Running final Sentence Review for {len(chunks_to_review)} leftover chunks (Starting at {first_leftover_idx})...")
             
             # 1つ前のチャンク（REVIEWED）を取得して文脈として渡す
-            prev_chunk = None
-            if first_leftover_idx > 0:
-                prev_res = supabase.table("lecture_transcripts")\
-                    .select("*")\
-                    .eq("lecture_id", lecture_id)\
-                    .eq("chunk_index", first_leftover_idx - 1)\
-                    .execute()
-                if prev_res.data and prev_res.data[0].get("status") == "REVIEWED":
-                    prev_chunk = prev_res.data[0]
+            prev_chunk = next((c for c in all_chunks if c["chunk_index"] == first_leftover_idx - 1), None)
 
             # LLM職人を呼び出す
             llm = UnifiedLLM(billing)
@@ -287,7 +326,8 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             .order("chunk_index")\
             .execute()
             
-        completed_chunks = [c for c in final_res.data if c.get("status") == "REVIEWED"]
+        adjusted_final = reconstruct_chunk_start_times(final_res.data or [])
+        completed_chunks = [c for c in adjusted_final if c.get("status") == "REVIEWED"]
         
         if len(completed_chunks) < expected_chunks:
              raise Exception(f"Mismatch in expected chunks after review. ({len(completed_chunks)}/{expected_chunks})")
@@ -336,7 +376,7 @@ async def run_core_extraction_task(job_id: str, task_id: str):
     _update_task_status(task_id, "RUNNING")
     
     # 💡 このタスク専用のお財布（コスト計算機）を用意
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="CORE_EXTRACTION")
     
     try:
         prev_payload = _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE")
@@ -379,7 +419,7 @@ async def run_role_classification_task(job_id: str, task_id: str):
     _update_task_status(task_id, "RUNNING")
     
     # 💡 このタスク専用のお財布を用意
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="ROLE_CLASSIFICATION")
     
     try:
         # 1. 必要な前工程のデータをR2からメモリにダウンロード
@@ -430,7 +470,7 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
     logger.log(f"▶️ Starting ANNOUNCEMENT_GENERATION (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
     
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="ANNOUNCEMENT_GENERATION")
     
     # 💡 1. Safety Net 用の正規表現コンパイル
     # \b で単語の境界を指定し、s? などで複数形にも対応させています
@@ -579,7 +619,7 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
     logger.log(f"▶️ Starting TOPIC_MAPPING (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
     
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="TOPIC_MAPPING")
     
     try:        
         # 1. 今日のトピックデータをR2から取得 (CORE_EXTRACTION の結果を使用)
@@ -650,7 +690,7 @@ async def run_review_card_task(job_id: str, task_id: str):
     logger.log(f"▶️ Starting REVIEW_CARD_GENERATION (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
     
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="REVIEW_CARD_GENERATION")
     
     try:
         # 1. 依存データの読み込み (Role Classification, Core Extraction, Topic Mapping)
@@ -702,15 +742,19 @@ async def run_image_prompt_generation_task(job_id: str, task_id: str):
     logger = TaskLogger(uid, lecture_id, "IMAGE_GENERATION")
     logger.log(f"▶️ Starting IMAGE_GENERATION (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="IMAGE_PROMPT_GENERATION")
     
     try:
         review_payload = _get_dependency_payload(job_id, "REVIEW_CARD_GENERATION")
         review_results = _download_from_r2_to_memory(review_payload["review_cards_path"])
 
+        # アカデミックトピックタイトルを取得するために CORE_EXTRACTION データをロード
+        core_payload = _get_dependency_payload(job_id, "CORE_EXTRACTION")
+        core_data = _download_from_r2_to_memory(core_payload["core_extraction_path"])
+
         llm = UnifiedLLM(billing)
         service = ImageGenerationService(llm, logger)
-        image_prompts = await service.run_from_memory(review_results)
+        image_prompts = await service.run_from_memory(review_results, core_data)
 
         r2_path = storage_service.save_json_log(uid, lecture_id, "image_prompts", image_prompts)
         _update_task_status(task_id, "COMPLETED", payload={"image_prompts_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
@@ -732,16 +776,30 @@ async def run_image_rendering_task(job_id: str, task_id: str):
     logger = TaskLogger(uid, lecture_id, "IMAGE_RENDERING")
     logger.log(f"▶️ Starting IMAGE_RENDERING (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="IMAGE_RENDERING")
     
     try:
         # 前工程 (6-A-1) で作成したプロンプトJSONをR2から読み込む
         prompt_payload = _get_dependency_payload(job_id, "IMAGE_PROMPT_GENERATION")
-        image_prompts = _download_from_r2_to_memory(prompt_payload["image_prompts_path"])
+        prompt_data = _download_from_r2_to_memory(prompt_payload["image_prompts_path"])
+
+        # style_suffixと各トピックのscene_descriptionを結合してレンダリング用リストを作成
+        style_suffix = prompt_data.get("world_building", {}).get("flux_style_suffix", "")
+        raw_prompts = prompt_data.get("image_prompts", [])
+
+        image_rendering_inputs = []
+        for p in raw_prompts:
+            scene_desc = p.get("flux_scene_description", "")
+            combined_prompt = f"{scene_desc}, {style_suffix}".strip().strip(",")
+            
+            image_rendering_inputs.append({
+                "topic_idx": p.get("topic_idx"),
+                "flux_prompt": combined_prompt
+            })
 
         # レンダリング職人を呼ぶ
         renderer = ImageRenderingService(logger, billing)
-        rendering_results = await renderer.run(uid, lecture_id, image_prompts)
+        rendering_results = await renderer.run(uid, lecture_id, image_rendering_inputs)
 
         # 結果のパスリストを保存
         r2_path = storage_service.save_json_log(uid, lecture_id, "rendered_images_manifest", rendering_results)
@@ -766,7 +824,7 @@ async def run_fun_fact_search_task(job_id: str, task_id: str):
     
     logger.log(f"▶️ Starting FUN_FACT_SEARCH (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="FUN_FACT_SEARCH")
 
     try:
         # 1. Core Extraction の結果を読み込む
@@ -803,7 +861,7 @@ async def run_fun_facts_task(job_id: str, task_id: str):
     logger = TaskLogger(uid, lecture_id, "FUN_FACTS_GENERATION")
     logger.log(f"▶️ Starting FUN_FACTS (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="FUN_FACTS_GENERATION")
     
     try:
         # 必要なデータをすべてダウンロード
@@ -849,7 +907,7 @@ async def run_detail_contents_task(job_id: str, task_id: str):
     logger = TaskLogger(uid, lecture_id, "DETAIL_CONTENTS_GENERATION")
     logger.log(f"▶️ Starting DETAIL_CONTENTS (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
-    billing = BillingEngine()
+    billing = BillingEngine(task_type="DETAIL_CONTENTS_GENERATION")
     
     try:
         # データの読み込み
@@ -908,7 +966,7 @@ async def run_finalize_job_task(job_id: str, task_id: str):
                 master_billing.records.append(record)
 
         # 2. 最終レポートの生成
-        final_report = master_billing.report()
+        final_report = master_billing.report_by_task()
         logger.log("✅ All task costs aggregated successfully.")
         logger.log(final_report)
 

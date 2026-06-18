@@ -39,6 +39,11 @@ PRICE_MATRIX = {
             "per_tile": 0.0000528,
             "per_step": 0.0001056,
             "default_steps": 4,
+        },
+        "cloudflare/flux-2-klein-4b": {
+            "per_tile": 0.000287,
+            "per_step": 0.0,
+            "default_steps": 4,
         }
     },
     "count": {  # $ per unit
@@ -67,6 +72,7 @@ class CostRecord:
     resource: str
     usage: Dict[str, float]
     cost_usd: float
+    task_type: Optional[str] = None
     note: Optional[str] = None
 
 
@@ -74,7 +80,8 @@ class CostRecord:
 # 📈 コスト計算エンジン
 # =========================================================
 class BillingEngine:
-    def __init__(self) -> None:
+    def __init__(self, task_type: Optional[str] = None) -> None:
+        self.task_type = task_type
         self.records: List[CostRecord] = []
 
     def add_token_cost(self, model: str, input_tokens: int, output_tokens: int) -> None:
@@ -94,6 +101,7 @@ class BillingEngine:
                 resource=model,
                 usage={"input": float(input_tokens), "output": float(output_tokens)},
                 cost_usd=cost,
+                task_type=self.task_type,
             )
         )
 
@@ -117,6 +125,7 @@ class BillingEngine:
                 resource=resource,
                 usage={"seconds": float(seconds), "multiplier": float(multiplier)},
                 cost_usd=cost,
+                task_type=self.task_type,
                 note=note,
             )
         )
@@ -145,6 +154,7 @@ class BillingEngine:
                 resource=resource,
                 usage={"count": float(count)},
                 cost_usd=cost,
+                task_type=self.task_type,
                 note=note,
             )
         )
@@ -170,6 +180,7 @@ class BillingEngine:
                 resource=resource,
                 usage={"tiles": float(tiles), "steps": float(actual_steps)},
                 cost_usd=cost,
+                task_type=self.task_type,
                 note=note,
             )
         )
@@ -216,6 +227,77 @@ class BillingEngine:
 
         lines.append("  -------------------------")
         lines.append(f"  TOTAL: ${self.total_usd():.6f}")
+        return "\n".join(lines)
+
+    def report_by_task(self) -> str:
+        TASK_ORDER = [
+            "CHECK_AND_ASSEMBLE",
+            "CORE_EXTRACTION",
+            "ROLE_CLASSIFICATION",
+            "ANNOUNCEMENT_GENERATION",
+            "TOPIC_MAPPING",
+            "REVIEW_CARD_GENERATION",
+            "IMAGE_PROMPT_GENERATION",
+            "IMAGE_RENDERING",
+            "FUN_FACT_SEARCH",
+            "FUN_FACTS_GENERATION",
+            "DETAIL_CONTENTS_GENERATION"
+        ]
+
+        from collections import defaultdict
+        grouped = defaultdict(list)
+        for r in self.records:
+            grouped[r.task_type].append(r)
+
+        lines = ["\n=== 📊 3D Grouped Cost Report ==="]
+
+        sorted_tasks = []
+        for task in TASK_ORDER:
+            if task in grouped or (task is None and None in grouped):
+                sorted_tasks.append(task)
+        for task in grouped:
+            if task not in sorted_tasks:
+                sorted_tasks.append(task)
+
+        for task in sorted_tasks:
+            records = grouped[task]
+            task_label = task if task is not None else "UNGROUPED"
+            task_total = sum(r.cost_usd for r in records)
+            lines.append(f"\n📂 [{task_label}] Subtotal: ${task_total:.6f}")
+
+            for r in records:
+                if r.dimension == "tokens":
+                    lines.append(
+                        f"  - [Tokens] {r.resource}: "
+                        f"{int(r.usage['input'])} in, {int(r.usage['output'])} out "
+                        f"-> ${r.cost_usd:.6f}"
+                    )
+                elif r.dimension == "time":
+                    multiplier = r.usage.get("multiplier", 1.0)
+                    suffix = f" x{multiplier:.2f}" if multiplier != 1.0 else ""
+                    note_suffix = f" ({r.note})" if r.note else ""
+                    lines.append(
+                        f"  - [Time]   {r.resource}: "
+                        f"{r.usage['seconds']:.2f}s{suffix} "
+                        f"-> ${r.cost_usd:.6f}{note_suffix}"
+                    )
+                elif r.dimension == "count":
+                    note_suffix = f" ({r.note})" if r.note else ""
+                    lines.append(
+                        f"  - [Count]  {r.resource}: "
+                        f"{int(r.usage['count'])} units "
+                        f"-> ${r.cost_usd:.6f}{note_suffix}"
+                    )
+                elif r.dimension == "image":
+                    note_suffix = f" ({r.note})" if r.note else ""
+                    lines.append(
+                        f"  - [Image]  {r.resource}: "
+                        f"{int(r.usage['tiles'])} tiles, {int(r.usage['steps'])} steps "
+                        f"-> ${r.cost_usd:.6f}{note_suffix}"
+                    )
+
+        lines.append("\n=================================")
+        lines.append(f"TOTAL COST: ${self.total_usd():.6f}")
         return "\n".join(lines)
 
 

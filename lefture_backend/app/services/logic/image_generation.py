@@ -10,22 +10,33 @@ class ImageGenerationService:
         self.logger = logger
         self.model_alias = "together_ai/openai/gpt-oss-20b"
 
-    async def run_from_memory(self, review_cards_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def run_from_memory(self, review_cards_results: List[Dict[str, Any]], core_data: Dict[str, Any]) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Image Prompt Generation")
         
         if not review_cards_results:
             self.logger.log("   [Logic] No review cards results found. Skipping Image Generation LLM call.")
-            return []
+            return {}
             
         prompt_template = _load_prompt("image_generation_prompt.txt")
         options_json = LLMOptions(output_type="json", temperature=0.5, reasoning_effort="medium")
 
-        # LLMに渡すインプットを最小化 (タイトルとHookのみ)
+        # Core Extractionのトピック情報から学術名(title)をマッピングする辞書を作成
+        academic_titles = {}
+        for topic in core_data.get("topics", []):
+            t_idx = topic.get("idx")
+            t_title = topic.get("title")
+            if t_idx is not None and t_title:
+                academic_titles[t_idx] = t_title
+
+        # LLMに渡すインプットを組み立て
         minimized_topics = []
         for res in review_cards_results:
+            topic_idx = res.get("topic_idx")
+            academic_title = academic_titles.get(topic_idx, "Unknown Topic")
+            core_concept = res.get("topic_evaluation", {}).get("core_concept_identified", "")
+
             # hookカードを探す
             hook_card = next((c for c in res.get("review_cards", []) if c.get("card_type") == "hook"), {})
-
             hook_text = ""
             for block in hook_card.get("content_blocks", []):
                 if isinstance(block, dict) and block.get("type") in ["quote", "paragraph", "callout"] and block.get("text"):
@@ -38,14 +49,22 @@ class ImageGenerationService:
                     summary = mt["summary"]
                     break
 
+            # concept_explanation を Hook と Summary を結合して作成
+            explanation_parts = []
+            if hook_text.strip():
+                explanation_parts.append(hook_text.strip())
+            if summary.strip():
+                explanation_parts.append(summary.strip())
+            concept_explanation = " — ".join(explanation_parts)
+
             minimized_topics.append({
-                "topic_idx": res.get("topic_idx"),
-                "title": res.get("topic_evaluation", {}).get("core_concept_identified", "Unknown Topic"),
-                "hook_text": hook_text,
-                "summary": summary
+                "topic_idx": topic_idx,
+                "title": academic_title,
+                "core_concept": core_concept,
+                "concept_explanation": concept_explanation
             })
 
-        prompt_text = prompt_template # 変数置換がないタイプなのでそのまま
+        prompt_text = prompt_template
         messages = [
             Message(role="system", content=prompt_text),
             Message(role="user", content=f"Generate visual prompts for these topics:\n{json.dumps(minimized_topics, ensure_ascii=False)}")
@@ -60,6 +79,13 @@ class ImageGenerationService:
         if not isinstance(res.output_json, dict):
             raise ValueError("Image prompt output must be a JSON object.")
 
+        world_building = res.output_json.get("world_building")
+        if not isinstance(world_building, dict):
+            raise ValueError("Image prompt output must contain a world_building object.")
+        
+        if not isinstance(world_building.get("flux_style_suffix"), str) or not world_building["flux_style_suffix"].strip():
+            raise ValueError("world_building object must contain a non-empty flux_style_suffix.")
+
         image_prompts = res.output_json.get("image_prompts")
         if not isinstance(image_prompts, list):
             raise ValueError("Image prompt output must contain an image_prompts list.")
@@ -69,8 +95,8 @@ class ImageGenerationService:
                 raise ValueError(f"image_prompts[{idx}] must be an object.")
             if "topic_idx" not in item:
                 raise ValueError(f"image_prompts[{idx}] is missing topic_idx.")
-            if not isinstance(item.get("flux_prompt"), str) or not item["flux_prompt"].strip():
-                raise ValueError(f"image_prompts[{idx}] is missing a valid flux_prompt.")
+            if not isinstance(item.get("flux_scene_description"), str) or not item["flux_scene_description"].strip():
+                raise ValueError(f"image_prompts[{idx}] is missing a valid flux_scene_description.")
 
         self.logger.log(f"   [Logic] Generated {len(image_prompts)} image prompt(s).")
-        return image_prompts
+        return res.output_json
