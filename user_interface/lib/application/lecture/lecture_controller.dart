@@ -30,16 +30,16 @@ class LectureController extends _$LectureController {
 
     try {
       await sync.pushOutbox();
-    } catch (e) {
-      dev.log('⚠️ Lecture push skipped: $e');
+    } catch (e, st) {
+      dev.log('⚠️ Lecture push skipped: $e', error: e, stackTrace: st);
     }
 
     try {
       final lastSync = forceFullPull ? null : nav.lastLectureSyncAt;
       await sync.pull(lastPullAt: lastSync);
       await nav.setLastLectureSyncAt(DateTime.now().toUtc());
-    } catch (e) {
-      dev.log('⚠️ Lecture pull skipped: $e');
+    } catch (e, st) {
+      dev.log('⚠️ Lecture pull skipped: $e', error: e, stackTrace: st);
     }
   }
 

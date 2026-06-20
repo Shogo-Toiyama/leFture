@@ -151,7 +151,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -163,6 +163,14 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(localLectures);
         await m.createTable(localLectureAssets);
         await m.createTable(localUploadJobs);
+      }
+      if (from < 3) {
+        // バージョン3への移行: owner_id -> user_id カラム変更に伴う破壊的変更
+        // 開発中のため、一度全テーブルを削除して再作成
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
       }
     }
   );
@@ -289,6 +297,32 @@ class AppDatabase extends _$AppDatabase {
     }
 
     return chain.reversed.toList(); // root -> ... -> current
+  }
+
+  Future<void> dumpDatabaseLog() async {
+    try {
+      print('=== DRIFT DATABASE DUMP ===');
+      final folders = await select(localLectureFolders).get();
+      print('LocalLectureFolders (${folders.length} items):');
+      for (final f in folders) {
+        print('  - $f');
+      }
+
+      final lectures = await select(localLectures).get();
+      print('LocalLectures (${lectures.length} items):');
+      for (final l in lectures) {
+        print('  - $l');
+      }
+
+      final outbox = await select(localOutbox).get();
+      print('LocalOutbox (${outbox.length} items):');
+      for (final o in outbox) {
+        print('  - $o');
+      }
+      print('=== DRIFT DATABASE DUMP END ===');
+    } catch (e, st) {
+      print('❌ Failed to dump Drift database: $e\n$st');
+    }
   }
 
 }

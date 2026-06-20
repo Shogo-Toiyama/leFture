@@ -78,9 +78,7 @@ class LectureFolderController extends _$LectureFolderController {
       dev.log('✅ pushOutbox success');
     } catch (e, st) {
       // ignore: avoid_print
-      dev.log('❌ pushOutbox failed: $e');
-      // ignore: avoid_print
-      dev.log(st as String);
+      dev.log('❌ pushOutbox failed: $e', error: e, stackTrace: st);
       rethrow; // まずは原因を見るためthrowしてOK
     }
   }
@@ -92,23 +90,23 @@ class LectureFolderController extends _$LectureFolderController {
     if (hardReset) {
       try {
         await sync.resetLocalToCloudBase();
-      } catch (e) {
-        dev.log('⚠️ reset skipped: $e');
+      } catch (e, st) {
+        dev.log('⚠️ reset skipped: $e', error: e, stackTrace: st);
       }
     }
 
     // 1) まず push（未送信を吐く）
     try {
       await sync.pushOutbox();
-    } catch (e) {
-      dev.log('⚠️ push skipped: $e');
+    } catch (e, st) {
+      dev.log('⚠️ push skipped: $e', error: e, stackTrace: st);
     }
 
     // 2) 次に pull（クラウドの正を取ってくる）
     try {
       await sync.pull(lastPullAt: null); // まず全件でOK
-    } catch (e) {
-      dev.log('⚠️ pull skipped: $e');
+    } catch (e, st) {
+      dev.log('⚠️ pull skipped: $e', error: e, stackTrace: st);
     }
   }
 
@@ -123,7 +121,8 @@ class LectureFolderController extends _$LectureFolderController {
     try {
       await bootstrapFolders();
       await nav.setLastFolderSyncAt(now);
-    } catch (_) {
+    } catch (e, st) {
+      dev.log('❌ bootstrapFolders failed: $e', error: e, stackTrace: st);
       // 更新しない（次回また試す）
     }
   }
