@@ -1,6 +1,6 @@
 class LectureFolder {
   final String id;
-  final String ownerId;
+  final String userId;
   final String name;
   final String? parentId;
   final String type;
@@ -14,7 +14,7 @@ class LectureFolder {
 
   LectureFolder({
     required this.id,
-    required this.ownerId,
+    required this.userId,
     required this.name,
     this.parentId,
     required this.type,
@@ -41,7 +41,7 @@ class LectureFolder {
   }) {
     return LectureFolder(
       id: id,
-      ownerId: ownerId,
+      userId: userId,
       name: name ?? this.name,
       parentId: parentId ?? this.parentId,
       type: type ?? this.type,
@@ -59,7 +59,7 @@ class LectureFolder {
   factory LectureFolder.fromMap(Map<String, dynamic> map) {
     return LectureFolder(
       id: map['id'] as String,
-      ownerId: map['owner_id'] as String,
+      userId: map['user_id'] as String,
       name: (map['name'] as String?) ?? '',
       parentId: map['parent_id'] as String?,
       type: (map['type'] as String?) ?? 'binder',

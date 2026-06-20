@@ -111,7 +111,7 @@ final class LectureListStreamProvider
   }
 }
 
-String _$lectureListStreamHash() => r'619fd3b998f2a8eca5d8d071a7f9347a465f7f0e';
+String _$lectureListStreamHash() => r'96c0d5e70803fd0424ece1b94a8e7fa49b10f729';
 
 final class LectureListStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<Lecture>>, String?> {

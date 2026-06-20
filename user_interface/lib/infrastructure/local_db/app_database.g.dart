@@ -18,12 +18,10 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
-    'ownerId',
-  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
-  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
-    'owner_id',
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -155,7 +153,7 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    ownerId,
+    userId,
     name,
     parentId,
     type,
@@ -185,13 +183,13 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('owner_id')) {
+    if (data.containsKey('user_id')) {
       context.handle(
-        _ownerIdMeta,
-        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_ownerIdMeta);
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -278,9 +276,9 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      ownerId: attachedDatabase.typeMapping.read(
+      userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}owner_id'],
+        data['${effectivePrefix}user_id'],
       )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -338,7 +336,7 @@ class $LocalLectureFoldersTable extends LocalLectureFolders
 class LocalLectureFolder extends DataClass
     implements Insertable<LocalLectureFolder> {
   final String id;
-  final String ownerId;
+  final String userId;
   final String name;
   final String? parentId;
   final String type;
@@ -352,7 +350,7 @@ class LocalLectureFolder extends DataClass
   final bool needsSync;
   const LocalLectureFolder({
     required this.id,
-    required this.ownerId,
+    required this.userId,
     required this.name,
     this.parentId,
     required this.type,
@@ -369,7 +367,7 @@ class LocalLectureFolder extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['owner_id'] = Variable<String>(ownerId);
+    map['user_id'] = Variable<String>(userId);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || parentId != null) {
       map['parent_id'] = Variable<String>(parentId);
@@ -395,7 +393,7 @@ class LocalLectureFolder extends DataClass
   LocalLectureFoldersCompanion toCompanion(bool nullToAbsent) {
     return LocalLectureFoldersCompanion(
       id: Value(id),
-      ownerId: Value(ownerId),
+      userId: Value(userId),
       name: Value(name),
       parentId: parentId == null && nullToAbsent
           ? const Value.absent()
@@ -423,7 +421,7 @@ class LocalLectureFolder extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalLectureFolder(
       id: serializer.fromJson<String>(json['id']),
-      ownerId: serializer.fromJson<String>(json['ownerId']),
+      userId: serializer.fromJson<String>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       parentId: serializer.fromJson<String?>(json['parentId']),
       type: serializer.fromJson<String>(json['type']),
@@ -442,7 +440,7 @@ class LocalLectureFolder extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'ownerId': serializer.toJson<String>(ownerId),
+      'userId': serializer.toJson<String>(userId),
       'name': serializer.toJson<String>(name),
       'parentId': serializer.toJson<String?>(parentId),
       'type': serializer.toJson<String>(type),
@@ -459,7 +457,7 @@ class LocalLectureFolder extends DataClass
 
   LocalLectureFolder copyWith({
     String? id,
-    String? ownerId,
+    String? userId,
     String? name,
     Value<String?> parentId = const Value.absent(),
     String? type,
@@ -473,7 +471,7 @@ class LocalLectureFolder extends DataClass
     bool? needsSync,
   }) => LocalLectureFolder(
     id: id ?? this.id,
-    ownerId: ownerId ?? this.ownerId,
+    userId: userId ?? this.userId,
     name: name ?? this.name,
     parentId: parentId.present ? parentId.value : this.parentId,
     type: type ?? this.type,
@@ -489,7 +487,7 @@ class LocalLectureFolder extends DataClass
   LocalLectureFolder copyWithCompanion(LocalLectureFoldersCompanion data) {
     return LocalLectureFolder(
       id: data.id.present ? data.id.value : this.id,
-      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      userId: data.userId.present ? data.userId.value : this.userId,
       name: data.name.present ? data.name.value : this.name,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       type: data.type.present ? data.type.value : this.type,
@@ -510,7 +508,7 @@ class LocalLectureFolder extends DataClass
   String toString() {
     return (StringBuffer('LocalLectureFolder(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('parentId: $parentId, ')
           ..write('type: $type, ')
@@ -529,7 +527,7 @@ class LocalLectureFolder extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
-    ownerId,
+    userId,
     name,
     parentId,
     type,
@@ -547,7 +545,7 @@ class LocalLectureFolder extends DataClass
       identical(this, other) ||
       (other is LocalLectureFolder &&
           other.id == this.id &&
-          other.ownerId == this.ownerId &&
+          other.userId == this.userId &&
           other.name == this.name &&
           other.parentId == this.parentId &&
           other.type == this.type &&
@@ -563,7 +561,7 @@ class LocalLectureFolder extends DataClass
 
 class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
   final Value<String> id;
-  final Value<String> ownerId;
+  final Value<String> userId;
   final Value<String> name;
   final Value<String?> parentId;
   final Value<String> type;
@@ -578,7 +576,7 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
   final Value<int> rowid;
   const LocalLectureFoldersCompanion({
     this.id = const Value.absent(),
-    this.ownerId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.name = const Value.absent(),
     this.parentId = const Value.absent(),
     this.type = const Value.absent(),
@@ -594,7 +592,7 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
   });
   LocalLectureFoldersCompanion.insert({
     required String id,
-    required String ownerId,
+    required String userId,
     required String name,
     this.parentId = const Value.absent(),
     this.type = const Value.absent(),
@@ -608,13 +606,13 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
     this.needsSync = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       ownerId = Value(ownerId),
+       userId = Value(userId),
        name = Value(name),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<LocalLectureFolder> custom({
     Expression<String>? id,
-    Expression<String>? ownerId,
+    Expression<String>? userId,
     Expression<String>? name,
     Expression<String>? parentId,
     Expression<String>? type,
@@ -630,7 +628,7 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (ownerId != null) 'owner_id': ownerId,
+      if (userId != null) 'user_id': userId,
       if (name != null) 'name': name,
       if (parentId != null) 'parent_id': parentId,
       if (type != null) 'type': type,
@@ -648,7 +646,7 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
 
   LocalLectureFoldersCompanion copyWith({
     Value<String>? id,
-    Value<String>? ownerId,
+    Value<String>? userId,
     Value<String>? name,
     Value<String?>? parentId,
     Value<String>? type,
@@ -664,7 +662,7 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
   }) {
     return LocalLectureFoldersCompanion(
       id: id ?? this.id,
-      ownerId: ownerId ?? this.ownerId,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       parentId: parentId ?? this.parentId,
       type: type ?? this.type,
@@ -686,8 +684,8 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (ownerId.present) {
-      map['owner_id'] = Variable<String>(ownerId.value);
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -732,7 +730,7 @@ class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
   String toString() {
     return (StringBuffer('LocalLectureFoldersCompanion(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('parentId: $parentId, ')
           ..write('type: $type, ')
@@ -1167,12 +1165,10 @@ class $LocalLecturesTable extends LocalLectures
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
-    'ownerId',
-  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
-  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
-    'owner_id',
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -1293,7 +1289,7 @@ class $LocalLecturesTable extends LocalLectures
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    ownerId,
+    userId,
     folderId,
     title,
     expectedChunks,
@@ -1322,13 +1318,13 @@ class $LocalLecturesTable extends LocalLectures
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('owner_id')) {
+    if (data.containsKey('user_id')) {
       context.handle(
-        _ownerIdMeta,
-        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_ownerIdMeta);
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('folder_id')) {
       context.handle(
@@ -1403,7 +1399,7 @@ class $LocalLecturesTable extends LocalLectures
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id, ownerId};
+  Set<GeneratedColumn> get $primaryKey => {id, userId};
   @override
   LocalLecture map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -1412,9 +1408,9 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      ownerId: attachedDatabase.typeMapping.read(
+      userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}owner_id'],
+        data['${effectivePrefix}user_id'],
       )!,
       folderId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1467,7 +1463,7 @@ class $LocalLecturesTable extends LocalLectures
 
 class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final String id;
-  final String ownerId;
+  final String userId;
   final String? folderId;
   final String? title;
   final int? expectedChunks;
@@ -1480,7 +1476,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final String? lastSyncError;
   const LocalLecture({
     required this.id,
-    required this.ownerId,
+    required this.userId,
     this.folderId,
     this.title,
     this.expectedChunks,
@@ -1496,7 +1492,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['owner_id'] = Variable<String>(ownerId);
+    map['user_id'] = Variable<String>(userId);
     if (!nullToAbsent || folderId != null) {
       map['folder_id'] = Variable<String>(folderId);
     }
@@ -1527,7 +1523,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   LocalLecturesCompanion toCompanion(bool nullToAbsent) {
     return LocalLecturesCompanion(
       id: Value(id),
-      ownerId: Value(ownerId),
+      userId: Value(userId),
       folderId: folderId == null && nullToAbsent
           ? const Value.absent()
           : Value(folderId),
@@ -1562,7 +1558,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalLecture(
       id: serializer.fromJson<String>(json['id']),
-      ownerId: serializer.fromJson<String>(json['ownerId']),
+      userId: serializer.fromJson<String>(json['userId']),
       folderId: serializer.fromJson<String?>(json['folderId']),
       title: serializer.fromJson<String?>(json['title']),
       expectedChunks: serializer.fromJson<int?>(json['expectedChunks']),
@@ -1580,7 +1576,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'ownerId': serializer.toJson<String>(ownerId),
+      'userId': serializer.toJson<String>(userId),
       'folderId': serializer.toJson<String?>(folderId),
       'title': serializer.toJson<String?>(title),
       'expectedChunks': serializer.toJson<int?>(expectedChunks),
@@ -1596,7 +1592,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
 
   LocalLecture copyWith({
     String? id,
-    String? ownerId,
+    String? userId,
     Value<String?> folderId = const Value.absent(),
     Value<String?> title = const Value.absent(),
     Value<int?> expectedChunks = const Value.absent(),
@@ -1609,7 +1605,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     Value<String?> lastSyncError = const Value.absent(),
   }) => LocalLecture(
     id: id ?? this.id,
-    ownerId: ownerId ?? this.ownerId,
+    userId: userId ?? this.userId,
     folderId: folderId.present ? folderId.value : this.folderId,
     title: title.present ? title.value : this.title,
     expectedChunks: expectedChunks.present
@@ -1630,7 +1626,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
       id: data.id.present ? data.id.value : this.id,
-      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      userId: data.userId.present ? data.userId.value : this.userId,
       folderId: data.folderId.present ? data.folderId.value : this.folderId,
       title: data.title.present ? data.title.value : this.title,
       expectedChunks: data.expectedChunks.present
@@ -1656,7 +1652,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   String toString() {
     return (StringBuffer('LocalLecture(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('folderId: $folderId, ')
           ..write('title: $title, ')
           ..write('expectedChunks: $expectedChunks, ')
@@ -1674,7 +1670,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   @override
   int get hashCode => Object.hash(
     id,
-    ownerId,
+    userId,
     folderId,
     title,
     expectedChunks,
@@ -1691,7 +1687,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       identical(this, other) ||
       (other is LocalLecture &&
           other.id == this.id &&
-          other.ownerId == this.ownerId &&
+          other.userId == this.userId &&
           other.folderId == this.folderId &&
           other.title == this.title &&
           other.expectedChunks == this.expectedChunks &&
@@ -1706,7 +1702,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
 
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<String> id;
-  final Value<String> ownerId;
+  final Value<String> userId;
   final Value<String?> folderId;
   final Value<String?> title;
   final Value<int?> expectedChunks;
@@ -1720,7 +1716,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
-    this.ownerId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.folderId = const Value.absent(),
     this.title = const Value.absent(),
     this.expectedChunks = const Value.absent(),
@@ -1735,7 +1731,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   });
   LocalLecturesCompanion.insert({
     required String id,
-    required String ownerId,
+    required String userId,
     this.folderId = const Value.absent(),
     this.title = const Value.absent(),
     this.expectedChunks = const Value.absent(),
@@ -1748,10 +1744,10 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.lastSyncError = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       ownerId = Value(ownerId);
+       userId = Value(userId);
   static Insertable<LocalLecture> custom({
     Expression<String>? id,
-    Expression<String>? ownerId,
+    Expression<String>? userId,
     Expression<String>? folderId,
     Expression<String>? title,
     Expression<int>? expectedChunks,
@@ -1766,7 +1762,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (ownerId != null) 'owner_id': ownerId,
+      if (userId != null) 'user_id': userId,
       if (folderId != null) 'folder_id': folderId,
       if (title != null) 'title': title,
       if (expectedChunks != null) 'expected_chunks': expectedChunks,
@@ -1783,7 +1779,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
 
   LocalLecturesCompanion copyWith({
     Value<String>? id,
-    Value<String>? ownerId,
+    Value<String>? userId,
     Value<String?>? folderId,
     Value<String?>? title,
     Value<int?>? expectedChunks,
@@ -1798,7 +1794,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   }) {
     return LocalLecturesCompanion(
       id: id ?? this.id,
-      ownerId: ownerId ?? this.ownerId,
+      userId: userId ?? this.userId,
       folderId: folderId ?? this.folderId,
       title: title ?? this.title,
       expectedChunks: expectedChunks ?? this.expectedChunks,
@@ -1819,8 +1815,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (ownerId.present) {
-      map['owner_id'] = Variable<String>(ownerId.value);
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (folderId.present) {
       map['folder_id'] = Variable<String>(folderId.value);
@@ -1862,7 +1858,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   String toString() {
     return (StringBuffer('LocalLecturesCompanion(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('folderId: $folderId, ')
           ..write('title: $title, ')
           ..write('expectedChunks: $expectedChunks, ')
@@ -1894,12 +1890,10 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
-    'ownerId',
-  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
-  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
-    'owner_id',
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2055,7 +2049,7 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    ownerId,
+    userId,
     lectureId,
     type,
     startTime,
@@ -2087,13 +2081,13 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('owner_id')) {
+    if (data.containsKey('user_id')) {
       context.handle(
-        _ownerIdMeta,
-        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_ownerIdMeta);
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('lecture_id')) {
       context.handle(
@@ -2199,7 +2193,7 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id, ownerId};
+  Set<GeneratedColumn> get $primaryKey => {id, userId};
   @override
   LocalLectureAsset map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -2208,9 +2202,9 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      ownerId: attachedDatabase.typeMapping.read(
+      userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}owner_id'],
+        data['${effectivePrefix}user_id'],
       )!,
       lectureId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2276,7 +2270,7 @@ class $LocalLectureAssetsTable extends LocalLectureAssets
 class LocalLectureAsset extends DataClass
     implements Insertable<LocalLectureAsset> {
   final String id;
-  final String ownerId;
+  final String userId;
   final String lectureId;
   final String type;
   final double startTime;
@@ -2292,7 +2286,7 @@ class LocalLectureAsset extends DataClass
   final DateTime updatedAt;
   const LocalLectureAsset({
     required this.id,
-    required this.ownerId,
+    required this.userId,
     required this.lectureId,
     required this.type,
     required this.startTime,
@@ -2311,7 +2305,7 @@ class LocalLectureAsset extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['owner_id'] = Variable<String>(ownerId);
+    map['user_id'] = Variable<String>(userId);
     map['lecture_id'] = Variable<String>(lectureId);
     map['type'] = Variable<String>(type);
     map['start_time'] = Variable<double>(startTime);
@@ -2341,7 +2335,7 @@ class LocalLectureAsset extends DataClass
   LocalLectureAssetsCompanion toCompanion(bool nullToAbsent) {
     return LocalLectureAssetsCompanion(
       id: Value(id),
-      ownerId: Value(ownerId),
+      userId: Value(userId),
       lectureId: Value(lectureId),
       type: Value(type),
       startTime: Value(startTime),
@@ -2375,7 +2369,7 @@ class LocalLectureAsset extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalLectureAsset(
       id: serializer.fromJson<String>(json['id']),
-      ownerId: serializer.fromJson<String>(json['ownerId']),
+      userId: serializer.fromJson<String>(json['userId']),
       lectureId: serializer.fromJson<String>(json['lectureId']),
       type: serializer.fromJson<String>(json['type']),
       startTime: serializer.fromJson<double>(json['startTime']),
@@ -2396,7 +2390,7 @@ class LocalLectureAsset extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'ownerId': serializer.toJson<String>(ownerId),
+      'userId': serializer.toJson<String>(userId),
       'lectureId': serializer.toJson<String>(lectureId),
       'type': serializer.toJson<String>(type),
       'startTime': serializer.toJson<double>(startTime),
@@ -2415,7 +2409,7 @@ class LocalLectureAsset extends DataClass
 
   LocalLectureAsset copyWith({
     String? id,
-    String? ownerId,
+    String? userId,
     String? lectureId,
     String? type,
     double? startTime,
@@ -2431,7 +2425,7 @@ class LocalLectureAsset extends DataClass
     DateTime? updatedAt,
   }) => LocalLectureAsset(
     id: id ?? this.id,
-    ownerId: ownerId ?? this.ownerId,
+    userId: userId ?? this.userId,
     lectureId: lectureId ?? this.lectureId,
     type: type ?? this.type,
     startTime: startTime ?? this.startTime,
@@ -2451,7 +2445,7 @@ class LocalLectureAsset extends DataClass
   LocalLectureAsset copyWithCompanion(LocalLectureAssetsCompanion data) {
     return LocalLectureAsset(
       id: data.id.present ? data.id.value : this.id,
-      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      userId: data.userId.present ? data.userId.value : this.userId,
       lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
       type: data.type.present ? data.type.value : this.type,
       startTime: data.startTime.present ? data.startTime.value : this.startTime,
@@ -2484,7 +2478,7 @@ class LocalLectureAsset extends DataClass
   String toString() {
     return (StringBuffer('LocalLectureAsset(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('lectureId: $lectureId, ')
           ..write('type: $type, ')
           ..write('startTime: $startTime, ')
@@ -2505,7 +2499,7 @@ class LocalLectureAsset extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
-    ownerId,
+    userId,
     lectureId,
     type,
     startTime,
@@ -2525,7 +2519,7 @@ class LocalLectureAsset extends DataClass
       identical(this, other) ||
       (other is LocalLectureAsset &&
           other.id == this.id &&
-          other.ownerId == this.ownerId &&
+          other.userId == this.userId &&
           other.lectureId == this.lectureId &&
           other.type == this.type &&
           other.startTime == this.startTime &&
@@ -2543,7 +2537,7 @@ class LocalLectureAsset extends DataClass
 
 class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   final Value<String> id;
-  final Value<String> ownerId;
+  final Value<String> userId;
   final Value<String> lectureId;
   final Value<String> type;
   final Value<double> startTime;
@@ -2560,7 +2554,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   final Value<int> rowid;
   const LocalLectureAssetsCompanion({
     this.id = const Value.absent(),
-    this.ownerId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.lectureId = const Value.absent(),
     this.type = const Value.absent(),
     this.startTime = const Value.absent(),
@@ -2578,7 +2572,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   });
   LocalLectureAssetsCompanion.insert({
     required String id,
-    required String ownerId,
+    required String userId,
     required String lectureId,
     required String type,
     this.startTime = const Value.absent(),
@@ -2594,12 +2588,12 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       ownerId = Value(ownerId),
+       userId = Value(userId),
        lectureId = Value(lectureId),
        type = Value(type);
   static Insertable<LocalLectureAsset> custom({
     Expression<String>? id,
-    Expression<String>? ownerId,
+    Expression<String>? userId,
     Expression<String>? lectureId,
     Expression<String>? type,
     Expression<double>? startTime,
@@ -2617,7 +2611,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (ownerId != null) 'owner_id': ownerId,
+      if (userId != null) 'user_id': userId,
       if (lectureId != null) 'lecture_id': lectureId,
       if (type != null) 'type': type,
       if (startTime != null) 'start_time': startTime,
@@ -2637,7 +2631,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
 
   LocalLectureAssetsCompanion copyWith({
     Value<String>? id,
-    Value<String>? ownerId,
+    Value<String>? userId,
     Value<String>? lectureId,
     Value<String>? type,
     Value<double>? startTime,
@@ -2655,7 +2649,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   }) {
     return LocalLectureAssetsCompanion(
       id: id ?? this.id,
-      ownerId: ownerId ?? this.ownerId,
+      userId: userId ?? this.userId,
       lectureId: lectureId ?? this.lectureId,
       type: type ?? this.type,
       startTime: startTime ?? this.startTime,
@@ -2679,8 +2673,8 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (ownerId.present) {
-      map['owner_id'] = Variable<String>(ownerId.value);
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (lectureId.present) {
       map['lecture_id'] = Variable<String>(lectureId.value);
@@ -2731,7 +2725,7 @@ class LocalLectureAssetsCompanion extends UpdateCompanion<LocalLectureAsset> {
   String toString() {
     return (StringBuffer('LocalLectureAssetsCompanion(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('lectureId: $lectureId, ')
           ..write('type: $type, ')
           ..write('startTime: $startTime, ')
@@ -2766,12 +2760,10 @@ class $LocalUploadJobsTable extends LocalUploadJobs
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
-    'ownerId',
-  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
-  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
-    'owner_id',
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2880,7 +2872,7 @@ class $LocalUploadJobsTable extends LocalUploadJobs
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    ownerId,
+    userId,
     kind,
     lectureId,
     assetId,
@@ -2908,13 +2900,13 @@ class $LocalUploadJobsTable extends LocalUploadJobs
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('owner_id')) {
+    if (data.containsKey('user_id')) {
       context.handle(
-        _ownerIdMeta,
-        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_ownerIdMeta);
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('kind')) {
       context.handle(
@@ -2984,7 +2976,7 @@ class $LocalUploadJobsTable extends LocalUploadJobs
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id, ownerId};
+  Set<GeneratedColumn> get $primaryKey => {id, userId};
   @override
   LocalUploadJob map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -2993,9 +2985,9 @@ class $LocalUploadJobsTable extends LocalUploadJobs
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      ownerId: attachedDatabase.typeMapping.read(
+      userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}owner_id'],
+        data['${effectivePrefix}user_id'],
       )!,
       kind: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -3044,7 +3036,7 @@ class $LocalUploadJobsTable extends LocalUploadJobs
 
 class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   final String id;
-  final String ownerId;
+  final String userId;
   final String kind;
   final String lectureId;
   final String assetId;
@@ -3056,7 +3048,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   final DateTime updatedAt;
   const LocalUploadJob({
     required this.id,
-    required this.ownerId,
+    required this.userId,
     required this.kind,
     required this.lectureId,
     required this.assetId,
@@ -3071,7 +3063,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['owner_id'] = Variable<String>(ownerId);
+    map['user_id'] = Variable<String>(userId);
     map['kind'] = Variable<String>(kind);
     map['lecture_id'] = Variable<String>(lectureId);
     map['asset_id'] = Variable<String>(assetId);
@@ -3091,7 +3083,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   LocalUploadJobsCompanion toCompanion(bool nullToAbsent) {
     return LocalUploadJobsCompanion(
       id: Value(id),
-      ownerId: Value(ownerId),
+      userId: Value(userId),
       kind: Value(kind),
       lectureId: Value(lectureId),
       assetId: Value(assetId),
@@ -3115,7 +3107,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalUploadJob(
       id: serializer.fromJson<String>(json['id']),
-      ownerId: serializer.fromJson<String>(json['ownerId']),
+      userId: serializer.fromJson<String>(json['userId']),
       kind: serializer.fromJson<String>(json['kind']),
       lectureId: serializer.fromJson<String>(json['lectureId']),
       assetId: serializer.fromJson<String>(json['assetId']),
@@ -3132,7 +3124,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'ownerId': serializer.toJson<String>(ownerId),
+      'userId': serializer.toJson<String>(userId),
       'kind': serializer.toJson<String>(kind),
       'lectureId': serializer.toJson<String>(lectureId),
       'assetId': serializer.toJson<String>(assetId),
@@ -3147,7 +3139,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
 
   LocalUploadJob copyWith({
     String? id,
-    String? ownerId,
+    String? userId,
     String? kind,
     String? lectureId,
     String? assetId,
@@ -3159,7 +3151,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
     DateTime? updatedAt,
   }) => LocalUploadJob(
     id: id ?? this.id,
-    ownerId: ownerId ?? this.ownerId,
+    userId: userId ?? this.userId,
     kind: kind ?? this.kind,
     lectureId: lectureId ?? this.lectureId,
     assetId: assetId ?? this.assetId,
@@ -3173,7 +3165,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   LocalUploadJob copyWithCompanion(LocalUploadJobsCompanion data) {
     return LocalUploadJob(
       id: data.id.present ? data.id.value : this.id,
-      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      userId: data.userId.present ? data.userId.value : this.userId,
       kind: data.kind.present ? data.kind.value : this.kind,
       lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
       assetId: data.assetId.present ? data.assetId.value : this.assetId,
@@ -3194,7 +3186,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   String toString() {
     return (StringBuffer('LocalUploadJob(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('kind: $kind, ')
           ..write('lectureId: $lectureId, ')
           ..write('assetId: $assetId, ')
@@ -3211,7 +3203,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
   @override
   int get hashCode => Object.hash(
     id,
-    ownerId,
+    userId,
     kind,
     lectureId,
     assetId,
@@ -3227,7 +3219,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
       identical(this, other) ||
       (other is LocalUploadJob &&
           other.id == this.id &&
-          other.ownerId == this.ownerId &&
+          other.userId == this.userId &&
           other.kind == this.kind &&
           other.lectureId == this.lectureId &&
           other.assetId == this.assetId &&
@@ -3241,7 +3233,7 @@ class LocalUploadJob extends DataClass implements Insertable<LocalUploadJob> {
 
 class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
   final Value<String> id;
-  final Value<String> ownerId;
+  final Value<String> userId;
   final Value<String> kind;
   final Value<String> lectureId;
   final Value<String> assetId;
@@ -3254,7 +3246,7 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
   final Value<int> rowid;
   const LocalUploadJobsCompanion({
     this.id = const Value.absent(),
-    this.ownerId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.kind = const Value.absent(),
     this.lectureId = const Value.absent(),
     this.assetId = const Value.absent(),
@@ -3268,7 +3260,7 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
   });
   LocalUploadJobsCompanion.insert({
     required String id,
-    required String ownerId,
+    required String userId,
     this.kind = const Value.absent(),
     required String lectureId,
     required String assetId,
@@ -3280,12 +3272,12 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       ownerId = Value(ownerId),
+       userId = Value(userId),
        lectureId = Value(lectureId),
        assetId = Value(assetId);
   static Insertable<LocalUploadJob> custom({
     Expression<String>? id,
-    Expression<String>? ownerId,
+    Expression<String>? userId,
     Expression<String>? kind,
     Expression<String>? lectureId,
     Expression<String>? assetId,
@@ -3299,7 +3291,7 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (ownerId != null) 'owner_id': ownerId,
+      if (userId != null) 'user_id': userId,
       if (kind != null) 'kind': kind,
       if (lectureId != null) 'lecture_id': lectureId,
       if (assetId != null) 'asset_id': assetId,
@@ -3315,7 +3307,7 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
 
   LocalUploadJobsCompanion copyWith({
     Value<String>? id,
-    Value<String>? ownerId,
+    Value<String>? userId,
     Value<String>? kind,
     Value<String>? lectureId,
     Value<String>? assetId,
@@ -3329,7 +3321,7 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
   }) {
     return LocalUploadJobsCompanion(
       id: id ?? this.id,
-      ownerId: ownerId ?? this.ownerId,
+      userId: userId ?? this.userId,
       kind: kind ?? this.kind,
       lectureId: lectureId ?? this.lectureId,
       assetId: assetId ?? this.assetId,
@@ -3349,8 +3341,8 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (ownerId.present) {
-      map['owner_id'] = Variable<String>(ownerId.value);
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (kind.present) {
       map['kind'] = Variable<String>(kind.value);
@@ -3389,7 +3381,7 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
   String toString() {
     return (StringBuffer('LocalUploadJobsCompanion(')
           ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
+          ..write('userId: $userId, ')
           ..write('kind: $kind, ')
           ..write('lectureId: $lectureId, ')
           ..write('assetId: $assetId, ')
@@ -3433,7 +3425,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$LocalLectureFoldersTableCreateCompanionBuilder =
     LocalLectureFoldersCompanion Function({
       required String id,
-      required String ownerId,
+      required String userId,
       required String name,
       Value<String?> parentId,
       Value<String> type,
@@ -3450,7 +3442,7 @@ typedef $$LocalLectureFoldersTableCreateCompanionBuilder =
 typedef $$LocalLectureFoldersTableUpdateCompanionBuilder =
     LocalLectureFoldersCompanion Function({
       Value<String> id,
-      Value<String> ownerId,
+      Value<String> userId,
       Value<String> name,
       Value<String?> parentId,
       Value<String> type,
@@ -3479,8 +3471,8 @@ class $$LocalLectureFoldersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3554,8 +3546,8 @@ class $$LocalLectureFoldersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3627,8 +3619,8 @@ class $$LocalLectureFoldersTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get ownerId =>
-      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -3710,7 +3702,7 @@ class $$LocalLectureFoldersTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> ownerId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<String> type = const Value.absent(),
@@ -3725,7 +3717,7 @@ class $$LocalLectureFoldersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalLectureFoldersCompanion(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 name: name,
                 parentId: parentId,
                 type: type,
@@ -3742,7 +3734,7 @@ class $$LocalLectureFoldersTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String ownerId,
+                required String userId,
                 required String name,
                 Value<String?> parentId = const Value.absent(),
                 Value<String> type = const Value.absent(),
@@ -3757,7 +3749,7 @@ class $$LocalLectureFoldersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalLectureFoldersCompanion.insert(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 name: name,
                 parentId: parentId,
                 type: type,
@@ -4022,7 +4014,7 @@ typedef $$LocalOutboxTableProcessedTableManager =
 typedef $$LocalLecturesTableCreateCompanionBuilder =
     LocalLecturesCompanion Function({
       required String id,
-      required String ownerId,
+      required String userId,
       Value<String?> folderId,
       Value<String?> title,
       Value<int?> expectedChunks,
@@ -4038,7 +4030,7 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
 typedef $$LocalLecturesTableUpdateCompanionBuilder =
     LocalLecturesCompanion Function({
       Value<String> id,
-      Value<String> ownerId,
+      Value<String> userId,
       Value<String?> folderId,
       Value<String?> title,
       Value<int?> expectedChunks,
@@ -4066,8 +4058,8 @@ class $$LocalLecturesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4136,8 +4128,8 @@ class $$LocalLecturesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4204,8 +4196,8 @@ class $$LocalLecturesTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get ownerId =>
-      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get folderId =>
       $composableBuilder(column: $table.folderId, builder: (column) => column);
@@ -4278,7 +4270,7 @@ class $$LocalLecturesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> ownerId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String?> folderId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<int?> expectedChunks = const Value.absent(),
@@ -4292,7 +4284,7 @@ class $$LocalLecturesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 folderId: folderId,
                 title: title,
                 expectedChunks: expectedChunks,
@@ -4308,7 +4300,7 @@ class $$LocalLecturesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String ownerId,
+                required String userId,
                 Value<String?> folderId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<int?> expectedChunks = const Value.absent(),
@@ -4322,7 +4314,7 @@ class $$LocalLecturesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 folderId: folderId,
                 title: title,
                 expectedChunks: expectedChunks,
@@ -4363,7 +4355,7 @@ typedef $$LocalLecturesTableProcessedTableManager =
 typedef $$LocalLectureAssetsTableCreateCompanionBuilder =
     LocalLectureAssetsCompanion Function({
       required String id,
-      required String ownerId,
+      required String userId,
       required String lectureId,
       required String type,
       Value<double> startTime,
@@ -4382,7 +4374,7 @@ typedef $$LocalLectureAssetsTableCreateCompanionBuilder =
 typedef $$LocalLectureAssetsTableUpdateCompanionBuilder =
     LocalLectureAssetsCompanion Function({
       Value<String> id,
-      Value<String> ownerId,
+      Value<String> userId,
       Value<String> lectureId,
       Value<String> type,
       Value<double> startTime,
@@ -4413,8 +4405,8 @@ class $$LocalLectureAssetsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4498,8 +4490,8 @@ class $$LocalLectureAssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4581,8 +4573,8 @@ class $$LocalLectureAssetsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get ownerId =>
-      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get lectureId =>
       $composableBuilder(column: $table.lectureId, builder: (column) => column);
@@ -4677,7 +4669,7 @@ class $$LocalLectureAssetsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> ownerId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> lectureId = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<double> startTime = const Value.absent(),
@@ -4694,7 +4686,7 @@ class $$LocalLectureAssetsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalLectureAssetsCompanion(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 lectureId: lectureId,
                 type: type,
                 startTime: startTime,
@@ -4713,7 +4705,7 @@ class $$LocalLectureAssetsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String ownerId,
+                required String userId,
                 required String lectureId,
                 required String type,
                 Value<double> startTime = const Value.absent(),
@@ -4730,7 +4722,7 @@ class $$LocalLectureAssetsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalLectureAssetsCompanion.insert(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 lectureId: lectureId,
                 type: type,
                 startTime: startTime,
@@ -4778,7 +4770,7 @@ typedef $$LocalLectureAssetsTableProcessedTableManager =
 typedef $$LocalUploadJobsTableCreateCompanionBuilder =
     LocalUploadJobsCompanion Function({
       required String id,
-      required String ownerId,
+      required String userId,
       Value<String> kind,
       required String lectureId,
       required String assetId,
@@ -4793,7 +4785,7 @@ typedef $$LocalUploadJobsTableCreateCompanionBuilder =
 typedef $$LocalUploadJobsTableUpdateCompanionBuilder =
     LocalUploadJobsCompanion Function({
       Value<String> id,
-      Value<String> ownerId,
+      Value<String> userId,
       Value<String> kind,
       Value<String> lectureId,
       Value<String> assetId,
@@ -4820,8 +4812,8 @@ class $$LocalUploadJobsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4885,8 +4877,8 @@ class $$LocalUploadJobsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4948,8 +4940,8 @@ class $$LocalUploadJobsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get ownerId =>
-      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
@@ -5021,7 +5013,7 @@ class $$LocalUploadJobsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> ownerId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> kind = const Value.absent(),
                 Value<String> lectureId = const Value.absent(),
                 Value<String> assetId = const Value.absent(),
@@ -5034,7 +5026,7 @@ class $$LocalUploadJobsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalUploadJobsCompanion(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 kind: kind,
                 lectureId: lectureId,
                 assetId: assetId,
@@ -5049,7 +5041,7 @@ class $$LocalUploadJobsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String ownerId,
+                required String userId,
                 Value<String> kind = const Value.absent(),
                 required String lectureId,
                 required String assetId,
@@ -5062,7 +5054,7 @@ class $$LocalUploadJobsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => LocalUploadJobsCompanion.insert(
                 id: id,
-                ownerId: ownerId,
+                userId: userId,
                 kind: kind,
                 lectureId: lectureId,
                 assetId: assetId,

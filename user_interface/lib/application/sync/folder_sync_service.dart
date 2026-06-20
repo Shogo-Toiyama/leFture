@@ -23,8 +23,8 @@ class FolderSyncService {
 
     var query = supabase
         .from(_table)
-        .select('id, owner_id, name, parent_id, type, icon, color, is_favorite, sort_order, created_at, updated_at, deleted_at')
-        .eq('owner_id', uid);
+        .select('id, user_id, name, parent_id, type, icon, color, is_favorite, sort_order, created_at, updated_at, deleted_at')
+        .eq('user_id', uid);
 
     if (lastPullAt != null) {
       query = query.gt('updated_at', lastPullAt.toUtc().toIso8601String());
@@ -36,7 +36,7 @@ class FolderSyncService {
       final m = e as Map<String, dynamic>;
       return LocalLectureFoldersCompanion(
         id: Value(m['id'] as String),
-        ownerId: Value(m['owner_id'] as String),
+        userId: Value(m['user_id'] as String),
         name: Value((m['name'] as String?) ?? ''),
         parentId: Value(m['parent_id'] as String?),
         type: Value((m['type'] as String?) ?? 'binder'),
@@ -76,11 +76,11 @@ class FolderSyncService {
             await supabase.from(_table).insert({
               'id': payload['id'],
               'name': payload['name'],
-              'owner_id': uid,
+              'user_id': uid,
               'parent_id': payload['parent_id'],
               'type': payload['type'],
-              // owner_idはDB default auth.uid() が理想
-              // ただし id指定insertでdefaultが効かない設定があるなら owner_id入れる
+              // user_idはDB default auth.uid() が理想
+              // ただし id指定insertでdefaultが効かない設定があるなら user_id入れる
             });
             break;
 
@@ -89,7 +89,7 @@ class FolderSyncService {
                 .from(_table)
                 .update({'name': payload['name']})
                 .eq('id', item.entityId)
-                .eq('owner_id', uid);
+                .eq('user_id', uid);
             break;
 
           case 'favorite':
@@ -97,7 +97,7 @@ class FolderSyncService {
                 .from(_table)
                 .update({'is_favorite': payload['is_favorite']})
                 .eq('id', item.entityId)
-                .eq('owner_id', uid);
+                .eq('user_id', uid);
             break;
 
           case 'delete':
@@ -105,7 +105,7 @@ class FolderSyncService {
                 .from(_table)
                 .update({'deleted_at': payload['deleted_at']})
                 .eq('id', item.entityId)
-                .eq('owner_id', uid);
+                .eq('user_id', uid);
             break;
 
           default:
@@ -137,7 +137,7 @@ class FolderSyncService {
     await db.deleteAllOutbox();
 
     // ローカルフォルダを自分の分だけ消す
-    await db.deleteAllLocalFolders(ownerId: uid);
+    await db.deleteAllLocalFolders(userId: uid);
   }
 
 }

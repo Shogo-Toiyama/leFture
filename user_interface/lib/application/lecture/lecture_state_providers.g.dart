@@ -64,7 +64,7 @@ final class AudioStatusProvider
   }
 }
 
-String _$audioStatusHash() => r'702392b458c75711fac94c5e517d1b58918df007';
+String _$audioStatusHash() => r'8966b45292f2ceb44f78e2289eb297ac8b1ffbeb';
 
 final class AudioStatusFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<AudioStatus>, String> {

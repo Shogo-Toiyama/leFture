@@ -20,7 +20,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
     final rows = await supabase
       .from(_table)
       .select()
-      .eq('owner_id', uid)
+      .eq('user_id', uid)
       .isFilter('parent_id', null)
       .isFilter('deleted_at', null)
       .order('sort_order', ascending: true)
@@ -36,7 +36,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
     final rows = await supabase
         .from(_table)
         .select()
-        .eq('owner_id', uid)
+        .eq('user_id', uid)
         .eq('parent_id', parentId)
         .isFilter('deleted_at', null)
         .order('sort_order', ascending: true)
@@ -71,7 +71,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
           'name': newName,
         })
         .eq('id', folderId)
-        .eq('owner_id', uid);
+        .eq('user_id', uid);
   }
 
   @override
@@ -84,7 +84,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
           'deleted_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', folderId)
-        .eq('owner_id', uid);
+        .eq('user_id', uid);
   }
 
   @override
@@ -95,7 +95,7 @@ class LectureFolderRepositorySupabase implements LectureFolderRepository{
         .from('lecture_folders')
         .update({'is_favorite': isFavorite})
         .eq('id', folderId)
-        .eq('owner_id', uid);
+        .eq('user_id', uid);
   }
 
 }

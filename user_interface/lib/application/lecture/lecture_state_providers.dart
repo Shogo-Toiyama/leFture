@@ -48,13 +48,12 @@ Future<AudioStatus> audioStatus(Ref ref, String lectureId) async {
   final hasLocal = File(localPath).existsSync();
 
   // B. クラウド (Supabase) の確認
-  // lecture_assets テーブルに type='audio' のレコードがあるか確認
+  // lecture_transcripts テーブルにその講義のレコードがあるか確認
   // (同期を待たず確実に判定するため、直接Supabaseに問い合わせます)
   final res = await supabase
-      .from('lecture_assets')
+      .from('lecture_transcripts')
       .count()
-      .eq('lecture_id', lectureId)
-      .eq('type', 'audio');
+      .eq('lecture_id', lectureId);
   
   final hasCloud = res > 0;
 

@@ -15,7 +15,7 @@ class LectureWriteService {
 
   Future<void> upsertLecture({
     required String lectureId,
-    required String ownerId,
+    required String userId,
     String? folderId,
     String? title,
     DateTime? lectureDateTimeUtc,
@@ -24,7 +24,7 @@ class LectureWriteService {
 
     final payload = <String, dynamic>{
       'id': lectureId,
-      'owner_id': ownerId,
+      'user_id': userId,
       'folder_id': folderId,
       'title': (title != null && title.trim().isNotEmpty) ? title.trim() : 'Untitled Lecture',
       'lecture_datetime': (lectureDateTimeUtc ?? DateTime.now().toUtc()).toIso8601String(),
@@ -32,29 +32,6 @@ class LectureWriteService {
     };
 
     await _client.from('lectures').upsert(
-      payload,
-      onConflict: 'id',
-    );
-  }
-
-  Future<void> upsertAudioAsset({
-    required String assetId,
-    required String lectureId,
-    required String ownerId,
-    required String bucket,
-    required String path,
-  }) async {
-    final payload = <String, dynamic>{
-      'id': assetId,
-      'lecture_id': lectureId,
-      'owner_id': ownerId,
-      'type': 'audio',
-      'storage_bucket': bucket,
-      'storage_path': path,
-    };
-
-    // retry/duplicateに強いように upsert
-    await _client.from('lecture_assets').upsert(
       payload,
       onConflict: 'id',
     );

@@ -9,8 +9,8 @@ part 'app_database.g.dart';
 class LocalLectureFolders extends Table {
   TextColumn get id => text()();
 
-  // Supabaseのowner_id（将来の検索/フィルタ用）
-  TextColumn get ownerId => text()();
+  // Supabaseのuser_id（将来の検索/フィルタ用）
+  TextColumn get userId => text()();
 
   TextColumn get name => text()();
 
@@ -59,7 +59,7 @@ class LocalOutbox extends Table {
 
 class LocalLectures extends Table {
   TextColumn get id => text()(); // uuid
-  TextColumn get ownerId => text()();
+  TextColumn get userId => text()();
 
   TextColumn get folderId => text().nullable()(); // null = Home
   TextColumn get title => text().nullable()();
@@ -81,12 +81,12 @@ class LocalLectures extends Table {
   TextColumn get lastSyncError => text().nullable()();
 
   @override
-  Set<Column> get primaryKey => {id, ownerId};
+  Set<Column> get primaryKey => {id, userId};
 }
 
 class LocalLectureAssets extends Table {
   TextColumn get id => text()(); // uuid
-  TextColumn get ownerId => text()();
+  TextColumn get userId => text()();
   TextColumn get lectureId => text()(); // uuid
 
   TextColumn get type => text()(); // "audio"
@@ -112,12 +112,12 @@ class LocalLectureAssets extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
-  Set<Column> get primaryKey => {id, ownerId};
+  Set<Column> get primaryKey => {id, userId};
 }
 
 class LocalUploadJobs extends Table {
   TextColumn get id => text()(); // uuid
-  TextColumn get ownerId => text()();
+  TextColumn get userId => text()();
 
   TextColumn get kind => text().withDefault(const Constant('audio_upload'))();
 
@@ -135,7 +135,7 @@ class LocalUploadJobs extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
-  Set<Column> get primaryKey => {id, ownerId};
+  Set<Column> get primaryKey => {id, userId};
 }
 
 @DriftDatabase(
@@ -168,37 +168,37 @@ class AppDatabase extends _$AppDatabase {
   );
 
   // --- Folders: read ---
-  Future<List<LocalLectureFolder>> listRootFolders(String ownerId) {
+  Future<List<LocalLectureFolder>> listRootFolders(String userId) {
     return (select(localLectureFolders)
-          ..where((t) => t.ownerId.equals(ownerId) & t.parentId.isNull() & t.deletedAt.isNull())
+          ..where((t) => t.userId.equals(userId) & t.parentId.isNull() & t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
         .get();
   }
 
-  Future<List<LocalLectureFolder>> listChildren(String ownerId, String parentId) {
+  Future<List<LocalLectureFolder>> listChildren(String userId, String parentId) {
     return (select(localLectureFolders)
-          ..where((t) => t.ownerId.equals(ownerId) & t.parentId.equals(parentId) & t.deletedAt.isNull())
+          ..where((t) => t.userId.equals(userId) & t.parentId.equals(parentId) & t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
         .get();
   }
 
-  Stream<List<LocalLectureFolder>> watchRootFolders(String ownerId) {
+  Stream<List<LocalLectureFolder>> watchRootFolders(String userId) {
     return (select(localLectureFolders)
-          ..where((t) => t.ownerId.equals(ownerId) & t.parentId.isNull() & t.deletedAt.isNull())
+          ..where((t) => t.userId.equals(userId) & t.parentId.isNull() & t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
         .watch();
   }
 
-  Stream<List<LocalLectureFolder>> watchChildren(String ownerId, String parentId) {
+  Stream<List<LocalLectureFolder>> watchChildren(String userId, String parentId) {
     return (select(localLectureFolders)
-          ..where((t) => t.ownerId.equals(ownerId) & t.parentId.equals(parentId) & t.deletedAt.isNull())
+          ..where((t) => t.userId.equals(userId) & t.parentId.equals(parentId) & t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
         .watch();
   }
 
-  Stream<List<LocalLecture>> watchLectures(String ownerId, String? folderId) {
+  Stream<List<LocalLecture>> watchLectures(String userId, String? folderId) {
     final query = select(localLectures)
-      ..where((t) => t.ownerId.equals(ownerId) & t.deletedAt.isNull())
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
 
     if (folderId == null) {
@@ -243,13 +243,13 @@ class AppDatabase extends _$AppDatabase {
     await (delete(localOutbox)..where((t) => t.id.isIn(ids))).go();
   }
 
-  Future<void> resetFoldersFromCloud({required String ownerId}) async {
+  Future<void> resetFoldersFromCloud({required String userId}) async {
     await transaction(() async {
       // 1) outbox全削除（安全：Supabaseには触れない）
       await delete(localOutbox).go();
 
-      // 2) ローカルのフォルダも全削除（自分のowner分だけ）
-      await (delete(localLectureFolders)..where((t) => t.ownerId.equals(ownerId))).go();
+      // 2) ローカルのフォルダも全削除（自分のuser分だけ）
+      await (delete(localLectureFolders)..where((t) => t.userId.equals(userId))).go();
     });
   }
 
@@ -257,21 +257,21 @@ class AppDatabase extends _$AppDatabase {
     await delete(localOutbox).go();
   }
 
-  Future<void> deleteAllLocalFolders({required String ownerId}) async {
-    await (delete(localLectureFolders)..where((t) => t.ownerId.equals(ownerId))).go();
+  Future<void> deleteAllLocalFolders({required String userId}) async {
+    await (delete(localLectureFolders)..where((t) => t.userId.equals(userId))).go();
   }
 
   Future<LocalLectureFolder?> getFolderById({
-    required String ownerId,
+    required String userId,
     required String folderId,
   }) {
     return (select(localLectureFolders)
-          ..where((t) => t.ownerId.equals(ownerId) & t.id.equals(folderId)))
+          ..where((t) => t.userId.equals(userId) & t.id.equals(folderId)))
         .getSingleOrNull();
   }
 
   Future<List<LocalLectureFolder>> getFolderAncestors({
-    required String ownerId,
+    required String userId,
     required String folderId,
   }) async {
     final chain = <LocalLectureFolder>[];
@@ -281,7 +281,7 @@ class AppDatabase extends _$AppDatabase {
     while (current != null && !visited.contains(current) && visited.length < 50) {
       visited.add(current);
 
-      final row = await getFolderById(ownerId: ownerId, folderId: current);
+      final row = await getFolderById(userId: userId, folderId: current);
       if (row == null) break;
 
       chain.add(row);

@@ -1,7 +1,7 @@
 // lib/domain/entities/lecture.dart
 class Lecture {
   final String id;
-  final String ownerId;
+  final String userId;
 
   /// 録音開始直後は未分類でも良い設計にしたいなら nullable にする
   final String? folderId;
@@ -20,7 +20,7 @@ class Lecture {
 
   Lecture({
     required this.id,
-    required this.ownerId,
+    required this.userId,
     required this.folderId,
     required this.title,
     required this.isDeleted,
@@ -33,7 +33,7 @@ class Lecture {
   factory Lecture.fromMap(Map<String, dynamic> map) {
     return Lecture(
       id: map['id'] as String,
-      ownerId: map['owner_id'] as String,
+      userId: map['user_id'] as String,
       folderId: map['folder_id'] as String?,
       title: map['title'] as String?,
       isDeleted: (map['is_deleted'] as bool?) ?? false,
@@ -49,7 +49,7 @@ class Lecture {
   Map<String, dynamic> toUpsertMap() {
     final m = <String, dynamic>{
       'id': id,
-      'owner_id': ownerId,
+      'user_id': userId,
       'is_deleted': isDeleted,
       'lecture_datetime': lectureDatetime.toIso8601String(),
       'title': title,

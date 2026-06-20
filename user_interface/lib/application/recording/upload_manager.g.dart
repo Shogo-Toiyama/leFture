@@ -48,4 +48,4 @@ final class UploadManagerProvider
   }
 }
 
-String _$uploadManagerHash() => r'78a72f5ab2822b9e64c64c186c6d9be4238dad79';
+String _$uploadManagerHash() => r'c09c735a2e04e9fe4ebd7469507c6b863a24eeeb';

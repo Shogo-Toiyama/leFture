@@ -68,7 +68,7 @@ class LectureSyncService {
     if (uid == null) return;
 
     // クエリ構築
-    var query = supabase.from('lectures').select().eq('owner_id', uid);
+    var query = supabase.from('lectures').select().eq('user_id', uid);
 
     // 差分更新: 前回同期時刻があれば、それ以降に更新されたものだけ取得
     if (lastPullAt != null) {
@@ -82,7 +82,7 @@ class LectureSyncService {
     final companions = data.map((json) {
       return LocalLecturesCompanion(
         id: Value(json['id'] as String),
-        ownerId: Value(json['owner_id'] as String),
+        userId: Value(json['user_id'] as String),
         folderId: Value(json['folder_id'] as String?),
         title: Value(json['title'] as String?),
         lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),

@@ -32,7 +32,7 @@ Future<List<FolderCrumb>> folderBreadcrumb(
   while (current != null && !visited.contains(current) && visited.length < 50) {
     visited.add(current);
 
-    final row = await db.getFolderById(ownerId: uid, folderId: current);
+    final row = await db.getFolderById(userId: uid, folderId: current);
     if (row == null) break;
 
     chain.add(FolderCrumb(

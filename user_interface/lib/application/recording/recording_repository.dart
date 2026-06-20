@@ -34,7 +34,7 @@ class RecordingRepository {
   }) {
     final uid = _requireUid();
     return drift.createDraftLecture(
-      ownerId: uid,
+      userId: uid,
       presetLectureId: presetLectureId,
       presetFolderId: presetFolderId,
       presetTitle: presetTitle,
@@ -47,7 +47,7 @@ class RecordingRepository {
     required String title,
   }) {
     final uid = _requireUid();
-    return drift.updateLectureTitle(ownerId: uid, lectureId: lectureId, title: title);
+    return drift.updateLectureTitle(userId: uid, lectureId: lectureId, title: title);
   }
 
   Future<void> updateLectureFolder({
@@ -55,7 +55,7 @@ class RecordingRepository {
     required String? folderId,
   }) {
     final uid = _requireUid();
-    return drift.updateLectureFolder(ownerId: uid, lectureId: lectureId, folderId: folderId);
+    return drift.updateLectureFolder(userId: uid, lectureId: lectureId, folderId: folderId);
   }
 
   Future<String> attachAudioAndEnqueueUpload({
@@ -67,7 +67,7 @@ class RecordingRepository {
   }) {
     final uid = _requireUid();
     return drift.attachAudioAndEnqueueUpload(
-      ownerId: uid,
+      userId: uid,
       lectureId: lectureId,
       localPath: localPath,
       startTime: startTime,

@@ -218,7 +218,7 @@ class UploadManager {
     // 2. Supabaseへの書き込み (Lecturesテーブル)
     await _lectureWriter.upsertLecture(
       lectureId: lecture.id,
-      ownerId: lecture.ownerId,
+      userId: lecture.userId,
       folderId: lecture.folderId,
       title: lecture.title,
       lectureDateTimeUtc: lecture.lectureDatetime,
@@ -226,7 +226,7 @@ class UploadManager {
 
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
     final fileName = 'chunk_$seqStr.wav'; 
-    final storagePath = '${lecture.ownerId}/${lecture.id}/audio_chunks/$fileName';
+    final storagePath = '${lecture.userId}/${lecture.id}/audio_chunks/$fileName';
 
     // 3. lecture_transcripts テーブルに「PROCESSING」を登録
     try {

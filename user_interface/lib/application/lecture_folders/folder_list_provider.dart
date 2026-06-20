@@ -2,7 +2,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_folder.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import '../auth/auth_provider.dart';
 
 part 'folder_list_provider.g.dart';
 
@@ -13,7 +13,7 @@ LectureFolder _toDomain(dynamic row) {
     // ignore: avoid_dynamic_calls
     id: row.id as String,
     // ignore: avoid_dynamic_calls
-    ownerId: row.ownerId as String,
+    userId: row.userId as String,
     // ignore: avoid_dynamic_calls
     name: row.name as String,
     // ignore: avoid_dynamic_calls
@@ -42,7 +42,8 @@ Stream<List<LectureFolder>> folderListStream(
   Ref ref,
   String? parentId,
 ) {
-  final uid = supabase.auth.currentUser?.id;
+  final user = ref.watch(currentUserProvider);
+  final uid = user?.id;
   if (uid == null) return const Stream.empty();
 
   final db = ref.watch(appDatabaseProvider);

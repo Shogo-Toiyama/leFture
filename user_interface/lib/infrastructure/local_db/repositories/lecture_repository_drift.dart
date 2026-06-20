@@ -9,11 +9,11 @@ class LectureRepositoryDrift {
 
   LectureRepositoryDrift(this._db);
 
-  Stream<List<Lecture>> watchLectures({required String? folderId}) {
-    final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return const Stream.empty();
-
-    return _db.watchLectures(uid, folderId).map((rows) {
+  Stream<List<Lecture>> watchLectures({
+    required String userId,
+    required String? folderId,
+  }) {
+    return _db.watchLectures(userId, folderId).map((rows) {
       return rows.map((row) => _toDomain(row)).toList();
     });
   }
@@ -57,7 +57,7 @@ class LectureRepositoryDrift {
   Lecture _toDomain(LocalLecture row) {
     return Lecture(
       id: row.id,
-      ownerId: row.ownerId,
+      userId: row.userId,
       folderId: row.folderId,
       title: row.title,
       isDeleted: row.deletedAt != null,

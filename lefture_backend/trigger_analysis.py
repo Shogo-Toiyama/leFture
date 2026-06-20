@@ -14,13 +14,13 @@ load_dotenv()
 # 実行時に引数として渡すこともできます: 
 #   python trigger_analysis.py <lecture_id> <owner_id> <expected_chunks>
 LECTURE_ID = "3017abbd-af51-4a51-82d8-d81344fd02e7"
-OWNER_ID = "651540df-c3d3-4438-b400-13037f13bb5c" # テスト用オーナーID（通常はユーザーのUUID）
+USER_ID = "651540df-c3d3-4438-b400-13037f13bb5c" # テスト用オーナーID（通常はユーザーのUUID）
 EXPECTED_CHUNKS = 163
 
 # 引数がある場合はそちらを優先する
 if len(sys.argv) >= 4:
     LECTURE_ID = sys.argv[1]
-    OWNER_ID = sys.argv[2]
+    USER_ID = sys.argv[2]
     EXPECTED_CHUNKS = int(sys.argv[3])
 
 # ==========================================
@@ -46,7 +46,7 @@ try:
     print(f"📝 1. 親ジョブを作成中 (lecture_id: {LECTURE_ID}, chunks: {EXPECTED_CHUNKS})...")
     job_data = {
         "lecture_id": LECTURE_ID,
-        "owner_id": OWNER_ID,
+        "user_id": USER_ID,
         "expected_chunks": EXPECTED_CHUNKS,
         "status": "PENDING"
     }

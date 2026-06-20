@@ -87,17 +87,17 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     if not user_res or not user_res.user:
         raise HTTPException(status_code=401, detail="Unauthorized user")
     
-    owner_id = user_res.user.id
+    user_id = user_res.user.id
 
     # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
     admin_client = get_supabase_client()
 
     # 4. 親ジョブを作成 (processing_jobs)
     job_data = {
-        "lecture_id": payload.lecture_id,
-        "owner_id": owner_id,
-        "expected_chunks": payload.expected_chunks,
-        "status": "PENDING"
+      "lecture_id": payload.lecture_id,
+      "user_id": user_id,
+      "expected_chunks": payload.expected_chunks,
+      "status": "PENDING"
     }
     job_res = admin_client.table("processing_jobs").insert(job_data).execute()
     job_id = job_res.data[0]["id"]

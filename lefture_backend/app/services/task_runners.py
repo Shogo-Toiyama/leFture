@@ -89,7 +89,7 @@ def _update_task_status(task_id: str, status: str, payload: dict = None, error_m
 
 def _get_job_context(job_id: str) -> dict:
     supabase = get_supabase_client()
-    res = supabase.table("processing_jobs").select("lecture_id, owner_id, expected_chunks").eq("id", job_id).single().execute()
+    res = supabase.table("processing_jobs").select("lecture_id, user_id, expected_chunks").eq("id", job_id).single().execute()
     return res.data
 
 def _get_dependency_payload(job_id: str, target_task_type: str) -> dict:
@@ -119,8 +119,8 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
     ダウンロード時間がゼロになるため、爆速で処理が完了する。
     """
     supabase = get_supabase_client()
-    res = supabase.table("lectures").select("owner_id").eq("id", lecture_id).single().execute()
-    uid = res.data["owner_id"] if res.data else "unknown_user"
+    res = supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
+    uid = res.data["user_id"] if res.data else "unknown_user"
     logger = TaskLogger(uid, lecture_id, f"TRANSCRIBE_CHUNK_{chunk_index:03d}")
     billing = BillingEngine(task_type="TRANSCRIBE_CHUNK")
     
@@ -244,7 +244,7 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
 
 async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     
     logger = TaskLogger(uid, lecture_id, "CHECK_AND_ASSEMBLE")
     logger.log(f"▶️ Starting CHECK_AND_ASSEMBLE (Task: {task_id})")
@@ -370,7 +370,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_core_extraction_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "CORE_EXTRACTION")
     logger.log(f"▶️ Starting CORE_EXTRACTION (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -412,7 +412,7 @@ async def run_core_extraction_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_role_classification_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "ROLE_CLASSIFICATION")
 
     logger.log(f"▶️ Starting ROLE_CLASSIFICATION (Task: {task_id})")
@@ -464,7 +464,7 @@ async def run_role_classification_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_announcement_generation_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "ANNOUNCEMENT_GENERATION")
 
     logger.log(f"▶️ Starting ANNOUNCEMENT_GENERATION (Task: {task_id})")
@@ -613,7 +613,7 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_topic_mapping_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "TOPIC_MAPPING")
 
     logger.log(f"▶️ Starting TOPIC_MAPPING (Task: {task_id})")
@@ -685,7 +685,7 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_review_card_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "REVIEW_CARD_GENERATION")
     logger.log(f"▶️ Starting REVIEW_CARD_GENERATION (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -738,7 +738,7 @@ async def run_review_card_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_image_prompt_generation_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "IMAGE_GENERATION")
     logger.log(f"▶️ Starting IMAGE_GENERATION (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -772,7 +772,7 @@ async def run_image_prompt_generation_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_image_rendering_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "IMAGE_RENDERING")
     logger.log(f"▶️ Starting IMAGE_RENDERING (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -819,7 +819,7 @@ async def run_image_rendering_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_fun_fact_search_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "FUN_FACT_SEARCH")
     
     logger.log(f"▶️ Starting FUN_FACT_SEARCH (Task: {task_id})")
@@ -857,7 +857,7 @@ async def run_fun_fact_search_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_fun_facts_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "FUN_FACTS_GENERATION")
     logger.log(f"▶️ Starting FUN_FACTS (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -903,7 +903,7 @@ async def run_fun_facts_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_detail_contents_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "DETAIL_CONTENTS_GENERATION")
     logger.log(f"▶️ Starting DETAIL_CONTENTS (Task: {task_id})")
     _update_task_status(task_id, "RUNNING")
@@ -938,7 +938,7 @@ async def run_detail_contents_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def run_finalize_job_task(job_id: str, task_id: str):
     job_ctx = _get_job_context(job_id)
-    uid, lecture_id = job_ctx["owner_id"], job_ctx["lecture_id"]
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     
     logger = TaskLogger(uid, lecture_id, "FINALIZE_JOB")
     logger.log(f"▶️ Starting FINAL COST AGGREGATION (Task: {task_id})")

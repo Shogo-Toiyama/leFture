@@ -22,7 +22,7 @@ class LectureFolderRepositoryDrift implements LectureFolderRepository {
   LectureFolder _toDomain(LocalLectureFolder row) {
     return LectureFolder(
       id: row.id,
-      ownerId: row.ownerId,
+      userId: row.userId,
       name: row.name,
       parentId: row.parentId,
       type: row.type,
@@ -62,7 +62,7 @@ class LectureFolderRepositoryDrift implements LectureFolderRepository {
 
     final row = LocalLectureFoldersCompanion.insert(
       id: localId,
-      ownerId: uid,
+      userId: uid,
       name: name,
       parentId: Value(parentId),
       type: Value(type),
@@ -93,7 +93,7 @@ class LectureFolderRepositoryDrift implements LectureFolderRepository {
     // domainへ
     return LectureFolder(
       id: localId,
-      ownerId: uid,
+      userId: uid,
       name: name,
       parentId: parentId,
       type: type,
@@ -113,7 +113,7 @@ class LectureFolderRepositoryDrift implements LectureFolderRepository {
     final now = DateTime.now().toUtc();
 
     await (db.update(db.localLectureFolders)
-          ..where((t) => t.id.equals(folderId) & t.ownerId.equals(uid)))
+          ..where((t) => t.id.equals(folderId) & t.userId.equals(uid)))
         .write(LocalLectureFoldersCompanion(
       name: Value(newName),
       updatedAt: Value(now),
@@ -134,7 +134,7 @@ class LectureFolderRepositoryDrift implements LectureFolderRepository {
     final now = DateTime.now().toUtc();
 
     await (db.update(db.localLectureFolders)
-          ..where((t) => t.id.equals(folderId) & t.ownerId.equals(uid)))
+          ..where((t) => t.id.equals(folderId) & t.userId.equals(uid)))
         .write(LocalLectureFoldersCompanion(
       deletedAt: Value(now),
       updatedAt: Value(now),
@@ -155,7 +155,7 @@ class LectureFolderRepositoryDrift implements LectureFolderRepository {
     final now = DateTime.now().toUtc();
 
     await (db.update(db.localLectureFolders)
-          ..where((t) => t.id.equals(folderId) & t.ownerId.equals(uid)))
+          ..where((t) => t.id.equals(folderId) & t.userId.equals(uid)))
         .write(LocalLectureFoldersCompanion(
       isFavorite: Value(isFavorite),
       updatedAt: Value(now),

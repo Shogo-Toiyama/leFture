@@ -24,7 +24,7 @@ class RecordingRepositoryDrift {
   static const String audioBucket = 'lecture_assets';
 
   Future<String> createDraftLecture({
-    required String ownerId,
+    required String userId,
     String? presetLectureId,
     String? presetFolderId,
     String? presetTitle,
@@ -37,7 +37,7 @@ class RecordingRepositoryDrift {
     await db.into(db.localLectures).insertOnConflictUpdate(
           LocalLecturesCompanion(
             id: Value(lectureId),
-            ownerId: Value(ownerId),
+            userId: Value(userId),
             folderId: Value(presetFolderId),
             title: Value(presetTitle ?? ''),
             createdAt: Value(now),
@@ -51,14 +51,14 @@ class RecordingRepositoryDrift {
   }
 
   Future<void> updateLectureTitle({
-    required String ownerId,
+    required String userId,
     required String lectureId,
     required String title,
   }) async {
     final now = DateTime.now().toUtc();
     await (db.update(db.localLectures)
           ..where((t) => t.id.equals(lectureId))
-          ..where((t) => t.ownerId.equals(ownerId)))
+          ..where((t) => t.userId.equals(userId)))
         .write(LocalLecturesCompanion(
       title: Value(title),
       updatedAt: Value(now),
@@ -66,14 +66,14 @@ class RecordingRepositoryDrift {
   }
 
   Future<void> updateLectureFolder({
-    required String ownerId,
+    required String userId,
     required String lectureId,
     required String? folderId,
   }) async {
     final now = DateTime.now().toUtc();
     await (db.update(db.localLectures)
           ..where((t) => t.id.equals(lectureId))
-          ..where((t) => t.ownerId.equals(ownerId)))
+          ..where((t) => t.userId.equals(userId)))
         .write(LocalLecturesCompanion(
       folderId: Value(folderId),
       updatedAt: Value(now),
@@ -83,7 +83,7 @@ class RecordingRepositoryDrift {
   /// 録音停止後に、asset + upload job を「同一トランザクション」で作る。
   /// ここが壊れないことが最重要なので transaction で囲む。
   Future<String> attachAudioAndEnqueueUpload({
-    required String ownerId,
+    required String userId,
     required String lectureId,
     required String localPath,
     required double startTime,
@@ -94,21 +94,21 @@ class RecordingRepositoryDrift {
 
     final assetId = presetAssetId ?? const Uuid().v4();
     final fileName = p.basename(localPath);
-    final storagePath = '$ownerId/$lectureId/$fileName';
+    final storagePath = '$userId/$lectureId/$fileName';
     final jobId = const Uuid().v4();
 
     await db.transaction(() async {
       // lecture updatedAt 更新（lecture row が存在しない可能性もあるので upsert にしたいならここを調整）
       await (db.update(db.localLectures)
             ..where((t) => t.id.equals(lectureId))
-            ..where((t) => t.ownerId.equals(ownerId)))
+            ..where((t) => t.userId.equals(userId)))
           .write(LocalLecturesCompanion(updatedAt: Value(now)));
 
       // asset upsert
       await db.into(db.localLectureAssets).insertOnConflictUpdate(
             LocalLectureAssetsCompanion(
               id: Value(assetId),
-              ownerId: Value(ownerId),
+              userId: Value(userId),
               lectureId: Value(lectureId),
               type: const Value('audio'),
               sequenceIndex: Value(sequenceIndex),
@@ -125,7 +125,7 @@ class RecordingRepositoryDrift {
       await db.into(db.localUploadJobs).insertOnConflictUpdate(
             LocalUploadJobsCompanion(
               id: Value(jobId),
-              ownerId: Value(ownerId),
+              userId: Value(userId),
               lectureId: Value(lectureId),
               assetId: Value(assetId),
 

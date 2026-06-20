@@ -77,7 +77,7 @@ class RecordingController extends _$RecordingController {
         final path = await _recorder.savePcmAsWav(flushed.data, state.currentLectureId!);
         
         await _repo.attachAudioAndEnqueueUpload(
-          ownerId: user.id,
+          userId: user.id,
           lectureId: state.currentLectureId!,
           localPath: path,
           sequenceIndex: _currentChunkIndex,
@@ -126,7 +126,7 @@ class RecordingController extends _$RecordingController {
 
     try {
       final lectureId = await _repo.createDraftLecture(
-        ownerId: user.id,
+        userId: user.id,
         presetFolderId: state.folderId, 
         presetTitle: state.title.isNotEmpty ? state.title : null,
       );
@@ -143,7 +143,7 @@ class RecordingController extends _$RecordingController {
           final path = await _recorder.savePcmAsWav(chunkData, lectureId);
           
           await _repo.attachAudioAndEnqueueUpload(
-            ownerId: user.id,
+            userId: user.id,
             lectureId: lectureId,
             localPath: path,
             sequenceIndex: _currentChunkIndex,
@@ -182,7 +182,7 @@ class RecordingController extends _$RecordingController {
     final lecture = state.lecture;
     if (lecture != null) {
       await _repo.updateLectureTitle(
-        ownerId: lecture.ownerId,
+        userId: lecture.userId,
         lectureId: lecture.id,
         title: newTitle,
       );
@@ -197,7 +197,7 @@ class RecordingController extends _$RecordingController {
     final lecture = state.lecture;
     if (lecture != null) {
       await _repo.updateLectureFolder(
-        ownerId: lecture.ownerId,
+        userId: lecture.userId,
         lectureId: lecture.id,
         folderId: folderId,
       );
@@ -229,7 +229,7 @@ class RecordingController extends _$RecordingController {
         final path = await _recorder.savePcmAsWav(finalFlushed.data, lecture.id);
         
         await _repo.attachAudioAndEnqueueUpload(
-          ownerId: lecture.ownerId,
+          userId: lecture.userId,
           lectureId: lecture.id,
           localPath: path,
           sequenceIndex: _currentChunkIndex, 

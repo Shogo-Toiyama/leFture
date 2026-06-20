@@ -66,7 +66,7 @@ final class FolderBreadcrumbProvider
   }
 }
 
-String _$folderBreadcrumbHash() => r'7e70669c0c902121bc83d9963b5563f61d03a959';
+String _$folderBreadcrumbHash() => r'af48d025f5a4bf6173eb77b84f4971dd3a219467';
 
 final class FolderBreadcrumbFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<FolderCrumb>>, String?> {
