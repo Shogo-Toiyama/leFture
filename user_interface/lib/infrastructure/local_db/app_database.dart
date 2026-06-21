@@ -299,32 +299,6 @@ class AppDatabase extends _$AppDatabase {
     return chain.reversed.toList(); // root -> ... -> current
   }
 
-  Future<void> dumpDatabaseLog() async {
-    try {
-      print('=== DRIFT DATABASE DUMP ===');
-      final folders = await select(localLectureFolders).get();
-      print('LocalLectureFolders (${folders.length} items):');
-      for (final f in folders) {
-        print('  - $f');
-      }
-
-      final lectures = await select(localLectures).get();
-      print('LocalLectures (${lectures.length} items):');
-      for (final l in lectures) {
-        print('  - $l');
-      }
-
-      final outbox = await select(localOutbox).get();
-      print('LocalOutbox (${outbox.length} items):');
-      for (final o in outbox) {
-        print('  - $o');
-      }
-      print('=== DRIFT DATABASE DUMP END ===');
-    } catch (e, st) {
-      print('❌ Failed to dump Drift database: $e\n$st');
-    }
-  }
-
 }
 
 LazyDatabase _openConnection() {

@@ -10,7 +10,6 @@ import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.d
 import 'package:lecture_companion_ui/application/lecture_folders/folder_breadcrumb_provider.dart';
 import 'package:lecture_companion_ui/application/lecture_folders/lecture_folder_controller.dart';
 import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 import 'widgets/breadcrumb_bar.dart';
@@ -47,7 +46,7 @@ class LectureFolderPage extends HookConsumerWidget {
           await ref.read(lectureFolderControllerProvider.notifier).bootstrapIfNeeded();
           await ref.read(lectureControllerProvider.notifier).bootstrapIfNeeded();
         } catch (e, st) {
-           print('❌ bootstrap error: $e\n$st');
+           debugPrint('❌ bootstrap error: $e\n$st');
         }
       });
       return null;
@@ -72,14 +71,6 @@ class LectureFolderPage extends HookConsumerWidget {
           ),
           iconTheme: const IconThemeData(color: Colors.white), // 戻るボタン等
           actions: [
-            IconButton(
-              tooltip: 'Dump DB Log',
-              icon: const Icon(Icons.bug_report, color: Colors.amber),
-              onPressed: () async {
-                print('🚀 Manually triggering Drift DB Dump...');
-                await ref.read(appDatabaseProvider).dumpDatabaseLog();
-              },
-            ),
             IconButton(
               tooltip: 'Add folder',
               icon: const Icon(Icons.create_new_folder_outlined, color: Colors.white),
@@ -135,46 +126,9 @@ class LectureFolderPage extends HookConsumerWidget {
                   final folders = foldersAsync.value ?? [];
                   final lectures = lecturesAsync.value ?? [];
                   
-                  if (foldersAsync.hasError) {
-                    print('❌ foldersAsync Error: ${foldersAsync.error}\n${foldersAsync.stackTrace}');
-                  }
-                  if (lecturesAsync.hasError) {
-                    print('❌ lecturesAsync Error: ${lecturesAsync.error}\n${lecturesAsync.stackTrace}');
-                  }
-
                   if ((foldersAsync.isLoading && folders.isEmpty) || 
                       (lecturesAsync.isLoading && lectures.isEmpty)) {
                     return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (foldersAsync.hasError || lecturesAsync.hasError) {
-                    final error = foldersAsync.error ?? lecturesAsync.error;
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Database Error Occurred',
-                              style: TextStyle(
-                                color: AppColors.universe.textStarlight,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              error.toString(),
-                              style: const TextStyle(color: Colors.redAccent),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
                   }
 
                   if (folders.isEmpty && lectures.isEmpty) {

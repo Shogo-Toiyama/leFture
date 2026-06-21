@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'dart:developer' as dev;
 
 String _requireUid() {
   final uid = supabase.auth.currentUser?.id;
@@ -60,7 +61,7 @@ class FolderSyncService {
     final uid = _requireUid();
 
     final items = await db.dequeueBatch(limit: 50);
-    print('📤 outbox items = ${items.length}');
+    dev.log('📤 outbox items = ${items.length}');
     if (items.isEmpty) return;
 
     final succeededIds = <int>[];
@@ -117,9 +118,9 @@ class FolderSyncService {
         await (db.update(db.localLectureFolders)..where((t) => t.id.equals(item.entityId)))
             .write(const LocalLectureFoldersCompanion(needsSync: Value(false)));
       } catch (e, st) {
-        print('❌ pushOutbox failed on item id=${item.id} op=${item.op} entityId=${item.entityId}');
-        print('❌ error: $e');
-        print(st.toString());
+        dev.log('❌ pushOutbox failed on item id=${item.id} op=${item.op} entityId=${item.entityId}');
+        dev.log('❌ error: $e');
+        dev.log(st.toString());
         break;
       }
     }
