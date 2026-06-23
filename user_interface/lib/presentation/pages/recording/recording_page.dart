@@ -9,8 +9,7 @@ import 'dart:async';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart'; // 色追加
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
-import '../../../application/lecture_folders/folder_breadcrumb_provider.dart';
-import 'widgets/folder_picker_sheet.dart';
+import 'widgets/course_picker_sheet.dart';
 
 class RecordingPage extends HookConsumerWidget {
   const RecordingPage({super.key, this.initialTab});
@@ -88,22 +87,18 @@ class RecordingPage extends HookConsumerWidget {
       );
     }
 
-    // 共通のフォルダ選択ロジック
-    final folderChainAsync = ref.watch(folderBreadcrumbProvider(state.folderId));
-    final folderLabel = folderChainAsync.maybeWhen(
-      data: (chain) => chain.isEmpty ? 'Home' : 'Home / ${chain.map((c) => c.name).join(' / ')}',
-      orElse: () => '...',
-    );
+    // コース選択ロジック
+    final courseLabel = state.courseId != null ? 'Course selected' : 'No course selected';
 
-    Future<void> openFolderPicker() async {
-      final result = await showModalBottomSheet<FolderPickerResult>(
+    Future<void> openCoursePicker() async {
+      final result = await showModalBottomSheet<CoursePickerResult>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent, // シート側で色をつけるため
-        builder: (_) => FolderPickerSheet(initialSelectedFolderId: state.folderId),
+        backgroundColor: Colors.transparent,
+        builder: (_) => CoursePickerSheet(initialSelectedCourseId: state.courseId),
       );
       if (result != null && result.confirmed) {
-        controller.setFolderId(result.folderId);
+        controller.setCourseId(result.courseId);
       }
     }
 
@@ -158,7 +153,7 @@ class RecordingPage extends HookConsumerWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          // 2. Folder
+                          // 2. Course
                           Container(
                             decoration: BoxDecoration(
                               color: AppColors.universe.glassWhiteLow,
@@ -167,7 +162,7 @@ class RecordingPage extends HookConsumerWidget {
                             ),
                             child: ListTile(
                               leading: Icon(Icons.folder_outlined, color: AppColors.universe.textComet),
-                              title: Text('Folder', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
+                              title: Text('Course', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
                               subtitle: LayoutBuilder(
                                 builder: (context, constraints) {
                                   // 1. テキストのスタイル定義
@@ -190,13 +185,13 @@ class RecordingPage extends HookConsumerWidget {
                                   }
 
                                   // A. そのままで入るならそのまま表示
-                                  if (checkFit(folderLabel)) {
-                                    return Text(folderLabel, style: style, maxLines: 1);
+                                  if (checkFit(courseLabel)) {
+                                    return Text(courseLabel, style: style, maxLines: 1);
                                   }
 
                                   // B. 入らない場合、パス区切り「 / 」で分解して、左から削っていく
                                   // 例: "Home / A / B / C" -> ["Home", "A", "B", "C"]
-                                  final parts = folderLabel.split(' / ');
+                                  final parts = courseLabel.split(' / ');
                                   
                                   // 左端から1つずつ削って「... / 」に置き換えて試す
                                   for (int i = 1; i < parts.length; i++) {
@@ -212,7 +207,7 @@ class RecordingPage extends HookConsumerWidget {
                                   // C. それでも入らない場合（最後の1フォルダすら長い場合）
                                   // 最後のフォルダ名だけで標準のellipsisを使う
                                   return Text(
-                                    parts.isNotEmpty ? parts.last : folderLabel,
+                                    parts.isNotEmpty ? parts.last : courseLabel,
                                     style: style,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -220,7 +215,7 @@ class RecordingPage extends HookConsumerWidget {
                                 },
                               ),
                               trailing: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                              onTap: isBusy ? null : openFolderPicker,
+                              onTap: isBusy ? null : openCoursePicker,
                             ),
                           ),
                           
@@ -366,7 +361,7 @@ class RecordingPage extends HookConsumerWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          // 2. Folder (Shared)
+                          // 2. Course (Shared)
                           Container(
                             decoration: BoxDecoration(
                               color: AppColors.universe.glassWhiteLow,
@@ -375,15 +370,15 @@ class RecordingPage extends HookConsumerWidget {
                             ),
                             child: ListTile(
                               leading: Icon(Icons.folder_outlined, color: AppColors.universe.textComet),
-                              title: Text('Folder', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
+                              title: Text('Course', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
                               subtitle: Text(
-                                folderLabel,
+                                courseLabel,
                                 maxLines: 1, 
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(color: AppColors.universe.textStarlight, fontWeight: FontWeight.bold),
                               ),
                               trailing: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                              onTap: openFolderPicker,
+                              onTap: openCoursePicker,
                             ),
                           ),
                           const SizedBox(height: 24),

@@ -16,13 +16,13 @@ LectureRepositoryDrift lectureRepository(Ref ref) {
   return LectureRepositoryDrift(db);
 }
 
-// フォルダIDごとの授業リストを返すProvider
+// コースIDごとの授業リストを返すProvider
 @riverpod
-Stream<List<Lecture>> lectureListStream(Ref ref, String? folderId,) {
+Stream<List<Lecture>> lectureListStream(Ref ref, String? courseId) {
   final user = ref.watch(currentUserProvider);
   final uid = user?.id;
   if (uid == null) return const Stream.empty();
 
   final repo = ref.watch(lectureRepositoryProvider);
-  return repo.watchLectures(userId: uid, folderId: folderId);
+  return repo.watchLectures(userId: uid, courseId: courseId);
 }

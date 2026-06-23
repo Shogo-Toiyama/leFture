@@ -16,7 +16,7 @@ class LectureWriteService {
   Future<void> upsertLecture({
     required String lectureId,
     required String userId,
-    String? folderId,
+    String? courseId,
     String? title,
     DateTime? lectureDateTimeUtc,
     bool isDeleted = false,
@@ -25,7 +25,7 @@ class LectureWriteService {
     final payload = <String, dynamic>{
       'id': lectureId,
       'user_id': userId,
-      'folder_id': folderId,
+      'course_id': courseId,
       'title': (title != null && title.trim().isNotEmpty) ? title.trim() : 'Untitled Lecture',
       'lecture_datetime': (lectureDateTimeUtc ?? DateTime.now().toUtc()).toIso8601String(),
       'is_deleted': isDeleted,

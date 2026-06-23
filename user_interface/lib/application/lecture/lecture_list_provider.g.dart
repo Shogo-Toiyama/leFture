@@ -111,7 +111,7 @@ final class LectureListStreamProvider
   }
 }
 
-String _$lectureListStreamHash() => r'96c0d5e70803fd0424ece1b94a8e7fa49b10f729';
+String _$lectureListStreamHash() => r'4ab61639283513fec51f9cfb5b52604d917424f0';
 
 final class LectureListStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<Lecture>>, String?> {
@@ -124,8 +124,8 @@ final class LectureListStreamFamily extends $Family
         isAutoDispose: true,
       );
 
-  LectureListStreamProvider call(String? folderId) =>
-      LectureListStreamProvider._(argument: folderId, from: this);
+  LectureListStreamProvider call(String? courseId) =>
+      LectureListStreamProvider._(argument: courseId, from: this);
 
   @override
   String toString() => r'lectureListStreamProvider';

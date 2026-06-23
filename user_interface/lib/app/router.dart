@@ -17,7 +17,7 @@ import 'package:lecture_companion_ui/presentation/pages/recording/recording_page
 import 'package:lecture_companion_ui/presentation/pages/learning_galaxy/learning_galaxy_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/lecture_folder/lecture_folder_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/course_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -69,15 +69,15 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 2. Notes System
       GoRoute(
-        path: AppRoutes.notesRoot, // '/notes'
-        builder: (context, state) => const LectureFolderPage(folderId: null), // Root Folder
+        path: AppRoutes.notesRoot,
+        builder: (context, state) => const CoursePage(),
         routes: [
-          // サブフォルダ: /notes/f/:folderId
+          // コース内: /notes/c/:courseId
           GoRoute(
-            path: AppRoutes.noteFolder, 
+            path: AppRoutes.noteCourse,
             builder: (context, state) {
-              final id = state.pathParameters['folderId'];
-              return LectureFolderPage(folderId: id);
+              final id = state.pathParameters['courseId'];
+              return CoursePage(courseId: id);
             },
           ),
           // 授業ビューワー: /notes/v/:lectureId
@@ -85,8 +85,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.noteViewer,
             builder: (context, state) {
               final id = state.pathParameters['lectureId'];
-              // TODO: nullチェックやエラーハンドリングは後で追加
-              return LectureViewerPage(lectureId: id!); 
+              return LectureViewerPage(lectureId: id!);
             },
           ),
         ],

@@ -13,7 +13,8 @@ class FunFactGenerationService:
         self, 
         role_classified_data: List[Dict[str, Any]], 
         core_data: Dict[str, Any],
-        search_results: List[Dict[str, Any]]
+        search_results: List[Dict[str, Any]],
+        student_profile: str
     ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Fun Fact Generation")
         
@@ -42,10 +43,7 @@ class FunFactGenerationService:
         if not seed_idea:
             self.logger.log("   [Logic] ⚠️ No fun_fact_idea found in core_data. Continuing with empty seed.")
 
-        # TODO: 学生プロフィール (※将来はDBやPersonal Contextツールから動的に取得可能)
-        student_profile = (
-            "A Computer Science major who loves building personal apps. Creative and enjoys problem-solving. Aims to work in entertainment-focused roles like Disney or automotive interior design in the future."
-        )
+        # student_profile is passed dynamically as a parameter
 
         search_text = ""
         if search_results:

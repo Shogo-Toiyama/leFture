@@ -6,38 +6,6 @@ import 'package:path/path.dart' as p;
 
 part 'app_database.g.dart';
 
-class LocalLectureFolders extends Table {
-  TextColumn get id => text()();
-
-  // Supabaseのuser_id（将来の検索/フィルタ用）
-  TextColumn get userId => text()();
-
-  TextColumn get name => text()();
-
-  // rootならnull
-  TextColumn get parentId => text().nullable()();
-
-  TextColumn get type => text().withDefault(const Constant('binder'))();
-
-  TextColumn get icon => text().nullable()();
-  TextColumn get color => text().nullable()();
-
-  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
-
-  DateTimeColumn get deletedAt => dateTime().nullable()();
-
-  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
-
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  // ローカル側で「クラウドへ未送信の変更があるか」管理する
-  BoolColumn get needsSync => boolean().withDefault(const Constant(false))();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 class LocalOutbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -61,7 +29,7 @@ class LocalLectures extends Table {
   TextColumn get id => text()(); // uuid
   TextColumn get userId => text()();
 
-  TextColumn get folderId => text().nullable()(); // null = Home
+  TextColumn get courseId => text().nullable()(); // null = コース未設定
   TextColumn get title => text().nullable()();
 
   IntColumn get expectedChunks => integer().nullable()();
@@ -73,6 +41,9 @@ class LocalLectures extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  // Groq Whisper に渡すコンテキスト文字列（コースタイトル＋過去キーワード）
+  TextColumn get whisperContext => text().nullable()();
 
   // local_only / synced / needs_sync
   TextColumn get syncStatus =>
@@ -140,18 +111,17 @@ class LocalUploadJobs extends Table {
 
 @DriftDatabase(
   tables: [
-    LocalLectureFolders, 
     LocalOutbox,
     LocalLectures,
     LocalLectureAssets,
     LocalUploadJobs,
-  ], 
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -165,67 +135,47 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(localUploadJobs);
       }
       if (from < 3) {
-        // バージョン3への移行: owner_id -> user_id カラム変更に伴う破壊的変更
-        // 開発中のため、一度全テーブルを削除して再作成
+        // バージョン3: owner_id → user_id カラム変更（開発中のため全削除）
         for (final table in allTables) {
           await m.drop(table);
         }
         await m.createAll();
       }
-    }
+      if (from < 4) {
+        // バージョン4: folder_id → course_id 変更、LocalLectureFolders 削除
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 5) {
+        // バージョン5: LocalLectures に whisperContext カラム追加
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+    },
   );
 
-  // --- Folders: read ---
-  Future<List<LocalLectureFolder>> listRootFolders(String userId) {
-    return (select(localLectureFolders)
-          ..where((t) => t.userId.equals(userId) & t.parentId.isNull() & t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
-        .get();
-  }
+  // --- Lectures ---
 
-  Future<List<LocalLectureFolder>> listChildren(String userId, String parentId) {
-    return (select(localLectureFolders)
-          ..where((t) => t.userId.equals(userId) & t.parentId.equals(parentId) & t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
-        .get();
-  }
-
-  Stream<List<LocalLectureFolder>> watchRootFolders(String userId) {
-    return (select(localLectureFolders)
-          ..where((t) => t.userId.equals(userId) & t.parentId.isNull() & t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
-        .watch();
-  }
-
-  Stream<List<LocalLectureFolder>> watchChildren(String userId, String parentId) {
-    return (select(localLectureFolders)
-          ..where((t) => t.userId.equals(userId) & t.parentId.equals(parentId) & t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder), (t) => OrderingTerm(expression: t.createdAt)]))
-        .watch();
-  }
-
-  Stream<List<LocalLecture>> watchLectures(String userId, String? folderId) {
+  Stream<List<LocalLecture>> watchLectures(String userId, String? courseId) {
     final query = select(localLectures)
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
 
-    if (folderId == null) {
-      query.where((t) => t.folderId.isNull());
+    if (courseId == null) {
+      query.where((t) => t.courseId.isNull());
     } else {
-      query.where((t) => t.folderId.equals(folderId));
+      query.where((t) => t.courseId.equals(courseId));
     }
 
     return query.watch();
   }
 
-  // --- Folders: upsert from cloud ---
-  Future<void> upsertFoldersFromCloud(List<LocalLectureFoldersCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(localLectureFolders, rows);
-    });
-  }
-
   // --- Outbox ---
+
   Future<void> enqueueOutbox({
     required String entityType,
     required String entityId,
@@ -251,54 +201,9 @@ class AppDatabase extends _$AppDatabase {
     await (delete(localOutbox)..where((t) => t.id.isIn(ids))).go();
   }
 
-  Future<void> resetFoldersFromCloud({required String userId}) async {
-    await transaction(() async {
-      // 1) outbox全削除（安全：Supabaseには触れない）
-      await delete(localOutbox).go();
-
-      // 2) ローカルのフォルダも全削除（自分のuser分だけ）
-      await (delete(localLectureFolders)..where((t) => t.userId.equals(userId))).go();
-    });
-  }
-
   Future<void> deleteAllOutbox() async {
     await delete(localOutbox).go();
   }
-
-  Future<void> deleteAllLocalFolders({required String userId}) async {
-    await (delete(localLectureFolders)..where((t) => t.userId.equals(userId))).go();
-  }
-
-  Future<LocalLectureFolder?> getFolderById({
-    required String userId,
-    required String folderId,
-  }) {
-    return (select(localLectureFolders)
-          ..where((t) => t.userId.equals(userId) & t.id.equals(folderId)))
-        .getSingleOrNull();
-  }
-
-  Future<List<LocalLectureFolder>> getFolderAncestors({
-    required String userId,
-    required String folderId,
-  }) async {
-    final chain = <LocalLectureFolder>[];
-    String? current = folderId;
-    final visited = <String>{};
-
-    while (current != null && !visited.contains(current) && visited.length < 50) {
-      visited.add(current);
-
-      final row = await getFolderById(userId: userId, folderId: current);
-      if (row == null) break;
-
-      chain.add(row);
-      current = row.parentId;
-    }
-
-    return chain.reversed.toList(); // root -> ... -> current
-  }
-
 }
 
 LazyDatabase _openConnection() {

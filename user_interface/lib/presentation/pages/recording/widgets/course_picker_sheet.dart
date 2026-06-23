@@ -1,0 +1,252 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/domain/entities/course.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+
+class CoursePickerResult {
+  const CoursePickerResult({this.courseId, required this.confirmed});
+  final String? courseId;
+  final bool confirmed;
+}
+
+/// 録音画面からコースを選択するボトムシート
+class CoursePickerSheet extends HookConsumerWidget {
+  const CoursePickerSheet({super.key, this.initialSelectedCourseId});
+
+  final String? initialSelectedCourseId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedId = useState<String?>(initialSelectedCourseId);
+    final searchCtl = useTextEditingController();
+    useListenable(searchCtl);
+
+    final coursesAsync = ref.watch(courseListProvider);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1C2E),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
+      ),
+      child: Column(
+        children: [
+          // ハンドル
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.universe.glassBorder,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ヘッダー
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Text(
+                  'Select Course',
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(
+                    const CoursePickerResult(confirmed: false),
+                  ),
+                  child: Text('Cancel', style: TextStyle(color: AppColors.universe.textComet)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 検索バー
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: searchCtl,
+              style: TextStyle(color: AppColors.universe.textStarlight),
+              decoration: InputDecoration(
+                hintText: 'Search courses...',
+                hintStyle: TextStyle(color: AppColors.universe.textComet),
+                prefixIcon: Icon(Icons.search, color: AppColors.universe.textComet),
+                filled: true,
+                fillColor: AppColors.universe.glassWhiteLow,
+                border: OutlineInputBorder(
+                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // コース一覧
+          Expanded(
+            child: coursesAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+              error: (e, _) => Center(
+                child: Text('Error: $e', style: const TextStyle(color: AppColors.correctionRed)),
+              ),
+              data: (courses) {
+                final query = searchCtl.text.trim().toLowerCase();
+                final filtered = query.isEmpty
+                    ? courses
+                    : courses.where((c) {
+                        final title = c.displayTitle.toLowerCase();
+                        final year = c.year?.attributeName.toLowerCase() ?? '';
+                        final term = c.term?.attributeName.toLowerCase() ?? '';
+                        return title.contains(query) || year.contains(query) || term.contains(query);
+                      }).toList();
+
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Text(
+                      courses.isEmpty ? 'No courses yet' : 'No results',
+                      style: TextStyle(color: AppColors.universe.textComet),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  itemCount: filtered.length,
+                  separatorBuilder: (context, i) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final course = filtered[index];
+                    final isSelected = course.id == selectedId.value;
+                    return _CoursePickerTile(
+                      course: course,
+                      isSelected: isSelected,
+                      onTap: () => selectedId.value = course.id,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          // 確定ボタン
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(
+                  CoursePickerResult(courseId: selectedId.value, confirmed: true),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.starGold,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  selectedId.value != null ? 'Confirm' : 'Continue without Course',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoursePickerTile extends StatelessWidget {
+  const _CoursePickerTile({
+    required this.course,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Course course;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[
+      if (course.year != null) course.year!.attributeName,
+      if (course.term != null) course.term!.attributeName,
+    ];
+    final subtitle = parts.isEmpty ? null : parts.join(' / ');
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.starGold.withValues(alpha: 0.15)
+              : AppColors.universe.glassWhiteLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.starGold : AppColors.universe.glassBorder,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.starGold.withValues(alpha: 0.2)
+                    : AppColors.universe.glassWhiteHigh,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.school_outlined,
+                color: isSelected ? AppColors.starGold : AppColors.universe.textComet,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    course.displayTitle,
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: AppColors.starGold, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}

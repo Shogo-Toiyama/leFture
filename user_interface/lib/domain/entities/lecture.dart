@@ -3,8 +3,7 @@ class Lecture {
   final String id;
   final String userId;
 
-  /// 録音開始直後は未分類でも良い設計にしたいなら nullable にする
-  final String? folderId;
+  final String? courseId;
 
   /// タイトル未入力でも開始できるなら nullable or '' でOK
   final String? title;
@@ -21,7 +20,7 @@ class Lecture {
   Lecture({
     required this.id,
     required this.userId,
-    required this.folderId,
+    required this.courseId,
     required this.title,
     required this.isDeleted,
     required this.sortOrder,
@@ -34,7 +33,7 @@ class Lecture {
     return Lecture(
       id: map['id'] as String,
       userId: map['user_id'] as String,
-      folderId: map['folder_id'] as String?,
+      courseId: map['course_id'] as String?,
       title: map['title'] as String?,
       isDeleted: (map['is_deleted'] as bool?) ?? false,
       sortOrder: (map['sort_order'] as int?) ?? 0,
@@ -55,8 +54,8 @@ class Lecture {
       'title': title,
     };
 
-    if (folderId != null) {
-      m['folder_id'] = folderId;
+    if (courseId != null) {
+      m['course_id'] = courseId;
     }
 
     // sort_order はDBで決めるなら送らない

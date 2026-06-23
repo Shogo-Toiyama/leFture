@@ -247,8 +247,9 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
 async def worker_transcribe_chunk(
     lecture_id: str = Form(...),
     start_time: float = Form(...),
-    chunk_index: int = Form(...),      
-    file: UploadFile = File(...)       
+    chunk_index: int = Form(...),
+    whisper_context: str = Form(""),
+    file: UploadFile = File(...)
 ):
     """
     FlutterからWAVファイルを受け取り、そのまま同期的に処理する。
@@ -260,14 +261,15 @@ async def worker_transcribe_chunk(
 
     # 1. WAVファイルをメモリ上(bytes)に直接読み込む
     audio_bytes = await file.read()
-    
+
     # 2. 💡 ここで await して、文字起こしが完全に終わるまで待機する！
     # （この待機中、Cloud Runは「通信中」と判定し、CPUを100%割り当て続けます）
     await run_transcribe_chunk_worker(
         lecture_id=lecture_id,
         start_time=start_time,
         chunk_index=chunk_index,
-        audio_bytes=audio_bytes
+        audio_bytes=audio_bytes,
+        whisper_context=whisper_context,
     )
     
     # 3. 処理がすべて終わったら、Flutterに成功レスポンスを返す

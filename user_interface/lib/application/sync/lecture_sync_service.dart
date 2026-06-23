@@ -83,7 +83,7 @@ class LectureSyncService {
       return LocalLecturesCompanion(
         id: Value(json['id'] as String),
         userId: Value(json['user_id'] as String),
-        folderId: Value(json['folder_id'] as String?),
+        courseId: Value(json['course_id'] as String?),
         title: Value(json['title'] as String?),
         lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),
         sortOrder: Value(json['sort_order'] as int?),

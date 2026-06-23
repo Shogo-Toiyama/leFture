@@ -26,7 +26,7 @@ class RecordingRepositoryDrift {
   Future<String> createDraftLecture({
     required String userId,
     String? presetLectureId,
-    String? presetFolderId,
+    String? presetCourseId,
     String? presetTitle,
     DateTime? lectureDateTime,
   }) async {
@@ -38,7 +38,7 @@ class RecordingRepositoryDrift {
           LocalLecturesCompanion(
             id: Value(lectureId),
             userId: Value(userId),
-            folderId: Value(presetFolderId),
+            courseId: Value(presetCourseId),
             title: Value(presetTitle ?? ''),
             createdAt: Value(now),
             updatedAt: Value(now),
@@ -65,17 +65,17 @@ class RecordingRepositoryDrift {
     ));
   }
 
-  Future<void> updateLectureFolder({
+  Future<void> updateLectureCourse({
     required String userId,
     required String lectureId,
-    required String? folderId,
+    required String? courseId,
   }) async {
     final now = DateTime.now().toUtc();
     await (db.update(db.localLectures)
           ..where((t) => t.id.equals(lectureId))
           ..where((t) => t.userId.equals(userId)))
         .write(LocalLecturesCompanion(
-      folderId: Value(folderId),
+      courseId: Value(courseId),
       updatedAt: Value(now),
     ));
   }
@@ -225,6 +225,17 @@ class RecordingRepositoryDrift {
   // Assetのデータ取得（ファイルパスを知るため）
   Future<LocalLectureAsset?> getAsset(String assetId) {
      return (db.select(db.localLectureAssets)..where((t) => t.id.equals(assetId))).getSingleOrNull();
+  }
+
+  Future<void> saveWhisperContext({
+    required String lectureId,
+    required String whisperContext,
+  }) async {
+    await (db.update(db.localLectures)..where((t) => t.id.equals(lectureId)))
+        .write(LocalLecturesCompanion(
+      whisperContext: Value(whisperContext),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
   }
 
   // 録音終了時(Done)に、総チャンク数をローカルDBに保存する

@@ -10,7 +10,7 @@ from typing import Any
 from app.core.config import BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
-from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation
+from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM
 
 from app.services.logic.transcription import TranscriptionService
@@ -105,6 +105,7 @@ def _download_from_r2_to_memory(storage_path: str) -> Any:
     )
     return json.loads(response["Body"].read().decode("utf-8"))
 
+
 # =========================================================
 # 👷 現場監督たち (Task Runners)
 # =========================================================
@@ -113,7 +114,7 @@ def _download_from_r2_to_memory(storage_path: str) -> Any:
 # 1. Transcribe Chunk （Groqでリアルタイム文字起こし）
 # ---------------------------------------------------------
 
-async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_time: float, audio_bytes: bytes):
+async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_time: float, audio_bytes: bytes, whisper_context: str = ""):
     """
     Flutterから直接送られてきたWAVバイナリ(audio_bytes)をメモリ上で処理する。
     ダウンロード時間がゼロになるため、爆速で処理が完了する。
@@ -131,9 +132,9 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
         transcriber = TranscriptionService(logger, billing)
         
         result = transcriber.run_in_memory(
-            audio_bytes=audio_bytes, 
+            audio_bytes=audio_bytes,
             chunk_index=chunk_index,
-            prompt_keywords = "UCLA, lecture, Computer Science"
+            prompt_keywords=whisper_context,
         )
 
         # 2. 受け取った音声バイナリをそのまま R2 に保存（バックアップ＆参照用）
@@ -207,13 +208,15 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
             logger.log(f"🚀 Triggering Sentence Review for chunks {first_chunk_index} to {first_chunk_index + 3}")
             
             # 4. SentenceReviewService を呼び出し
+            course_title, keywords_list = _get_sentence_review_context(lecture_id)
+            
             llm = UnifiedLLM(billing)
             reviewer = SentenceReviewService(llm, logger)
             reviewed_chunks = await reviewer.run_from_memory(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
-                course_title="Computer Science",
-                keywords_list=""
+                course_title=course_title,
+                keywords_list=keywords_list
             )
             
             # 5. 返ってきた綺麗なデータを DB に UPSERT (上書き)
@@ -297,13 +300,15 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             prev_chunk = next((c for c in all_chunks if c["chunk_index"] == first_leftover_idx - 1), None)
 
             # LLM職人を呼び出す
+            course_title, keywords_list = _get_sentence_review_context(lecture_id)
+            
             llm = UnifiedLLM(billing)
             reviewer = SentenceReviewService(llm, logger)
             reviewed_leftovers = await reviewer.run_from_memory(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
-                course_title="Computer Science", # ※必要に応じてjob_ctxから取得
-                keywords_list=""
+                course_title=course_title,
+                keywords_list=keywords_list
             )
             
             # レビュー結果をDBに書き込み、REVIEWED に昇格
@@ -382,12 +387,15 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         prev_payload = _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE")
         transcript_data = _download_from_r2_to_memory(prev_payload["transcript_json_path"])
 
+        # 学生プロフィールの取得
+        student_profile = _get_student_profile(uid)
+
         # UnifiedLLMを初期化して職人に渡す
         llm = UnifiedLLM(billing)
         extractor = CoreExtractionService(llm, logger)
         
         # メモリ上で処理
-        extraction_result = await extractor.run_from_memory(transcript_data)
+        extraction_result = await extractor.run_from_memory(transcript_data, student_profile)
 
         # ログをR2に保存
         r2_path = storage_service.save_json_log(uid, lecture_id, "core_extraction", extraction_result)
@@ -456,10 +464,13 @@ async def run_role_classification_task(job_id: str, task_id: str):
         # 2. 新しい職人を呼ぶ
         classifier = RoleClassificationService(billing, logger)
         
+        # コースタイトルを取得してテーマのフォールバックにする
+        course_title, _ = _get_sentence_review_context(lecture_id)
+
         classified_data = await classifier.run_from_memory(
             transcript_data=transcript_data, 
             core_data=core_data,
-            theme=core_data.get("title") or "University Lecture"
+            theme=core_data.get("title") or course_title
         )
 
         # 3. フルログをR2に保存
@@ -983,11 +994,15 @@ async def run_fun_facts_task(job_id: str, task_id: str):
         llm = UnifiedLLM(billing)
         service = FunFactGenerationService(llm, logger)
         
+        # 学生プロフィールの取得
+        student_profile = _get_student_profile(uid)
+        
         # 💡 メモリ上の分類済みデータと検索結果を渡す！
         fun_fact = await service.run_from_memory(
             role_classified_data=classified_data,
             core_data=core_data,
-            search_results=search_results
+            search_results=search_results,
+            student_profile=student_profile
         )
 
         r2_path = storage_service.save_json_log(uid, lecture_id, "fun_fact", fun_fact)

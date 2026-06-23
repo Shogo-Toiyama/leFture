@@ -3,751 +3,6 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $LocalLectureFoldersTable extends LocalLectureFolders
-    with TableInfo<$LocalLectureFoldersTable, LocalLectureFolder> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $LocalLectureFoldersTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  @override
-  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
-    'user_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _parentIdMeta = const VerificationMeta(
-    'parentId',
-  );
-  @override
-  late final GeneratedColumn<String> parentId = GeneratedColumn<String>(
-    'parent_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
-  @override
-  late final GeneratedColumn<String> type = GeneratedColumn<String>(
-    'type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('binder'),
-  );
-  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
-  @override
-  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
-    'icon',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _colorMeta = const VerificationMeta('color');
-  @override
-  late final GeneratedColumn<String> color = GeneratedColumn<String>(
-    'color',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
-    'isFavorite',
-  );
-  @override
-  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
-    'is_favorite',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_favorite" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
-    'sortOrder',
-  );
-  @override
-  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
-    'sort_order',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _needsSyncMeta = const VerificationMeta(
-    'needsSync',
-  );
-  @override
-  late final GeneratedColumn<bool> needsSync = GeneratedColumn<bool>(
-    'needs_sync',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("needs_sync" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    userId,
-    name,
-    parentId,
-    type,
-    icon,
-    color,
-    isFavorite,
-    deletedAt,
-    sortOrder,
-    createdAt,
-    updatedAt,
-    needsSync,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'local_lecture_folders';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<LocalLectureFolder> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('user_id')) {
-      context.handle(
-        _userIdMeta,
-        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_userIdMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('parent_id')) {
-      context.handle(
-        _parentIdMeta,
-        parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta),
-      );
-    }
-    if (data.containsKey('type')) {
-      context.handle(
-        _typeMeta,
-        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
-      );
-    }
-    if (data.containsKey('icon')) {
-      context.handle(
-        _iconMeta,
-        icon.isAcceptableOrUnknown(data['icon']!, _iconMeta),
-      );
-    }
-    if (data.containsKey('color')) {
-      context.handle(
-        _colorMeta,
-        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
-      );
-    }
-    if (data.containsKey('is_favorite')) {
-      context.handle(
-        _isFavoriteMeta,
-        isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
-      );
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
-    }
-    if (data.containsKey('sort_order')) {
-      context.handle(
-        _sortOrderMeta,
-        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
-    }
-    if (data.containsKey('needs_sync')) {
-      context.handle(
-        _needsSyncMeta,
-        needsSync.isAcceptableOrUnknown(data['needs_sync']!, _needsSyncMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  LocalLectureFolder map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return LocalLectureFolder(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      userId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}user_id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      parentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}parent_id'],
-      ),
-      type: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}type'],
-      )!,
-      icon: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}icon'],
-      ),
-      color: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}color'],
-      ),
-      isFavorite: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_favorite'],
-      )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}deleted_at'],
-      ),
-      sortOrder: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sort_order'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}updated_at'],
-      )!,
-      needsSync: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}needs_sync'],
-      )!,
-    );
-  }
-
-  @override
-  $LocalLectureFoldersTable createAlias(String alias) {
-    return $LocalLectureFoldersTable(attachedDatabase, alias);
-  }
-}
-
-class LocalLectureFolder extends DataClass
-    implements Insertable<LocalLectureFolder> {
-  final String id;
-  final String userId;
-  final String name;
-  final String? parentId;
-  final String type;
-  final String? icon;
-  final String? color;
-  final bool isFavorite;
-  final DateTime? deletedAt;
-  final int sortOrder;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final bool needsSync;
-  const LocalLectureFolder({
-    required this.id,
-    required this.userId,
-    required this.name,
-    this.parentId,
-    required this.type,
-    this.icon,
-    this.color,
-    required this.isFavorite,
-    this.deletedAt,
-    required this.sortOrder,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.needsSync,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['user_id'] = Variable<String>(userId);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || parentId != null) {
-      map['parent_id'] = Variable<String>(parentId);
-    }
-    map['type'] = Variable<String>(type);
-    if (!nullToAbsent || icon != null) {
-      map['icon'] = Variable<String>(icon);
-    }
-    if (!nullToAbsent || color != null) {
-      map['color'] = Variable<String>(color);
-    }
-    map['is_favorite'] = Variable<bool>(isFavorite);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt);
-    }
-    map['sort_order'] = Variable<int>(sortOrder);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
-    map['needs_sync'] = Variable<bool>(needsSync);
-    return map;
-  }
-
-  LocalLectureFoldersCompanion toCompanion(bool nullToAbsent) {
-    return LocalLectureFoldersCompanion(
-      id: Value(id),
-      userId: Value(userId),
-      name: Value(name),
-      parentId: parentId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(parentId),
-      type: Value(type),
-      icon: icon == null && nullToAbsent ? const Value.absent() : Value(icon),
-      color: color == null && nullToAbsent
-          ? const Value.absent()
-          : Value(color),
-      isFavorite: Value(isFavorite),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
-      sortOrder: Value(sortOrder),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
-      needsSync: Value(needsSync),
-    );
-  }
-
-  factory LocalLectureFolder.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return LocalLectureFolder(
-      id: serializer.fromJson<String>(json['id']),
-      userId: serializer.fromJson<String>(json['userId']),
-      name: serializer.fromJson<String>(json['name']),
-      parentId: serializer.fromJson<String?>(json['parentId']),
-      type: serializer.fromJson<String>(json['type']),
-      icon: serializer.fromJson<String?>(json['icon']),
-      color: serializer.fromJson<String?>(json['color']),
-      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
-      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
-      sortOrder: serializer.fromJson<int>(json['sortOrder']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      needsSync: serializer.fromJson<bool>(json['needsSync']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'userId': serializer.toJson<String>(userId),
-      'name': serializer.toJson<String>(name),
-      'parentId': serializer.toJson<String?>(parentId),
-      'type': serializer.toJson<String>(type),
-      'icon': serializer.toJson<String?>(icon),
-      'color': serializer.toJson<String?>(color),
-      'isFavorite': serializer.toJson<bool>(isFavorite),
-      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
-      'sortOrder': serializer.toJson<int>(sortOrder),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'needsSync': serializer.toJson<bool>(needsSync),
-    };
-  }
-
-  LocalLectureFolder copyWith({
-    String? id,
-    String? userId,
-    String? name,
-    Value<String?> parentId = const Value.absent(),
-    String? type,
-    Value<String?> icon = const Value.absent(),
-    Value<String?> color = const Value.absent(),
-    bool? isFavorite,
-    Value<DateTime?> deletedAt = const Value.absent(),
-    int? sortOrder,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    bool? needsSync,
-  }) => LocalLectureFolder(
-    id: id ?? this.id,
-    userId: userId ?? this.userId,
-    name: name ?? this.name,
-    parentId: parentId.present ? parentId.value : this.parentId,
-    type: type ?? this.type,
-    icon: icon.present ? icon.value : this.icon,
-    color: color.present ? color.value : this.color,
-    isFavorite: isFavorite ?? this.isFavorite,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
-    sortOrder: sortOrder ?? this.sortOrder,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    needsSync: needsSync ?? this.needsSync,
-  );
-  LocalLectureFolder copyWithCompanion(LocalLectureFoldersCompanion data) {
-    return LocalLectureFolder(
-      id: data.id.present ? data.id.value : this.id,
-      userId: data.userId.present ? data.userId.value : this.userId,
-      name: data.name.present ? data.name.value : this.name,
-      parentId: data.parentId.present ? data.parentId.value : this.parentId,
-      type: data.type.present ? data.type.value : this.type,
-      icon: data.icon.present ? data.icon.value : this.icon,
-      color: data.color.present ? data.color.value : this.color,
-      isFavorite: data.isFavorite.present
-          ? data.isFavorite.value
-          : this.isFavorite,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
-      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      needsSync: data.needsSync.present ? data.needsSync.value : this.needsSync,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('LocalLectureFolder(')
-          ..write('id: $id, ')
-          ..write('userId: $userId, ')
-          ..write('name: $name, ')
-          ..write('parentId: $parentId, ')
-          ..write('type: $type, ')
-          ..write('icon: $icon, ')
-          ..write('color: $color, ')
-          ..write('isFavorite: $isFavorite, ')
-          ..write('deletedAt: $deletedAt, ')
-          ..write('sortOrder: $sortOrder, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('needsSync: $needsSync')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    userId,
-    name,
-    parentId,
-    type,
-    icon,
-    color,
-    isFavorite,
-    deletedAt,
-    sortOrder,
-    createdAt,
-    updatedAt,
-    needsSync,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is LocalLectureFolder &&
-          other.id == this.id &&
-          other.userId == this.userId &&
-          other.name == this.name &&
-          other.parentId == this.parentId &&
-          other.type == this.type &&
-          other.icon == this.icon &&
-          other.color == this.color &&
-          other.isFavorite == this.isFavorite &&
-          other.deletedAt == this.deletedAt &&
-          other.sortOrder == this.sortOrder &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.needsSync == this.needsSync);
-}
-
-class LocalLectureFoldersCompanion extends UpdateCompanion<LocalLectureFolder> {
-  final Value<String> id;
-  final Value<String> userId;
-  final Value<String> name;
-  final Value<String?> parentId;
-  final Value<String> type;
-  final Value<String?> icon;
-  final Value<String?> color;
-  final Value<bool> isFavorite;
-  final Value<DateTime?> deletedAt;
-  final Value<int> sortOrder;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
-  final Value<bool> needsSync;
-  final Value<int> rowid;
-  const LocalLectureFoldersCompanion({
-    this.id = const Value.absent(),
-    this.userId = const Value.absent(),
-    this.name = const Value.absent(),
-    this.parentId = const Value.absent(),
-    this.type = const Value.absent(),
-    this.icon = const Value.absent(),
-    this.color = const Value.absent(),
-    this.isFavorite = const Value.absent(),
-    this.deletedAt = const Value.absent(),
-    this.sortOrder = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.needsSync = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  LocalLectureFoldersCompanion.insert({
-    required String id,
-    required String userId,
-    required String name,
-    this.parentId = const Value.absent(),
-    this.type = const Value.absent(),
-    this.icon = const Value.absent(),
-    this.color = const Value.absent(),
-    this.isFavorite = const Value.absent(),
-    this.deletedAt = const Value.absent(),
-    this.sortOrder = const Value.absent(),
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    this.needsSync = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       userId = Value(userId),
-       name = Value(name),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt);
-  static Insertable<LocalLectureFolder> custom({
-    Expression<String>? id,
-    Expression<String>? userId,
-    Expression<String>? name,
-    Expression<String>? parentId,
-    Expression<String>? type,
-    Expression<String>? icon,
-    Expression<String>? color,
-    Expression<bool>? isFavorite,
-    Expression<DateTime>? deletedAt,
-    Expression<int>? sortOrder,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
-    Expression<bool>? needsSync,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (userId != null) 'user_id': userId,
-      if (name != null) 'name': name,
-      if (parentId != null) 'parent_id': parentId,
-      if (type != null) 'type': type,
-      if (icon != null) 'icon': icon,
-      if (color != null) 'color': color,
-      if (isFavorite != null) 'is_favorite': isFavorite,
-      if (deletedAt != null) 'deleted_at': deletedAt,
-      if (sortOrder != null) 'sort_order': sortOrder,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-      if (needsSync != null) 'needs_sync': needsSync,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  LocalLectureFoldersCompanion copyWith({
-    Value<String>? id,
-    Value<String>? userId,
-    Value<String>? name,
-    Value<String?>? parentId,
-    Value<String>? type,
-    Value<String?>? icon,
-    Value<String?>? color,
-    Value<bool>? isFavorite,
-    Value<DateTime?>? deletedAt,
-    Value<int>? sortOrder,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
-    Value<bool>? needsSync,
-    Value<int>? rowid,
-  }) {
-    return LocalLectureFoldersCompanion(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      name: name ?? this.name,
-      parentId: parentId ?? this.parentId,
-      type: type ?? this.type,
-      icon: icon ?? this.icon,
-      color: color ?? this.color,
-      isFavorite: isFavorite ?? this.isFavorite,
-      deletedAt: deletedAt ?? this.deletedAt,
-      sortOrder: sortOrder ?? this.sortOrder,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      needsSync: needsSync ?? this.needsSync,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (userId.present) {
-      map['user_id'] = Variable<String>(userId.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (parentId.present) {
-      map['parent_id'] = Variable<String>(parentId.value);
-    }
-    if (type.present) {
-      map['type'] = Variable<String>(type.value);
-    }
-    if (icon.present) {
-      map['icon'] = Variable<String>(icon.value);
-    }
-    if (color.present) {
-      map['color'] = Variable<String>(color.value);
-    }
-    if (isFavorite.present) {
-      map['is_favorite'] = Variable<bool>(isFavorite.value);
-    }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
-    }
-    if (sortOrder.present) {
-      map['sort_order'] = Variable<int>(sortOrder.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
-    }
-    if (needsSync.present) {
-      map['needs_sync'] = Variable<bool>(needsSync.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('LocalLectureFoldersCompanion(')
-          ..write('id: $id, ')
-          ..write('userId: $userId, ')
-          ..write('name: $name, ')
-          ..write('parentId: $parentId, ')
-          ..write('type: $type, ')
-          ..write('icon: $icon, ')
-          ..write('color: $color, ')
-          ..write('isFavorite: $isFavorite, ')
-          ..write('deletedAt: $deletedAt, ')
-          ..write('sortOrder: $sortOrder, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('needsSync: $needsSync, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $LocalOutboxTable extends LocalOutbox
     with TableInfo<$LocalOutboxTable, LocalOutboxData> {
   @override
@@ -1174,12 +429,12 @@ class $LocalLecturesTable extends LocalLectures
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _folderIdMeta = const VerificationMeta(
-    'folderId',
+  static const VerificationMeta _courseIdMeta = const VerificationMeta(
+    'courseId',
   );
   @override
-  late final GeneratedColumn<String> folderId = GeneratedColumn<String>(
-    'folder_id',
+  late final GeneratedColumn<String> courseId = GeneratedColumn<String>(
+    'course_id',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -1263,6 +518,17 @@ class $LocalLecturesTable extends LocalLectures
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _whisperContextMeta = const VerificationMeta(
+    'whisperContext',
+  );
+  @override
+  late final GeneratedColumn<String> whisperContext = GeneratedColumn<String>(
+    'whisper_context',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -1290,7 +556,7 @@ class $LocalLecturesTable extends LocalLectures
   List<GeneratedColumn> get $columns => [
     id,
     userId,
-    folderId,
+    courseId,
     title,
     expectedChunks,
     lectureDatetime,
@@ -1298,6 +564,7 @@ class $LocalLecturesTable extends LocalLectures
     createdAt,
     updatedAt,
     deletedAt,
+    whisperContext,
     syncStatus,
     lastSyncError,
   ];
@@ -1326,10 +593,10 @@ class $LocalLecturesTable extends LocalLectures
     } else if (isInserting) {
       context.missing(_userIdMeta);
     }
-    if (data.containsKey('folder_id')) {
+    if (data.containsKey('course_id')) {
       context.handle(
-        _folderIdMeta,
-        folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta),
+        _courseIdMeta,
+        courseId.isAcceptableOrUnknown(data['course_id']!, _courseIdMeta),
       );
     }
     if (data.containsKey('title')) {
@@ -1380,6 +647,15 @@ class $LocalLecturesTable extends LocalLectures
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('whisper_context')) {
+      context.handle(
+        _whisperContextMeta,
+        whisperContext.isAcceptableOrUnknown(
+          data['whisper_context']!,
+          _whisperContextMeta,
+        ),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -1412,9 +688,9 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}user_id'],
       )!,
-      folderId: attachedDatabase.typeMapping.read(
+      courseId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}folder_id'],
+        data['${effectivePrefix}course_id'],
       ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1444,6 +720,10 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
+      whisperContext: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}whisper_context'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -1464,7 +744,7 @@ class $LocalLecturesTable extends LocalLectures
 class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final String id;
   final String userId;
-  final String? folderId;
+  final String? courseId;
   final String? title;
   final int? expectedChunks;
   final DateTime? lectureDatetime;
@@ -1472,12 +752,13 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final String? whisperContext;
   final String syncStatus;
   final String? lastSyncError;
   const LocalLecture({
     required this.id,
     required this.userId,
-    this.folderId,
+    this.courseId,
     this.title,
     this.expectedChunks,
     this.lectureDatetime,
@@ -1485,6 +766,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.whisperContext,
     required this.syncStatus,
     this.lastSyncError,
   });
@@ -1493,8 +775,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['user_id'] = Variable<String>(userId);
-    if (!nullToAbsent || folderId != null) {
-      map['folder_id'] = Variable<String>(folderId);
+    if (!nullToAbsent || courseId != null) {
+      map['course_id'] = Variable<String>(courseId);
     }
     if (!nullToAbsent || title != null) {
       map['title'] = Variable<String>(title);
@@ -1513,6 +795,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
+    if (!nullToAbsent || whisperContext != null) {
+      map['whisper_context'] = Variable<String>(whisperContext);
+    }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || lastSyncError != null) {
       map['last_sync_error'] = Variable<String>(lastSyncError);
@@ -1524,9 +809,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     return LocalLecturesCompanion(
       id: Value(id),
       userId: Value(userId),
-      folderId: folderId == null && nullToAbsent
+      courseId: courseId == null && nullToAbsent
           ? const Value.absent()
-          : Value(folderId),
+          : Value(courseId),
       title: title == null && nullToAbsent
           ? const Value.absent()
           : Value(title),
@@ -1544,6 +829,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      whisperContext: whisperContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(whisperContext),
       syncStatus: Value(syncStatus),
       lastSyncError: lastSyncError == null && nullToAbsent
           ? const Value.absent()
@@ -1559,7 +847,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     return LocalLecture(
       id: serializer.fromJson<String>(json['id']),
       userId: serializer.fromJson<String>(json['userId']),
-      folderId: serializer.fromJson<String?>(json['folderId']),
+      courseId: serializer.fromJson<String?>(json['courseId']),
       title: serializer.fromJson<String?>(json['title']),
       expectedChunks: serializer.fromJson<int?>(json['expectedChunks']),
       lectureDatetime: serializer.fromJson<DateTime?>(json['lectureDatetime']),
@@ -1567,6 +855,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      whisperContext: serializer.fromJson<String?>(json['whisperContext']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastSyncError: serializer.fromJson<String?>(json['lastSyncError']),
     );
@@ -1577,7 +866,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'userId': serializer.toJson<String>(userId),
-      'folderId': serializer.toJson<String?>(folderId),
+      'courseId': serializer.toJson<String?>(courseId),
       'title': serializer.toJson<String?>(title),
       'expectedChunks': serializer.toJson<int?>(expectedChunks),
       'lectureDatetime': serializer.toJson<DateTime?>(lectureDatetime),
@@ -1585,6 +874,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'whisperContext': serializer.toJson<String?>(whisperContext),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastSyncError': serializer.toJson<String?>(lastSyncError),
     };
@@ -1593,7 +883,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   LocalLecture copyWith({
     String? id,
     String? userId,
-    Value<String?> folderId = const Value.absent(),
+    Value<String?> courseId = const Value.absent(),
     Value<String?> title = const Value.absent(),
     Value<int?> expectedChunks = const Value.absent(),
     Value<DateTime?> lectureDatetime = const Value.absent(),
@@ -1601,12 +891,13 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
+    Value<String?> whisperContext = const Value.absent(),
     String? syncStatus,
     Value<String?> lastSyncError = const Value.absent(),
   }) => LocalLecture(
     id: id ?? this.id,
     userId: userId ?? this.userId,
-    folderId: folderId.present ? folderId.value : this.folderId,
+    courseId: courseId.present ? courseId.value : this.courseId,
     title: title.present ? title.value : this.title,
     expectedChunks: expectedChunks.present
         ? expectedChunks.value
@@ -1618,6 +909,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    whisperContext: whisperContext.present
+        ? whisperContext.value
+        : this.whisperContext,
     syncStatus: syncStatus ?? this.syncStatus,
     lastSyncError: lastSyncError.present
         ? lastSyncError.value
@@ -1627,7 +921,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     return LocalLecture(
       id: data.id.present ? data.id.value : this.id,
       userId: data.userId.present ? data.userId.value : this.userId,
-      folderId: data.folderId.present ? data.folderId.value : this.folderId,
+      courseId: data.courseId.present ? data.courseId.value : this.courseId,
       title: data.title.present ? data.title.value : this.title,
       expectedChunks: data.expectedChunks.present
           ? data.expectedChunks.value
@@ -1639,6 +933,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      whisperContext: data.whisperContext.present
+          ? data.whisperContext.value
+          : this.whisperContext,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -1653,7 +950,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     return (StringBuffer('LocalLecture(')
           ..write('id: $id, ')
           ..write('userId: $userId, ')
-          ..write('folderId: $folderId, ')
+          ..write('courseId: $courseId, ')
           ..write('title: $title, ')
           ..write('expectedChunks: $expectedChunks, ')
           ..write('lectureDatetime: $lectureDatetime, ')
@@ -1661,6 +958,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('whisperContext: $whisperContext, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncError: $lastSyncError')
           ..write(')'))
@@ -1671,7 +969,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   int get hashCode => Object.hash(
     id,
     userId,
-    folderId,
+    courseId,
     title,
     expectedChunks,
     lectureDatetime,
@@ -1679,6 +977,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     createdAt,
     updatedAt,
     deletedAt,
+    whisperContext,
     syncStatus,
     lastSyncError,
   );
@@ -1688,7 +987,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       (other is LocalLecture &&
           other.id == this.id &&
           other.userId == this.userId &&
-          other.folderId == this.folderId &&
+          other.courseId == this.courseId &&
           other.title == this.title &&
           other.expectedChunks == this.expectedChunks &&
           other.lectureDatetime == this.lectureDatetime &&
@@ -1696,6 +995,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
+          other.whisperContext == this.whisperContext &&
           other.syncStatus == this.syncStatus &&
           other.lastSyncError == this.lastSyncError);
 }
@@ -1703,7 +1003,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<String> id;
   final Value<String> userId;
-  final Value<String?> folderId;
+  final Value<String?> courseId;
   final Value<String?> title;
   final Value<int?> expectedChunks;
   final Value<DateTime?> lectureDatetime;
@@ -1711,13 +1011,14 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
+  final Value<String?> whisperContext;
   final Value<String> syncStatus;
   final Value<String?> lastSyncError;
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
-    this.folderId = const Value.absent(),
+    this.courseId = const Value.absent(),
     this.title = const Value.absent(),
     this.expectedChunks = const Value.absent(),
     this.lectureDatetime = const Value.absent(),
@@ -1725,6 +1026,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.whisperContext = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncError = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1732,7 +1034,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   LocalLecturesCompanion.insert({
     required String id,
     required String userId,
-    this.folderId = const Value.absent(),
+    this.courseId = const Value.absent(),
     this.title = const Value.absent(),
     this.expectedChunks = const Value.absent(),
     this.lectureDatetime = const Value.absent(),
@@ -1740,6 +1042,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.whisperContext = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncError = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1748,7 +1051,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   static Insertable<LocalLecture> custom({
     Expression<String>? id,
     Expression<String>? userId,
-    Expression<String>? folderId,
+    Expression<String>? courseId,
     Expression<String>? title,
     Expression<int>? expectedChunks,
     Expression<DateTime>? lectureDatetime,
@@ -1756,6 +1059,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
+    Expression<String>? whisperContext,
     Expression<String>? syncStatus,
     Expression<String>? lastSyncError,
     Expression<int>? rowid,
@@ -1763,7 +1067,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
-      if (folderId != null) 'folder_id': folderId,
+      if (courseId != null) 'course_id': courseId,
       if (title != null) 'title': title,
       if (expectedChunks != null) 'expected_chunks': expectedChunks,
       if (lectureDatetime != null) 'lecture_datetime': lectureDatetime,
@@ -1771,6 +1075,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (whisperContext != null) 'whisper_context': whisperContext,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastSyncError != null) 'last_sync_error': lastSyncError,
       if (rowid != null) 'rowid': rowid,
@@ -1780,7 +1085,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   LocalLecturesCompanion copyWith({
     Value<String>? id,
     Value<String>? userId,
-    Value<String?>? folderId,
+    Value<String?>? courseId,
     Value<String?>? title,
     Value<int?>? expectedChunks,
     Value<DateTime?>? lectureDatetime,
@@ -1788,6 +1093,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
+    Value<String?>? whisperContext,
     Value<String>? syncStatus,
     Value<String?>? lastSyncError,
     Value<int>? rowid,
@@ -1795,7 +1101,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     return LocalLecturesCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
-      folderId: folderId ?? this.folderId,
+      courseId: courseId ?? this.courseId,
       title: title ?? this.title,
       expectedChunks: expectedChunks ?? this.expectedChunks,
       lectureDatetime: lectureDatetime ?? this.lectureDatetime,
@@ -1803,6 +1109,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      whisperContext: whisperContext ?? this.whisperContext,
       syncStatus: syncStatus ?? this.syncStatus,
       lastSyncError: lastSyncError ?? this.lastSyncError,
       rowid: rowid ?? this.rowid,
@@ -1818,8 +1125,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
     }
-    if (folderId.present) {
-      map['folder_id'] = Variable<String>(folderId.value);
+    if (courseId.present) {
+      map['course_id'] = Variable<String>(courseId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1842,6 +1149,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
+    if (whisperContext.present) {
+      map['whisper_context'] = Variable<String>(whisperContext.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -1859,7 +1169,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     return (StringBuffer('LocalLecturesCompanion(')
           ..write('id: $id, ')
           ..write('userId: $userId, ')
-          ..write('folderId: $folderId, ')
+          ..write('courseId: $courseId, ')
           ..write('title: $title, ')
           ..write('expectedChunks: $expectedChunks, ')
           ..write('lectureDatetime: $lectureDatetime, ')
@@ -1867,6 +1177,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('whisperContext: $whisperContext, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncError: $lastSyncError, ')
           ..write('rowid: $rowid')
@@ -3400,8 +2711,6 @@ class LocalUploadJobsCompanion extends UpdateCompanion<LocalUploadJob> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $LocalLectureFoldersTable localLectureFolders =
-      $LocalLectureFoldersTable(this);
   late final $LocalOutboxTable localOutbox = $LocalOutboxTable(this);
   late final $LocalLecturesTable localLectures = $LocalLecturesTable(this);
   late final $LocalLectureAssetsTable localLectureAssets =
@@ -3414,7 +2723,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    localLectureFolders,
     localOutbox,
     localLectures,
     localLectureAssets,
@@ -3422,376 +2730,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ];
 }
 
-typedef $$LocalLectureFoldersTableCreateCompanionBuilder =
-    LocalLectureFoldersCompanion Function({
-      required String id,
-      required String userId,
-      required String name,
-      Value<String?> parentId,
-      Value<String> type,
-      Value<String?> icon,
-      Value<String?> color,
-      Value<bool> isFavorite,
-      Value<DateTime?> deletedAt,
-      Value<int> sortOrder,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      Value<bool> needsSync,
-      Value<int> rowid,
-    });
-typedef $$LocalLectureFoldersTableUpdateCompanionBuilder =
-    LocalLectureFoldersCompanion Function({
-      Value<String> id,
-      Value<String> userId,
-      Value<String> name,
-      Value<String?> parentId,
-      Value<String> type,
-      Value<String?> icon,
-      Value<String?> color,
-      Value<bool> isFavorite,
-      Value<DateTime?> deletedAt,
-      Value<int> sortOrder,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<bool> needsSync,
-      Value<int> rowid,
-    });
-
-class $$LocalLectureFoldersTableFilterComposer
-    extends Composer<_$AppDatabase, $LocalLectureFoldersTable> {
-  $$LocalLectureFoldersTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get userId => $composableBuilder(
-    column: $table.userId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get parentId => $composableBuilder(
-    column: $table.parentId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get icon => $composableBuilder(
-    column: $table.icon,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get color => $composableBuilder(
-    column: $table.color,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isFavorite => $composableBuilder(
-    column: $table.isFavorite,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get sortOrder => $composableBuilder(
-    column: $table.sortOrder,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get needsSync => $composableBuilder(
-    column: $table.needsSync,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$LocalLectureFoldersTableOrderingComposer
-    extends Composer<_$AppDatabase, $LocalLectureFoldersTable> {
-  $$LocalLectureFoldersTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get userId => $composableBuilder(
-    column: $table.userId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get parentId => $composableBuilder(
-    column: $table.parentId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get icon => $composableBuilder(
-    column: $table.icon,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get color => $composableBuilder(
-    column: $table.color,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isFavorite => $composableBuilder(
-    column: $table.isFavorite,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get sortOrder => $composableBuilder(
-    column: $table.sortOrder,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get needsSync => $composableBuilder(
-    column: $table.needsSync,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$LocalLectureFoldersTableAnnotationComposer
-    extends Composer<_$AppDatabase, $LocalLectureFoldersTable> {
-  $$LocalLectureFoldersTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get parentId =>
-      $composableBuilder(column: $table.parentId, builder: (column) => column);
-
-  GeneratedColumn<String> get type =>
-      $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<String> get icon =>
-      $composableBuilder(column: $table.icon, builder: (column) => column);
-
-  GeneratedColumn<String> get color =>
-      $composableBuilder(column: $table.color, builder: (column) => column);
-
-  GeneratedColumn<bool> get isFavorite => $composableBuilder(
-    column: $table.isFavorite,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  GeneratedColumn<int> get sortOrder =>
-      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<bool> get needsSync =>
-      $composableBuilder(column: $table.needsSync, builder: (column) => column);
-}
-
-class $$LocalLectureFoldersTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $LocalLectureFoldersTable,
-          LocalLectureFolder,
-          $$LocalLectureFoldersTableFilterComposer,
-          $$LocalLectureFoldersTableOrderingComposer,
-          $$LocalLectureFoldersTableAnnotationComposer,
-          $$LocalLectureFoldersTableCreateCompanionBuilder,
-          $$LocalLectureFoldersTableUpdateCompanionBuilder,
-          (
-            LocalLectureFolder,
-            BaseReferences<
-              _$AppDatabase,
-              $LocalLectureFoldersTable,
-              LocalLectureFolder
-            >,
-          ),
-          LocalLectureFolder,
-          PrefetchHooks Function()
-        > {
-  $$LocalLectureFoldersTableTableManager(
-    _$AppDatabase db,
-    $LocalLectureFoldersTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$LocalLectureFoldersTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$LocalLectureFoldersTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer: () =>
-              $$LocalLectureFoldersTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> userId = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String?> parentId = const Value.absent(),
-                Value<String> type = const Value.absent(),
-                Value<String?> icon = const Value.absent(),
-                Value<String?> color = const Value.absent(),
-                Value<bool> isFavorite = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<int> sortOrder = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<bool> needsSync = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => LocalLectureFoldersCompanion(
-                id: id,
-                userId: userId,
-                name: name,
-                parentId: parentId,
-                type: type,
-                icon: icon,
-                color: color,
-                isFavorite: isFavorite,
-                deletedAt: deletedAt,
-                sortOrder: sortOrder,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                needsSync: needsSync,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String userId,
-                required String name,
-                Value<String?> parentId = const Value.absent(),
-                Value<String> type = const Value.absent(),
-                Value<String?> icon = const Value.absent(),
-                Value<String?> color = const Value.absent(),
-                Value<bool> isFavorite = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<int> sortOrder = const Value.absent(),
-                required DateTime createdAt,
-                required DateTime updatedAt,
-                Value<bool> needsSync = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => LocalLectureFoldersCompanion.insert(
-                id: id,
-                userId: userId,
-                name: name,
-                parentId: parentId,
-                type: type,
-                icon: icon,
-                color: color,
-                isFavorite: isFavorite,
-                deletedAt: deletedAt,
-                sortOrder: sortOrder,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                needsSync: needsSync,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$LocalLectureFoldersTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $LocalLectureFoldersTable,
-      LocalLectureFolder,
-      $$LocalLectureFoldersTableFilterComposer,
-      $$LocalLectureFoldersTableOrderingComposer,
-      $$LocalLectureFoldersTableAnnotationComposer,
-      $$LocalLectureFoldersTableCreateCompanionBuilder,
-      $$LocalLectureFoldersTableUpdateCompanionBuilder,
-      (
-        LocalLectureFolder,
-        BaseReferences<
-          _$AppDatabase,
-          $LocalLectureFoldersTable,
-          LocalLectureFolder
-        >,
-      ),
-      LocalLectureFolder,
-      PrefetchHooks Function()
-    >;
 typedef $$LocalOutboxTableCreateCompanionBuilder =
     LocalOutboxCompanion Function({
       Value<int> id,
@@ -4015,7 +2953,7 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
     LocalLecturesCompanion Function({
       required String id,
       required String userId,
-      Value<String?> folderId,
+      Value<String?> courseId,
       Value<String?> title,
       Value<int?> expectedChunks,
       Value<DateTime?> lectureDatetime,
@@ -4023,6 +2961,7 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
+      Value<String?> whisperContext,
       Value<String> syncStatus,
       Value<String?> lastSyncError,
       Value<int> rowid,
@@ -4031,7 +2970,7 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
     LocalLecturesCompanion Function({
       Value<String> id,
       Value<String> userId,
-      Value<String?> folderId,
+      Value<String?> courseId,
       Value<String?> title,
       Value<int?> expectedChunks,
       Value<DateTime?> lectureDatetime,
@@ -4039,6 +2978,7 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
+      Value<String?> whisperContext,
       Value<String> syncStatus,
       Value<String?> lastSyncError,
       Value<int> rowid,
@@ -4063,8 +3003,8 @@ class $$LocalLecturesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get folderId => $composableBuilder(
-    column: $table.folderId,
+  ColumnFilters<String> get courseId => $composableBuilder(
+    column: $table.courseId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4103,6 +3043,11 @@ class $$LocalLecturesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get whisperContext => $composableBuilder(
+    column: $table.whisperContext,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
@@ -4133,8 +3078,8 @@ class $$LocalLecturesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get folderId => $composableBuilder(
-    column: $table.folderId,
+  ColumnOrderings<String> get courseId => $composableBuilder(
+    column: $table.courseId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4173,6 +3118,11 @@ class $$LocalLecturesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get whisperContext => $composableBuilder(
+    column: $table.whisperContext,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -4199,8 +3149,8 @@ class $$LocalLecturesTableAnnotationComposer
   GeneratedColumn<String> get userId =>
       $composableBuilder(column: $table.userId, builder: (column) => column);
 
-  GeneratedColumn<String> get folderId =>
-      $composableBuilder(column: $table.folderId, builder: (column) => column);
+  GeneratedColumn<String> get courseId =>
+      $composableBuilder(column: $table.courseId, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -4226,6 +3176,11 @@ class $$LocalLecturesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get whisperContext => $composableBuilder(
+    column: $table.whisperContext,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -4271,7 +3226,7 @@ class $$LocalLecturesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> userId = const Value.absent(),
-                Value<String?> folderId = const Value.absent(),
+                Value<String?> courseId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<int?> expectedChunks = const Value.absent(),
                 Value<DateTime?> lectureDatetime = const Value.absent(),
@@ -4279,13 +3234,14 @@ class $$LocalLecturesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String?> whisperContext = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> lastSyncError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
                 userId: userId,
-                folderId: folderId,
+                courseId: courseId,
                 title: title,
                 expectedChunks: expectedChunks,
                 lectureDatetime: lectureDatetime,
@@ -4293,6 +3249,7 @@ class $$LocalLecturesTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                whisperContext: whisperContext,
                 syncStatus: syncStatus,
                 lastSyncError: lastSyncError,
                 rowid: rowid,
@@ -4301,7 +3258,7 @@ class $$LocalLecturesTableTableManager
               ({
                 required String id,
                 required String userId,
-                Value<String?> folderId = const Value.absent(),
+                Value<String?> courseId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<int?> expectedChunks = const Value.absent(),
                 Value<DateTime?> lectureDatetime = const Value.absent(),
@@ -4309,13 +3266,14 @@ class $$LocalLecturesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String?> whisperContext = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<String?> lastSyncError = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
                 userId: userId,
-                folderId: folderId,
+                courseId: courseId,
                 title: title,
                 expectedChunks: expectedChunks,
                 lectureDatetime: lectureDatetime,
@@ -4323,6 +3281,7 @@ class $$LocalLecturesTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                whisperContext: whisperContext,
                 syncStatus: syncStatus,
                 lastSyncError: lastSyncError,
                 rowid: rowid,
@@ -5095,8 +4054,6 @@ typedef $$LocalUploadJobsTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$LocalLectureFoldersTableTableManager get localLectureFolders =>
-      $$LocalLectureFoldersTableTableManager(_db, _db.localLectureFolders);
   $$LocalOutboxTableTableManager get localOutbox =>
       $$LocalOutboxTableTableManager(_db, _db.localOutbox);
   $$LocalLecturesTableTableManager get localLectures =>

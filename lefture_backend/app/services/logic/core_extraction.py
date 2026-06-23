@@ -13,10 +13,11 @@ class CoreExtractionService:
         self.logger = logger
         self.model_alias = "gemini/gemini-2.5-flash-lite"
 
-    async def run_from_memory(self, transcript_data: list[dict]) -> Dict[str, Any]:
+    async def run_from_memory(self, transcript_data: list[dict], student_profile: str) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Core Extraction with {self.model_alias}")
 
         prompt = _load_prompt("core_extraction_prompt.txt")
+        prompt = prompt.replace("${STUDENT_PROFILE}", student_profile)
         options_json = LLMOptions(output_type="json", temperature=0.4)
 
         # データの整形 (<sid>: <text> のプレーンテキストを作成)

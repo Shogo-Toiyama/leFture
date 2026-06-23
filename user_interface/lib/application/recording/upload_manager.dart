@@ -219,7 +219,7 @@ class UploadManager {
     await _lectureWriter.upsertLecture(
       lectureId: lecture.id,
       userId: lecture.userId,
-      folderId: lecture.folderId,
+      courseId: lecture.courseId,
       title: lecture.title,
       lectureDateTimeUtc: lecture.lectureDatetime,
     );
@@ -250,6 +250,7 @@ class UploadManager {
         lectureId: lecture.id,
         chunkIndex: asset.sequenceIndex,
         startTime: asset.startTime,
+        whisperContext: lecture.whisperContext ?? '',
       );
     } catch (e) {
       print('❌ [UploadManager] 通信エラー、後でリトライします: $e');
@@ -263,17 +264,20 @@ class UploadManager {
     required String lectureId,
     required int chunkIndex,
     required double startTime,
+    String whisperContext = '',
   }) async {
     // Cloud RunのURL
     final uri = Uri.parse('https://lefture-511705914929.us-west1.run.app/worker/transcribe-chunk');
-    
+
     final request = http.MultipartRequest('POST', uri);
-    
+
     // Cloud Run側が「どのデータか」分かるようにメタデータを送る
     request.fields['lecture_id'] = lectureId;
     request.fields['chunk_index'] = chunkIndex.toString();
-
     request.fields['start_time'] = startTime.toString();
+    if (whisperContext.isNotEmpty) {
+      request.fields['whisper_context'] = whisperContext;
+    }
     
     // WAVファイルをバイナリとして添付
     request.files.add(await http.MultipartFile.fromPath('file', localPath));

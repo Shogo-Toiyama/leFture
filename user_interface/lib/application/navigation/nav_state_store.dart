@@ -17,16 +17,16 @@ class NavStateStore {
     await prefs.setString(_kLastNotesLocation, location);
   }
 
-  static const _kLastFolderSyncAt = 'last_folder_sync_at_ms';
+  static const _kLastCourseSyncAt = 'last_course_sync_at_ms';
 
-  int? get lastFolderSyncAtMs => prefs.getInt(_kLastFolderSyncAt);
+  int? get lastCourseSyncAtMs => prefs.getInt(_kLastCourseSyncAt);
 
-  Future<void> setLastFolderSyncAt(DateTime dtUtc) async {
-    await prefs.setInt(_kLastFolderSyncAt, dtUtc.millisecondsSinceEpoch);
+  Future<void> setLastCourseSyncAt(DateTime dtUtc) async {
+    await prefs.setInt(_kLastCourseSyncAt, dtUtc.millisecondsSinceEpoch);
   }
 
-  DateTime? get lastFolderSyncAt {
-    final ms = lastFolderSyncAtMs;
+  DateTime? get lastCourseSyncAt {
+    final ms = lastCourseSyncAtMs;
     if (ms == null) return null;
     return DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
   }

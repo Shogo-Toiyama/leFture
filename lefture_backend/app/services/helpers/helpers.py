@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from app.core.config import PROMPTS_DIR
+from app.core.supabase import get_supabase_client
 
 def _strip_code_fence(text: str) -> str:
     if text.lstrip().startswith("```"):
@@ -274,3 +275,83 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
             new_graph["ghost_nodes"] = [g for g in new_graph["ghost_nodes"] if g.get("id") != ghost_id]
         
     return new_graph
+
+
+def _get_sentence_review_context(lecture_id: str) -> tuple[str, str]:
+    """
+    Sentence Review タスク用に、コースタイトルと直前講義のキーワード一覧を取得します。
+    """
+    supabase = get_supabase_client()
+    
+    # 1. 今回の講義の course_id と created_at を取得
+    lec_res = supabase.table("lectures").select("course_id, created_at").eq("id", lecture_id).single().execute()
+    if not lec_res.data:
+        return "University Lecture", ""
+        
+    course_id = lec_res.data.get("course_id")
+    created_at = lec_res.data.get("created_at")
+    
+    # 2. courses から course_title を取得
+    course_title = "University Lecture"
+    if course_id:
+        course_res = supabase.table("courses").select("course_title").eq("id", course_id).single().execute()
+        if course_res.data and course_res.data.get("course_title"):
+            course_title = course_res.data["course_title"]
+            
+    # 3. 直前の講義（同じ course_id 内で今回の講義より古く、最新のもの）の ID を取得
+    prev_lecture_id = None
+    if course_id and created_at:
+        prev_res = supabase.table("lectures")\
+            .select("id")\
+            .eq("course_id", course_id)\
+            .eq("is_deleted", False)\
+            .lt("created_at", created_at)\
+            .order("created_at", desc=True)\
+            .limit(1)\
+            .execute()
+        if prev_res.data:
+            prev_lecture_id = prev_res.data[0].get("id")
+            
+    # 4. 直前講義のキーワード一覧を取得
+    keywords_list = ""
+    if prev_lecture_id:
+        kw_res = supabase.table("keywords")\
+            .select("keyword")\
+            .eq("lecture_id", prev_lecture_id)\
+            .execute()
+        if kw_res.data:
+            keywords = [item["keyword"] for item in kw_res.data if item.get("keyword")]
+            keywords_list = ", ".join(keywords)
+            
+    return course_title, keywords_list
+
+
+def _get_student_profile(uid: str) -> str:
+    """
+    user_profiles から学生のプロフィール情報を取得し、LLMに渡すコンテキスト文字列を構築します。
+    """
+    supabase = get_supabase_client()
+    try:
+        res = supabase.table("user_profiles").select("profile, interests, future_goals").eq("id", uid).single().execute()
+        if not res.data:
+            return "A university student majoring in Computer Science interested in software engineering."
+            
+        p_text = res.data.get("profile") or ""
+        i_text = res.data.get("interests") or ""
+        g_text = res.data.get("future_goals") or ""
+        
+        parts = []
+        if p_text:
+            parts.append(p_text)
+        if i_text:
+            parts.append(f"Interests: {i_text}")
+        if g_text:
+            parts.append(f"Future Goals: {g_text}")
+            
+        if not parts:
+            return "A university student majoring in Computer Science interested in software engineering."
+            
+        return " ".join(parts)
+    except Exception:
+        # DBエラー時の安全なフォールバック
+        return "A university student majoring in Computer Science interested in software engineering."

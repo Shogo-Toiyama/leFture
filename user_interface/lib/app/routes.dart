@@ -18,6 +18,6 @@ class AppRoutes {
 
   // Notes (Nested)
   static const notesRoot = '/notes';
-  static const noteFolder = 'f/:folderId'; // 例: /notes/f/123
+  static const noteCourse = 'c/:courseId'; // 例: /notes/c/123
   static const noteViewer = 'v/:lectureId'; // 例: /notes/v/456
 }

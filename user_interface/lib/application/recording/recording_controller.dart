@@ -13,6 +13,60 @@ import 'upload_manager.dart';
 
 part 'recording_controller.g.dart';
 
+/// コースとキーワードから Groq Whisper 用コンテキスト文字列を生成する
+Future<String> _buildWhisperContext({
+  required String uid,
+  required String courseId,
+}) async {
+  final parts = <String>[];
+
+  try {
+    // 1. コースタイトルを取得
+    final courseRow = await supabase
+        .from('courses')
+        .select('course_title, course_code')
+        .eq('id', courseId)
+        .eq('user_id', uid)
+        .maybeSingle();
+
+    if (courseRow != null) {
+      final title = courseRow['course_title'] as String? ??
+          courseRow['course_code'] as String?;
+      if (title != null && title.isNotEmpty) {
+        parts.add('Course: $title');
+      }
+    }
+
+    // 2. 同コースの過去講義キーワードを取得（最新20件）
+    final lectureRows = await supabase
+        .from('lectures')
+        .select('id')
+        .eq('course_id', courseId)
+        .eq('user_id', uid)
+        .limit(10);
+
+    final lectureIds = lectureRows.map((r) => r['id'] as String).toList();
+
+    if (lectureIds.isNotEmpty) {
+      final kwRows = await supabase
+          .from('keywords')
+          .select('keyword')
+          .inFilter('lecture_id', lectureIds)
+          .limit(20);
+
+      final keywords =
+          kwRows.map((r) => r['keyword'] as String).toSet().toList();
+      if (keywords.isNotEmpty) {
+        parts.add('Keywords: ${keywords.join(', ')}');
+      }
+    }
+  } catch (e) {
+    log('[WhisperContext] Failed to fetch context: $e');
+  }
+
+  return parts.join('\n');
+}
+
 @Riverpod(keepAlive: true)
 AudioRecorderService audioRecorderService(Ref ref) {
   final svc = AudioRecorderService();
@@ -127,9 +181,18 @@ class RecordingController extends _$RecordingController {
     try {
       final lectureId = await _repo.createDraftLecture(
         userId: user.id,
-        presetFolderId: state.folderId, 
+        presetCourseId: state.courseId,
         presetTitle: state.title.isNotEmpty ? state.title : null,
       );
+
+      // コースが選択されていればWhisperコンテキストをフェッチして保存
+      final courseId = state.courseId;
+      if (courseId != null) {
+        final context = await _buildWhisperContext(uid: user.id, courseId: courseId);
+        if (context.isNotEmpty) {
+          await _repo.saveWhisperContext(lectureId: lectureId, whisperContext: context);
+        }
+      }
 
       state = state.copyWith(currentLectureId: lectureId);
       _startWatchingLecture(lectureId);
@@ -189,17 +252,17 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  Future<void> setFolderId(String? folderId) async {
+  Future<void> setCourseId(String? courseId) async {
     state = state.copyWith(
-      folderId: folderId,
-      forceClearFolderId: folderId == null,
+      courseId: courseId,
+      forceClearCourseId: courseId == null,
     );
     final lecture = state.lecture;
     if (lecture != null) {
-      await _repo.updateLectureFolder(
+      await _repo.updateLectureCourse(
         userId: lecture.userId,
         lectureId: lecture.id,
-        folderId: folderId,
+        courseId: courseId,
       );
     }
   }

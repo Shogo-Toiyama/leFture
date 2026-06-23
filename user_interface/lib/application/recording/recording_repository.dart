@@ -28,7 +28,7 @@ class RecordingRepository {
 
   Future<String> createDraftLecture({
     String? presetLectureId,
-    String? presetFolderId,
+    String? presetCourseId,
     String? presetTitle,
     DateTime? lectureDateTime,
   }) {
@@ -36,7 +36,7 @@ class RecordingRepository {
     return drift.createDraftLecture(
       userId: uid,
       presetLectureId: presetLectureId,
-      presetFolderId: presetFolderId,
+      presetCourseId: presetCourseId,
       presetTitle: presetTitle,
       lectureDateTime: lectureDateTime,
     );
@@ -50,12 +50,12 @@ class RecordingRepository {
     return drift.updateLectureTitle(userId: uid, lectureId: lectureId, title: title);
   }
 
-  Future<void> updateLectureFolder({
+  Future<void> updateLectureCourse({
     required String lectureId,
-    required String? folderId,
+    required String? courseId,
   }) {
     final uid = _requireUid();
-    return drift.updateLectureFolder(userId: uid, lectureId: lectureId, folderId: folderId);
+    return drift.updateLectureCourse(userId: uid, lectureId: lectureId, courseId: courseId);
   }
 
   Future<String> attachAudioAndEnqueueUpload({

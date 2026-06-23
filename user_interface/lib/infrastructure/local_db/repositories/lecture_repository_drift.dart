@@ -11,9 +11,9 @@ class LectureRepositoryDrift {
 
   Stream<List<Lecture>> watchLectures({
     required String userId,
-    required String? folderId,
+    required String? courseId,
   }) {
-    return _db.watchLectures(userId, folderId).map((rows) {
+    return _db.watchLectures(userId, courseId).map((rows) {
       return rows.map((row) => _toDomain(row)).toList();
     });
   }
@@ -58,7 +58,7 @@ class LectureRepositoryDrift {
     return Lecture(
       id: row.id,
       userId: row.userId,
-      folderId: row.folderId,
+      courseId: row.courseId,
       title: row.title,
       isDeleted: row.deletedAt != null,
       sortOrder: row.sortOrder ?? 0,
