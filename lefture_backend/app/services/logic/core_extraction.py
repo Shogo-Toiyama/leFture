@@ -111,7 +111,6 @@ class CoreExtractionService:
             raise ValueError("Core extraction output must be a JSON object.")
 
         required_top_level_keys = [
-            "keywords",
             "summary",
             "title",
             "topics",
@@ -120,12 +119,6 @@ class CoreExtractionService:
         missing_keys = [key for key in required_top_level_keys if key not in output]
         if missing_keys:
             raise ValueError(f"Core extraction output is missing keys: {missing_keys}")
-
-        if not isinstance(output["keywords"], list):
-            raise ValueError("Core extraction field 'keywords' must be a list.")
-
-        if not all(isinstance(keyword, str) for keyword in output["keywords"]):
-            raise ValueError("Core extraction field 'keywords' must contain only strings.")
 
         if not isinstance(output["summary"], str):
             raise ValueError("Core extraction field 'summary' must be a string.")
@@ -156,6 +149,16 @@ class CoreExtractionService:
                     f"topics[{idx}].topic_type must be 'ACADEMIC' or 'LOGISTICS'. "
                     f"Got: {topic_type}"
                 )
+
+            # keywords のバリデーション
+            keywords = topic.get("keywords")
+            if keywords is not None:
+                if not isinstance(keywords, list):
+                    raise ValueError(f"topics[{idx}].keywords must be a list.")
+                if not all(isinstance(kw, str) for kw in keywords):
+                    raise ValueError(f"topics[{idx}].keywords must contain only strings.")
+            else:
+                topic["keywords"] = []
 
             self._validate_sid_range(
                 start_sid=topic.get("start_sid"),

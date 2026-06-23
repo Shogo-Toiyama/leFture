@@ -12,54 +12,40 @@ The format is strict: `<sid>: <text>`
 
 ### TASK & CONSTRAINTS (Follow this exact sequence for your reasoning)
 
-1. KEYWORDS (`keywords`):
-- First, scan the text and extract 10 to 20 core academic concepts and fundamental technical terms that are essential for the student's exam preparation and deep understanding of the lecture.
-- CRITICAL: Do NOT include analogies, anecdotal terms, or specific examples used for illustration, even if they are mentioned frequently. Focus strictly on the theoretical and architectural concepts.
+1. TOPICS & KEYWORDS (`topics`):
+- Partition the transcript into 4 to 6 broad, student-friendly learning chapters.
+- For EACH topic, extract 3 to 6 core academic concepts (`keywords`).
+
+**Structuring & Boundaries Rule:**
+- Group related concepts by larger learning arcs (e.g., problem → solution, principle → implementation, theory → real-world system).
+- Do not split every technical term into its own topic. Place boundaries at major conceptual shifts, not minor term changes.
+- If the professor returns to an earlier concept for a sustained section, create or continue a chapter that reflects that resumed concept.
+
+**Content Filtering & Logistics Rule:**
+- Ignore pure filler, jokes, and brief administrative remarks.
+- ONLY create a "LOGISTICS" segment if there is a massive, continuous block discussing the syllabus or grading.
+- Do not leave large gaps. Meaningful transitional content, examples, and definitions MUST be absorbed into the nearest appropriate ACADEMIC topic.
+
+**Balance Rule:**
+- Keep topics reasonably balanced in learning weight and transcript length.
+- Avoid creating one huge "catch-all" topic for unrelated late-lecture material. If necessary, merge smaller adjacent topics to maintain balance within the 6-topic limit.
+
+**Keyword Constraints (CRITICAL):**
+- Focus strictly on theoretical and architectural concepts essential for deep understanding.
+- Do NOT include analogies, anecdotal terms, or specific examples used for illustration, even if frequently mentioned.
+
+**Topic Title Examples:**
+- Good (Broad learning chapters): "Zero Trust Architecture Fundamentals", "Privacy-Preserving Security Monitoring", "Role-Based Access Control and Trade-offs"
+- Bad (Too narrow): "Micro-segmentation", "False Positives", "RELRO"
 
 2. SUMMARY (`summary`):
-- Based on the key concepts, write exactly 2-3 sentences summarizing the overall lecture.
+- Based on these topics, write exactly 2-3 sentences summarizing the overall lecture.
+- CRITICAL: Write directly about the concepts like a textbook introduction (e.g., "Virtual memory provides..."). Do NOT use meta-phrases like "This lecture explains..." or "The professor discusses...".
 
 3. LECTURE TITLE (`title`):
 - Condense the summary into a concise, highly specific title for the entire lecture (max 10 words).
 
-4. TOPIC SEGMENTATION (`topics`):
-- Partition the transcript into 4 to 6 broad, student-friendly learning chapters. 
-- These topics will become the main study notes and review-card groups shown to the student, so avoid overly fine-grained segmentation.
-- Target Count: Do not create more than 6 ACADEMIC topics. If the lecture contains many distinct concepts, group related concepts into coherent chapters by learning purpose.
-
-Granularity Rule:
-- A topic may include multiple related sub-concepts, examples, and applications.
-- Do not split every technical term into its own topic.
-- Prefer grouping by larger learning arcs, such as:
-  - problem → solution
-  - principle → implementation
-  - mechanism → example
-  - risk → mitigation
-  - theory → real-world system
-  - family of related technologies
-
-Balance Rule:
-- Keep topics reasonably balanced in learning weight.
-- Avoid creating one huge catch-all topic for unrelated late-lecture material.
-- If one topic becomes much larger than the others, rebalance by merging smaller adjacent topics or splitting the large section into a more coherent chapter while staying within 6 ACADEMIC topics.
-
-Meaningful Coverage Rule:
-- Topic ranges do not need to cover pure filler, jokes, repeated phrases, or unusable transcription noise.
-- However, do not leave large gaps that contain meaningful academic content, examples, definitions, comparisons, conceptual transitions, or setup for later concepts.
-- If meaningful transitional content connects two topics, include it in the nearest appropriate ACADEMIC topic.
-
-Boundary Rule:
-- Prefer boundaries at major learning shifts, not every minor term change.
-- If the professor returns to an earlier concept and then develops it for a sustained section, create or continue a chapter that reflects that resumed concept.
-
-Logistics Rule:
-- ONLY create a "LOGISTICS" segment if there is a massive, continuous block discussing syllabus, grading, etc. Otherwise, ignore short administrative remarks or absorb them into the surrounding ACADEMIC topic.
-
-Topic Title Examples:
-- Good (Broad learning chapters): "Zero Trust Architecture Fundamentals", "Privacy-Preserving Security Monitoring", "Role-Based Access Control and Trade-offs"
-- Too narrow (Do not use): "Micro-segmentation", "False Positives", "RELRO"
-
-5. FUN FACT IDEA (`fun_fact_idea`):
+4. FUN FACT IDEA (`fun_fact_idea`):
 - Review the <STUDENT_PROFILE> and find ONE specific concept from the topics that can be creatively connected to the student's interests.
 - Goal: Generate an *idea* (not the full final text) that will make the student say, "Wow, this lecture connects to what I want to do!"
 - `start_sid` & `end_sid`: Identify the exact segment where this concept is taught.
@@ -72,26 +58,21 @@ Topic Title Examples:
   - `search_reasoning`: Briefly explain why this external context is necessary to maximize the "AHA!" moment for the student.
 
 ### OUTPUT FORMAT
-Return ONLY a valid, minified JSON object.
+Return ONLY a valid JSON object.
 Do not include markdown formatting, code fences, comments, explanations, or preamble.
 
 {
-  "keywords": [
-    "Virtual memory",
-    "Address translation",
-    "Translation Lookaside Buffer (TLB)",
-    "Page fault",
-    "Context switch overhead",
-    "Spatial locality",
-    "Thrashing"
-  ],
-  "summary": "This lecture explains how operating systems use virtual memory to give each process the illusion of a private address space. It covers address translation, page tables, and the tradeoffs involved in mapping virtual addresses to physical memory.",
-  "title": "Virtual Memory and Address Translation",
   "topics": [
     {
       "idx": 1,
       "title": "Motivation for Virtual Memory",
       "topic_type": "ACADEMIC",
+      "keywords": [
+        "Virtual memory",
+        "Process isolation",
+        "Address space",
+        "Memory fragmentation"
+      ],
       "start_sid": "s000001",
       "end_sid": "s000118"
     },
@@ -99,6 +80,13 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
       "idx": 2,
       "title": "Address Translation and Page Tables",
       "topic_type": "ACADEMIC",
+      "keywords": [
+        "Address translation",
+        "Page table",
+        "Memory Management Unit (MMU)",
+        "Virtual address",
+        "Physical address"
+      ],
       "start_sid": "s000119",
       "end_sid": "s000247"
     },
@@ -106,10 +94,18 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
       "idx": 3,
       "title": "TLB Performance Tradeoffs",
       "topic_type": "ACADEMIC",
+      "keywords": [
+        "Translation Lookaside Buffer (TLB)",
+        "Context switch overhead",
+        "Cache hit rate",
+        "Page fault"
+      ],
       "start_sid": "s000248",
       "end_sid": "s000372"
     }
   ],
+  "summary": "Virtual memory isolates processes by providing each with the illusion of a private, contiguous address space. The operating system, supported by hardware like the TLB, maps these virtual addresses to physical memory using page tables, balancing process isolation with translation performance.",
+  "title": "Virtual Memory and Address Translation",
   "fun_fact_idea": {
     "start_sid": "s000019",
     "end_sid": "s000047",

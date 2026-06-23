@@ -10,7 +10,7 @@ from typing import Any
 from app.core.config import BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
-from app.services.helpers.helpers import TaskLogger
+from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM
 
 from app.services.logic.transcription import TranscriptionService
@@ -392,6 +392,28 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         # ログをR2に保存
         r2_path = storage_service.save_json_log(uid, lecture_id, "core_extraction", extraction_result)
 
+        # Supabaseの `lectures` テーブルを更新 (title_generated と summary)
+        supabase = get_supabase_client()
+        supabase.table("lectures").update({
+            "title_generated": extraction_result.get("title"),
+            "summary": extraction_result.get("summary"),
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", lecture_id).execute()
+
+        # 各トピックのキーワードを `keywords` テーブルに保存
+        for topic in extraction_result.get("topics", []):
+            topic_idx = topic.get("idx")
+            topic_keywords = topic.get("keywords", [])
+            for kw in topic_keywords:
+                kw_data = {
+                    "user_id": uid,
+                    "lecture_id": lecture_id,
+                    "topic_number": topic_idx,
+                    "keyword": kw,
+                    "definition": None
+                }
+                supabase.table("keywords").insert(kw_data).execute()
+
         _update_task_status(task_id, "COMPLETED", payload={"core_extraction_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
         
         # 📊 最後に今回のタスクのコストレポートを出力！
@@ -437,7 +459,7 @@ async def run_role_classification_task(job_id: str, task_id: str):
         classified_data = await classifier.run_from_memory(
             transcript_data=transcript_data, 
             core_data=core_data,
-            theme=core_data.get("title") or "Computer Science"
+            theme=core_data.get("title") or "University Lecture"
         )
 
         # 3. フルログをR2に保存
@@ -592,7 +614,23 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
         # 4. フルログを R2 に保存
         r2_path = storage_service.save_json_log(uid, lecture_id, "announcements", announcements_json)
 
-        # 5. TODO: Supabaseの `announcements` テーブルに書き込む処理（必要に応じて）
+        # 5. Supabaseの `announcements` テーブルに書き込む処理
+        supabase = get_supabase_client()
+        for announcement in announcements_json.get("announcements", []):
+            ann_data = {
+                "user_id": uid,
+                "lecture_id": lecture_id,
+                "type": announcement.get("type"),
+                "title": announcement.get("title"),
+                "description": announcement.get("description"),
+                "location": announcement.get("location"),
+                "start_sid": announcement.get("start_sid"),
+                "end_sid": announcement.get("end_sid"),
+                "related_topic_title": announcement.get("related_topic_title"),
+                "datetime_parameters": announcement.get("datetime_parameters"),
+                "metadata": {"is_completed": False}
+            }
+            supabase.table("announcements").insert(ann_data).execute()
 
         _update_task_status(task_id, "COMPLETED", payload={"announcements_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
         
@@ -629,12 +667,29 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
         # 今日のマクロトピック（ACADEMICのみ）を抽出
         academic_topics = [t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"]
         
-        # 最初の週 (Week 1, Lecture 1) と仮定し、ACADEMICトピックのみの連番で node_wk1_i を付与
-        # (元データを汚さないようにコピーを作って加工)
+        # コースIDと講義番号の取得
+        supabase = get_supabase_client()
+        lec_res = supabase.table("lectures").select("course_id").eq("id", lecture_id).single().execute()
+        course_id = lec_res.data.get("course_id") if lec_res.data else None
+        
+        lecture_num = 1
+        if course_id:
+            lectures_res = supabase.table("lectures")\
+                .select("id")\
+                .eq("course_id", course_id)\
+                .eq("is_deleted", False)\
+                .order("created_at")\
+                .execute()
+            if lectures_res.data:
+                lecture_ids = [l["id"] for l in lectures_res.data]
+                if lecture_id in lecture_ids:
+                    lecture_num = lecture_ids.index(lecture_id) + 1
+
+        # ACADEMICトピックのみの連番で node_wkX_Y を付与
         todays_topics_list = []
         for i, t in enumerate(academic_topics, start=1):
             topic_copy = t.copy()
-            topic_copy["topic_id"] = f"node_wk1_{i}"
+            topic_copy["topic_id"] = f"node_wk{lecture_num}_{i}"
             todays_topics_list.append(topic_copy)
             
         todays_macro_topics = {
@@ -642,14 +697,25 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
             "topics": todays_topics_list
         }
 
-        # 2. TODO: 過去のグラフ状態の取得
-        # 現時点では保存・取得ロジックが未実装のため、空の配列を持つオブジェクトを作成
+        # 2. 過去のグラフ状態を Supabase から取得
         current_graph_state = {
             "clusters": [],
             "nodes": [],
             "edges": [],
             "ghost_nodes": []
         }
+        
+        existing_map_id = None
+        if course_id:
+            map_res = supabase.table("topic_maps").select("id, map").eq("course_id", course_id).execute()
+            if map_res.data:
+                existing_map_id = map_res.data[0].get("id")
+                db_map = map_res.data[0].get("map")
+                if db_map and isinstance(db_map, dict):
+                    current_graph_state["clusters"] = db_map.get("clusters") or []
+                    current_graph_state["nodes"] = db_map.get("nodes") or []
+                    current_graph_state["edges"] = db_map.get("edges") or []
+                    current_graph_state["ghost_nodes"] = db_map.get("ghost_nodes") or []
 
         # 3. 職人を呼ぶ
         llm = UnifiedLLM(billing)
@@ -664,7 +730,26 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
         # 4. フルログをR2に保存
         r2_path = storage_service.save_json_log(uid, lecture_id, "topic_mapping", mapping_result)
 
-        # 5. ステータス更新
+        # 5. 差分を Full Map にマージ
+        mutations = mapping_result.get("graph_mutations") or {}
+        new_graph = _merge_graph_mutation(current_graph_state, mutations, todays_topics_list)
+
+        # 6. Supabase の `topic_maps` テーブルに更新保存
+        if course_id:
+            map_data = {
+                "user_id": uid,
+                "course_id": course_id,
+                "map": new_graph,
+                "updated_at": datetime.now().isoformat()
+            }
+            if existing_map_id:
+                supabase.table("topic_maps").update(map_data).eq("id", existing_map_id).execute()
+                logger.log(f"💾 Updated existing topic map (ID: {existing_map_id}) in Supabase")
+            else:
+                supabase.table("topic_maps").insert(map_data).execute()
+                logger.log(f"💾 Inserted new topic map for course {course_id} in Supabase")
+
+        # 7. ステータス更新
         _update_task_status(task_id, "COMPLETED", payload={"topic_mapping_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
         
         # 📊 コストレポート出力
@@ -716,6 +801,22 @@ async def run_review_card_task(job_id: str, task_id: str):
 
         # 3. フルログをR2に保存
         r2_path = storage_service.save_json_log(uid, lecture_id, "review_cards", review_cards_results)
+
+        # Supabaseに1枚ずつカードを保存
+        supabase = get_supabase_client()
+        for res in review_cards_results:
+            topic_idx = res.get("topic_idx")
+            for card in res.get("review_cards", []):
+                card_data = {
+                    "user_id": uid,
+                    "lecture_id": lecture_id,
+                    "topic_number": topic_idx,
+                    "title": card.get("title"),
+                    "hero_emoji": card.get("hero_emoji"),
+                    "card_type": card.get("card_type"),
+                    "card_content": card.get("content_blocks")  # jsonb
+                }
+                supabase.table("review_cards").insert(card_data).execute()
 
         # 4. ステータス更新
         _update_task_status(task_id, "COMPLETED", payload={"review_cards_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
@@ -890,6 +991,19 @@ async def run_fun_facts_task(job_id: str, task_id: str):
         )
 
         r2_path = storage_service.save_json_log(uid, lecture_id, "fun_fact", fun_fact)
+
+        # SupabaseにFun Factを保存
+        supabase = get_supabase_client()
+        fact_data = {
+            "user_id": uid,
+            "lecture_id": lecture_id,
+            "title": fun_fact.get("title"),
+            "hook": fun_fact.get("hook"),
+            "body": fun_fact.get("body"),
+            "metadata": None  # 将来のために今はNullで保存
+        }
+        supabase.table("fun_facts").insert(fact_data).execute()
+
         _update_task_status(task_id, "COMPLETED", payload={"fun_fact_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
         logger.log(billing.report())
         logger.save_to_r2(storage_service)
@@ -925,6 +1039,43 @@ async def run_detail_contents_task(job_id: str, task_id: str):
         all_details = await service.run_from_memory(classified_data, core_data)
 
         r2_path = storage_service.save_json_log(uid, lecture_id, "detail_contents", all_details)
+
+        # Supabaseに1トピックずつ詳細ノートとトピック情報を保存
+        supabase = get_supabase_client()
+        core_topics = {t.get("idx"): t for t in core_data.get("topics", [])}
+
+        for detail in all_details:
+            topic_idx = detail.get("topic_idx")
+            raw_content = detail.get("content")
+            if topic_idx is None or not raw_content:
+                continue
+
+            # タイトルとサマリーの分離
+            summary, clean_contents = _parse_detail_contents(raw_content)
+
+            # A. lecture_topics にトピック情報を保存
+            core_topic = core_topics.get(topic_idx, {})
+            topic_data = {
+                "user_id": uid,
+                "lecture_id": lecture_id,
+                "index": topic_idx,
+                "topic_title": core_topic.get("title", f"Topic {topic_idx}"),
+                "topic_type": core_topic.get("topic_type", "ACADEMIC"),
+                "summary": summary,
+                "start_sid": core_topic.get("start_sid"),
+                "end_sid": core_topic.get("end_sid")
+            }
+            supabase.table("lecture_topics").insert(topic_data).execute()
+
+            # B. deep_notes にクリーンな詳細ノートを保存
+            note_data = {
+                "user_id": uid,
+                "lecture_id": lecture_id,
+                "topic_number": topic_idx,
+                "note_contents": clean_contents
+            }
+            supabase.table("deep_notes").insert(note_data).execute()
+
         _update_task_status(task_id, "COMPLETED", payload={"details_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
         logger.log(billing.report())
         logger.save_to_r2(storage_service)
