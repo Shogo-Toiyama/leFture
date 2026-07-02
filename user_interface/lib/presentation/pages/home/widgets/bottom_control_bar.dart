@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
@@ -8,49 +9,69 @@ class BottomControlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // 左: Study (Note)
-          _BottomButton(
-            icon: Icons.edit_note,
-            label: 'Study',
-            onTap: () {}, // context.push(AppRoutes.study)
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.only(
+            top: 16.0,
+            bottom: bottomPadding > 0 ? bottomPadding : 16.0,
           ),
-
-          // 中央: Record (Big)
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.recording),
-            onLongPress: () {
-              // TODO: スライドしてNoteモードへ
-            },
-            child: Container(
-              width: 120,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.starGold,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.starGold.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
+          decoration: BoxDecoration(
+            color: AppColors.universe.voidBackground.withValues(alpha: 0.55),
+            border: Border(
+              top: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1.0,
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 32),
             ),
           ),
-
-          // 右: AI Chat
-          _BottomButton(
-            icon: Icons.chat_bubble_outline,
-            label: 'Chat',
-            onTap: () => context.push(AppRoutes.aiChat),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // 左: Study (Note)
+              _BottomButton(
+                icon: Icons.edit_note,
+                label: 'Study',
+                onTap: () {}, // context.push(AppRoutes.study)
+              ),
+    
+              // 中央: Record (Big)
+              GestureDetector(
+                onTap: () => context.push(AppRoutes.recording),
+                onLongPress: () {
+                  // TODO: スライドしてNoteモードへ
+                },
+                child: Container(
+                  width: 120,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.starGold,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.starGold.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.auto_awesome, color: Colors.white, size: 32),
+                ),
+              ),
+    
+              // 右: AI Chat
+              _BottomButton(
+                icon: Icons.chat_bubble_outline,
+                label: 'Chat',
+                onTap: () => context.push(AppRoutes.aiChat),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

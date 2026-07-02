@@ -2,35 +2,36 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as v;
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/application/galaxy/galaxy_state_provider.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 // 定数はクラスの外に出しておくとコンパイル時定数として扱われやすい
 const double _minZoom = 1.0;
 const double _maxZoom = 8.0;
 
-class GalaxyView extends StatefulWidget {
+class GalaxyView extends ConsumerStatefulWidget {
   const GalaxyView({super.key});
 
   @override
-  State<GalaxyView> createState() => _GalaxyViewState();
+  ConsumerState<GalaxyView> createState() => GalaxyViewState();
 }
 
-class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateMixin {
+class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProviderStateMixin {
   late final AnimationController _ticker;
-  late final List<_Star> stars;
-  late final List<_NebulaPuff> nebula;
-  late final List<_BgStar> bgStars;
+  late final List<_Star> _stars;
+  late final List<_NebulaPuff> _nebula;
+  late final List<_BgStar> _bgStars;
 
   ui.Image? _spriteTexture;
   double t = 0.0;
   int _frame = 0; // フレームカウンタをフィールドに移動
 
   // Camera / controls
-  double zoom = 2.0;
-  v.Quaternion camRot = v.Quaternion.identity();
   bool userInteracting = false;
 
   // Cache projected points for picking
-  List<_ProjectedStar> projected = [];
+  List<_ProjectedStar> _projected = [];
 
   @override
   void initState() {
@@ -42,7 +43,7 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
     const radius = 1.0;
     const thickness = 0.05;
 
-    stars = _generateSpiralGalaxy(
+    _stars = _generateSpiralGalaxy(
       seed: seed,
       count: starCount,
       arms: arms,
@@ -50,7 +51,7 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
       thickness: thickness,
     );
 
-    nebula = _generateNebula(
+    _nebula = _generateNebula(
       seed: seed,
       count: (starCount / 500).toInt(),
       arms: arms,
@@ -58,7 +59,7 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
       thickness: thickness,
     );
 
-    bgStars = _generateBgStars(
+    _bgStars = _generateBgStars(
       seed: 123,
       count: 3200,
     );
@@ -71,15 +72,22 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
   }
 
   void _onTick() {
+    if (!mounted) return;
     if ((_frame++ & 1) == 1) return; // 30FPS制限
     t += 1 / 30;
 
-    if (!userInteracting) {
+    final state = ref.read(galaxyStateProvider);
+    if (!userInteracting && state.autoRotate) {
       const spin = 0.002;
       final worldUp = v.Vector3(0, 1, 0);
       final q = v.Quaternion.axisAngle(worldUp, spin);
-      camRot = q * camRot;
-      camRot.normalize();
+      final newCamRot = q * state.camRot;
+      newCamRot.normalize();
+      
+      ref.read(galaxyStateProvider.notifier).updateState(
+        camRot: newCamRot,
+        zoom: state.zoom,
+      );
     }
     setState(() {});
   }
@@ -116,60 +124,86 @@ class _GalaxyViewState extends State<GalaxyView> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  // --- 外部からジェスチャーを流し込むための公開メソッド ---
+  void handleScaleStart(ScaleStartDetails details) {
+    setState(() => userInteracting = true);
+  }
+
+  void handleScaleUpdate(ScaleUpdateDetails d) {
+    final state = ref.read(galaxyStateProvider);
+    var newZoom = state.zoom;
+    var newCamRot = state.camRot.clone();
+
+    // Zoom
+    const zoomSensitivity = 0.05;
+    final s = math.pow(d.scale, zoomSensitivity).toDouble();
+    newZoom = (newZoom * s).clamp(_minZoom, _maxZoom);
+
+    // Rotation
+    final dx = d.focalPointDelta.dx;
+    final dy = d.focalPointDelta.dy;
+    const rotSpeed = 0.005;
+
+    final worldUp = v.Vector3(0, 1, 0);
+    final qYaw = v.Quaternion.axisAngle(worldUp, -dx * rotSpeed);
+
+    final camRight = v.Vector3(1, 0, 0);
+    newCamRot.rotate(camRight); 
+    final qPitch = v.Quaternion.axisAngle(camRight, -dy * rotSpeed);
+
+    newCamRot = (qPitch * qYaw) * newCamRot;
+    newCamRot.normalize();
+
+    ref.read(galaxyStateProvider.notifier).updateState(
+      camRot: newCamRot,
+      zoom: newZoom,
+    );
+    setState(() {});
+  }
+
+  void handleScaleEnd(ScaleEndDetails details) {
+    setState(() => userInteracting = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_spriteTexture == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // プロバイダーから状態を直接読み取る（watchしないことでリビルドを防ぐ）
+    final state = ref.read(galaxyStateProvider);
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        return GestureDetector(
-          onScaleStart: (_) => setState(() => userInteracting = true),
-          onScaleEnd: (_) => setState(() => userInteracting = false),
-          onScaleUpdate: (d) {
-            setState(() {
-              // Zoom
-              const zoomSensitivity = 0.05;
-              final s = math.pow(d.scale, zoomSensitivity).toDouble();
-              zoom = (zoom * s).clamp(_minZoom, _maxZoom);
-
-              // Rotation
-              final dx = d.focalPointDelta.dx;
-              final dy = d.focalPointDelta.dy;
-              const rotSpeed = 0.005;
-
-              final worldUp = v.Vector3(0, 1, 0);
-              final qYaw = v.Quaternion.axisAngle(worldUp, -dx * rotSpeed);
-
-              final camRight = v.Vector3(1, 0, 0);
-              camRot.rotate(camRight); 
-              final qPitch = v.Quaternion.axisAngle(camRight, -dy * rotSpeed);
-
-              camRot = (qPitch * qYaw) * camRot;
-              camRot.normalize();
-            });
-          },
-          child: RepaintBoundary(
-            // 2. ClipRect: 画用紙からはみ出したインク（drawColor）をカットする
-            child: ClipRect(
-              child: CustomPaint(
-                painter: _GalaxyPainter(
-                  stars: stars,
-                  nebula: nebula,
-                  bgStars: bgStars,
-                  time: t,
-                  camRot: camRot,
-                  zoom: zoom,
-                  onProjected: (list) => projected = list,
-                  sprite: _spriteTexture!,
+        return Stack(
+          children: [
+            GestureDetector(
+              onScaleStart: handleScaleStart,
+              onScaleEnd: handleScaleEnd,
+              onScaleUpdate: handleScaleUpdate,
+              child: RepaintBoundary(
+                // 2. ClipRect: 画用紙からはみ出したインク（drawColor）をカットする
+                child: ClipRect(
+                  child: CustomPaint(
+                    painter: _GalaxyPainter(
+                      stars: _stars,
+                      nebula: _nebula,
+                      bgStars: _bgStars,
+                      time: t,
+                      camRot: state.camRot,
+                      zoom: state.zoom,
+                      onProjected: (list) => _projected = list,
+                      sprite: _spriteTexture!,
+                    ),
+                    isComplex: true,
+                    willChange: true,
+                    size: Size.infinite, 
+                  ),
                 ),
-                isComplex: true,
-                willChange: true,
-                size: Size.infinite, 
               ),
             ),
-          ),
+          ],
         );
       },
     );
@@ -254,7 +288,7 @@ class _GalaxyPainter extends CustomPainter {
   final ui.Image sprite;
 
   // 定数を外に出して再利用可能に
-  static const _bgColor = Color(0xFF060913);
+  static final _bgColor = AppColors.universe.voidBackground;
   static const _nebulaPalette = [
     Color(0xFFFF5FA2), Color(0xFFFF9A3D), Color(0xFFB86BFF), Color(0xFF4FA8FF),
   ];

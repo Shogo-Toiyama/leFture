@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
+import 'recording_timer_chip.dart';
 
 class HomeAppBar extends StatelessWidget {
   const HomeAppBar({super.key});
@@ -14,12 +14,12 @@ class HomeAppBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 左: 録音チップ
+          // 左: 録音チップ (リアルタイムで同期)
           const RecordingTimerChip(),
 
           // 右: プロフィール & クレジット残量
           GestureDetector(
-            onTap: ()=> { context.push(AppRoutes.profile)},
+            onTap: () => context.push(AppRoutes.profile),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -41,7 +41,6 @@ class HomeAppBar extends StatelessWidget {
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white, // 画像がない時の背景
-                    // image: DecorationImage(...) // ここにユーザーアイコン
                   ),
                   child: const Icon(Icons.person, color: Colors.grey, size: 20),
                 ),
