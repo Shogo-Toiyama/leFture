@@ -224,11 +224,37 @@ class UploadManager {
       lectureDateTimeUtc: lecture.lectureDatetime,
     );
 
+    // 3. ジョブの種類に応じてアップロード処理を分岐
+    if (job.kind == 'master_audio_upload') {
+      try {
+        await _postMasterAudioToCloudRun(
+          localPath: localPath,
+          lectureId: lecture.id,
+        );
+        
+        // アップロード成功後、ローカルの一時圧縮ファイルを削除する
+        try {
+          final file = File(localPath);
+          if (await file.exists()) {
+            await file.delete();
+            print('🧹 [UploadManager] Master audio local file deleted.');
+          }
+        } catch (cleanupError) {
+          print('⚠️ [UploadManager] Master audio cleanup failed: $cleanupError');
+        }
+      } catch (e) {
+        print('❌ [UploadManager] マスターオーディオ通信エラー、後でリトライします: $e');
+        rethrow;
+      }
+      return;
+    }
+
+    // 従来のチャンク処理（kind == 'audio_upload' の想定）
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
     final fileName = 'chunk_$seqStr.wav'; 
     final storagePath = '${lecture.userId}/${lecture.id}/audio_chunks/$fileName';
 
-    // 3. lecture_transcripts テーブルに「PROCESSING」を登録
+    // 4. lecture_transcripts テーブルに「PROCESSING」を登録
     try {
       await supabase.from('lecture_transcripts').upsert({
         'lecture_id': lecture.id,
@@ -243,7 +269,7 @@ class UploadManager {
       rethrow; 
     }
 
-    // 4. Cloud Run に直接 POST して文字起こしを開始（バックエンドが R2 に保存する）
+    // 5. Cloud Run に直接 POST して文字起こしを開始（バックエンドが R2 に保存する）
     try {
       await _postToCloudRun(
         localPath: localPath,
@@ -291,5 +317,26 @@ class UploadManager {
     }
     
     print('🚀 [UploadManager] Cloud RunにChunk $chunkIndex を送信完了！');
+  }
+
+  /// Cloud Runへ直接マスターオーディオ(M4A)ファイルを投げるメソッド
+  Future<void> _postMasterAudioToCloudRun({
+    required String localPath,
+    required String lectureId,
+  }) async {
+    final uri = Uri.parse('https://lefture-511705914929.us-west1.run.app/worker/upload-master-audio');
+
+    final request = http.MultipartRequest('POST', uri);
+    request.fields['lecture_id'] = lectureId;
+    request.files.add(await http.MultipartFile.fromPath('file', localPath));
+
+    final response = await request.send();
+    
+    if (response.statusCode != 200) {
+      final respStr = await response.stream.bytesToString();
+      throw Exception('Cloud Run master upload error (${response.statusCode}): $respStr');
+    }
+    
+    print('🚀 [UploadManager] Cloud RunにMaster Audio $lectureId を送信完了！');
   }
 }

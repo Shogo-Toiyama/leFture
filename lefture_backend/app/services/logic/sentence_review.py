@@ -19,19 +19,24 @@ class SentenceReviewService:
         def make_chunks_absolute(chunks: list) -> list:
             absolute_chunks = []
             for chunk in chunks:
-                if chunk.get("status") == "REVIEWED":
-                    # Already absolute
-                    absolute_chunks.append(chunk)
-                    continue
+                segs = chunk.get("segments_reviewed")
+                is_absolute = True
+                if segs is None:
+                    segs = chunk.get("segments_groq") or []
+                    is_absolute = False
+
                 c_start = chunk.get("start_time", 0.0)
                 new_chunk = chunk.copy()
                 new_segs = []
-                for seg in chunk.get("segments", []):
+                for seg in segs:
                     new_seg = seg.copy()
-                    new_seg["start"] = seg["start"] + c_start
-                    new_seg["end"] = seg["end"] + c_start
+                    if not is_absolute:
+                        new_seg["start"] = seg["start"] + c_start
+                        new_seg["end"] = seg["end"] + c_start
                     new_segs.append(new_seg)
                 new_chunk["segments"] = new_segs
+                if not new_chunk.get("text"):
+                    new_chunk["text"] = chunk.get("text_reviewed") or chunk.get("text_groq") or ""
                 absolute_chunks.append(new_chunk)
             return absolute_chunks
 
@@ -39,35 +44,47 @@ class SentenceReviewService:
         target_xml = ""
         
         # 前回のチャンク
-        if previous_chunk and previous_chunk.get("segments"):
-            prev_start_time = previous_chunk.get("start_time")
-            if prev_start_time is None:
-                raise ValueError(f"CRITICAL: prev_chunk (index={previous_chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
-            last_segs = previous_chunk["segments"][-3:]
-            is_absolute = previous_chunk.get("status") == "REVIEWED"
-            for seg in last_segs:
-                sid = seg["sid"]
-                seg_start = seg["start"]
-                seg_end = seg["end"]
-                if not is_absolute:
-                    seg_start += prev_start_time
-                    seg_end += prev_start_time
-                orig_map[sid] = {
-                    "text": seg["text"],
-                    "start": seg_start,
-                    "end": seg_end,
-                    "chunk_index": previous_chunk.get("chunk_index"),
-                    "confidence": seg.get("confidence", 0.99)
-                }
-                target_xml += f"<{sid}>{seg['text']}</{sid}>"
+        if previous_chunk:
+            prev_segs = previous_chunk.get("segments_reviewed")
+            is_absolute = True
+            if prev_segs is None:
+                prev_segs = previous_chunk.get("segments_groq") or []
+                is_absolute = False
+
+            if prev_segs:
+                prev_start_time = previous_chunk.get("start_time")
+                if prev_start_time is None:
+                    raise ValueError(f"CRITICAL: prev_chunk (index={previous_chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
+                last_segs = prev_segs[-3:]
+                for seg in last_segs:
+                    sid = seg["sid"]
+                    seg_start = seg["start"]
+                    seg_end = seg["end"]
+                    if not is_absolute:
+                        seg_start += prev_start_time
+                        seg_end += prev_start_time
+                    orig_map[sid] = {
+                        "text": seg["text"],
+                        "start": seg_start,
+                        "end": seg_end,
+                        "chunk_index": previous_chunk.get("chunk_index"),
+                        "confidence": seg.get("confidence", 0.99)
+                    }
+                    target_xml += f"<{sid}>{seg['text']}</{sid}>"
 
         # 今回のチャンク
         for chunk in chunks_to_review:
             chunk_start_time = chunk.get("start_time")
             if chunk_start_time is None:
                 raise ValueError(f"CRITICAL: chunk (index={chunk.get('chunk_index')}) is missing start_time. Cannot calculate absolute timestamps.")
-            is_absolute = chunk.get("status") == "REVIEWED"
-            for seg in chunk.get("segments", []):
+            
+            cur_segs = chunk.get("segments_reviewed")
+            is_absolute = True
+            if cur_segs is None:
+                cur_segs = chunk.get("segments_groq") or []
+                is_absolute = False
+
+            for seg in cur_segs:
                 sid = seg["sid"]
                 seg_start = seg["start"]
                 seg_end = seg["end"]

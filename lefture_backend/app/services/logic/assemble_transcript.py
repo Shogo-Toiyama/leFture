@@ -18,7 +18,11 @@ class AssembleTranscriptService:
 
         for chunk in completed_chunks:
             chunk_index = chunk.get("chunk_index")
-            segments = chunk.get("segments") or []
+            segments = chunk.get("segments_reviewed")
+            is_absolute = True
+            if segments is None:
+                segments = chunk.get("segments_groq") or []
+                is_absolute = False
 
             if not isinstance(segments, list):
                 raise ValueError(
@@ -36,8 +40,6 @@ class AssembleTranscriptService:
 
             if not segments:
                 continue
-
-            is_absolute = chunk.get("status") == "REVIEWED"
             for seg in segments:
                 if is_absolute:
                     # REVIEWEDなチャンクはすでに絶対時間になっているため、そのまま使用する！

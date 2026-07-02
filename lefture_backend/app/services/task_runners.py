@@ -155,8 +155,8 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
         supabase.table("lecture_transcripts").update({
             "audio_duration": result["audio_duration"],
             "status": new_status,
-            "text": result["text"],
-            "segments": result["segments"], 
+            "text_groq": result["text"],
+            "segments_groq": result["segments"], 
             "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0,
             "storage_path": audio_r2_path,
         }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
@@ -223,8 +223,8 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
             for rc in reviewed_chunks:
                 supabase.table("lecture_transcripts").update({
                     "status": "REVIEWED",
-                    "text": rc["text"],
-                    "segments": rc["segments"]
+                    "text_reviewed": rc["text"],
+                    "segments_reviewed": rc["segments"]
                 }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
                 
             logger.log("✅ 4 chunks successfully REVIEWED and updated in DB!")
@@ -315,8 +315,8 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             for rc in reviewed_leftovers:
                 supabase.table("lecture_transcripts").update({
                     "status": "REVIEWED",
-                    "text": rc["text"],
-                    "segments": rc["segments"]
+                    "text_reviewed": rc["text"],
+                    "segments_reviewed": rc["segments"]
                 }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
                 
             logger.log("✅ Final leftover chunks successfully REVIEWED!")

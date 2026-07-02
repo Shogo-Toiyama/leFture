@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   connectivity_plus
+  ffmpeg_kit_flutter_new_audio
   permission_handler_windows
   record_windows
   sqlite3_flutter_libs

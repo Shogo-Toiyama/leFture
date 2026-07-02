@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
 from supabase import create_client, ClientOptions
 from nltk.tokenize import sent_tokenize
@@ -274,6 +275,49 @@ async def worker_transcribe_chunk(
     
     # 3. 処理がすべて終わったら、Flutterに成功レスポンスを返す
     return {"status": "success", "message": f"Chunk {chunk_index} fully processed."}
+
+# ---------------------------------------------------------
+# 🎥 マスターオーディオ(全体音源)のアップロード受付
+# ---------------------------------------------------------
+@app.post("/worker/upload-master-audio")
+async def worker_upload_master_audio(
+    lecture_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """
+    Flutterから圧縮されたマスターオーディオ(M4A)を受け取り、R2に保存して
+    Supabaseのlecturesテーブルのaudio_pathを更新する。
+    """
+    if not file:
+        raise HTTPException(status_code=400, detail="No audio file provided")
+
+    # 1. ユーザーIDを取得するため、Supabaseからレコードを取得
+    supabase = get_supabase_client()
+    res = supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail=f"Lecture {lecture_id} not found")
+    uid = res.data["user_id"]
+
+    # 2. ファイルを読み込み
+    audio_bytes = await file.read()
+
+    # 3. R2に保存
+    from app.services.task_runners import storage_service
+    audio_r2_path = storage_service.save_binary(
+        uid=uid,
+        lecture_id=lecture_id,
+        file_name="master_audio.m4a",
+        data=audio_bytes,
+        content_type="audio/x-m4a"
+    )
+
+    # 4. Supabase の lectures テーブルの audio_path を更新
+    supabase.table("lectures").update({
+        "audio_path": audio_r2_path,
+        "updated_at": datetime.now().isoformat()
+    }).eq("id", lecture_id).execute()
+
+    return {"status": "success", "message": f"Master audio uploaded and saved to {audio_r2_path}."}
 
 # ---------------------------------------------------------
 # 🗺️ タスクの種類と、呼び出す裏口 (URL) のマッピング辞書

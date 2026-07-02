@@ -216,6 +216,9 @@ class RecordingController extends _$RecordingController {
           _currentChunkIndex++; 
           _uploadMgr.tryProcessQueue();
         },
+        onMasterDataReady: (Uint8List masterData) async {
+          await _recorder.appendMasterRawData(masterData, lectureId);
+        },
       );
 
       final audioStream = await _recorder.startStream();
@@ -284,8 +287,11 @@ class RecordingController extends _$RecordingController {
       await _recorder.stop();
       _timer?.cancel();
 
+      // 1. マスター生PCMデータをAAC (M4A) に圧縮エンコード
+      final masterM4aPath = await _recorder.encodeMasterRawToM4a(lecture.id);
+
+      // 2. 最後のチャンクをフラッシュして登録
       final finalFlushed = _chunker?.flush();
-      
       if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
         log('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
         
@@ -300,6 +306,13 @@ class RecordingController extends _$RecordingController {
         );
         _currentChunkIndex++;
       }
+
+      // 3. マスターオーディオのアップロードジョブを登録
+      await _repo.enqueueMasterAudioUpload(
+        userId: lecture.userId,
+        lectureId: lecture.id,
+        localPath: masterM4aPath,
+      );
 
       await _repo.finishLectureRecording(
         lectureId: lecture.id,
@@ -324,6 +337,7 @@ class RecordingController extends _$RecordingController {
     _dbSubscription?.cancel();
     
     if (state.currentLectureId != null) {
+      await _recorder.cleanUpMasterAudioFiles(state.currentLectureId!);
       await _repo.deleteLectureAndAssets(state.currentLectureId!);
     }
     

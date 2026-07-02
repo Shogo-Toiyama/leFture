@@ -257,4 +257,59 @@ class RecordingRepositoryDrift {
           ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
         .get();
   }
+
+  // マスターオーディオ用のアップロードジョブをエンキューする
+  Future<String> enqueueMasterAudioUpload({
+    required String userId,
+    required String lectureId,
+    required String localPath,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final assetId = const Uuid().v4();
+    final jobId = const Uuid().v4();
+    final fileName = p.basename(localPath);
+    final storagePath = '$userId/$lectureId/$fileName';
+
+    await db.transaction(() async {
+      // 1. lecture updatedAt 更新
+      await (db.update(db.localLectures)
+            ..where((t) => t.id.equals(lectureId))
+            ..where((t) => t.userId.equals(userId)))
+          .write(LocalLecturesCompanion(updatedAt: Value(now)));
+
+      // 2. asset 登録 (type: 'master_audio', sequenceIndex: -1)
+      await db.into(db.localLectureAssets).insertOnConflictUpdate(
+            LocalLectureAssetsCompanion(
+              id: Value(assetId),
+              userId: Value(userId),
+              lectureId: Value(lectureId),
+              type: const Value('master_audio'),
+              sequenceIndex: const Value(-1),
+              localPath: Value(localPath),
+              storageBucket: const Value(audioBucket),
+              storagePath: Value(storagePath),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+
+      // 3. upload job 登録 (kind: 'master_audio_upload')
+      await db.into(db.localUploadJobs).insertOnConflictUpdate(
+            LocalUploadJobsCompanion(
+              id: Value(jobId),
+              userId: Value(userId),
+              lectureId: Value(lectureId),
+              assetId: Value(assetId),
+              kind: const Value('master_audio_upload'),
+              status: const Value('queued'),
+              attemptCount: const Value(0),
+              lastError: const Value(null),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+    });
+
+    return jobId;
+  }
 }
