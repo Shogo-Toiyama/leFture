@@ -42,7 +42,7 @@ final class GalaxyStateNotifierProvider
 }
 
 String _$galaxyStateNotifierHash() =>
-    r'4a883454d8aee73005f03a55f1b7a8a3751df8d7';
+    r'a528f3a0ab30f4a4a9bb6bf950561f69f849b1a3';
 
 abstract class _$GalaxyStateNotifier extends $Notifier<GalaxyState> {
   GalaxyState build();

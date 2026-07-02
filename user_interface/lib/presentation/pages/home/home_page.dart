@@ -13,8 +13,8 @@ import 'widgets/recent_lectures_list.dart';
 import 'widgets/bottom_control_bar.dart';
 import 'widgets/combined_header.dart';
 
-// 銀河ウィジェットの高さ（固定）
-const double _kGalaxyHeight = 200.0;
+// 銀河ウィジェットの高さの、画面縦幅に対する割合
+const double _kGalaxyHeightRatio = 0.25;
 // FunFactsの高さ（固定）。
 const double _kFunFactsHeight = 190.0;
 // Coursesヘッダーの高さ（固定）。
@@ -33,6 +33,11 @@ class HomePage extends HookConsumerWidget {
     // 銀河のジェスチャーを外部から制御するためのキー
     final galaxyKey = useMemoized(() => GlobalKey<GalaxyViewState>());
 
+    // 銀河エリアに指が触れている間、外側のCustomScrollViewのスクロールを無効化する。
+    // これがないと、縦方向のドラッグがジェスチャーアリーナで銀河のScaleGestureRecognizerと
+    // Scrollableのドラッグ認識器の間で競合し、スクロール側が勝ってしまうことがある。
+    final isGalaxyPointerDown = useState(false);
+
     // スクロール位置のリスナー
     useEffect(() {
       void listener() {
@@ -48,12 +53,15 @@ class HomePage extends HookConsumerWidget {
     final double statusBarHeight = MediaQuery.of(context).padding.top;
     final double navigationBarHeight = MediaQuery.of(context).padding.bottom;
 
+    // 銀河ウィジェットの高さ（画面縦幅の1/4、端末サイズに応じて可変）
+    final double galaxyHeight = screenHeight * _kGalaxyHeightRatio;
+
     // 各セクションの正確な高さを計算（スライド退避用）
     final double topAreaHeight = statusBarHeight + 56.0 + 68.0; // AppBar + AnnouncementBar
     final double bottomAreaHeight = 72.0 + navigationBarHeight + 16.0; // BottomControlBar (目安)
 
     // スクロール量に応じて銀河がぼける (スクロールした瞬間にリニアに開始)
-    final double blurSigma = ((scrollOffset.value / _kGalaxyHeight).clamp(0.0, 1.0) * 12.0);
+    final double blurSigma = ((scrollOffset.value / galaxyHeight).clamp(0.0, 1.0) * 12.0);
 
     return PopScope(
       canPop: !isTransitioning.value,
@@ -75,7 +83,7 @@ class HomePage extends HookConsumerWidget {
               top: isTransitioning.value ? 0.0 : topAreaHeight,
               left: 0,
               right: 0,
-              height: isTransitioning.value ? screenHeight : _kGalaxyHeight,
+              height: isTransitioning.value ? screenHeight : galaxyHeight,
               child: Hero(
                 tag: 'galaxy',
                 child: GalaxyView(key: galaxyKey),
@@ -90,7 +98,7 @@ class HomePage extends HookConsumerWidget {
                 top: topAreaHeight,
                 left: 0,
                 right: 0,
-                height: _kGalaxyHeight,
+                height: galaxyHeight,
                 child: IgnorePointer(
                   child: ClipRect(
                     child: BackdropFilter(
@@ -131,7 +139,7 @@ class HomePage extends HookConsumerWidget {
                   ),
                   // 下端のフェード
                   Positioned(
-                    top: topAreaHeight + _kGalaxyHeight - 15,
+                    top: topAreaHeight + galaxyHeight - 15,
                     left: 0,
                     right: 0,
                     height: 15,
@@ -169,37 +177,46 @@ class HomePage extends HookConsumerWidget {
                 opacity: isTransitioning.value ? 0.0 : 1.0,
                 child: CustomScrollView(
                   controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: isGalaxyPointerDown.value
+                      ? const NeverScrollableScrollPhysics()
+                      : const BouncingScrollPhysics(),
                   slivers: [
                     // 銀河の高さ分のスペーサー 兼 タッチイベント制御層
                     SliverToBoxAdapter(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onScaleStart: (d) => galaxyKey.currentState?.handleScaleStart(d),
-                        onScaleUpdate: (d) => galaxyKey.currentState?.handleScaleUpdate(d),
-                        onScaleEnd: (d) => galaxyKey.currentState?.handleScaleEnd(d),
-                        onTap: isTransitioning.value
-                            ? null
-                            : () async {
-                                showGradients.value = false; // 遷移開始時に一瞬で非表示
-                                isTransitioning.value = true;
-                                
-                                // アニメーション時間 (600ms) を待ってからページ遷移
-                                await Future.delayed(const Duration(milliseconds: 600));
-                                if (context.mounted && isTransitioning.value) {
-                                  // 戻り値を待って、戻ってきたら縮小アニメーションを開始する
-                                  await context.push(AppRoutes.learningGalaxy);
-                                  if (context.mounted) {
-                                    isTransitioning.value = false;
-                                    // 縮小アニメーション完了 (600ms) を待ってからパッと表示
-                                    await Future.delayed(const Duration(milliseconds: 600));
-                                    if (context.mounted && !isTransitioning.value) {
-                                      showGradients.value = true;
+                      child: Listener(
+                        // pointerDown時点でスクロールを無効化しておくことで、
+                        // その後のドラッグがジェスチャーアリーナで銀河側に確実に渡るようにする。
+                        onPointerDown: (_) => isGalaxyPointerDown.value = true,
+                        onPointerUp: (_) => isGalaxyPointerDown.value = false,
+                        onPointerCancel: (_) => isGalaxyPointerDown.value = false,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onScaleStart: (d) => galaxyKey.currentState?.handleScaleStart(d),
+                          onScaleUpdate: (d) => galaxyKey.currentState?.handleScaleUpdate(d),
+                          onScaleEnd: (d) => galaxyKey.currentState?.handleScaleEnd(d),
+                          onTap: isTransitioning.value
+                              ? null
+                              : () async {
+                                  showGradients.value = false; // 遷移開始時に一瞬で非表示
+                                  isTransitioning.value = true;
+
+                                  // アニメーション時間 (600ms) を待ってからページ遷移
+                                  await Future.delayed(const Duration(milliseconds: 600));
+                                  if (context.mounted && isTransitioning.value) {
+                                    // 戻り値を待って、戻ってきたら縮小アニメーションを開始する
+                                    await context.push(AppRoutes.learningGalaxy);
+                                    if (context.mounted) {
+                                      isTransitioning.value = false;
+                                      // 縮小アニメーション完了 (600ms) を待ってからパッと表示
+                                      await Future.delayed(const Duration(milliseconds: 600));
+                                      if (context.mounted && !isTransitioning.value) {
+                                        showGradients.value = true;
+                                      }
                                     }
                                   }
-                                }
-                              },
-                        child: const SizedBox(height: _kGalaxyHeight),
+                                },
+                          child: SizedBox(height: galaxyHeight),
+                        ),
                       ),
                     ),
                     // FunFacts + Courses ヘッダー (銀河エリアを超えたら上端にSticky)

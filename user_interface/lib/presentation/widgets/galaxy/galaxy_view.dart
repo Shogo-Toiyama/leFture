@@ -3,12 +3,18 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as v;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/application/galaxy/galaxy_data_provider.dart';
 import 'package:lecture_companion_ui/application/galaxy/galaxy_state_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 // 定数はクラスの外に出しておくとコンパイル時定数として扱われやすい
 const double _minZoom = 1.0;
 const double _maxZoom = 8.0;
+
+// 慣性(フリック後の減衰回転)関連の定数
+const double _inertiaSmoothing = 0.35; // ドラッグ中の角速度を追跡する指数移動平均の重み
+const double _inertiaDecay = 0.94; // 1フレームごとの減衰率
+const double _inertiaStopThresholdSq = 2.5e-7; // これ未満の角速度になったら慣性を止める
 
 class GalaxyView extends ConsumerStatefulWidget {
   const GalaxyView({super.key});
@@ -19,11 +25,6 @@ class GalaxyView extends ConsumerStatefulWidget {
 
 class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProviderStateMixin {
   late final AnimationController _ticker;
-  late final List<_Star> _stars;
-  late final List<_NebulaPuff> _nebula;
-  late final List<_BgStar> _bgStars;
-
-  ui.Image? _spriteTexture;
   double t = 0.0;
   int _frame = 0; // フレームカウンタをフィールドに移動
 
@@ -33,42 +34,20 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
   // Cache projected points for picking
   List<_ProjectedStar> _projected = [];
 
+  // トラックボール操作用: 現在のウィジェットサイズ（buildのLayoutBuilderで更新）
+  Size _viewSize = Size.zero;
+
+  // 慣性回転用: 直近のドラッグの「角速度」を軸*角度のベクトルとして保持する。
+  // 指を離した瞬間、この値を引き継いで減衰させながら回転を続ける。
+  v.Vector3 _spinVector = v.Vector3.zero();
+
   @override
   void initState() {
     super.initState();
 
-    const seed = 42;
-    const starCount = 20000;
-    const arms = 3;
-    const radius = 1.0;
-    const thickness = 0.05;
-
-    _stars = _generateSpiralGalaxy(
-      seed: seed,
-      count: starCount,
-      arms: arms,
-      radius: radius,
-      thickness: thickness,
-    );
-
-    _nebula = _generateNebula(
-      seed: seed,
-      count: (starCount / 500).toInt(),
-      arms: arms,
-      radius: radius * 0.7,
-      thickness: thickness,
-    );
-
-    _bgStars = _generateBgStars(
-      seed: 123,
-      count: 3200,
-    );
-
     _ticker = AnimationController(vsync: this, duration: const Duration(days: 99))
       ..addListener(_onTick) // リスナーメソッドを分けるとスッキリする
       ..forward();
-
-    _generateSpriteTexture();
   }
 
   void _onTick() {
@@ -77,45 +56,38 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
     t += 1 / 30;
 
     final state = ref.read(galaxyStateProvider);
-    if (!userInteracting && state.autoRotate) {
-      const spin = 0.002;
-      final worldUp = v.Vector3(0, 1, 0);
-      final q = v.Quaternion.axisAngle(worldUp, spin);
-      final newCamRot = q * state.camRot;
-      newCamRot.normalize();
-      
-      ref.read(galaxyStateProvider.notifier).updateState(
-        camRot: newCamRot,
-        zoom: state.zoom,
-      );
+    if (!userInteracting) {
+      if (_spinVector.length2 > _inertiaStopThresholdSq) {
+        // 慣性: 指を離した時点の角速度を減衰させながら回転を続ける
+        final angle = _spinVector.length;
+        final axis = _spinVector.clone()..normalize();
+        final q = v.Quaternion.axisAngle(axis, angle);
+        final newCamRot = (q * state.camRot)..normalize();
+
+        ref.read(galaxyStateProvider.notifier).updateState(
+          camRot: newCamRot,
+          zoom: state.zoom,
+        );
+
+        _spinVector = _spinVector * _inertiaDecay;
+      } else {
+        _spinVector = v.Vector3.zero();
+
+        if (state.autoRotate) {
+          const spin = 0.002;
+          final worldUp = v.Vector3(0, 1, 0);
+          final q = v.Quaternion.axisAngle(worldUp, spin);
+          final newCamRot = q * state.camRot;
+          newCamRot.normalize();
+
+          ref.read(galaxyStateProvider.notifier).updateState(
+            camRot: newCamRot,
+            zoom: state.zoom,
+          );
+        }
+      }
     }
     setState(() {});
-  }
-
-  Future<void> _generateSpriteTexture() async {
-    const size = 64;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-    final center = const Offset(size / 2, size / 2);
-    final radius = size / 2.0;
-
-    final paint = Paint()
-      ..shader = ui.Gradient.radial(
-        center,
-        radius,
-        const [Color(0xFFFFFFFF), Color(0x00FFFFFF)],
-        const [0.0, 1.0],
-      );
-
-    canvas.drawCircle(center, radius, paint);
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size, size);
-
-    if (mounted) {
-      setState(() {
-        _spriteTexture = image;
-      });
-    }
   }
 
   @override
@@ -126,6 +98,8 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
 
   // --- 外部からジェスチャーを流し込むための公開メソッド ---
   void handleScaleStart(ScaleStartDetails details) {
+    // 新しいドラッグを始めたら、前回の慣性の勢いは打ち消す
+    _spinVector = v.Vector3.zero();
     setState(() => userInteracting = true);
   }
 
@@ -139,20 +113,37 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
     final s = math.pow(d.scale, zoomSensitivity).toDouble();
     newZoom = (newZoom * s).clamp(_minZoom, _maxZoom);
 
-    // Rotation
-    final dx = d.focalPointDelta.dx;
-    final dy = d.focalPointDelta.dy;
-    const rotSpeed = 0.005;
+    // Rotation (トラックボール/アークボール方式)
+    // 画面上のドラッグ前後の点を仮想球面上の3D点に投影し、その2点間の回転を
+    // そのままカメラに適用する。ヨー・ピッチを別軸として毎フレーム積み上げないため、
+    // ロール(傾き)が蓄積してドリフトすることがなく、常に「指の動き＝見た目の動き」が一致する。
+    if (_viewSize.width > 0 && _viewSize.height > 0) {
+      const sensitivity = 0.5; // 感度調整用の係数
+      final current = d.localFocalPoint;
+      final previous = current - d.focalPointDelta;
 
-    final worldUp = v.Vector3(0, 1, 0);
-    final qYaw = v.Quaternion.axisAngle(worldUp, -dx * rotSpeed);
+      final pCurr = _projectToSphere(current, _viewSize);
+      final pPrev = _projectToSphere(previous, _viewSize);
 
-    final camRight = v.Vector3(1, 0, 0);
-    newCamRot.rotate(camRight); 
-    final qPitch = v.Quaternion.axisAngle(camRight, -dy * rotSpeed);
+      final dot = pPrev.dot(pCurr).clamp(-1.0, 1.0);
+      final angle = math.acos(dot) * sensitivity;
 
-    newCamRot = (qPitch * qYaw) * newCamRot;
-    newCamRot.normalize();
+      if (angle > 1e-6) {
+        final axis = pPrev.cross(pCurr);
+        if (axis.length2 > 1e-12) {
+          axis.normalize();
+          final qDelta = v.Quaternion.axisAngle(axis, angle);
+          // スクリーン空間で求めた回転をそのままカメラ姿勢に左から掛ける
+          newCamRot = (qDelta * newCamRot)..normalize();
+
+          // 慣性用に、直近の角速度(軸*角度)を指数移動平均で追跡しておく。
+          // 指を離した瞬間、最後の1フレームだけを見ると急停止のノイズを
+          // 拾いやすいため、直近の勢いを滑らかにならしておく。
+          final instant = axis * angle;
+          _spinVector = _spinVector * (1 - _inertiaSmoothing) + instant * _inertiaSmoothing;
+        }
+      }
+    }
 
     ref.read(galaxyStateProvider.notifier).updateState(
       camRot: newCamRot,
@@ -161,49 +152,85 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
     setState(() {});
   }
 
+  /// 画面ローカル座標を、ウィジェット中心を原点とする仮想楕円体面上の
+  /// 3D点(x: 右, y: 上, z: 手前)に投影する。中心から外側にはみ出した場合は
+  /// 楕円の縁（z=0）にクランプする。
+  ///
+  /// x/yそれぞれをウィジェットの半幅・半高で正規化するため、横長/縦長どちらの
+  /// ウィジェットでも「見た目の範囲いっぱい＝操作できる範囲」になる
+  /// （min(width,height)を使う円の場合、横長ウィジェットではボールが
+  /// 実際の見た目よりかなり小さくなってしまう）。
+  v.Vector3 _projectToSphere(Offset point, Size size) {
+    final halfWidth = size.width * 0.5;
+    final halfHeight = size.height * 0.5;
+
+    // この投影結果はワールド空間ではなく、camRotがそのまま出力に使うview空間
+    final nx = -(point.dx - halfWidth) / halfWidth;
+    final ny = -(point.dy - halfHeight) / halfHeight;
+
+    final lenSq = nx * nx + ny * ny;
+    if (lenSq <= 1.0) {
+      final nz = math.sqrt(1.0 - lenSq);
+      return v.Vector3(nx, ny, nz);
+    } else {
+      final invLen = 1.0 / math.sqrt(lenSq);
+      return v.Vector3(nx * invLen, ny * invLen, 0);
+    }
+  }
+
   void handleScaleEnd(ScaleEndDetails details) {
     setState(() => userInteracting = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_spriteTexture == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    // 星field・スプライトテクスチャはgalaxyDataProviderでアプリ全体としてキャッシュされている。
+    // watchすることで、初回のみローディングを表示し、以降このProviderが生きている限り
+    // どのGalaxyViewインスタンスも再生成なしに即座に描画できる。
+    final galaxyDataAsync = ref.watch(galaxyDataProvider);
 
-    // プロバイダーから状態を直接読み取る（watchしないことでリビルドを防ぐ）
-    final state = ref.read(galaxyStateProvider);
+    return galaxyDataAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Icon(Icons.error_outline, color: Colors.white.withValues(alpha: 0.5)),
+      ),
+      data: (galaxyData) {
+        // プロバイダーから状態を直接読み取る（watchしないことでリビルドを防ぐ）
+        final state = ref.read(galaxyStateProvider);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Stack(
-          children: [
-            GestureDetector(
-              onScaleStart: handleScaleStart,
-              onScaleEnd: handleScaleEnd,
-              onScaleUpdate: handleScaleUpdate,
-              child: RepaintBoundary(
-                // 2. ClipRect: 画用紙からはみ出したインク（drawColor）をカットする
-                child: ClipRect(
-                  child: CustomPaint(
-                    painter: _GalaxyPainter(
-                      stars: _stars,
-                      nebula: _nebula,
-                      bgStars: _bgStars,
-                      time: t,
-                      camRot: state.camRot,
-                      zoom: state.zoom,
-                      onProjected: (list) => _projected = list,
-                      sprite: _spriteTexture!,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            _viewSize = constraints.biggest;
+            return Stack(
+              children: [
+                GestureDetector(
+                  onScaleStart: handleScaleStart,
+                  onScaleEnd: handleScaleEnd,
+                  onScaleUpdate: handleScaleUpdate,
+                  child: RepaintBoundary(
+                    // 2. ClipRect: 画用紙からはみ出したインク（drawColor）をカットする
+                    child: ClipRect(
+                      child: CustomPaint(
+                        painter: _GalaxyPainter(
+                          stars: galaxyData.stars,
+                          nebula: galaxyData.nebula,
+                          bgStars: galaxyData.bgStars,
+                          time: t,
+                          camRot: state.camRot,
+                          zoom: state.zoom,
+                          onProjected: (list) => _projected = list,
+                          sprite: galaxyData.sprite,
+                        ),
+                        isComplex: true,
+                        willChange: true,
+                        size: Size.infinite,
+                      ),
                     ),
-                    isComplex: true,
-                    willChange: true,
-                    size: Size.infinite, 
                   ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
@@ -214,49 +241,11 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
 // Data Classes (Immutable & Simple)
 // ---------------------------------------------------------------------------
 
-class _Star {
-  const _Star({
-    required this.id,
-    required this.pos,
-    required this.size,
-    required this.bright,
-    required this.type,
-  });
-
-  final String id;
-  final v.Vector3 pos;
-  final double size;
-  final double bright;
-  final int type;
-}
-
 class _ProjectedStar {
   const _ProjectedStar({required this.star, required this.screen, required this.depth});
-  final _Star star;
+  final GalaxyStar star;
   final Offset screen;
   final double depth;
-}
-
-class _NebulaPuff {
-  const _NebulaPuff({
-    required this.pos,
-    required this.radius,
-    required this.alpha,
-    required this.colorIndex,
-  });
-
-  final v.Vector3 pos;
-  final double radius;
-  final double alpha;
-  final int colorIndex;
-}
-
-class _BgStar {
-  const _BgStar(this.x01, this.y01, this.r, this.baseA);
-  final double x01;
-  final double y01;
-  final double r;
-  final double baseA;
 }
 
 typedef _ProjectedCallback = void Function(List<_ProjectedStar> list);
@@ -278,9 +267,9 @@ class _GalaxyPainter extends CustomPainter {
     required this.sprite,
   });
 
-  final List<_Star> stars;
-  final List<_NebulaPuff> nebula;
-  final List<_BgStar> bgStars;
+  final List<GalaxyStar> stars;
+  final List<GalaxyNebulaPuff> nebula;
+  final List<GalaxyBgStar> bgStars;
   final double time;
   final v.Quaternion camRot;
   final double zoom;
@@ -307,17 +296,17 @@ class _GalaxyPainter extends CustomPainter {
 
     final center = Offset(size.width * 0.5, size.height * 0.52);
     final screenMin = math.min(size.width, size.height);
-    
+
     // Density Fix: iPad等で星がスカスカになるのを防ぐ
     final densityScale = screenMin / 380.0;
-    
+
     final fov = 1.2;
     final scale = screenMin * 0.38 * zoom;
     final z01 = ((zoom - _minZoom) / (_maxZoom - _minZoom)).clamp(0.0, 1.0).toDouble();
 
     // Matrix manual expansion
     final rotMatrix = v.Matrix4.identity()..setRotation(camRot.asRotationMatrix());
-    final m = rotMatrix.storage; 
+    final m = rotMatrix.storage;
     final m00 = m[0], m01 = m[4], m02 = m[8],  m03 = m[12];
     final m10 = m[1], m11 = m[5], m12 = m[9],  m13 = m[13];
     final m20 = m[2], m21 = m[6], m22 = m[10], m23 = m[14];
@@ -334,7 +323,7 @@ class _GalaxyPainter extends CustomPainter {
     final bgTransforms = <RSTransform>[];
     final bgRects = <Rect>[];
     final bgColors = <Color>[];
-    final avoidR = screenMin * 0.14; 
+    final avoidR = screenMin * 0.14;
     final avoidRSq = avoidR * avoidR;
 
     for (final s in bgStars) {
@@ -364,7 +353,7 @@ class _GalaxyPainter extends CustomPainter {
 
     if (bgTransforms.isNotEmpty) {
       canvas.drawAtlas(
-        sprite, bgTransforms, bgRects, bgColors, 
+        sprite, bgTransforms, bgRects, bgColors,
         BlendMode.modulate, null, Paint()
       );
     }
@@ -373,11 +362,11 @@ class _GalaxyPainter extends CustomPainter {
     // 2. Center Glow (Deformed by view angle)
     // -------------------------------------------------------
     final normalX = m01;
-    final normalY = m11; 
-    final normalZ = m21; 
+    final normalY = m11;
+    final normalZ = m21;
     final tilt = normalZ.abs();
     final angle = math.atan2(normalY, normalX);
-    
+
     final haze = 1.35 - 0.55 * z01;
     final coreRadius = screenMin * 0.18 * zoom * haze;
 
@@ -443,7 +432,7 @@ class _GalaxyPainter extends CustomPainter {
       if (alpha < 0.01) continue;
 
       nebulaTransforms.add(RSTransform.fromComponents(
-        rotation: 0, scale: sScale, anchorX: anchorX, anchorY: anchorY, 
+        rotation: 0, scale: sScale, anchorX: anchorX, anchorY: anchorY,
         translateX: x2, translateY: y2
       ));
       nebulaRects.add(spriteRect);
@@ -452,7 +441,7 @@ class _GalaxyPainter extends CustomPainter {
 
     if (nebulaTransforms.isNotEmpty) {
       canvas.drawAtlas(
-        sprite, nebulaTransforms, nebulaRects, nebulaColors, 
+        sprite, nebulaTransforms, nebulaRects, nebulaColors,
         BlendMode.modulate, null, Paint()..blendMode = BlendMode.screen
       );
     }
@@ -464,10 +453,10 @@ class _GalaxyPainter extends CustomPainter {
     final starRects = <Rect>[];
     final starColors = <Color>[];
     final projList = <_ProjectedStar>[];
-    
+
     final zoomT = ((zoom - 0.6) / 2.4).clamp(0.0, 1.0); // 3.0 - 0.6 = 2.4
     final zoomBoost = 0.55 + 0.9 * math.pow(zoomT, 2.2);
-    
+
     // Zoom Alpha Logic
     final baseAlphaFactor = 0.3 + 0.5 * z01;
 
@@ -498,11 +487,11 @@ class _GalaxyPainter extends CustomPainter {
       final alpha = (s.bright / math.pow(z, 0.8) * baseAlphaFactor).clamp(0.3, 1.0);
       if (alpha < 0.01) continue;
 
-      final visualScale = 1.2; 
+      final visualScale = 1.2;
       final sScale = (sizePx * 2 * visualScale) / spriteW;
 
       starTransforms.add(RSTransform.fromComponents(
-        rotation: 0, scale: sScale, anchorX: anchorX, anchorY: anchorY, 
+        rotation: 0, scale: sScale, anchorX: anchorX, anchorY: anchorY,
         translateX: x2, translateY: y2
       ));
       starRects.add(spriteRect);
@@ -513,7 +502,7 @@ class _GalaxyPainter extends CustomPainter {
 
     if (starTransforms.isNotEmpty) {
       canvas.drawAtlas(
-        sprite, starTransforms, starRects, starColors, 
+        sprite, starTransforms, starRects, starColors,
         BlendMode.modulate, null, Paint()..blendMode = BlendMode.screen
       );
     }
@@ -521,164 +510,8 @@ class _GalaxyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GalaxyPainter oldDelegate) {
-    return oldDelegate.camRot != camRot || 
-           oldDelegate.zoom != zoom || 
+    return oldDelegate.camRot != camRot ||
+           oldDelegate.zoom != zoom ||
            oldDelegate.time != time;
   }
-}
-
-
-// ---------------------------------------------------------------------------
-// Generators
-// ---------------------------------------------------------------------------
-
-List<_BgStar> _generateBgStars({required int seed, required int count}) {
-  final rnd = math.Random(seed);
-  return List.generate(count, (_) {
-    final x = rnd.nextDouble();
-    final y = rnd.nextDouble();
-    final r = 0.25 + math.pow(rnd.nextDouble(), 3.4) * 0.9;
-    final baseA = 0.3 + math.pow(rnd.nextDouble(), 2.5) * 0.70;
-    return _BgStar(x, y, r, baseA);
-  });
-}
-
-List<_NebulaPuff> _generateNebula({
-  required int seed,
-  required int count,
-  required int arms,
-  required double radius,
-  required double thickness,
-  double innerStartNorm = 0.10,
-}) {
-  final rnd = math.Random(seed + 999);
-  
-  // Helper: Box-Muller normal distribution
-  double randNorm() {
-    final u1 = math.max(rnd.nextDouble(), 1e-9);
-    final u2 = rnd.nextDouble();
-    return math.sqrt(-2.0 * math.log(u1)) * math.cos(2 * math.pi * u2);
-  }
-
-  final puffs = <_NebulaPuff>[];
-
-  for (int i = 0; i < count; i++) {
-    final t = rnd.nextDouble();
-    final rNormRaw = math.pow(t, 0.55).toDouble();
-    final rNorm = innerStartNorm + (1 - innerStartNorm) * rNormRaw;
-    final r = radius * rNorm;
-
-    final arm = rnd.nextInt(arms);
-    final baseAngle = (arm / arms) * 2 * math.pi;
-
-    const spiralTightness = 5.0;
-    final angleNoise = 0.12 + 0.40 * rNorm;
-    final angle = baseAngle + r * spiralTightness + randNorm() * angleNoise;
-
-    final posNoise = 0.015 + 0.06 * rNorm;
-    final x = r * math.cos(angle) + randNorm() * posNoise;
-    final y = r * math.sin(angle) + randNorm() * posNoise;
-    final z = randNorm() * thickness * (0.4 + 0.8 * (1 - rNorm));
-
-    final baseR = 14.0 + 38.0 * rNorm;
-    final alpha = (0.10 + 0.22 * (1 - rNorm) + rnd.nextDouble() * 0.08).clamp(0.04, 0.32);
-
-    final p = rnd.nextDouble();
-    final colorIndex = (p < 0.45) ? 0 : (p < 0.75) ? 1 : (p < 0.92) ? 2 : 3;
-
-    puffs.add(_NebulaPuff(
-      pos: v.Vector3(x, z, y),
-      radius: baseR * (0.7 + rnd.nextDouble() * 0.9),
-      alpha: alpha,
-      colorIndex: colorIndex,
-    ));
-  }
-  return puffs;
-}
-
-List<_Star> _generateSpiralGalaxy({
-  required int seed,
-  required int count,
-  required int arms,
-  required double radius,
-  required double thickness,
-  int bulgeCount = 5000,
-  double bulgeRadiusNorm = 0.2,
-  double innerDiskHoleNorm = 0.14,
-}) {
-  final rnd = math.Random(seed);
-  final stars = <_Star>[];
-
-  // Helper
-  double randNorm() {
-    final u1 = math.max(rnd.nextDouble(), 1e-9);
-    final u2 = rnd.nextDouble();
-    return math.sqrt(-2.0 * math.log(u1)) * math.cos(2 * math.pi * u2);
-  }
-
-  // --- Bulge ---
-  for (int i = 0; i < bulgeCount; i++) {
-    const mix = 0.28;
-    final uOuter = 0.75 * (1 - math.pow(rnd.nextDouble(), 2.6));
-    final uInner = math.pow(rnd.nextDouble(), 1.7).toDouble();
-    final u = (rnd.nextDouble() < mix) ? uInner : uOuter;
-
-    final maxR = radius * bulgeRadiusNorm;
-    final r = maxR * u;
-    final rJ = (r + randNorm() * (maxR * 0.06)).clamp(0.0, maxR);
-
-    final theta = math.acos(2 * rnd.nextDouble() - 1);
-    final phi = rnd.nextDouble() * 2 * math.pi;
-    const flatten = 0.75;
-
-    final x = rJ * math.sin(theta) * math.cos(phi);
-    final y = rJ * math.sin(theta) * math.sin(phi);
-    final z = rJ * math.cos(theta) * flatten;
-
-    final bright = (0.35 + 0.65 * math.pow(1 - u, 0.7) + rnd.nextDouble() * 0.15)
-        .clamp(0.0, 1.0).toDouble();
-    
-    final size = (0.5 + bright * 0.9 + rnd.nextDouble() * 0.35);
-
-    final p = rnd.nextDouble();
-    final type = (p < 0.55) ? 2 : (p < 0.95) ? 0 : 1;
-
-    stars.add(_Star(
-      id: "bulge_$i", pos: v.Vector3(x, z, y), size: size, bright: bright, type: type
-    ));
-  }
-
-  // --- Disk ---
-  final diskCount = count - stars.length; // 残りをディスクにする
-  for (int i = 0; i < diskCount; i++) {
-    final t = rnd.nextDouble();
-    final rNormRaw = math.pow(t, 0.85).toDouble();
-    final rNorm = innerDiskHoleNorm + (1.0 - innerDiskHoleNorm) * rNormRaw;
-    final r = radius * rNorm;
-
-    final arm = rnd.nextInt(arms);
-    final baseAngle = (arm / arms) * 2 * math.pi;
-
-    const spiralTightness = 5.0;
-    final angleNoise = (0.18 + 0.35 * rNorm);
-    final angle = baseAngle + r * spiralTightness + randNorm() * angleNoise;
-
-    final posNoise = 0.012 + 0.05 * rNorm;
-    final x = r * math.cos(angle) + randNorm() * posNoise;
-    final y = r * math.sin(angle) + randNorm() * posNoise;
-    final z = randNorm() * thickness * (0.6 + 0.8 * (1 - rNorm));
-
-    final bright = (0.15 + 0.85 * math.pow(1 - rNorm, 1.8) + rnd.nextDouble() * 0.15)
-        .clamp(0.0, 1.0);
-    final size = (0.6 + bright * 1.8 + rnd.nextDouble() * 0.6);
-
-    final p = rnd.nextDouble();
-    final type = (p < 0.55) ? 1 : (p < 0.78) ? 0 : (p < 0.93) ? 2 : 3;
-
-    stars.add(_Star(
-      id: "disk_$i", pos: v.Vector3(x, z, y), size: size, bright: bright, type: type
-    ));
-  }
-
-  return stars;
 }
