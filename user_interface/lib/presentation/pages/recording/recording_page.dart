@@ -9,6 +9,8 @@ import 'dart:async';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart'; // 色追加
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
+import '../dev_tools/simulate_recording_tab.dart';
+import '../dev_tools/test_mode_flag.dart';
 import 'widgets/course_picker_sheet.dart';
 
 class RecordingPage extends HookConsumerWidget {
@@ -26,8 +28,8 @@ class RecordingPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // タブコントローラー (2つ: Voice / Memo)
-    final tabController = useTabController(initialLength: 2);
+    // タブコントローラー (Voice / Memo、isTestModeの時だけTestタブが加わる)
+    final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
     final memoCtl = useTextEditingController();
     useListenable(memoCtl);
     
@@ -125,6 +127,7 @@ class RecordingPage extends HookConsumerWidget {
           tabs: const [
             Tab(icon: Icon(Icons.mic)),
             Tab(icon: Icon(Icons.edit_note)),
+            if (isTestMode) Tab(icon: Icon(Icons.bug_report)),
           ],
         ),
       ),
@@ -436,6 +439,11 @@ class RecordingPage extends HookConsumerWidget {
                   ),
                 ],
               ),
+
+              // ==========================================
+              // Tab 3: Test (Tier 1 simulate-recording harness, isTestMode only)
+              // ==========================================
+              if (isTestMode) const SimulateRecordingTab(),
             ],
           ),
 

@@ -44,3 +44,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Dev-only fixtures for the /debug/simulate-recording harness (large PCM files, not for git)
+dev_fixtures/

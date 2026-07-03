@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:typed_data';
 import 'package:lecture_companion_ui/core/services/audio_record/audio_chunker.dart';
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -61,20 +61,27 @@ Future<String> _buildWhisperContext({
       }
     }
   } catch (e) {
-    log('[WhisperContext] Failed to fetch context: $e');
+    DevLog.add('[WhisperContext] Failed to fetch context: $e');
   }
 
   return parts.join('\n');
 }
 
-@Riverpod(keepAlive: true)
+// dependencies: [] を明示することで、このproviderがdev_tools/のTestタブから
+// ProviderScope(overrides: [...])で差し替え可能な「scoped provider」になる。
+// 何もオーバーライドしなければ今まで通りルートの単一インスタンスとして動く。
+@Riverpod(keepAlive: true, dependencies: [])
 AudioRecorderService audioRecorderService(Ref ref) {
   final svc = AudioRecorderService();
   ref.onDispose(svc.dispose);
   return svc;
 }
 
-@Riverpod(keepAlive: true)
+// audioRecorderServiceに依存していることを明示しないと、dev_tools/側で
+// ProviderScopeを使ってaudioRecorderServiceProviderをオーバーライドしても
+// このControllerには一切伝播しない(常にルートコンテナの本物のマイクを使う
+// インスタンスを参照し続ける)。Riverpodの仕様上、これが必須。
+@Riverpod(keepAlive: true, dependencies: [audioRecorderService])
 class RecordingController extends _$RecordingController {
   StreamSubscription? _dbSubscription;
   Timer? _timer;
@@ -154,6 +161,7 @@ class RecordingController extends _$RecordingController {
   }
 
   Future<void> _startRecordingSession() async {
+    DevLog.add('[StartSession] 1/8 begin');
     final user = supabase.auth.currentUser;
     if (user == null) {
       state = state.copyWith(
@@ -163,10 +171,12 @@ class RecordingController extends _$RecordingController {
       return;
     }
 
+    DevLog.add('[StartSession] 2/8 requesting mic/notification permissions...');
     Map<Permission, PermissionStatus> statuses = await [
       Permission.microphone,
       Permission.notification,
     ].request();
+    DevLog.add('[StartSession] 3/8 permission result: $statuses');
 
     if (statuses[Permission.microphone] != PermissionStatus.granted) {
       state = state.copyWith(
@@ -179,11 +189,13 @@ class RecordingController extends _$RecordingController {
     state = state.copyWith(phase: RecordingPhase.requestingPermission, clearErrorMessage: true);
 
     try {
+      DevLog.add('[StartSession] 4/8 creating draft lecture...');
       final lectureId = await _repo.createDraftLecture(
         userId: user.id,
         presetCourseId: state.courseId,
         presetTitle: state.title.isNotEmpty ? state.title : null,
       );
+      DevLog.add('[StartSession] 5/8 draft lecture created: $lectureId');
 
       // コースが選択されていればWhisperコンテキストをフェッチして保存
       final courseId = state.courseId;
@@ -197,14 +209,14 @@ class RecordingController extends _$RecordingController {
       state = state.copyWith(currentLectureId: lectureId);
       _startWatchingLecture(lectureId);
 
-      _currentChunkIndex = 0; 
+      _currentChunkIndex = 0;
 
       _chunker = AudioChunker(
         onChunkReady: (Uint8List chunkData, double startTimeSec) async {
-          log('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length} (Start: ${startTimeSec}s)');
-          
+          DevLog.add('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length} (Start: ${startTimeSec}s)');
+
           final path = await _recorder.savePcmAsWav(chunkData, lectureId);
-          
+
           await _repo.attachAudioAndEnqueueUpload(
             userId: user.id,
             lectureId: lectureId,
@@ -212,8 +224,8 @@ class RecordingController extends _$RecordingController {
             sequenceIndex: _currentChunkIndex,
             startTime: startTimeSec,
           );
-          
-          _currentChunkIndex++; 
+
+          _currentChunkIndex++;
           _uploadMgr.tryProcessQueue();
         },
         onMasterDataReady: (Uint8List masterData) async {
@@ -221,16 +233,25 @@ class RecordingController extends _$RecordingController {
         },
       );
 
+      DevLog.add('[StartSession] 6/8 calling _recorder.startStream()...');
       final audioStream = await _recorder.startStream();
+      DevLog.add('[StartSession] 7/8 _recorder.startStream() returned, subscribing...');
 
-      _audioStreamSub = audioStream.listen((data) {
-        _chunker!.processAudioStream(data);
-      });
+      _audioStreamSub = audioStream.listen(
+        (data) {
+          _chunker!.processAudioStream(data);
+        },
+        onError: (Object e, StackTrace st) {
+          DevLog.add('🔴 [StartSession] audioStream error: $e\n$st');
+        },
+      );
 
       _startTimer();
       state = state.copyWith(phase: RecordingPhase.recording);
+      DevLog.add('[StartSession] 8/8 recording phase active');
 
-    } catch (e) {
+    } catch (e, st) {
+      DevLog.add('🔴 [StartSession] failed: $e\n$st');
       state = state.copyWith(phase: RecordingPhase.error, errorMessage: 'Failed to start: $e');
     }
   }
@@ -238,7 +259,7 @@ class RecordingController extends _$RecordingController {
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      log('[Timer] Tick: ${state.elapsedSeconds + 1} (Phase: ${state.phase})');
+      DevLog.add('[Timer] Tick: ${state.elapsedSeconds + 1} (Phase: ${state.phase})');
       state = state.copyWith(elapsedSeconds: state.elapsedSeconds + 1);
     });
   }
@@ -293,7 +314,7 @@ class RecordingController extends _$RecordingController {
       // 2. 最後のチャンクをフラッシュして登録
       final finalFlushed = _chunker?.flush();
       if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
-        log('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
+        DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
         
         final path = await _recorder.savePcmAsWav(finalFlushed.data, lecture.id);
         

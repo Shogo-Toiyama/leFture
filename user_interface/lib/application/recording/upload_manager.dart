@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:http/http.dart' as http;
@@ -82,11 +83,17 @@ class UploadManager {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    // オフラインなら何もしない
-    final connectivity = await Connectivity().checkConnectivity();
-    if (_isOffline(connectivity)) return;
-
     try {
+      // オフラインなら何もしない
+      // ★ この判定をtry内に置くのが重要: tryの外でreturnすると、finallyで
+      // _isProcessingをfalseに戻す処理を素通りしてしまい、一度オフライン判定
+      // (誤検知含む)が起きただけでアップロードが永久に止まってしまうバグになる。
+      final connectivity = await Connectivity().checkConnectivity();
+      if (_isOffline(connectivity)) {
+        DevLog.add('📡 [UploadManager] Offline detected, skipping this round.');
+        return;
+      }
+
       while (true) {
         // オフラインになったら中断
         final currentConn = await Connectivity().checkConnectivity();
@@ -131,14 +138,14 @@ class UploadManager {
           // Q2. この授業はすでに録音終了（Done）しているか？
           final lecture = await _repo.getLecture(job.lectureId);
           if (lecture == null) {
-            print('Lecture not found (maybe discarded?)');
+            DevLog.add('Lecture not found (maybe discarded?)');
             continue;
           }
           final expectedChunks = lecture.expectedChunks;
           
           // A. もし「未送信がゼロ」かつ「録音が終了している」なら、全部送り切った証拠！！
           if (remainingJobs.isEmpty && expectedChunks != null) {
-            print('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
+            DevLog.add('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
             
             try {
               // 1. Supabaseから現在のユーザーのJWTトークンを取得
@@ -166,12 +173,12 @@ class UploadManager {
               );
 
               if (response.statusCode == 200 || response.statusCode == 202) {
-                print('🚀 start_analysis (Cloud Run) の呼び出し成功！');
+                DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
               } else {
                 throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
               }
             } catch (invokeError) {
-              print('❌ start_analysis の呼び出しでエラー: $invokeError');
+              DevLog.add('❌ start_analysis の呼び出しでエラー: $invokeError');
               // ※ ここでエラーが起きても、データはStorageに安全に保管されているので、
               // 画面上から「再分析」ボタンなどでリトライできる作りにすれば完璧です！
             }
@@ -237,13 +244,13 @@ class UploadManager {
           final file = File(localPath);
           if (await file.exists()) {
             await file.delete();
-            print('🧹 [UploadManager] Master audio local file deleted.');
+            DevLog.add('🧹 [UploadManager] Master audio local file deleted.');
           }
         } catch (cleanupError) {
-          print('⚠️ [UploadManager] Master audio cleanup failed: $cleanupError');
+          DevLog.add('⚠️ [UploadManager] Master audio cleanup failed: $cleanupError');
         }
       } catch (e) {
-        print('❌ [UploadManager] マスターオーディオ通信エラー、後でリトライします: $e');
+        DevLog.add('❌ [UploadManager] マスターオーディオ通信エラー、後でリトライします: $e');
         rethrow;
       }
       return;
@@ -263,9 +270,9 @@ class UploadManager {
         'status': 'PROCESSING',
         'start_time': asset.startTime,
       });
-      print('📝 [UploadManager] 処理開始(PROCESSING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
+      DevLog.add('📝 [UploadManager] 処理開始(PROCESSING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
     } catch (e) {
-      print('❌ [UploadManager] DBへの受付票登録に失敗: $e');
+      DevLog.add('❌ [UploadManager] DBへの受付票登録に失敗: $e');
       rethrow; 
     }
 
@@ -279,7 +286,7 @@ class UploadManager {
         whisperContext: lecture.whisperContext ?? '',
       );
     } catch (e) {
-      print('❌ [UploadManager] 通信エラー、後でリトライします: $e');
+      DevLog.add('❌ [UploadManager] 通信エラー、後でリトライします: $e');
       rethrow;
     }
   }
@@ -316,7 +323,7 @@ class UploadManager {
       throw Exception('Cloud Run error (${response.statusCode}): $respStr');
     }
     
-    print('🚀 [UploadManager] Cloud RunにChunk $chunkIndex を送信完了！');
+    DevLog.add('🚀 [UploadManager] Cloud RunにChunk $chunkIndex を送信完了！');
   }
 
   /// Cloud Runへ直接マスターオーディオ(M4A)ファイルを投げるメソッド
@@ -337,6 +344,6 @@ class UploadManager {
       throw Exception('Cloud Run master upload error (${response.statusCode}): $respStr');
     }
     
-    print('🚀 [UploadManager] Cloud RunにMaster Audio $lectureId を送信完了！');
+    DevLog.add('🚀 [UploadManager] Cloud RunにMaster Audio $lectureId を送信完了！');
   }
 }

@@ -27,8 +27,8 @@ final class AudioRecorderServiceProvider
         retry: null,
         name: r'audioRecorderServiceProvider',
         isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+        dependencies: <ProviderOrFamily>[],
+        $allTransitiveDependencies: <ProviderOrFamily>[],
       );
 
   @override
@@ -55,7 +55,7 @@ final class AudioRecorderServiceProvider
 }
 
 String _$audioRecorderServiceHash() =>
-    r'7081d9a2fae2b11c928c1cc02aed343f1be507b0';
+    r'ced89a75dcea0d4263ed419017aa4006af229660';
 
 @ProviderFor(RecordingController)
 final recordingControllerProvider = RecordingControllerProvider._();
@@ -69,9 +69,13 @@ final class RecordingControllerProvider
         retry: null,
         name: r'recordingControllerProvider',
         isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+        dependencies: <ProviderOrFamily>[audioRecorderServiceProvider],
+        $allTransitiveDependencies: <ProviderOrFamily>[
+          RecordingControllerProvider.$allTransitiveDependencies0,
+        ],
       );
+
+  static final $allTransitiveDependencies0 = audioRecorderServiceProvider;
 
   @override
   String debugGetCreateSourceHash() => _$recordingControllerHash();
@@ -90,7 +94,7 @@ final class RecordingControllerProvider
 }
 
 String _$recordingControllerHash() =>
-    r'07ad6e847a4fec1e82bff6568d5391f66ecfb38a';
+    r'ba21544b6306a7c7b0a4255223ecadcbbd586df2';
 
 abstract class _$RecordingController extends $Notifier<RecordingState> {
   RecordingState build();

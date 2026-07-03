@@ -43,7 +43,9 @@ class RecordingState {
 
   bool get isRecording => phase == RecordingPhase.recording;
   bool get isPaused => phase == RecordingPhase.paused;
-  bool get canUpload => phase == RecordingPhase.paused && lecture != null;
+  bool get canUpload => 
+      (phase == RecordingPhase.paused || phase == RecordingPhase.recording) && 
+      lecture != null;
 
   factory RecordingState.idle() {
     return const RecordingState(

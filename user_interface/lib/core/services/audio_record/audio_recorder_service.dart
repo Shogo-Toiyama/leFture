@@ -6,6 +6,7 @@ import 'package:flutter_background/flutter_background.dart';
 import 'package:record/record.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
@@ -25,10 +26,12 @@ class AudioRecorderService {
       notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'), // アイコン
     );
 
+    DevLog.add('[AudioRecorderService] calling FlutterBackground.initialize()...');
     // 権限と設定を初期化
     _isBackgroundInitialized = await FlutterBackground.initialize(
       androidConfig: androidConfig,
     );
+    DevLog.add('[AudioRecorderService] FlutterBackground.initialize() returned: $_isBackgroundInitialized');
   }
 
   Future<void> start({required String outputPath}) async {
@@ -67,7 +70,9 @@ class AudioRecorderService {
     if (Platform.isAndroid) {
       await _initBackgroundService();
       if (_isBackgroundInitialized) {
+        DevLog.add('[AudioRecorderService] calling FlutterBackground.enableBackgroundExecution()...');
         await FlutterBackground.enableBackgroundExecution();
+        DevLog.add('[AudioRecorderService] enableBackgroundExecution() returned');
       }
     }
 
@@ -76,8 +81,10 @@ class AudioRecorderService {
       sampleRate: 16000,               // 16kHz (Whisperの推奨サンプリングレート)
       numChannels: 1,                  // モノラル (データ量を半分にするため)
     );
-    // print("Audio Stream呼び出します！");
-    return await _recorder.startStream(config);
+    DevLog.add('[AudioRecorderService] calling _recorder.startStream(config)...');
+    final stream = await _recorder.startStream(config);
+    DevLog.add('[AudioRecorderService] _recorder.startStream(config) returned a stream');
+    return stream;
   }
 
   Future<void> pause() async {
