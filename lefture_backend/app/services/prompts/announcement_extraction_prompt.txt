@@ -47,6 +47,8 @@ If time or date is mentioned, populate the `datetime_parameters` object based ON
 
 ### OUTPUT FORMAT
 Return ONLY a valid, minified JSON object matching the structure below. Do not include markdown formatting (like ```json), explanations, or preamble.
+If there are no announcements, TODOs, EVENTs, HINTs, or INFOs to extract, return a JSON object with an empty array: {"announcements": []}
+
 
 {
   "announcements": [

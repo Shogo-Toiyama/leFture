@@ -1136,6 +1136,31 @@ async def run_finalize_job_task(job_id: str, task_id: str):
         logger.log("✅ All task costs aggregated successfully.")
         logger.log(final_report)
 
+        # 2.5 IMAGE_RENDERING の結果を取得し、lecture_topics に画像パスを書き込む
+        try:
+            logger.log("🖼️ Linking rendered images to lecture_topics...")
+            rendering_payload = _get_dependency_payload(job_id, "IMAGE_RENDERING")
+            manifest_path = rendering_payload.get("rendered_images_path")
+            if manifest_path:
+                rendering_results = _download_from_r2_to_memory(manifest_path)
+                if isinstance(rendering_results, list):
+                    for item in rendering_results:
+                        topic_idx = item.get("topic_idx")
+                        img_path = item.get("image_path")
+                        if topic_idx is not None and img_path:
+                            supabase.table("lecture_topics")\
+                                .update({"image_path": img_path})\
+                                .eq("lecture_id", lecture_id)\
+                                .eq("index", topic_idx)\
+                                .execute()
+                    logger.log(f"✅ Successfully linked {len(rendering_results)} image path(s) to lecture_topics.")
+                else:
+                    logger.log("⚠️ Rendered images manifest is not a list. Skipping image linking.")
+            else:
+                logger.log("⚠️ Rendered images manifest path not found in payload. Skipping image linking.")
+        except Exception as img_link_error:
+            logger.log(f"⚠️ Failed to link images to lecture_topics: {img_link_error}")
+
         # 3. R2に「最終原価レポート」を保存 (ログとしての永久保存)
         report_storage_path = storage_service.save_json_log(uid, lecture_id, "total_cost_report", {
             "total_usd": master_billing.total_usd(),

@@ -44,4 +44,9 @@ class AnnouncementGenerationService:
 
         self.logger.log(f"⏰ Announcement Generation finished in {res.elapsed_seconds:.2f} seconds.")
         
-        return res.output_json
+        output = res.output_json
+        if not output or not isinstance(output, dict) or "announcements" not in output:
+            self.logger.log("⚠️ Received empty or invalid JSON response. Falling back to empty announcements list.")
+            output = {"announcements": []}
+            
+        return output

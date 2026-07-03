@@ -393,8 +393,10 @@ class UnifiedLLM:
         json_parse_error = None
 
         if options.output_type == "json":
+            from app.services.helpers.helpers import extract_json_string
+            cleaned_text = extract_json_string(output_text)
             try:
-                out_json = json.loads(output_text) if output_text.strip() else None
+                out_json = json.loads(cleaned_text) if cleaned_text.strip() else None
             except Exception as e:
                 json_parse_error = str(e)
                 warnings.warn(

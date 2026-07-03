@@ -19,6 +19,32 @@ def _strip_code_fence(text: str) -> str:
         text = "\n".join(lines)
     return text
 
+def extract_json_string(text: str) -> str:
+    text_stripped = text.strip()
+    if not text_stripped:
+        return ""
+    
+    # 最初に見つかる { または [ を探す
+    first_idx = -1
+    first_char = ''
+    for idx, char in enumerate(text_stripped):
+        if char in ('{', '['):
+            first_idx = idx
+            first_char = char
+            break
+            
+    if first_idx == -1:
+        return text_stripped
+        
+    last_char = '}' if first_char == '{' else ']'
+    last_idx = text_stripped.rfind(last_char)
+    
+    if last_idx != -1 and last_idx > first_idx:
+        return text_stripped[first_idx:last_idx + 1]
+        
+    return text_stripped
+
+
 def _load_prompt(filename: str) -> str:
     prompt_path = PROMPTS_DIR / filename
     if not prompt_path.exists():
