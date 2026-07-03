@@ -22,7 +22,7 @@ class SentenceReviewService:
                 segs = chunk.get("segments_reviewed")
                 is_absolute = True
                 if segs is None:
-                    segs = chunk.get("segments_groq") or []
+                    segs = chunk.get("segments_stt") or []
                     is_absolute = False
 
                 c_start = chunk.get("start_time", 0.0)
@@ -36,7 +36,7 @@ class SentenceReviewService:
                     new_segs.append(new_seg)
                 new_chunk["segments"] = new_segs
                 if not new_chunk.get("text"):
-                    new_chunk["text"] = chunk.get("text_reviewed") or chunk.get("text_groq") or ""
+                    new_chunk["text"] = chunk.get("text_reviewed") or chunk.get("text_stt") or ""
                 absolute_chunks.append(new_chunk)
             return absolute_chunks
 
@@ -48,7 +48,7 @@ class SentenceReviewService:
             prev_segs = previous_chunk.get("segments_reviewed")
             is_absolute = True
             if prev_segs is None:
-                prev_segs = previous_chunk.get("segments_groq") or []
+                prev_segs = previous_chunk.get("segments_stt") or []
                 is_absolute = False
 
             if prev_segs:
@@ -81,7 +81,7 @@ class SentenceReviewService:
             cur_segs = chunk.get("segments_reviewed")
             is_absolute = True
             if cur_segs is None:
-                cur_segs = chunk.get("segments_groq") or []
+                cur_segs = chunk.get("segments_stt") or []
                 is_absolute = False
 
             for seg in cur_segs:

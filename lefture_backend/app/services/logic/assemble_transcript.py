@@ -21,7 +21,7 @@ class AssembleTranscriptService:
             segments = chunk.get("segments_reviewed")
             is_absolute = True
             if segments is None:
-                segments = chunk.get("segments_groq") or []
+                segments = chunk.get("segments_stt") or []
                 is_absolute = False
 
             if not isinstance(segments, list):

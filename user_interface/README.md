@@ -7,4 +7,5 @@ dart run build_runner build --delete-conflicting-outputs
 ```
 flutter run
 flutter run --release
+flutter run --release --dart-define=IS_TEST_MODE=true
 ```

@@ -4,7 +4,6 @@ import json
 import re
 from pathlib import Path
 from datetime import datetime
-from groq import Groq
 from typing import Any
 
 from app.core.config import BASE_WORK_DIR
@@ -155,8 +154,8 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
         supabase.table("lecture_transcripts").update({
             "audio_duration": result["audio_duration"],
             "status": new_status,
-            "text_groq": result["text"],
-            "segments_groq": result["segments"], 
+            "text_stt": result["text"],
+            "segments_stt": result["segments"], 
             "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0,
             "storage_path": audio_r2_path,
         }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
@@ -168,66 +167,96 @@ async def run_transcribe_chunk_worker(lecture_id: str, chunk_index: int, start_t
             logger.log(f"🔇 Text: (No speech detected, skipped Groq)")
 
         # =========================================================
-        # Sentence Review のトリガー
+        # Sentence Review のトリガー (4枚区切りでアトミックに並行制御)
         # =========================================================
         
-        # 1. 現在 TRANSCRIBED 状態になっているチャンクを全て取得
-        res = supabase.table("lecture_transcripts")\
-            .select("*")\
-            .eq("lecture_id", lecture_id)\
-            .eq("status", "TRANSCRIBED")\
-            .order("chunk_index")\
-            .execute()
+        # 1. 自分が所属するバッチ（4つ区切り）を特定
+        batch_start = (chunk_index // 4) * 4
+        batch_indices = [batch_start + i for i in range(4)]
         
-        pending_chunks = res.data
+        logger.log(f"🔍 Checking progressive Sentence Review batch starting at {batch_start} (Chunks: {batch_indices})")
         
-        # 2. 4つ以上溜まっていたらReview
-        if len(pending_chunks) >= 4:
-            # 今回レビューする4つを切り出す
-            chunks_to_review = pending_chunks[:4]
-            first_chunk_index = chunks_to_review[0]["chunk_index"]
-            chunk_ids = [c["id"] for c in chunks_to_review]
-            supabase.table("lecture_transcripts").update({"status": "REVIEWING"}).in_("id", chunk_ids).execute()
-            
-            # 3. タイムライン再構築のために、このバッチまでのすべての履歴を取得
-            history_res = supabase.table("lecture_transcripts")\
-                .select("*")\
+        try:
+            # 2. バッチの4つのチャンクの状態を確認
+            check_res = supabase.table("lecture_transcripts")\
+                .select("chunk_index, status")\
                 .eq("lecture_id", lecture_id)\
-                .lte("chunk_index", first_chunk_index + 3)\
-                .order("chunk_index")\
+                .in_("chunk_index", batch_indices)\
                 .execute()
-            
-            adjusted_history = reconstruct_chunk_start_times(history_res.data or [])
-            
-            # 補正済みのリストから chunks_to_review と prev_chunk を抽出
-            adjusted_review_map = {c["chunk_index"]: c for c in adjusted_history}
-            chunks_to_review = [adjusted_review_map[c["chunk_index"]] for c in chunks_to_review if c["chunk_index"] in adjusted_review_map]
-            
-            prev_chunk = adjusted_review_map.get(first_chunk_index - 1) if first_chunk_index > 0 else None
-            
-            logger.log(f"🚀 Triggering Sentence Review for chunks {first_chunk_index} to {first_chunk_index + 3}")
-            
-            # 4. SentenceReviewService を呼び出し
-            course_title, keywords_list = _get_sentence_review_context(lecture_id)
-            
-            llm = UnifiedLLM(billing)
-            reviewer = SentenceReviewService(llm, logger)
-            reviewed_chunks = await reviewer.run_from_memory(
-                chunks_to_review=chunks_to_review,
-                previous_chunk=prev_chunk,
-                course_title=course_title,
-                keywords_list=keywords_list
-            )
-            
-            # 5. 返ってきた綺麗なデータを DB に UPSERT (上書き)
-            for rc in reviewed_chunks:
-                supabase.table("lecture_transcripts").update({
-                    "status": "REVIEWED",
-                    "text_reviewed": rc["text"],
-                    "segments_reviewed": rc["segments"]
-                }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
                 
-            logger.log("✅ 4 chunks successfully REVIEWED and updated in DB!")
+            chunks_status = {c["chunk_index"]: c["status"] for c in check_res.data or []}
+            all_ready = len(chunks_status) == 4 and all(status == "TRANSCRIBED" for status in chunks_status.values())
+            
+            if all_ready:
+                # 3. 4つのチャンクをアトミックに 'REVIEWING' に更新 (TRANSCRIBED であるもののみ)
+                # 同時実行された場合、先に更新に成功した1プロセスのみが更新件数4を獲得する
+                lock_res = supabase.table("lecture_transcripts")\
+                    .update({"status": "REVIEWING"})\
+                    .eq("lecture_id", lecture_id)\
+                    .in_("chunk_index", batch_indices)\
+                    .eq("status", "TRANSCRIBED")\
+                    .execute()
+                    
+                updated_chunks = lock_res.data or []
+                
+                if len(updated_chunks) == 4:
+                    logger.log(f"🔒 Lock acquired for batch {batch_start}! Executing Sentence Review...")
+                    
+                    # 最新のデータを再度取得してインデックス順にソート
+                    batch_res = supabase.table("lecture_transcripts")\
+                        .select("*")\
+                        .eq("lecture_id", lecture_id)\
+                        .in_("chunk_index", batch_indices)\
+                        .order("chunk_index")\
+                        .execute()
+                        
+                    chunks_to_review = batch_res.data or []
+                    
+                    # タイムライン再構築のために、このバッチまでのすべての履歴を取得
+                    history_res = supabase.table("lecture_transcripts")\
+                        .select("*")\
+                        .eq("lecture_id", lecture_id)\
+                        .lte("chunk_index", batch_start + 3)\
+                        .order("chunk_index")\
+                        .execute()
+                    
+                    adjusted_history = reconstruct_chunk_start_times(history_res.data or [])
+                    
+                    # 補正済みのリストから chunks_to_review と prev_chunk を抽出
+                    adjusted_review_map = {c["chunk_index"]: c for c in adjusted_history}
+                    chunks_to_review = [adjusted_review_map[c["chunk_index"]] for c in chunks_to_review if c["chunk_index"] in adjusted_review_map]
+                    
+                    prev_chunk = adjusted_review_map.get(batch_start - 1) if batch_start > 0 else None
+                    
+                    logger.log(f"🚀 Triggering Sentence Review for chunks {batch_start} to {batch_start + 3}")
+                    
+                    # SentenceReviewService を呼び出し
+                    course_title, keywords_list = _get_sentence_review_context(lecture_id)
+                    
+                    llm = UnifiedLLM(billing)
+                    reviewer = SentenceReviewService(llm, logger)
+                    reviewed_chunks = await reviewer.run_from_memory(
+                        chunks_to_review=chunks_to_review,
+                        previous_chunk=prev_chunk,
+                        course_title=course_title,
+                        keywords_list=keywords_list
+                    )
+                    
+                    # 返ってきた綺麗なデータを DB に書き込み REVIEWED に更新
+                    for rc in reviewed_chunks:
+                        supabase.table("lecture_transcripts").update({
+                            "status": "REVIEWED",
+                            "text_reviewed": rc["text"],
+                            "segments_reviewed": rc["segments"]
+                        }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
+                        
+                    logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB!")
+                else:
+                    logger.log(f"⚠️ Lock contention: another worker acquired the lock for batch {batch_start}. Skipping review.")
+            else:
+                logger.log(f"⏳ Batch starting at {batch_start} is not fully ready yet (statuses: {chunks_status}). Skipping review.")
+        except Exception as review_trigger_error:
+            logger.log(f"⚠️ Error in progressive Sentence Review trigger: {review_trigger_error}")
             
         # 📊 レポートの出力とログの保存
         logger.log(billing.report())
