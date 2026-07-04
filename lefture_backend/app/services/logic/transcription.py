@@ -3,10 +3,45 @@ import math
 import time
 import os
 import base64
+import asyncio
 import requests
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 from pydub import AudioSegment
 from app.services.helpers.helpers import TaskLogger
 from app.services.helpers.llm_unified import BillingEngine
+
+
+class _RetryableCloudflareError(Exception):
+    """429/5xx等、リトライすれば成功する見込みがあるCloudflare APIエラー。"""
+    pass
+
+
+@retry(
+    retry=retry_if_exception_type((_RetryableCloudflareError, requests.exceptions.RequestException)),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential_jitter(initial=1, max=8),
+    reraise=True,
+)
+async def _call_cloudflare_whisper(url: str, headers: dict, payload: dict) -> dict:
+    """
+    Cloudflare Whisper APIを呼び出す。429/5xx/接続エラーは指数バックオフ＋ジッターで
+    リトライし、400等のクライアントエラーはリトライしても無駄なのでそのまま送出する。
+    """
+    response = await asyncio.to_thread(requests.post, url, headers=headers, json=payload, timeout=60)
+
+    if response.status_code == 429 or response.status_code >= 500:
+        raise _RetryableCloudflareError(f"HTTP {response.status_code}: {response.text}")
+    if response.status_code != 200:
+        raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+    res_json = response.json()
+    if not res_json.get("success"):
+        errors = res_json.get("errors", [])
+        err_msg = errors[0].get("message") if errors else "Unknown error"
+        raise Exception(f"Cloudflare AI Error: {err_msg}")
+
+    return res_json.get("result") or {}
+
 
 class TranscriptionService:
     def __init__(self, logger: TaskLogger, billing: BillingEngine):
@@ -19,16 +54,17 @@ class TranscriptionService:
         if not self.account_id or not self.api_key:
             self.logger.log("⚠️ CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_KEY is not set in environment variables.")
 
-    def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
+    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
         """
         [究極のシンプルパイプライン]
-        Flutterから送られてきた34秒（オーバーラップ込み）のRAWデータをBase64エンコードし、
+        Flutterから送られてきた34秒（オーバーラップ込み）のM4A(AAC)データをBase64エンコードし、
         Cloudflare Workers AIのWhisper-large-v3-turboモデルに送信する。
         """
         self.logger.log(f"   [Logic] Loading audio into memory for chunk {chunk_index}")
-        
+
         # バイナリから音声を展開（長さを取得するためだけに読み込む）
-        audio = AudioSegment.from_file(io.BytesIO(audio_bytes), format="wav")
+        # ffmpegを呼ぶブロッキング処理なのでスレッドに逃がす
+        audio = await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(audio_bytes), format="m4a")
         actual_duration = len(audio) / 1000.0
         
         if not self.account_id or not self.api_key:
@@ -60,18 +96,8 @@ class TranscriptionService:
             if prompt_keywords:
                 payload["initial_prompt"] = prompt_keywords
 
-            response = requests.post(url, headers=headers, json=payload, timeout=60)
-            if response.status_code != 200:
-                raise Exception(f"HTTP {response.status_code}: {response.text}")
-                
-            res_json = response.json()
-            if not res_json.get("success"):
-                errors = res_json.get("errors", [])
-                err_msg = errors[0].get("message") if errors else "Unknown error"
-                raise Exception(f"Cloudflare AI Error: {err_msg}")
-                
-            result = res_json.get("result") or {}
-            
+            result = await _call_cloudflare_whisper(url, headers, payload)
+
         except Exception as e:
             self.logger.log(f"   [Logic] ❌ Cloudflare API Error: {e}")
             # APIエラー時は空データを返す

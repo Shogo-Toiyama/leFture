@@ -258,7 +258,7 @@ class UploadManager {
 
     // 従来のチャンク処理（kind == 'audio_upload' の想定）
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
-    final fileName = 'chunk_$seqStr.wav'; 
+    final fileName = 'chunk_$seqStr.m4a';
     final storagePath = '${lecture.userId}/${lecture.id}/audio_chunks/$fileName';
 
     // 4. lecture_transcripts テーブルに「PROCESSING」を登録
@@ -291,7 +291,7 @@ class UploadManager {
     }
   }
 
-  /// Cloud RunのFastAPIへ直接WAVファイルを投げるメソッド
+  /// Cloud RunのFastAPIへ直接M4A(AAC)ファイルを投げるメソッド
   Future<void> _postToCloudRun({
     required String localPath,
     required String lectureId,
@@ -312,17 +312,24 @@ class UploadManager {
       request.fields['whisper_context'] = whisperContext;
     }
     
-    // WAVファイルをバイナリとして添付
+    // M4A(AAC)ファイルをバイナリとして添付
     request.files.add(await http.MultipartFile.fromPath('file', localPath));
 
     // 送信してレスポンスを待つ
-    final response = await request.send();
-    
+    // ★ タイムアウトを必ず設定する: Cloud Run側がハングした場合、これが無いと
+    // _processQueue の直列ループが永久に停止し、以降の全チャンクが送信されなくなる。
+    final response = await request.send().timeout(
+      const Duration(seconds: 90),
+      onTimeout: () => throw TimeoutException(
+        'Cloud Run timed out while transcribing chunk $chunkIndex',
+      ),
+    );
+
     if (response.statusCode != 200) {
       final respStr = await response.stream.bytesToString();
       throw Exception('Cloud Run error (${response.statusCode}): $respStr');
     }
-    
+
     DevLog.add('🚀 [UploadManager] Cloud RunにChunk $chunkIndex を送信完了！');
   }
 
@@ -337,13 +344,18 @@ class UploadManager {
     request.fields['lecture_id'] = lectureId;
     request.files.add(await http.MultipartFile.fromPath('file', localPath));
 
-    final response = await request.send();
-    
+    final response = await request.send().timeout(
+      const Duration(minutes: 5),
+      onTimeout: () => throw TimeoutException(
+        'Cloud Run timed out while uploading master audio for lecture $lectureId',
+      ),
+    );
+
     if (response.statusCode != 200) {
       final respStr = await response.stream.bytesToString();
       throw Exception('Cloud Run master upload error (${response.statusCode}): $respStr');
     }
-    
+
     DevLog.add('🚀 [UploadManager] Cloud RunにMaster Audio $lectureId を送信完了！');
   }
 }

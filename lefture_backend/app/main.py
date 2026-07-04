@@ -1,15 +1,30 @@
 import os
 import json
-from datetime import datetime
+import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
 from supabase import create_client, ClientOptions
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
+from google.api_core.exceptions import AlreadyExists
+
+# Cloud Tasksのタスク名は決定的にするが、task_id/chunk単体だけをキーにすると
+# CHECK_AND_ASSEMBLEの「チャンクが揃うまでPENDINGに戻って自己リトライする」といった
+# 正当な再試行までCloud Tasksの名前重複チェックでブロックされてしまう
+# （同名タスクは完了後 約1時間 再利用できないため）。
+# そのため短い時間バケットをキーに含め、「ごく短時間の重複投入だけ」を弾く。
+TASK_DEDUP_WINDOW_SECONDS = 30
+
+def _dedup_bucket() -> int:
+    return int(time.time() // TASK_DEDUP_WINDOW_SECONDS)
 
 from app.core.supabase import get_supabase_client
 from app.services.task_runners import (
-    run_transcribe_chunk_worker,
+    receive_transcribe_chunk,
+    process_transcribe_chunk,
     run_check_and_assemble_transcript_task,
     run_role_classification_task,
     run_core_extraction_task,
@@ -29,17 +44,27 @@ from app.services.task_runners import (
 # ---------------------------------------------------------
 app = FastAPI(title="leFture Backend Worker", version="2.0.0")
 
+# 同期I/O（Supabase/boto3/requests/Cloud Tasksクライアント）をasyncio.to_threadで
+# 逃がすためのスレッドプールを明示サイジング。デフォルト(min(32, cpu+4))だと
+# 100人同時利用のような高負荷時にスレッド待ちで詰まるため。
+@app.on_event("startup")
+async def _configure_thread_pool():
+    loop = asyncio.get_event_loop()
+    loop.set_default_executor(ThreadPoolExecutor(max_workers=64))
+
 # ---------------------------------------------------------
 # 環境変数の読み込み
 # ---------------------------------------------------------
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = os.getenv("GCP_REGION", "us-west1")
 QUEUE_NAME = os.getenv("QUEUE_NAME", "lefture-processing-queue")
-CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL") 
+CHUNK_QUEUE_NAME = os.getenv("CHUNK_QUEUE_NAME", "lefture-chunk-queue")
+CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL")
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET") # 追加: Supabase Webhookからのリクエストを検証するシークレット
+STALE_TASK_TIMEOUT_MINUTES = int(os.getenv("STALE_TASK_TIMEOUT_MINUTES", "20")) # Cloud Scheduler駆動のリカバリが「止まっている」と判定するまでの分数
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -61,6 +86,15 @@ class WorkerPayload(BaseModel):
 class StartAnalysisRequest(BaseModel):
     lecture_id: str
     expected_chunks: int
+
+class TranscribeChunkPayload(BaseModel):
+    """Cloud Tasks から /worker/transcribe-chunk-process に渡されるデータ"""
+    lecture_id: str
+    chunk_index: int
+    start_time: float
+    whisper_context: str = ""
+    r2_audio_path: str
+    uid: str
 
 # ---------------------------------------------------------
 # 分析開始 (start_analysis)
@@ -218,8 +252,10 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
     # 5. 実行可能なタスクを処理
     for task in ready_tasks:
         # 5-1. 二重起動を防ぐため、DBのステータスを 'QUEUED' に更新する
+        # updated_at も明示的に更新しておく（reap-stale-tasksがこの時刻を基準に
+        # 「QUEUEDのままenqueueに失敗して止まっているタスク」を検出するため）
         update_res = admin_client.table("processing_tasks")\
-            .update({"status": "QUEUED"})\
+            .update({"status": "QUEUED", "updated_at": datetime.now().isoformat()})\
             .eq("id", task["id"])\
             .eq("status", "PENDING")\
             .execute()
@@ -253,28 +289,47 @@ async def worker_transcribe_chunk(
     file: UploadFile = File(...)
 ):
     """
-    FlutterからWAVファイルを受け取り、そのまま同期的に処理する。
-    通信が繋がっている間はCloud RunがCPUを100%割り当ててくれるため、
-    「リクエスト処理中のみCPUを割り当てる（コスト最小）」設定のまま爆速で完了する。
+    FlutterからM4A(AAC)ファイルを受け取り、R2への保存とCloud Tasksへのenqueueだけ
+    行って即座に返す（受付窓口）。実際の文字起こしは /worker/transcribe-chunk-process
+    が非同期に行うため、Cloudflare Whisper側がハングしてもこのリクエスト自体は
+    詰まらない。
     """
     if not file:
         raise HTTPException(status_code=400, detail="No audio file provided")
 
-    # 1. WAVファイルをメモリ上(bytes)に直接読み込む
+    # 1. M4Aファイルをメモリ上(bytes)に直接読み込む
     audio_bytes = await file.read()
 
-    # 2. 💡 ここで await して、文字起こしが完全に終わるまで待機する！
-    # （この待機中、Cloud Runは「通信中」と判定し、CPUを100%割り当て続けます）
-    await run_transcribe_chunk_worker(
+    # 2. R2への保存とCloud Tasksへのenqueueだけ行い、即座に返す
+    await receive_transcribe_chunk(
         lecture_id=lecture_id,
         start_time=start_time,
         chunk_index=chunk_index,
         audio_bytes=audio_bytes,
         whisper_context=whisper_context,
     )
-    
-    # 3. 処理がすべて終わったら、Flutterに成功レスポンスを返す
-    return {"status": "success", "message": f"Chunk {chunk_index} fully processed."}
+
+    return {"status": "success", "message": f"Chunk {chunk_index} received and queued for transcription."}
+
+# ---------------------------------------------------------
+# リアルタイム・トランスクライブ処理（Cloud Tasksから呼ばれる非同期ワーカー）
+# ---------------------------------------------------------
+@app.post("/worker/transcribe-chunk-process")
+async def worker_transcribe_chunk_process(payload: TranscribeChunkPayload):
+    """
+    /worker/transcribe-chunk がenqueueしたタスクを実際に処理する。
+    Cloudflare Whisperの呼び出し等が失敗した場合は例外をそのまま伝播させ、
+    非2xxを返すことでCloud Tasksの自動リトライに任せる（他の /worker/* と同じ規約）。
+    """
+    await process_transcribe_chunk(
+        lecture_id=payload.lecture_id,
+        chunk_index=payload.chunk_index,
+        start_time=payload.start_time,
+        whisper_context=payload.whisper_context,
+        r2_audio_path=payload.r2_audio_path,
+        uid=payload.uid,
+    )
+    return {"status": "success", "message": f"Chunk {payload.chunk_index} fully processed."}
 
 # ---------------------------------------------------------
 # 🎥 マスターオーディオ(全体音源)のアップロード受付
@@ -293,7 +348,9 @@ async def worker_upload_master_audio(
 
     # 1. ユーザーIDを取得するため、Supabaseからレコードを取得
     supabase = get_supabase_client()
-    res = supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
+    res = await asyncio.to_thread(
+        lambda: supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
+    )
     if not res.data:
         raise HTTPException(status_code=404, detail=f"Lecture {lecture_id} not found")
     uid = res.data["user_id"]
@@ -303,7 +360,8 @@ async def worker_upload_master_audio(
 
     # 3. R2に保存
     from app.services.task_runners import storage_service
-    audio_r2_path = storage_service.save_binary(
+    audio_r2_path = await asyncio.to_thread(
+        storage_service.save_binary,
         uid=uid,
         lecture_id=lecture_id,
         file_name="master_audio.m4a",
@@ -312,10 +370,12 @@ async def worker_upload_master_audio(
     )
 
     # 4. Supabase の lectures テーブルの audio_path を更新
-    supabase.table("lectures").update({
-        "audio_path": audio_r2_path,
-        "updated_at": datetime.now().isoformat()
-    }).eq("id", lecture_id).execute()
+    await asyncio.to_thread(
+        lambda: supabase.table("lectures").update({
+            "audio_path": audio_r2_path,
+            "updated_at": datetime.now().isoformat()
+        }).eq("id", lecture_id).execute()
+    )
 
     return {"status": "success", "message": f"Master audio uploaded and saved to {audio_r2_path}."}
 
@@ -367,9 +427,12 @@ async def enqueue_task(payload: EnqueuePayload):
         "job_id": payload.job_id,
         "task_id": payload.task_id
     }
-    
+
     # 3. Cloud Tasksのジョブ構成
+    # name を task_id から決定的に組み立てることで、同じタスクが誤って
+    # 二重にenqueueされても(オーケストレーターの競合等)Cloud Tasks側で弾かれる。
     task = {
+        "name": client.task_path(PROJECT_ID, REGION, QUEUE_NAME, f"task-{payload.task_id}-{_dedup_bucket()}"),
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}{route_path}",  # 割り出された専用の裏口を叩く！
@@ -384,13 +447,71 @@ async def enqueue_task(payload: EnqueuePayload):
 
     # 4. キューに追加 (Enqueue)
     try:
-        response = client.create_task(request={"parent": parent, "task": task})
+        response = await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
         print(f"✅ Enqueued {payload.task_type} to Cloud Tasks: {response.name}")
+    except AlreadyExists:
+        # 同名タスクが既に投入済み＝二重投入。正常系として扱う。
+        print(f"⏭️ Task {payload.task_id} already enqueued (duplicate request ignored).")
     except Exception as e:
         print(f"❌ Failed to enqueue task: {e}")
         raise HTTPException(status_code=500, detail=f"Cloud Tasks Error: {e}")
 
     return {"message": "Task queued successfully", "task_id": payload.task_id}
+
+
+# ---------------------------------------------------------
+# 🎤 チャンク文字起こし専用のenqueue（DAGパイプラインとは別キュー）
+# ---------------------------------------------------------
+async def enqueue_transcribe_chunk_task(
+    lecture_id: str,
+    chunk_index: int,
+    start_time: float,
+    whisper_context: str,
+    r2_audio_path: str,
+    uid: str,
+):
+    """
+    /worker/transcribe-chunk-process を叩くCloud Tasksタスクをenqueueする。
+    DAGパイプライン用の QUEUE_NAME とは別の CHUNK_QUEUE_NAME を使う。録音終了後の
+    重いDAG処理のバーストが、録音中のユーザーのリアルタイム文字起こしを
+    遅延させないようにするため。
+    """
+    if not (PROJECT_ID and CLOUD_RUN_URL and SERVICE_ACCOUNT_EMAIL):
+        raise RuntimeError("❌ Missing Environment Variables for Cloud Tasks enqueue!")
+
+    parent = client.queue_path(PROJECT_ID, REGION, CHUNK_QUEUE_NAME)
+
+    worker_payload = {
+        "lecture_id": lecture_id,
+        "chunk_index": chunk_index,
+        "start_time": start_time,
+        "whisper_context": whisper_context,
+        "r2_audio_path": r2_audio_path,
+        "uid": uid,
+    }
+
+    # name を lecture_id + chunk_index から決定的に組み立てることで、
+    # 同じチャンクが誤って二重にenqueueされてもCloud Tasks側で弾かれる
+    # （reaperによる再enqueueと通常経路が競合した場合の保険にもなる）。
+    task = {
+        "name": client.task_path(PROJECT_ID, REGION, CHUNK_QUEUE_NAME, f"chunk-{lecture_id}-{chunk_index}-{_dedup_bucket()}"),
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": f"{CLOUD_RUN_URL}/worker/transcribe-chunk-process",
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps(worker_payload).encode(),
+            "oidc_token": {
+                "service_account_email": SERVICE_ACCOUNT_EMAIL,
+                "audience": CLOUD_RUN_URL,
+            }
+        }
+    }
+
+    try:
+        response = await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
+        print(f"✅ Enqueued TRANSCRIBE_CHUNK (chunk {chunk_index}) to Cloud Tasks: {response.name}")
+    except AlreadyExists:
+        print(f"⏭️ Chunk {chunk_index} for lecture {lecture_id} already enqueued (duplicate request ignored).")
 
 
 # ---------------------------------------------------------
@@ -456,3 +577,71 @@ async def worker_detail_contents(payload: WorkerPayload):
 async def worker_finalize_job(payload: WorkerPayload):
     await run_finalize_job_task(payload.job_id, payload.task_id)
     return {"status": "success"}
+
+
+# ---------------------------------------------------------
+# 🩺 Patrol（Cloud Scheduler駆動の汎用メンテナンス・ディスパッチャー）
+# ---------------------------------------------------------
+# Cloud Schedulerのジョブは1つだけ用意し、このエンドポイントを叩いてもらう。
+# 中身は独立したチェック関数のリストで、将来「deleted_atの掃除」「エラー回収」等を
+# 追加するときはPATROL_CHECKSに関数を1つ足すだけでよく、Cloud Scheduler側の
+# 設定変更は不要。1つのチェックが失敗しても他のチェックが止まらないよう、
+# それぞれ独立してtry/exceptする。
+# （音声チャンク自体の詰まりは task_runners._recover_stuck_chunks が
+#   CHECK_AND_ASSEMBLEの待ち合わせリトライの中で回収するため、ここでは対象にしない）
+
+async def _patrol_reap_stale_dag_tasks() -> dict:
+    """
+    processing_tasksのうち、QUEUED/RUNNINGのまま STALE_TASK_TIMEOUT_MINUTES 以上
+    updated_at が更新されていない行を PENDING に戻す。この更新はSupabaseの
+    Database Webhook経由で既存の /webhook/orchestrator を自動的に起こし、
+    再enqueueまで面倒を見てくれる。タスクの種類に依存しない汎用的な仕組みなので、
+    将来タスク種別が増えてもこのロジックは変更不要。
+    """
+    admin_client = get_supabase_client()
+    threshold = (datetime.now(timezone.utc) - timedelta(minutes=STALE_TASK_TIMEOUT_MINUTES)).isoformat()
+
+    stale_tasks_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks")
+            .select("id, task_type")
+            .in_("status", ["QUEUED", "RUNNING"])
+            .lt("updated_at", threshold)
+            .execute()
+    )
+
+    recovered = 0
+    for t in (stale_tasks_res.data or []):
+        reset_res = await asyncio.to_thread(
+            lambda t=t: admin_client.table("processing_tasks")
+                .update({"status": "PENDING", "updated_at": datetime.now().isoformat()})
+                .eq("id", t["id"])
+                .in_("status", ["QUEUED", "RUNNING"])
+                .execute()
+        )
+        if reset_res.data:
+            recovered += 1
+            print(f"🩹 Recovered stale task {t['id']} ({t['task_type']}): reset to PENDING")
+
+    return {"recovered_tasks": recovered, "threshold_minutes": STALE_TASK_TIMEOUT_MINUTES}
+
+
+# 将来ここに追加していく（例）:
+# async def _patrol_cleanup_soft_deleted() -> dict: ...
+# async def _patrol_collect_error_reports() -> dict: ...
+
+PATROL_CHECKS = [
+    ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
+]
+
+
+@app.post("/maintenance/patrol")
+async def patrol():
+    """Cloud Schedulerから定期的に呼ばれる、汎用メンテナンスのディスパッチャー。"""
+    results = {}
+    for name, check_fn in PATROL_CHECKS:
+        try:
+            results[name] = await check_fn()
+        except Exception as e:
+            results[name] = {"error": str(e)}
+            print(f"⚠️ Patrol check '{name}' failed: {e}")
+    return results

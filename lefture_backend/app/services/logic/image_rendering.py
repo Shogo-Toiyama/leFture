@@ -3,10 +3,34 @@ import base64
 import asyncio
 import httpx
 from typing import Any, Dict, List
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
 from app.services.helpers.helpers import TaskLogger
 from app.services.helpers.llm_unified import BillingEngine
 from app.core.r2_storage import storage_service # R2保存用
+
+
+def _is_retryable_cloudflare_error(exc: BaseException) -> bool:
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code == 429 or exc.response.status_code >= 500
+    return isinstance(exc, httpx.RequestError)
+
+
+@retry(
+    retry=retry_if_exception(_is_retryable_cloudflare_error),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential_jitter(initial=1, max=8),
+    reraise=True,
+)
+async def _post_cloudflare_flux(client: httpx.AsyncClient, url: str, headers: dict, files: dict) -> httpx.Response:
+    """
+    Cloudflare Flux画像生成APIを呼び出す。429/5xx/接続エラーは指数バックオフ＋ジッターで
+    リトライし、それ以外のクライアントエラーはリトライしても無駄なのでそのまま送出する。
+    """
+    response = await client.post(url, headers=headers, files=files, timeout=60.0)
+    response.raise_for_status()
+    return response
+
 
 class ImageRenderingService:
     def __init__(self, logger: TaskLogger, billing: BillingEngine):
@@ -49,9 +73,7 @@ class ImageRenderingService:
         self.logger.log(f"   [Logic] Requesting image for Topic {topic_idx} (Tiles: {tiles})")
         
         try:
-            # タイムアウトは長め(60秒)に設定
-            response = await client.post(url, headers=headers, files=files, timeout=60.0)
-            response.raise_for_status()
+            response = await _post_cloudflare_flux(client, url, headers, files)
 
             content_type = response.headers.get("Content-Type", "")
             image_bytes = None

@@ -2,7 +2,7 @@
 //
 // デバッグ専用: 実マイクの代わりに、事前に用意したPCMファイル（本番と同じ
 // pcm16bits/16kHz/monoのヘッダなしraw音声）を実時間ペースで流し込む
-// AudioRecorderService。startStream() だけを差し替え、savePcmAsWav /
+// AudioRecorderService。startStream() だけを差し替え、savePcmAsM4a /
 // appendMasterRawData / encodeMasterRawToM4a / pause / resume / stop は
 // 親クラスのファイルI/O実装をそのまま使う（実機マイクに依存しないため安全）。
 //

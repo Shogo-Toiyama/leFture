@@ -348,6 +348,10 @@ class UnifiedLLM:
             "model": model,
             "messages": litellm_messages,
             "temperature": options.temperature,
+            # 429/5xx/タイムアウト等の一時的な失敗に対し、litellm組み込みの
+            # リトライ機構（指数バックオフ）に任せる。100人同時利用でレート制限に
+            # 引っかかる確率が上がることへの耐性。
+            "num_retries": 3,
         }
 
         if options.max_tokens is not None:

@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
 # 作業ディレクトリ設定
 WORKDIR /app
 
+# print()を即座にCloud Runのログへ流すため、標準出力のバッファリングを無効化
+ENV PYTHONUNBUFFERED=1
+
 # 依存関係ファイルのコピーとインストール
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

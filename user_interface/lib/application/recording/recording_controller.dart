@@ -135,7 +135,7 @@ class RecordingController extends _$RecordingController {
 
       final flushed = _chunker?.flush();
       if (flushed != null && flushed.data.isNotEmpty) {
-        final path = await _recorder.savePcmAsWav(flushed.data, state.currentLectureId!);
+        final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
         
         await _repo.attachAudioAndEnqueueUpload(
           userId: user.id,
@@ -215,7 +215,7 @@ class RecordingController extends _$RecordingController {
         onChunkReady: (Uint8List chunkData, double startTimeSec) async {
           DevLog.add('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length} (Start: ${startTimeSec}s)');
 
-          final path = await _recorder.savePcmAsWav(chunkData, lectureId);
+          final path = await _recorder.savePcmAsM4a(chunkData, lectureId);
 
           await _repo.attachAudioAndEnqueueUpload(
             userId: user.id,
@@ -316,7 +316,7 @@ class RecordingController extends _$RecordingController {
       if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
         DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
         
-        final path = await _recorder.savePcmAsWav(finalFlushed.data, lecture.id);
+        final path = await _recorder.savePcmAsM4a(finalFlushed.data, lecture.id);
         
         await _repo.attachAudioAndEnqueueUpload(
           userId: lecture.userId,

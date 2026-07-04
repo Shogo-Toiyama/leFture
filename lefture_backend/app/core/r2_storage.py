@@ -23,12 +23,16 @@ class R2StorageService:
             raise RuntimeError(f"Missing R2 environment variables: {', '.join(missing)}")
         
         # S3互換クライアントの初期化
+        # max_pool_connectionsはデフォルト10のままだと、asyncio.to_threadで
+        # R2呼び出しを並列化した際にここがボトルネックになる。
+        # main.py起動時に設定するThreadPoolExecutor(max_workers=64)と同程度以上を
+        # 確保しておけば、スレッドプール側の並列度が実質的な上限になる。
         self.s3 = boto3.client(
             's3',
             endpoint_url=self.endpoint_url,
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
-            config=Config(signature_version='s3v4'),
+            config=Config(signature_version='s3v4', max_pool_connections=100),
             region_name='auto' # R2はregion_name='auto'でOK
         )
 
@@ -45,6 +49,11 @@ class R2StorageService:
     def download_file(self, storage_path: str, local_path: Path):
         """ファイルをR2からダウンロード"""
         self.s3.download_file(self.bucket_name, storage_path, str(local_path))
+
+    def download_binary(self, storage_path: str) -> bytes:
+        """R2からバイナリデータ（音声など）を生バイトのまま取得する"""
+        response = self.s3.get_object(Bucket=self.bucket_name, Key=storage_path)
+        return response["Body"].read()
 
     def save_json_log(self, uid: str, lecture_id: str, task_type: str, data: Any):
         """

@@ -128,52 +128,41 @@ class AudioRecorderService {
     await _recorder.dispose();
   }
 
-  Future<String> savePcmAsWav(Uint8List pcmData, String lectureId) async {
-    // 1. WAVヘッダー（44バイト）を作成する
+  /// チャンクの生PCMデータをFFmpegでAAC(M4A)にエンコードしてローカルに保存する
+  Future<String> savePcmAsM4a(Uint8List pcmData, String lectureId) async {
     final int sampleRate = 16000;
     final int channels = 1;
-    final int byteRate = sampleRate * channels * 2; // 16-bit = 2 bytes
-    final int dataSize = pcmData.length;
-    final int fileSize = 36 + dataSize;
 
-    final ByteData header = ByteData(44);
-    
-    // "RIFF" (リトルエンディアンで書き込み)
-    header.setUint8(0, 82); header.setUint8(1, 73); header.setUint8(2, 70); header.setUint8(3, 70);
-    header.setUint32(4, fileSize, Endian.little);
-    // "WAVE"
-    header.setUint8(8, 87); header.setUint8(9, 65); header.setUint8(10, 86); header.setUint8(11, 69);
-    // "fmt "
-    header.setUint8(12, 102); header.setUint8(13, 109); header.setUint8(14, 116); header.setUint8(15, 32);
-    header.setUint32(16, 16, Endian.little); // Subchunk1Size
-    header.setUint16(20, 1, Endian.little);  // AudioFormat (1 = PCM)
-    header.setUint16(22, channels, Endian.little); // NumChannels
-    header.setUint32(24, sampleRate, Endian.little); // SampleRate
-    header.setUint32(28, byteRate, Endian.little); // ByteRate
-    header.setUint16(32, channels * 2, Endian.little); // BlockAlign
-    header.setUint16(34, 16, Endian.little); // BitsPerSample
-    // "data"
-    header.setUint8(36, 100); header.setUint8(37, 97); header.setUint8(38, 116); header.setUint8(39, 97);
-    header.setUint32(40, dataSize, Endian.little);
-
-    // 2. ヘッダーとPCMデータを結合
-    final BytesBuilder wavBuilder = BytesBuilder();
-    wavBuilder.add(header.buffer.asUint8List());
-    wavBuilder.add(pcmData);
-    final Uint8List finalWavData = wavBuilder.toBytes();
-
-    // 3. ローカルディレクトリに保存
     final Directory dir = await getApplicationDocumentsDirectory();
+    final String chunkDir = '${dir.path}/lectures/$lectureId/audio_chunks';
+    await Directory(chunkDir).create(recursive: true);
+
     // ファイル名が被らないようにUUIDを使う
-    final String chunkFileName = '${const Uuid().v4()}.wav';
-    // leFture用のディレクトリ構成に合わせて保存パスを作成
-    final String filePath = '${dir.path}/lectures/$lectureId/audio_chunks/$chunkFileName';
+    final String uuid = const Uuid().v4();
+    final String rawPath = '$chunkDir/$uuid.raw';
+    final String m4aPath = '$chunkDir/$uuid.m4a';
 
-    final File wavFile = File(filePath);
-    await wavFile.parent.create(recursive: true); // フォルダがなければ作る
-    await wavFile.writeAsBytes(finalWavData);
+    final File rawFile = File(rawPath);
+    await rawFile.writeAsBytes(pcmData);
 
-    return filePath; // 保存したファイルのパスを返す
+    final command = '-y -f s16le -ar $sampleRate -ac $channels -i "$rawPath" -c:a aac -b:a 64k "$m4aPath"';
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+
+    // 一時rawファイルは成功・失敗にかかわらず不要なので削除
+    try {
+      if (await rawFile.exists()) await rawFile.delete();
+    } catch (e) {
+      print('⚠️ Failed to delete raw chunk file: $e');
+    }
+
+    if (!ReturnCode.isSuccess(returnCode)) {
+      final logs = await session.getLogs();
+      final errorMsg = logs.map((l) => l.getMessage()).join('\n');
+      throw Exception('FFmpeg chunk audio encoding failed. ReturnCode: $returnCode.\nLogs:\n$errorMsg');
+    }
+
+    return m4aPath; // 保存したファイルのパスを返す
   }
 
   /// 指定されたレクチャーIDの一時PCMファイルパスを返す
