@@ -414,10 +414,17 @@ class LectureViewerPage extends HookConsumerWidget {
   }) {
     final safeTop = MediaQuery.of(context).padding.top;
     return Container(
-      color: Colors.transparent,
+      decoration: isExpanded
+          ? BoxDecoration(
+              color: Color.lerp(AppColors.paper.background, AppColors.paper.textInk, 0.035),
+              border: Border(
+                bottom: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+              ),
+            )
+          : null,
       padding: EdgeInsets.only(
         top: isExpanded ? safeTop + 16.0 : 16.0, 
-        bottom: 8.0,
+        bottom: isExpanded ? 12.0 : 8.0,
       ),
       child: Column(
         children: [
@@ -1006,7 +1013,7 @@ class _ReviewCardsView extends HookWidget {
                         width: 110,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.paper.surface,
+                          color: AppColors.paper.background,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
                           boxShadow: [
@@ -1161,7 +1168,13 @@ class _ReviewCardsView extends HookWidget {
                             return Stack(
                               children: [
                                 Positioned.fill(
-                                  child: buildCard(previousCardIndex.value),
+                                  child: Transform.scale(
+                                    scale: 1.0 - (0.08 * progress),
+                                    child: Opacity(
+                                      opacity: 1.0 - (0.5 * progress),
+                                      child: buildCard(previousCardIndex.value),
+                                    ),
+                                  ),
                                 ),
                                 Positioned.fill(
                                   child: Transform.translate(
@@ -1243,107 +1256,139 @@ class _DeepNotesView extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shouldStartAtBottom = useState(false);
+    final noteIndex = selectedNoteIndex.value;
 
-    if (selectedNoteIndex.value == null) {
-      // List of note tiles with full summary
-      return ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: dummyTopics.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final topic = dummyTopics[index];
-          return GestureDetector(
-            onTap: () {
-              selectedNoteIndex.value = index;
-              onExpand();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.paper.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          topic['title'] as String,
-                          style: TextStyle(
-                            color: AppColors.paper.textInk,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          topic['summary'] as String,
-                          style: TextStyle(
-                            color: AppColors.paper.textPencil,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.chevron_right, color: AppColors.starGold, size: 24),
-                ],
-              ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: noteIndex == null
+          ? _buildNoteList(context)
+          : _NoteDetailView(
+              key: ValueKey('note_detail_$noteIndex'),
+              noteIndex: noteIndex,
+              topic: dummyTopics[noteIndex],
+              startAtBottom: shouldStartAtBottom.value,
+              selectedText: selectedText,
+              onNext: () {
+                if (noteIndex < dummyTopics.length - 1) {
+                  shouldStartAtBottom.value = false;
+                  selectedNoteIndex.value = noteIndex + 1;
+                }
+              },
+              onPrev: () {
+                if (noteIndex > 0) {
+                  shouldStartAtBottom.value = true;
+                  selectedNoteIndex.value = noteIndex - 1;
+                }
+              },
             ),
-          );
-        },
-      );
-    }
+    );
+  }
 
-    // Expanded Markdown Detail View with scroll transition arrows (restricted to edge starts)
+  Widget _buildNoteList(BuildContext context) {
+    return ListView.separated(
+      key: const ValueKey('note_list'),
+      padding: const EdgeInsets.all(16),
+      itemCount: dummyTopics.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final topic = dummyTopics[index];
+        return GestureDetector(
+          onTap: () {
+            selectedNoteIndex.value = index;
+            onExpand();
+          },
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.paper.background,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        topic['title'] as String,
+                        style: TextStyle(
+                          color: AppColors.paper.textInk,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        topic['summary'] as String,
+                        style: TextStyle(
+                          color: AppColors.paper.textPencil,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary, size: 24),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _NoteDetailView extends HookWidget {
+  const _NoteDetailView({
+    super.key,
+    required this.noteIndex,
+    required this.topic,
+    required this.startAtBottom,
+    required this.onNext,
+    required this.onPrev,
+    required this.selectedText,
+  });
+
+  final int noteIndex;
+  final Map<String, dynamic> topic;
+  final bool startAtBottom;
+  final VoidCallback onNext;
+  final VoidCallback onPrev;
+  final ValueNotifier<String?> selectedText;
+
+  @override
+  Widget build(BuildContext context) {
     final scrollController = useScrollController();
     final isTransitioning = useState(false);
     
     // Markers to track where scroll gestures start
     final startedAtTop = useState(false);
     final startedAtBottom = useState(false);
-    
-    final topic = dummyTopics[selectedNoteIndex.value!];
+    final shouldGoToNext = useState(false);
+    final shouldGoToPrev = useState(false);
 
-    void nextNote() {
-      if (isTransitioning.value) return;
-      if (selectedNoteIndex.value! < dummyTopics.length - 1) {
-        isTransitioning.value = true;
-        selectedNoteIndex.value = selectedNoteIndex.value! + 1;
+    // Jump to bottom if startAtBottom is true
+    useEffect(() {
+      if (startAtBottom) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (scrollController.hasClients) {
-            scrollController.jumpTo(0.0);
+            scrollController.jumpTo(scrollController.position.maxScrollExtent);
           }
-          isTransitioning.value = false;
         });
       }
-    }
-
-    void prevNote() {
-      if (isTransitioning.value) return;
-      if (selectedNoteIndex.value! > 0) {
-        isTransitioning.value = true;
-        selectedNoteIndex.value = selectedNoteIndex.value! - 1;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (scrollController.hasClients) {
-            scrollController.jumpTo(0.0);
-          }
-          isTransitioning.value = false;
-        });
-      }
-    }
+      return null;
+    }, [noteIndex]);
 
     return Container(
       color: Colors.transparent,
@@ -1360,23 +1405,52 @@ class _DeepNotesView extends HookWidget {
                   final metrics = notification.metrics;
                   startedAtTop.value = metrics.pixels <= 0.0;
                   startedAtBottom.value = metrics.pixels >= metrics.maxScrollExtent;
+                  shouldGoToNext.value = false;
+                  shouldGoToPrev.value = false;
                 }
                 
-                // Reset on scroll end
+                // Trigger transitions ONLY when the user releases their finger (dragDetails becomes null)
+                if (notification is ScrollEndNotification || 
+                    (notification is ScrollUpdateNotification && notification.dragDetails == null)) {
+                  if (shouldGoToNext.value) {
+                    shouldGoToNext.value = false;
+                    shouldGoToPrev.value = false;
+                    isTransitioning.value = true;
+                    onNext();
+                  } else if (shouldGoToPrev.value) {
+                    shouldGoToNext.value = false;
+                    shouldGoToPrev.value = false;
+                    isTransitioning.value = true;
+                    onPrev();
+                  }
+                }
+                
+                // Detect overscroll boundaries
+                if (notification is ScrollUpdateNotification) {
+                  final metrics = notification.metrics;
+                  final isDragging = notification.dragDetails != null;
+                  
+                  if (isDragging) {
+                    if (startedAtBottom.value && metrics.pixels >= metrics.maxScrollExtent + 50 && noteIndex < dummyTopics.length - 1) {
+                      shouldGoToNext.value = true;
+                    }
+                    if (startedAtTop.value && metrics.pixels <= metrics.minScrollExtent - 50 && noteIndex > 0) {
+                      shouldGoToPrev.value = true;
+                    }
+
+                    // Reset page turn intent if user scrolls back before releasing
+                    if (shouldGoToNext.value && metrics.pixels < metrics.maxScrollExtent + 10) {
+                      shouldGoToNext.value = false;
+                    }
+                    if (shouldGoToPrev.value && metrics.pixels > metrics.minScrollExtent - 10) {
+                      shouldGoToPrev.value = false;
+                    }
+                  }
+                }
+                
                 if (notification is ScrollEndNotification) {
                   startedAtTop.value = false;
                   startedAtBottom.value = false;
-                }
-                
-                // Trigger transitions on overscroll ONLY if scroll started at the boundary
-                if (notification is ScrollUpdateNotification) {
-                  final metrics = notification.metrics;
-                  if (startedAtBottom.value && metrics.pixels >= metrics.maxScrollExtent + 50 && selectedNoteIndex.value! < dummyTopics.length - 1) {
-                    nextNote();
-                  }
-                  if (startedAtTop.value && metrics.pixels <= metrics.minScrollExtent - 50 && selectedNoteIndex.value! > 0) {
-                    prevNote();
-                  }
                 }
                 return false;
               },
@@ -1395,13 +1469,13 @@ class _DeepNotesView extends HookWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   children: [
                     // Upper Arrow indicator (if previous note exists)
-                    if (selectedNoteIndex.value! > 0)
+                    if (noteIndex > 0)
                       Center(
                         child: Column(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.keyboard_arrow_up, color: AppColors.starGold, size: 28),
-                              onPressed: prevNote,
+                              icon: Icon(Icons.keyboard_arrow_up, color: Theme.of(context).colorScheme.primary, size: 28),
+                              onPressed: onPrev,
                             ),
                             const Text(
                               'Pull or tap to previous note',
@@ -1485,14 +1559,14 @@ class _DeepNotesView extends HookWidget {
                     const SizedBox(height: 32),
 
                     // Lower Arrow indicator (if next note exists)
-                    if (selectedNoteIndex.value! < dummyTopics.length - 1)
+                    if (noteIndex < dummyTopics.length - 1)
                       Center(
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
                             IconButton(
-                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.starGold, size: 28),
-                              onPressed: nextNote,
+                              icon: Icon(Icons.keyboard_arrow_down, color: Theme.of(context).colorScheme.primary, size: 28),
+                              onPressed: onNext,
                             ),
                             const Text(
                               'Pull or tap to next note',

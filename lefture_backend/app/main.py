@@ -96,6 +96,12 @@ class TranscribeChunkPayload(BaseModel):
     r2_audio_path: str
     uid: str
 
+class MasterAudioUploadUrlRequest(BaseModel):
+    lecture_id: str
+
+class MasterAudioUploadCompleteRequest(BaseModel):
+    lecture_id: str
+
 # ---------------------------------------------------------
 # 分析開始 (start_analysis)
 # ---------------------------------------------------------
@@ -334,50 +340,65 @@ async def worker_transcribe_chunk_process(payload: TranscribeChunkPayload):
 # ---------------------------------------------------------
 # 🎥 マスターオーディオ(全体音源)のアップロード受付
 # ---------------------------------------------------------
-@app.post("/worker/upload-master-audio")
-async def worker_upload_master_audio(
-    lecture_id: str = Form(...),
-    file: UploadFile = File(...)
-):
-    """
-    Flutterから圧縮されたマスターオーディオ(M4A)を受け取り、R2に保存して
-    Supabaseのlecturesテーブルのaudio_pathを更新する。
-    """
-    if not file:
-        raise HTTPException(status_code=400, detail="No audio file provided")
+# Cloud Runのリクエストボディには32MBのハード上限があり、64kbpsのマスター音声でも
+# 約70分の録音で超えてしまう（60〜90分超の講義は普通にあるため構造的な問題）。
+# そのためCloud Runを経由させず、R2への署名付きURLをFlutterに発行し、
+# クライアントから直接R2へPUTしてもらう方式にする。
+MASTER_AUDIO_CONTENT_TYPE = "audio/x-m4a"
 
-    # 1. ユーザーIDを取得するため、Supabaseからレコードを取得
+
+@app.post("/worker/request-master-audio-upload-url")
+async def worker_request_master_audio_upload_url(payload: MasterAudioUploadUrlRequest):
+    """マスター音声をR2へ直接PUTするための署名付きURLを発行する。"""
     supabase = get_supabase_client()
     res = await asyncio.to_thread(
-        lambda: supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
+        lambda: supabase.table("lectures").select("user_id").eq("id", payload.lecture_id).single().execute()
     )
     if not res.data:
-        raise HTTPException(status_code=404, detail=f"Lecture {lecture_id} not found")
+        raise HTTPException(status_code=404, detail=f"Lecture {payload.lecture_id} not found")
     uid = res.data["user_id"]
 
-    # 2. ファイルを読み込み
-    audio_bytes = await file.read()
-
-    # 3. R2に保存
     from app.services.task_runners import storage_service
-    audio_r2_path = await asyncio.to_thread(
-        storage_service.save_binary,
+    upload_url, storage_path = await asyncio.to_thread(
+        storage_service.generate_presigned_put_url,
         uid=uid,
-        lecture_id=lecture_id,
+        lecture_id=payload.lecture_id,
         file_name="master_audio.m4a",
-        data=audio_bytes,
-        content_type="audio/x-m4a"
+        content_type=MASTER_AUDIO_CONTENT_TYPE,
     )
 
-    # 4. Supabase の lectures テーブルの audio_path を更新
+    return {"upload_url": upload_url, "storage_path": storage_path}
+
+
+@app.post("/worker/complete-master-audio-upload")
+async def worker_complete_master_audio_upload(payload: MasterAudioUploadCompleteRequest):
+    """
+    Flutterが直接R2へのPUTを終えた後に呼ぶ。クライアントの自己申告を鵜呑みにせず、
+    実際にR2上にファイルが存在することを確認してからaudio_pathを更新する。
+    """
+    supabase = get_supabase_client()
+    res = await asyncio.to_thread(
+        lambda: supabase.table("lectures").select("user_id").eq("id", payload.lecture_id).single().execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail=f"Lecture {payload.lecture_id} not found")
+    uid = res.data["user_id"]
+
+    from app.services.task_runners import storage_service
+    storage_path = f"{uid}/{payload.lecture_id}/master_audio.m4a"
+
+    exists = await asyncio.to_thread(storage_service.object_exists, storage_path)
+    if not exists:
+        raise HTTPException(status_code=400, detail="Uploaded file not found in storage yet")
+
     await asyncio.to_thread(
         lambda: supabase.table("lectures").update({
-            "audio_path": audio_r2_path,
+            "audio_path": storage_path,
             "updated_at": datetime.now().isoformat()
-        }).eq("id", lecture_id).execute()
+        }).eq("id", payload.lecture_id).execute()
     )
 
-    return {"status": "success", "message": f"Master audio uploaded and saved to {audio_r2_path}."}
+    return {"status": "success", "message": f"Master audio path recorded: {storage_path}"}
 
 # ---------------------------------------------------------
 # 🗺️ タスクの種類と、呼び出す裏口 (URL) のマッピング辞書

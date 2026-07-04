@@ -11,7 +11,7 @@ from typing import Any
 from app.core.config import BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
-from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile
+from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile, _sid_to_int, _int_to_sid
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM
 
 from app.services.logic.transcription import TranscriptionService
@@ -112,11 +112,20 @@ def _download_from_r2_to_memory_sync(storage_path: str) -> Any:
     return json.loads(response["Body"].read().decode("utf-8"))
 
 def _claim_task_sync(task_id: str) -> bool:
-    """QUEUED状態のタスクだけをRUNNINGにアトミックに更新する。Cloud Tasksのリトライ等で
-    同じタスクが2回同時に走り出しても、更新できるのは1回だけ（更新0件なら二重実行とみなす）。"""
+    """
+    QUEUEDまたはFAILED状態のタスクだけをRUNNINGにアトミックに更新する。
+    同じタスクが2回"同時に"走り出しても、更新できるのは1回だけ（更新0件なら
+    二重実行とみなしスキップする）ため、真の同時実行だけを防げる。
+
+    FAILEDもクレーム対象に含めているのが重要: Cloud Tasksは500応答を見て
+    自動的にリトライしてくる（正当な再試行）。もしQUEUEDのみをクレーム対象にすると、
+    1回目の失敗でstatusがFAILEDになった時点でこのリトライが「QUEUEDじゃないから」と
+    毎回スキップされ、200 OKを返してしまう。するとCloud Tasksは「成功した」と
+    誤解して以降二度とリトライしなくなり、タスクがFAILEDのまま永久に取り残される。
+    """
     res = get_supabase_client().table("processing_tasks")\
         .update({"status": "RUNNING", "updated_at": datetime.now().isoformat()})\
-        .eq("id", task_id).eq("status", "QUEUED").execute()
+        .eq("id", task_id).in_("status", ["QUEUED", "FAILED"]).execute()
     return len(res.data or []) > 0
 
 
@@ -152,16 +161,20 @@ def _parse_supabase_timestamp(raw: str) -> "datetime | None":
 async def _recover_stuck_chunks(supabase, lecture_id: str, all_chunks: list, uid: str, logger: TaskLogger):
     """
     CHECK_AND_ASSEMBLEがチャンクの完了を待っている最中に呼ばれる。
-    PROCESSING/TRANSCRIBINGのまま CHUNK_STALE_TIMEOUT_MINUTES 以上動きが無いチャンクを
-    「詰まっている」とみなし、R2上の音声（決定的なパスで再構築可能）を使って
-    文字起こしを再enqueueする。専用のスケジューラーを用意しなくても、
+    PROCESSING/TRANSCRIBING/ERRORのまま CHUNK_STALE_TIMEOUT_MINUTES 以上動きが無い
+    チャンクを「詰まっている」とみなし、R2上の音声（決定的なパスで再構築可能）を
+    使って文字起こしを再enqueueする。専用のスケジューラーを用意しなくても、
     CHECK_AND_ASSEMBLEの待ち合わせリトライ自体がこの回収ループを兼ねる。
+    ERRORも対象に含めるのは、Cloud Tasks自体が既定のリトライ回数を使い果たして
+    諦めてしまった場合、それ以降は誰もこのチャンクを再試行しないため
+    （process_transcribe_chunk側のクレームはCloud Tasksがまだリトライしている間しか
+    効かない）、ここが最後の回収役になる。
     """
     threshold = datetime.now(timezone.utc) - timedelta(minutes=CHUNK_STALE_TIMEOUT_MINUTES)
 
     stuck_chunks = []
     for c in all_chunks:
-        if c.get("status") not in ("PROCESSING", "TRANSCRIBING"):
+        if c.get("status") not in ("PROCESSING", "TRANSCRIBING", "ERROR"):
             continue
         updated_at = _parse_supabase_timestamp(c.get("updated_at") or "")
         if updated_at and updated_at < threshold:
@@ -181,7 +194,7 @@ async def _recover_stuck_chunks(supabase, lecture_id: str, all_chunks: list, uid
             lambda chunk_index=chunk_index: supabase.table("lecture_transcripts")
                 .update({"status": "PROCESSING", "updated_at": datetime.now().isoformat()})
                 .eq("lecture_id", lecture_id).eq("chunk_index", chunk_index)
-                .in_("status", ["PROCESSING", "TRANSCRIBING"])
+                .in_("status", ["PROCESSING", "TRANSCRIBING", "ERROR"])
                 .execute()
         )
         if not (claim_res.data or []):
@@ -260,18 +273,23 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
     try:
         logger.log(f"🎤 [Queued] Transcribing chunk {chunk_index} for lecture {lecture_id}")
 
-        # 0. PROCESSING状態のチャンクだけをアトミックにTRANSCRIBINGへクレームする。
-        # Cloud Tasksのリトライ等で同じチャンクが2回同時に走り出しても、
+        # 0. PROCESSING または ERROR 状態のチャンクだけをアトミックにTRANSCRIBINGへクレームする。
+        # Cloud Tasksのリトライ等で同じチャンクが2回"同時に"走り出しても、
         # 実際に処理を進められるのは1回だけ（Cloudflareへの二重課金・二重書き込みを防ぐ）。
+        # ERRORも対象に含めるのが重要: この関数は失敗時に例外を再送出して500を返し、
+        # Cloud Tasksの自動リトライに任せる設計。もしPROCESSINGのみをクレーム対象にすると、
+        # 1回目の失敗でstatusがERRORになった時点で、その後の正当なリトライが
+        # 毎回「PROCESSINGじゃないから」とスキップされ200 OKを返してしまい、
+        # Cloud Tasksが「成功した」と誤解して二度とリトライしなくなる。
         claim_res = await asyncio.to_thread(
             lambda: supabase.table("lecture_transcripts")
                 .update({"status": "TRANSCRIBING"})
                 .eq("lecture_id", lecture_id).eq("chunk_index", chunk_index)
-                .eq("status", "PROCESSING")
+                .in_("status", ["PROCESSING", "ERROR"])
                 .execute()
         )
         if not (claim_res.data or []):
-            logger.log(f"⏭️ Chunk {chunk_index} is not in PROCESSING state. Skipping duplicate execution.")
+            logger.log(f"⏭️ Chunk {chunk_index} is not in PROCESSING/ERROR state. Skipping duplicate execution.")
             return
 
         # 1. R2から音声バイナリを取得
@@ -420,6 +438,7 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
         await asyncio.to_thread(
             lambda: supabase.table("lecture_transcripts").update({
                 "status": "ERROR",
+                "updated_at": datetime.now().isoformat(),
             }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         )
         logger.save_to_r2(storage_service)
@@ -729,9 +748,13 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
     
     try:        
         # 1. 必要な全データをメモリに読み込む
-        transcript_data = await _download_from_r2_to_memory(await _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE")["transcript_json_path"])
-        core_data = await _download_from_r2_to_memory(await _get_dependency_payload(job_id, "CORE_EXTRACTION")["core_extraction_path"])
-        classified_data = await _download_from_r2_to_memory(await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION")["role_classification_path"])
+        # ※ (await _get_dependency_payload(...))["key"] のように必ず括弧で先にawaitを
+        # 完了させる。await X(...)["key"] と書くと、Pythonの演算子優先順位により
+        # 「X(...)["key"]（coroutineオブジェクトの添字アクセス）」が先に評価されて
+        # TypeErrorになる。
+        transcript_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE"))["transcript_json_path"])
+        core_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "CORE_EXTRACTION"))["core_extraction_path"])
+        classified_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION"))["role_classification_path"])
 
         # 検索しやすくするための辞書を作成
         sid_to_text = {item["sid"]: item["text"] for item in transcript_data if "sid" in item}
@@ -746,19 +769,18 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
                 start_sid = topic.get("start_sid")
                 end_sid = topic.get("end_sid")
                 
-                try:
-                    start_idx = int(start_sid[1:])
-                    end_idx = int(end_sid[1:])
-                    
+                start_idx = _sid_to_int(start_sid) if isinstance(start_sid, str) else None
+                end_idx = _sid_to_int(end_sid) if isinstance(end_sid, str) else None
+                if start_idx is None or end_idx is None:
+                    logger.log(f"⚠️ Failed to parse SID in LOGISTICS topic: start_sid={start_sid}, end_sid={end_sid}")
+                else:
                     block_lines = [f"[Topic: {topic_title}]"]
                     for i in range(start_idx, end_idx + 1):
-                        sid = f"s{i:06d}"
+                        sid = _int_to_sid(i)
                         if sid in sid_to_text:
                             block_lines.append(f"{sid}: {sid_to_text[sid]}")
-                            
+
                     formatted_blocks.append("\n".join(block_lines))
-                except Exception as e:
-                    logger.log(f"⚠️ Failed to parse SID in LOGISTICS topic: {e}")
 
         # ==========================================
         # ② ROLE_CLASSIFICATION & Safety Net (キーワード抽出)
@@ -806,17 +828,16 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
                 
                 # このブロックが元々どのトピックに属していたか推測（真ん中の文を基準にする）
                 mid_idx = block[len(block)//2]
-                mid_sid_num = int(classified_data[mid_idx]["sid"][1:])
-                
+                mid_sid_num = _sid_to_int(classified_data[mid_idx].get("sid"))
+
                 topic_title = "Embedded Announcement"
-                for topic in core_data.get("topics", []):
-                    try:
-                        t_start = int(topic["start_sid"][1:])
-                        t_end = int(topic["end_sid"][1:])
-                        if t_start <= mid_sid_num <= t_end:
+                if mid_sid_num is not None:
+                    for topic in core_data.get("topics", []):
+                        t_start = _sid_to_int(topic.get("start_sid"))
+                        t_end = _sid_to_int(topic.get("end_sid"))
+                        if t_start is not None and t_end is not None and t_start <= mid_sid_num <= t_end:
                             topic_title = topic.get("title", "Embedded Announcement")
                             break
-                    except: pass
                 
                 block_lines = [f"[Topic: {topic_title}]"]
                 for i in range(start_idx, end_idx + 1):
@@ -842,11 +863,45 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
 
         # 5. Supabaseの `announcements` テーブルに書き込む処理
         supabase = get_supabase_client()
+        valid_sids = set(sid_to_text.keys())
+
+        def _normalize_announcement_sid_range(start_sid, end_sid):
+            """
+            LLMが返したstart_sid/end_sidを検証する。announcementの内容自体は
+            SIDが壊れていても価値があるかもしれないため、この関数は常に
+            announcementを保存させる前提で「位置情報だけ」を正規化する:
+            - start/endが逆転していれば入れ替えて正しい順序に直す
+            - フォーマットが崩れていれば正規形に直す
+            - それでも実在しないSIDなら、位置情報無しとして (None, None) を返す
+              （announcement自体は後続で必ず保存される。ユーザーが後から見て
+              不要なら削除できるため、位置がズレていても情報を失うよりはまし）
+            """
+            start_num = _sid_to_int(start_sid) if isinstance(start_sid, str) else None
+            end_num = _sid_to_int(end_sid) if isinstance(end_sid, str) else None
+            if start_num is None or end_num is None:
+                return None, None
+
+            if start_num > end_num:
+                logger.log(f"⚠️ Announcement SID range was reversed, swapping: {start_sid} <-> {end_sid}")
+                start_num, end_num = end_num, start_num
+
+            normalized_start, normalized_end = _int_to_sid(start_num), _int_to_sid(end_num)
+            if normalized_start not in valid_sids or normalized_end not in valid_sids:
+                logger.log(
+                    f"⚠️ Announcement SID range does not exist in transcript, saving without SID: "
+                    f"start_sid={start_sid}, end_sid={end_sid}"
+                )
+                return None, None
+
+            return normalized_start, normalized_end
 
         # 冪等性のため、書き込み前にこの講義分の既存announcementsを削除しておく
         def _insert_announcements_sync():
             supabase.table("announcements").delete().eq("lecture_id", lecture_id).execute()
             for announcement in announcements_json.get("announcements", []):
+                start_sid, end_sid = _normalize_announcement_sid_range(
+                    announcement.get("start_sid"), announcement.get("end_sid")
+                )
                 ann_data = {
                     "user_id": uid,
                     "lecture_id": lecture_id,
@@ -854,12 +909,13 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
                     "title": announcement.get("title"),
                     "description": announcement.get("description"),
                     "location": announcement.get("location"),
-                    "start_sid": announcement.get("start_sid"),
-                    "end_sid": announcement.get("end_sid"),
+                    "start_sid": start_sid,
+                    "end_sid": end_sid,
                     "related_topic_title": announcement.get("related_topic_title"),
                     "datetime_parameters": announcement.get("datetime_parameters"),
                     "metadata": {"is_completed": False}
                 }
+                # SIDが壊れていても、announcement自体の情報は必ず保存する。
                 supabase.table("announcements").insert(ann_data).execute()
 
         await asyncio.to_thread(_insert_announcements_sync)
@@ -972,7 +1028,7 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
 
         # 5. 差分を Full Map にマージ
         mutations = mapping_result.get("graph_mutations") or {}
-        new_graph = _merge_graph_mutation(current_graph_state, mutations, todays_topics_list)
+        new_graph = _merge_graph_mutation(current_graph_state, mutations, todays_topics_list, logger=logger)
 
         # 6. Supabase の `topic_maps` テーブルに更新保存
         # course_id にUNIQUE制約がある前提で upsert する。update/insertを手動で

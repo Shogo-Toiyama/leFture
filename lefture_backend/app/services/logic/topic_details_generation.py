@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt, TaskLogger
+from app.services.helpers.helpers import _load_prompt, TaskLogger, _sid_to_int
 
 class TopicDetailGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -26,10 +26,10 @@ class TopicDetailGenerationService:
             start_sid = topic.get("start_sid")
             end_sid = topic.get("end_sid")
 
-            try:
-                start_num = int(start_sid[1:])
-                end_num = int(end_sid[1:])
-            except: continue
+            start_num = _sid_to_int(start_sid) if isinstance(start_sid, str) else None
+            end_num = _sid_to_int(end_sid) if isinstance(end_sid, str) else None
+            if start_num is None or end_num is None:
+                continue
 
             # BUFFER = 20 の文脈付きで抽出する
             BUFFER = 20
@@ -39,10 +39,9 @@ class TopicDetailGenerationService:
             segment_sentences = []
             for s in role_classified_data:
                 sid = s.get("sid", "")
-                try:
-                    sid_num = int(sid[1:])
-                except Exception as e:
-                    self.logger.log(f"⚠️ Invalid SID in role_classified_data: {sid}. Error: {e}")
+                sid_num = _sid_to_int(sid)
+                if sid_num is None:
+                    self.logger.log(f"⚠️ Invalid SID in role_classified_data: {sid}")
                     continue
 
                 if context_start_num <= sid_num <= context_end_num:

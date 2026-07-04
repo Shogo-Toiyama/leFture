@@ -54,11 +54,22 @@ def _load_prompt(filename: str) -> str:
 
 
 def _sid_to_int(sid: Optional[str]) -> Optional[int]:
-    SID_NUM = re.compile(r"s(\d+)")
+    """
+    'sXXXXXX' 形式のSID文字列を数値へ変換する。LLMが返しがちな軽微な
+    フォーマット崩れ（大文字S、sプレフィックス無し、ゼロ埋め桁数の過不足）も
+    許容する。int()変換自体がゼロ埋めの過不足を自然に吸収してくれるため、
+    ここで拾う必要があるのは「sの有無・大文字小文字」だけ。
+    """
+    SID_NUM = re.compile(r"[sS]?(\d+)")
     if not sid:
         return None
-    m = SID_NUM.fullmatch(sid)
+    m = SID_NUM.fullmatch(sid.strip())
     return int(m.group(1)) if m else None
+
+
+def _int_to_sid(n: int) -> str:
+    """数値を正規形のSID文字列（s + ゼロ埋め6桁）に変換する。"""
+    return f"s{n:06d}"
 
 
 # =========================================================
@@ -191,13 +202,17 @@ def _parse_detail_contents(content: str) -> tuple[str, str]:
     return summary, clean_contents
 
 
-def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: list[dict]) -> dict:
+def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: list[dict], logger=None) -> dict:
     """
     Topic Mapping (LLM) から出力された差分(mutations)を、
     現在の Full Map 状態(current_graph)に適用し、最新の Full Map 状態を返します。
     """
     import copy
     new_graph = copy.deepcopy(current_graph)
+
+    def _log(msg: str) -> None:
+        if logger is not None:
+            logger.log(msg)
     
     # 1. クラスターのアクション (create / rename / remove)
     cluster_actions = mutations.get("cluster_actions", [])
@@ -243,6 +258,11 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
             existing_node["cluster_id"] = cluster_id
         else:
             topic_info = todays_topics_map.get(topic_id, {})
+            if not topic_info:
+                # todays_topicsに無いtopic_id（ハルシネーションの可能性）。
+                # ノード自体は情報を失わないよう保存するが、タイトルはtopic_idを
+                # そのまま出すフォールバックになるため、後で気づけるようログに残す。
+                _log(f"⚠️ Topic Mapping referenced an unknown topic_id in node_placements: {topic_id}")
             new_graph["nodes"].append({
                 "id": topic_id,
                 "title": topic_info.get("title", f"Topic {topic_id}"),
@@ -251,6 +271,11 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
             })
 
     # 3. エッジのアクション (add / remove)
+    # add時は、source/targetが実在するノードかどうかを検証する。存在しないノードを
+    # 参照するエッジは繋ぎようがない（宙に浮いた線になる）ため、そのエッジだけを
+    # 無視する。ノードやクラスターなど他の情報はここでは一切失われない。
+    known_node_ids = {n.get("id") for n in new_graph.get("nodes", [])}
+
     edge_actions = mutations.get("edge_actions", [])
     for action_item in edge_actions:
         action = action_item.get("action")
@@ -259,11 +284,17 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
         relation_type = action_item.get("relation_type", "builds_on")
         if not source_id or not target_id:
             continue
-            
+
         if "edges" not in new_graph:
             new_graph["edges"] = []
-            
+
         if action == "add":
+            if source_id not in known_node_ids or target_id not in known_node_ids:
+                _log(
+                    f"⚠️ Skipped edge referencing a non-existent node "
+                    f"(source={source_id}, target={target_id}): could not be connected."
+                )
+                continue
             if not any(e.get("source") == source_id and e.get("target") == target_id for e in new_graph["edges"]):
                 new_graph["edges"].append({
                     "source": source_id,
@@ -272,7 +303,7 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
                 })
         elif action == "remove":
             new_graph["edges"] = [
-                e for e in new_graph["edges"] 
+                e for e in new_graph["edges"]
                 if not (e.get("source") == source_id and e.get("target") == target_id)
             ]
 

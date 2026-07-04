@@ -1,11 +1,10 @@
 # app/services/logic/role_classification.py
 import os
 import time
-import re
 import httpx
 from typing import Any, Dict, List
 
-from app.services.helpers.helpers import TaskLogger
+from app.services.helpers.helpers import TaskLogger, _sid_to_int
 from app.services.helpers.llm_unified import BillingEngine
 
 class RoleClassificationService:
@@ -34,22 +33,13 @@ class RoleClassificationService:
             if topic.get("topic_type") == "LOGISTICS":
                 start_sid = topic.get("start_sid")
                 end_sid = topic.get("end_sid")
-                if not (
-                    isinstance(start_sid, str)
-                    and isinstance(end_sid, str)
-                    and re.fullmatch(r"s\d{6}", start_sid)
-                    and re.fullmatch(r"s\d{6}", end_sid)
-                ):
+                start_idx = _sid_to_int(start_sid) if isinstance(start_sid, str) else None
+                end_idx = _sid_to_int(end_sid) if isinstance(end_sid, str) else None
+                if start_idx is None or end_idx is None:
                     raise ValueError(f"Invalid LOGISTICS SID range in core_data: {topic}")
-                try:
-                    # "s000015" のような文字列から数値(15)だけを取り出す
-                    start_idx = int(start_sid[1:])
-                    end_idx = int(end_sid[1:])
-                    if start_idx > end_idx:
-                        raise ValueError(f"Invalid LOGISTICS range order: {topic}")
-                    logistics_ranges.append((start_idx, end_idx))
-                except (ValueError, KeyError, TypeError):
-                    raise
+                if start_idx > end_idx:
+                    raise ValueError(f"Invalid LOGISTICS range order: {topic}")
+                logistics_ranges.append((start_idx, end_idx))
 
         # ==========================================
         # 2. データの仕分け (ACADEMIC vs LOGISTICS)
@@ -61,14 +51,11 @@ class RoleClassificationService:
         for item in transcript_data:
             sid_str = item.get("sid", "")
             is_logistics = False
-            
-            if sid_str.startswith("s"):
-                try:
-                    sid_num = int(sid_str[1:])
-                    # この文がLOGISTICSの範囲内に入っているかチェック
-                    is_logistics = any(start <= sid_num <= end for start, end in logistics_ranges)
-                except ValueError:
-                    pass
+
+            sid_num = _sid_to_int(sid_str)
+            if sid_num is not None:
+                # この文がLOGISTICSの範囲内に入っているかチェック
+                is_logistics = any(start <= sid_num <= end for start, end in logistics_ranges)
             
             # DeBERTaで推論すべき(ACADEMICな)文だけを抽出
             if not is_logistics:

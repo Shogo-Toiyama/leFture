@@ -1,10 +1,20 @@
 # app/services/logic/core_extraction.py
+import json
 import re
 from typing import Any, Dict
 
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 from app.services.helpers.helpers import _load_prompt
 from app.services.helpers.helpers import TaskLogger
+from app.services.helpers.helpers import _sid_to_int, _int_to_sid
+
+# 重なりを自動補正してよい上限（文数）。これを超える場合は「軽微なズレ」とは
+# 言えないため補正を諦め、リトライに任せる。
+# 40文（＝前後20文ずつ）としているのは、後続のカード/ノート生成（例:
+# topic_details_generation.py の BUFFER=20）がtopicの前後20文をコンテキストとして
+# LLMに渡す設計のため。重なりが40文以内であれば中間で分割しても、前後20文の
+# コンテキストを合わせれば元の重なっていた範囲を過不足なくカバーできる。
+MAX_AUTO_CORRECTABLE_OVERLAP_SIDS = 40
 
 
 class CoreExtractionService:
@@ -83,11 +93,24 @@ class CoreExtractionService:
 
         self.logger.log(f"⏰ Core Extraction finished in {res.elapsed_seconds:.2f} seconds.")
 
-        normalized_output = self._validate_and_normalize_output(
-            output=res.output_json,
-            valid_sids=valid_sids,
-            sid_to_order=sid_to_order,
-        )
+        try:
+            normalized_output = self._validate_and_normalize_output(
+                output=res.output_json,
+                valid_sids=valid_sids,
+                sid_to_order=sid_to_order,
+            )
+        except Exception as e:
+            # バリデーション失敗時、生のLLM出力はどこにも残らずそのまま消えていた。
+            # 後で見返せるようログに残す（TaskLoggerはタスク失敗時にR2へ保存される）。
+            # ※ ここで保存されるのはこのログだけで、下流タスクが実際に読む
+            # core_extraction.json（save_json_log呼び出し）はバリデーション成功後
+            # にしか書き込まれないため、壊れた出力を誤って後続処理が読む心配はない。
+            self.logger.log(f"❌ Core extraction output failed validation: {e}")
+            self.logger.log(
+                "📄 Raw (invalid) LLM output for debugging:\n"
+                f"{json.dumps(res.output_json, ensure_ascii=False, indent=2)}"
+            )
+            raise
 
         return normalized_output
 
@@ -131,14 +154,13 @@ class CoreExtractionService:
         if not isinstance(topics, list) or not topics:
             raise ValueError("Core extraction field 'topics' must be a non-empty list.")
 
-        previous_end_order = 0
+        # 1. 各topicの基本フィールドを検証する（重なり順序のチェックはまだしない）。
+        order_to_sid = {order: sid for sid, order in sid_to_order.items()}
+        topics_with_order: list[tuple[int, int, dict]] = []
 
         for idx, topic in enumerate(topics, start=1):
             if not isinstance(topic, dict):
                 raise ValueError(f"topics[{idx}] must be an object.")
-
-            # idx は後続で混乱しないように、必ず1始まりの連番へ正規化する。
-            topic["idx"] = idx
 
             title = topic.get("title")
             if not isinstance(title, str) or not title.strip():
@@ -161,7 +183,7 @@ class CoreExtractionService:
             else:
                 topic["keywords"] = []
 
-            self._validate_sid_range(
+            topic["start_sid"], topic["end_sid"] = self._validate_sid_range(
                 start_sid=topic.get("start_sid"),
                 end_sid=topic.get("end_sid"),
                 valid_sids=valid_sids,
@@ -172,19 +194,73 @@ class CoreExtractionService:
             start_order = sid_to_order[topic["start_sid"]]
             end_order = sid_to_order[topic["end_sid"]]
 
-            if start_order <= previous_end_order:
-                raise ValueError(
-                    f"topics[{idx}] overlaps with a previous topic or is out of order. "
-                    f"start_sid={topic['start_sid']}, previous_end_order={previous_end_order}"
+            topics_with_order.append((start_order, end_order, topic))
+
+        # 2. LLMが順序をシャッフルして返すことがあるため、start_orderで安定ソートする。
+        # これ自体は意味を変えない機械的な並べ替え。
+        topics_with_order.sort(key=lambda t: t[0])
+
+        # 3. 重なり・連続性を検証しつつ、軽微なズレは自動補正する。
+        # 「軽微」の基準: 重なっている長さが MAX_AUTO_CORRECTABLE_OVERLAP_SIDS (40文)
+        # 以下であること。補正方法は「重なりの中間で分割」— 前のtopicの終わりを
+        # 削るのではなく押し出すのでもなく、重なった区間を両者で半分ずつ分け合う。
+        # これを超える重なりや、分割してもどちらかの範囲が消えてしまう場合は、
+        # 意味の取り違えである可能性が高いため補正を諦めてリトライに任せる。
+        previous_end_order = 0
+        previous_start_order = 0
+        previous_topic: dict | None = None
+        normalized_topics: list[dict] = []
+
+        for start_order, end_order, topic in topics_with_order:
+            if previous_topic is not None and start_order <= previous_end_order:
+                overlap_start = start_order
+                overlap_end = previous_end_order
+                overlap_length = overlap_end - overlap_start + 1
+
+                if overlap_length > MAX_AUTO_CORRECTABLE_OVERLAP_SIDS:
+                    raise ValueError(
+                        f"topic '{topic.get('title')}' overlaps too much with the previous "
+                        f"topic to auto-correct (overlap={overlap_length} SIDs, "
+                        f"max_auto_correctable={MAX_AUTO_CORRECTABLE_OVERLAP_SIDS} SIDs): "
+                        f"start_sid={topic['start_sid']}, end_sid={topic['end_sid']}"
+                    )
+
+                mid_order = (overlap_start + overlap_end) // 2
+                new_previous_end_order = mid_order
+                new_start_order = mid_order + 1
+
+                if new_start_order > end_order or new_previous_end_order < previous_start_order:
+                    raise ValueError(
+                        f"topic '{topic.get('title')}' overlap could not be split safely "
+                        f"(topic too short after split): start_sid={topic['start_sid']}"
+                    )
+
+                self.logger.log(
+                    f"⚠️ Auto-corrected overlap between '{previous_topic.get('title')}' and "
+                    f"'{topic.get('title')}' by splitting at the midpoint "
+                    f"(previous end_sid -> {order_to_sid[new_previous_end_order]}, "
+                    f"current start_sid -> {order_to_sid[new_start_order]})"
                 )
 
+                previous_topic["end_sid"] = order_to_sid[new_previous_end_order]
+                previous_end_order = new_previous_end_order
+
+                topic["start_sid"] = order_to_sid[new_start_order]
+                start_order = new_start_order
+
+            topic["idx"] = len(normalized_topics) + 1
+            normalized_topics.append(topic)
             previous_end_order = end_order
+            previous_start_order = start_order
+            previous_topic = topic
+
+        output["topics"] = normalized_topics
 
         fun_fact_idea = output["fun_fact_idea"]
         if not isinstance(fun_fact_idea, dict):
             raise ValueError("Core extraction field 'fun_fact_idea' must be an object.")
 
-        self._validate_sid_range(
+        fun_fact_idea["start_sid"], fun_fact_idea["end_sid"] = self._validate_sid_range(
             start_sid=fun_fact_idea.get("start_sid"),
             end_sid=fun_fact_idea.get("end_sid"),
             valid_sids=valid_sids,
@@ -238,17 +314,36 @@ class CoreExtractionService:
         valid_sids: set[str],
         sid_to_order: dict[str, int],
         label: str,
-    ) -> None:
+    ) -> tuple[str, str]:
         if not isinstance(start_sid, str) or not isinstance(end_sid, str):
             raise ValueError(f"{label} must contain string start_sid and end_sid.")
 
-        if start_sid not in valid_sids:
-            raise ValueError(f"{label}.start_sid does not exist in transcript: {start_sid}")
-
-        if end_sid not in valid_sids:
-            raise ValueError(f"{label}.end_sid does not exist in transcript: {end_sid}")
+        start_sid = self._normalize_sid_or_raise(start_sid, valid_sids, label=f"{label}.start_sid")
+        end_sid = self._normalize_sid_or_raise(end_sid, valid_sids, label=f"{label}.end_sid")
 
         if sid_to_order[start_sid] > sid_to_order[end_sid]:
             raise ValueError(
                 f"{label} has invalid SID range: start_sid={start_sid}, end_sid={end_sid}"
             )
+
+        return start_sid, end_sid
+
+    def _normalize_sid_or_raise(self, raw_sid: str, valid_sids: set[str], label: str) -> str:
+        """
+        LLMが返したSIDが軽微なフォーマット崩れ（sプレフィックス無し・大文字S・
+        ゼロ埋め桁数の過不足）であれば正規形に補正する。補正後も実在しない、
+        または数値として解釈できない場合はハルシネーションとみなし例外を送出する。
+        """
+        if raw_sid in valid_sids:
+            return raw_sid
+
+        n = _sid_to_int(raw_sid)
+        if n is not None:
+            candidate = _int_to_sid(n)
+            if candidate in valid_sids:
+                self.logger.log(
+                    f"⚠️ Auto-corrected malformed SID format: '{raw_sid}' -> '{candidate}' ({label})"
+                )
+                return candidate
+
+        raise ValueError(f"{label} does not exist in transcript: {raw_sid}")

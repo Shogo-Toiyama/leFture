@@ -4,7 +4,7 @@ import time
 from typing import Any, Dict, List
 
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import TaskLogger, _load_prompt
+from app.services.helpers.helpers import TaskLogger, _load_prompt, _sid_to_int
 
 class ReviewCardGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -36,15 +36,16 @@ class ReviewCardGenerationService:
             end_sid = topic.get("end_sid")
 
             # 2. このトピックの範囲の文を抽出
-            try:
-                start_num = int(start_sid[1:])
-                end_num = int(end_sid[1:])
-            except: continue
+            start_num = _sid_to_int(start_sid) if isinstance(start_sid, str) else None
+            end_num = _sid_to_int(end_sid) if isinstance(end_sid, str) else None
+            if start_num is None or end_num is None:
+                continue
 
-            segment_sentences = [
-                s for s in role_classified_data 
-                if start_num <= int(s["sid"][1:]) <= end_num
-            ]
+            segment_sentences = []
+            for s in role_classified_data:
+                sid_num = _sid_to_int(s.get("sid"))
+                if sid_num is not None and start_num <= sid_num <= end_num:
+                    segment_sentences.append(s)
 
             if not segment_sentences: continue
 

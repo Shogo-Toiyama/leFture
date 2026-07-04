@@ -213,7 +213,13 @@ class RecordingController extends _$RecordingController {
 
       _chunker = AudioChunker(
         onChunkReady: (Uint8List chunkData, double startTimeSec) async {
-          DevLog.add('[Chunker] Chunk $_currentChunkIndex is ready! Size: ${chunkData.length} (Start: ${startTimeSec}s)');
+          // ★ awaitを挟む前に同期的に採番する: onChunkReadyはAudioChunkerから
+          // awaitされずに呼ばれるため、チャンクが立て続けに来ると(15倍速テスト等)
+          // 前のチャンクのFFmpegエンコード待ち中に次のチャンクのこのコールバックが
+          // 走り出す。_currentChunkIndexの読み取り＋インクリメントがawaitの後だと、
+          // 2つの異なるチャンクが同じsequenceIndexを取得してしまう競合状態になる。
+          final chunkIndex = _currentChunkIndex++;
+          DevLog.add('[Chunker] Chunk $chunkIndex is ready! Size: ${chunkData.length} (Start: ${startTimeSec}s)');
 
           final path = await _recorder.savePcmAsM4a(chunkData, lectureId);
 
@@ -221,11 +227,10 @@ class RecordingController extends _$RecordingController {
             userId: user.id,
             lectureId: lectureId,
             localPath: path,
-            sequenceIndex: _currentChunkIndex,
+            sequenceIndex: chunkIndex,
             startTime: startTimeSec,
           );
 
-          _currentChunkIndex++;
           _uploadMgr.tryProcessQueue();
         },
         onMasterDataReady: (Uint8List masterData) async {

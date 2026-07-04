@@ -132,8 +132,11 @@ class UploadManager {
             lastError: null,
           );
           
-          // Q1. この授業の未送信ジョブはまだ残っているか？
-          final remainingJobs = await _repo.getPendingJobsForLecture(job.lectureId);
+          // Q1. この授業の未送信「チャンク」ジョブはまだ残っているか？
+          // ★ マスター音声(kind: master_audio_upload)は分析の入力ではなく再生用途
+          // でしかないため、ここでは意図的に見ない。マスター音声の失敗・保留が
+          // 分析開始を永久にブロックしてしまう問題を避けるため。
+          final remainingJobs = await _repo.getPendingChunkJobsForLecture(job.lectureId);
           
           // Q2. この授業はすでに録音終了（Done）しているか？
           final lecture = await _repo.getLecture(job.lectureId);
@@ -186,16 +189,20 @@ class UploadManager {
         } catch (e) {
           // 失敗...
           // リトライ回数を増やし、次のリトライ時刻を設定
+          // ★ attemptCountを実際にDBへ書き戻す（以前はここが抜けていて常に0のまま
+          // だったため、指数バックオフのつもりが実質「常に30秒固定」になっていた）
           final nextAttempt = job.attemptCount + 1;
-          // 指数バックオフ: 30秒, 60秒, 120秒 ...
-          final delaySeconds = 30 * pow(2, nextAttempt - 1); 
-          final nextRetry = DateTime.now().toUtc().add(Duration(seconds: delaySeconds.toInt()));
+          // 指数バックオフ: 30秒, 60秒, 120秒 ... 上限5分(300秒)でそれ以上は伸ばさない
+          const maxBackoffSeconds = 5 * 60;
+          final delaySeconds = min(30 * pow(2, nextAttempt - 1).toInt(), maxBackoffSeconds);
+          final nextRetry = DateTime.now().toUtc().add(Duration(seconds: delaySeconds));
 
           await _repo.updateJobStatus(
             jobId: job.id,
             status: 'retry_wait',
             lastError: e.toString(),
             nextRetryAt: nextRetry,
+            attemptCount: nextAttempt,
           );
           
           // エラーが出たので、一旦ループを抜けるか、次のジョブへ行くか。
@@ -333,29 +340,85 @@ class UploadManager {
     DevLog.add('🚀 [UploadManager] Cloud RunにChunk $chunkIndex を送信完了！');
   }
 
-  /// Cloud Runへ直接マスターオーディオ(M4A)ファイルを投げるメソッド
+  /// マスターオーディオ(M4A)をR2へ直接アップロードするメソッド。
+  /// Cloud Runには32MBのリクエストボディ上限があり、64kbpsの音声でも約70分の
+  /// 録音で超えてしまう（60〜90分超の講義は普通にあるため構造的な問題だった）。
+  /// そのためCloud Runは「署名付きURLの発行」と「完了記録」だけを行い、
+  /// 実際のファイル転送はR2へ直接行う。
   Future<void> _postMasterAudioToCloudRun({
     required String localPath,
     required String lectureId,
   }) async {
-    final uri = Uri.parse('https://lefture-511705914929.us-west1.run.app/worker/upload-master-audio');
-
-    final request = http.MultipartRequest('POST', uri);
-    request.fields['lecture_id'] = lectureId;
-    request.files.add(await http.MultipartFile.fromPath('file', localPath));
-
-    final response = await request.send().timeout(
-      const Duration(minutes: 5),
-      onTimeout: () => throw TimeoutException(
-        'Cloud Run timed out while uploading master audio for lecture $lectureId',
-      ),
+    // 1. 署名付きアップロードURLをCloud Runから取得（小さいJSONリクエスト）
+    const contentType = 'audio/x-m4a';
+    final requestUrlUri = Uri.parse(
+      'https://lefture-511705914929.us-west1.run.app/worker/request-master-audio-upload-url',
     );
+    final requestUrlResponse = await http
+        .post(
+          requestUrlUri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'lecture_id': lectureId}),
+        )
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException(
+            'Cloud Run timed out while requesting master audio upload URL for lecture $lectureId',
+          ),
+        );
 
-    if (response.statusCode != 200) {
-      final respStr = await response.stream.bytesToString();
-      throw Exception('Cloud Run master upload error (${response.statusCode}): $respStr');
+    if (requestUrlResponse.statusCode != 200) {
+      throw Exception(
+        'Cloud Run request-upload-url error (${requestUrlResponse.statusCode}): ${requestUrlResponse.body}',
+      );
     }
 
-    DevLog.add('🚀 [UploadManager] Cloud RunにMaster Audio $lectureId を送信完了！');
+    final uploadUrl = jsonDecode(requestUrlResponse.body)['upload_url'] as String;
+
+    // 2. R2へ直接PUT（Cloud Runを経由しないので32MB上限に引っかからない）
+    // ★ Content-Typeはバックエンドが署名付きURLを発行した際の値と完全に
+    // 一致させる必要がある（不一致だとR2が署名検証で拒否する）。
+    final fileBytes = await File(localPath).readAsBytes();
+    final putResponse = await http
+        .put(
+          Uri.parse(uploadUrl),
+          headers: {'Content-Type': contentType},
+          body: fileBytes,
+        )
+        .timeout(
+          const Duration(minutes: 5),
+          onTimeout: () => throw TimeoutException(
+            'R2 timed out while uploading master audio for lecture $lectureId',
+          ),
+        );
+
+    if (putResponse.statusCode != 200) {
+      throw Exception('R2 upload error (${putResponse.statusCode}): ${putResponse.body}');
+    }
+
+    // 3. アップロード完了をCloud Runに通知し、lectures.audio_pathを更新してもらう
+    final completeUri = Uri.parse(
+      'https://lefture-511705914929.us-west1.run.app/worker/complete-master-audio-upload',
+    );
+    final completeResponse = await http
+        .post(
+          completeUri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'lecture_id': lectureId}),
+        )
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw TimeoutException(
+            'Cloud Run timed out while completing master audio upload for lecture $lectureId',
+          ),
+        );
+
+    if (completeResponse.statusCode != 200) {
+      throw Exception(
+        'Cloud Run complete-upload error (${completeResponse.statusCode}): ${completeResponse.body}',
+      );
+    }
+
+    DevLog.add('🚀 [UploadManager] Master Audio $lectureId をR2へ直接送信完了！');
   }
 }

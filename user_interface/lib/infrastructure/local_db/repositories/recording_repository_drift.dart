@@ -187,12 +187,14 @@ class RecordingRepositoryDrift {
     required String status,
     String? lastError,
     DateTime? nextRetryAt,
+    int? attemptCount,
   }) async {
     await (db.update(db.localUploadJobs)..where((t) => t.id.equals(jobId)))
         .write(LocalUploadJobsCompanion(
       status: Value(status),
       lastError: Value(lastError),
       nextRetryAt: Value(nextRetryAt),
+      attemptCount: attemptCount != null ? Value(attemptCount) : const Value.absent(),
       updatedAt: Value(DateTime.now().toUtc()),
     ));
   }
@@ -254,6 +256,18 @@ class RecordingRepositoryDrift {
   Future<List<LocalUploadJob>> getPendingJobsForLecture(String lectureId) {
     return (db.select(db.localUploadJobs)
           ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+        .get();
+  }
+
+  // UploadManager用：start-analysisのトリガー判定に使う。
+  // マスター音声(kind: 'master_audio_upload')は分析パイプラインの入力ではなく
+  // 再生用途でしかないため、これが失敗・保留中でも分析開始をブロックしない。
+  // ここでは音声チャンク(kind: 'audio_upload')のみを対象にする。
+  Future<List<LocalUploadJob>> getPendingChunkJobsForLecture(String lectureId) {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.equals('audio_upload'))
           ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
         .get();
   }

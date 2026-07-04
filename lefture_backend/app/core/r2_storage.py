@@ -2,8 +2,9 @@ import os
 import json
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 class R2StorageService:
     def __init__(self):
@@ -83,6 +84,41 @@ class R2StorageService:
             ContentType=content_type
         )
         return path
+
+    def generate_presigned_put_url(
+        self,
+        uid: str,
+        lecture_id: str,
+        file_name: str,
+        content_type: str = "application/octet-stream",
+        expires_in: int = 3600,
+    ) -> Tuple[str, str]:
+        """
+        クライアントがR2へ直接PUTできる署名付きURLを発行する。マスター音声のように
+        Cloud Runのリクエストボディ上限(32MB)を超えうる大きなファイルを、
+        Cloud Runを経由せずアップロードするために使う。
+        署名処理はローカルで完結し、実際のネットワーク呼び出しは発生しない。
+        """
+        path = f"{uid}/{lecture_id}/{file_name}"
+        url = self.s3.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": self.bucket_name,
+                "Key": path,
+                "ContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+        return url, path
+
+    def object_exists(self, storage_path: str) -> bool:
+        """R2上に指定パスのオブジェクトが実在するか確認する。"""
+        try:
+            self.s3.head_object(Bucket=self.bucket_name, Key=storage_path)
+            return True
+        except ClientError:
+            return False
 
 # シングルトンとしてインスタンス化
 storage_service = R2StorageService()
