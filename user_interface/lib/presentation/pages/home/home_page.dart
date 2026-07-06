@@ -4,6 +4,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/home_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
@@ -12,6 +14,7 @@ import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
 import 'widgets/bottom_control_bar.dart';
 import 'widgets/combined_header.dart';
+import 'widgets/empty_home_content.dart';
 
 // 銀河ウィジェットの高さの、画面縦幅に対する割合
 const double _kGalaxyHeightRatio = 0.25;
@@ -48,6 +51,29 @@ class HomePage extends HookConsumerWidget {
       scrollController.addListener(listener);
       return () => scrollController.removeListener(listener);
     }, [scrollController]);
+
+    // コースが1件も無い、もしくはコースはあってもレクチャーが1件も無いユーザーには、
+    // 通常のダッシュボードの代わりにオンボーディング用の空状態画面を表示する。
+    // （コースがあってもレクチャーが無ければ、RecentLecturesList等はどのみち空になるため）
+    final courses = ref.watch(courseListProvider).asData?.value;
+    final lectures = ref.watch(allLecturesStreamProvider).asData?.value;
+
+    // データ読み込み中は、一瞬のチラつきを防ぐためにローディング画面を表示する
+    if (courses == null || lectures == null) {
+      return Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.starGold),
+          ),
+        ),
+      );
+    }
+
+    // DEBUG: 一時的に lectures.isEmpty の条件を外して常に EmptyHomeContent を表示
+    if (courses != null && lectures != null) {
+      return const EmptyHomeContent();
+    }
 
     final double screenHeight = MediaQuery.of(context).size.height;
     final double statusBarHeight = MediaQuery.of(context).padding.top;

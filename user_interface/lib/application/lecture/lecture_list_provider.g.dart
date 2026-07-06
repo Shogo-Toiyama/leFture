@@ -130,3 +130,42 @@ final class LectureListStreamFamily extends $Family
   @override
   String toString() => r'lectureListStreamProvider';
 }
+
+@ProviderFor(allLecturesStream)
+final allLecturesStreamProvider = AllLecturesStreamProvider._();
+
+final class AllLecturesStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Lecture>>,
+          List<Lecture>,
+          Stream<List<Lecture>>
+        >
+    with $FutureModifier<List<Lecture>>, $StreamProvider<List<Lecture>> {
+  AllLecturesStreamProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'allLecturesStreamProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$allLecturesStreamHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<Lecture>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Lecture>> create(Ref ref) {
+    return allLecturesStream(ref);
+  }
+}
+
+String _$allLecturesStreamHash() => r'41483d597be0a77adf48a4153cf611c898edab69';

@@ -17,7 +17,22 @@ const double _inertiaDecay = 0.94; // 1フレームごとの減衰率
 const double _inertiaStopThresholdSq = 2.5e-7; // これ未満の角速度になったら慣性を止める
 
 class GalaxyView extends ConsumerStatefulWidget {
-  const GalaxyView({super.key});
+  const GalaxyView({
+    super.key,
+    this.config = defaultGalaxyConfig,
+    this.glowScale = 1.0,
+  });
+
+  /// 銀河生成パラメーター。省略時はこれまで通りの標準的な銀河になる。
+  /// 例: `defaultGalaxyConfig.copyWith(diskStarCount: 0, nebulaCount: 0)` で
+  /// 「まだ星が少ないユーザー向けの、中心核だけの銀河」になる。
+  final GalaxyConfig config;
+
+  /// 中心に重ねて光らせている2枚の楕円（Outer Glow / Inner Core）の
+  /// 半径にかける倍率。星の生成データとは無関係の純粋な見た目調整用なので
+  /// [GalaxyConfig] ではなくこちらのパラメーターで持つ。
+  /// 例: バルジだけの小さな銀河では 0.4〜0.5 程度に絞ると馴染む。
+  final double glowScale;
 
   @override
   ConsumerState<GalaxyView> createState() => GalaxyViewState();
@@ -184,10 +199,10 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
 
   @override
   Widget build(BuildContext context) {
-    // 星field・スプライトテクスチャはgalaxyDataProviderでアプリ全体としてキャッシュされている。
-    // watchすることで、初回のみローディングを表示し、以降このProviderが生きている限り
+    // 星field・スプライトテクスチャはgalaxyDataProviderでconfigごとにキャッシュされている。
+    // watchすることで、初回のみローディングを表示し、以降同じconfigである限り
     // どのGalaxyViewインスタンスも再生成なしに即座に描画できる。
-    final galaxyDataAsync = ref.watch(galaxyDataProvider);
+    final galaxyDataAsync = ref.watch(galaxyDataProvider(widget.config));
 
     return galaxyDataAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -220,6 +235,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
                           zoom: state.zoom,
                           onProjected: (list) => _projected = list,
                           sprite: galaxyData.sprite,
+                          glowScale: widget.glowScale,
                         ),
                         isComplex: true,
                         willChange: true,
@@ -265,6 +281,7 @@ class _GalaxyPainter extends CustomPainter {
     required this.zoom,
     required this.onProjected,
     required this.sprite,
+    this.glowScale = 1.0,
   });
 
   final List<GalaxyStar> stars;
@@ -275,6 +292,7 @@ class _GalaxyPainter extends CustomPainter {
   final double zoom;
   final _ProjectedCallback onProjected;
   final ui.Image sprite;
+  final double glowScale;
 
   // 定数を外に出して再利用可能に
   static final _bgColor = AppColors.universe.voidBackground;
@@ -368,7 +386,7 @@ class _GalaxyPainter extends CustomPainter {
     final angle = math.atan2(normalY, normalX);
 
     final haze = 1.35 - 0.55 * z01;
-    final coreRadius = screenMin * 0.18 * zoom * haze;
+    final coreRadius = screenMin * 0.18 * zoom * haze * glowScale;
 
     // Outer Glow
     canvas.save();
@@ -512,6 +530,7 @@ class _GalaxyPainter extends CustomPainter {
   bool shouldRepaint(covariant _GalaxyPainter oldDelegate) {
     return oldDelegate.camRot != camRot ||
            oldDelegate.zoom != zoom ||
-           oldDelegate.time != time;
+           oldDelegate.time != time ||
+           oldDelegate.glowScale != glowScale;
   }
 }

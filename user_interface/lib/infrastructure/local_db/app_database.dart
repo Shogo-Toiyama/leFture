@@ -174,6 +174,14 @@ class AppDatabase extends _$AppDatabase {
     return query.watch();
   }
 
+  /// コースの有無に関わらず、ユーザーの全レクチャーを横断して監視する。
+  /// （オンボーディング完了判定など「1件でも録音済みか」を見たい場合に使う）
+  Stream<List<LocalLecture>> watchAllLectures(String userId) {
+    final query = select(localLectures)
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull());
+    return query.watch();
+  }
+
   // --- Outbox ---
 
   Future<void> enqueueOutbox({

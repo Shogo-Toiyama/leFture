@@ -67,31 +67,136 @@ class GalaxyData {
   final ui.Image sprite;
 }
 
-@Riverpod(keepAlive: true)
-Future<GalaxyData> galaxyData(Ref ref) async {
-  const seed = 42;
-  const starCount = 20000;
-  const arms = 3;
-  const radius = 1.0;
-  const thickness = 0.05;
+/// 銀河生成パラメーター。フィールドのデフォルト値が、これまで
+/// 決め打ちだった値（[defaultGalaxyConfig]）。
+/// 例えば「まだ星が少ないユーザー向けの銀河」を作りたい場合は
+/// `defaultGalaxyConfig.copyWith(diskStarCount: 0, nebulaCount: 0)` のように上書きする。
+@immutable
+class GalaxyConfig {
+  const GalaxyConfig({
+    this.seed = 42,
+    this.bulgeStarCount = 5000,
+    this.diskStarCount = 15000,
+    this.arms = 3,
+    this.radius = 1.0,
+    this.thickness = 0.05,
+    this.bulgeRadiusNorm = 0.2,
+    this.innerDiskHoleNorm = 0.14,
+    this.nebulaCount = 40,
+    this.bgStarCount = 3200,
+  });
 
+  /// 乱数シード。同じ値なら毎回同じ銀河が生成される。
+  final int seed;
+
+  /// 中心部（バルジ）の星の数。
+  final int bulgeStarCount;
+
+  /// 渦状腕（ディスク）に散らばる星の数。ここを0にすると、
+  /// 中心のバルジだけの「生まれたばかりの銀河」になる。
+  final int diskStarCount;
+
+  /// 渦状腕の本数。
+  final int arms;
+
+  /// 銀河全体の半径（描画時のスケール基準）。
+  final double radius;
+
+  /// ディスクの厚み。
+  final double thickness;
+
+  /// バルジ半径の、銀河全体の半径に対する割合。
+  final double bulgeRadiusNorm;
+
+  /// ディスク中心の「穴」の大きさ（半径に対する割合）。
+  final double innerDiskHoleNorm;
+
+  /// 渦状腕に沿って漂うガス雲(nebula)の数。
+  final int nebulaCount;
+
+  /// 背景の遠い星の数（銀河そのものとは独立した書き割り）。
+  final int bgStarCount;
+
+  GalaxyConfig copyWith({
+    int? seed,
+    int? bulgeStarCount,
+    int? diskStarCount,
+    int? arms,
+    double? radius,
+    double? thickness,
+    double? bulgeRadiusNorm,
+    double? innerDiskHoleNorm,
+    int? nebulaCount,
+    int? bgStarCount,
+  }) {
+    return GalaxyConfig(
+      seed: seed ?? this.seed,
+      bulgeStarCount: bulgeStarCount ?? this.bulgeStarCount,
+      diskStarCount: diskStarCount ?? this.diskStarCount,
+      arms: arms ?? this.arms,
+      radius: radius ?? this.radius,
+      thickness: thickness ?? this.thickness,
+      bulgeRadiusNorm: bulgeRadiusNorm ?? this.bulgeRadiusNorm,
+      innerDiskHoleNorm: innerDiskHoleNorm ?? this.innerDiskHoleNorm,
+      nebulaCount: nebulaCount ?? this.nebulaCount,
+      bgStarCount: bgStarCount ?? this.bgStarCount,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GalaxyConfig &&
+          seed == other.seed &&
+          bulgeStarCount == other.bulgeStarCount &&
+          diskStarCount == other.diskStarCount &&
+          arms == other.arms &&
+          radius == other.radius &&
+          thickness == other.thickness &&
+          bulgeRadiusNorm == other.bulgeRadiusNorm &&
+          innerDiskHoleNorm == other.innerDiskHoleNorm &&
+          nebulaCount == other.nebulaCount &&
+          bgStarCount == other.bgStarCount);
+
+  @override
+  int get hashCode => Object.hash(
+        seed,
+        bulgeStarCount,
+        diskStarCount,
+        arms,
+        radius,
+        thickness,
+        bulgeRadiusNorm,
+        innerDiskHoleNorm,
+        nebulaCount,
+        bgStarCount,
+      );
+}
+
+const defaultGalaxyConfig = GalaxyConfig();
+
+@Riverpod(keepAlive: true)
+Future<GalaxyData> galaxyData(Ref ref, GalaxyConfig config) async {
   final stars = _generateSpiralGalaxy(
-    seed: seed,
-    count: starCount,
-    arms: arms,
-    radius: radius,
-    thickness: thickness,
+    seed: config.seed,
+    bulgeCount: config.bulgeStarCount,
+    diskCount: config.diskStarCount,
+    arms: config.arms,
+    radius: config.radius,
+    thickness: config.thickness,
+    bulgeRadiusNorm: config.bulgeRadiusNorm,
+    innerDiskHoleNorm: config.innerDiskHoleNorm,
   );
 
   final nebula = _generateNebula(
-    seed: seed,
-    count: (starCount / 500).toInt(),
-    arms: arms,
-    radius: radius * 0.7,
-    thickness: thickness,
+    seed: config.seed,
+    count: config.nebulaCount,
+    arms: config.arms,
+    radius: config.radius * 0.7,
+    thickness: config.thickness,
   );
 
-  final bgStars = _generateBgStars(seed: 123, count: 3200);
+  final bgStars = _generateBgStars(seed: 123, count: config.bgStarCount);
 
   final sprite = await _generateSpriteTexture();
 
@@ -188,11 +293,11 @@ List<GalaxyNebulaPuff> _generateNebula({
 
 List<GalaxyStar> _generateSpiralGalaxy({
   required int seed,
-  required int count,
+  required int bulgeCount,
+  required int diskCount,
   required int arms,
   required double radius,
   required double thickness,
-  int bulgeCount = 5000,
   double bulgeRadiusNorm = 0.2,
   double innerDiskHoleNorm = 0.14,
 }) {
@@ -240,7 +345,6 @@ List<GalaxyStar> _generateSpiralGalaxy({
   }
 
   // --- Disk ---
-  final diskCount = count - stars.length; // 残りをディスクにする
   for (int i = 0; i < diskCount; i++) {
     final t = rnd.nextDouble();
     final rNormRaw = math.pow(t, 0.85).toDouble();

@@ -26,3 +26,14 @@ Stream<List<Lecture>> lectureListStream(Ref ref, String? courseId) {
   final repo = ref.watch(lectureRepositoryProvider);
   return repo.watchLectures(userId: uid, courseId: courseId);
 }
+
+// コースの有無に関わらず、ユーザーが1件でもレクチャーを持っているかを判定するためのProvider
+@riverpod
+Stream<List<Lecture>> allLecturesStream(Ref ref) {
+  final user = ref.watch(currentUserProvider);
+  final uid = user?.id;
+  if (uid == null) return const Stream.empty();
+
+  final repo = ref.watch(lectureRepositoryProvider);
+  return repo.watchAllLectures(userId: uid);
+}

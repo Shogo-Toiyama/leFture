@@ -18,6 +18,13 @@ class LectureRepositoryDrift {
     });
   }
 
+  /// コースの有無に関わらず、ユーザーの全レクチャーを横断して監視する。
+  Stream<List<Lecture>> watchAllLectures({required String userId}) {
+    return _db.watchAllLectures(userId).map((rows) {
+      return rows.map((row) => _toDomain(row)).toList();
+    });
+  }
+
   /// 論理削除を実行し、Outboxに登録する (Transaction)
   Future<void> softDeleteLecture({required String lectureId}) async {
     final uid = supabase.auth.currentUser?.id;
