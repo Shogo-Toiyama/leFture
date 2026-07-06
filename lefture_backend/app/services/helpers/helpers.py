@@ -24,6 +24,26 @@ def extract_json_string(text: str) -> str:
     if not text_stripped:
         return ""
     
+    # Check for Together AI GPT-OSS Harmony/JSON Mode corruption prefixes
+    # e.g., {"final{": {"key": "value"}} -> {"key": "value"}
+    # e.g., {"final{\": {"key": "value"}} -> {"key": "value"}
+    # e.g., {"final": {"key": "value"}}  -> {"key": "value"}
+    if text_stripped.startswith('{"final'):
+        colon_idx = text_stripped.find(':')
+        if colon_idx != -1:
+            inner_idx = -1
+            # Find the first true opening brace/bracket after the first colon
+            for idx in range(colon_idx + 1, len(text_stripped)):
+                if text_stripped[idx] in ('{', '['):
+                    inner_idx = idx
+                    break
+            
+            if inner_idx != -1:
+                # Find matching ending brace by removing one outer '}' at the end
+                last_idx = text_stripped.rfind('}')
+                if last_idx > inner_idx:
+                    text_stripped = text_stripped[inner_idx:last_idx]
+    
     # 最初に見つかる { または [ を探す
     first_idx = -1
     first_char = ''
@@ -43,6 +63,7 @@ def extract_json_string(text: str) -> str:
         return text_stripped[first_idx:last_idx + 1]
         
     return text_stripped
+
 
 
 def _load_prompt(filename: str) -> str:

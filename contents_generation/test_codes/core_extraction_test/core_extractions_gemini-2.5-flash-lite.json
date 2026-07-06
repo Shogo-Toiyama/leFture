@@ -1,80 +1,106 @@
 {
-  "keywords": [
-    "Access control",
-    "Capabilities",
-    "Access Control Lists (ACLs)",
-    "Zero Trust Architecture (ZTA)",
-    "Principle of Least Privilege",
-    "Micro-segmentation",
-    "Centralized Logging",
-    "Behavioral Analytics",
-    "Differential Privacy",
-    "Zero-Knowledge Proofs",
-    "Role-Based Access Control (RBAC)",
-    "Covert Channels",
-    "Common Vulnerabilities and Exposures (CVE)",
-    "Address Space Layout Randomization (ASLR)",
-    "Verified Boot",
-    "Smart Contracts",
-    "Distributed Ledger"
-  ],
-  "summary": "This lecture explores various security concepts, contrasting traditional perimeter-based access control with Zero Trust Architecture (ZTA). It delves into practical implementations and challenges, including the principle of least privilege, micro-segmentation, logging, behavioral analytics, privacy preservation techniques, and the vulnerabilities inherent in system design and configuration.",
-  "title": "Advanced Security Concepts: Zero Trust, Privacy, and Vulnerabilities",
   "topics": [
     {
       "idx": 1,
-      "title": "Access Control Models: Capabilities vs. ACLs and the Rise of Zero Trust",
+      "title": "Access Control Models: Capabilities vs. ACLs and Perimeter Security",
       "topic_type": "ACADEMIC",
-      "start_sid": "s000001",
-      "end_sid": "s000108"
+      "keywords": [
+        "Access control",
+        "Capabilities",
+        "Access Control Lists (ACLs)",
+        "Perimeter-based access control",
+        "File descriptors"
+      ],
+      "start_sid": "s000007",
+      "end_sid": "s000065"
     },
     {
       "idx": 2,
-      "title": "Zero Trust Architecture Principles and Implementation",
+      "title": "Zero Trust Architecture (ZTA) Principles",
       "topic_type": "ACADEMIC",
-      "start_sid": "s000109",
-      "end_sid": "s000224"
+      "keywords": [
+        "Zero Trust Architecture (ZTA)",
+        "Principle of least privilege",
+        "Micro-segmentation",
+        "Centralized logging",
+        "Authentication",
+        "Authorization"
+      ],
+      "start_sid": "s000069",
+      "end_sid": "s000207"
     },
     {
       "idx": 3,
-      "title": "Decentralized Technologies: Blockchains and Smart Contracts",
+      "title": "Technologies for Zero Trust: Blockchains and Smart Contracts",
       "topic_type": "ACADEMIC",
-      "start_sid": "s000225",
-      "end_sid": "s000322"
+      "keywords": [
+        "Distributed ledger",
+        "Smart contracts",
+        "Peer-to-peer networks",
+        "Blockchain",
+        "Transaction recording"
+      ],
+      "start_sid": "s000226",
+      "end_sid": "s000303"
     },
     {
       "idx": 4,
-      "title": "Behavioral Analytics, Privacy Preservation, and Differential Privacy",
+      "title": "Behavioral Analytics and Privacy Preservation",
       "topic_type": "ACADEMIC",
+      "keywords": [
+        "Behavioral analytics",
+        "Machine learning",
+        "False positives",
+        "False negatives",
+        "Differential privacy",
+        "Zero-knowledge proofs"
+      ],
       "start_sid": "s000323",
-      "end_sid": "s000447"
+      "end_sid": "s000427"
     },
     {
       "idx": 5,
-      "title": "Advanced Access Control and Resource Access Methods",
+      "title": "Advanced Access Control and Resource Access",
       "topic_type": "ACADEMIC",
-      "start_sid": "s000471",
-      "end_sid": "s000563"
+      "keywords": [
+        "Role-based access control (RBAC)",
+        "Direct access",
+        "Indirect access",
+        "Covert channels",
+        "Security implementation"
+      ],
+      "start_sid": "s000473",
+      "end_sid": "s000627"
     },
     {
       "idx": 6,
-      "title": "Covert Channels and System Vulnerabilities",
+      "title": "Security Failure Modes and Android Security Evolution",
       "topic_type": "ACADEMIC",
-      "start_sid": "s000564",
+      "keywords": [
+        "Configuration errors",
+        "Common Vulnerabilities and Exposures (CVE)",
+        "Android security",
+        "Address Space Layout Randomization (ASLR)",
+        "Verified Boot",
+        "Trojan horse"
+      ],
+      "start_sid": "s000641",
       "end_sid": "s001045"
     }
   ],
+  "summary": "This lecture explores modern security architectures, contrasting perimeter-based access control with Zero Trust Architecture (ZTA). It delves into ZTA principles like least privilege and micro-segmentation, supported by technologies such as blockchains and smart contracts. The discussion also covers behavioral analytics, privacy preservation techniques, advanced access control models like RBAC, and the critical aspects of security failure modes and the evolution of mobile OS security.",
+  "title": "Zero Trust Architecture, Security Principles, and Failure Modes",
   "fun_fact_idea": {
     "start_sid": "s000069",
-    "end_sid": "s000077",
+    "end_sid": "s000090",
     "concept_focus": "Zero Trust Architecture (ZTA)",
-    "exciting_angle": "Connect the 'Zero Trust' concept to building secure, scalable cloud-native applications. This can help the student understand how to design systems that minimize implicit trust, a crucial aspect for modern software engineering and entrepreneurship.",
+    "exciting_angle": "Connect the core idea of Zero Trust Architecture to how modern cybersecurity firms are building resilient systems that don't rely on traditional network perimeters, which is crucial for protecting distributed workforces and cloud-native applications.",
     "needs_web_search": true,
     "search_queries": [
-      "zero trust architecture cloud native applications",
-      "implementing zero trust in microservices",
-      "startup security zero trust best practices"
+      "Zero Trust Architecture case studies cybersecurity firms",
+      "Implementing ZTA for remote workforces",
+      "Cloud-native security and Zero Trust principles"
     ],
-    "search_reasoning": "Real-world examples and best practices for implementing Zero Trust in cloud-native environments or startups would provide concrete, actionable insights for the student's application development and entrepreneurial interests."
+    "search_reasoning": "To provide a concrete and exciting angle, it's necessary to find real-world examples of how cybersecurity companies or large organizations are actively implementing ZTA to secure their infrastructure, especially in the context of remote work and cloud environments. This will demonstrate the practical application of the lecture's concepts."
   }
 }

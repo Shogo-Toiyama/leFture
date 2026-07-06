@@ -1,0 +1,41 @@
+{
+  "global_art_direction": {
+    "art_medium": "Hyper-realistic tactile 3D render with a matte, industrial finish",
+    "base_color_palette": "Deep charcoal, slate grey, and electric cobalt blue accents",
+    "lighting_and_mood": "High-contrast cinematic lighting with sharp, dramatic shadows, clean and professional",
+    "flux_style_suffix": "Hyper-realistic tactile 3D render, matte industrial finish, deep charcoal and slate grey with electric cobalt blue accents, high-contrast cinematic lighting, sharp shadows, clean professional composition"
+  },
+  "image_prompts": [
+    {
+      "topic_idx": 1,
+      "visual_anchor_used": "An Air Force base perimeter gate vs internal hallways (Extracted from the hook: 'Security models like an Air Force base')",
+      "flux_scene_description": "Wide-angle isometric shot of a complex security gate made of heavy steel bars with a single guard station, transitioning into a vast, open-plan office interior where people move freely without barriers."
+    },
+    {
+      "topic_idx": 2,
+      "visual_anchor_used": "A castle where every individual stone is guarded (Extracted from the hook: 'Trust NO ONE, not even your friends inside')",
+      "flux_scene_description": "Extreme high-angle bird's-eye view of a medieval-style stone castle where every single inhabitant is standing inside their own individual, transparent glass containment cube, isolated from one another."
+    },
+    {
+      "topic_idx": 3,
+      "visual_anchor_used": "A person trying to fit a massive pile of keys into a tiny, single-keyhole door (Extracted from the hook: 'Harder to do in practice than you might think')",
+      "flux_idx": 3,
+      "flux_scene_description": "Close-up side profile shot of a hand holding a massive, heavy ring of hundreds of mismatched keys, struggling to select just one small, precise key to fit into a single, minimalist door lock."
+    },
+    {
+      "topic_idx": 4,
+      "visual_anchor_used": "A stone tablet with permanent, carved entries (Extracted from the hook: 'Accounting book written in permanent ink')",
+      "flux_scene_description": "Extreme macro shot of a heavy, ancient stone ledger lying on a metal desk, with glowing blue digital data streams etched deeply into the rock surface, impossible to erase."
+    },
+    {
+      "topic_idx": 5,
+      "visual_anchor_used": "A person wearing distinct, interchangeable masks (Extracted from the hook: 'BruinLearn roles like student, TA, instructor')",
+      "flux_scene_description": "Medium depth-of-field shot of a person standing at a crossroads, holding three distinct, stylized geometric masks, each representing a different role, with the person choosing which mask to wear to enter a specific gate."
+    },
+    {
+      "topic_idx": 6,
+      "visual_anchor_used": "Two isolated rooms connected by a thin, vibrating pipe (Extracted from the hook: 'Programs separated by a wall whispering secrets')",
+      "flux_scene_description": "Split-view cross-section shot of two identical, soundproofed concrete rooms separated by a thick, opaque wall, with a single, thin, vibrating copper wire snaking through a tiny crack in the wall between them."
+    }
+  ]
+}

@@ -1,39 +1,40 @@
 {
-  "world_building": {
-    "recurring_motif": "A intricately carved, antique wooden birdcage. This represents the system's security boundary and access controls.",
-    "world_setting": "A dimly lit, bustling 1920s speakeasy, filled with shadowy figures, clinking glasses, and the distant sound of jazz music.",
-    "flux_style_suffix": "A vintage black and white photograph with a slight grain, dramatic chiaroscuro lighting, deep shadows, and a sense of hidden activity."
+  "global_art_direction": {
+    "art_medium": "Highly detailed 3D render with a slightly stylized, illustrative feel",
+    "base_color_palette": "Cool blues and grays with sharp, contrasting accents of electric orange",
+    "lighting_and_mood": "Dramatic, high-contrast studio lighting with strong directional shadows, emphasizing depth and form",
+    "flux_style_suffix": "A highly detailed 3D render with a slightly stylized, illustrative feel, cool blues and grays with sharp, contrasting accents of electric orange, dramatic high-contrast studio lighting with strong directional shadows, emphasizing depth and form"
   },
   "image_prompts": [
     {
       "topic_idx": 1,
-      "core_concept_translation": "Topic 1: ACLs vs Capabilities. The birdcage (system) has a main gate (ACL) with a guard checking everyone entering. Once inside, individual birds (processes) have specific perches they can access (Capabilities). The scene shows the main gate guard checking credentials, while inside, a bird is denied access to a specific perch.",
-      "flux_scene_description": "Medium shot, eye-level, showing the ornate entrance gate to a grand, antique wooden birdcage. A stern-faced guard in a peaked cap is meticulously checking a small, folded paper (representing an ACL) from a shadowy figure attempting to enter. Inside the cage, visible through the bars, another bird is perched on a forbidden, empty branch, while a different bird is allowed on a nearby, occupied perch."
+      "visual_anchor_used": "An Air Force base with distinct security checkpoints (Extracted from the hook: 'Security models can be like an Air Force base')",
+      "flux_scene_description": "Overhead shot of a miniature, stylized Air Force base. A large, imposing gate with armed guards represents the perimeter check (ACLs). Inside the base, smaller, more numerous checkpoints with less intense scrutiny guard individual buildings (Capabilities)."
     },
     {
       "topic_idx": 2,
-      "core_concept_translation": "Topic 2: Zero Trust Architecture. The speakeasy setting emphasizes the 'trust no one' principle. The birdcage is now less of a secure enclosure and more of a fragile structure. The focus shifts to constant, internal checks. Every bird inside must prove its identity and purpose to every other bird and every perch.",
-      "flux_scene_description": "Low angle wide shot of the speakeasy interior, with the antique wooden birdcage now placed centrally on a table, appearing less imposing. Shadows obscure most patrons. A single bird is attempting to land on a perch, but a tiny, disembodied hand (representing a verification process) is holding up a miniature 'stop' sign directly in its path, preventing landing."
+      "visual_anchor_used": "A medieval castle under siege (Invented metaphor for Zero Trust)",
+      "flux_scene_description": "Eye-level shot looking towards a formidable castle. Instead of a moat and drawbridge, the entire perimeter is riddled with tiny, individual security scanners and laser grids. Even figures already inside the castle walls are being scanned by additional, smaller scanners on their own bodies."
     },
     {
       "topic_idx": 3,
-      "core_concept_translation": "Topic 3: Logging, Privacy, Differential Privacy. The speakeasy's constant activity is now being meticulously recorded. The birdcage's bars are subtly etched with tiny, unreadable symbols (logs). A shadowy figure is observing the birds, but their observation is deliberately blurred or generalized (differential privacy), making it impossible to identify individual bird actions.",
-      "flux_scene_description": "Close-up shot, slightly angled, focusing on the intricate carvings on the bars of the antique wooden birdcage. The carvings are revealed to be tiny, abstract symbols that appear to be recording activity. In the background, slightly out of focus, a shadowy figure with a notepad is looking towards the cage, but their gaze is diffused, as if seeing a general pattern rather than specific details."
+      "visual_anchor_used": "A single, tiny key opening a massive vault (Invented metaphor for Least Privilege)",
+      "flux_scene_description": "Extreme close-up shot of a single, small, intricately designed key. The key is perfectly inserted into the lock of an enormous, imposing vault door, which is just beginning to creak open. The rest of the vault remains sealed and dark."
     },
     {
       "topic_idx": 4,
-      "core_concept_translation": "Topic 4: Blockchain, Distributed Ledger, Smart Contracts. The birdcage's structure is now distributed. Instead of one cage, there are many identical, interconnected cages, each holding a copy of the same birds and perches. Each 'transaction' (a bird moving to a perch) is permanently recorded on a small, glowing tablet attached to each cage.",
-      "flux_scene_description": "Extreme wide shot, looking down from above, showing a network of identical, antique wooden birdcages arranged in a circular pattern. Each cage contains the same set of birds. Glowing, unchangeable tablets are affixed to the side of each cage, displaying identical sequences of symbols representing past bird movements."
+      "visual_anchor_used": "A physical ledger book with entries being etched in stone (Extracted from the hook: 'Imagine an accounting book where every entry is written in permanent ink')",
+      "flux_scene_description": "Macro shot of an ancient, thick ledger book lying open. Each page has entries that appear to be carved into stone tablets, with a chisel and hammer actively etching the latest transaction. The surrounding environment is a dimly lit, stone chamber."
     },
     {
       "topic_idx": 5,
-      "core_concept_translation": "Topic 5: RBAC and Direct vs Indirect Access. The birds are now categorized by their 'plumage color' (roles). A central 'keeper' (the system) assigns specific colored feathers to groups of birds, granting them access to certain perches. Birds with matching plumage can access their designated perches.",
-      "flux_scene_description": "Over-the-shoulder shot from behind a speakeasy patron looking towards the birdcage. The birds inside are now clearly distinguished by vibrant, different colored plumage (e.g., red, blue, green). A central, shadowy figure is carefully attaching a colored feather to a bird's wing. Birds with red plumage are gathered around a red perch, while blue-plumaged birds are near a blue perch."
+      "visual_anchor_used": "Students and instructors interacting with a course management system (Extracted from the hook: 'BruinLearn asks for your 'role' (student, TA, instructor)')",
+      "flux_scene_description": "Medium shot of stylized, abstract figures representing students and instructors. They are interacting with floating, translucent 'role' cards (e.g., 'Student', 'Instructor'). Each card has a distinct color and symbol, and the figures can only access specific sections of a larger, abstract data structure when holding the correct role card."
     },
     {
       "topic_idx": 6,
-      "core_concept_translation": "Topic 6: Android Security Mechanisms and Advanced OS Protections. The birdcage is now a complex, multi-layered structure with hidden passages and subtle mechanisms. Birds are trying to 'whisper' information through vibrations in the cage structure (covert channels), but internal 'filters' or 'dampeners' (OS protections) are actively trying to block or obscure these subtle signals.",
-      "flux_scene_description": "Macro close-up shot focusing on the intricate joinery and hidden compartments within the antique wooden birdcage. Tiny, almost invisible vibrations are depicted as faint ripples in the wood. Small, metallic 'filters' or 'valves' are positioned along these potential pathways, subtly distorting or blocking the ripples, preventing them from passing through."
+      "visual_anchor_used": "Two abstract digital entities communicating through shared, subtle environmental changes (Invented metaphor for covert channel)",
+      "flux_scene_description": "Close-up shot of two distinct, glowing abstract digital entities separated by a translucent barrier. One entity subtly manipulates a shared resource, like causing a ripple effect in a pool of light or slightly altering the ambient temperature represented by subtle color shifts, which the other entity then observes and interprets."
     }
   ]
 }

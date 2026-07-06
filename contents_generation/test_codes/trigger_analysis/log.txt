@@ -1,0 +1,449 @@
+DEFAULT 2026-07-04T21:16:12.243872Z 🚀 Found 1 ready task(s): ['CHECK_AND_ASSEMBLE']
+DEFAULT 2026-07-04T21:16:12.581129Z 📩 Orchestrator requested to enqueue: CHECK_AND_ASSEMBLE (Task ID: 0abfdd45-10d1-4c09-9748-cc82d8c13b30)
+DEFAULT 2026-07-04T21:16:12.587886Z 🎼 Orchestrator waking up! Triggered by Task: REVIEW_CARD_GENERATION (INSERT)
+DEFAULT 2026-07-04T21:16:12.704317Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:12.704581Z INFO: 169.254.169.126:25464 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:12.705184Z 🎼 Orchestrator waking up! Triggered by Task: IMAGE_RENDERING (INSERT)
+INFO 2026-07-04T21:16:12.727527Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 3.137 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/check-and-assemble
+DEFAULT 2026-07-04T21:16:12.821480Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:12.821737Z INFO: 169.254.169.126:25476 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:12.822318Z 🎼 Orchestrator waking up! Triggered by Task: ANNOUNCEMENT_GENERATION (INSERT)
+DEFAULT 2026-07-04T21:16:12.922293Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:12.922627Z INFO: 169.254.169.126:25480 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:12.923475Z 🎼 Orchestrator waking up! Triggered by Task: IMAGE_PROMPT_GENERATION (INSERT)
+DEFAULT 2026-07-04T21:16:13.023219Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.023587Z INFO: 169.254.169.126:25488 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.024158Z 🎼 Orchestrator waking up! Triggered by Task: TOPIC_MAPPING (INSERT)
+DEFAULT 2026-07-04T21:16:13.140064Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.140396Z INFO: 169.254.169.126:25494 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.141229Z 🎼 Orchestrator waking up! Triggered by Task: FUN_FACTS_GENERATION (INSERT)
+DEFAULT 2026-07-04T21:16:13.241580Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.241871Z INFO: 169.254.169.126:25506 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.242609Z 🎼 Orchestrator waking up! Triggered by Task: CORE_EXTRACTION (INSERT)
+DEFAULT 2026-07-04T21:16:13.360377Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.360598Z INFO: 169.254.169.126:25518 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.361228Z 🎼 Orchestrator waking up! Triggered by Task: FUN_FACT_SEARCH (INSERT)
+DEFAULT 2026-07-04T21:16:13.459505Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.459763Z INFO: 169.254.169.126:25532 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.460350Z 🎼 Orchestrator waking up! Triggered by Task: ROLE_CLASSIFICATION (INSERT)
+DEFAULT 2026-07-04T21:16:13.561530Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.562Z INFO: 169.254.169.126:25536 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.562989Z 🎼 Orchestrator waking up! Triggered by Task: FINALIZE_JOB (INSERT)
+DEFAULT 2026-07-04T21:16:13.665777Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.665998Z INFO: 169.254.169.126:25538 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.666586Z 🎼 Orchestrator waking up! Triggered by Task: CHECK_AND_ASSEMBLE (INSERT)
+DEFAULT 2026-07-04T21:16:13.784454Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:13.784676Z INFO: 169.254.169.126:25562 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.785454Z ✅ Enqueued CHECK_AND_ASSEMBLE to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-0abfdd45-10d1-4c09-9748-cc82d8c13b30-59439992
+DEFAULT 2026-07-04T21:16:13.785652Z INFO: 169.254.169.126:25448 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+INFO 2026-07-04T21:16:13.846744Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:13.849564Z INFO: 169.254.169.126:25592 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:13.888283Z [CHECK_AND_ASSEMBLE] ▶️ Starting CHECK_AND_ASSEMBLE (Task: 0abfdd45-10d1-4c09-9748-cc82d8c13b30)
+INFO 2026-07-04T21:16:14.910214Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 57 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:14.950736Z [CHECK_AND_ASSEMBLE] 🎉 All 155 chunks REVIEWED! Assembling transcript.json...
+DEFAULT 2026-07-04T21:16:14.950777Z [CHECK_AND_ASSEMBLE] [Logic] Starting AssembleTranscriptService
+DEFAULT 2026-07-04T21:16:14.952768Z [CHECK_AND_ASSEMBLE] [Logic] Assembled 718 sentences.
+DEFAULT 2026-07-04T21:16:14.967958Z INFO: 169.254.169.126:25604 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:15.375685Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/transcript_assembled.json
+DEFAULT 2026-07-04T21:16:15.476529Z [CHECK_AND_ASSEMBLE] ✅ CHECK_AND_ASSEMBLE Completed!
+DEFAULT 2026-07-04T21:16:15.863187Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/CHECK_AND_ASSEMBLE_console.json
+DEFAULT 2026-07-04T21:16:15.865011Z INFO: 169.254.169.126:25576 - "POST /worker/check-and-assemble HTTP/1.1" 200 OK
+INFO 2026-07-04T21:16:16.027804Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 138 B] [httpRequest.latency: 278 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:16.030589Z 🎼 Orchestrator waking up! Triggered by Task: CHECK_AND_ASSEMBLE (UPDATE)
+DEFAULT 2026-07-04T21:16:16.128756Z 🚀 Found 1 ready task(s): ['CORE_EXTRACTION']
+DEFAULT 2026-07-04T21:16:16.247986Z 📩 Orchestrator requested to enqueue: CORE_EXTRACTION (Task ID: 906b961d-a11c-4480-a955-57e1bb2fa747)
+DEFAULT 2026-07-04T21:16:16.306471Z ✅ Enqueued CORE_EXTRACTION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-906b961d-a11c-4480-a955-57e1bb2fa747-59439992
+DEFAULT 2026-07-04T21:16:16.306776Z INFO: 169.254.169.126:25616 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+ERROR 2026-07-04T21:16:16.322627Z [httpRequest.requestMethod: POST] [httpRequest.status: 500] [httpRequest.responseSize: 130 B] [httpRequest.latency: 4.738 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/core-extraction
+DEFAULT 2026-07-04T21:16:16.429731Z [CORE_EXTRACTION] ▶️ Starting CORE_EXTRACTION (Task: 906b961d-a11c-4480-a955-57e1bb2fa747)
+DEFAULT 2026-07-04T21:16:17.013080Z [CORE_EXTRACTION] [Logic] Starting Core Extraction with gemini/gemini-2.5-flash-lite
+DEFAULT 2026-07-04T21:16:17.019375Z [CORE_EXTRACTION] Waiting for response from LiteLLM...
+INFO 2026-07-04T21:16:17.366816Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:16:17.367626Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:17.370316Z INFO: 169.254.169.126:25622 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:17.370783Z INFO: 169.254.169.126:25628 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:20.638544Z /app/app/services/helpers/llm_unified.py:90: RuntimeWarning: [BillingEngine] Unknown price key for dimension='tokens', resource='gemini/gemini-2.5-flash-lite'. Cost was recorded as $0.0 without stopping execution.
+DEFAULT 2026-07-04T21:16:20.638564Z warn_unknown_price("tokens", model)
+DEFAULT 2026-07-04T21:16:20.638630Z [CORE_EXTRACTION] ⏰ Core Extraction finished in 3.62 seconds.
+DEFAULT 2026-07-04T21:16:20.638832Z [CORE_EXTRACTION] ❌ Core extraction output failed validation: topic 'Rendering Pipeline and Coordinate Spaces' overlaps too much with the previous topic to auto-correct (overlap=100 SIDs, max_auto_correctable=40 SIDs): start_sid=s000078, end_sid=s000109
+DEFAULT 2026-07-04T21:16:20.639064Z [CORE_EXTRACTION] 📄 Raw (invalid) LLM output for debugging:
+DEFAULT 2026-07-04T21:16:20.639070Z {
+DEFAULT 2026-07-04T21:16:20.639074Z "topics": [
+DEFAULT 2026-07-04T21:16:20.639078Z {
+DEFAULT 2026-07-04T21:16:20.639080Z "idx": 1,
+DEFAULT 2026-07-04T21:16:20.639083Z "title": "Illumination Model Recap",
+DEFAULT 2026-07-04T21:16:20.639086Z "topic_type": "ACADEMIC",
+DEFAULT 2026-07-04T21:16:20.639088Z "keywords": [
+DEFAULT 2026-07-04T21:16:20.639091Z "Illumination",
+DEFAULT 2026-07-04T21:16:20.639093Z "Surface normal",
+DEFAULT 2026-07-04T21:16:20.639096Z "Light vector",
+DEFAULT 2026-07-04T21:16:20.639098Z "View vector",
+DEFAULT 2026-07-04T21:16:20.639101Z "Reflection vector",
+DEFAULT 2026-07-04T21:16:20.639105Z "Ambient component",
+DEFAULT 2026-07-04T21:16:20.639109Z "Diffuse component",
+DEFAULT 2026-07-04T21:16:20.639113Z "Specular component"
+DEFAULT 2026-07-04T21:16:20.639116Z ],
+DEFAULT 2026-07-04T21:16:20.639119Z "start_sid": "s000037",
+DEFAULT 2026-07-04T21:16:20.639122Z "end_sid": "s000177"
+DEFAULT 2026-07-04T21:16:20.639125Z },
+DEFAULT 2026-07-04T21:16:20.639127Z {
+DEFAULT 2026-07-04T21:16:20.639130Z "idx": 2,
+DEFAULT 2026-07-04T21:16:20.639132Z "title": "Light Source Types and Spotlight Mechanics",
+DEFAULT 2026-07-04T21:16:20.639135Z "topic_type": "ACADEMIC",
+DEFAULT 2026-07-04T21:16:20.639137Z "keywords": [
+DEFAULT 2026-07-04T21:16:20.639139Z "Ambient light",
+DEFAULT 2026-07-04T21:16:20.639142Z "Point light source",
+DEFAULT 2026-07-04T21:16:20.639144Z "Spotlight",
+DEFAULT 2026-07-04T21:16:20.639147Z "Spot angle",
+DEFAULT 2026-07-04T21:16:20.639149Z "Light direction",
+DEFAULT 2026-07-04T21:16:20.639152Z "Attenuation"
+DEFAULT 2026-07-04T21:16:20.639155Z ],
+DEFAULT 2026-07-04T21:16:20.639157Z "start_sid": "s000181",
+DEFAULT 2026-07-04T21:16:20.639161Z "end_sid": "s000263"
+DEFAULT 2026-07-04T21:16:20.639164Z },
+DEFAULT 2026-07-04T21:16:20.639166Z {
+DEFAULT 2026-07-04T21:16:20.639168Z "idx": 3,
+DEFAULT 2026-07-04T21:16:20.639171Z "title": "Rendering Pipeline and Coordinate Spaces",
+DEFAULT 2026-07-04T21:16:20.639173Z "topic_type": "ACADEMIC",
+DEFAULT 2026-07-04T21:16:20.639175Z "keywords": [
+DEFAULT 2026-07-04T21:16:20.639178Z "Rendering pipeline",
+DEFAULT 2026-07-04T21:16:20.639181Z "Model space",
+DEFAULT 2026-07-04T21:16:20.639183Z "World space",
+DEFAULT 2026-07-04T21:16:20.639186Z "Eye space",
+DEFAULT 2026-07-04T21:16:20.639189Z "Projection space",
+DEFAULT 2026-07-04T21:16:20.639191Z "Rasterization"
+DEFAULT 2026-07-04T21:16:20.639194Z ],
+DEFAULT 2026-07-04T21:16:20.639196Z "start_sid": "s000078",
+DEFAULT 2026-07-04T21:16:20.639198Z "end_sid": "s000109"
+DEFAULT 2026-07-04T21:16:20.639201Z },
+DEFAULT 2026-07-04T21:16:20.639203Z {
+DEFAULT 2026-07-04T21:16:20.639206Z "idx": 4,
+DEFAULT 2026-07-04T21:16:20.639209Z "title": "Shading Techniques: Flat and Smooth",
+DEFAULT 2026-07-04T21:16:20.639212Z "topic_type": "ACADEMIC",
+DEFAULT 2026-07-04T21:16:20.639216Z "keywords": [
+DEFAULT 2026-07-04T21:16:20.639219Z "Flat shading",
+DEFAULT 2026-07-04T21:16:20.639221Z "Faceted shading",
+DEFAULT 2026-07-04T21:16:20.639224Z "Mac banding",
+DEFAULT 2026-07-04T21:16:20.639226Z "Gouraud shading",
+DEFAULT 2026-07-04T21:16:20.639228Z "Vertex normal",
+DEFAULT 2026-07-04T21:16:20.639231Z "Intensity interpolation"
+DEFAULT 2026-07-04T21:16:20.639233Z ],
+DEFAULT 2026-07-04T21:16:20.639235Z "start_sid": "s000341",
+DEFAULT 2026-07-04T21:16:20.639238Z "end_sid": "s000489"
+DEFAULT 2026-07-04T21:16:20.639240Z },
+DEFAULT 2026-07-04T21:16:20.639243Z {
+DEFAULT 2026-07-04T21:16:20.639245Z "idx": 5,
+DEFAULT 2026-07-04T21:16:20.639247Z "title": "Interpolation Methods: Bilinear and Barycentric",
+DEFAULT 2026-07-04T21:16:20.639307Z "topic_type": "ACADEMIC",
+DEFAULT 2026-07-04T21:16:20.639310Z "keywords": [
+DEFAULT 2026-07-04T21:16:20.639312Z "Bilinear interpolation",
+DEFAULT 2026-07-04T21:16:20.639314Z "Barycentric interpolation",
+DEFAULT 2026-07-04T21:16:20.639317Z "Linear interpolation",
+DEFAULT 2026-07-04T21:16:20.639320Z "Screen space",
+DEFAULT 2026-07-04T21:16:20.639323Z "Pixel color",
+DEFAULT 2026-07-04T21:16:20.639327Z "Vertex attributes"
+DEFAULT 2026-07-04T21:16:20.639329Z ],
+DEFAULT 2026-07-04T21:16:20.639333Z "start_sid": "s000499",
+DEFAULT 2026-07-04T21:16:20.639335Z "end_sid": "s000630"
+DEFAULT 2026-07-04T21:16:20.639338Z },
+DEFAULT 2026-07-04T21:16:20.639341Z {
+DEFAULT 2026-07-04T21:16:20.639345Z "idx": 6,
+DEFAULT 2026-07-04T21:16:20.639348Z "title": "Phong Shading and Per-Pixel Illumination",
+DEFAULT 2026-07-04T21:16:20.639351Z "topic_type": "ACADEMIC",
+DEFAULT 2026-07-04T21:16:20.639355Z "keywords": [
+DEFAULT 2026-07-04T21:16:20.639358Z "Phong shading",
+DEFAULT 2026-07-04T21:16:20.639361Z "Per-pixel illumination",
+DEFAULT 2026-07-04T21:16:20.639364Z "World-space normal",
+DEFAULT 2026-07-04T21:16:20.639367Z "Inverse mapping",
+DEFAULT 2026-07-04T21:16:20.639370Z "Specular highlight"
+DEFAULT 2026-07-04T21:16:20.639372Z ],
+DEFAULT 2026-07-04T21:16:20.639375Z "start_sid": "s000661",
+DEFAULT 2026-07-04T21:16:20.639378Z "end_sid": "s000706"
+DEFAULT 2026-07-04T21:16:20.639381Z }
+DEFAULT 2026-07-04T21:16:20.639385Z ],
+DEFAULT 2026-07-04T21:16:20.639390Z "summary": "This lecture covers the principles of computer graphics illumination, detailing light source types, the illumination model components (ambient, diffuse, specular), and their application within the rendering pipeline across various coordinate spaces. It then explores different shading techniques, starting with flat shading and its limitations, progressing to smooth shading methods like Gouraud and Phong, and explaining interpolation techniques such as bilinear and barycentric interpolation for achieving realistic visual effects.",
+DEFAULT 2026-07-04T21:16:20.639397Z "title": "Computer Graphics Illumination and Shading Techniques",
+DEFAULT 2026-07-04T21:16:20.639401Z "fun_fact_idea": {
+DEFAULT 2026-07-04T21:16:20.639404Z "start_sid": "s000341",
+DEFAULT 2026-07-04T21:16:20.639407Z "end_sid": "s000413",
+DEFAULT 2026-07-04T21:16:20.639458Z "concept_focus": "Mac banding",
+DEFAULT 2026-07-04T21:16:20.639461Z "exciting_angle": "Connect Mac banding, an optical illusion that exaggerates contrast at edges, to how UI/UX designers use subtle visual cues and contrast to guide user attention and perception in software interfaces, making them more intuitive and effective.",
+DEFAULT 2026-07-04T21:16:20.639463Z "needs_web_search": true,
+DEFAULT 2026-07-04T21:16:20.639466Z "search_queries": [
+DEFAULT 2026-07-04T21:16:20.639468Z "mac banding optical illusion UI UX design",
+DEFAULT 2026-07-04T21:16:20.639470Z "visual perception contrast edge detection user interface",
+DEFAULT 2026-07-04T21:16:20.639473Z "optical illusions in user interface design"
+DEFAULT 2026-07-04T21:16:20.639476Z ],
+DEFAULT 2026-07-04T21:16:20.639479Z "search_reasoning": "To make a compelling connection between a visual artifact in computer graphics and its application in UI/UX design, it's crucial to find real-world examples or design principles that leverage similar perceptual phenomena for user guidance and aesthetic appeal."
+DEFAULT 2026-07-04T21:16:20.639481Z }
+DEFAULT 2026-07-04T21:16:20.639483Z }
+DEFAULT 2026-07-04T21:16:20.641443Z [CORE_EXTRACTION] ❌ CORE_EXTRACTION Failed: topic 'Rendering Pipeline and Coordinate Spaces' overlaps too much with the previous topic to auto-correct (overlap=100 SIDs, max_auto_correctable=40 SIDs): start_sid=s000078, end_sid=s000109
+ERROR 2026-07-04T21:16:20.641471Z Traceback (most recent call last): File "/app/app/services/task_runners.py", line 620, in run_core_extraction_task extraction_result = await extractor.run_from_memory(transcript_data, student_profile) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File "/app/app/services/logic/core_extraction.py", line 97, in run_from_memory normalized_output = self._validate_and_normalize_output( ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File "/app/app/services/logic/core_extraction.py", line 221, in _validate_and_normalize_output raise ValueError( ValueError: topic 'Rendering Pipeline and Coordinate Spaces' overlaps too much with the previous topic to auto-correct (overlap=100 SIDs, max_auto_correctable=40 SIDs): start_sid=s000078, end_sid=s000109
+INFO 2026-07-04T21:16:20.745490Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:20.748537Z INFO: 169.254.169.126:3822 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:21.061063Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/CORE_EXTRACTION_console.json
+DEFAULT 2026-07-04T21:16:21.061427Z INFO: 169.254.169.126:25620 - "POST /worker/core-extraction HTTP/1.1" 500 Internal Server Error
+DEFAULT 2026-07-04T21:16:21.076294Z ERROR: Exception in ASGI application
+ERROR 2026-07-04T21:16:21.076376Z Traceback (most recent call last): File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 416, in run_asgi result = await app( # type: ignore[func-returns-value] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 63, in __call__ return await self.app(scope, receive, send) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1163, in __call__ await super().__call__(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 90, in __call__ await self.middleware_stack(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__ raise exc File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__ await self.app(scope, receive, _send) File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__ await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app raise exc File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app await app(scope, receive, sender) File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__ await self.app(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 660, in __call__ await self.middleware_stack(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 2683, in app await route.handle(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 1266, in handle await super().handle(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 276, in handle await self.app(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 150, in app await wrap_app_handling_exceptions(app, request)(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app raise exc File "/usr/local/lib/python3.11/site-packages/sta…
+INFO 2026-07-04T21:16:26.081693Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 9.418 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/core-extraction
+DEFAULT 2026-07-04T21:16:26.277988Z [CORE_EXTRACTION] ▶️ Starting CORE_EXTRACTION (Task: 906b961d-a11c-4480-a955-57e1bb2fa747)
+INFO 2026-07-04T21:16:26.383592Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:26.386664Z INFO: 169.254.169.126:3846 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:26.787820Z [CORE_EXTRACTION] [Logic] Starting Core Extraction with gemini/gemini-2.5-flash-lite
+DEFAULT 2026-07-04T21:16:26.789690Z [CORE_EXTRACTION] Waiting for response from LiteLLM...
+DEFAULT 2026-07-04T21:16:29.948335Z [CORE_EXTRACTION] ⏰ Core Extraction finished in 3.16 seconds.
+DEFAULT 2026-07-04T21:16:30.255824Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/core_extraction.json
+INFO 2026-07-04T21:16:34.863913Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 138 B] [httpRequest.latency: 811 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:34.871121Z 🎼 Orchestrator waking up! Triggered by Task: CORE_EXTRACTION (UPDATE)
+DEFAULT 2026-07-04T21:16:35.032351Z 🚀 Found 2 ready task(s): ['FUN_FACT_SEARCH', 'ROLE_CLASSIFICATION']
+DEFAULT 2026-07-04T21:16:35.177091Z 📩 Orchestrator requested to enqueue: FUN_FACT_SEARCH (Task ID: a995756b-15bc-4730-89dd-d1a4123c372e)
+DEFAULT 2026-07-04T21:16:35.177979Z [CORE_EXTRACTION]
+DEFAULT 2026-07-04T21:16:35.177986Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:16:35.177990Z [Tokens] gemini/gemini-2.5-flash-lite: 20519 in, 1007 out -> $0.000000
+DEFAULT 2026-07-04T21:16:35.177993Z [Time] cloudrun/self: 3.16s -> $0.000095 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:16:35.177997Z -------------------------
+DEFAULT 2026-07-04T21:16:35.178Z TOTAL: $0.000095
+DEFAULT 2026-07-04T21:16:35.178263Z [CORE_EXTRACTION] ✅ CORE_EXTRACTION Completed!
+INFO 2026-07-04T21:16:35.221267Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 5.128 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/fun-fact-search
+DEFAULT 2026-07-04T21:16:35.499896Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/CORE_EXTRACTION_console.json
+DEFAULT 2026-07-04T21:16:35.500403Z INFO: 169.254.169.126:3836 - "POST /worker/core-extraction HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:35.501073Z ✅ Enqueued FUN_FACT_SEARCH to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-a995756b-15bc-4730-89dd-d1a4123c372e-59439993
+DEFAULT 2026-07-04T21:16:35.602463Z 📩 Orchestrator requested to enqueue: ROLE_CLASSIFICATION (Task ID: 6472eed2-cf47-4b4a-8a58-58c3623c31cb)
+DEFAULT 2026-07-04T21:16:35.675413Z ✅ Enqueued ROLE_CLASSIFICATION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-6472eed2-cf47-4b4a-8a58-58c3623c31cb-59439993
+DEFAULT 2026-07-04T21:16:35.675753Z INFO: 169.254.169.126:32604 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:35.724139Z [FUN_FACT_SEARCH] ▶️ Starting FUN_FACT_SEARCH (Task: a995756b-15bc-4730-89dd-d1a4123c372e)
+INFO 2026-07-04T21:16:35.734191Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:16:35.734795Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:35.737158Z INFO: 169.254.169.126:32630 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:35.737995Z INFO: 169.254.169.126:32638 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:36.097889Z [FUN_FACT_SEARCH] [Logic] Starting Web Search via Tavily
+DEFAULT 2026-07-04T21:16:36.097918Z [FUN_FACT_SEARCH] [Logic] Searching for: 'mac banding video game graphics'
+INFO 2026-07-04T21:16:36.221467Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 30.683 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/role-classification
+DEFAULT 2026-07-04T21:16:36.342268Z [ROLE_CLASSIFICATION] ▶️ Starting ROLE_CLASSIFICATION (Task: 6472eed2-cf47-4b4a-8a58-58c3623c31cb)
+INFO 2026-07-04T21:16:36.795091Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:16:36.796270Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 1 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:36.797979Z INFO: 169.254.169.126:32656 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:36.798826Z INFO: 169.254.169.126:32660 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:37.090976Z [ROLE_CLASSIFICATION] [Logic] Starting Role Classification via Modal (DeBERTa)
+DEFAULT 2026-07-04T21:16:37.092794Z [ROLE_CLASSIFICATION] 📦 Total sentences: 718 | Academic (Sending to Modal): 718 | Logistics (Skipped): 0
+DEFAULT 2026-07-04T21:16:37.248407Z [FUN_FACT_SEARCH] [Logic] Searching for: 'optical illusions in game rendering'
+DEFAULT 2026-07-04T21:16:38.505887Z [FUN_FACT_SEARCH] [Logic] Searching for: 'shading techniques to avoid visual artifacts in games'
+DEFAULT 2026-07-04T21:16:39.617252Z [FUN_FACT_SEARCH] [Logic] Web Search finished. Found 9 snippets.
+DEFAULT 2026-07-04T21:16:39.867787Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/web_search_results.json
+INFO 2026-07-04T21:16:39.972356Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 128 B] [httpRequest.latency: 137 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:16:39.975264Z 🎼 Orchestrator waking up! Triggered by Task: FUN_FACT_SEARCH (UPDATE)
+DEFAULT 2026-07-04T21:16:40.110353Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:16:40.110571Z INFO: 169.254.169.126:39350 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:16:40.111134Z [FUN_FACT_SEARCH]
+DEFAULT 2026-07-04T21:16:40.111137Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:16:40.111141Z [Count] tavily/search: 1 units -> $0.008000 (Search query: mac banding video game graphics)
+DEFAULT 2026-07-04T21:16:40.111144Z [Count] tavily/search: 1 units -> $0.008000 (Search query: optical illusions in game rendering)
+DEFAULT 2026-07-04T21:16:40.111147Z [Count] tavily/search: 1 units -> $0.008000 (Search query: shading techniques to avoid visual artifacts in games)
+DEFAULT 2026-07-04T21:16:40.111149Z -------------------------
+DEFAULT 2026-07-04T21:16:40.111152Z TOTAL: $0.024000
+DEFAULT 2026-07-04T21:16:40.348880Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/FUN_FACT_SEARCH_console.json
+DEFAULT 2026-07-04T21:16:40.350081Z INFO: 169.254.169.126:32620 - "POST /worker/fun-fact-search HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:05.987154Z [ROLE_CLASSIFICATION] ✅ Role Classification finished. Returned 718 sentences.
+DEFAULT 2026-07-04T21:17:06.332915Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/role_classification.json
+INFO 2026-07-04T21:17:06.621282Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 138 B] [httpRequest.latency: 825 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:06.621408Z [ROLE_CLASSIFICATION]
+DEFAULT 2026-07-04T21:17:06.621423Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:17:06.621428Z [Time] modal/t4: 3.35s -> $0.000549 (DeBERTa GPU processing)
+DEFAULT 2026-07-04T21:17:06.621432Z [Time] cloudrun/self: 28.89s -> $0.000867 (Role Classification Wait)
+DEFAULT 2026-07-04T21:17:06.621435Z -------------------------
+DEFAULT 2026-07-04T21:17:06.621439Z TOTAL: $0.001416
+DEFAULT 2026-07-04T21:17:06.621443Z [ROLE_CLASSIFICATION] ✅ ROLE_CLASSIFICATION Completed!
+DEFAULT 2026-07-04T21:17:06.904127Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/ROLE_CLASSIFICATION_console.json
+DEFAULT 2026-07-04T21:17:06.905102Z INFO: 169.254.169.126:32642 - "POST /worker/role-classification HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:06.906656Z 🎼 Orchestrator waking up! Triggered by Task: ROLE_CLASSIFICATION (UPDATE)
+DEFAULT 2026-07-04T21:17:07.011463Z 🚀 Found 2 ready task(s): ['ANNOUNCEMENT_GENERATION', 'TOPIC_MAPPING']
+DEFAULT 2026-07-04T21:17:07.294654Z 📩 Orchestrator requested to enqueue: ANNOUNCEMENT_GENERATION (Task ID: a787328f-c0d9-457a-b126-ae3a28ab4df3)
+DEFAULT 2026-07-04T21:17:07.332140Z ✅ Enqueued ANNOUNCEMENT_GENERATION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-a787328f-c0d9-457a-b126-ae3a28ab4df3-59439994
+INFO 2026-07-04T21:17:07.342271Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 29.002 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/announcement-generation
+DEFAULT 2026-07-04T21:17:07.429981Z 📩 Orchestrator requested to enqueue: TOPIC_MAPPING (Task ID: df65ed39-5111-48b0-921f-3ac65e79f0fd)
+DEFAULT 2026-07-04T21:17:07.447168Z ✅ Enqueued TOPIC_MAPPING to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-df65ed39-5111-48b0-921f-3ac65e79f0fd-59439994
+DEFAULT 2026-07-04T21:17:07.447410Z INFO: 169.254.169.126:36282 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+INFO 2026-07-04T21:17:07.505455Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:17:07.506610Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 3 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:07.509560Z INFO: 169.254.169.126:36306 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:07.510254Z INFO: 169.254.169.126:36304 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:07.531003Z [ANNOUNCEMENT_GENERATION] ▶️ Starting ANNOUNCEMENT_GENERATION (Task: a787328f-c0d9-457a-b126-ae3a28ab4df3)
+INFO 2026-07-04T21:17:08.347541Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 11.456 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/topic-mapping
+DEFAULT 2026-07-04T21:17:08.433626Z [ANNOUNCEMENT_GENERATION] [Logic] 🛟 Safety Net successfully caught 2 sentences that AI missed!
+DEFAULT 2026-07-04T21:17:08.449993Z [TOPIC_MAPPING] ▶️ Starting TOPIC_MAPPING (Task: df65ed39-5111-48b0-921f-3ac65e79f0fd)
+INFO 2026-07-04T21:17:08.569810Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 1 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:17:08.571011Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:08.572294Z INFO: 169.254.169.126:36334 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:08.573387Z INFO: 169.254.169.126:36346 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:08.687231Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/input_announcement_generation.json
+DEFAULT 2026-07-04T21:17:08.687445Z [ANNOUNCEMENT_GENERATION] [Logic] Starting Announcement Generation with together_ai/openai/gpt-oss-20b
+DEFAULT 2026-07-04T21:17:08.689447Z [ANNOUNCEMENT_GENERATION] Waiting for response from LiteLLM...
+DEFAULT 2026-07-04T21:17:09.864240Z [TOPIC_MAPPING] [Logic] Starting Topic Mapping with together_ai/openai/gpt-oss-120b
+DEFAULT 2026-07-04T21:17:09.868581Z [TOPIC_MAPPING] Waiting for response from LiteLLM (Topic Mapping)...
+DEFAULT 2026-07-04T21:17:18.625562Z [TOPIC_MAPPING] ⏰ Topic Mapping finished in 8.76 seconds.
+DEFAULT 2026-07-04T21:17:18.938568Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/topic_mapping.json
+INFO 2026-07-04T21:17:19.056390Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 138 B] [httpRequest.latency: 747 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:19.059159Z 🎼 Orchestrator waking up! Triggered by Task: TOPIC_MAPPING (UPDATE)
+DEFAULT 2026-07-04T21:17:19.329652Z 🚀 Found 1 ready task(s): ['REVIEW_CARD_GENERATION']
+DEFAULT 2026-07-04T21:17:19.418735Z 📩 Orchestrator requested to enqueue: REVIEW_CARD_GENERATION (Task ID: e9308de5-8093-4c2a-8324-2904896bbbda)
+DEFAULT 2026-07-04T21:17:19.419767Z [TOPIC_MAPPING]
+DEFAULT 2026-07-04T21:17:19.419772Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:17:19.419777Z [Tokens] together_ai/openai/gpt-oss-120b: 2156 in, 1564 out -> $0.001262
+DEFAULT 2026-07-04T21:17:19.419782Z [Time] cloudrun/self: 8.76s -> $0.000263 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:17:19.419785Z -------------------------
+DEFAULT 2026-07-04T21:17:19.419789Z TOTAL: $0.001524
+DEFAULT 2026-07-04T21:17:19.419807Z [TOPIC_MAPPING] ✅ TOPIC_MAPPING Completed!
+INFO 2026-07-04T21:17:19.469698Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 110.683 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/review-card
+DEFAULT 2026-07-04T21:17:19.800547Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/TOPIC_MAPPING_console.json
+DEFAULT 2026-07-04T21:17:19.800895Z INFO: 169.254.169.126:36320 - "POST /worker/topic-mapping HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:19.801893Z ✅ Enqueued REVIEW_CARD_GENERATION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-e9308de5-8093-4c2a-8324-2904896bbbda-59439994
+DEFAULT 2026-07-04T21:17:19.802137Z INFO: 169.254.169.126:38876 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+INFO 2026-07-04T21:17:19.862965Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:19.865890Z INFO: 169.254.169.126:21218 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:19.925890Z [REVIEW_CARD_GENERATION] ▶️ Starting REVIEW_CARD_GENERATION (Task: e9308de5-8093-4c2a-8324-2904896bbbda)
+DEFAULT 2026-07-04T21:17:20.777288Z [REVIEW_CARD_GENERATION] [Logic] Starting Review Card Generation with gemini/gemini-2.5-flash
+DEFAULT 2026-07-04T21:17:20.782582Z [REVIEW_CARD_GENERATION] [Logic] Generating cards for Topic 1: Illumination Model Recap (136 valid sentences)
+INFO 2026-07-04T21:17:20.924573Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:20.927404Z INFO: 169.254.169.126:21220 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:35.016232Z [ANNOUNCEMENT_GENERATION] ⏰ Announcement Generation finished in 26.33 seconds.
+DEFAULT 2026-07-04T21:17:35.016254Z [ANNOUNCEMENT_GENERATION] ⚠️ Received empty or invalid JSON response. Falling back to empty announcements list.
+DEFAULT 2026-07-04T21:17:35.295319Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/announcements.json
+DEFAULT 2026-07-04T21:17:36.072042Z [ANNOUNCEMENT_GENERATION]
+DEFAULT 2026-07-04T21:17:36.072054Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:17:36.072058Z [Tokens] together_ai/openai/gpt-oss-20b: 6041 in, 4096 out -> $0.001121
+DEFAULT 2026-07-04T21:17:36.072061Z [Time] cloudrun/self: 26.33s -> $0.000790 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:17:36.072063Z -------------------------
+DEFAULT 2026-07-04T21:17:36.072066Z TOTAL: $0.001911
+DEFAULT 2026-07-04T21:17:36.072077Z [ANNOUNCEMENT_GENERATION] ✅ ANNOUNCEMENT_GENERATION Completed!
+INFO 2026-07-04T21:17:36.142594Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 128 B] [httpRequest.latency: 310 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:17:36.343690Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/ANNOUNCEMENT_GENERATION_console.json
+DEFAULT 2026-07-04T21:17:36.344835Z INFO: 169.254.169.126:36298 - "POST /worker/announcement-generation HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:36.346402Z 🎼 Orchestrator waking up! Triggered by Task: ANNOUNCEMENT_GENERATION (UPDATE)
+DEFAULT 2026-07-04T21:17:36.453273Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:17:36.453648Z INFO: 169.254.169.126:58738 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:17:36.458137Z [REVIEW_CARD_GENERATION] [Logic] Generating cards for Topic 2: Light Source Types and Spotlight Mechanics (81 valid sentences)
+DEFAULT 2026-07-04T21:17:51.825907Z [REVIEW_CARD_GENERATION] [Logic] Generating cards for Topic 3: Advanced Rendering Concepts (50 valid sentences)
+DEFAULT 2026-07-04T21:18:05.072987Z [REVIEW_CARD_GENERATION] [Logic] Generating cards for Topic 4: Shading Techniques: Flat and Smooth (122 valid sentences)
+DEFAULT 2026-07-04T21:18:19.773674Z [REVIEW_CARD_GENERATION] [Logic] Generating cards for Topic 5: Interpolation Methods: Bilinear and Barycentric (131 valid sentences)
+DEFAULT 2026-07-04T21:18:42.356778Z [REVIEW_CARD_GENERATION] [Logic] Generating cards for Topic 6: Phong Shading and Pixel-Level Illumination (45 valid sentences)
+DEFAULT 2026-07-04T21:19:06.665170Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/review_cards.json
+DEFAULT 2026-07-04T21:19:09.893139Z [REVIEW_CARD_GENERATION]
+DEFAULT 2026-07-04T21:19:09.893150Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:19:09.893154Z [Tokens] gemini/gemini-2.5-flash: 7413 in, 3102 out -> $0.009979
+DEFAULT 2026-07-04T21:19:09.893157Z [Time] cloudrun/self: 15.67s -> $0.000470 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:09.893160Z [Tokens] gemini/gemini-2.5-flash: 5952 in, 3211 out -> $0.009813
+DEFAULT 2026-07-04T21:19:09.893163Z [Time] cloudrun/self: 15.37s -> $0.000461 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:09.893165Z [Tokens] gemini/gemini-2.5-flash: 5499 in, 2724 out -> $0.008460
+DEFAULT 2026-07-04T21:19:09.893168Z [Time] cloudrun/self: 13.25s -> $0.000397 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:09.893170Z [Tokens] gemini/gemini-2.5-flash: 7204 in, 2912 out -> $0.009441
+DEFAULT 2026-07-04T21:19:09.893173Z [Time] cloudrun/self: 14.70s -> $0.000441 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:09.893176Z [Tokens] gemini/gemini-2.5-flash: 8137 in, 4048 out -> $0.012561
+DEFAULT 2026-07-04T21:19:09.893178Z [Time] cloudrun/self: 22.58s -> $0.000677 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:09.893181Z [Tokens] gemini/gemini-2.5-flash: 5143 in, 4755 out -> $0.013430
+DEFAULT 2026-07-04T21:19:09.893183Z [Time] cloudrun/self: 24.02s -> $0.000721 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:09.893186Z -------------------------
+DEFAULT 2026-07-04T21:19:09.893189Z TOTAL: $0.066852
+DEFAULT 2026-07-04T21:19:09.893191Z [REVIEW_CARD_GENERATION] ✅ REVIEW_CARD_GENERATION Completed! Generated cards for 6 topics.
+INFO 2026-07-04T21:19:10.031027Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 138 B] [httpRequest.latency: 660 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:10.152959Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/REVIEW_CARD_GENERATION_console.json
+DEFAULT 2026-07-04T21:19:10.153638Z INFO: 169.254.169.126:21206 - "POST /worker/review-card HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:10.155147Z 🎼 Orchestrator waking up! Triggered by Task: REVIEW_CARD_GENERATION (UPDATE)
+DEFAULT 2026-07-04T21:19:10.254999Z 🚀 Found 3 ready task(s): ['FUN_FACTS_GENERATION', 'DETAIL_CONTENTS_GENERATION', 'IMAGE_PROMPT_GENERATION']
+DEFAULT 2026-07-04T21:19:10.361537Z 📩 Orchestrator requested to enqueue: FUN_FACTS_GENERATION (Task ID: 2777637a-6eb8-4f94-8d18-af6cab2db321)
+DEFAULT 2026-07-04T21:19:10.395434Z ✅ Enqueued FUN_FACTS_GENERATION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-2777637a-6eb8-4f94-8d18-af6cab2db321-59439998
+INFO 2026-07-04T21:19:10.408205Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 13.872 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/fun-facts-generation
+DEFAULT 2026-07-04T21:19:10.493396Z 📩 Orchestrator requested to enqueue: DETAIL_CONTENTS_GENERATION (Task ID: 83e2047a-17ad-4c98-9909-6f9fad162691)
+DEFAULT 2026-07-04T21:19:10.523541Z ✅ Enqueued DETAIL_CONTENTS_GENERATION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-83e2047a-17ad-4c98-9909-6f9fad162691-59439998
+DEFAULT 2026-07-04T21:19:10.661910Z 📩 Orchestrator requested to enqueue: IMAGE_PROMPT_GENERATION (Task ID: 654ef520-58c7-4999-a3e3-33c264ad8e2e)
+DEFAULT 2026-07-04T21:19:10.662886Z [FUN_FACTS_GENERATION] ▶️ Starting FUN_FACTS (Task: 2777637a-6eb8-4f94-8d18-af6cab2db321)
+DEFAULT 2026-07-04T21:19:10.691819Z ✅ Enqueued IMAGE_PROMPT_GENERATION to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-654ef520-58c7-4999-a3e3-33c264ad8e2e-59439998
+DEFAULT 2026-07-04T21:19:10.692172Z INFO: 169.254.169.126:14496 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+INFO 2026-07-04T21:19:10.754283Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:19:10.754968Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:19:10.755747Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 5 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+INFO 2026-07-04T21:19:10.757218Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 5 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:10.757618Z INFO: 169.254.169.126:14524 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:10.758144Z INFO: 169.254.169.126:14528 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:10.760753Z INFO: 169.254.169.126:14538 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:10.762417Z INFO: 169.254.169.126:14554 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+INFO 2026-07-04T21:19:11.427268Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 102.264 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/detail-contents
+DEFAULT 2026-07-04T21:19:11.521173Z [DETAIL_CONTENTS_GENERATION] ▶️ Starting DETAIL_CONTENTS (Task: 83e2047a-17ad-4c98-9909-6f9fad162691)
+DEFAULT 2026-07-04T21:19:11.747110Z [FUN_FACTS_GENERATION] [Logic] Starting Fun Fact Generation
+INFO 2026-07-04T21:19:11.823666Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:11.827585Z INFO: 169.254.169.126:14580 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:12.172173Z [DETAIL_CONTENTS_GENERATION] [Logic] Starting Topic Detail Generation
+DEFAULT 2026-07-04T21:19:12.177198Z [DETAIL_CONTENTS_GENERATION] [Logic] Generating detail contents for Topic 1: Illumination Model Recap
+ERROR 2026-07-04T21:19:12.417600Z [httpRequest.requestMethod: POST] [httpRequest.status: 500] [httpRequest.responseSize: 130 B] [httpRequest.latency: 24.062 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/image-prompt-generation
+DEFAULT 2026-07-04T21:19:12.514374Z [IMAGE_GENERATION] ▶️ Starting IMAGE_GENERATION (Task: 654ef520-58c7-4999-a3e3-33c264ad8e2e)
+INFO 2026-07-04T21:19:12.886442Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 2 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:12.889219Z INFO: 169.254.169.126:14588 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:13.228976Z [IMAGE_GENERATION] [Logic] Starting Image Prompt Generation
+DEFAULT 2026-07-04T21:19:23.113457Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/fun_fact.json
+INFO 2026-07-04T21:19:23.736663Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 128 B] [httpRequest.latency: 142 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:23.739841Z 🎼 Orchestrator waking up! Triggered by Task: FUN_FACTS_GENERATION (UPDATE)
+DEFAULT 2026-07-04T21:19:23.879779Z ⏸️ No ready tasks found at this moment.
+DEFAULT 2026-07-04T21:19:23.880109Z INFO: 169.254.169.126:21044 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:23.880750Z [FUN_FACTS_GENERATION]
+DEFAULT 2026-07-04T21:19:23.880763Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:19:23.880770Z [Tokens] gemini/gemini-2.5-flash: 19911 in, 1871 out -> $0.010651
+DEFAULT 2026-07-04T21:19:23.880776Z [Time] cloudrun/self: 11.10s -> $0.000333 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:19:23.880779Z -------------------------
+DEFAULT 2026-07-04T21:19:23.880783Z TOTAL: $0.010984
+DEFAULT 2026-07-04T21:19:24.280710Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/FUN_FACTS_GENERATION_console.json
+DEFAULT 2026-07-04T21:19:24.281569Z INFO: 169.254.169.126:14508 - "POST /worker/fun-facts-generation HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:30.938957Z [DETAIL_CONTENTS_GENERATION] [Logic] Generating detail contents for Topic 2: Light Source Types and Spotlight Mechanics
+INFO 2026-07-04T21:19:36.183026Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 3 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:36.187525Z INFO: 169.254.169.126:32536 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:36.479952Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/IMAGE_GENERATION_console.json
+DEFAULT 2026-07-04T21:19:36.480217Z INFO: 169.254.169.126:14586 - "POST /worker/image-prompt-generation HTTP/1.1" 500 Internal Server Error
+DEFAULT 2026-07-04T21:19:36.484155Z ERROR: Exception in ASGI application
+ERROR 2026-07-04T21:19:36.484240Z Traceback (most recent call last): File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 416, in run_asgi result = await app( # type: ignore[func-returns-value] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 63, in __call__ return await self.app(scope, receive, send) ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1163, in __call__ await super().__call__(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 90, in __call__ await self.middleware_stack(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__ raise exc File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__ await self.app(scope, receive, _send) File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__ await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app raise exc File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app await app(scope, receive, sender) File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__ await self.app(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 660, in __call__ await self.middleware_stack(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 2683, in app await route.handle(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 1266, in handle await super().handle(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 276, in handle await self.app(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 150, in app await wrap_app_handling_exceptions(app, request)(scope, receive, send) File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app raise exc File "/usr/local/lib/python3.11/site-packages/sta…
+INFO 2026-07-04T21:19:41.504736Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 22.489 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/image-prompt-generation
+DEFAULT 2026-07-04T21:19:41.656213Z [IMAGE_GENERATION] ▶️ Starting IMAGE_GENERATION (Task: 654ef520-58c7-4999-a3e3-33c264ad8e2e)
+INFO 2026-07-04T21:19:41.751999Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 6 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:19:41.759058Z INFO: 169.254.169.126:5724 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:19:42.215873Z [IMAGE_GENERATION] [Logic] Starting Image Prompt Generation
+DEFAULT 2026-07-04T21:19:44.084530Z [DETAIL_CONTENTS_GENERATION] [Logic] Generating detail contents for Topic 3: Advanced Rendering Concepts
+DEFAULT 2026-07-04T21:19:59.142186Z [DETAIL_CONTENTS_GENERATION] [Logic] Generating detail contents for Topic 4: Shading Techniques: Flat and Smooth
+DEFAULT 2026-07-04T21:20:03.037728Z [IMAGE_GENERATION] [Logic] Generated 6 image prompt(s).
+DEFAULT 2026-07-04T21:20:03.334361Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/image_prompts.json
+INFO 2026-07-04T21:20:03.448401Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 138 B] [httpRequest.latency: 549 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:20:03.451358Z 🎼 Orchestrator waking up! Triggered by Task: IMAGE_PROMPT_GENERATION (UPDATE)
+DEFAULT 2026-07-04T21:20:03.585733Z 🚀 Found 1 ready task(s): ['IMAGE_RENDERING']
+DEFAULT 2026-07-04T21:20:03.697335Z 📩 Orchestrator requested to enqueue: IMAGE_RENDERING (Task ID: 73830f84-1530-4ff1-bd02-4c3aba4ecd27)
+DEFAULT 2026-07-04T21:20:03.698940Z [IMAGE_GENERATION]
+DEFAULT 2026-07-04T21:20:03.698946Z === 📊 3D Cost Report ===
+DEFAULT 2026-07-04T21:20:03.698950Z [Tokens] together_ai/openai/gpt-oss-20b: 2248 in, 3329 out -> $0.000778
+DEFAULT 2026-07-04T21:20:03.698952Z [Time] cloudrun/self: 20.82s -> $0.000625 (rough Cloud Run self cost)
+DEFAULT 2026-07-04T21:20:03.698955Z -------------------------
+DEFAULT 2026-07-04T21:20:03.698957Z TOTAL: $0.001403
+DEFAULT 2026-07-04T21:20:03.698995Z [IMAGE_GENERATION] ✅ IMAGE_GENERATION Completed!
+INFO 2026-07-04T21:20:03.754101Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 120 B] [httpRequest.latency: 24.447 s] [httpRequest.userAgent: Google-Cloud-Tasks] https://lefture-511705914929.us-west1.run.app/worker/image-rendering
+DEFAULT 2026-07-04T21:20:03.994991Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/IMAGE_GENERATION_console.json
+DEFAULT 2026-07-04T21:20:03.995406Z INFO: 169.254.169.126:5710 - "POST /worker/image-prompt-generation HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:20:03.996668Z ✅ Enqueued IMAGE_RENDERING to Cloud Tasks: projects/gen-lang-client-0682456679/locations/us-west1/queues/lefture-processing-queue/tasks/task-73830f84-1530-4ff1-bd02-4c3aba4ecd27-59440000
+DEFAULT 2026-07-04T21:20:03.997314Z INFO: 169.254.169.126:38790 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+INFO 2026-07-04T21:20:04.057828Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 3 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:20:04.061766Z INFO: 169.254.169.126:38806 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:20:04.095666Z [IMAGE_RENDERING] ▶️ Starting IMAGE_RENDERING (Task: 73830f84-1530-4ff1-bd02-4c3aba4ecd27)
+DEFAULT 2026-07-04T21:20:04.471846Z [IMAGE_RENDERING] [Logic] Starting parallel Image Rendering for 6 topics.
+DEFAULT 2026-07-04T21:20:04.486798Z [IMAGE_RENDERING] [Logic] Requesting image for Topic 1 (Tiles: 1)
+DEFAULT 2026-07-04T21:20:04.487458Z [IMAGE_RENDERING] [Logic] Requesting image for Topic 2 (Tiles: 1)
+DEFAULT 2026-07-04T21:20:04.487851Z [IMAGE_RENDERING] [Logic] Requesting image for Topic 3 (Tiles: 1)
+DEFAULT 2026-07-04T21:20:04.488201Z [IMAGE_RENDERING] [Logic] Requesting image for Topic 4 (Tiles: 1)
+DEFAULT 2026-07-04T21:20:04.491295Z [IMAGE_RENDERING] [Logic] Requesting image for Topic 5 (Tiles: 1)
+DEFAULT 2026-07-04T21:20:04.491702Z [IMAGE_RENDERING] [Logic] Requesting image for Topic 6 (Tiles: 1)
+INFO 2026-07-04T21:20:05.121908Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 148 B] [httpRequest.latency: 3 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:20:05.125869Z INFO: 169.254.169.126:38812 - "POST /webhook/orchestrator HTTP/1.1" 200 OK
+DEFAULT 2026-07-04T21:20:14.571068Z [IMAGE_RENDERING] [Logic] ✅ Image for Topic 6 successfully generated and saved to R2!
+DEFAULT 2026-07-04T21:20:16.107387Z [DETAIL_CONTENTS_GENERATION] [Logic] Generating detail contents for Topic 5: Interpolation Methods: Bilinear and Barycentric
+DEFAULT 2026-07-04T21:20:16.728757Z [IMAGE_RENDERING] [Logic] ✅ Image for Topic 5 successfully generated and saved to R2!
+DEFAULT 2026-07-04T21:20:17.408108Z [IMAGE_RENDERING] [Logic] ✅ Image for Topic 3 successfully generated and saved to R2!
+DEFAULT 2026-07-04T21:20:18.547196Z [IMAGE_RENDERING] [Logic] ✅ Image for Topic 2 successfully generated and saved to R2!
+DEFAULT 2026-07-04T21:20:22.789162Z [IMAGE_RENDERING] [Logic] ✅ Image for Topic 1 successfully generated and saved to R2!
+DEFAULT 2026-07-04T21:20:27.091460Z [IMAGE_RENDERING] [Logic] ✅ Image for Topic 4 successfully generated and saved to R2!
+DEFAULT 2026-07-04T21:20:27.539227Z 📁 Log saved to R2: 4859e134-9221-4e02-b33a-46b6cab47016/e464135a-8f0c-4c19-b9e8-32c5c327ee6f/pipeline_logs/rendered_images_manifest.json
+INFO 2026-07-04T21:20:27.787359Z [httpRequest.requestMethod: POST] [httpRequest.status: 200] [httpRequest.responseSize: 128 B] [httpRequest.latency: 160 ms] [httpRequest.userAgent: pg_net 0.19.5] https://lefture-511705914929.us-west1.run.app/webhook/orchestrator
+DEFAULT 2026-07-04T21:20:27.790172Z 🎼 Orchestrator waking up! Triggered by Task: IMAGE_RENDERING (UPDATE)
+DEFAULT 2026-07-04T21:20:27.947819Z ⏸️ No ready tasks found at this moment.
+...

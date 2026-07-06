@@ -33,7 +33,6 @@ class ImageGenerationService:
         for res in review_cards_results:
             topic_idx = res.get("topic_idx")
             academic_title = academic_titles.get(topic_idx, "Unknown Topic")
-            core_concept = res.get("topic_evaluation", {}).get("core_concept_identified", "")
 
             # hookカードを探す
             hook_card = next((c for c in res.get("review_cards", []) if c.get("card_type") == "hook"), {})
@@ -49,19 +48,11 @@ class ImageGenerationService:
                     summary = mt["summary"]
                     break
 
-            # concept_explanation を Hook と Summary を結合して作成
-            explanation_parts = []
-            if hook_text.strip():
-                explanation_parts.append(hook_text.strip())
-            if summary.strip():
-                explanation_parts.append(summary.strip())
-            concept_explanation = " — ".join(explanation_parts)
-
             minimized_topics.append({
                 "topic_idx": topic_idx,
                 "title": academic_title,
-                "core_concept": core_concept,
-                "concept_explanation": concept_explanation
+                "hook_text": hook_text.strip(),
+                "summary": summary.strip()
             })
 
         prompt_text = prompt_template
@@ -79,12 +70,12 @@ class ImageGenerationService:
         if not isinstance(res.output_json, dict):
             raise ValueError("Image prompt output must be a JSON object.")
 
-        world_building = res.output_json.get("world_building")
-        if not isinstance(world_building, dict):
-            raise ValueError("Image prompt output must contain a world_building object.")
+        global_art_direction = res.output_json.get("global_art_direction")
+        if not isinstance(global_art_direction, dict):
+            raise ValueError("Image prompt output must contain a global_art_direction object.")
         
-        if not isinstance(world_building.get("flux_style_suffix"), str) or not world_building["flux_style_suffix"].strip():
-            raise ValueError("world_building object must contain a non-empty flux_style_suffix.")
+        if not isinstance(global_art_direction.get("flux_style_suffix"), str) or not global_art_direction["flux_style_suffix"].strip():
+            raise ValueError("global_art_direction object must contain a non-empty flux_style_suffix.")
 
         image_prompts = res.output_json.get("image_prompts")
         if not isinstance(image_prompts, list):

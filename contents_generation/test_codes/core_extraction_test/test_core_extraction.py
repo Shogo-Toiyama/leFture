@@ -73,8 +73,10 @@ def test_core_extraction():
     # Models to test
     models = [
         "together_ai/openai/gpt-oss-120b",
-        # "gemini/gemini-2.5-flash-lite",
-        # "gemini/gemini-2.5-flash"
+        "gemini/gemini-2.5-flash-lite",
+        # "gemini/gemini-2.5-flash",
+        "gemini/gemini-3.1-flash-lite",
+        "together_ai/meta-llama/Llama-3.3-70B-Instruct-Turbo"
     ]
 
     # Model Pricing per 1,000,000 tokens (Standard pricing)
@@ -82,7 +84,9 @@ def test_core_extraction():
         "together_ai/openai/gpt-oss-120b": {"input": 0.15, "output": 0.60},
         "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
-        "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50}
+        "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},
+        "gemini/gemini-3.1-flash-lite": {"input": 0.40, "output": 1.50},
+        "together_ai/meta-llama/Llama-3.3-70B-Instruct-Turbo": {"input": 1.04, "output": 1.04}
     }
 
     total_cost = 0.0

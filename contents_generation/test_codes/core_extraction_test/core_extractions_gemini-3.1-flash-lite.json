@@ -1,0 +1,100 @@
+{
+  "topics": [
+    {
+      "idx": 1,
+      "title": "Zero Trust Architecture and Access Control",
+      "topic_type": "ACADEMIC",
+      "keywords": [
+        "Zero Trust Architecture",
+        "Perimeter-based access control",
+        "Principle of least privilege",
+        "Micro-segmentation",
+        "Centralized logging"
+      ],
+      "start_sid": "s000007",
+      "end_sid": "s000207"
+    },
+    {
+      "idx": 2,
+      "title": "Decentralized Trust Technologies",
+      "topic_type": "ACADEMIC",
+      "keywords": [
+        "Distributed ledger",
+        "Smart contracts",
+        "Peer-to-peer networks",
+        "Behavioral analytics",
+        "False positives"
+      ],
+      "start_sid": "s000217",
+      "end_sid": "s000364"
+    },
+    {
+      "idx": 3,
+      "title": "Privacy Preservation and Cryptographic Principles",
+      "topic_type": "ACADEMIC",
+      "keywords": [
+        "Differential privacy",
+        "Zero-knowledge proof",
+        "Kerckhoffs's principle",
+        "Information leakage"
+      ],
+      "start_sid": "s000365",
+      "end_sid": "s000466"
+    },
+    {
+      "idx": 4,
+      "title": "Role-Based Access Control and System Design",
+      "topic_type": "ACADEMIC",
+      "keywords": [
+        "Role-based access control (RBAC)",
+        "Direct vs indirect access",
+        "Covert channels",
+        "Side-channel attacks"
+      ],
+      "start_sid": "s000471",
+      "end_sid": "s000627"
+    },
+    {
+      "idx": 5,
+      "title": "Security Vulnerabilities and Hardening Techniques",
+      "topic_type": "ACADEMIC",
+      "keywords": [
+        "Common Vulnerabilities and Exposures (CVE)",
+        "Address Space Layout Randomization (ASLR)",
+        "Verified Boot",
+        "Relocation Read-Only (RELRO)",
+        "SELinux"
+      ],
+      "start_sid": "s000632",
+      "end_sid": "s000923"
+    },
+    {
+      "idx": 6,
+      "title": "Trust Foundations and Supply Chain Security",
+      "topic_type": "ACADEMIC",
+      "keywords": [
+        "Trojan horse",
+        "Compiler backdoors",
+        "Trust bootstrapping",
+        "Reflections on Trusting Trust"
+      ],
+      "start_sid": "s000924",
+      "end_sid": "s001037"
+    }
+  ],
+  "summary": "Modern security architectures shift from perimeter-based models to Zero Trust frameworks, emphasizing continuous authorization and the principle of least privilege. These systems integrate advanced defensive mechanisms like behavioral analytics, cryptographic privacy preservation, and hardware-level hardening to mitigate vulnerabilities, while acknowledging the fundamental limitations of trust in software supply chains.",
+  "title": "Zero Trust Security, Privacy, and System Hardening",
+  "fun_fact_idea": {
+    "start_sid": "s000924",
+    "end_sid": "s001037",
+    "concept_focus": "Trust bootstrapping",
+    "exciting_angle": "Connect Ken Thompson's 'Reflections on Trusting Trust' to modern software supply chain attacks like the SolarWinds hack. This shows the student that the most sophisticated security engineering is still vulnerable to foundational trust issues in the tools we use to build our code.",
+    "needs_web_search": true,
+    "search_queries": [
+      "SolarWinds supply chain attack mechanism analysis",
+      "Ken Thompson Trusting Trust modern supply chain security implications",
+      "how to defend against compiler backdoors"
+    ],
+    "search_reasoning": "Connecting a classic academic lecture to a massive, real-world corporate security failure like SolarWinds will provide a high-impact 'AHA!' moment regarding the fragility of software development pipelines."
+  }
+}

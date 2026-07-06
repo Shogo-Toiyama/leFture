@@ -21,7 +21,7 @@ class CoreExtractionService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "gemini/gemini-2.5-flash-lite"
+        self.model_alias = "gemini/gemini-3.1-flash-lite"
 
     async def run_from_memory(self, transcript_data: list[dict], student_profile: str) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Core Extraction with {self.model_alias}")

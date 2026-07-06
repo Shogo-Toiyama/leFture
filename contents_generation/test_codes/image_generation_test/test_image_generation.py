@@ -60,7 +60,6 @@ def format_image_generation_inputs():
         for res in review_cards_results:
             topic_idx = res.get("topic_idx")
             academic_title = academic_titles.get(topic_idx, "Unknown Topic")
-            core_concept = res.get("topic_evaluation", {}).get("core_concept_identified", "")
 
             # extract Hook
             hook_card = next((c for c in res.get("review_cards", []) if c.get("card_type") == "hook"), {})
@@ -77,13 +76,11 @@ def format_image_generation_inputs():
                     summary = mt["summary"]
                     break
 
-            concept_explanation = f"{hook_text} — {summary}".strip().strip("—").strip()
-
             minimized_topics.append({
                 "topic_idx": topic_idx,
                 "title": academic_title,
-                "core_concept": core_concept,
-                "concept_explanation": concept_explanation
+                "hook_text": hook_text.strip(),
+                "summary": summary.strip()
             })
             
         return minimized_topics
@@ -98,7 +95,7 @@ def test_image_generation():
     # "BOTH"        - Generate prompts using LLM and render images using Cloudflare
     # "PROMPT_ONLY" - Generate prompts using LLM only (saves image_prompts_*.json)
     # "IMAGE_ONLY"  - Skip LLM prompt generation, load from existing JSON, and render images
-    EXECUTION_MODE = "IMAGE_ONLY"  # Change to "BOTH", "PROMPT_ONLY", or "IMAGE_ONLY"
+    EXECUTION_MODE = "BOTH"  # Change to "BOTH", "PROMPT_ONLY", or "IMAGE_ONLY"
     # -------------------------------------------------------------------------
 
     # Read prompt
@@ -117,18 +114,22 @@ def test_image_generation():
 
     # Models to test
     models = [
-        "gemini/gemini-2.5-flash-lite"
+        "together_ai/openai/gpt-oss-20b",
+        "gemini/gemini-2.5-flash-lite",
+        "gemini/gemini-3.1-flash-lite"
     ]
 
     # Model Pricing per 1,000,000 tokens
     PRICING_PER_1M = {
         "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
-        "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50}
+        "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},
+        "gemini/gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50}
     }
 
     total_cost = 0.0
     total_time = 0.0
+    total_flux_cost = 0.0
 
     for model in models:
         model_safe_name = model.split('/')[-1]
@@ -218,8 +219,9 @@ def test_image_generation():
         # Print preview and run image rendering
         if result_dict:
             # Print preview of World Building and Scene descriptions
-            wb = result_dict.get("world_building", {})
-            print(f"🌍 World Setting: {wb.get('world_setting')}")
+            wb = result_dict.get("global_art_direction") or result_dict.get("world_building", {})
+            world_setting = wb.get("world_setting") or wb.get("art_medium", "N/A")
+            print(f"🌍 World Setting: {world_setting}")
             print(f"🎨 Style Suffix: {wb.get('flux_style_suffix')}")
             
             prompts_list = result_dict.get("image_prompts", [])
@@ -230,6 +232,8 @@ def test_image_generation():
                 # Try rendering images via Cloudflare if credentials are available
                 cf_account = os.getenv("CLOUDFLARE_ACCOUNT_ID")
                 cf_token = os.getenv("CLOUDFLARE_API_KEY")
+                w = 512
+                h = 512
                 if cf_account and cf_token:
                     print(f"\n🎨 Cloudflare credentials found! Rendering images using @cf/black-forest-labs/flux-2-klein-4b...")
                     for p in prompts_list:
@@ -247,8 +251,8 @@ def test_image_generation():
                                 }
                                 files = {
                                     "prompt": (None, combined_prompt),
-                                    "width": (None, "384"),
-                                    "height": (None, "672")
+                                    "width": (None, str(w)),
+                                    "height": (None, str(h))
                                 }
                                 cf_res = requests.post(url, headers=headers, files=files, timeout=60)
                             else:
@@ -258,8 +262,8 @@ def test_image_generation():
                                 }
                                 payload = {
                                     "prompt": combined_prompt,
-                                    "width": 384,
-                                    "height": 672,
+                                    "width": w,
+                                    "height": h,
                                     "num_steps": 4
                                 }
                                 cf_res = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -276,10 +280,15 @@ def test_image_generation():
                                     image_bytes = cf_res.content
                                 
                                 if image_bytes:
+                                    # Calculate flux tiles and cost (width 384, height 672)
+                                    tiles = ((w + 511) // 512) * ((h + 511) // 512)
+                                    flux_cost = tiles * 0.000287
+                                    total_flux_cost += flux_cost
+
                                     out_img_path = current_dir / f"image_topic_{topic_idx}_{model_safe_name}.jpg"
                                     with open(out_img_path, "wb") as img_f:
                                         img_f.write(image_bytes)
-                                    print(f"   ✅ Saved image to: {out_img_path.name}")
+                                    print(f"   ✅ Saved image to: {out_img_path.name} (Estimated Flux Cost: ${flux_cost:.6f})")
                             else:
                                 print(f"   ❌ Cloudflare response error ({cf_res.status_code}): {cf_res.text}")
                         except Exception as img_err:
@@ -293,7 +302,9 @@ def test_image_generation():
     print(f"🏁 Execution Summary")
     print(f"==================================================")
     print(f"⏱️ Total Time: {total_time:.2f} seconds")
-    print(f"💰 Total Cost: ${total_cost:.6f}")
+    print(f"💰 LLM Cost: ${total_cost:.6f}")
+    print(f"🎨 Flux Cost: ${total_flux_cost:.6f}")
+    print(f"💵 Combined Total Cost: ${(total_cost + total_flux_cost):.6f}")
 
 if __name__ == "__main__":
     test_image_generation()

@@ -1194,7 +1194,10 @@ async def run_image_rendering_task(job_id: str, task_id: str):
         prompt_data = await _download_from_r2_to_memory(prompt_payload["image_prompts_path"])
 
         # style_suffixと各トピックのscene_descriptionを結合してレンダリング用リストを作成
-        style_suffix = prompt_data.get("world_building", {}).get("flux_style_suffix", "")
+        style_suffix = (
+            prompt_data.get("global_art_direction", {}).get("flux_style_suffix", "")
+            or prompt_data.get("world_building", {}).get("flux_style_suffix", "")
+        )
         raw_prompts = prompt_data.get("image_prompts", [])
 
         image_rendering_inputs = []

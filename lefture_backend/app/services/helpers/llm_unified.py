@@ -22,7 +22,9 @@ PRICE_MATRIX = {
         "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "deepinfra/openai/gpt-oss-120b": {"input": 0.039, "output": 0.19},
         "deepinfra/deepseek-ai/DeepSeek-V3.2": {"input": 0.26, "output": 0.38},
+        "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
         "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},
+        "gemini/gemini-3.1-flash-lite": {"input": 0.40, "output": 1.50},
     },
     "time": {  # $ per unit per second
         "modal/cpu": 0.0000131,     # per core-second
@@ -364,8 +366,15 @@ class UnifiedLLM:
             kwargs["reasoning_effort"] = options.reasoning_effort
 
         # JSONモードの指定
-        if options.output_type == "json":
+        # NOTE: GPT-OSS models have a known token conflict between Harmony format and response_format,
+        # leading to corrupt prefixes like {"final{":. We rely on raw text + extract_json_string for these models.
+        if options.output_type == "json" and "gpt-oss" not in model:
             kwargs["response_format"] = {"type": "json_object"}
+
+        # Gemini 3+ の場合は警告を避けるため temperature などのパラメータを削除する
+        # (LiteLLMはGoogle AI StudioのGemini 3+に対してこれらのパラメータを非推奨警告として出力するため)
+        if ("gemini-3" in model or "gemini/gemini-3" in model) and "temperature" in kwargs:
+            del kwargs["temperature"]
 
         # 実行時間の概算計測
         start_time = time.perf_counter()
@@ -376,7 +385,6 @@ class UnifiedLLM:
             raise RuntimeError(f"LiteLLM Error with model {model}: {e}") from e
 
         elapsed_time = time.perf_counter() - start_time
-
         output_text = response.choices[0].message.content or ""
 
         usage = getattr(response, "usage", None)

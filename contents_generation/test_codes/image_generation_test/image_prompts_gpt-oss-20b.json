@@ -1,39 +1,41 @@
 {
-  "world_building": {
-    "recurring_motif": "A massive, interlocking stone puzzle box with nested chambers and rotating hinges, each chamber holding a different key or lock",
-    "world_setting": "A dimly lit, ancient stone workshop where a master craftsman assembles the puzzle box, surrounded by shelves of etched maps and glowing runes",
-    "flux_style_suffix": "A high‑detail, realistic rendering with warm amber lighting, subtle shadows, and a slightly cinematic depth of field"
+  "commentary to=assistant{": "global_art_direction",
+  "global_art_direction": {
+    "art_medium": "Photorealistic 3D render",
+    "base_color_palette": "Warm amber tones with cool blue accents",
+    "lighting_and_mood": "Soft, diffused studio lighting with gentle rim highlights",
+    "flux_style_suffix": "Photorealistic 3D render, warm amber tones with cool blue accents, soft diffused studio lighting with gentle rim highlights"
   },
   "image_prompts": [
     {
       "topic_idx": 1,
-      "core_concept_translation": "The concept of persistent access via capabilities is visualised by showing a user who, after unlocking the outer lock (ACL), receives a brass key that can open an inner chamber. The key represents the persistent, process‑specific access granted by a capability, while the outer lock remains a gate that must be passed each time.",
-      "flux_scene_description": "Low angle close‑up over a weathered hand reaching into a partially opened stone puzzle box. The hand pulls out a brass key that fits into a hidden inner lock. The outer lock remains closed. Behind, shelves of etched maps and glowing runes."
+      "visual_anchor_used": "A guard in heavy armor standing at a concrete perimeter gate, holding a large leather checklist, symbolizing ACL checks at the perimeter",
+      "flux_scene_description": "Low-angle wide shot of a guard in heavy armor standing at a concrete perimeter gate, holding a large leather checklist, while a small figure with a keycard wanders inside the gate area. The background shows a distant runway and a clear sky."
     },
     {
       "topic_idx": 2,
-      "core_concept_translation": "Zero Trust requires verification of every interaction, even within the system. The scene shows a hand turning a tiny brass lock on the puzzle box, with a faint blue glow indicating that the lock is being authenticated each time, illustrating the principle of trusting no one, even inside.",
-      "flux_scene_description": "Mid‑shot from the side of a hand turning a tiny brass lock on the puzzle box. A faint blue light glows from the lock, indicating verification. The outer lock is still closed, and a faint mist surrounds the lock."
+      "visual_anchor_used": "A blindfolded guard at a stone castle gate turning his back on approaching figures, representing Zero Trust's 'trust no one' principle",
+      "flux_scene_description": "Mid-shot of a guard wearing a blindfold, standing at a stone castle gate, turning his back on a line of approaching figures. The gate is heavy and locked, with no open doors. The background shows a moody, overcast sky."
     },
     {
       "topic_idx": 3,
-      "core_concept_translation": "The idea of logging and differential privacy is represented by a translucent veil sliding over a scroll inside the puzzle box, obscuring the ink and showing only blurred outlines. This demonstrates how information can be logged while still protecting individual privacy.",
-      "flux_scene_description": "Top‑down close‑up of a translucent veil sliding over a parchment scroll inside the puzzle box. The scroll's ink is blurred, revealing only faint outlines. The puzzle box's outer shell is visible in the background."
+      "visual_anchor_used": "A hand placing a translucent veil over a stack of bound log books, illustrating privacy and differential privacy",
+      "flux_scene_description": "High-angle shot of a hand gently draping a translucent, semi-transparent veil over a stack of bound log books on a wooden desk. The veil shimmers with faint, diffused light, obscuring the details of the logs. The background is a dim office with a single window."
     },
     {
       "topic_idx": 4,
-      "core_concept_translation": "Blockchain’s immutable ledger is visualised as a stone tablet etched with a continuous line of runes inside the puzzle box. A hand presses onto the tablet, and a steady amber glow shows that the marks cannot be erased, embodying the permanence of a distributed ledger.",
-      "flux_scene_description": "Close‑up of a hand pressing onto a stone tablet etched with a continuous line of runes inside the puzzle box. The tablet glows with a steady amber light, showing that the marks cannot be erased."
+      "visual_anchor_used": "A closed leather ledger book with a fountain pen resting on an open page, ink drying, symbolizing permanent, unchangeable entries",
+      "flux_scene_description": "Extreme macro of a closed leather ledger book with a thick cover, a fountain pen resting on an open page, ink still drying, surrounded by a faint glow. The background is a dark, blurred study desk."
     },
     {
       "topic_idx": 5,
-      "core_concept_translation": "Role‑Based Access Control is illustrated by a rack of colored brass keys hanging on the puzzle box. A hand selects a red key for admin, a blue key for user, and a green key for guest, showing how roles act as an intermediate layer of access control between users and resources.",
-      "flux_scene_description": "Wide shot of a rack of colored brass keys hanging on the puzzle box. A hand reaches for a red key labeled \"admin\", a blue key labeled \"user\", and a green key labeled \"guest\". The puzzle box's outer lock remains closed."
+      "visual_anchor_used": "A person standing before a podium with three colored flags representing student, TA, instructor roles",
+      "flux_scene_description": "Over-the-shoulder shot of a person standing before a podium holding a clipboard, with three colored flags (blue, green, red) hanging on a pole beside the podium. The flags are slightly raised, each distinct color. The background is a simple classroom wall."
     },
     {
       "topic_idx": 6,
-      "core_concept_translation": "The covert channel is depicted by a hidden panel of the puzzle box sliding open to reveal a narrow cavity with a faint silver glow, symbolising a covert path for information that bypasses normal channels.",
-      "flux_scene_description": "Low angle close‑up of a hand sliding a hidden panel of the puzzle box. The panel opens to reveal a narrow cavity with a faint silver glow, representing a covert channel."
+      "visual_anchor_used": "Two figures separated by a wall with a crack, each holding a glowing microchip, symbolizing a covert channel",
+      "flux_scene_description": "Side view of two figures in contrasting colors standing on either side of a solid wall with a narrow crack. Each figure holds a small glowing microchip, and a faint light passes through the crack connecting them. The background is a dim, industrial corridor."
     }
   ]
 }
