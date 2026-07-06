@@ -7,6 +7,9 @@ class Lecture {
 
   /// タイトル未入力でも開始できるなら nullable or '' でOK
   final String? title;
+  final String? titleGenerated;
+  final String? summary;
+  final String? audioPath;
 
   final bool isDeleted;
 
@@ -22,6 +25,9 @@ class Lecture {
     required this.userId,
     required this.courseId,
     required this.title,
+    this.titleGenerated,
+    this.summary,
+    this.audioPath,
     required this.isDeleted,
     required this.sortOrder,
     required this.lectureDatetime,
@@ -35,6 +41,9 @@ class Lecture {
       userId: map['user_id'] as String,
       courseId: map['course_id'] as String?,
       title: map['title'] as String?,
+      titleGenerated: map['title_generated'] as String?,
+      summary: map['summary'] as String?,
+      audioPath: map['audio_path'] as String?,
       isDeleted: (map['is_deleted'] as bool?) ?? false,
       sortOrder: (map['sort_order'] as int?) ?? 0,
       lectureDatetime: DateTime.parse(map['lecture_datetime'] as String),
@@ -52,6 +61,7 @@ class Lecture {
       'is_deleted': isDeleted,
       'lecture_datetime': lectureDatetime.toIso8601String(),
       'title': title,
+      'title_generated': titleGenerated,
     };
 
     if (courseId != null) {

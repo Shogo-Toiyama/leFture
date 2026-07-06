@@ -67,6 +67,7 @@ class LectureRepositoryDrift {
       userId: row.userId,
       courseId: row.courseId,
       title: row.title,
+      titleGenerated: row.titleGenerated,
       isDeleted: row.deletedAt != null,
       sortOrder: row.sortOrder ?? 0,
       lectureDatetime: row.lectureDatetime ?? row.createdAt,

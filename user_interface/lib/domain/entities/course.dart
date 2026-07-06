@@ -11,6 +11,7 @@ class Course {
     this.yearId,
     this.termId,
     this.subjectId,
+    this.professorId,
     this.metadata,
     this.deletedAt,
     required this.createdAt,
@@ -19,6 +20,7 @@ class Course {
     this.term,
     this.subject,
     this.school,
+    this.professor,
   });
 
   final String id;
@@ -30,6 +32,9 @@ class Course {
   final String? yearId;
   final String? termId;
   final String? subjectId;
+
+  /// DBのカラム名は "professor" (course_attributesへのFK)
+  final String? professorId;
   final Map<String, dynamic>? metadata;
   final DateTime? deletedAt;
   final DateTime createdAt;
@@ -40,6 +45,7 @@ class Course {
   final CourseAttribute? term;
   final CourseAttribute? subject;
   final CourseAttribute? school;
+  final CourseAttribute? professor;
 
   String get displayTitle => courseTitle ?? courseCode ?? 'Untitled Course';
 
@@ -63,6 +69,8 @@ class Course {
       yearId: map['year_id'] as String?,
       termId: map['term_id'] as String?,
       subjectId: map['subject_id'] as String?,
+      // professorカラム自体はuuid。埋め込みJOINは "professor_attr" 別名で取得する
+      professorId: map['professor'] is String ? map['professor'] as String : null,
       metadata: map['metadata'] as Map<String, dynamic>?,
       deletedAt: map['deleted_at'] == null
           ? null
@@ -74,6 +82,7 @@ class Course {
       term: parseAttr(map['term']),
       subject: parseAttr(map['subject']),
       school: parseAttr(map['school']),
+      professor: parseAttr(map['professor_attr']),
     );
   }
 
@@ -85,6 +94,7 @@ class Course {
     String? yearId,
     String? termId,
     String? subjectId,
+    String? professorId,
     Map<String, dynamic>? metadata,
   }) {
     return Course(
@@ -97,6 +107,7 @@ class Course {
       yearId: yearId ?? this.yearId,
       termId: termId ?? this.termId,
       subjectId: subjectId ?? this.subjectId,
+      professorId: professorId ?? this.professorId,
       metadata: metadata ?? this.metadata,
       deletedAt: deletedAt,
       createdAt: createdAt,
@@ -105,6 +116,7 @@ class Course {
       term: term,
       subject: subject,
       school: school,
+      professor: professor,
     );
   }
 }

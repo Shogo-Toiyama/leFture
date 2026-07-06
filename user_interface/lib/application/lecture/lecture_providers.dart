@@ -1,5 +1,7 @@
 // lib/application/lecture/lecture_providers.dart
 
+import 'dart:io';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../infrastructure/repositories/lecture_artifact_repository.dart';
@@ -30,19 +32,6 @@ Stream<Lecture?> lecture(Ref ref, String id) {
 // UIから直接呼べるデータ取得用Provider (Familyを使う)
 // -----------------------------------------------------------------------------
 
-// 読む授業データを取得するProvider
-// ref.watch(lectureCompleteDataProvider((uid: '...', lectureId: '...'))) で使います
-@riverpod
-Future<LectureCompleteData?> lectureCompleteData(
-  Ref ref, {
-  required String uid,
-  required String lectureId,
-}) {
-  return ref
-      .watch(lectureArtifactRepositoryProvider)
-      .getLectureCompleteData(uid: uid, lectureId: lectureId);
-}
-
 // トランスクリプトを取得するProvider
 @riverpod
 Future<List<TranscriptSentence>?> transcript(
@@ -53,4 +42,11 @@ Future<List<TranscriptSentence>?> transcript(
   return ref
       .watch(lectureArtifactRepositoryProvider)
       .getTranscript(uid: uid, lectureId: lectureId);
+}
+
+// R2上の任意の成果物ファイル（トピック画像など）をローカルキャッシュ経由で取得するProvider
+// storagePath 例: "{uid}/{lectureId}/images/topic_1.jpg"
+@riverpod
+Future<File?> artifactFile(Ref ref, String storagePath) {
+  return ref.watch(lectureArtifactRepositoryProvider).getArtifactFile(storagePath);
 }

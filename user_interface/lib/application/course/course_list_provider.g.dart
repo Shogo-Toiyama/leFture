@@ -143,3 +143,142 @@ final class TermAttributesProvider
 }
 
 String _$termAttributesHash() => r'33c5cd66be6dd731cc1aa5ebb5be114952e5c046';
+
+/// Professor アトリビュート一覧（コース作成フォームの候補）
+
+@ProviderFor(professorAttributes)
+final professorAttributesProvider = ProfessorAttributesProvider._();
+
+/// Professor アトリビュート一覧（コース作成フォームの候補）
+
+final class ProfessorAttributesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CourseAttribute>>,
+          List<CourseAttribute>,
+          FutureOr<List<CourseAttribute>>
+        >
+    with
+        $FutureModifier<List<CourseAttribute>>,
+        $FutureProvider<List<CourseAttribute>> {
+  /// Professor アトリビュート一覧（コース作成フォームの候補）
+  ProfessorAttributesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'professorAttributesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$professorAttributesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<CourseAttribute>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<CourseAttribute>> create(Ref ref) {
+    return professorAttributes(ref);
+  }
+}
+
+String _$professorAttributesHash() =>
+    r'fe7ad25165ee662025809dda498f8419e16ab109';
+
+/// School アトリビュート一覧（コース作成フォームの候補）
+
+@ProviderFor(schoolAttributes)
+final schoolAttributesProvider = SchoolAttributesProvider._();
+
+/// School アトリビュート一覧（コース作成フォームの候補）
+
+final class SchoolAttributesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CourseAttribute>>,
+          List<CourseAttribute>,
+          FutureOr<List<CourseAttribute>>
+        >
+    with
+        $FutureModifier<List<CourseAttribute>>,
+        $FutureProvider<List<CourseAttribute>> {
+  /// School アトリビュート一覧（コース作成フォームの候補）
+  SchoolAttributesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'schoolAttributesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$schoolAttributesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<CourseAttribute>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<CourseAttribute>> create(Ref ref) {
+    return schoolAttributes(ref);
+  }
+}
+
+String _$schoolAttributesHash() => r'ace70af5e8b2e7ed7bf5df1aa6cf9988f52f3bec';
+
+/// Subject アトリビュート一覧（コース作成フォームの候補）
+
+@ProviderFor(subjectAttributes)
+final subjectAttributesProvider = SubjectAttributesProvider._();
+
+/// Subject アトリビュート一覧（コース作成フォームの候補）
+
+final class SubjectAttributesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<CourseAttribute>>,
+          List<CourseAttribute>,
+          FutureOr<List<CourseAttribute>>
+        >
+    with
+        $FutureModifier<List<CourseAttribute>>,
+        $FutureProvider<List<CourseAttribute>> {
+  /// Subject アトリビュート一覧（コース作成フォームの候補）
+  SubjectAttributesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'subjectAttributesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$subjectAttributesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<CourseAttribute>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<CourseAttribute>> create(Ref ref) {
+    return subjectAttributes(ref);
+  }
+}
+
+String _$subjectAttributesHash() => r'c287d99030220cbeaa37f84122011856f199a23b';

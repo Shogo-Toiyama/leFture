@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/galaxy/galaxy_data_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
@@ -40,6 +41,12 @@ class EmptyHomeContent extends ConsumerWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final galaxyHeight = screenHeight * _kGalaxyHeightRatio;
 
+    Future<void> handleRefresh() async {
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+      ref.invalidate(courseListProvider);
+      ref.invalidate(currentUserProfileProvider);
+    }
+
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
       body: SafeArea(
@@ -49,8 +56,12 @@ class EmptyHomeContent extends ConsumerWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
+                  return RefreshIndicator(
+                    color: AppColors.starGold,
+                    onRefresh: handleRefresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: constraints.maxHeight,
                       ),
@@ -208,6 +219,7 @@ class EmptyHomeContent extends ConsumerWidget {
                           ],
                         ),
                       ),
+                    ),
                     ),
                   );
                 },

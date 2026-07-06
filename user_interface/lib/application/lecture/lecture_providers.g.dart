@@ -127,97 +127,6 @@ final class LectureFamily extends $Family
   String toString() => r'lectureProvider';
 }
 
-@ProviderFor(lectureCompleteData)
-final lectureCompleteDataProvider = LectureCompleteDataFamily._();
-
-final class LectureCompleteDataProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<LectureCompleteData?>,
-          LectureCompleteData?,
-          FutureOr<LectureCompleteData?>
-        >
-    with
-        $FutureModifier<LectureCompleteData?>,
-        $FutureProvider<LectureCompleteData?> {
-  LectureCompleteDataProvider._({
-    required LectureCompleteDataFamily super.from,
-    required ({String uid, String lectureId}) super.argument,
-  }) : super(
-         retry: null,
-         name: r'lectureCompleteDataProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$lectureCompleteDataHash();
-
-  @override
-  String toString() {
-    return r'lectureCompleteDataProvider'
-        ''
-        '$argument';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<LectureCompleteData?> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<LectureCompleteData?> create(Ref ref) {
-    final argument = this.argument as ({String uid, String lectureId});
-    return lectureCompleteData(
-      ref,
-      uid: argument.uid,
-      lectureId: argument.lectureId,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is LectureCompleteDataProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$lectureCompleteDataHash() =>
-    r'a5b4c02397ad93a254bc5524bf94b52b0add45e5';
-
-final class LectureCompleteDataFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<LectureCompleteData?>,
-          ({String uid, String lectureId})
-        > {
-  LectureCompleteDataFamily._()
-    : super(
-        retry: null,
-        name: r'lectureCompleteDataProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  LectureCompleteDataProvider call({
-    required String uid,
-    required String lectureId,
-  }) => LectureCompleteDataProvider._(
-    argument: (uid: uid, lectureId: lectureId),
-    from: this,
-  );
-
-  @override
-  String toString() => r'lectureCompleteDataProvider';
-}
-
 @ProviderFor(transcript)
 final transcriptProvider = TranscriptFamily._();
 
@@ -300,4 +209,73 @@ final class TranscriptFamily extends $Family
 
   @override
   String toString() => r'transcriptProvider';
+}
+
+@ProviderFor(artifactFile)
+final artifactFileProvider = ArtifactFileFamily._();
+
+final class ArtifactFileProvider
+    extends $FunctionalProvider<AsyncValue<File?>, File?, FutureOr<File?>>
+    with $FutureModifier<File?>, $FutureProvider<File?> {
+  ArtifactFileProvider._({
+    required ArtifactFileFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'artifactFileProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$artifactFileHash();
+
+  @override
+  String toString() {
+    return r'artifactFileProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<File?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<File?> create(Ref ref) {
+    final argument = this.argument as String;
+    return artifactFile(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ArtifactFileProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$artifactFileHash() => r'b103c348bcf17a3b0afcd1d660c82898f2586e15';
+
+final class ArtifactFileFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<File?>, String> {
+  ArtifactFileFamily._()
+    : super(
+        retry: null,
+        name: r'artifactFileProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  ArtifactFileProvider call(String storagePath) =>
+      ArtifactFileProvider._(argument: storagePath, from: this);
+
+  @override
+  String toString() => r'artifactFileProvider';
 }

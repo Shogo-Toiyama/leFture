@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_announcements_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_details_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
 
 /// コース一覧 / コース内授業一覧 を兼ねるページ
@@ -47,7 +52,10 @@ class _CourseTreeView extends ConsumerWidget {
         elevation: 0,
         title: Text(
           'Courses',
-          style: TextStyle(color: AppColors.universe.textStarlight, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.universe.textStarlight,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         iconTheme: IconThemeData(color: AppColors.universe.textStarlight),
       ),
@@ -59,13 +67,20 @@ class _CourseTreeView extends ConsumerWidget {
         onPressed: () => _openCreateSheet(context, ref),
       ),
       body: coursesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.starGold),
+        ),
         error: (e, _) => Center(
-          child: Text('Error: $e', style: const TextStyle(color: AppColors.correctionRed)),
+          child: Text(
+            'Error: $e',
+            style: const TextStyle(color: AppColors.correctionRed),
+          ),
         ),
         data: (courses) {
           if (courses.isEmpty) {
-            return _EmptyCoursesView(onCreateTap: () => _openCreateSheet(context, ref));
+            return _EmptyCoursesView(
+              onCreateTap: () => _openCreateSheet(context, ref),
+            );
           }
           final grouped = _groupCourses(courses);
           return RefreshIndicator(
@@ -108,12 +123,11 @@ class _CourseTreeView extends ConsumerWidget {
     }
     // Year を降順（新しい年が上）、No Year は末尾
     final sorted = Map.fromEntries(
-      result.entries.toList()
-        ..sort((a, b) {
-          if (a.key == 'No Year') return 1;
-          if (b.key == 'No Year') return -1;
-          return b.key.compareTo(a.key);
-        }),
+      result.entries.toList()..sort((a, b) {
+        if (a.key == 'No Year') return 1;
+        if (b.key == 'No Year') return -1;
+        return b.key.compareTo(a.key);
+      }),
     );
     return sorted;
   }
@@ -147,10 +161,10 @@ class _YearSection extends StatelessWidget {
             ],
           ),
         ),
-        ...termMap.entries.map((termEntry) => _TermSection(
-              termName: termEntry.key,
-              courses: termEntry.value,
-            )),
+        ...termMap.entries.map(
+          (termEntry) =>
+              _TermSection(termName: termEntry.key, courses: termEntry.value),
+        ),
       ],
     );
   }
@@ -173,11 +187,18 @@ class _TermSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
             child: Row(
               children: [
-                Icon(Icons.folder_open, color: AppColors.universe.textComet, size: 16),
+                Icon(
+                  Icons.folder_open,
+                  color: AppColors.universe.textComet,
+                  size: 16,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   termName,
-                  style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
+                  style: TextStyle(
+                    color: AppColors.universe.textComet,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -217,7 +238,11 @@ class _CourseTile extends StatelessWidget {
                   color: AppColors.universe.glassWhiteHigh,
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.school_outlined, color: AppColors.starGold, size: 18),
+                child: const Icon(
+                  Icons.school_outlined,
+                  color: AppColors.starGold,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -232,7 +257,11 @@ class _CourseTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.universe.textComet, size: 20),
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.universe.textComet,
+                size: 20,
+              ),
             ],
           ),
         ),
@@ -252,7 +281,11 @@ class _EmptyCoursesView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.school_outlined, size: 64, color: AppColors.universe.textComet),
+          Icon(
+            Icons.school_outlined,
+            size: 64,
+            color: AppColors.universe.textComet,
+          ),
           const SizedBox(height: 16),
           Text(
             'No courses yet',
@@ -276,7 +309,9 @@ class _EmptyCoursesView extends StatelessWidget {
               backgroundColor: AppColors.starGold,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -294,227 +329,344 @@ class _CourseLectureListView extends ConsumerWidget {
 
   final String courseId;
 
+  Course? _findCourse(List<Course> courses) {
+    for (final c in courses) {
+      if (c.id == courseId) return c;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // We will use fake dummy data for the presentation
-    final dummyLectures = List.generate(10, (i) => Lecture(
-      id: 'dummy_$i',
-      courseId: courseId,
-      lectureDatetime: DateTime.now().subtract(Duration(days: i)),
-      title: 'Lecture ${10 - i}: ${['Introduction', 'Variables', 'Control Flow', 'Functions', 'Classes', 'Inheritance', 'Polymorphism', 'Interfaces', 'Generics', 'Exceptions'][i % 10]}',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      userId: 'dummy',
-      sortOrder: i,
-      isDeleted: false,
-    ));
+    final courses =
+        ref.watch(courseListProvider).asData?.value ?? const <Course>[];
+    final course = _findCourse(courses);
+
+    // ローカルDBは新しい順に並ぶので、シラバス的に古い順（Week1が上）へ並べ替える
+    final lectures =
+        (ref.watch(lectureListStreamProvider(courseId)).asData?.value ??
+                const <Lecture>[])
+            .reversed
+            .toList();
+
+    final announcement = ref
+        .watch(latestAnnouncementForCourseProvider(courseId))
+        .asData
+        ?.value;
+
+    if (course == null) {
+      return Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: const SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.starGold),
+          ),
+        ),
+      );
+    }
+
+    final termYearParts = [
+      course.term?.attributeName,
+      course.year?.attributeName,
+    ].where((s) => s != null && s.isNotEmpty).toList();
+    final termYearLabel = termYearParts.join(' ');
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // 1. AppBar Area
-            const SliverToBoxAdapter(
-              child: _CourseAppBar(),
-            ),
+        child: RefreshIndicator(
+          color: AppColors.starGold,
+          onRefresh: () async {
+            ref.invalidate(courseListProvider);
+            ref.invalidate(lectureListStreamProvider(courseId));
+            ref.invalidate(latestAnnouncementForCourseProvider(courseId));
+          },
+          child: CustomScrollView(
+            slivers: [
+              // 1. AppBar Area
+              const SliverToBoxAdapter(child: _CourseAppBar()),
 
-            // 2. Main content area padding
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Row 1: Course Metadata
-                  Row(
-                    children: [
-                      const Text(
-                        'CS 101',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Dr. Smith',
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Fall 2026',
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Row 2: Course Title & Edit Button
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            'Introduction to Computer Science',
-                            style: TextStyle(
-                              color: AppColors.universe.textStarlight,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, color: Colors.white70),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Row 3: Announcement & Detail Button
-                  Row(
-                    children: [
-                      // Announcement Card
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.universe.glassWhiteLow,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.universe.glassBorder),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.campaign_outlined, color: AppColors.starGold, size: 20),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Next Quiz on Week 4 topics!',
-                                  style: TextStyle(
-                                    color: AppColors.universe.textStarlight,
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Detailed Info Button (=:)
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          width: 64,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: AppColors.universe.glassWhiteLow,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.universe.glassBorder),
-                          ),
-                          child: const Icon(
-                            Icons.dns_outlined,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Row 4: Topic Map
-                  Text(
-                    'Topic Map',
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 220,
-                    decoration: BoxDecoration(
-                      color: AppColors.universe.glassWhiteLow,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.universe.glassBorder),
-                    ),
-                    child: Stack(
+              // 2. Main content area padding
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Row 1: Course Metadata
+                    Row(
                       children: [
-                        // Map Drawing
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: _TopicMapPainter(),
-                          ),
-                        ),
-                        // Overlay Text
-                        Positioned(
-                          bottom: 16,
-                          left: 16,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.universe.voidBackground.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(8),
+                        if (course.courseCode?.trim().isNotEmpty == true) ...[
+                          Text(
+                            course.courseCode!.trim(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        if (course.professor != null)
+                          Text(
+                            course.professor!.attributeName.trim(),
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontSize: 14,
+                            ),
+                          ),
+                        const Spacer(),
+                        if (termYearLabel.isNotEmpty)
+                          Text(
+                            termYearLabel,
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontSize: 14,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Row 2: Course Title & Edit Button
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
                             child: Text(
-                              '5 Nodes Discovered',
+                              course.displayTitle,
                               style: TextStyle(
-                                color: AppColors.universe.textComet,
-                                fontSize: 12,
+                                color: AppColors.universe.textStarlight,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: Colors.white70,
+                          ),
+                          onPressed: () => _openEditSheet(context, course),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                  // Row 5: Lectures Section
-                  Text(
-                    'Lectures',
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    // Row 3: Announcement & Detail Button
+                    Row(
+                      children: [
+                        // Announcement Card (タップでコース内アナウンス一覧を開く)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _openAnnouncementsSheet(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.universe.glassWhiteLow,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.universe.glassBorder,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    announcement != null
+                                        ? iconForAnnouncementType(
+                                            announcement.type,
+                                          )
+                                        : Icons.campaign_outlined,
+                                    color: AppColors.starGold,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      announcement?.title?.trim().isNotEmpty ==
+                                              true
+                                          ? announcement!.title!.trim()
+                                          : (announcement?.description
+                                                        ?.trim()
+                                                        .isNotEmpty ==
+                                                    true
+                                                ? announcement!.description!
+                                                      .trim()
+                                                : 'No announcements yet'),
+                                      style: TextStyle(
+                                        color: AppColors.universe.textStarlight,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Detailed Info Button (コースの詳細情報シートを開く)
+                        GestureDetector(
+                          onTap: () => _openDetailsSheet(context, course),
+                          child: Container(
+                            width: 64,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.universe.glassWhiteLow,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.universe.glassBorder,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.dns_outlined,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ]),
-              ),
-            ),
+                    const SizedBox(height: 20),
 
-            // Lectures List
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 24).copyWith(bottom: 100),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _LectureTile(lecture: dummyLectures[index]),
-                    );
-                  },
-                  childCount: dummyLectures.length,
+                    // Row 4: Topic Map
+                    // TODO: トピックマップは後で一緒に実装する（現状はプレースホルダーのまま）
+                    Text(
+                      'Topic Map',
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: AppColors.universe.glassWhiteLow,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.universe.glassBorder,
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Map Drawing
+                          Positioned.fill(
+                            child: CustomPaint(painter: _TopicMapPainter()),
+                          ),
+                          // Overlay Text
+                          Positioned(
+                            bottom: 16,
+                            left: 16,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.universe.voidBackground
+                                    .withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Coming soon',
+                                style: TextStyle(
+                                  color: AppColors.universe.textComet,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Row 5: Lectures Section
+                    Text(
+                      'Lectures',
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ]),
                 ),
               ),
-            ),
-          ],
+
+              // Lectures List
+              if (lectures.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 24,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Center(
+                      child: Text(
+                        'No lectures recorded yet',
+                        style: TextStyle(color: AppColors.universe.textComet),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                  ).copyWith(bottom: 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _LectureTile(lecture: lectures[index]),
+                      );
+                    }, childCount: lectures.length),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Future<void> _openEditSheet(BuildContext context, Course course) async {
+    await showModalBottomSheet<Course>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CourseCreateSheet(existingCourse: course),
+    );
+  }
+
+  Future<void> _openAnnouncementsSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CourseAnnouncementsSheet(courseId: courseId),
+    );
+  }
+
+  Future<void> _openDetailsSheet(BuildContext context, Course course) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CourseDetailsSheet(course: course),
     );
   }
 }
@@ -551,7 +703,9 @@ class _CourseAppBar extends StatelessWidget {
                     value: 0.7,
                     strokeWidth: 3,
                     backgroundColor: AppColors.universe.glassWhiteLow,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.starGold),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.starGold,
+                    ),
                   ),
                 ),
                 Container(
@@ -565,7 +719,7 @@ class _CourseAppBar extends StatelessWidget {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -579,21 +733,25 @@ class _TopicMapPainter extends CustomPainter {
       ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
-    
+
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // Grid lines
     canvas.drawLine(Offset(0, center.dy), Offset(size.width, center.dy), paint);
-    canvas.drawLine(Offset(center.dx, 0), Offset(center.dx, size.height), paint);
-    
+    canvas.drawLine(
+      Offset(center.dx, 0),
+      Offset(center.dx, size.height),
+      paint,
+    );
+
     // Concentric orbits
     canvas.drawCircle(center, 40, paint);
     canvas.drawCircle(center, 80, paint);
-    
+
     final linePaint = Paint()
       ..color = AppColors.starGold.withValues(alpha: 0.3)
       ..strokeWidth = 2.0;
-      
+
     final nodePaint = Paint()
       ..color = AppColors.starGold.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
@@ -603,13 +761,13 @@ class _TopicMapPainter extends CustomPainter {
     final p2 = Offset(center.dx + 30, center.dy - 60);
     final p3 = Offset(center.dx + 70, center.dy + 30);
     final p4 = Offset(center.dx - 30, center.dy + 60);
-    
+
     // Connections
     canvas.drawLine(center, p1, linePaint);
     canvas.drawLine(center, p2, linePaint);
     canvas.drawLine(center, p3, linePaint);
     canvas.drawLine(center, p4, linePaint);
-    
+
     // Draw nodes
     canvas.drawCircle(center, 8, nodePaint);
     canvas.drawCircle(p1, 5, nodePaint);
@@ -621,8 +779,6 @@ class _TopicMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-
 
 class _LectureTile extends StatelessWidget {
   const _LectureTile({required this.lecture});
@@ -651,7 +807,11 @@ class _LectureTile extends StatelessWidget {
                 color: AppColors.universe.glassWhiteHigh,
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: const Icon(Icons.description_outlined, color: AppColors.starGold, size: 22),
+              child: const Icon(
+                Icons.description_outlined,
+                color: AppColors.starGold,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -659,7 +819,11 @@ class _LectureTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    lecture.title?.isNotEmpty == true ? lecture.title! : 'Untitled Lecture',
+                    lecture.title?.trim().isNotEmpty == true
+                        ? lecture.title!
+                        : (lecture.titleGenerated?.trim().isNotEmpty == true
+                              ? lecture.titleGenerated!
+                              : 'Untitled Lecture'),
                     style: TextStyle(
                       color: AppColors.universe.textStarlight,
                       fontWeight: FontWeight.w600,
@@ -671,18 +835,29 @@ class _LectureTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.access_time, size: 12, color: AppColors.universe.textComet),
+                      Icon(
+                        Icons.access_time,
+                        size: 12,
+                        color: AppColors.universe.textComet,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         _dateFmt.format(lecture.lectureDatetime.toLocal()),
-                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: AppColors.universe.textComet, size: 20),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.universe.textComet,
+              size: 20,
+            ),
           ],
         ),
       ),

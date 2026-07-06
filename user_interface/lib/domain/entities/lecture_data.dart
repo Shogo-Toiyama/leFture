@@ -69,7 +69,9 @@ class LectureSegment {
 
 // -----------------------------------------------------------------------------
 // 2. トランスクリプト用のデータモデル
-// sentences_final.json (リスト形式) の中身1つ分に対応
+// R2の pipeline_logs/role_classification.json (無ければ transcript_assembled.json)
+// のリスト1要素分に対応。
+// 形式: {sid, text, start(秒:float), end(秒:float), confidence, role?, role_confidence?}
 // -----------------------------------------------------------------------------
 
 class TranscriptSentence {
@@ -77,7 +79,7 @@ class TranscriptSentence {
   final String text;
   final int start; // ミリ秒
   final int end;   // ミリ秒
-  final String role; // "lecture", "qa", "chitchat" など
+  final String role; // "CONTENT", "LOGISTICS" など。role分類前は "CONTENT" 扱い
 
   const TranscriptSentence({
     required this.sid,
@@ -87,13 +89,22 @@ class TranscriptSentence {
     required this.role,
   });
 
+  /// 講義本編の発話かどうか（それ以外は事務連絡・雑談など）
+  bool get isMainContent {
+    final r = role.toUpperCase();
+    return r == 'CONTENT' || r == 'LECTURE';
+  }
+
   factory TranscriptSentence.fromJson(Map<String, dynamic> json) {
+    // バックエンドは秒(float)で保存している。ミリ秒(int)に変換して保持する。
+    int toMs(dynamic v) => v is num ? (v * 1000).round() : 0;
+
     return TranscriptSentence(
-      sid: json['sid'] as String,
-      text: json['text'] as String,
-      start: json['start'] as int,
-      end: json['end'] as int,
-      role: json['role'] as String,
+      sid: json['sid'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+      start: toMs(json['start']),
+      end: toMs(json['end']),
+      role: json['role'] as String? ?? 'CONTENT',
     );
   }
 

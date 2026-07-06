@@ -12,13 +12,16 @@ CourseRepositorySupabase courseRepository(Ref ref) {
 class CourseRepositorySupabase {
   static const _table = 'courses';
 
-  // Supabase join query: course_attributes を year/term/subject/school 別に結合
+  // Supabase join query: course_attributes を year/term/subject/school/professor 別に結合。
+  // professorはカラム名自体が "professor" (uuid) なので、埋め込みは別名 "professor_attr" で
+  // 取得する (同名にするとレスポンス上でuuidカラムが埋め込みオブジェクトに置き換わるため)。
   static const _selectWithAttributes = '''
     *,
     year:course_attributes!year_id(*),
     term:course_attributes!term_id(*),
     subject:course_attributes!subject_id(*),
-    school:course_attributes!school_id(*)
+    school:course_attributes!school_id(*),
+    professor_attr:course_attributes!professor(*)
   ''';
 
   String _requireUid() {
@@ -66,6 +69,7 @@ class CourseRepositorySupabase {
     String? termId,
     String? subjectId,
     String? schoolId,
+    String? professorId,
     Map<String, dynamic>? metadata,
   }) async {
     _requireUid();
@@ -81,6 +85,7 @@ class CourseRepositorySupabase {
           if (termId != null) 'term_id': termId,
           if (subjectId != null) 'subject_id': subjectId,
           if (schoolId != null) 'school_id': schoolId,
+          if (professorId != null) 'professor': professorId,
           if (metadata != null) 'metadata': metadata,
         })
         .select(_selectWithAttributes)
@@ -89,7 +94,9 @@ class CourseRepositorySupabase {
     return Course.fromMap(inserted);
   }
 
-  /// コース更新
+  /// コース更新。
+  /// 編集フォームからの保存を想定しており、コード/概要/各アトリビュートは
+  /// nullを渡すと「クリア(未設定に戻す)」の意味になる。
   Future<Course> updateCourse({
     required String courseId,
     String? courseTitle,
@@ -99,6 +106,7 @@ class CourseRepositorySupabase {
     String? termId,
     String? subjectId,
     String? schoolId,
+    String? professorId,
     Map<String, dynamic>? metadata,
   }) async {
     _requireUid();
@@ -107,12 +115,13 @@ class CourseRepositorySupabase {
         .from(_table)
         .update({
           if (courseTitle != null) 'course_title': courseTitle,
-          if (courseCode != null) 'course_code': courseCode,
-          if (summary != null) 'summary': summary,
-          if (yearId != null) 'year_id': yearId,
-          if (termId != null) 'term_id': termId,
-          if (subjectId != null) 'subject_id': subjectId,
-          if (schoolId != null) 'school_id': schoolId,
+          'course_code': courseCode,
+          'summary': summary,
+          'year_id': yearId,
+          'term_id': termId,
+          'subject_id': subjectId,
+          'school_id': schoolId,
+          'professor': professorId,
           if (metadata != null) 'metadata': metadata,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })

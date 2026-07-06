@@ -33,7 +33,7 @@ class LectureStatusScaffold extends ConsumerWidget {
           if (state == LectureUIState.complete) {
             final uid = supabase.auth.currentUser?.id;
             if (uid != null) {
-              ref.invalidate(lectureCompleteDataProvider(uid: uid, lectureId: lecture.id));
+              ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
             }
           }
         });

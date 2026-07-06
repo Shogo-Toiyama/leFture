@@ -449,6 +449,17 @@ class $LocalLecturesTable extends LocalLectures
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _titleGeneratedMeta = const VerificationMeta(
+    'titleGenerated',
+  );
+  @override
+  late final GeneratedColumn<String> titleGenerated = GeneratedColumn<String>(
+    'title_generated',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _expectedChunksMeta = const VerificationMeta(
     'expectedChunks',
   );
@@ -558,6 +569,7 @@ class $LocalLecturesTable extends LocalLectures
     userId,
     courseId,
     title,
+    titleGenerated,
     expectedChunks,
     lectureDatetime,
     sortOrder,
@@ -603,6 +615,15 @@ class $LocalLecturesTable extends LocalLectures
       context.handle(
         _titleMeta,
         title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('title_generated')) {
+      context.handle(
+        _titleGeneratedMeta,
+        titleGenerated.isAcceptableOrUnknown(
+          data['title_generated']!,
+          _titleGeneratedMeta,
+        ),
       );
     }
     if (data.containsKey('expected_chunks')) {
@@ -696,6 +717,10 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       ),
+      titleGenerated: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title_generated'],
+      ),
       expectedChunks: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}expected_chunks'],
@@ -746,6 +771,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final String userId;
   final String? courseId;
   final String? title;
+  final String? titleGenerated;
   final int? expectedChunks;
   final DateTime? lectureDatetime;
   final int? sortOrder;
@@ -760,6 +786,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     required this.userId,
     this.courseId,
     this.title,
+    this.titleGenerated,
     this.expectedChunks,
     this.lectureDatetime,
     this.sortOrder,
@@ -780,6 +807,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     }
     if (!nullToAbsent || title != null) {
       map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || titleGenerated != null) {
+      map['title_generated'] = Variable<String>(titleGenerated);
     }
     if (!nullToAbsent || expectedChunks != null) {
       map['expected_chunks'] = Variable<int>(expectedChunks);
@@ -815,6 +845,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       title: title == null && nullToAbsent
           ? const Value.absent()
           : Value(title),
+      titleGenerated: titleGenerated == null && nullToAbsent
+          ? const Value.absent()
+          : Value(titleGenerated),
       expectedChunks: expectedChunks == null && nullToAbsent
           ? const Value.absent()
           : Value(expectedChunks),
@@ -849,6 +882,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       userId: serializer.fromJson<String>(json['userId']),
       courseId: serializer.fromJson<String?>(json['courseId']),
       title: serializer.fromJson<String?>(json['title']),
+      titleGenerated: serializer.fromJson<String?>(json['titleGenerated']),
       expectedChunks: serializer.fromJson<int?>(json['expectedChunks']),
       lectureDatetime: serializer.fromJson<DateTime?>(json['lectureDatetime']),
       sortOrder: serializer.fromJson<int?>(json['sortOrder']),
@@ -868,6 +902,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'userId': serializer.toJson<String>(userId),
       'courseId': serializer.toJson<String?>(courseId),
       'title': serializer.toJson<String?>(title),
+      'titleGenerated': serializer.toJson<String?>(titleGenerated),
       'expectedChunks': serializer.toJson<int?>(expectedChunks),
       'lectureDatetime': serializer.toJson<DateTime?>(lectureDatetime),
       'sortOrder': serializer.toJson<int?>(sortOrder),
@@ -885,6 +920,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     String? userId,
     Value<String?> courseId = const Value.absent(),
     Value<String?> title = const Value.absent(),
+    Value<String?> titleGenerated = const Value.absent(),
     Value<int?> expectedChunks = const Value.absent(),
     Value<DateTime?> lectureDatetime = const Value.absent(),
     Value<int?> sortOrder = const Value.absent(),
@@ -899,6 +935,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     userId: userId ?? this.userId,
     courseId: courseId.present ? courseId.value : this.courseId,
     title: title.present ? title.value : this.title,
+    titleGenerated: titleGenerated.present
+        ? titleGenerated.value
+        : this.titleGenerated,
     expectedChunks: expectedChunks.present
         ? expectedChunks.value
         : this.expectedChunks,
@@ -923,6 +962,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       userId: data.userId.present ? data.userId.value : this.userId,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
       title: data.title.present ? data.title.value : this.title,
+      titleGenerated: data.titleGenerated.present
+          ? data.titleGenerated.value
+          : this.titleGenerated,
       expectedChunks: data.expectedChunks.present
           ? data.expectedChunks.value
           : this.expectedChunks,
@@ -952,6 +994,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('userId: $userId, ')
           ..write('courseId: $courseId, ')
           ..write('title: $title, ')
+          ..write('titleGenerated: $titleGenerated, ')
           ..write('expectedChunks: $expectedChunks, ')
           ..write('lectureDatetime: $lectureDatetime, ')
           ..write('sortOrder: $sortOrder, ')
@@ -971,6 +1014,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     userId,
     courseId,
     title,
+    titleGenerated,
     expectedChunks,
     lectureDatetime,
     sortOrder,
@@ -989,6 +1033,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.userId == this.userId &&
           other.courseId == this.courseId &&
           other.title == this.title &&
+          other.titleGenerated == this.titleGenerated &&
           other.expectedChunks == this.expectedChunks &&
           other.lectureDatetime == this.lectureDatetime &&
           other.sortOrder == this.sortOrder &&
@@ -1005,6 +1050,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<String> userId;
   final Value<String?> courseId;
   final Value<String?> title;
+  final Value<String?> titleGenerated;
   final Value<int?> expectedChunks;
   final Value<DateTime?> lectureDatetime;
   final Value<int?> sortOrder;
@@ -1020,6 +1066,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.userId = const Value.absent(),
     this.courseId = const Value.absent(),
     this.title = const Value.absent(),
+    this.titleGenerated = const Value.absent(),
     this.expectedChunks = const Value.absent(),
     this.lectureDatetime = const Value.absent(),
     this.sortOrder = const Value.absent(),
@@ -1036,6 +1083,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     required String userId,
     this.courseId = const Value.absent(),
     this.title = const Value.absent(),
+    this.titleGenerated = const Value.absent(),
     this.expectedChunks = const Value.absent(),
     this.lectureDatetime = const Value.absent(),
     this.sortOrder = const Value.absent(),
@@ -1053,6 +1101,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<String>? userId,
     Expression<String>? courseId,
     Expression<String>? title,
+    Expression<String>? titleGenerated,
     Expression<int>? expectedChunks,
     Expression<DateTime>? lectureDatetime,
     Expression<int>? sortOrder,
@@ -1069,6 +1118,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       if (userId != null) 'user_id': userId,
       if (courseId != null) 'course_id': courseId,
       if (title != null) 'title': title,
+      if (titleGenerated != null) 'title_generated': titleGenerated,
       if (expectedChunks != null) 'expected_chunks': expectedChunks,
       if (lectureDatetime != null) 'lecture_datetime': lectureDatetime,
       if (sortOrder != null) 'sort_order': sortOrder,
@@ -1087,6 +1137,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<String>? userId,
     Value<String?>? courseId,
     Value<String?>? title,
+    Value<String?>? titleGenerated,
     Value<int?>? expectedChunks,
     Value<DateTime?>? lectureDatetime,
     Value<int?>? sortOrder,
@@ -1103,6 +1154,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       userId: userId ?? this.userId,
       courseId: courseId ?? this.courseId,
       title: title ?? this.title,
+      titleGenerated: titleGenerated ?? this.titleGenerated,
       expectedChunks: expectedChunks ?? this.expectedChunks,
       lectureDatetime: lectureDatetime ?? this.lectureDatetime,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -1130,6 +1182,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (titleGenerated.present) {
+      map['title_generated'] = Variable<String>(titleGenerated.value);
     }
     if (expectedChunks.present) {
       map['expected_chunks'] = Variable<int>(expectedChunks.value);
@@ -1171,6 +1226,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write('userId: $userId, ')
           ..write('courseId: $courseId, ')
           ..write('title: $title, ')
+          ..write('titleGenerated: $titleGenerated, ')
           ..write('expectedChunks: $expectedChunks, ')
           ..write('lectureDatetime: $lectureDatetime, ')
           ..write('sortOrder: $sortOrder, ')
@@ -2955,6 +3011,7 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       required String userId,
       Value<String?> courseId,
       Value<String?> title,
+      Value<String?> titleGenerated,
       Value<int?> expectedChunks,
       Value<DateTime?> lectureDatetime,
       Value<int?> sortOrder,
@@ -2972,6 +3029,7 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<String> userId,
       Value<String?> courseId,
       Value<String?> title,
+      Value<String?> titleGenerated,
       Value<int?> expectedChunks,
       Value<DateTime?> lectureDatetime,
       Value<int?> sortOrder,
@@ -3010,6 +3068,11 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get titleGenerated => $composableBuilder(
+    column: $table.titleGenerated,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3088,6 +3151,11 @@ class $$LocalLecturesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get titleGenerated => $composableBuilder(
+    column: $table.titleGenerated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get expectedChunks => $composableBuilder(
     column: $table.expectedChunks,
     builder: (column) => ColumnOrderings(column),
@@ -3154,6 +3222,11 @@ class $$LocalLecturesTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get titleGenerated => $composableBuilder(
+    column: $table.titleGenerated,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get expectedChunks => $composableBuilder(
     column: $table.expectedChunks,
@@ -3228,6 +3301,7 @@ class $$LocalLecturesTableTableManager
                 Value<String> userId = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
+                Value<String?> titleGenerated = const Value.absent(),
                 Value<int?> expectedChunks = const Value.absent(),
                 Value<DateTime?> lectureDatetime = const Value.absent(),
                 Value<int?> sortOrder = const Value.absent(),
@@ -3243,6 +3317,7 @@ class $$LocalLecturesTableTableManager
                 userId: userId,
                 courseId: courseId,
                 title: title,
+                titleGenerated: titleGenerated,
                 expectedChunks: expectedChunks,
                 lectureDatetime: lectureDatetime,
                 sortOrder: sortOrder,
@@ -3260,6 +3335,7 @@ class $$LocalLecturesTableTableManager
                 required String userId,
                 Value<String?> courseId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
+                Value<String?> titleGenerated = const Value.absent(),
                 Value<int?> expectedChunks = const Value.absent(),
                 Value<DateTime?> lectureDatetime = const Value.absent(),
                 Value<int?> sortOrder = const Value.absent(),
@@ -3275,6 +3351,7 @@ class $$LocalLecturesTableTableManager
                 userId: userId,
                 courseId: courseId,
                 title: title,
+                titleGenerated: titleGenerated,
                 expectedChunks: expectedChunks,
                 lectureDatetime: lectureDatetime,
                 sortOrder: sortOrder,

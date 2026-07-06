@@ -31,6 +31,7 @@ class LocalLectures extends Table {
 
   TextColumn get courseId => text().nullable()(); // null = コース未設定
   TextColumn get title => text().nullable()();
+  TextColumn get titleGenerated => text().nullable()();
 
   IntColumn get expectedChunks => integer().nullable()();
 
@@ -121,7 +122,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -155,6 +156,13 @@ class AppDatabase extends _$AppDatabase {
         }
         await m.createAll();
       }
+      if (from < 6) {
+        // バージョン6: LocalLectures に titleGenerated カラム追加
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
     },
   );
 
@@ -178,7 +186,8 @@ class AppDatabase extends _$AppDatabase {
   /// （オンボーディング完了判定など「1件でも録音済みか」を見たい場合に使う）
   Stream<List<LocalLecture>> watchAllLectures(String userId) {
     final query = select(localLectures)
-      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull());
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
+      ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
     return query.watch();
   }
 
@@ -211,6 +220,13 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteAllOutbox() async {
     await delete(localOutbox).go();
+  }
+
+  Future<int> getLocalLecturesCount(String userId) async {
+    final query = select(localLectures)
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull());
+    final list = await query.get();
+    return list.length;
   }
 }
 

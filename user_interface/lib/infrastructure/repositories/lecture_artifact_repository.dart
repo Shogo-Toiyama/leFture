@@ -4,140 +4,110 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 
 import '../../domain/entities/lecture_data.dart';
 
+/// R2に保存された成果物(トランスクリプトJSON・トピック画像など)を取得するリポジトリ。
+///
+/// R2の認証情報はクライアントに持たせられないため、バックエンドの
+/// `/get-artifact-urls` でJWT認証した上で署名付きGET URLを発行してもらい、
+/// それを使ってダウンロードする。取得したファイルはローカルにキャッシュし、
+/// 2回目以降はネットワークを使わない。
 class LectureArtifactRepository {
   final SupabaseClient _supabase;
 
   LectureArtifactRepository(this._supabase);
 
+  static const _workerBaseUrl = 'https://lefture-artifact-worker.shogo-toiyama.workers.dev';
+
   // ---------------------------------------------------------------------------
-  // 1. 読む授業 (LectureCompleteData) を取得
+  // 汎用: R2ストレージパス → ローカルキャッシュ済みFile
   // ---------------------------------------------------------------------------
-  Future<LectureCompleteData?> getLectureCompleteData({
-    required String uid,
-    required String lectureId,
-  }) async {
-    const fileName = 'lecture_complete_data.json';
-    
-    try{
-      // 1. ファイルを取得（ローカルにあればそれを、なければDL）
-      final file = await _downloadOrGetLocalFile(
-        uid: uid,
-        lectureId: lectureId,
-        fileName: fileName,
+
+  /// [storagePath] (例: "{uid}/{lectureId}/images/topic_1.jpg") のファイルを
+  /// キャッシュ優先で取得する。存在しない/取得失敗時はnull。
+  Future<File?> getArtifactFile(String storagePath) async {
+    final localFile = await _localCacheFile(storagePath);
+    if (localFile.existsSync() && localFile.lengthSync() > 0) {
+      return localFile;
+    }
+
+    final token = _supabase.auth.currentSession?.accessToken;
+    if (token == null) {
+      debugPrint('Artifact download failed: token is null');
+      return null;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$_workerBaseUrl/$storagePath'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
-
-      // 2. JSON文字列を読み込む
-      final jsonString = await file.readAsString();
-
-      // 3. 重いパース処理は別スレッド(compute)で行う
-      return compute(_parseLectureCompleteData, jsonString);
-    } catch (e) {
-      final msg = e.toString();
-      if (msg.contains('404') || msg.contains('Object not found') || msg.contains('not_found')) {
+      if (response.statusCode != 200) {
+        // まだ生成されていない(404)等。キャッシュせずnullを返す。
+        debugPrint('Artifact GET ${response.statusCode}: $storagePath');
         return null;
       }
-      
-      rethrow;
+      await localFile.writeAsBytes(response.bodyBytes);
+      return localFile;
+    } catch (e) {
+      debugPrint('Artifact download error: $e');
+      return null;
     }
   }
 
+  Future<File> _localCacheFile(String storagePath) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dir.path, 'r2_cache', storagePath));
+    if (!file.parent.existsSync()) {
+      await file.parent.create(recursive: true);
+    }
+    return file;
+  }
+
   // ---------------------------------------------------------------------------
-  // 2. トランスクリプト (List<TranscriptSentence>) を取得
+  // トランスクリプト
   // ---------------------------------------------------------------------------
+
+  /// トランスクリプトを取得する。
+  ///
+  /// role分類済みの `role_classification.json` を優先し、
+  /// まだ無ければ組み立て直後の `transcript_assembled.json` にフォールバックする。
   Future<List<TranscriptSentence>?> getTranscript({
     required String uid,
     required String lectureId,
   }) async {
-    const fileName = 'sentences_final.json';
+    for (final fileName in const [
+      'pipeline_logs/role_classification.json',
+      'pipeline_logs/transcript_assembled.json',
+    ]) {
+      final file = await getArtifactFile('$uid/$lectureId/$fileName');
+      if (file == null) continue;
 
-    try {
-      final file = await _downloadOrGetLocalFile(
-        uid: uid,
-        lectureId: lectureId,
-        fileName: fileName,
-      );
-
-      final jsonString = await file.readAsString();
-      return compute(_parseTranscript, jsonString);
-    } catch (e) {
-      final msg = e.toString();
-      if (msg.contains('404') || msg.contains('Object not found') || msg.contains('not_found')) {
-        return null;
+      try {
+        final jsonString = await file.readAsString();
+        return compute(_parseTranscript, jsonString);
+      } catch (e) {
+        debugPrint('Transcript parse error ($fileName): $e');
+        // パースできない壊れたキャッシュは消して次の候補へ
+        try {
+          await file.delete();
+        } catch (_) {}
       }
-      
-      rethrow;
     }
-  }
-
-  // ===========================================================================
-  // Private Helpers
-  // ===========================================================================
-
-  /// ローカルにファイルがあればそれを返し、なければStorageからDLして保存して返す
-  Future<File> _downloadOrGetLocalFile({
-    required String uid,
-    required String lectureId,
-    required String fileName,
-  }) async {
-    // ローカルの保存先パスを取得
-    // 例: /data/user/0/com.example/app_flutter/lectures/<lectureId>/<fileName>
-    final dir = await getApplicationDocumentsDirectory();
-    final saveDir = Directory(
-      p.join(dir.path, 'lectures', lectureId, 'artifacts')
-    );
-    
-    // ディレクトリがなければ作成
-    if (!saveDir.existsSync()) {
-      await saveDir.create(recursive: true);
-    }
-
-    final localFile = File('${saveDir.path}/$fileName');
-
-    // すでにファイルが存在するなら、それを返す (Cache Hit)
-    if (localFile.existsSync()) {
-      debugPrint('Cache Hit: ${localFile.path}');
-      return localFile;
-    }
-
-    // 存在しないなら Supabase からダウンロード (Cache Miss)
-    debugPrint('Downloading from Supabase: $fileName');
-    try {
-      // Storageのパス: <UID>/<LectureID>/artifacts/<FileName>
-      final storagePath = '$uid/$lectureId/artifacts/$fileName';
-
-      // Supabaseからバイトデータをダウンロード
-      // ※ バケット名は 'lecture_assets' と仮定しています。違っていれば変更してください。
-      final bytes = await _supabase.storage
-          .from('lecture_assets') 
-          .download(storagePath);
-
-      // ローカルに書き込み
-      await localFile.writeAsBytes(bytes);
-      
-      return localFile;
-    } catch (e) {
-      // ダウンロード失敗時などはエラーを投げる
-      // (まだ生成が終わっていない場合など)
-      debugPrint('Download Error: $e');
-      throw Exception('Failed to download $fileName: $e');
-    }
+    return null;
   }
 }
 
 // -----------------------------------------------------------------------------
 // Isolate (別スレッド) で実行するためのトップレベル関数
 // -----------------------------------------------------------------------------
-
-LectureCompleteData _parseLectureCompleteData(String jsonString) {
-  final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
-  return LectureCompleteData.fromJson(jsonMap);
-}
 
 List<TranscriptSentence> _parseTranscript(String jsonString) {
   final jsonList = jsonDecode(jsonString) as List<dynamic>;

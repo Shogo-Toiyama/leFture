@@ -1,11 +1,16 @@
 import 'dart:ui';
+import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/fun_fact/fun_fact_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/home_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
@@ -52,6 +57,13 @@ class HomePage extends HookConsumerWidget {
       return () => scrollController.removeListener(listener);
     }, [scrollController]);
 
+    // アプリ起動時（Home初回表示時）に、Supabase上のレクチャーをローカルDBへ同期する。
+    // 頻度は LectureController 側の interval（デフォルト15分）でレート制限される。
+    useEffect(() {
+      ref.read(lectureControllerProvider.notifier).bootstrapIfNeeded();
+      return null;
+    }, const []);
+
     // コースが1件も無い、もしくはコースはあってもレクチャーが1件も無いユーザーには、
     // 通常のダッシュボードの代わりにオンボーディング用の空状態画面を表示する。
     // （コースがあってもレクチャーが無ければ、RecentLecturesList等はどのみち空になるため）
@@ -70,9 +82,17 @@ class HomePage extends HookConsumerWidget {
       );
     }
 
-    // DEBUG: 一時的に lectures.isEmpty の条件を外して常に EmptyHomeContent を表示
-    if (courses != null && lectures != null) {
+    if (lectures.isEmpty) {
       return const EmptyHomeContent();
+    }
+
+    // 銀河エリアを引っ張って離すとリロードする（下に表示されるレクチャー等の実データを再取得する）
+    Future<void> handleRefresh() async {
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+      ref.invalidate(courseListProvider);
+      ref.invalidate(currentUserProfileProvider);
+      ref.invalidate(recentFunFactsProvider);
+      ref.invalidate(latestAnnouncementProvider);
     }
 
     final double screenHeight = MediaQuery.of(context).size.height;
@@ -207,6 +227,14 @@ class HomePage extends HookConsumerWidget {
                       ? const NeverScrollableScrollPhysics()
                       : const BouncingScrollPhysics(),
                   slivers: [
+                    // Pull-to-refresh: スクロールが一番上（銀河が全部見えている状態）の時だけ、
+                    // さらに下に引っ張るとこのControlがオーバースクロールを検知してリロードする。
+                    // 銀河エリア自体は独自のGestureDetectorでスケール/回転を処理して
+                    // スクロール判定を無効化するため、銀河の下（FunFacts/Courses/レクチャー欄）
+                    // から指を離さずに引っ張った場合のみ発火する。
+                    CupertinoSliverRefreshControl(
+                      onRefresh: handleRefresh,
+                    ),
                     // 銀河の高さ分のスペーサー 兼 タッチイベント制御層
                     SliverToBoxAdapter(
                       child: Listener(

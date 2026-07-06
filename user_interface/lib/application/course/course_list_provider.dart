@@ -26,3 +26,24 @@ Future<List<CourseAttribute>> termAttributes(Ref ref) async {
   final repo = ref.watch(courseAttributeRepositoryProvider);
   return repo.listByType('term');
 }
+
+/// Professor アトリビュート一覧（コース作成フォームの候補）
+@riverpod
+Future<List<CourseAttribute>> professorAttributes(Ref ref) async {
+  final repo = ref.watch(courseAttributeRepositoryProvider);
+  return repo.listByType('professor');
+}
+
+/// School アトリビュート一覧（コース作成フォームの候補）
+@riverpod
+Future<List<CourseAttribute>> schoolAttributes(Ref ref) async {
+  final repo = ref.watch(courseAttributeRepositoryProvider);
+  return repo.listByType('school');
+}
+
+/// Subject アトリビュート一覧（コース作成フォームの候補）
+@riverpod
+Future<List<CourseAttribute>> subjectAttributes(Ref ref) async {
+  final repo = ref.watch(courseAttributeRepositoryProvider);
+  return repo.listByType('subject');
+}

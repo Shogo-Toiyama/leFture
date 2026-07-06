@@ -1,0 +1,195 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'course_announcement_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+/// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
+/// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
+
+@ProviderFor(latestAnnouncementForCourse)
+final latestAnnouncementForCourseProvider =
+    LatestAnnouncementForCourseFamily._();
+
+/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+/// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
+/// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
+
+final class LatestAnnouncementForCourseProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Announcement?>,
+          Announcement?,
+          FutureOr<Announcement?>
+        >
+    with $FutureModifier<Announcement?>, $FutureProvider<Announcement?> {
+  /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+  /// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
+  /// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
+  LatestAnnouncementForCourseProvider._({
+    required LatestAnnouncementForCourseFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'latestAnnouncementForCourseProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$latestAnnouncementForCourseHash();
+
+  @override
+  String toString() {
+    return r'latestAnnouncementForCourseProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Announcement?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Announcement?> create(Ref ref) {
+    final argument = this.argument as String;
+    return latestAnnouncementForCourse(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LatestAnnouncementForCourseProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$latestAnnouncementForCourseHash() =>
+    r'16430eafe18535239da7b500c9041ebdd7523b1d';
+
+/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+/// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
+/// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
+
+final class LatestAnnouncementForCourseFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Announcement?>, String> {
+  LatestAnnouncementForCourseFamily._()
+    : super(
+        retry: null,
+        name: r'latestAnnouncementForCourseProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+  /// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
+  /// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
+
+  LatestAnnouncementForCourseProvider call(String courseId) =>
+      LatestAnnouncementForCourseProvider._(argument: courseId, from: this);
+
+  @override
+  String toString() => r'latestAnnouncementForCourseProvider';
+}
+
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+
+@ProviderFor(activeAnnouncementsForCourse)
+final activeAnnouncementsForCourseProvider =
+    ActiveAnnouncementsForCourseFamily._();
+
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+
+final class ActiveAnnouncementsForCourseProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          FutureOr<List<Announcement>>
+        >
+    with
+        $FutureModifier<List<Announcement>>,
+        $FutureProvider<List<Announcement>> {
+  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+  ActiveAnnouncementsForCourseProvider._({
+    required ActiveAnnouncementsForCourseFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'activeAnnouncementsForCourseProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeAnnouncementsForCourseHash();
+
+  @override
+  String toString() {
+    return r'activeAnnouncementsForCourseProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Announcement>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Announcement>> create(Ref ref) {
+    final argument = this.argument as String;
+    return activeAnnouncementsForCourse(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ActiveAnnouncementsForCourseProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$activeAnnouncementsForCourseHash() =>
+    r'27fd611c0e55e81ea46e3dfd9f60175149d185f7';
+
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+
+final class ActiveAnnouncementsForCourseFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Announcement>>, String> {
+  ActiveAnnouncementsForCourseFamily._()
+    : super(
+        retry: null,
+        name: r'activeAnnouncementsForCourseProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+
+  ActiveAnnouncementsForCourseProvider call(String courseId) =>
+      ActiveAnnouncementsForCourseProvider._(argument: courseId, from: this);
+
+  @override
+  String toString() => r'activeAnnouncementsForCourseProvider';
+}

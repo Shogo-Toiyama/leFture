@@ -302,10 +302,6 @@ class RecordingController extends _$RecordingController {
     final lecture = state.lecture;
     if (lecture == null) return;
 
-    if (lecture.title?.isEmpty ?? true) {
-      await setTitle('Untitled Lecture'); 
-    }
-
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
 
     try {

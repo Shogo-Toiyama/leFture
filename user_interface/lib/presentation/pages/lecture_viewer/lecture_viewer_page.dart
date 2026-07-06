@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -5,9 +7,21 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lecture_companion_ui/core/utils/text_preview.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
+import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/domain/entities/announcement.dart';
+import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
+import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
+import 'package:lecture_companion_ui/domain/entities/keyword.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 
@@ -25,7 +39,7 @@ class LectureViewerPage extends HookConsumerWidget {
     
     // Panel States
     final isExpanded = useState(false);
-    final currentTab = useState(0); // 0: Cards, 1: Notes, 2: Transcript
+    final currentTab = useState(0); // 0: Cards, 1: Notes, 2: Keywords, 3: Transcript
     final currentCardIndex = useState<int>(0);
     final selectedNoteIndex = useState<int?>(null);
     final selectedText = useState<String?>(null);
@@ -44,6 +58,7 @@ class LectureViewerPage extends HookConsumerWidget {
       );
       return _buildViewerBody(
         context: context,
+        ref: ref,
         lecture: dummyLecture,
         isExpanded: isExpanded,
         currentTab: currentTab,
@@ -65,6 +80,7 @@ class LectureViewerPage extends HookConsumerWidget {
 
         return _buildViewerBody(
           context: context,
+          ref: ref,
           lecture: lecture,
           isExpanded: isExpanded,
           currentTab: currentTab,
@@ -78,6 +94,7 @@ class LectureViewerPage extends HookConsumerWidget {
 
   Widget _buildViewerBody({
     required BuildContext context,
+    required WidgetRef ref,
     required Lecture lecture,
     required ValueNotifier<bool> isExpanded,
     required ValueNotifier<int> currentTab,
@@ -85,6 +102,56 @@ class LectureViewerPage extends HookConsumerWidget {
     required ValueNotifier<int?> selectedNoteIndex,
     required ValueNotifier<String?> selectedText,
   }) {
+    // --- 実データの取得 ---
+    final topics = ref.watch(lectureTopicsProvider(lecture.id)).asData?.value ?? const <LectureTopic>[];
+    final deepNotes = ref.watch(deepNotesProvider(lecture.id)).asData?.value ?? const <DeepNote>[];
+    final reviewCards = ref.watch(reviewCardsProvider(lecture.id)).asData?.value ?? const <ReviewCard>[];
+    final keywords = ref.watch(lectureKeywordsProvider(lecture.id)).asData?.value ?? const <Keyword>[];
+    final funFacts = ref.watch(funFactsForLectureProvider(lecture.id)).asData?.value ?? const <FunFact>[];
+    final announcements = ref.watch(announcementsForLectureProvider(lecture.id)).asData?.value ?? const <Announcement>[];
+
+    final uid = ref.watch(currentUserProvider)?.id;
+    final transcriptAsync = uid == null
+        ? const AsyncValue<List<TranscriptSentence>?>.data(null)
+        : ref.watch(transcriptProvider(uid: uid, lectureId: lecture.id));
+
+    // topic を index で引けるようにしておく
+    final topicByIndex = <int, LectureTopic>{
+      for (final t in topics) t.index: t,
+    };
+
+    // Deep Notes: lecture_topics の並び順に、対応するnote_contentsを合わせて1つのリストにする。
+    // LLM生成物に含まれるSID引用(⟦s000011⟧など)は表示時には除去する。
+    final noteTopics = topics
+        .map((t) => _NoteTopic(
+              title: t.displayTitle,
+              summary: stripSidCitations(t.summary ?? ''),
+              content: stripSidCitations(deepNotes
+                      .firstWhere(
+                        (n) => n.topicNumber == t.index,
+                        orElse: () => DeepNote(id: '', topicNumber: t.index, createdAt: DateTime.now()),
+                      )
+                      .noteContents ??
+                  ''),
+            ))
+        .toList();
+
+    // Review Cards: topic_number ごとにグルーピング（既にtopic_number昇順で取得済み）
+    final reviewGroups = <_ReviewTopicGroup>[];
+    for (final card in reviewCards) {
+      if (reviewGroups.isEmpty || reviewGroups.last.topicNumber != card.topicNumber) {
+        final topic = topicByIndex[card.topicNumber];
+        reviewGroups.add(_ReviewTopicGroup(
+          topicNumber: card.topicNumber,
+          title: topic?.displayTitle ?? 'Topic ${card.topicNumber}',
+          imagePath: topic?.imagePath,
+          cards: [card],
+        ));
+      } else {
+        reviewGroups.last.cards.add(card);
+      }
+    }
+
     final paperTheme = ThemeData(
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.paper.background,
@@ -144,7 +211,14 @@ class LectureViewerPage extends HookConsumerWidget {
                   headerHeight.value = size.height;
                 }
               },
-              child: _buildBackgroundContent(context, lecture, dateStr, timeStr),
+              child: _buildBackgroundContent(
+                context,
+                lecture,
+                dateStr,
+                timeStr,
+                funFacts: funFacts,
+                announcements: announcements,
+              ),
             ),
           ),
 
@@ -203,6 +277,10 @@ class LectureViewerPage extends HookConsumerWidget {
                                 selectedNoteIndex: selectedNoteIndex,
                                 onExpand: () => isExpanded.value = true,
                                 selectedText: selectedText,
+                                reviewGroups: reviewGroups,
+                                noteTopics: noteTopics,
+                                keywords: keywords,
+                                transcriptAsync: transcriptAsync,
                               ),
                             ),
                           ),
@@ -352,13 +430,25 @@ class LectureViewerPage extends HookConsumerWidget {
     );
   }
 
-  Widget _buildBackgroundContent(BuildContext context, Lecture lecture, String dateStr, String timeStr) {
+  Widget _buildBackgroundContent(
+    BuildContext context,
+    Lecture lecture,
+    String dateStr,
+    String timeStr, {
+    required List<FunFact> funFacts,
+    required List<Announcement> announcements,
+  }) {
+    final displayTitle = lecture.title?.trim().isNotEmpty == true
+        ? lecture.title!
+        : (lecture.titleGenerated?.trim().isNotEmpty == true ? lecture.titleGenerated! : 'Untitled Lecture');
+    final summary = lecture.summary == null ? null : stripSidCitations(lecture.summary!).trim();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Custom Home-style AppBar with Back button
         const _LectureAppBar(),
-        
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
@@ -376,7 +466,7 @@ class LectureViewerPage extends HookConsumerWidget {
 
               // Title
               Text(
-                lecture.title?.isNotEmpty == true ? lecture.title! : 'Untitled Lecture',
+                displayTitle,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 26,
@@ -388,9 +478,11 @@ class LectureViewerPage extends HookConsumerWidget {
               ),
               const SizedBox(height: 8),
 
-              // Summary Section (directly written)
+              // Summary
               Text(
-                'This lecture covers the fundamental concepts of Object-Oriented Programming, specifically focusing on classes and their instantiation into objects.',
+                (summary != null && summary.isNotEmpty)
+                    ? summary
+                    : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 13,
@@ -399,10 +491,50 @@ class LectureViewerPage extends HookConsumerWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
+
+              if (announcements.isNotEmpty || funFacts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (announcements.isNotEmpty) ...[
+                      _HighlightChip(
+                        icon: Icons.campaign_outlined,
+                        label: '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
+                        onTap: () => _showAnnouncementsSheet(context, announcements),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (funFacts.isNotEmpty)
+                      _HighlightChip(
+                        icon: Icons.auto_awesome,
+                        label: '${funFacts.length} fun fact${funFacts.length == 1 ? '' : 's'}',
+                        onTap: () => _showFunFactsSheet(context, funFacts),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+
+  void _showAnnouncementsSheet(BuildContext context, List<Announcement> announcements) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LectureInfoSheet.announcements(announcements),
+    );
+  }
+
+  void _showFunFactsSheet(BuildContext context, List<FunFact> funFacts) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LectureInfoSheet.funFacts(funFacts),
     );
   }
 
@@ -437,16 +569,21 @@ class LectureViewerPage extends HookConsumerWidget {
           
           if (!isExpanded) const SizedBox(height: 8),
 
-          // Tabs
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _TabItem(title: 'Review Cards', index: 0, currentTab: currentTab, isExpanded: isExpanded),
-              const SizedBox(width: 8),
-              _TabItem(title: 'Deep Notes', index: 1, currentTab: currentTab, isExpanded: isExpanded),
-              const SizedBox(width: 8),
-              _TabItem(title: 'Transcript', index: 2, currentTab: currentTab, isExpanded: isExpanded),
-            ],
+          // Tabs（横幅が狭い端末でも折り返さないよう横スクロール可能にしておく）
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TabItem(title: 'Review Cards', index: 0, currentTab: currentTab, isExpanded: isExpanded),
+                const SizedBox(width: 8),
+                _TabItem(title: 'Deep Notes', index: 1, currentTab: currentTab, isExpanded: isExpanded),
+                const SizedBox(width: 8),
+                _TabItem(title: 'Keywords', index: 2, currentTab: currentTab, isExpanded: isExpanded),
+                const SizedBox(width: 8),
+                _TabItem(title: 'Transcript', index: 3, currentTab: currentTab, isExpanded: isExpanded),
+              ],
+            ),
           ),
 
           // Down indicator (only when expanded)
@@ -470,6 +607,10 @@ class LectureViewerPage extends HookConsumerWidget {
     required ValueNotifier<int?> selectedNoteIndex,
     required VoidCallback onExpand,
     required ValueNotifier<String?> selectedText,
+    required List<_ReviewTopicGroup> reviewGroups,
+    required List<_NoteTopic> noteTopics,
+    required List<Keyword> keywords,
+    required AsyncValue<List<TranscriptSentence>?> transcriptAsync,
   }) {
     if (currentTab == 0) {
       return _ReviewCardsView(
@@ -477,6 +618,7 @@ class LectureViewerPage extends HookConsumerWidget {
         isExpanded: isExpanded,
         currentCardIndex: currentCardIndex,
         onExpand: onExpand,
+        groups: reviewGroups,
       );
     } else if (currentTab == 1) {
       return _DeepNotesView(
@@ -485,10 +627,17 @@ class LectureViewerPage extends HookConsumerWidget {
         selectedNoteIndex: selectedNoteIndex,
         onExpand: onExpand,
         selectedText: selectedText,
+        topics: noteTopics,
+      );
+    } else if (currentTab == 2) {
+      return _KeywordsView(
+        key: const ValueKey('tab_2'),
+        keywords: keywords,
       );
     } else {
-      return const _TranscriptView(
-        key: ValueKey('tab_2'),
+      return _TranscriptView(
+        key: const ValueKey('tab_3'),
+        transcriptAsync: transcriptAsync,
       );
     }
   }
@@ -557,287 +706,369 @@ class _TabItem extends StatelessWidget {
   }
 }
 
-// Global Dummy Data matching 5 Topics, with summaries and 4 cards each.
-final dummyTopics = [
-  {
-    'title': '1. OOP Basics',
-    'summary': 'Introduces classes, objects, and the core differences between structured and object-oriented programming.',
-    'content': '''Object-Oriented Programming (OOP) is a programming paradigm based on the concept of "objects", which can contain data and code. Data is in the form of fields (often known as attributes or properties), and code is in the form of procedures (often known as methods).
+// ---------------------------------------------------------------------------
+// Deep Notes / Review Cards 用の軽量データクラス
+// ---------------------------------------------------------------------------
 
-### What is a Class?
-A class is a user-defined blueprint or prototype from which objects are created. Classes provide a means of bundling data and functionality together. Creating a new class creates a new type of object, allowing new instances of that type to be made. Each class instance can have attributes attached to it for maintaining its state. Class instances can also have methods (defined by its class) for modifying its state.
+/// Deep Notesタブの1トピック分（lecture_topics + deep_notes を結合したもの）
+class _NoteTopic {
+  const _NoteTopic({required this.title, required this.summary, required this.content});
 
-### What is an Object?
-An object is an instance of a class. When a class is defined, no memory is allocated but when it is instantiated (i.e. an object is created), memory is allocated. Objects have state, behavior, and identity.
+  final String title;
+  final String summary;
+  final String content;
+}
 
-### Why OOP?
-OOP makes it easier to model real-world concepts in code. It provides structure, reusability, and makes large codebases easier to maintain over time.
+/// Review Cardsタブの1トピック分（review_cardsをtopic_numberでグルーピングしたもの）
+class _ReviewTopicGroup {
+  _ReviewTopicGroup({
+    required this.topicNumber,
+    required this.title,
+    required this.cards,
+    this.imagePath,
+  });
 
-- **Modularity:** The source code for a class can be written and maintained independently of the source code for other classes.
-- **Information hiding:** By interacting only with an object's methods, the details of its internal implementation remain hidden from the outside world.
-- **Code re-use:** If a class already exists, you can use that class's objects in your program.
-- **Easy debugging:** If a particular object is causing problems, you can simply remove it and try another.
+  final int topicNumber;
+  final String title;
+  final List<ReviewCard> cards;
 
-```python
-class Dog:
-    # Class Attribute
-    species = "Canis familiaris"
+  /// lecture_topics.image_path (R2ストレージパス)。生成前はnull。
+  final String? imagePath;
+}
 
-    def __init__(self, name, age):
-        self.name = name
-        self.age = age
+// ---------------------------------------------------------------------------
+// ヘッダーの「Xお知らせ」「Y Fun Facts」チップ
+// ---------------------------------------------------------------------------
+class _HighlightChip extends StatelessWidget {
+  const _HighlightChip({required this.icon, required this.label, required this.onTap});
 
-    # Instance method
-    def description(self):
-        return f"{self.name} is {self.age} years old"
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
-    # Another instance method
-    def speak(self, sound):
-        return f"{self.name} says {sound}"
-```
-
-### Let's see it in action:
-Here is how you can instantiate the class and use its properties and methods:
-
-```python
-buddy = Dog("Buddy", 9)
-miles = Dog("Miles", 4)
-
-print(buddy.description())  # Output: Buddy is 9 years old
-print(miles.speak("Woof"))  # Output: Miles says Woof
-```''',
-    'cards': [
-      {'q': 'What is a Class?', 'a': 'A blueprint for creating objects, defining their properties and behaviors.'},
-      {'q': 'What is an Object?', 'a': 'An instance of a class containing actual values.'},
-      {'q': 'State vs Behavior?', 'a': 'State represents the data (fields) of an object; behavior represents actions (methods) it can perform.'},
-      {'q': 'Instantiation?', 'a': 'The process of creating an instance (object) of a class.'},
-    ]
-  },
-  {
-    'title': '2. Class Syntax in Python',
-    'summary': 'Covers how to define a class, add attributes, and instantiate them in Python.',
-    'content': '''In Python, defining a class is straightforward. We use the `class` keyword followed by the class name. According to PEP 8 standards, class names should use CapWords (PascalCase) convention.
-
-### Defining a Class
-Here is how you can define a simple class with class attributes and instance attributes:
-
-```python
-class Car:
-    # Class attribute (shared by all instances)
-    wheels = 4
-    
-    def __init__(self, model, year, color):
-        self.model = model  # Instance attribute
-        self.year = year    # Instance attribute
-        self.color = color  # Instance attribute
-        self.odometer = 0   # Default attribute
-```
-
-### Instantiating an Object
-To create an instance of a class, call the class name as if it were a function and pass the arguments that `__init__` expects:
-
-```python
-my_car = Car("Model 3", 2023, "Red")
-print(my_car.model)  # Output: Model 3
-print(my_car.wheels) # Output: 4
-```
-
-### Modifying Attributes
-There are three ways to modify an attribute's value:
-1. Modify the value directly through the instance.
-2. Set the value through a method.
-3. Increment the value through a method.
-
-#### 1. Modifying an Attribute's Value Directly
-```python
-my_car.odometer = 23
-print(my_car.odometer)  # Output: 23
-```
-
-#### 2. Modifying an Attribute's Value Through a Method
-```python
-class Car:
-    # ... previous code ...
-    def update_odometer(self, mileage):
-        if mileage >= self.odometer:
-            self.odometer = mileage
-        else:
-            print("You can't roll back an odometer!")
-```''',
-    'cards': [
-      {'q': 'class keyword?', 'a': 'Used to define a new user-defined class.'},
-      {'q': 'Instance attribute?', 'a': 'Variables that belong to a specific object, defined typically in __init__.'},
-      {'q': 'How to instantiate?', 'a': 'Call the class name as if it were a function: my_obj = MyClass().'},
-      {'q': 'Class attributes?', 'a': 'Variables shared by all instances of a class.'},
-    ]
-  },
-  {
-    'title': '3. Constructors & __init__',
-    'summary': 'Deep dive into the initialization method of Python classes, default values, and setup.',
-    'content': '''The `__init__` method is a special method in Python classes. It is run automatically as soon as an object of a class is instantiated. It is often referred to as the constructor, although technically it initializes an already created object.
-
-### Purpose of __init__
-It is used to initialize the object's attributes. It acts as the constructor of the class. It allows you to pass arguments when creating a new instance of a class, ensuring every instance starts with the necessary state.
-
-### The `self` Parameter
-The `self` parameter is a reference to the current instance of the class and is used to access variables that belong to the class. It does not have to be named `self`, but it is a strong convention in Python. Omitting `self` will result in a NameError or TypeError when trying to access instance variables.
-
-### Multiple Constructors?
-Unlike some other languages (like Java or C++), Python does not support multiple `__init__` methods directly (method overloading). If you define multiple `__init__` methods, the last one will overwrite the previous ones. However, you can achieve similar functionality using:
-- Default arguments.
-- Variable-length arguments (`*args`, `**kwargs`).
-- Class methods as alternative constructors.
-
-```python
-class User:
-    def __init__(self, username, email="default@example.com", role="Student"):
-        self.username = username
-        self.email = email
-        self.role = role
-
-    @classmethod
-    def create_admin(cls, username):
-        return cls(username, email=f"{username}@admin.com", role="Admin")
-
-# Normal creation
-student = User("alice")
-# Admin creation using classmethod
-admin = User.create_admin("bob")
-```''',
-    'cards': [
-      {'q': 'What is __init__?', 'a': 'A special method (constructor) called automatically when a class instance is created.'},
-      {'q': 'Purpose of self?', 'a': 'Represents the specific instance of the class being created or modified.'},
-      {'q': 'Can __init__ return values?', 'a': 'No, it always implicitly returns None.'},
-      {'q': 'Default arguments?', 'a': 'Can define parameters in __init__ with default values for flexible instantiation.'},
-    ]
-  },
-  {
-    'title': '4. Methods & self',
-    'summary': 'Explains instance methods, why self is required as the first argument, and method calls.',
-    'content': '''Methods are functions defined inside the body of a class. They are used to define the behaviors of an object and can perform computations or alter the state of the object.
-
-### Instance Methods
-Instance methods are the most common type of method in Python classes. They must take `self` as their first argument. Through the `self` parameter, instance methods can freely access other attributes and other methods on the same object.
-
-```python
-class Calculator:
-    def __init__(self, value=0):
-        self.value = value
-        
-    def add(self, amount):
-        self.value += amount
-        return self.value
-
-    def subtract(self, amount):
-        self.value -= amount
-        return self.value
-```
-
-### Why `self` is Required
-When you call a method like `obj.method(amount)`, Python automatically translates it into `Class.method(obj, amount)`. The `self` parameter receives the instance object itself.
-
-### Class Methods
-Class methods are decorated with `@classmethod`. Instead of `self`, they take `cls` as the first parameter, which points to the class itself rather than an instance. They can modify class state that applies across all instances.
-
-```python
-class SchoolMember:
-    total_members = 0
-
-    def __init__(self):
-        SchoolMember.increment_members()
-
-    @classmethod
-    def increment_members(cls):
-        cls.total_members += 1
-```
-
-### Static Methods
-If a method does not access instance or class state, we can use the `@staticmethod` decorator. They behave like plain functions but belong to the class's namespace.
-
-```python
-class MathUtils:
-    @staticmethod
-    def is_even(n):
-        return n % 2 == 0
-```''',
-    'cards': [
-      {'q': 'Instance method?', 'a': 'A function defined inside a class that takes self as its first parameter.'},
-      {'q': 'Why is self needed?', 'a': 'To access other attributes or methods on the same object.'},
-      {'q': 'Calling methods?', 'a': 'Use dot notation on the object: object.method().'},
-      {'q': 'Static methods?', 'a': 'Methods that don\'t access instance or class state, decorated with @staticmethod.'},
-    ]
-  },
-  {
-    'title': '5. Advanced OOP Features',
-    'summary': 'A glance at inheritance, method overriding, and polymorphism in Python.',
-    'content': '''Python OOP supports advanced features such as inheritance, polymorphism, method overriding, and encapsulation.
-
-### Inheritance
-Inheritance allows us to define a class that inherits all the methods and properties from another class. The parent class is the class being inherited from, also called the base class. The child class is the class that inherits from another class, also called the derived class.
-
-```python
-class Animal:
-    def __init__(self, name):
-        self.name = name
-
-    def speak(self):
-        return "Some sound"
-        
-class Cat(Animal):
-    def speak(self):
-        return "Meow"
-```
-
-### Method Overriding
-In the example above, `Cat` overrides the `speak` method of `Animal`. Method overriding allows a child class to provide a specific implementation of a method that is already provided by one of its superclasses.
-
-### The `super()` Function
-`super()` is used to call methods of the parent class. It is particularly useful in `__init__` to ensure the parent class is initialized correctly.
-
-```python
-class Dog(Animal):
-    def __init__(self, name, breed):
-        super().__init__(name)  # Initialize parent attributes
-        self.breed = breed
-
-    def speak(self):
-        return f"{super().speak()} and Woof!"
-```
-
-### Polymorphism
-Polymorphism is the ability of different classes to respond to the same method call in their own ways. For example, if you have a list of animals, you can call `.speak()` on all of them without knowing their specific subtype:
-
-```python
-animals = [Cat("Whiskers"), Dog("Rex", "German Shepherd")]
-for animal in animals:
-    print(f"{animal.name}: {animal.speak()}")
-```''',
-    'cards': [
-      {'q': 'Inheritance syntax?', 'a': 'class ChildClass(ParentClass):'},
-      {'q': 'Method Overriding?', 'a': 'Defining a method in the child class with the same name as one in the parent class.'},
-      {'q': 'super() function?', 'a': 'Used to delegate method calls to a parent class.'},
-      {'q': 'Polymorphism?', 'a': 'The ability of different classes to respond to the same method call in their own ways.'},
-    ]
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.universe.glassWhiteLow,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.universe.glassBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.starGold, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppColors.universe.textStarlight,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-];
+}
+
+// ---------------------------------------------------------------------------
+// 「Xお知らせ」「Y Fun Facts」チップをタップした時に開くボトムシート
+// ---------------------------------------------------------------------------
+class _LectureInfoSheet extends StatelessWidget {
+  const _LectureInfoSheet._({required this.title, required this.itemsBuilder});
+
+  factory _LectureInfoSheet.announcements(List<Announcement> announcements) {
+    return _LectureInfoSheet._(
+      title: 'Announcements',
+      itemsBuilder: (context) =>
+          announcements.map((a) => _AnnouncementRow(announcement: a)).toList(),
+    );
+  }
+
+  factory _LectureInfoSheet.funFacts(List<FunFact> funFacts) {
+    return _LectureInfoSheet._(
+      title: 'Fun Facts',
+      itemsBuilder: (context) => funFacts.map((f) => _FunFactRow(funFact: f)).toList(),
+    );
+  }
+
+  final String title;
+  final List<Widget> Function(BuildContext context) itemsBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = itemsBuilder(context);
+    return DraggableScrollableSheet(
+      initialChildSize: 0.55,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1C2E),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.universe.glassBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: items.isEmpty
+                    ? Center(
+                        child: Text('Nothing here yet',
+                            style: TextStyle(color: AppColors.universe.textComet)),
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                        itemCount: items.length,
+                        separatorBuilder: (context, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) => items[index],
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AnnouncementRow extends StatelessWidget {
+  const _AnnouncementRow({required this.announcement});
+
+  final Announcement announcement;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(iconForAnnouncementType(announcement.type), color: AppColors.starGold, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  announcement.title?.trim().isNotEmpty == true
+                      ? announcement.title!.trim()
+                      : 'Announcement',
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                if (announcement.description?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    announcement.description!.trim(),
+                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FunFactRow extends StatelessWidget {
+  const _FunFactRow({required this.funFact});
+
+  final FunFact funFact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            funFact.title?.trim().isNotEmpty == true ? funFact.title!.trim() : 'Fun Fact',
+            style: const TextStyle(
+              color: AppColors.starGold,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (funFact.hook?.trim().isNotEmpty == true) ...[
+            MarkdownBody(
+              data: stripSidCitations(funFact.hook!.trim()),
+              styleSheet: _funFactStyle(
+                TextStyle(
+                  color: AppColors.universe.textStarlight,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  height: 1.4,
+                ),
+                context,
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          if (funFact.body?.trim().isNotEmpty == true)
+            MarkdownBody(
+              data: stripSidCitations(funFact.body!.trim()),
+              styleSheet: _funFactStyle(
+                TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.4),
+                context,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  MarkdownStyleSheet _funFactStyle(TextStyle base, BuildContext context) {
+    return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+      p: base,
+      strong: base.copyWith(fontWeight: FontWeight.bold, color: AppColors.universe.textStarlight),
+      em: base.copyWith(fontStyle: FontStyle.italic),
+      listBullet: base.copyWith(color: AppColors.starGold),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Keywords View
+// ---------------------------------------------------------------------------
+class _KeywordsView extends StatelessWidget {
+  const _KeywordsView({super.key, required this.keywords});
+
+  final List<Keyword> keywords;
+
+  @override
+  Widget build(BuildContext context) {
+    if (keywords.isEmpty) {
+      return Center(
+        child: Text(
+          'No keywords yet',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: keywords.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final k = keywords[index];
+        final hasDefinition = k.definition?.trim().isNotEmpty == true;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.paper.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                k.keyword?.trim().isNotEmpty == true ? k.keyword!.trim() : 'Untitled term',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                hasDefinition ? k.definition!.trim() : 'Definition pending…',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                  height: 1.4,
+                  fontStyle: hasDefinition ? FontStyle.normal : FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 
 // ---------------------------------------------------------------------------
 // 1. Review Cards View
 // ---------------------------------------------------------------------------
-class _ReviewCardsView extends HookWidget {
+/// Review Cardsタブのフラットなカード1枚分。[card]がnullなら表紙(トピック画像+タイトル)。
+class _ReviewCardItem {
+  const _ReviewCardItem({required this.groupIndex, this.card});
+
+  final int groupIndex;
+  final ReviewCard? card;
+
+  bool get isCover => card == null;
+}
+
+class _ReviewCardsView extends HookConsumerWidget {
   const _ReviewCardsView({
     super.key,
     required this.isExpanded,
     required this.currentCardIndex,
     required this.onExpand,
+    required this.groups,
   });
 
   final bool isExpanded;
   final ValueNotifier<int> currentCardIndex;
   final VoidCallback onExpand;
+  final List<_ReviewTopicGroup> groups;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final animationController = useAnimationController(
       duration: const Duration(milliseconds: 350),
     );
@@ -847,8 +1078,40 @@ class _ReviewCardsView extends HookWidget {
     final isAnimating = useState<bool>(false);
     final isGoingForward = useState<bool>(true);
 
-    const totalCards = 20;
     final screenWidth = MediaQuery.of(context).size.width;
+
+    // groupsを「表紙 + コンテンツカード」のフラットな1本のリストに展開する。
+    // 「フラットindex -> どのgroupか」「groupごとの開始index」も併せて作っておく。
+    final flatItems = useMemoized(() {
+      final list = <_ReviewCardItem>[];
+      for (var gi = 0; gi < groups.length; gi++) {
+        list.add(_ReviewCardItem(groupIndex: gi)); // 表紙
+        for (final card in groups[gi].cards) {
+          list.add(_ReviewCardItem(groupIndex: gi, card: card));
+        }
+      }
+      return list;
+    }, [groups]);
+
+    final groupStartIndex = useMemoized(() {
+      final starts = <int>[];
+      var idx = 0;
+      for (final g in groups) {
+        starts.add(idx);
+        idx += g.cards.length + 1; // +1は表紙
+      }
+      return starts;
+    }, [groups]);
+
+    final totalCards = flatItems.length;
+
+    // トピック画像 (R2からローカルキャッシュ経由で取得)。groupIndex -> File?
+    final imageFiles = <int, File?>{};
+    for (var gi = 0; gi < groups.length; gi++) {
+      final path = groups[gi].imagePath;
+      imageFiles[gi] =
+          path == null ? null : ref.watch(artifactFileProvider(path)).asData?.value;
+    }
 
     final navigateTo = useCallback((int newIndex, {bool immediate = false}) {
       if (isAnimating.value || newIndex == currentCardIndex.value) return;
@@ -868,61 +1131,24 @@ class _ReviewCardsView extends HookWidget {
     }, [currentCardIndex.value, isAnimating.value]);
 
     Widget buildCard(int cardIdx) {
-      final tIdx = cardIdx ~/ 4;
-      final cIdxInTopic = cardIdx % 4;
-      final cTopic = dummyTopics[tIdx];
-      final cList = cTopic['cards'] as List<Map<String, String>>;
-      final cardData = cList[cIdxInTopic];
+      final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
+      final imageFile = imageFiles[item.groupIndex];
 
-      final isDark = Theme.of(context).brightness == Brightness.dark;
+      if (item.isCover) {
+        return _CoverCard(
+          title: groups[item.groupIndex].title,
+          imageFile: imageFile,
+          borderRadius: 24,
+        );
+      }
+      return _ContentCard(card: item.card!, imageFile: imageFile);
+    }
 
-      return Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.universe.glassWhiteLow : AppColors.paper.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? AppColors.universe.glassBorder : Colors.black.withValues(alpha: 0.08),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? Colors.black38 : Colors.black.withValues(alpha: 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.lightbulb_outline,
-              color: AppColors.starGold,
-              size: 56,
-            ),
-            const SizedBox(height: 32),
-            Text(
-              cardData['q']!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              cardData['a']!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                fontSize: 15,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    if (totalCards == 0) {
+      return Center(
+        child: Text(
+          'No review cards yet',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       );
     }
@@ -931,8 +1157,8 @@ class _ReviewCardsView extends HookWidget {
       // Collapsed State: Card Dashboard (Start button + Horizontal Scroll Rows)
       return ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: dummyTopics.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(height: 24),
+        itemCount: groups.length + 1,
+        separatorBuilder: (context, _) => const SizedBox(height: 24),
         itemBuilder: (context, topicIdx) {
           if (topicIdx == 0) {
             return Padding(
@@ -977,15 +1203,16 @@ class _ReviewCardsView extends HookWidget {
             );
           }
 
-          final topic = dummyTopics[topicIdx - 1];
-          final cards = topic['cards'] as List<Map<String, String>>;
-          
+          final group = groups[topicIdx - 1];
+          final groupStart = groupStartIndex[topicIdx - 1];
+          final imageFile = imageFiles[topicIdx - 1];
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Topic Header
               Text(
-                topic['title'] as String,
+                group.title,
                 style: TextStyle(
                   color: AppColors.paper.textInk,
                   fontWeight: FontWeight.bold,
@@ -993,20 +1220,43 @@ class _ReviewCardsView extends HookWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              
-              // Horizontally scrollable vertical-oriented cards
+
+              // 横スクロールのカード列: 先頭は表紙(画像入り)、続けてコンテンツカード
               SizedBox(
                 height: 150,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
-                  itemCount: cards.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, cardIdx) {
-                    final card = cards[cardIdx];
+                  itemCount: group.cards.length + 1,
+                  separatorBuilder: (context, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, tileIdx) {
+                    if (tileIdx == 0) {
+                      // 表紙タイル
+                      return GestureDetector(
+                        onTap: () {
+                          navigateTo(groupStart, immediate: true);
+                          onExpand();
+                        },
+                        child: SizedBox(
+                          width: 110,
+                          child: _CoverCard(
+                            title: group.title,
+                            imageFile: imageFile,
+                            borderRadius: 16,
+                            compact: true,
+                          ),
+                        ),
+                      );
+                    }
+
+                    final card = group.cards[tileIdx - 1];
+                    final preview = card.title?.trim().isNotEmpty == true
+                        ? card.title!.trim()
+                        : plainTextPreview(
+                            card.cardContent.isNotEmpty ? (card.cardContent.first.text ?? '') : '');
                     return GestureDetector(
                       onTap: () {
-                        navigateTo((topicIdx - 1) * 4 + cardIdx, immediate: true);
+                        navigateTo(groupStart + tileIdx, immediate: true);
                         onExpand();
                       },
                       child: Container(
@@ -1024,18 +1274,25 @@ class _ReviewCardsView extends HookWidget {
                             ),
                           ],
                         ),
-                        child: Center(
-                          child: Text(
-                            card['q']!,
-                            style: TextStyle(
-                              color: AppColors.paper.textInk,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (card.heroEmoji?.trim().isNotEmpty == true) ...[
+                              Text(card.heroEmoji!.trim(), style: const TextStyle(fontSize: 24)),
+                              const SizedBox(height: 6),
+                            ],
+                            Text(
+                              preview,
+                              style: TextStyle(
+                                color: AppColors.paper.textInk,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            textAlign: TextAlign.center,
-                            maxLines: 5,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
                         ),
                       ),
                     );
@@ -1050,9 +1307,8 @@ class _ReviewCardsView extends HookWidget {
 
     // Expanded State: Immersive Instagram Stories-style Card Viewer
     final index = currentCardIndex.value.clamp(0, totalCards - 1);
-    final topicIndex = index ~/ 4;
-
-    final topic = dummyTopics[topicIndex];
+    final currentGroupIndex = flatItems[index].groupIndex;
+    final topic = groups[currentGroupIndex];
 
     return Container(
       color: Colors.transparent,
@@ -1062,7 +1318,7 @@ class _ReviewCardsView extends HookWidget {
         children: [
           // 1. Topic Title above the card
           Text(
-            topic['title'] as String,
+            topic.title,
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
               fontSize: 16,
@@ -1072,18 +1328,20 @@ class _ReviewCardsView extends HookWidget {
           ),
           const SizedBox(height: 12),
 
-          // 2. Stories Progress Indicators (Grouped by Topic, 20 bars total)
+          // 2. Stories Progress Indicators (Grouped by Topic, 表紙も1本として数える)
           Row(
-            children: List.generate(dummyTopics.length, (topicIdx) {
+            children: List.generate(groups.length, (topicIdx) {
+              final group = groups[topicIdx];
+              final groupStart = groupStartIndex[topicIdx];
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Row(
-                    children: List.generate(4, (cardIdx) {
-                      final absIdx = topicIdx * 4 + cardIdx;
+                    children: List.generate(group.cards.length + 1, (cardIdx) {
+                      final absIdx = groupStart + cardIdx;
                       final isFilled = absIdx <= currentCardIndex.value;
                       final isActive = absIdx == currentCardIndex.value;
-                      
+
                       final isDark = Theme.of(context).brightness == Brightness.dark;
                       final activeColor = Theme.of(context).colorScheme.primary;
                       final filledColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.6);
@@ -1094,10 +1352,10 @@ class _ReviewCardsView extends HookWidget {
                           height: 4,
                           margin: const EdgeInsets.symmetric(horizontal: 1.5),
                           decoration: BoxDecoration(
-                            color: isActive 
-                                ? activeColor 
-                                : isFilled 
-                                    ? filledColor 
+                            color: isActive
+                                ? activeColor
+                                : isFilled
+                                    ? filledColor
                                     : unfilledColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
@@ -1111,129 +1369,331 @@ class _ReviewCardsView extends HookWidget {
           ),
           const SizedBox(height: 20),
 
-          // 3. Card & Tap Detection Stack
+          // 3. Card Area
+          // タップ判定はカードを覆うオーバーレイではなく、この親GestureDetectorのonTapUpで行う。
+          // (オーバーレイ方式だとカード内のスクロールジェスチャーを奪ってしまうため。
+          //  Scrollableは縦ドラッグのみを主張するので、タップは親に届き、縦スクロールは
+          //  カード内のSingleChildScrollViewが処理する。)
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
+              onTapUp: (details) {
+                final cardWidth = screenWidth - 32;
+                if (details.localPosition.dx < cardWidth * 0.3) {
+                  // 左30%タップ → 前のカード
+                  if (currentCardIndex.value > 0) {
+                    navigateTo(currentCardIndex.value - 1);
+                  }
+                } else {
+                  // 右70%タップ → 次のカード
+                  if (currentCardIndex.value < totalCards - 1) {
+                    navigateTo(currentCardIndex.value + 1);
+                  }
+                }
+              },
               onHorizontalDragEnd: (details) {
                 if (details.primaryVelocity == null) return;
                 // Swipe Left (velocity < -300) -> Next Topic
                 if (details.primaryVelocity! < -300) {
-                  final currentTopicIndex = currentCardIndex.value ~/ 4;
-                  if (currentTopicIndex < 4) {
-                    navigateTo((currentTopicIndex + 1) * 4);
+                  if (currentGroupIndex < groups.length - 1) {
+                    navigateTo(groupStartIndex[currentGroupIndex + 1]);
                   }
                 }
                 // Swipe Right (velocity > 300) -> Previous Topic
                 else if (details.primaryVelocity! > 300) {
-                  final currentTopicIndex = currentCardIndex.value ~/ 4;
-                  if (currentTopicIndex > 0) {
-                    navigateTo((currentTopicIndex - 1) * 4);
+                  if (currentGroupIndex > 0) {
+                    navigateTo(groupStartIndex[currentGroupIndex - 1]);
                   }
                 }
               },
-              child: Stack(
-                children: [
-                  // Animated Card Stack
-                  Positioned.fill(
-                    child: Builder(
-                      builder: (context) {
-                        if (isAnimating.value) {
-                          final progress = animationController.value;
-                          if (isGoingForward.value) {
-                            return Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Transform.scale(
-                                    scale: 0.92 + (0.08 * progress),
-                                    child: Opacity(
-                                      opacity: 0.5 + (0.5 * progress),
-                                      child: buildCard(currentCardIndex.value),
-                                    ),
-                                  ),
-                                ),
-                                Positioned.fill(
-                                  child: Transform.translate(
-                                    offset: Offset(-progress * screenWidth, 0),
-                                    child: Transform.rotate(
-                                      angle: -progress * 0.2,
-                                      alignment: Alignment.bottomCenter,
-                                      child: buildCard(previousCardIndex.value),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          } else {
-                            return Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Transform.scale(
-                                    scale: 1.0 - (0.08 * progress),
-                                    child: Opacity(
-                                      opacity: 1.0 - (0.5 * progress),
-                                      child: buildCard(previousCardIndex.value),
-                                    ),
-                                  ),
-                                ),
-                                Positioned.fill(
-                                  child: Transform.translate(
-                                    offset: Offset(-(1.0 - progress) * screenWidth, 0),
-                                    child: Transform.rotate(
-                                      angle: -(1.0 - progress) * 0.2,
-                                      alignment: Alignment.bottomCenter,
-                                      child: buildCard(currentCardIndex.value),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        } else {
-                          return buildCard(currentCardIndex.value);
-                        }
-                      },
-                    ),
-                  ),
-
-                  // Left Tap detector (30% width)
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    width: (screenWidth - 32) * 0.3,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (currentCardIndex.value > 0) {
-                          navigateTo(currentCardIndex.value - 1);
-                        }
-                      },
-                    ),
-                  ),
-
-                  // Right Tap detector (70% width)
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    right: 0,
-                    width: (screenWidth - 32) * 0.7,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (currentCardIndex.value < totalCards - 1) {
-                          navigateTo(currentCardIndex.value + 1);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+              child: Builder(
+                builder: (context) {
+                  if (isAnimating.value) {
+                    final progress = animationController.value;
+                    if (isGoingForward.value) {
+                      return Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Transform.scale(
+                              scale: 0.92 + (0.08 * progress),
+                              child: Opacity(
+                                opacity: 0.5 + (0.5 * progress),
+                                child: buildCard(currentCardIndex.value),
+                              ),
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Transform.translate(
+                              offset: Offset(-progress * screenWidth, 0),
+                              child: Transform.rotate(
+                                angle: -progress * 0.2,
+                                alignment: Alignment.bottomCenter,
+                                child: buildCard(previousCardIndex.value),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Transform.scale(
+                              scale: 1.0 - (0.08 * progress),
+                              child: Opacity(
+                                opacity: 1.0 - (0.5 * progress),
+                                child: buildCard(previousCardIndex.value),
+                              ),
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: Transform.translate(
+                              offset: Offset(-(1.0 - progress) * screenWidth, 0),
+                              child: Transform.rotate(
+                                angle: -(1.0 - progress) * 0.2,
+                                alignment: Alignment.bottomCenter,
+                                child: buildCard(currentCardIndex.value),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  } else {
+                    return buildCard(currentCardIndex.value);
+                  }
+                },
               ),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+/// トピックの表紙カード。画像を全面に敷き、その上にタイトルを重ねる。
+/// 画像の色味が読めないため、タイトルは半透明の白帯 + 白縁取りの黒文字で保護する。
+class _CoverCard extends StatelessWidget {
+  const _CoverCard({
+    required this.title,
+    required this.imageFile,
+    required this.borderRadius,
+    this.compact = false,
+  });
+
+  final String title;
+  final File? imageFile;
+  final double borderRadius;
+
+  /// ダッシュボードの小さいタイル用 (フォント等を縮小)
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleStyle = TextStyle(
+      color: Colors.black,
+      fontSize: compact ? 12 : 22,
+      fontWeight: FontWeight.bold,
+      height: 1.3,
+      // 白縁取り (ハロー) で画像の色に負けないようにする
+      shadows: const [
+        Shadow(color: Colors.white, blurRadius: 2),
+        Shadow(color: Colors.white, blurRadius: 4),
+        Shadow(color: Colors.white, blurRadius: 8),
+      ],
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (imageFile != null)
+            Image.file(imageFile!, fit: BoxFit.cover)
+          else
+            // 画像がまだ無い場合のフォールバック背景
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+                ),
+              ),
+            ),
+          // タイトル帯 (半透明の白)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 8 : 20,
+                vertical: compact ? 8 : 16,
+              ),
+              color: Colors.white.withValues(alpha: 0.72),
+              child: Text(
+                title,
+                style: titleStyle,
+                textAlign: TextAlign.center,
+                maxLines: compact ? 3 : 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// コンテンツカード。トピック画像がある場合はカードの縁に画像が覗くよう、
+/// 画像を背景全面に敷いた上で、少し内側に本文パネルを重ねる。
+class _ContentCard extends StatelessWidget {
+  const _ContentCard({required this.card, required this.imageFile});
+
+  final ReviewCard card;
+  final File? imageFile;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasImage = imageFile != null;
+
+    final content = SingleChildScrollView(
+      padding: EdgeInsets.all(hasImage ? 20 : 28),
+      child: Column(
+        children: [
+          Text(
+            card.heroEmoji?.trim().isNotEmpty == true ? card.heroEmoji!.trim() : '💡',
+            style: const TextStyle(fontSize: 56),
+          ),
+          const SizedBox(height: 24),
+          if (card.title?.trim().isNotEmpty == true) ...[
+            Text(
+              card.title!.trim(),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+          ],
+          ...card.cardContent.map((block) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ReviewCardBlockView(block: block),
+              )),
+        ],
+      ),
+    );
+
+    if (!hasImage) {
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.universe.glassWhiteLow : AppColors.paper.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? AppColors.universe.glassBorder : Colors.black.withValues(alpha: 0.08),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black38 : Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: content,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        image: DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black38 : Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      // 縁として画像を見せるための余白
+      padding: const EdgeInsets.all(10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: (isDark ? AppColors.universe.voidBackground : AppColors.paper.surface)
+              .withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: content,
+      ),
+    );
+  }
+}
+
+/// review_cards.card_content の1ブロック（paragraph / quote / list）を描画する。
+/// テキストはMarkdown(太字など)を含むためMarkdownBodyで描画し、SID引用は除去する。
+class _ReviewCardBlockView extends StatelessWidget {
+  const _ReviewCardBlockView({required this.block});
+
+  final ReviewCardBlock block;
+
+  MarkdownStyleSheet _styleSheet(BuildContext context, {bool italic = false}) {
+    final baseColor = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.9);
+    final style = TextStyle(
+      color: baseColor,
+      fontSize: 15,
+      height: 1.4,
+      fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+    );
+    return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+      p: style,
+      strong: style.copyWith(
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+      em: style.copyWith(fontStyle: FontStyle.italic),
+      code: style.copyWith(fontFamily: 'monospace', backgroundColor: Colors.transparent),
+      listBullet: style.copyWith(color: AppColors.starGold),
+      textAlign: WrapAlignment.center,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    switch (block.type) {
+      case 'quote':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: AppColors.starGold, width: 3)),
+          ),
+          child: MarkdownBody(
+            data: stripSidCitations(block.text ?? ''),
+            styleSheet: _styleSheet(context, italic: true).copyWith(textAlign: WrapAlignment.start),
+          ),
+        );
+      case 'list':
+        final items = block.items ?? const <String>[];
+        // 各itemをMarkdownの箇条書きにまとめて1つのMarkdownBodyで描画する
+        final markdown = items.map((item) => '- ${stripSidCitations(item)}').join('\n');
+        return MarkdownBody(
+          data: markdown,
+          styleSheet: _styleSheet(context).copyWith(textAlign: WrapAlignment.start),
+        );
+      case 'paragraph':
+      default:
+        return MarkdownBody(
+          data: stripSidCitations(block.text ?? ''),
+          styleSheet: _styleSheet(context),
+        );
+    }
   }
 }
 
@@ -1247,17 +1707,28 @@ class _DeepNotesView extends HookWidget {
     required this.selectedNoteIndex,
     required this.onExpand,
     required this.selectedText,
+    required this.topics,
   });
 
   final bool isExpanded;
   final ValueNotifier<int?> selectedNoteIndex;
   final VoidCallback onExpand;
   final ValueNotifier<String?> selectedText;
+  final List<_NoteTopic> topics;
 
   @override
   Widget build(BuildContext context) {
     final shouldStartAtBottom = useState(false);
     final noteIndex = selectedNoteIndex.value;
+
+    if (topics.isEmpty) {
+      return Center(
+        child: Text(
+          'Deep notes are being generated…',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      );
+    }
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
@@ -1266,11 +1737,12 @@ class _DeepNotesView extends HookWidget {
           : _NoteDetailView(
               key: ValueKey('note_detail_$noteIndex'),
               noteIndex: noteIndex,
-              topic: dummyTopics[noteIndex],
+              topic: topics[noteIndex],
+              totalTopics: topics.length,
               startAtBottom: shouldStartAtBottom.value,
               selectedText: selectedText,
               onNext: () {
-                if (noteIndex < dummyTopics.length - 1) {
+                if (noteIndex < topics.length - 1) {
                   shouldStartAtBottom.value = false;
                   selectedNoteIndex.value = noteIndex + 1;
                 }
@@ -1289,10 +1761,10 @@ class _DeepNotesView extends HookWidget {
     return ListView.separated(
       key: const ValueKey('note_list'),
       padding: const EdgeInsets.all(16),
-      itemCount: dummyTopics.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemCount: topics.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final topic = dummyTopics[index];
+        final topic = topics[index];
         return GestureDetector(
           onTap: () {
             selectedNoteIndex.value = index;
@@ -1319,22 +1791,24 @@ class _DeepNotesView extends HookWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        topic['title'] as String,
+                        topic.title,
                         style: TextStyle(
                           color: AppColors.paper.textInk,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        topic['summary'] as String,
-                        style: TextStyle(
-                          color: AppColors.paper.textPencil,
-                          fontSize: 13,
-                          height: 1.4,
+                      if (topic.summary.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          topic.summary,
+                          style: TextStyle(
+                            color: AppColors.paper.textPencil,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -1354,6 +1828,7 @@ class _NoteDetailView extends HookWidget {
     super.key,
     required this.noteIndex,
     required this.topic,
+    required this.totalTopics,
     required this.startAtBottom,
     required this.onNext,
     required this.onPrev,
@@ -1361,7 +1836,8 @@ class _NoteDetailView extends HookWidget {
   });
 
   final int noteIndex;
-  final Map<String, dynamic> topic;
+  final _NoteTopic topic;
+  final int totalTopics;
   final bool startAtBottom;
   final VoidCallback onNext;
   final VoidCallback onPrev;
@@ -1431,7 +1907,7 @@ class _NoteDetailView extends HookWidget {
                   final isDragging = notification.dragDetails != null;
                   
                   if (isDragging) {
-                    if (startedAtBottom.value && metrics.pixels >= metrics.maxScrollExtent + 50 && noteIndex < dummyTopics.length - 1) {
+                    if (startedAtBottom.value && metrics.pixels >= metrics.maxScrollExtent + 50 && noteIndex < totalTopics - 1) {
                       shouldGoToNext.value = true;
                     }
                     if (startedAtTop.value && metrics.pixels <= metrics.minScrollExtent - 50 && noteIndex > 0) {
@@ -1487,25 +1963,29 @@ class _NoteDetailView extends HookWidget {
                       ),
 
                     Text(
-                      topic['title'] as String,
+                      topic.title,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      topic['summary'] as String,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 15,
-                        fontStyle: FontStyle.italic,
+                    if (topic.summary.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        topic.summary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 15,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 24),
                     MarkdownBody(
-                      data: topic['content'] as String? ?? '',
+                      data: topic.content.isNotEmpty
+                          ? topic.content
+                          : 'Deep notes for this topic are still being generated…',
                       selectable: false,
                       styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                         p: TextStyle(
@@ -1559,7 +2039,7 @@ class _NoteDetailView extends HookWidget {
                     const SizedBox(height: 32),
 
                     // Lower Arrow indicator (if next note exists)
-                    if (noteIndex < dummyTopics.length - 1)
+                    if (noteIndex < totalTopics - 1)
                       Center(
                         child: Column(
                           children: [
@@ -1590,35 +2070,76 @@ class _NoteDetailView extends HookWidget {
 // 3. Transcript View
 // ---------------------------------------------------------------------------
 class _TranscriptView extends StatelessWidget {
-  const _TranscriptView({super.key});
+  const _TranscriptView({super.key, required this.transcriptAsync});
+
+  final AsyncValue<List<TranscriptSentence>?> transcriptAsync;
+
+  static String _formatMs(int ms) {
+    final totalSeconds = ms ~/ 1000;
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.transparent,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(24),
-        itemCount: 10,
-        separatorBuilder: (_, __) => const SizedBox(height: 24),
-        itemBuilder: (context, index) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '10:04',
-                style: TextStyle(color: AppColors.starGold, fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  'This is a generated transcript snippet for the lecture. At this point, the professor is explaining the core concepts in detail. Pay attention to the syntax used here.',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14, height: 1.5),
-                ),
-              ),
-            ],
-          );
-        },
+    return transcriptAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+      error: (err, _) => Center(
+        child: Text(
+          'Transcript unavailable',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
       ),
+      data: (sentences) {
+        if (sentences == null || sentences.isEmpty) {
+          return Center(
+            child: Text(
+              'Transcript is being generated…',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          );
+        }
+        return Container(
+          color: Colors.transparent,
+          child: ListView.separated(
+            padding: const EdgeInsets.all(24),
+            itemCount: sentences.length,
+            separatorBuilder: (context, _) => const SizedBox(height: 24),
+            itemBuilder: (context, index) {
+              final sentence = sentences[index];
+              final isSideChatter = sentence.role != 'lecture';
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatMs(sentence.start),
+                    style: const TextStyle(
+                      color: AppColors.starGold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      sentence.text,
+                      style: TextStyle(
+                        color: isSideChatter
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                        height: 1.5,
+                        fontStyle: isSideChatter ? FontStyle.italic : FontStyle.normal,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

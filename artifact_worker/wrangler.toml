@@ -1,0 +1,16 @@
+name = "lefture-artifact-worker"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# R2バケットへのバインディング。S3互換API(アクセスキー等)は一切不要で、
+# Worker実行コンテキストから env.LECTURE_ASSETS.get(key) のように直接アクセスできる。
+[[r2_buckets]]
+binding = "LECTURE_ASSETS"
+bucket_name = "lefture-assets"
+
+# 機密ではない設定値はvarsに直書きでOK(シークレットではないため wrangler secret 不要)。
+[vars]
+SUPABASE_URL = "https://lvbpuywjxmmeecftinkb.supabase.co"
+# JWKSの再フェッチ間隔(秒)。Supabase側の鍵ローテーションは頻繁ではないため長めでよい。
+JWKS_CACHE_TTL_SECONDS = "21600"

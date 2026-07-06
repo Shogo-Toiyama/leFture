@@ -67,11 +67,14 @@ class LectureSyncService {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
 
+    // ローカルの件数をチェック
+    final localCount = await _db.getLocalLecturesCount(uid);
+
     // クエリ構築
     var query = supabase.from('lectures').select().eq('user_id', uid);
 
-    // 差分更新: 前回同期時刻があれば、それ以降に更新されたものだけ取得
-    if (lastPullAt != null) {
+    // ローカルにデータが存在し、かつ前回同期時刻がある場合のみ差分同期を行う
+    if (lastPullAt != null && localCount > 0) {
       query = query.gt('updated_at', lastPullAt.toIso8601String());
     }
 
@@ -85,6 +88,7 @@ class LectureSyncService {
         userId: Value(json['user_id'] as String),
         courseId: Value(json['course_id'] as String?),
         title: Value(json['title'] as String?),
+        titleGenerated: Value(json['title_generated'] as String?),
         lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),
         sortOrder: Value(json['sort_order'] as int?),
         createdAt: Value(DateTime.parse(json['created_at'])),

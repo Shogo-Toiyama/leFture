@@ -102,6 +102,7 @@ class MasterAudioUploadUrlRequest(BaseModel):
 class MasterAudioUploadCompleteRequest(BaseModel):
     lecture_id: str
 
+
 # ---------------------------------------------------------
 # 分析開始 (start_analysis)
 # ---------------------------------------------------------
@@ -399,6 +400,7 @@ async def worker_complete_master_audio_upload(payload: MasterAudioUploadComplete
     )
 
     return {"status": "success", "message": f"Master audio path recorded: {storage_path}"}
+
 
 # ---------------------------------------------------------
 # 🗺️ タスクの種類と、呼び出す裏口 (URL) のマッピング辞書
