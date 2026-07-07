@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
@@ -15,6 +14,9 @@ import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_de
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
+
+import 'package:lecture_companion_ui/presentation/widgets/course_tile.dart';
+import 'package:lecture_companion_ui/presentation/widgets/lecture_tile.dart';
 
 /// コース一覧 / コース内授業一覧 を兼ねるページ
 ///
@@ -203,68 +205,21 @@ class _TermSection extends StatelessWidget {
               ],
             ),
           ),
-          ...courses.map((course) => _CourseTile(course: course)),
+          ...courses.map((course) => CourseTile(
+                course: course,
+                onEdit: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Mock Edit Course: ${course.courseTitle}')),
+                  );
+                },
+                onDelete: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Mock Delete Course: ${course.courseTitle}')),
+                  );
+                },
+              )),
           const SizedBox(height: 8),
         ],
-      ),
-    );
-  }
-}
-
-class _CourseTile extends StatelessWidget {
-  const _CourseTile({required this.course});
-
-  final Course course;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, bottom: 8),
-      child: GestureDetector(
-        onTap: () => context.push('${AppRoutes.notesRoot}/c/${course.id}'),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.universe.glassWhiteLow,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.universe.glassBorder),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.universe.glassWhiteHigh,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: const Icon(
-                  Icons.school_outlined,
-                  color: AppColors.starGold,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  course.displayTitle,
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: AppColors.universe.textComet,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -631,7 +586,27 @@ class _CourseLectureListView extends ConsumerWidget {
                     delegate: SliverChildBuilderDelegate((context, index) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: _LectureTile(lecture: lectures[index]),
+                        child: LectureTile(
+                          lecture: lectures[index],
+                          onEdit: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Mock Edit Lecture: ${lectures[index].title ?? lectures[index].titleGenerated}',
+                                ),
+                              ),
+                            );
+                          },
+                          onDelete: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Mock Delete Lecture: ${lectures[index].title ?? lectures[index].titleGenerated}',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       );
                     }, childCount: lectures.length),
                   ),
@@ -778,89 +753,4 @@ class _TopicMapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _LectureTile extends StatelessWidget {
-  const _LectureTile({required this.lecture});
-
-  final Lecture lecture;
-
-  static final _dateFmt = DateFormat('MMM d, yyyy');
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('${AppRoutes.notesRoot}/v/${lecture.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.universe.glassWhiteLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.universe.glassBorder),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.universe.glassWhiteHigh,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: const Icon(
-                Icons.description_outlined,
-                color: AppColors.starGold,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lecture.title?.trim().isNotEmpty == true
-                        ? lecture.title!
-                        : (lecture.titleGenerated?.trim().isNotEmpty == true
-                              ? lecture.titleGenerated!
-                              : 'Untitled Lecture'),
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 12,
-                        color: AppColors.universe.textComet,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _dateFmt.format(lecture.lectureDatetime.toLocal()),
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.universe.textComet,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -283,6 +283,7 @@ class _ReactionButton extends ConsumerWidget {
           // 状態をリフレッシュして再ロード
           ref.invalidate(recentFunFactsProvider);
         } catch (e) {
+          if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to update reaction: $e')),
           );

@@ -53,9 +53,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // =================================================================
       // Auth Routes
       // =================================================================
-      GoRoute(path: AppRoutes.welcome, builder: (_, __) => const WelcomePage()),
-      GoRoute(path: AppRoutes.signIn, builder: (_, __) => const SignInPage()),
-      GoRoute(path: AppRoutes.signUp, builder: (_, __) => const SignUpPage()),
+      GoRoute(path: AppRoutes.welcome, builder: (context, state) => const WelcomePage()),
+      GoRoute(path: AppRoutes.signIn, builder: (context, state) => const SignInPage()),
+      GoRoute(path: AppRoutes.signUp, builder: (context, state) => const SignUpPage()),
 
       // =================================================================
       // Main Routes (Single Stack)
@@ -129,8 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           
           return MaterialPage(
             fullscreenDialog: true, // これで下から出てくるモーダルになります
-            // child: RecordingPage(initialTab: initialTab),
-            child: RecordingPage(),
+            child: RecordingPage(initialTab: initialTab),
           );
         },
       ),

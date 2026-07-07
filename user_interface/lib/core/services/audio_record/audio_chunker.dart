@@ -8,8 +8,8 @@ class AudioChunker {
   int _silenceBytesCount = 0; 
   int _logCounter = 0;
 
-  static const int BYTES_PER_SEC = 32000;
-  static const int OVERLAP_BYTES = 2 * BYTES_PER_SEC; // 2秒
+  static const int bytesPerSec = 32000;
+  static const int overlapBytes = 2 * bytesPerSec; // 2秒
 
   int _mainChunkStartIndex = 0; 
   bool _isWaitingForTail = false; 
@@ -42,15 +42,15 @@ class AudioChunker {
     }
 
     if (_isWaitingForTail) {
-      int targetLength = _cutPointIndex + OVERLAP_BYTES;
+      int targetLength = _cutPointIndex + overlapBytes;
       if (_buffer.length >= targetLength) {
         _extractAndEmitChunk(targetLength);
       }
       return; // 待機中は新たなカット判定はしない
     }
 
-    double currentMainDurationSec = (_buffer.length - _mainChunkStartIndex) / BYTES_PER_SEC;
-    double silenceDurationSec = _silenceBytesCount / BYTES_PER_SEC;
+    double currentMainDurationSec = (_buffer.length - _mainChunkStartIndex) / bytesPerSec;
+    double silenceDurationSec = _silenceBytesCount / bytesPerSec;
 
     _logCounter++;
     if (_logCounter % 10 == 0) {
@@ -58,24 +58,18 @@ class AudioChunker {
     }
 
     bool shouldCut = false;
-    String cutReason = ''; 
 
     if (currentMainDurationSec >= 120.0) {
       shouldCut = true; 
-      cutReason = '2分強制カット';
     } else if (currentMainDurationSec >= 90.0 && silenceDurationSec >= 0.3) {
       shouldCut = true; 
-      cutReason = '1分半 ＆ 0.3秒無音';
     } else if (currentMainDurationSec >= 60.0 && silenceDurationSec >= 0.6) {
       shouldCut = true; 
-      cutReason = '1分 ＆ 0.6秒無音';
     } else if (currentMainDurationSec >= 30.0 && silenceDurationSec >= 1.0) {
       shouldCut = true; 
-      cutReason = '30秒 ＆ 1.0秒無音';
     }
 
     if (shouldCut) {
-      // print('✂️ [Chunker] カット判定！あと2秒の尻尾を待ちます。理由: $cutReason');
       _isWaitingForTail = true;
       _cutPointIndex = _buffer.length; 
     }
@@ -84,16 +78,16 @@ class AudioChunker {
   void _extractAndEmitChunk(int targetLength) {
     Uint8List allBytes = _buffer.takeBytes();
 
-    int startExtract = math.max(0, _mainChunkStartIndex - OVERLAP_BYTES);
+    int startExtract = math.max(0, _mainChunkStartIndex - overlapBytes);
     int endExtract = math.min(targetLength, allBytes.length);
 
     Uint8List chunk = allBytes.sublist(startExtract, endExtract);
     
-    double absoluteStartTimeSec = (_absoluteBufferStartOffset + startExtract) / BYTES_PER_SEC;
+    double absoluteStartTimeSec = (_absoluteBufferStartOffset + startExtract) / bytesPerSec;
 
     onChunkReady(chunk, absoluteStartTimeSec);
 
-    int keepStart = math.max(0, _cutPointIndex - OVERLAP_BYTES);
+    int keepStart = math.max(0, _cutPointIndex - overlapBytes);
     Uint8List retainedBytes = allBytes.sublist(keepStart);
     _buffer.add(retainedBytes);
 
@@ -109,12 +103,12 @@ class AudioChunker {
     
     Uint8List allBytes = _buffer.takeBytes();
     
-    int startExtract = math.max(0, _mainChunkStartIndex - OVERLAP_BYTES);
+    int startExtract = math.max(0, _mainChunkStartIndex - overlapBytes);
     if (startExtract >= allBytes.length) return null;
 
     Uint8List chunk = allBytes.sublist(startExtract);
     
-    double absoluteStartTimeSec = (_absoluteBufferStartOffset + startExtract) / BYTES_PER_SEC;
+    double absoluteStartTimeSec = (_absoluteBufferStartOffset + startExtract) / bytesPerSec;
 
     _silenceBytesCount = 0;
     _isWaitingForTail = false;

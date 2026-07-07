@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_background/flutter_background.dart';
@@ -153,7 +153,7 @@ class AudioRecorderService {
     try {
       if (await rawFile.exists()) await rawFile.delete();
     } catch (e) {
-      print('⚠️ Failed to delete raw chunk file: $e');
+      debugPrint('⚠️ Failed to delete raw chunk file: $e');
     }
 
     if (!ReturnCode.isSuccess(returnCode)) {
@@ -213,7 +213,7 @@ class AudioRecorderService {
         await rawFile.delete();
       } catch (e) {
         // 削除失敗は致命的ではないのでログ出力のみ
-        print('⚠️ Failed to delete raw master file: $e');
+        debugPrint('⚠️ Failed to delete raw master file: $e');
       }
       return m4aPath;
     } else {
@@ -239,7 +239,7 @@ class AudioRecorderService {
         await m4aFile.delete();
       }
     } catch (e) {
-      print('⚠️ Failed to clean up master audio files for lecture $lectureId: $e');
+      debugPrint('⚠️ Failed to clean up master audio files for lecture $lectureId: $e');
     }
   }
 }

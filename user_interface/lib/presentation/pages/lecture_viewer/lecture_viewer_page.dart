@@ -136,9 +136,26 @@ class LectureViewerPage extends HookConsumerWidget {
             ))
         .toList();
 
-    // Review Cards: topic_number ごとにグルーピング（既にtopic_number昇順で取得済み）
+    // Review Cards: topic_number 昇順、かつ cardType（hook -> core_why -> gotcha -> next_action）の順にソートしてグルーピング
+    const cardTypeOrder = {
+      'hook': 0,
+      'core_why': 1,
+      'gotcha': 2,
+      'next_action': 3,
+    };
+
+    final sortedReviewCards = List<ReviewCard>.from(reviewCards)
+      ..sort((a, b) {
+        if (a.topicNumber != b.topicNumber) {
+          return a.topicNumber.compareTo(b.topicNumber);
+        }
+        final orderA = cardTypeOrder[a.cardType?.toLowerCase()] ?? 99;
+        final orderB = cardTypeOrder[b.cardType?.toLowerCase()] ?? 99;
+        return orderA.compareTo(orderB);
+      });
+
     final reviewGroups = <_ReviewTopicGroup>[];
-    for (final card in reviewCards) {
+    for (final card in sortedReviewCards) {
       if (reviewGroups.isEmpty || reviewGroups.last.topicNumber != card.topicNumber) {
         final topic = topicByIndex[card.topicNumber];
         reviewGroups.add(_ReviewTopicGroup(
@@ -151,6 +168,7 @@ class LectureViewerPage extends HookConsumerWidget {
         reviewGroups.last.cards.add(card);
       }
     }
+
 
     final paperTheme = ThemeData(
       brightness: Brightness.light,

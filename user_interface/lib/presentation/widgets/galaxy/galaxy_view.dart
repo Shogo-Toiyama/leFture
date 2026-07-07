@@ -46,8 +46,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
   // Camera / controls
   bool userInteracting = false;
 
-  // Cache projected points for picking
-  List<_ProjectedStar> _projected = [];
+
 
   // トラックボール操作用: 現在のウィジェットサイズ（buildのLayoutBuilderで更新）
   Size _viewSize = Size.zero;
@@ -233,7 +232,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
                           time: t,
                           camRot: state.camRot,
                           zoom: state.zoom,
-                          onProjected: (list) => _projected = list,
+                          onProjected: (_) {},
                           sprite: galaxyData.sprite,
                           glowScale: widget.glowScale,
                         ),

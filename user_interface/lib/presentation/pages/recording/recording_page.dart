@@ -32,6 +32,9 @@ class RecordingPage extends HookConsumerWidget {
     final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
     final memoCtl = useTextEditingController();
     useListenable(memoCtl);
+    final showMoreSettings = useState(false);
+    final autoStartAnalysis = useState(true);
+    final realtimeTranscribe = useState(false);
     
     // 初期タブの設定 (noteなら1番目)
     useEffect(() {
@@ -85,6 +88,47 @@ class RecordingPage extends HookConsumerWidget {
         focusedBorder: OutlineInputBorder(
           borderSide: const BorderSide(color: AppColors.starGold),
           borderRadius: BorderRadius.circular(12),
+        ),
+      );
+    }
+
+    Widget buildToggleRow({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+      required bool value,
+      required ValueChanged<bool> onChanged,
+    }) {
+      return Container(
+        decoration: BoxDecoration(
+          color: AppColors.universe.glassWhiteLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.universe.glassBorder),
+        ),
+        child: SwitchListTile(
+          secondary: Icon(icon, color: AppColors.universe.textComet),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: AppColors.universe.textStarlight,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              color: AppColors.universe.textComet,
+              fontSize: 11,
+            ),
+          ),
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: AppColors.starGold,
+          activeTrackColor: AppColors.starGold.withValues(alpha: 0.3),
+          inactiveThumbColor: AppColors.universe.textComet,
+          inactiveTrackColor: AppColors.universe.glassWhiteLow,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         ),
       );
     }
@@ -146,17 +190,7 @@ class RecordingPage extends HookConsumerWidget {
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          // 1. Title
-                          TextField(
-                            controller: titleCtl,
-                            enabled: !isBusy,
-                            style: TextStyle(color: AppColors.universe.textStarlight),
-                            decoration: glassInputDecoration('Lecture title', Icons.title),
-                            onChanged: controller.setTitle,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // 2. Course
+                          // 1. Course
                           Container(
                             decoration: BoxDecoration(
                               color: AppColors.universe.glassWhiteLow,
@@ -222,6 +256,41 @@ class RecordingPage extends HookConsumerWidget {
                             ),
                           ),
                           
+                          // コース未選択時の注意書き（録音開始後のみ表示）
+                          if (state.courseId == null && (state.phase == RecordingPhase.recording || state.phase == RecordingPhase.paused))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.alertAmber.withValues(alpha: 0.15),
+                                  border: Border.all(color: AppColors.alertAmber, width: 1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: AppColors.alertAmber,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'No course selected. Automated AI analysis will not start unless a course is assigned. Please select a course before or after uploading to start analysis.',
+                                        style: TextStyle(
+                                          color: AppColors.universe.textStarlight,
+                                          fontSize: 12,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                           const SizedBox(height: 40),
 
                           // 3. Timer
@@ -316,6 +385,73 @@ class RecordingPage extends HookConsumerWidget {
                               icon: Icon(Icons.delete_outline, size: 20, color: AppColors.universe.textComet),
                               label: Text('Discard Recording', style: TextStyle(color: AppColors.universe.textComet)),
                             ),
+
+                          const SizedBox(height: 24),
+
+                          // More Settings アコーディオン
+                          InkWell(
+                            onTap: () => showMoreSettings.value = !showMoreSettings.value,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    showMoreSettings.value
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    color: AppColors.universe.textComet,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'More Settings',
+                                    style: TextStyle(
+                                      color: AppColors.universe.textComet,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 200),
+                            crossFadeState: showMoreSettings.value
+                                ? CrossFadeState.showFirst
+                                : CrossFadeState.showSecond,
+                            firstChild: Column(
+                              children: [
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: titleCtl,
+                                  enabled: !isBusy,
+                                  style: TextStyle(color: AppColors.universe.textStarlight),
+                                  decoration: glassInputDecoration('Lecture title', Icons.title),
+                                  onChanged: controller.setTitle,
+                                ),
+                                const SizedBox(height: 16),
+                                buildToggleRow(
+                                  icon: Icons.play_circle_outline,
+                                  title: 'Auto-start analysis',
+                                  subtitle: 'Automatically start processing tasks after upload completes.',
+                                  value: autoStartAnalysis.value,
+                                  onChanged: (val) => autoStartAnalysis.value = val,
+                                ),
+                                const SizedBox(height: 12),
+                                buildToggleRow(
+                                  icon: Icons.chat_bubble_outline,
+                                  title: 'Realtime transcribe',
+                                  subtitle: 'Transcribe audio stream in realtime as you record.',
+                                  value: realtimeTranscribe.value,
+                                  onChanged: (val) => realtimeTranscribe.value = val,
+                                ),
+                              ],
+                            ),
+                            secondChild: const SizedBox(width: double.infinity),
+                          ),
                         ],
                       ),
                     ),

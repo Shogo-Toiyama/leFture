@@ -10,6 +10,7 @@ import 'package:lecture_companion_ui/application/course/course_list_provider.dar
 import 'package:lecture_companion_ui/application/fun_fact/fun_fact_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/home_app_bar.dart';
@@ -69,6 +70,7 @@ class HomePage extends HookConsumerWidget {
     // （コースがあってもレクチャーが無ければ、RecentLecturesList等はどのみち空になるため）
     final courses = ref.watch(courseListProvider).asData?.value;
     final lectures = ref.watch(allLecturesStreamProvider).asData?.value;
+    final forceEmpty = ref.watch(debugForceEmptyHomeProvider);
 
     // データ読み込み中は、一瞬のチラつきを防ぐためにローディング画面を表示する
     if (courses == null || lectures == null) {
@@ -82,7 +84,7 @@ class HomePage extends HookConsumerWidget {
       );
     }
 
-    if (lectures.isEmpty) {
+    if (lectures.isEmpty || forceEmpty) {
       return const EmptyHomeContent();
     }
 

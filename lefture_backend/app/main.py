@@ -131,8 +131,24 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     
     user_id = user_res.user.id
 
-    # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
+     # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
     admin_client = get_supabase_client()
+
+    # 3.5 講義情報を取得し、course_id が存在するか検証する
+    try:
+        lec_res = admin_client.table("lectures").select("course_id").eq("id", payload.lecture_id).single().execute()
+        if not lec_res.data or not lec_res.data.get("course_id"):
+            raise HTTPException(
+                status_code=400,
+                detail="Lecture must be assigned to a course before analysis can start."
+            )
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to verify lecture course association: {str(e)}"
+        )
 
     # 4. 親ジョブを作成 (processing_jobs)
     job_data = {
