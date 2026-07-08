@@ -1,29 +1,22 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
-import 'package:lecture_companion_ui/core/utils/text_preview.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
 import 'package:lecture_companion_ui/domain/entities/keyword.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/repositories/fun_fact_repository_supabase.dart';
+import 'package:lecture_companion_ui/domain/entities/course.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
   const LectureViewerPage({
@@ -36,13 +29,6 @@ class LectureViewerPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDummy = lectureId.startsWith('dummy_');
-    
-    // Panel States
-    final isExpanded = useState(false);
-    final currentTab = useState(0); // 0: Cards, 1: Notes, 2: Keywords, 3: Transcript
-    final currentCardIndex = useState<int>(0);
-    final selectedNoteIndex = useState<int?>(null);
-    final selectedText = useState<String?>(null);
 
     if (isDummy) {
       final dummyLecture = Lecture(
@@ -56,37 +42,48 @@ class LectureViewerPage extends HookConsumerWidget {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      return _buildViewerBody(
-        context: context,
-        ref: ref,
-        lecture: dummyLecture,
-        isExpanded: isExpanded,
-        currentTab: currentTab,
-        currentCardIndex: currentCardIndex,
-        selectedNoteIndex: selectedNoteIndex,
-        selectedText: selectedText,
+      return Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: _buildViewerBody(
+          context: context,
+          ref: ref,
+          lecture: dummyLecture,
+        ),
       );
     }
 
     final lectureAsync = ref.watch(lectureProvider(lectureId));
 
     return lectureAsync.when(
-      loading: () => Scaffold(backgroundColor: AppColors.universe.voidBackground, body: const Center(child: CircularProgressIndicator(color: AppColors.starGold))),
-      error: (err, stack) => Scaffold(backgroundColor: AppColors.universe.voidBackground, body: Center(child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)))),
+      loading: () => Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.starGold),
+        ),
+      ),
+      error: (err, stack) => Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: Center(
+          child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
+        ),
+      ),
       data: (lecture) {
         if (lecture == null) {
-          return Scaffold(backgroundColor: AppColors.universe.voidBackground, body: const Center(child: Text('Lecture not found', style: TextStyle(color: Colors.white))));
+          return Scaffold(
+            backgroundColor: AppColors.universe.voidBackground,
+            body: const Center(
+              child: Text('Lecture not found', style: TextStyle(color: Colors.white)),
+            ),
+          );
         }
 
-        return _buildViewerBody(
-          context: context,
-          ref: ref,
-          lecture: lecture,
-          isExpanded: isExpanded,
-          currentTab: currentTab,
-          currentCardIndex: currentCardIndex,
-          selectedNoteIndex: selectedNoteIndex,
-          selectedText: selectedText,
+        return Scaffold(
+          backgroundColor: AppColors.universe.voidBackground,
+          body: _buildViewerBody(
+            context: context,
+            ref: ref,
+            lecture: lecture,
+          ),
         );
       },
     );
@@ -96,457 +93,255 @@ class LectureViewerPage extends HookConsumerWidget {
     required BuildContext context,
     required WidgetRef ref,
     required Lecture lecture,
-    required ValueNotifier<bool> isExpanded,
-    required ValueNotifier<int> currentTab,
-    required ValueNotifier<int> currentCardIndex,
-    required ValueNotifier<int?> selectedNoteIndex,
-    required ValueNotifier<String?> selectedText,
   }) {
-    // --- 実データの取得 ---
     final topics = ref.watch(lectureTopicsProvider(lecture.id)).asData?.value ?? const <LectureTopic>[];
-    final deepNotes = ref.watch(deepNotesProvider(lecture.id)).asData?.value ?? const <DeepNote>[];
-    final reviewCards = ref.watch(reviewCardsProvider(lecture.id)).asData?.value ?? const <ReviewCard>[];
     final keywords = ref.watch(lectureKeywordsProvider(lecture.id)).asData?.value ?? const <Keyword>[];
     final funFacts = ref.watch(funFactsForLectureProvider(lecture.id)).asData?.value ?? const <FunFact>[];
     final announcements = ref.watch(announcementsForLectureProvider(lecture.id)).asData?.value ?? const <Announcement>[];
 
-    final uid = ref.watch(currentUserProvider)?.id;
-    final transcriptAsync = uid == null
-        ? const AsyncValue<List<TranscriptSentence>?>.data(null)
-        : ref.watch(transcriptProvider(uid: uid, lectureId: lecture.id));
-
-    // topic を index で引けるようにしておく
-    final topicByIndex = <int, LectureTopic>{
-      for (final t in topics) t.index: t,
-    };
-
-    // Deep Notes: lecture_topics の並び順に、対応するnote_contentsを合わせて1つのリストにする。
-    // LLM生成物に含まれるSID引用(⟦s000011⟧など)は表示時には除去する。
-    final noteTopics = topics
-        .map((t) => _NoteTopic(
-              title: t.displayTitle,
-              summary: stripSidCitations(t.summary ?? ''),
-              content: stripSidCitations(deepNotes
-                      .firstWhere(
-                        (n) => n.topicNumber == t.index,
-                        orElse: () => DeepNote(id: '', topicNumber: t.index, createdAt: DateTime.now()),
-                      )
-                      .noteContents ??
-                  ''),
-            ))
-        .toList();
-
-    // Review Cards: topic_number 昇順、かつ cardType（hook -> core_why -> gotcha -> next_action）の順にソートしてグルーピング
-    const cardTypeOrder = {
-      'hook': 0,
-      'core_why': 1,
-      'gotcha': 2,
-      'next_action': 3,
-    };
-
-    final sortedReviewCards = List<ReviewCard>.from(reviewCards)
-      ..sort((a, b) {
-        if (a.topicNumber != b.topicNumber) {
-          return a.topicNumber.compareTo(b.topicNumber);
-        }
-        final orderA = cardTypeOrder[a.cardType?.toLowerCase()] ?? 99;
-        final orderB = cardTypeOrder[b.cardType?.toLowerCase()] ?? 99;
-        return orderA.compareTo(orderB);
-      });
-
-    final reviewGroups = <_ReviewTopicGroup>[];
-    for (final card in sortedReviewCards) {
-      if (reviewGroups.isEmpty || reviewGroups.last.topicNumber != card.topicNumber) {
-        final topic = topicByIndex[card.topicNumber];
-        reviewGroups.add(_ReviewTopicGroup(
-          topicNumber: card.topicNumber,
-          title: topic?.displayTitle ?? 'Topic ${card.topicNumber}',
-          imagePath: topic?.imagePath,
-          cards: [card],
-        ));
-      } else {
-        reviewGroups.last.cards.add(card);
-      }
-    }
-
-
-    final paperTheme = ThemeData(
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.paper.background,
-      colorScheme: ColorScheme.light(
-        surface: AppColors.paper.surface,
-        onSurface: AppColors.paper.textInk,
-        onSurfaceVariant: AppColors.paper.textPencil,
-        primary: AppColors.deepGold,
-      ),
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(color: AppColors.paper.textInk),
-        bodyMedium: TextStyle(color: AppColors.paper.textInk),
-        titleLarge: TextStyle(color: AppColors.paper.textInk, fontWeight: FontWeight.bold),
-        titleMedium: TextStyle(color: AppColors.paper.textInk, fontWeight: FontWeight.bold),
-        labelSmall: TextStyle(color: AppColors.paper.textPencil),
-      ),
+    final courses = ref.watch(courseListProvider).asData?.value ?? const <Course>[];
+    final course = courses.cast<Course?>().firstWhere(
+      (c) => c?.id == lecture.courseId,
+      orElse: () => null,
     );
+    final courseCode = course?.courseCode ?? 'N/A';
 
-    useEffect(() {
-      if (isExpanded.value) {
-        if (currentTab.value == 1 && selectedNoteIndex.value == null) {
-          selectedNoteIndex.value = 0;
-        }
-      } else {
-        selectedNoteIndex.value = null;
-      }
-      return null;
-    }, [isExpanded.value, currentTab.value]);
-
-    useEffect(() {
-      selectedText.value = null;
-      return null;
-    }, [currentTab.value, isExpanded.value, selectedNoteIndex.value]);
-
-    final headerHeight = useState<double>(280.0);
-    final screenHeight = MediaQuery.of(context).size.height;
-    
-    final collapsedTopOffset = headerHeight.value+20;
-    final topOffset = isExpanded.value ? 0.0 : collapsedTopOffset;
-    final panelHeight = isExpanded.value ? screenHeight : screenHeight - collapsedTopOffset;
-
-    final dateStr = DateFormat.yMMMd().format(lecture.lectureDatetime);
-    final timeStr = DateFormat.Hm().format(lecture.lectureDatetime);
-
-    return Scaffold(
-      backgroundColor: AppColors.universe.voidBackground,
-      body: Stack(
-        children: [
-          // 1. Background Content (Header)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _MeasureSize(
-              onChange: (size) {
-                if (headerHeight.value != size.height) {
-                  headerHeight.value = size.height;
-                }
-              },
-              child: _buildBackgroundContent(
-                context,
-                lecture,
-                dateStr,
-                timeStr,
-                funFacts: funFacts,
-                announcements: announcements,
-              ),
-            ),
-          ),
-
-          // 2. Slidable Foreground Panel
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutCubic,
-            top: topOffset,
-            left: 0,
-            right: 0,
-            height: panelHeight,
-            child: GestureDetector(
-              onVerticalDragUpdate: (details) {
-                if (details.delta.dy < -5 && !isExpanded.value) {
-                  isExpanded.value = true;
-                } else if (details.delta.dy > 5 && isExpanded.value) {
-                  isExpanded.value = false;
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  color: isExpanded.value
-                      ? AppColors.paper.background
-                      : AppColors.paper.background.withValues(alpha: 0.5),
-                  border: isExpanded.value ? null : Border(top: BorderSide(color: AppColors.universe.glassBorder)),
-                  borderRadius: isExpanded.value 
-                      ? BorderRadius.zero 
-                      : const BorderRadius.vertical(top: Radius.circular(32)),
-                ),
-                child: Theme(
-                  data: paperTheme,
-                  child: Stack(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Tab Header Area
-                          _buildPanelHeader(
-                            context: context,
-                            isExpanded: isExpanded.value, 
-                            currentTab: currentTab,
-                            onToggleExpand: () {
-                              isExpanded.value = !isExpanded.value;
-                            },
-                          ),
-                          // Panel Content Area
-                          Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              child: _buildPanelContent(
-                                currentTab: currentTab.value,
-                                isExpanded: isExpanded.value,
-                                currentCardIndex: currentCardIndex,
-                                selectedNoteIndex: selectedNoteIndex,
-                                onExpand: () => isExpanded.value = true,
-                                selectedText: selectedText,
-                                reviewGroups: reviewGroups,
-                                noteTopics: noteTopics,
-                                keywords: keywords,
-                                transcriptAsync: transcriptAsync,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (isExpanded.value && selectedText.value != null && selectedText.value!.isNotEmpty)
-                        Positioned(
-                          top: MediaQuery.of(context).padding.top + 104.0,
-                          left: 16,
-                          right: 16,
-                          child: Builder(
-                            builder: (context) {
-                              final isDark = Theme.of(context).brightness == Brightness.dark;
-                              return Container(
-                                height: 46,
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.universe.voidBackground.withValues(alpha: 0.92)
-                                      : AppColors.paper.surface.withValues(alpha: 0.95),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isDark
-                                        ? AppColors.universe.glassBorder
-                                        : Colors.black.withValues(alpha: 0.08),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: isDark
-                                          ? Colors.black.withValues(alpha: 0.4)
-                                          : Colors.black.withValues(alpha: 0.06),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.gesture, 
-                                          color: isDark 
-                                              ? AppColors.universe.textComet 
-                                              : AppColors.paper.textPencil, 
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'テキストアクション',
-                                          style: TextStyle(
-                                            color: isDark 
-                                                ? Colors.white70 
-                                                : AppColors.paper.textPencil,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 24),
-                                        _ToolbarButton(
-                                          icon: Icons.auto_awesome,
-                                          label: 'AIに質問',
-                                          color: AppColors.starGold,
-                                          onTap: () {
-                                            final text = selectedText.value;
-                                            if (text != null && text.isNotEmpty) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  backgroundColor: AppColors.universe.voidBackground,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(6),
-                                                    side: BorderSide(color: AppColors.universe.glassBorder),
-                                                  ),
-                                                  behavior: SnackBarBehavior.floating,
-                                                  content: Text('AIに質問中: "$text"', style: const TextStyle(color: Colors.white)),
-                                                ),
-                                              );
-                                              selectedText.value = null; // Close menu
-                                            }
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _ToolbarButton(
-                                          icon: Icons.edit,
-                                          label: 'マーカー',
-                                          color: isDark ? Colors.white : AppColors.paper.textInk,
-                                          onTap: () {
-                                            final text = selectedText.value;
-                                            if (text != null && text.isNotEmpty) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  backgroundColor: AppColors.universe.voidBackground,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12),
-                                                    side: BorderSide(color: AppColors.universe.glassBorder),
-                                                  ),
-                                                  behavior: SnackBarBehavior.floating,
-                                                  content: Text('マーカーを追加: "$text"', style: const TextStyle(color: Colors.white)),
-                                                ),
-                                              );
-                                              selectedText.value = null; // Close menu
-                                            }
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _ToolbarButton(
-                                          icon: Icons.copy,
-                                          label: 'コピー',
-                                          color: isDark ? Colors.white : AppColors.paper.textInk,
-                                          onTap: () {
-                                            final text = selectedText.value;
-                                            if (text != null && text.isNotEmpty) {
-                                              Clipboard.setData(ClipboardData(text: text));
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  backgroundColor: AppColors.universe.voidBackground,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(12),
-                                                    side: BorderSide(color: AppColors.universe.glassBorder),
-                                                  ),
-                                                  behavior: SnackBarBehavior.floating,
-                                                  content: const Text('クリップボードにコピーしました', style: TextStyle(color: Colors.white)),
-                                                ),
-                                              );
-                                              selectedText.value = null; // Close menu
-                                            }
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackgroundContent(
-    BuildContext context,
-    Lecture lecture,
-    String dateStr,
-    String timeStr, {
-    required List<FunFact> funFacts,
-    required List<Announcement> announcements,
-  }) {
     final displayTitle = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
-        : (lecture.titleGenerated?.trim().isNotEmpty == true ? lecture.titleGenerated! : 'Untitled Lecture');
+        : (lecture.titleGenerated?.trim().isNotEmpty == true
+            ? lecture.titleGenerated!
+            : 'Untitled Lecture');
     final summary = lecture.summary == null ? null : stripSidCitations(lecture.summary!).trim();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Custom Home-style AppBar with Back button
-        const _LectureAppBar(),
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _LectureAppBar(),
+            const SizedBox(height: 16),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date & Time
-              Text(
-                '$dateStr • $timeStr',
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontSize: 13,
+            // Date & Course Code (left-aligned)
+            Row(
+              children: [
+                Text(
+                  DateFormat.yMMMd().format(lecture.lectureDatetime),
+                  style: TextStyle(
+                    color: AppColors.universe.textComet,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-
-              // Title
-              Text(
-                displayTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
+                Text(
+                  '  •  ',
+                  style: TextStyle(
+                    color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                    fontSize: 13,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-
-              // Summary
-              Text(
-                (summary != null && summary.isNotEmpty)
-                    ? summary
-                    : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
-                style: TextStyle(
-                  color: AppColors.universe.textStarlight,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              if (announcements.isNotEmpty || funFacts.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (announcements.isNotEmpty) ...[
-                      _HighlightChip(
-                        icon: Icons.campaign_outlined,
-                        label: '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
-                        onTap: () => _showAnnouncementsSheet(context, announcements),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (funFacts.isNotEmpty)
-                      _HighlightChip(
-                        icon: Icons.auto_awesome,
-                        label: '${funFacts.length} fun fact${funFacts.length == 1 ? '' : 's'}',
-                        onTap: () => _showFunFactsSheet(context, funFacts),
-                      ),
-                  ],
+                Text(
+                  courseCode,
+                  style: const TextStyle(
+                    color: AppColors.starGold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+
+            // Title
+            Text(
+              displayTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Summary
+            Text(
+              (summary != null && summary.isNotEmpty)
+                  ? summary
+                  : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
+              style: TextStyle(
+                color: AppColors.universe.textStarlight,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Start Review Session Button (horizontal capsule button)
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Starting Review Session...')),
+                );
+              },
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.starGold, Color(0xFFFFD700)],
+                  ),
+                  borderRadius: BorderRadius.circular(26),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.starGold.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Start Review Session',
+                      style: TextStyle(
+                        color: AppColors.universe.voidBackground,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Horizontal Info Chips Row
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _HighlightChip(
+                    icon: Icons.campaign_outlined,
+                    label: '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
+                    onTap: announcements.isNotEmpty
+                        ? () => _showAnnouncementsSheet(context, lecture.id, announcements)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  _HighlightChip(
+                    icon: Icons.vpn_key_outlined,
+                    label: '${keywords.length} keyword${keywords.length == 1 ? '' : 's'}',
+                    onTap: keywords.isNotEmpty
+                        ? () => _showKeywordsSheet(context, keywords)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  _HighlightChip(
+                    icon: Icons.hub_outlined,
+                    label: '${topics.length} topic node${topics.length == 1 ? '' : 's'}',
+                    onTap: null, // Dummy/no-op
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // Two Large Buttons: Review Cards & Deep Notes (横並びでどでかく)
+            Row(
+              children: [
+                Expanded(
+                  child: _LargeNavigatorCard(
+                    icon: Icons.style_outlined,
+                    title: 'Review Cards',
+                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/rc/${lecture.id}'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _LargeNavigatorCard(
+                    icon: Icons.description_outlined,
+                    title: 'Deep Notes',
+                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/dn/${lecture.id}'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+
+            // Fun Fact Section
+            if (funFacts.isNotEmpty) ...[
+              Text(
+                'FUN FACT',
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _ViewerFunFactCard(fact: funFacts.first),
+              const SizedBox(height: 28),
             ],
-          ),
+
+            // Transcript Button (Bottom)
+            GestureDetector(
+              onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/transcript/${lecture.id}'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.universe.glassWhiteLow,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.universe.glassBorder),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long_outlined, color: AppColors.starGold, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Transcript',
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  void _showAnnouncementsSheet(BuildContext context, List<Announcement> announcements) {
+  void _showAnnouncementsSheet(BuildContext context, String lectureId, List<Announcement> announcements) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _LectureInfoSheet.announcements(announcements),
+      builder: (_) => _LectureInfoSheet.announcements(lectureId: lectureId, announcements: announcements),
     );
   }
 
+  void _showKeywordsSheet(BuildContext context, List<Keyword> keywords) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LectureInfoSheet.keywords(keywords),
+    );
+  }
+}
+
+// Commented out unused methods and helpers from the old sliding sheet layout
+/*
   void _showFunFactsSheet(BuildContext context, List<FunFact> funFacts) {
     showModalBottomSheet<void>(
       context: context,
@@ -573,47 +368,38 @@ class LectureViewerPage extends HookConsumerWidget {
             )
           : null,
       padding: EdgeInsets.only(
-        top: isExpanded ? safeTop + 16.0 : 16.0, 
-        bottom: isExpanded ? 12.0 : 8.0,
+        top: isExpanded ? safeTop : 0,
       ),
-      child: Column(
-        children: [
-          // Up indicator (only when collapsed)
-          if (!isExpanded)
-            GestureDetector(
-              onTap: onToggleExpand,
-              child: Icon(Icons.keyboard_arrow_up, color: AppColors.universe.textComet, size: 28),
-            ),
-          
-          if (!isExpanded) const SizedBox(height: 8),
-
-          // Tabs（横幅が狭い端末でも折り返さないよう横スクロール可能にしておく）
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _TabItem(title: 'Review Cards', index: 0, currentTab: currentTab, isExpanded: isExpanded),
-                const SizedBox(width: 8),
-                _TabItem(title: 'Deep Notes', index: 1, currentTab: currentTab, isExpanded: isExpanded),
-                const SizedBox(width: 8),
-                _TabItem(title: 'Keywords', index: 2, currentTab: currentTab, isExpanded: isExpanded),
-                const SizedBox(width: 8),
-                _TabItem(title: 'Transcript', index: 3, currentTab: currentTab, isExpanded: isExpanded),
-              ],
-            ),
-          ),
-
-          // Down indicator (only when expanded)
-          if (isExpanded)
-            GestureDetector(
-              onTap: onToggleExpand,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Icon(Icons.keyboard_arrow_down, color: AppColors.paper.textPencil, size: 28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: [
+                    _TabItem(title: 'Review Cards', index: 0, currentTab: currentTab, isExpanded: isExpanded),
+                    const SizedBox(width: 8),
+                    _TabItem(title: 'Deep Notes', index: 1, currentTab: currentTab, isExpanded: isExpanded),
+                    const SizedBox(width: 8),
+                    _TabItem(title: 'Keywords', index: 2, currentTab: currentTab, isExpanded: isExpanded),
+                    const SizedBox(width: 8),
+                    _TabItem(title: 'Transcript', index: 3, currentTab: currentTab, isExpanded: isExpanded),
+                  ],
+                ),
               ),
             ),
-        ],
+            IconButton(
+              icon: Icon(
+                isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                color: isExpanded ? AppColors.paper.textInk : Colors.white,
+              ),
+              onPressed: onToggleExpand,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -724,11 +510,6 @@ class _TabItem extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Deep Notes / Review Cards 用の軽量データクラス
-// ---------------------------------------------------------------------------
-
-/// Deep Notesタブの1トピック分（lecture_topics + deep_notes を結合したもの）
 class _NoteTopic {
   const _NoteTopic({required this.title, required this.summary, required this.content});
 
@@ -737,7 +518,6 @@ class _NoteTopic {
   final String content;
 }
 
-/// Review Cardsタブの1トピック分（review_cardsをtopic_numberでグルーピングしたもの）
 class _ReviewTopicGroup {
   _ReviewTopicGroup({
     required this.topicNumber,
@@ -750,19 +530,199 @@ class _ReviewTopicGroup {
   final String title;
   final List<ReviewCard> cards;
 
-  /// lecture_topics.image_path (R2ストレージパス)。生成前はnull。
   final String? imagePath;
+}
+*/
+
+class _LargeNavigatorCard extends StatelessWidget {
+  const _LargeNavigatorCard({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.universe.glassWhiteLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.universe.glassBorder),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.universe.glassWhiteHigh,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: AppColors.starGold,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                color: AppColors.universe.textStarlight,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerFunFactCard extends HookConsumerWidget {
+  const _ViewerFunFactCard({
+    required this.fact,
+  });
+
+  final FunFact fact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hook = fact.hook?.trim();
+    final body = fact.body?.trim() ?? '';
+    final fullText = (hook != null && hook.isNotEmpty) ? '$hook\n\n$body' : body;
+
+    final currentReaction = fact.metadata?['reaction'] as String?;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (fact.title?.trim().isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Text(
+                fact.title!.trim(),
+                style: const TextStyle(
+                  color: AppColors.starGold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Text(
+              fullText,
+              style: TextStyle(
+                color: AppColors.universe.textStarlight,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ),
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.white10)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _ViewerReactionButton(
+                  factId: fact.id,
+                  lectureId: fact.lectureId!,
+                  reaction: 'like',
+                  currentReaction: currentReaction,
+                ),
+                const SizedBox(width: 12),
+                _ViewerReactionButton(
+                  factId: fact.id,
+                  lectureId: fact.lectureId!,
+                  reaction: 'dislike',
+                  currentReaction: currentReaction,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewerReactionButton extends ConsumerWidget {
+  const _ViewerReactionButton({
+    required this.factId,
+    required this.lectureId,
+    required this.reaction,
+    required this.currentReaction,
+  });
+
+  final String factId;
+  final String lectureId;
+  final String reaction;
+  final String? currentReaction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isActive = currentReaction == reaction;
+
+    IconData iconData;
+    Color iconColor;
+    if (reaction == 'like') {
+      iconData = isActive ? Icons.favorite : Icons.favorite_border;
+      iconColor = isActive ? Colors.redAccent : Colors.white54;
+    } else {
+      iconData = isActive ? Icons.thumb_down : Icons.thumb_down_alt_outlined;
+      iconColor = isActive ? Colors.blueAccent : Colors.white54;
+    }
+
+    return IconButton(
+      icon: Icon(iconData, color: iconColor, size: 20),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      onPressed: () async {
+        final newReaction = isActive ? null : reaction;
+        try {
+          await ref.read(funFactRepositoryProvider).updateReaction(factId, newReaction);
+          // Invalidate to update reactively
+          ref.invalidate(funFactsForLectureProvider(lectureId));
+        } catch (e) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update reaction: $e')),
+          );
+        }
+      },
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
 // ヘッダーの「Xお知らせ」「Y Fun Facts」チップ
 // ---------------------------------------------------------------------------
 class _HighlightChip extends StatelessWidget {
-  const _HighlightChip({required this.icon, required this.label, required this.onTap});
+  const _HighlightChip({required this.icon, required this.label, this.onTap});
 
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -798,30 +758,86 @@ class _HighlightChip extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // 「Xお知らせ」「Y Fun Facts」チップをタップした時に開くボトムシート
 // ---------------------------------------------------------------------------
-class _LectureInfoSheet extends StatelessWidget {
-  const _LectureInfoSheet._({required this.title, required this.itemsBuilder});
+class _LectureInfoSheet extends ConsumerWidget {
+  const _LectureInfoSheet._({required this.title, required this.itemsBuilder, this.lectureId});
 
-  factory _LectureInfoSheet.announcements(List<Announcement> announcements) {
+  factory _LectureInfoSheet.announcements({
+    required String lectureId,
+    required List<Announcement> announcements,
+  }) {
     return _LectureInfoSheet._(
       title: 'Announcements',
-      itemsBuilder: (context) =>
-          announcements.map((a) => _AnnouncementRow(announcement: a)).toList(),
+      lectureId: lectureId,
+      itemsBuilder: (context, ref) {
+        // 最新の状態を NotifierProvider から直接取得（スワイプ後の状態変化を反映）
+        final currentAnnouncements =
+            ref.watch(announcementsForLectureProvider(lectureId)).asData?.value ?? announcements;
+        return currentAnnouncements
+            .map(
+              (a) => AnnouncementTile(
+                announcement: a,
+                showTimestamp: false,
+                onToggleComplete: (ann) =>
+                    ref.read(announcementsForLectureProvider(lectureId).notifier).toggleComplete(ann),
+              ),
+            )
+            .toList();
+      },
     );
   }
 
-  factory _LectureInfoSheet.funFacts(List<FunFact> funFacts) {
+
+
+  factory _LectureInfoSheet.keywords(List<Keyword> keywords) {
     return _LectureInfoSheet._(
-      title: 'Fun Facts',
-      itemsBuilder: (context) => funFacts.map((f) => _FunFactRow(funFact: f)).toList(),
+      title: 'Keywords',
+      itemsBuilder: (context, ref) => keywords.map((k) {
+        final hasDefinition = k.definition?.trim().isNotEmpty == true;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.universe.glassBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  k.keyword?.trim().isNotEmpty == true ? k.keyword!.trim() : 'Untitled term',
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  hasDefinition ? k.definition!.trim() : 'Definition pending…',
+                  style: TextStyle(
+                    color: AppColors.universe.textComet,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontStyle: hasDefinition ? FontStyle.normal : FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
   final String title;
-  final List<Widget> Function(BuildContext context) itemsBuilder;
+  final String? lectureId;
+  final List<Widget> Function(BuildContext context, WidgetRef ref) itemsBuilder;
 
   @override
-  Widget build(BuildContext context) {
-    final items = itemsBuilder(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = itemsBuilder(context, ref);
     return DraggableScrollableSheet(
       initialChildSize: 0.55,
       minChildSize: 0.3,
@@ -882,55 +898,8 @@ class _LectureInfoSheet extends StatelessWidget {
   }
 }
 
-class _AnnouncementRow extends StatelessWidget {
-  const _AnnouncementRow({required this.announcement});
 
-  final Announcement announcement;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.universe.glassBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(iconForAnnouncementType(announcement.type), color: AppColors.starGold, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  announcement.title?.trim().isNotEmpty == true
-                      ? announcement.title!.trim()
-                      : 'Announcement',
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                if (announcement.description?.trim().isNotEmpty == true) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    announcement.description!.trim(),
-                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
+/*
 class _FunFactRow extends StatelessWidget {
   const _FunFactRow({required this.funFact});
 
@@ -2161,6 +2130,7 @@ class _TranscriptView extends StatelessWidget {
     );
   }
 }
+*/
 
 class _LectureAppBar extends StatelessWidget {
   const _LectureAppBar();
@@ -2216,6 +2186,7 @@ class _LectureAppBar extends StatelessWidget {
   }
 }
 
+/*
 class _MeasureSize extends StatefulWidget {
   final Widget child;
   final OnWidgetSizeChange onChange;
@@ -2289,3 +2260,4 @@ class _ToolbarButton extends StatelessWidget {
     );
   }
 }
+*/

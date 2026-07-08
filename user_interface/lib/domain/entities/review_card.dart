@@ -65,3 +65,20 @@ class ReviewCard {
     );
   }
 }
+
+/// review_cards.card_type の正規の並び順。
+/// Hook -> Core Why -> Gotcha -> Next Action
+const reviewCardTypeOrder = ['hook', 'core_why', 'gotcha', 'next_action'];
+
+int _reviewCardTypeRank(String? cardType) {
+  final idx = reviewCardTypeOrder.indexOf(cardType ?? '');
+  return idx == -1 ? reviewCardTypeOrder.length : idx;
+}
+
+/// カードをHook -> Core Why -> Gotcha -> Next Actionの順に並び替える。
+List<ReviewCard> sortReviewCards(List<ReviewCard> cards) {
+  final sorted = [...cards];
+  sorted.sort((a, b) =>
+      _reviewCardTypeRank(a.cardType).compareTo(_reviewCardTypeRank(b.cardType)));
+  return sorted;
+}

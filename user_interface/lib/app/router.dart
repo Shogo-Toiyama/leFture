@@ -19,6 +19,11 @@ import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dar
 import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/course_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/review_cards/review_cards_dashboard_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/review_cards/review_cards_viewer_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_list_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_detail_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/transcript/transcript_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -62,31 +67,94 @@ final routerProvider = Provider<GoRouter>((ref) {
       // =================================================================
       
       // 1. Home (Dashboard) - 宇宙のコックピット
+      // 1. Home (Dashboard) - 宇宙のコックピット
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomePage(),
-      ),
-
-      // 2. Notes System
-      GoRoute(
-        path: AppRoutes.notesRoot,
-        builder: (context, state) => const CoursePage(),
         routes: [
-          // コース内: /notes/c/:courseId
+          // 2. Notes System (Nested under /home)
           GoRoute(
-            path: AppRoutes.noteCourse,
-            builder: (context, state) {
-              final id = state.pathParameters['courseId'];
-              return CoursePage(courseId: id);
-            },
-          ),
-          // 授業ビューワー: /notes/v/:lectureId
-          GoRoute(
-            path: AppRoutes.noteViewer,
-            builder: (context, state) {
-              final id = state.pathParameters['lectureId'];
-              return LectureViewerPage(lectureId: id!);
-            },
+            path: AppRoutes.notesRoot, // 'notes' -> /home/notes
+            builder: (context, state) => const CoursePage(),
+            routes: [
+              // コース内: /home/notes/c/:courseId
+              GoRoute(
+                path: AppRoutes.noteCourse, // 'c/:courseId' -> /home/notes/c/:courseId
+                builder: (context, state) {
+                  final id = state.pathParameters['courseId'];
+                  return CoursePage(courseId: id);
+                },
+                routes: [
+                  // 授業ビューワー: /home/notes/c/:courseId/v/:lectureId
+                  GoRoute(
+                    path: AppRoutes.noteViewer, // 'v/:lectureId' -> /home/notes/c/:courseId/v/:lectureId
+                    builder: (context, state) {
+                      final id = state.pathParameters['lectureId'];
+                      return LectureViewerPage(lectureId: id!);
+                    },
+                  ),
+
+                  // Review Cards: /home/notes/c/:courseId/rc/:lectureId
+                  GoRoute(
+                    path: AppRoutes.reviewCardsDashboard, // 'rc/:lectureId'
+                    builder: (context, state) {
+                      final id = state.pathParameters['lectureId']!;
+                      return ReviewCardsDashboardPage(lectureId: id);
+                    },
+                  ),
+
+                  // Review Cards Viewer: /home/notes/c/:courseId/rcv/:lectureId
+                  GoRoute(
+                    path: AppRoutes.reviewCardsViewer, // 'rcv/:lectureId'
+                    builder: (context, state) {
+                      final id = state.pathParameters['lectureId']!;
+                      final indexStr = state.uri.queryParameters['index'];
+                      final initialIndex = indexStr != null ? int.tryParse(indexStr) : null;
+                      return ReviewCardsViewerPage(
+                        lectureId: id,
+                        initialIndex: initialIndex ?? 0,
+                      );
+                    },
+                  ),
+
+                  // Deep Notes List: /home/notes/c/:courseId/dn/:lectureId
+                  GoRoute(
+                    path: AppRoutes.deepNotesList, // 'dn/:lectureId'
+                    builder: (context, state) {
+                      final id = state.pathParameters['lectureId']!;
+                      return DeepNotesListPage(lectureId: id);
+                    },
+                  ),
+
+                  // Deep Notes Detail: /home/notes/c/:courseId/dnd/:topicIndex
+                  GoRoute(
+                    path: AppRoutes.deepNotesDetail, // 'dnd/:lectureId/:topicIndex'
+                    builder: (context, state) {
+                      final id    = state.pathParameters['lectureId']!;
+                      final index = int.tryParse(
+                              state.pathParameters['topicIndex'] ?? '0') ??
+                          0;
+                      final topics =
+                          (state.extra as List<DeepNoteTopic>?) ?? const [];
+                      return DeepNotesDetailPage(
+                        lectureId: id,
+                        topicIndex: index,
+                        topics: topics,
+                      );
+                    },
+                  ),
+
+                  // Transcript: /home/notes/c/:courseId/transcript/:lectureId
+                  GoRoute(
+                    path: AppRoutes.transcript, // 'transcript/:lectureId'
+                    builder: (context, state) {
+                      final id = state.pathParameters['lectureId']!;
+                      return TranscriptPage(lectureId: id);
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),

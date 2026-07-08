@@ -16,8 +16,22 @@ class AppRoutes {
   static const profile = '/profile';
   static const study = '/study';
 
-  // Notes (Nested)
-  static const notesRoot = '/notes';
-  static const noteCourse = 'c/:courseId'; // 例: /notes/c/123
-  static const noteViewer = 'v/:lectureId'; // 例: /notes/v/456
+  // Notes (Nested relative paths for GoRouter configuration)
+  static const notesRoot = 'notes';
+  static const noteCourse = 'c/:courseId'; // 例: c/123
+  static const noteViewer = 'v/:lectureId'; // 例: v/456
+
+  // Review Cards (Nested under /home/notes/c/:courseId)
+  static const reviewCardsDashboard = 'rc/:lectureId';        // rc/:lectureId
+  static const reviewCardsViewer    = 'rcv/:lectureId';       // rcv/:lectureId
+
+  // Deep Notes (Nested under /home/notes/c/:courseId)
+  static const deepNotesList   = 'dn/:lectureId';             // dn/:lectureId
+  static const deepNotesDetail = 'dnd/:lectureId/:topicIndex';// dnd/:lectureId/:topicIndex
+
+  // Transcript (Nested under /home/notes/c/:courseId)
+  static const transcript = 'transcript/:lectureId';          // transcript/:lectureId
+
+  // Absolute Navigation Paths
+  static const notesRootPath = '/home/notes';
 }
