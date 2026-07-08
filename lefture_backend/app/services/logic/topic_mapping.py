@@ -48,7 +48,12 @@ class TopicMappingService:
             self.logger.log(f"❌ JSON parse failed for Topic Mapping. Raw output:\n{res.output_text}")
             raise ValueError(f"Topic Mapping JSON parse failed: {res.json_parse_error}")
 
+        output = res.output_json
+        if not output or not isinstance(output, dict) or "graph_mutations" not in output:
+            self.logger.log(f"❌ Received structurally invalid JSON for Topic Mapping (missing 'graph_mutations'). Raw output: {res.output_text[:500] if res.output_text else 'None'}")
+            raise ValueError(f"Topic Mapping JSON is valid but missing 'graph_mutations' key. Got: {type(output)}")
+
         elapsed = time.perf_counter() - start_time
         self.logger.log(f"⏰ Topic Mapping finished in {elapsed:.2f} seconds.")
         
-        return res.output_json
+        return output

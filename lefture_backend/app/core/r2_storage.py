@@ -120,5 +120,29 @@ class R2StorageService:
         except ClientError:
             return False
 
+    def load_json_cache(self, storage_path: str) -> Any | None:
+        """
+        R2上のオブジェクトを読み込む。存在しない場合はNoneを返す（例外を飲む）。
+        トピック単位キャッシュの読み込みに使う。
+        """
+        try:
+            response = self.s3.get_object(Bucket=self.bucket_name, Key=storage_path)
+            return json.loads(response["Body"].read().decode("utf-8"))
+        except ClientError:
+            return None
+
+    def save_json_cache(self, storage_path: str, data: Any) -> str:
+        """
+        任意のR2パスにJSONを保存する（save_json_logと違いパスを自分で指定できる）。
+        """
+        json_data = json.dumps(data, indent=2, ensure_ascii=False)
+        self.s3.put_object(
+            Bucket=self.bucket_name,
+            Key=storage_path,
+            Body=json_data,
+            ContentType="application/json"
+        )
+        return storage_path
+
 # シングルトンとしてインスタンス化
 storage_service = R2StorageService()

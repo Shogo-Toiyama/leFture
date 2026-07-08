@@ -1,8 +1,10 @@
 # app/services/logic/review_card_generation.py
 import json
 import time
+import asyncio
 from typing import Any, Dict, List
 
+from app.core.r2_storage import storage_service
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 from app.services.helpers.helpers import TaskLogger, _load_prompt, _sid_to_int
 
@@ -16,7 +18,9 @@ class ReviewCardGenerationService:
         self, 
         role_classified_data: List[Dict[str, Any]], 
         core_data: Dict[str, Any],
-        mapping_result: Dict[str, Any]
+        mapping_result: Dict[str, Any],
+        uid: str,
+        lecture_id: str
     ) -> List[Dict[str, Any]]:
         
         self.logger.log(f"   [Logic] Starting Review Card Generation with {self.model_alias}")
@@ -29,9 +33,20 @@ class ReviewCardGenerationService:
         # 1. ACADEMIC なトピックだけを抽出
         academic_topics = [t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"]
 
+        failed_topic_indices = []
+
         for topic in academic_topics:
             topic_idx = topic.get("idx")
             topic_title = topic.get("title")
+            
+            # ① R2キャッシュ確認 (リトライ時はここでスキップ)
+            cache_path = f"{uid}/{lecture_id}/pipeline_cache/review_cards_topic_{topic_idx}.json"
+            cached = await asyncio.to_thread(storage_service.load_json_cache, cache_path)
+            if cached is not None:
+                self.logger.log(f"   [Cache] Topic {topic_idx}: loaded from R2 cache, skipping LLM.")
+                all_review_results.append(cached)
+                continue
+
             start_sid = topic.get("start_sid")
             end_sid = topic.get("end_sid")
 
@@ -47,7 +62,11 @@ class ReviewCardGenerationService:
                 if sid_num is not None and start_num <= sid_num <= end_num:
                     segment_sentences.append(s)
 
-            if not segment_sentences: continue
+            if not segment_sentences:
+                empty_res = {"topic_idx": topic_idx, "review_cards": []}
+                await asyncio.to_thread(storage_service.save_json_cache, cache_path, empty_res)
+                all_review_results.append(empty_res)
+                continue
 
             # 3. 💡 修正版: 一文ごとの確率 (all_probabilities) でフィルタリング！
             trimmed_lines = []
@@ -70,6 +89,9 @@ class ReviewCardGenerationService:
             # 有効な文章が1つも残らなかったらこのトピックはスキップ
             if not trimmed_lines:
                 self.logger.log(f"   [Logic] Skipping Topic {topic_idx} (No valid sentences passed the probability filter)")
+                empty_res = {"topic_idx": topic_idx, "review_cards": []}
+                await asyncio.to_thread(storage_service.save_json_cache, cache_path, empty_res)
+                all_review_results.append(empty_res)
                 continue
 
             trimmed_transcript = "\n".join(trimmed_lines)
@@ -98,6 +120,8 @@ class ReviewCardGenerationService:
             if not res.json_parse_error and res.output_json:
                 result = res.output_json
                 result["topic_idx"] = topic_idx # 紐付け用
+                # ③ 成功したらR2にキャッシュ保存
+                await asyncio.to_thread(storage_service.save_json_cache, cache_path, result)
                 all_review_results.append(result)
             else:
                 self.logger.log(
@@ -105,5 +129,15 @@ class ReviewCardGenerationService:
                     f"JSON parse error: {res.json_parse_error}. "
                     f"Output text snippet: {res.output_text[:500] if res.output_text else 'None'}"
                 )
+                failed_topic_indices.append(topic_idx)
+
+        # ④ 失敗があれば例外を送出する
+        if failed_topic_indices:
+            raise ValueError(
+                f"Review Card generation failed for {len(failed_topic_indices)} topic(s): "
+                f"indices={failed_topic_indices}. "
+                f"Successfully cached {len(all_review_results)} topic(s). "
+                f"Retry will skip cached topics."
+            )
 
         return all_review_results

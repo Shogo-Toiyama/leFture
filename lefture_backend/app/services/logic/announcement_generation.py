@@ -46,7 +46,7 @@ class AnnouncementGenerationService:
         
         output = res.output_json
         if not output or not isinstance(output, dict) or "announcements" not in output:
-            self.logger.log("⚠️ Received empty or invalid JSON response. Falling back to empty announcements list.")
-            output = {"announcements": []}
+            self.logger.log(f"❌ Received structurally invalid JSON (missing 'announcements' key). Raw output: {res.output_text[:500] if res.output_text else 'None'}")
+            raise ValueError(f"Announcement JSON is valid but missing 'announcements' key. Got: {type(output)}, keys: {list(output.keys()) if isinstance(output, dict) else 'N/A'}")
             
         return output

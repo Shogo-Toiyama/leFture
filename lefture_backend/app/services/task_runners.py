@@ -1095,7 +1095,9 @@ async def run_review_card_task(job_id: str, task_id: str):
         review_cards_results = await generator.run_from_memory(
             role_classified_data=classified_data,
             core_data=core_data,
-            mapping_result=mapping_result
+            mapping_result=mapping_result,
+            uid=uid,
+            lecture_id=lecture_id
         )
 
         # 3. フルログをR2に保存
@@ -1363,7 +1365,11 @@ async def run_detail_contents_task(job_id: str, task_id: str):
         service = TopicDetailGenerationService(llm, logger)
         
         # 💡 Review Cardと同じく、全データを渡して中でループ・フィルタリングしてもらう！
-        all_details = await service.run_from_memory(classified_data, core_data)
+        all_details = await service.run_from_memory(
+            classified_data, core_data,
+            uid=uid,
+            lecture_id=lecture_id
+        )
 
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "detail_contents", all_details)
 
