@@ -11,9 +11,36 @@ Future<Announcement?> latestAnnouncement(Ref ref) async {
   return repo.getLatestActive();
 }
 
-/// 未完了のアナウンスメント全件（新しい順）
+/// 未完了のアナウンスメント全件（新しい順）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 @riverpod
-Future<List<Announcement>> activeAnnouncements(Ref ref) async {
-  final repo = ref.watch(announcementRepositoryProvider);
-  return repo.listActive();
+class ActiveAnnouncements extends _$ActiveAnnouncements {
+  @override
+  Future<List<Announcement>> build() async {
+    final repo = ref.watch(announcementRepositoryProvider);
+    return repo.listActive();
+  }
+
+  /// 指定アナウンスメントの完了/未完了をトグルして楽観的に状態を更新する。
+  Future<void> toggleComplete(Announcement announcement) async {
+    final repo = ref.read(announcementRepositoryProvider);
+    final newCompletedAt = announcement.isCompleted ? null : DateTime.now();
+
+    // 楽観的UI更新: ローカル状態のみ書き換え
+    state = AsyncData(
+      (state.value ?? []).map((a) {
+        if (a.id == announcement.id) {
+          return a.copyWith(completedAt: () => newCompletedAt);
+        }
+        return a;
+      }).toList(),
+    );
+
+    // Supabase にも非同期で書き込む
+    await repo.markAsCompleted(announcement.id, newCompletedAt);
+
+    // latestAnnouncement（AnnouncementBar用）は再フェッチで最新を反映
+    ref.invalidate(latestAnnouncementProvider);
+  }
 }

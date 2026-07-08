@@ -431,24 +431,22 @@ final class FunFactsForLectureFamily extends $Family
   String toString() => r'funFactsForLectureProvider';
 }
 
-/// 講義のアナウンスメント一覧
+/// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
-@ProviderFor(announcementsForLecture)
+@ProviderFor(AnnouncementsForLecture)
 final announcementsForLectureProvider = AnnouncementsForLectureFamily._();
 
-/// 講義のアナウンスメント一覧
-
+/// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 final class AnnouncementsForLectureProvider
     extends
-        $FunctionalProvider<
-          AsyncValue<List<Announcement>>,
-          List<Announcement>,
-          FutureOr<List<Announcement>>
-        >
-    with
-        $FutureModifier<List<Announcement>>,
-        $FutureProvider<List<Announcement>> {
-  /// 講義のアナウンスメント一覧
+        $AsyncNotifierProvider<AnnouncementsForLecture, List<Announcement>> {
+  /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+  /// AsyncNotifier として管理することで、Done/Undo 操作後も
+  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
   AnnouncementsForLectureProvider._({
     required AnnouncementsForLectureFamily super.from,
     required String super.argument,
@@ -472,15 +470,7 @@ final class AnnouncementsForLectureProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Announcement>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<Announcement>> create(Ref ref) {
-    final argument = this.argument as String;
-    return announcementsForLecture(ref, argument);
-  }
+  AnnouncementsForLecture create() => AnnouncementsForLecture();
 
   @override
   bool operator ==(Object other) {
@@ -495,12 +485,21 @@ final class AnnouncementsForLectureProvider
 }
 
 String _$announcementsForLectureHash() =>
-    r'db39d3a1ba24a39fa05defe1fe4877033e500980';
+    r'21d76d49eb9bdff820b94aea1ff99b2532d19cff';
 
-/// 講義のアナウンスメント一覧
+/// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
 final class AnnouncementsForLectureFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Announcement>>, String> {
+    with
+        $ClassFamilyOverride<
+          AnnouncementsForLecture,
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          FutureOr<List<Announcement>>,
+          String
+        > {
   AnnouncementsForLectureFamily._()
     : super(
         retry: null,
@@ -510,11 +509,40 @@ final class AnnouncementsForLectureFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 講義のアナウンスメント一覧
+  /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+  /// AsyncNotifier として管理することで、Done/Undo 操作後も
+  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
   AnnouncementsForLectureProvider call(String lectureId) =>
       AnnouncementsForLectureProvider._(argument: lectureId, from: this);
 
   @override
   String toString() => r'announcementsForLectureProvider';
+}
+
+/// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+
+abstract class _$AnnouncementsForLecture
+    extends $AsyncNotifier<List<Announcement>> {
+  late final _$args = ref.$arg as String;
+  String get lectureId => _$args;
+
+  FutureOr<List<Announcement>> build(String lectureId);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
+              AsyncValue<List<Announcement>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(_$args));
+  }
 }

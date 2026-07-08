@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 
 /// 全コース横断の未完了アナウンスメント一覧シート (HomeのAnnouncementBarから開く)。
 /// 各アナウンスをタップすると、そのアナウンスが属するコースのページへ遷移する。
 class AllAnnouncementsSheet extends ConsumerWidget {
   const AllAnnouncementsSheet({super.key});
-
-  static final _dateFmt = DateFormat('MMM d, yyyy · h:mm a');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -92,15 +88,17 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                         final courseId = announcement.lectureId == null
                             ? null
                             : courseIdByLectureId[announcement.lectureId];
-                        return _AnnouncementTile(
+                        return AnnouncementTile(
                           announcement: announcement,
                           courseName: courseId == null ? null : courseTitleById[courseId],
                           onTap: courseId == null
                               ? null
                               : () {
                                   Navigator.of(context).pop(); // シートを閉じてから遷移
-                                  context.push('${AppRoutes.notesRoot}/c/$courseId');
+                                  context.push('${AppRoutes.notesRootPath}/c/$courseId');
                                 },
+                          onToggleComplete: (a) =>
+                              ref.read(activeAnnouncementsProvider.notifier).toggleComplete(a),
                         );
                       },
                     );
@@ -111,74 +109,6 @@ class AllAnnouncementsSheet extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _AnnouncementTile extends StatelessWidget {
-  const _AnnouncementTile({
-    required this.announcement,
-    required this.courseName,
-    required this.onTap,
-  });
-
-  final Announcement announcement;
-  final String? courseName;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.universe.glassWhiteLow,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.universe.glassBorder),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(iconForAnnouncementType(announcement.type), color: AppColors.starGold, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    announcement.title?.trim().isNotEmpty == true
-                        ? announcement.title!.trim()
-                        : 'Announcement',
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (announcement.description?.trim().isNotEmpty == true) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      announcement.description!.trim(),
-                      style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                    ),
-                  ],
-                  const SizedBox(height: 6),
-                  Text(
-                    [
-                      if (courseName != null) courseName!,
-                      AllAnnouncementsSheet._dateFmt.format(announcement.createdAt.toLocal()),
-                    ].join(' · '),
-                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            if (onTap != null)
-              Icon(Icons.chevron_right, color: AppColors.universe.textComet, size: 18),
-          ],
-        ),
-      ),
     );
   }
 }

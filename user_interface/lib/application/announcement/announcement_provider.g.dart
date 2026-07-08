@@ -53,24 +53,21 @@ final class LatestAnnouncementProvider
 String _$latestAnnouncementHash() =>
     r'c2934070e6b7306b3dc3e834f5d64d402e4433cf';
 
-/// 未完了のアナウンスメント全件（新しい順）
+/// 未完了のアナウンスメント全件（新しい順）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
-@ProviderFor(activeAnnouncements)
+@ProviderFor(ActiveAnnouncements)
 final activeAnnouncementsProvider = ActiveAnnouncementsProvider._();
 
-/// 未完了のアナウンスメント全件（新しい順）
-
+/// 未完了のアナウンスメント全件（新しい順）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 final class ActiveAnnouncementsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Announcement>>,
-          List<Announcement>,
-          FutureOr<List<Announcement>>
-        >
-    with
-        $FutureModifier<List<Announcement>>,
-        $FutureProvider<List<Announcement>> {
-  /// 未完了のアナウンスメント全件（新しい順）
+    extends $AsyncNotifierProvider<ActiveAnnouncements, List<Announcement>> {
+  /// 未完了のアナウンスメント全件（新しい順）。
+  /// AsyncNotifier として管理することで、Done/Undo 操作後も
+  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
   ActiveAnnouncementsProvider._()
     : super(
         from: null,
@@ -87,15 +84,32 @@ final class ActiveAnnouncementsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Announcement>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<Announcement>> create(Ref ref) {
-    return activeAnnouncements(ref);
-  }
+  ActiveAnnouncements create() => ActiveAnnouncements();
 }
 
 String _$activeAnnouncementsHash() =>
-    r'97fb6617b00658bb936abff9459ed1ef7ff2edb5';
+    r'5acd345e5b91a802fadc4bb5c9c9af4c91fb1a6a';
+
+/// 未完了のアナウンスメント全件（新しい順）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+
+abstract class _$ActiveAnnouncements
+    extends $AsyncNotifier<List<Announcement>> {
+  FutureOr<List<Announcement>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
+              AsyncValue<List<Announcement>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

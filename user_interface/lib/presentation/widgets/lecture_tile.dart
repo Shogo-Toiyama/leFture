@@ -65,7 +65,7 @@ class LectureTile extends StatelessWidget {
     final hasCourseCode = code != null && code.isNotEmpty;
 
     return GestureDetector(
-      onTap: () => context.push('${AppRoutes.notesRoot}/v/${lecture.id}'),
+      onTap: () => context.go('${AppRoutes.notesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
       onLongPress: (onEdit != null || onDelete != null)
           ? () => showTileActionsSheet(
                 context: context,

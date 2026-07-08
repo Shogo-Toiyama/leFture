@@ -49,9 +49,31 @@ Future<List<FunFact>> funFactsForLecture(Ref ref, String lectureId) async {
   return repo.listForLecture(lectureId);
 }
 
-/// 講義のアナウンスメント一覧
+/// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 @riverpod
-Future<List<Announcement>> announcementsForLecture(Ref ref, String lectureId) async {
-  final repo = ref.watch(announcementRepositoryProvider);
-  return repo.listForLecture(lectureId);
+class AnnouncementsForLecture extends _$AnnouncementsForLecture {
+  @override
+  Future<List<Announcement>> build(String lectureId) async {
+    final repo = ref.watch(announcementRepositoryProvider);
+    return repo.listForLecture(lectureId);
+  }
+
+  /// 指定アナウンスメントの完了/未完了をトグルして楽観的に状態を更新する。
+  Future<void> toggleComplete(Announcement announcement) async {
+    final repo = ref.read(announcementRepositoryProvider);
+    final newCompletedAt = announcement.isCompleted ? null : DateTime.now();
+
+    state = AsyncData(
+      (state.value ?? []).map((a) {
+        if (a.id == announcement.id) {
+          return a.copyWith(completedAt: () => newCompletedAt);
+        }
+        return a;
+      }).toList(),
+    );
+
+    await repo.markAsCompleted(announcement.id, newCompletedAt);
+  }
 }

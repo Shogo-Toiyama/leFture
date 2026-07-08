@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 
 /// コース内の全レクチャーを横断した、未完了のアナウンスメント一覧ボトムシート。
 class CourseAnnouncementsSheet extends ConsumerWidget {
   const CourseAnnouncementsSheet({super.key, required this.courseId});
 
   final String courseId;
-
-  static final _dateFmt = DateFormat('MMM d, yyyy · h:mm a');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -78,9 +74,12 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                       itemCount: announcements.length,
                       separatorBuilder: (context, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => _AnnouncementTile(
+                      itemBuilder: (context, index) => AnnouncementTile(
                         announcement: announcements[index],
-                        dateFmt: _dateFmt,
+                        showTimestamp: true,
+                        onToggleComplete: (a) => ref
+                            .read(activeAnnouncementsForCourseProvider(courseId).notifier)
+                            .toggleComplete(a),
                       ),
                     );
                   },
@@ -90,59 +89,6 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _AnnouncementTile extends StatelessWidget {
-  const _AnnouncementTile({required this.announcement, required this.dateFmt});
-
-  final Announcement announcement;
-  final DateFormat dateFmt;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.universe.glassBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(iconForAnnouncementType(announcement.type), color: AppColors.starGold, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  announcement.title?.trim().isNotEmpty == true ? announcement.title! : 'Announcement',
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                if (announcement.description?.trim().isNotEmpty == true) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    announcement.description!.trim(),
-                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                  ),
-                ],
-                const SizedBox(height: 6),
-                Text(
-                  dateFmt.format(announcement.createdAt.toLocal()),
-                  style: TextStyle(color: AppColors.universe.textComet, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

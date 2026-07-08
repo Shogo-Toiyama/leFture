@@ -95,4 +95,12 @@ class AnnouncementRepositorySupabase {
 
     return rows.map((e) => Announcement.fromMap(e)).toList();
   }
+
+  /// 指定アナウンスメントの completed_at を更新する。nullを渡すと未完了に戻る。
+  Future<void> markAsCompleted(String id, DateTime? completedAt) async {
+    await supabase.from(_table).update({
+      'completed_at': completedAt?.toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', id);
+  }
 }

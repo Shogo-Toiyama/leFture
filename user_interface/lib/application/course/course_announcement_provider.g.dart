@@ -9,16 +9,12 @@ part of 'course_announcement_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
-/// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
-/// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
 
 @ProviderFor(latestAnnouncementForCourse)
 final latestAnnouncementForCourseProvider =
     LatestAnnouncementForCourseFamily._();
 
 /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
-/// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
-/// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
 
 final class LatestAnnouncementForCourseProvider
     extends
@@ -29,8 +25,6 @@ final class LatestAnnouncementForCourseProvider
         >
     with $FutureModifier<Announcement?>, $FutureProvider<Announcement?> {
   /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
-  /// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
-  /// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
   LatestAnnouncementForCourseProvider._({
     required LatestAnnouncementForCourseFamily super.from,
     required String super.argument,
@@ -80,8 +74,6 @@ String _$latestAnnouncementForCourseHash() =>
     r'16430eafe18535239da7b500c9041ebdd7523b1d';
 
 /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
-/// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
-/// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
 
 final class LatestAnnouncementForCourseFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Announcement?>, String> {
@@ -95,8 +87,6 @@ final class LatestAnnouncementForCourseFamily extends $Family
       );
 
   /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
-  /// (announcementsはlecture_id経由の紐付けのみでcourse_idを持たないため、
-  /// まずこのコースのレクチャーID一覧をローカルDBから取得してから絞り込む)
 
   LatestAnnouncementForCourseProvider call(String courseId) =>
       LatestAnnouncementForCourseProvider._(argument: courseId, from: this);
@@ -105,25 +95,26 @@ final class LatestAnnouncementForCourseFamily extends $Family
   String toString() => r'latestAnnouncementForCourseProvider';
 }
 
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
-@ProviderFor(activeAnnouncementsForCourse)
+@ProviderFor(ActiveAnnouncementsForCourse)
 final activeAnnouncementsForCourseProvider =
     ActiveAnnouncementsForCourseFamily._();
 
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
-
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 final class ActiveAnnouncementsForCourseProvider
     extends
-        $FunctionalProvider<
-          AsyncValue<List<Announcement>>,
-          List<Announcement>,
-          FutureOr<List<Announcement>>
-        >
-    with
-        $FutureModifier<List<Announcement>>,
-        $FutureProvider<List<Announcement>> {
-  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+        $AsyncNotifierProvider<
+          ActiveAnnouncementsForCourse,
+          List<Announcement>
+        > {
+  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
+  /// AsyncNotifier として管理することで、Done/Undo 操作後も
+  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
   ActiveAnnouncementsForCourseProvider._({
     required ActiveAnnouncementsForCourseFamily super.from,
     required String super.argument,
@@ -147,15 +138,7 @@ final class ActiveAnnouncementsForCourseProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Announcement>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<Announcement>> create(Ref ref) {
-    final argument = this.argument as String;
-    return activeAnnouncementsForCourse(ref, argument);
-  }
+  ActiveAnnouncementsForCourse create() => ActiveAnnouncementsForCourse();
 
   @override
   bool operator ==(Object other) {
@@ -170,12 +153,21 @@ final class ActiveAnnouncementsForCourseProvider
 }
 
 String _$activeAnnouncementsForCourseHash() =>
-    r'27fd611c0e55e81ea46e3dfd9f60175149d185f7';
+    r'2558f872aacd58b93263d1eb972925e332bf8efb';
 
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
 final class ActiveAnnouncementsForCourseFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Announcement>>, String> {
+    with
+        $ClassFamilyOverride<
+          ActiveAnnouncementsForCourse,
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          FutureOr<List<Announcement>>,
+          String
+        > {
   ActiveAnnouncementsForCourseFamily._()
     : super(
         retry: null,
@@ -185,11 +177,40 @@ final class ActiveAnnouncementsForCourseFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧
+  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
+  /// AsyncNotifier として管理することで、Done/Undo 操作後も
+  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
 
   ActiveAnnouncementsForCourseProvider call(String courseId) =>
       ActiveAnnouncementsForCourseProvider._(argument: courseId, from: this);
 
   @override
   String toString() => r'activeAnnouncementsForCourseProvider';
+}
+
+/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
+/// AsyncNotifier として管理することで、Done/Undo 操作後も
+/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+
+abstract class _$ActiveAnnouncementsForCourse
+    extends $AsyncNotifier<List<Announcement>> {
+  late final _$args = ref.$arg as String;
+  String get courseId => _$args;
+
+  FutureOr<List<Announcement>> build(String courseId);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
+              AsyncValue<List<Announcement>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(_$args));
+  }
 }

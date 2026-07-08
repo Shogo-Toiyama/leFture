@@ -69,4 +69,28 @@ class Announcement {
       updatedAt: DateTime.parse((map['updated_at'] ?? map['created_at']) as String),
     );
   }
+
+  bool get isCompleted => completedAt != null;
+
+  Announcement copyWith({
+    DateTime? Function()? completedAt,
+  }) {
+    return Announcement(
+      id: id,
+      userId: userId,
+      lectureId: lectureId,
+      type: type,
+      title: title,
+      description: description,
+      location: location,
+      startSid: startSid,
+      endSid: endSid,
+      relatedTopicTitle: relatedTopicTitle,
+      datetimeParameters: datetimeParameters,
+      completedAt: completedAt != null ? completedAt() : this.completedAt,
+      metadata: metadata,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
 }
