@@ -485,7 +485,7 @@ final class AnnouncementsForLectureProvider
 }
 
 String _$announcementsForLectureHash() =>
-    r'21d76d49eb9bdff820b94aea1ff99b2532d19cff';
+    r'ade9203750620a65c0d0751fbd0df4ff72852f0e';
 
 /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
 /// AsyncNotifier として管理することで、Done/Undo 操作後も

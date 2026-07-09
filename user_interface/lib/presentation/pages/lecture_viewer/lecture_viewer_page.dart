@@ -241,7 +241,7 @@ class LectureViewerPage extends HookConsumerWidget {
                   const SizedBox(width: 8),
                   _HighlightChip(
                     icon: Icons.hub_outlined,
-                    label: '${topics.length} topic node${topics.length == 1 ? '' : 's'}',
+                    label: '${topics.length} topic${topics.length == 1 ? '' : 's'}',
                     onTap: null, // Dummy/no-op
                   ),
                 ],

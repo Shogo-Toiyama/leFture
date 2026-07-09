@@ -574,7 +574,7 @@ class _ReviewCardBlockView extends StatelessWidget {
 
   MarkdownStyleSheet _styleSheet(BuildContext context,
       {bool italic = false}) {
-    final baseColor = AppColors.paper.textPencil;
+    final baseColor = AppColors.paper.textInk;
     final style = TextStyle(
       color: baseColor,
       fontSize: 15,

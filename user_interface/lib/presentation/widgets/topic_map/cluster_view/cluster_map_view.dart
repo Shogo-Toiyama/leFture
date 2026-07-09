@@ -45,6 +45,15 @@
 import 'dart:math' show max, min;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
 import '../force_layout/graph_force_simulation.dart';
 import '../topic_map_models.dart';
@@ -52,6 +61,7 @@ import '../topic_map_style.dart';
 import 'cluster_geometry.dart';
 import 'cluster_map_painter.dart';
 import 'cluster_selection.dart';
+import 'lecture_topic_detail_panel.dart';
 import 'zoom_detail.dart';
 
 /// Above this zoom scale, the big centered cluster title (Cluster View)
@@ -66,13 +76,34 @@ const double _kMaxZoomScale = 2.5;
 /// kClusterBlobPadding) plus its outside label and a little breathing room.
 const double _kContentPadding = 160;
 
-class ClusterMapView extends StatefulWidget {
-  const ClusterMapView({super.key, required this.data});
+class ClusterMapView extends ConsumerStatefulWidget {
+  const ClusterMapView({
+    super.key,
+    required this.data,
+    required this.courseId,
+    this.initialSelection,
+    this.interactive = true,
+  });
 
   final TopicMapData data;
 
+  /// Needed to look up the real Lecture (title/summary/id) behind a
+  /// lecture_num when showing the Lecture/Topic View detail sheet -- see
+  /// _showLectureOrTopicSheet.
+  final String courseId;
+
+  /// Selection to open with instead of the default Cluster View overview --
+  /// e.g. `ClusterSelection.lecture(n)` to embed a Lecture-View preview.
+  final ClusterSelection? initialSelection;
+
+  /// When false, renders as a static, non-interactive preview: no top
+  /// overlay (mode title/lecture chips), no pan/zoom/tap, no detail sheet.
+  /// Meant for small embedded thumbnails (e.g. a course page card) where
+  /// the enclosing widget owns tap handling instead.
+  final bool interactive;
+
   @override
-  State<ClusterMapView> createState() => _ClusterMapViewState();
+  ConsumerState<ClusterMapView> createState() => _ClusterMapViewState();
 }
 
 /// Duration/curve for the camera flying to frame a just-selected lecture's
@@ -80,7 +111,8 @@ class ClusterMapView extends StatefulWidget {
 const Duration _kLectureFitAnimationDuration = Duration(milliseconds: 450);
 const Curve _kLectureFitAnimationCurve = Curves.easeInOutCubic;
 
-class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStateMixin {
+class _ClusterMapViewState extends ConsumerState<ClusterMapView>
+    with TickerProviderStateMixin {
   /// Only shapes the initial radial seeding -- see the file-level comment.
   static const Size _simulationSeedBounds = Size(1100, 1400);
 
@@ -93,14 +125,45 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
   /// bounds above -- see the file-level comment.
   late final Size _renderCanvasSize;
 
-  final TransformationController _transformController = TransformationController();
+  final TransformationController _transformController =
+      TransformationController();
   ClusterSelection? _selection;
   bool _hasScheduledFitToContent = false;
   AnimationController? _lectureFitController;
 
+  /// The last viewport size build() actually laid out with (see the
+  /// LayoutBuilder in build()) -- cached so gesture callbacks like
+  /// _selectLecture, which run outside of build, can still compute a fit
+  /// without relying on MediaQuery (wrong when embedded in a constrained
+  /// preview smaller than the full screen).
+  Size _lastViewportSize = Size.zero;
+
+  /// Drives the bottom detail panel (see build()'s Column/Expanded split)
+  /// -- null hides it. Resolved asynchronously by _loadPanelData since it
+  /// needs the real Lecture (and, for Topic View, LectureTopic) rows behind
+  /// a lecture_num/topic_num, not just what's in the map's own json.
+  _PanelData? _panelData;
+
+  /// Current panel height in px; 0 when closed. Opens at [_panelMinExtent]
+  /// (small, map still mostly visible/draggable) and can be dragged up to
+  /// [_panelMaxExtent] via the panel's own drag handle -- see
+  /// _onPanelDragUpdate/_onPanelDragEnd. Both extents are recomputed every
+  /// build from the current layout size (see build()'s LayoutBuilder) and
+  /// cached here so the drag callbacks, which run outside of build, can
+  /// clamp against the latest values.
+  double _panelExtent = 0;
+  double _panelMinExtent = 0;
+  double _panelMaxExtent = 0;
+
+  /// While actively dragging, height changes apply with zero animation
+  /// duration so the panel tracks the finger 1:1; released drags (and the
+  /// initial open) snap/animate over a short duration instead.
+  bool _isDraggingPanel = false;
+
   @override
   void initState() {
     super.initState();
+    _selection = widget.initialSelection;
     final data = widget.data;
     _clusterIdByNodeId = buildClusterIdByNodeId(data);
     _lectureNumByNodeId = buildLectureNumByNodeId(data);
@@ -110,7 +173,15 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
       for (final n in data.nodes) n.id,
       for (final g in data.ghostNodes) g.id,
     ];
-    final edgePairs = [for (final e in data.edges) MapEntry(e.sourceId, e.targetId)];
+    final edgePairs = [
+      for (final e in data.edges) MapEntry(e.sourceId, e.targetId),
+      // Ghost nodes have no entry in data.edges, but derived_from_topic_id
+      // is effectively an edge too -- feeding it into the simulation as a
+      // spring pulls the ghost near the real topic it was predicted from,
+      // instead of it only being held in place by cluster affinity.
+      for (final g in data.ghostNodes)
+        if (g.derivedFromTopicId != null) MapEntry(g.derivedFromTopicId!, g.id),
+    ];
 
     _simulation = GraphForceSimulation(
       nodeIds: nodeIds,
@@ -153,7 +224,10 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
     for (final node in _simulation.nodes.values) {
       node.position += shift;
     }
-    return Size(maxX - minX + _kContentPadding * 2, maxY - minY + _kContentPadding * 2);
+    return Size(
+      maxX - minX + _kContentPadding * 2,
+      maxY - minY + _kContentPadding * 2,
+    );
   }
 
   /// The scale at which the whole render canvas exactly fits inside
@@ -175,7 +249,8 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
   /// being able to fit an 8-cluster graph, which needed ~0.22 to fit).
   /// Tying it to the same fit-scale calculation instead of a fixed number
   /// means it can never happen again regardless of how big the graph gets.
-  double _effectiveMinScale(Size viewportSize) => min(_kMinZoomScale, _computeFitScale(viewportSize));
+  double _effectiveMinScale(Size viewportSize) =>
+      min(_kMinZoomScale, _computeFitScale(viewportSize));
 
   /// Picks `boundaryMargin` so InteractiveViewer's own internal zoom-out
   /// floor (see the file-level comment) lands on our `_computeFitScale`
@@ -193,8 +268,10 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
     const extraSlack = 24.0;
     final requiredWidth = viewportSize.width / fitScale;
     final requiredHeight = viewportSize.height / fitScale;
-    final marginX = max(0.0, (requiredWidth - _renderCanvasSize.width) / 2) + extraSlack;
-    final marginY = max(0.0, (requiredHeight - _renderCanvasSize.height) / 2) + extraSlack;
+    final marginX =
+        max(0.0, (requiredWidth - _renderCanvasSize.width) / 2) + extraSlack;
+    final marginY =
+        max(0.0, (requiredHeight - _renderCanvasSize.height) / 2) + extraSlack;
     return EdgeInsets.symmetric(horizontal: marginX, vertical: marginY);
   }
 
@@ -218,15 +295,30 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
   /// passes its own already-computed fit scale to stay in lockstep with
   /// [_effectiveMinScale]/[_computeBoundaryMargin]) and by
   /// [_animateToLectureBounds] (which fits a subset of the canvas instead).
-  Matrix4 _matrixForBounds(Rect targetBounds, Size viewportSize, {double? fitScaleOverride}) {
-    final rawScale = fitScaleOverride ??
+  Matrix4 _matrixForBounds(
+    Rect targetBounds,
+    Size viewportSize, {
+    double? fitScaleOverride,
+  }) {
+    final rawScale =
+        fitScaleOverride ??
         (targetBounds.width <= 0 || targetBounds.height <= 0
             ? 1.0
-            : min(viewportSize.width / targetBounds.width, viewportSize.height / targetBounds.height) * 0.85);
-    final scale = rawScale.clamp(_effectiveMinScale(viewportSize), _kMaxZoomScale);
+            : min(
+                    viewportSize.width / targetBounds.width,
+                    viewportSize.height / targetBounds.height,
+                  ) *
+                  0.85);
+    final scale = rawScale.clamp(
+      _effectiveMinScale(viewportSize),
+      _kMaxZoomScale,
+    );
 
     final contentCenter = targetBounds.center;
-    final viewportCenter = Offset(viewportSize.width / 2, viewportSize.height / 2);
+    final viewportCenter = Offset(
+      viewportSize.width / 2,
+      viewportSize.height / 2,
+    );
     final tx = viewportCenter.dx - contentCenter.dx * scale;
     final ty = viewportCenter.dy - contentCenter.dy * scale;
 
@@ -235,10 +327,22 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
     // reports fitScale instead of being dragged up to the unscaled z
     // axis's length of 1), translation in the last column.
     return Matrix4(
-      scale, 0, 0, 0, //
-      0, scale, 0, 0, //
-      0, 0, scale, 0, //
-      tx, ty, 0, 1, //
+      scale,
+      0,
+      0,
+      0, //
+      0,
+      scale,
+      0,
+      0, //
+      0,
+      0,
+      scale,
+      0, //
+      tx,
+      ty,
+      0,
+      1, //
     );
   }
 
@@ -284,7 +388,10 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
     _lectureFitController = null;
     oldController?.dispose();
 
-    final controller = AnimationController(vsync: this, duration: _kLectureFitAnimationDuration);
+    final controller = AnimationController(
+      vsync: this,
+      duration: _kLectureFitAnimationDuration,
+    );
     _lectureFitController = controller;
     final animation = Matrix4Tween(begin: from, end: target).animate(
       CurvedAnimation(parent: controller, curve: _kLectureFitAnimationCurve),
@@ -298,7 +405,10 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
     // whichever tears the widget down later would otherwise try to dispose
     // an already-disposed controller.
     controller.addStatusListener((status) {
-      if (status != AnimationStatus.completed && status != AnimationStatus.dismissed) return;
+      if (status != AnimationStatus.completed &&
+          status != AnimationStatus.dismissed) {
+        return;
+      }
       if (identical(_lectureFitController, controller)) {
         _lectureFitController = null;
       }
@@ -318,21 +428,231 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
   }
 
   void _selectNode(String nodeId) {
+    final wasSelected =
+        _selection?.type == ClusterSelectionType.node && _selection!.id == nodeId;
     setState(() {
       final next = ClusterSelection.node(nodeId);
       _selection = _selection == next ? null : next;
     });
+    if (wasSelected || !widget.interactive) {
+      if (wasSelected) {
+        setState(() {
+          _panelData = null;
+          _panelExtent = 0;
+        });
+      }
+      return;
+    }
+
+    // Ghost nodes are predictions, not real recorded topics -- they have no
+    // lecture_num/summary/lecture to jump to, so they don't get a detail
+    // panel (buildLectureNumByNodeId deliberately excludes them too).
+    TopicMapNode? node;
+    for (final n in widget.data.nodes) {
+      if (n.id == nodeId) {
+        node = n;
+        break;
+      }
+    }
+    if (node != null) {
+      _loadPanelData(lectureNum: node.lectureNum, topicNode: node);
+    } else {
+      setState(() {
+        _panelData = null;
+        _panelExtent = 0;
+      });
+    }
   }
 
   void _selectLecture(int lectureNum) {
-    final wasSameLecture = _selection?.type == ClusterSelectionType.lecture && _selection!.id == lectureNum.toString();
+    final wasSameLecture =
+        _selection?.type == ClusterSelectionType.lecture &&
+        _selection!.id == lectureNum.toString();
     setState(() {
       final next = ClusterSelection.lecture(lectureNum);
       _selection = _selection == next ? null : next;
     });
-    if (!wasSameLecture && _selection != null) {
-      _animateToLectureBounds(lectureNum, MediaQuery.sizeOf(context));
+    if (wasSameLecture || _selection == null) {
+      setState(() {
+        _panelData = null;
+        _panelExtent = 0;
+      });
+      return;
     }
+    _animateToLectureBounds(lectureNum, _lastViewportSize);
+    if (widget.interactive) {
+      _loadPanelData(lectureNum: lectureNum, topicNode: null);
+    }
+  }
+
+  /// Trailing number in a topic_id like "node_lc1_3" -> 3 (the topic's
+  /// position within its lecture) -- see task_runners.py's
+  /// `f"node_lc{lecture_num}_{i}"` for where that shape comes from.
+  static final RegExp _topicNumPattern = RegExp(r'_(\d+)$');
+
+  int? _topicNumFromTopicId(String topicId) {
+    return int.tryParse(_topicNumPattern.firstMatch(topicId)?.group(1) ?? '');
+  }
+
+  String _lectureDisplayTitle(Lecture lecture) {
+    if (lecture.title?.trim().isNotEmpty == true) return lecture.title!.trim();
+    if (lecture.titleGenerated?.trim().isNotEmpty == true) return lecture.titleGenerated!.trim();
+    return 'Untitled Lecture';
+  }
+
+  String? _clusterNameFor(String? clusterId) {
+    if (clusterId == null) return null;
+    for (final c in widget.data.clusters) {
+      if (c.id == clusterId) return c.name;
+    }
+    return null;
+  }
+
+  String? _nodeTitleById(String nodeId) {
+    for (final n in widget.data.nodes) {
+      if (n.id == nodeId) return n.title;
+    }
+    return null;
+  }
+
+  /// Every edge touching [nodeId], resolved to the other endpoint's title
+  /// -- edges only ever connect real nodes (see topic_map_models.dart), so
+  /// ghost nodes never show up here.
+  List<RelatedTopicEdge> _relatedTopicsFor(String nodeId) {
+    final related = <RelatedTopicEdge>[];
+    for (final e in widget.data.edges) {
+      if (e.sourceId == nodeId) {
+        final title = _nodeTitleById(e.targetId);
+        if (title != null) {
+          related.add(RelatedTopicEdge(title: title, relationType: e.humanizedRelationType, isOutgoing: true));
+        }
+      } else if (e.targetId == nodeId) {
+        final title = _nodeTitleById(e.sourceId);
+        if (title != null) {
+          related.add(RelatedTopicEdge(title: title, relationType: e.humanizedRelationType, isOutgoing: false));
+        }
+      }
+    }
+    return related;
+  }
+
+  /// Resolves the bottom panel's content and stores it in [_panelData].
+  /// Lecture View: title comes from the local `lectures` row, but summary
+  /// is fetched fresh from Supabase (see lectureProvider) -- summary is
+  /// AI-generated well after recording, and the local-first Drift table
+  /// (LocalLectures in app_database.dart) only mirrors recording-time
+  /// fields, so it's always null there.
+  /// Topic View: title is the map node's own title, but its summary has to
+  /// come from `lecture_topics.summary` -- the map itself never carries
+  /// one. topicNum (from the topic_id) is 1-based position among *only*
+  /// this lecture's ACADEMIC topics (see task_runners.py's
+  /// `academic_topics` filter), whereas lecture_topics.index is the row's
+  /// raw position among *all* topic types (ACADEMIC and LOGISTICS mixed) --
+  /// so the match has to replicate that same "filter to ACADEMIC, then
+  /// take the Nth" step client-side rather than compare index directly.
+  ///
+  /// Lectures are streamed newest-first from the local DB; lecture_num is
+  /// assigned by oldest-first position (see task_runners.py's
+  /// `_fetch_course_and_lecture_num_sync`), so this has to un-reverse the
+  /// same way CoursePage does before indexing by lecture_num - 1.
+  Future<void> _loadPanelData({required int lectureNum, TopicMapNode? topicNode}) async {
+    final lectures = (await ref.read(lectureListStreamProvider(widget.courseId).future)).reversed.toList();
+    if (lectureNum < 1 || lectureNum > lectures.length) {
+      if (mounted) {
+        setState(() {
+          _panelData = null;
+          _panelExtent = 0;
+        });
+      }
+      return;
+    }
+    final lecture = lectures[lectureNum - 1];
+    final title = topicNode?.title ?? _lectureDisplayTitle(lecture);
+    int? topicNum;
+    String? summary;
+
+    // Best-effort: a failed summary fetch (offline, RLS, transient error)
+    // shouldn't silently swallow the whole panel -- _selectLecture/
+    // _selectNode call this without awaiting it, so an uncaught exception
+    // here would otherwise just vanish into an unhandled Future error and
+    // the panel would never appear at all.
+    try {
+      if (topicNode == null) {
+        // A plain one-shot query, not the realtime `lectureProvider` stream
+        // -- this fires on every tap, and there's no reason to open/tear
+        // down a realtime channel just to read one field once.
+        final row = await supabase
+            .from('lectures')
+            .select('summary')
+            .eq('id', lecture.id)
+            .maybeSingle();
+        final rawSummary = row?['summary'] as String?;
+        summary = rawSummary == null ? null : stripSidCitations(rawSummary);
+      } else {
+        topicNum = _topicNumFromTopicId(topicNode.id);
+        if (topicNum != null) {
+          final lectureTopics = await ref.read(lectureTopicsProvider(lecture.id).future);
+          final academicTopics = lectureTopics.where((t) => t.topicType == 'ACADEMIC').toList();
+          if (topicNum >= 1 && topicNum <= academicTopics.length) {
+            final matched = academicTopics[topicNum - 1];
+            summary = matched.summary == null ? null : stripSidCitations(matched.summary!);
+          }
+        }
+      }
+    } catch (_) {
+      summary = null;
+    }
+
+    final clusterName = topicNode == null ? null : _clusterNameFor(topicNode.clusterId);
+    final relatedTopics = topicNode == null ? const <RelatedTopicEdge>[] : _relatedTopicsFor(topicNode.id);
+
+    if (!mounted) return;
+    setState(() {
+      _panelData = _PanelData(
+        lecture: lecture,
+        lectureNum: lectureNum,
+        topicNum: topicNum,
+        title: title,
+        clusterName: clusterName,
+        relatedTopics: relatedTopics,
+        summary: summary,
+      );
+      // Open at the small initial extent -- but only when actually
+      // (re)opening from closed. Switching between lecture/topic while
+      // the panel's already up (e.g. tapping a different node) keeps
+      // whatever extent the user had dragged it to.
+      if (_panelExtent <= 0) _panelExtent = _panelMinExtent;
+    });
+  }
+
+  /// Applies a live drag delta to the panel's height, clamped to the
+  /// min/max extents computed by the current build (see build()'s
+  /// LayoutBuilder). Zero-duration while dragging so it tracks the finger
+  /// 1:1 -- see _isDraggingPanel.
+  void _onPanelDragUpdate(double deltaY) {
+    setState(() {
+      _isDraggingPanel = true;
+      _panelExtent = (_panelExtent - deltaY).clamp(_panelMinExtent, _panelMaxExtent);
+    });
+  }
+
+  /// Snaps to whichever of min/max extent the drag ended closer to (a
+  /// fast enough fling overrides that towards the fling's direction).
+  void _onPanelDragEnd(double? velocity) {
+    const flingThreshold = 300.0;
+    final double target;
+    if (velocity != null && velocity < -flingThreshold) {
+      target = _panelMaxExtent;
+    } else if (velocity != null && velocity > flingThreshold) {
+      target = _panelMinExtent;
+    } else {
+      final midpoint = (_panelMinExtent + _panelMaxExtent) / 2;
+      target = _panelExtent >= midpoint ? _panelMaxExtent : _panelMinExtent;
+    }
+    setState(() {
+      _isDraggingPanel = false;
+      _panelExtent = target;
+    });
   }
 
   void _handleBackgroundTapUp(TapUpDetails details) {
@@ -342,20 +662,31 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
         setState(() {
           final next = ClusterSelection.cluster(entry.key);
           _selection = _selection == next ? null : next;
+          _panelData = null;
+          _panelExtent = 0;
         });
         return;
       }
     }
-    setState(() => _selection = null);
+    setState(() {
+      _selection = null;
+      _panelData = null;
+      _panelExtent = 0;
+    });
   }
 
   /// Topic View: glow only the single tapped node, not the graph neighbors
   /// [highlight] also brightens. Lecture View: glow every node in
   /// [highlight] (the whole lecture). Cluster View never glows.
-  bool _isGlowing(String nodeId, HighlightSet highlight, TopicMapViewMode viewMode) {
+  bool _isGlowing(
+    String nodeId,
+    HighlightSet highlight,
+    TopicMapViewMode viewMode,
+  ) {
     switch (viewMode) {
       case TopicMapViewMode.topic:
-        return _selection?.type == ClusterSelectionType.node && _selection!.id == nodeId;
+        return _selection?.type == ClusterSelectionType.node &&
+            _selection!.id == nodeId;
       case TopicMapViewMode.lecture:
         return highlight.nodeIds.contains(nodeId);
       case TopicMapViewMode.cluster:
@@ -387,6 +718,100 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Local layout size, not MediaQuery.sizeOf(context) -- this widget
+        // can be embedded at any size (a small course-page preview card,
+        // not just a fullscreen page), and the fit/zoom-limit math below
+        // has to match whatever box it's actually laid out in. Unlike an
+        // earlier version of this panel, the map's own size never changes
+        // when the panel opens -- it's drawn as an overlay on top instead
+        // (see below), so there's no relayout of this (expensive) map
+        // subtree on every animation frame.
+        final viewportSize = constraints.biggest;
+        _lastViewportSize = viewportSize;
+
+        if (!_hasScheduledFitToContent) {
+          _hasScheduledFitToContent = true;
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _fitToContent(viewportSize),
+          );
+        }
+
+        // The panel opens small (mostly-map, easy to keep browsing the
+        // graph) and can be dragged up almost to the top -- just enough of
+        // the map (mapPeekHeight) always stays clear and touchable at the
+        // panel's tallest so it never structurally reaches zero height
+        // (it's an overlay, so its real layout size never changes anyway).
+        const mapPeekHeight = 72.0;
+        _panelMinExtent = min(320.0, constraints.maxHeight * 0.5);
+        _panelMaxExtent = max(_panelMinExtent, constraints.maxHeight - mapPeekHeight);
+
+        return Stack(
+          children: [
+            // Positioned.fill rather than a bare (non-positioned) child --
+            // Stack only sizes itself to constraints.biggest when *every*
+            // child is positioned; a single non-positioned child would
+            // shrink the whole Stack down to that child's own preferred
+            // size instead (the exact bug hit earlier with the back
+            // button in topic_map_page.dart).
+            Positioned.fill(child: _buildContent(context, viewportSize)),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: AnimatedContainer(
+                // Zero duration while the finger is actively dragging it
+                // (1:1 tracking, no lag); animated for the initial open and
+                // for the post-drag snap to min/max.
+                duration: _isDraggingPanel ? Duration.zero : const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                height: _panelData == null ? 0 : _panelExtent,
+                // A fixed (not open-ended) height -- the panel's body
+                // scrolls internally now (see LectureTopicDetailPanel),
+                // which needs a bounded height to size its
+                // Expanded/SingleChildScrollView against.
+                child: _panelData == null
+                    ? const SizedBox(width: double.infinity)
+                    : LectureTopicDetailPanel(
+                        courseTitle: widget.data.courseTitle,
+                        lectureNum: _panelData!.lectureNum,
+                        topicNum: _panelData!.topicNum,
+                        title: _panelData!.title,
+                        summary: _panelData!.summary,
+                        clusterName: _panelData!.clusterName,
+                        relatedTopics: _panelData!.relatedTopics,
+                        onDragUpdate: _onPanelDragUpdate,
+                        onDragEnd: _onPanelDragEnd,
+                        // Only hides the panel -- keeps the Lecture/Topic
+                        // View selection (and its highlight/glow) intact,
+                        // unlike tapping the background/a cluster, which
+                        // clears both. Tapping a different node/lecture
+                        // still opens a fresh panel as usual.
+                        onClose: () => setState(() {
+                          _panelData = null;
+                          _panelExtent = 0;
+                        }),
+                        onGoToLecture: () {
+                          final lecture = _panelData!.lecture;
+                          final courseId = widget.courseId;
+                          setState(() {
+                            _selection = null;
+                            _panelData = null;
+                            _panelExtent = 0;
+                          });
+                          context.push('${AppRoutes.notesRootPath}/c/$courseId/v/${lecture.id}');
+                        },
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, Size viewportSize) {
     final data = widget.data;
     final brightness = Theme.of(context).brightness;
 
@@ -395,123 +820,158 @@ class _ClusterMapViewState extends State<ClusterMapView> with TickerProviderStat
         data.clusters[i].id: TopicMapPalette.clusterColor(i, brightness),
     };
 
-    final highlight = computeHighlight(data, _selection, _clusterIdByNodeId, _lectureNumByNodeId);
+    final highlight = computeHighlight(
+      data,
+      _selection,
+      _clusterIdByNodeId,
+      _lectureNumByNodeId,
+    );
     final blobs = computeClusterBlobs(data, _simulation);
     final viewMode = viewModeForSelection(_selection);
     final currentScale = _transformController.value.getMaxScaleOnAxis();
     final shrink = detailShrinkFactor(currentScale);
 
-    final viewportSize = MediaQuery.sizeOf(context);
-
-    if (!_hasScheduledFitToContent) {
-      _hasScheduledFitToContent = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fitToContent(viewportSize));
-    }
-
-    return Container(
-      color: TopicMapPalette.surface(brightness),
-      child: Stack(
-        children: [
-          InteractiveViewer(
-            transformationController: _transformController,
-            constrained: false,
-            minScale: _effectiveMinScale(viewportSize),
-            maxScale: _kMaxZoomScale,
-            boundaryMargin: _computeBoundaryMargin(viewportSize),
-            child: SizedBox(
-              width: _renderCanvasSize.width,
-              height: _renderCanvasSize.height,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapUp: _handleBackgroundTapUp,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    CustomPaint(
-                      size: _renderCanvasSize,
-                      painter: ClusterMapPainter(
-                        data: data,
-                        simulation: _simulation,
-                        brightness: brightness,
-                        selection: _selection,
-                        viewMode: viewMode,
-                        highlight: highlight,
-                        blobs: blobs,
-                        clusterColorByClusterId: clusterColorByClusterId,
-                        ghostNodeIds: _ghostNodeIds,
-                        currentScale: currentScale,
+    return IgnorePointer(
+      ignoring: !widget.interactive,
+      child: Container(
+        color: TopicMapPalette.surface(brightness),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              transformationController: _transformController,
+              constrained: false,
+              minScale: _effectiveMinScale(viewportSize),
+              maxScale: _kMaxZoomScale,
+              boundaryMargin: _computeBoundaryMargin(viewportSize),
+              child: SizedBox(
+                width: _renderCanvasSize.width,
+                height: _renderCanvasSize.height,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: _handleBackgroundTapUp,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CustomPaint(
+                        size: _renderCanvasSize,
+                        painter: ClusterMapPainter(
+                          data: data,
+                          simulation: _simulation,
+                          brightness: brightness,
+                          selection: _selection,
+                          viewMode: viewMode,
+                          highlight: highlight,
+                          blobs: blobs,
+                          clusterColorByClusterId: clusterColorByClusterId,
+                          ghostNodeIds: _ghostNodeIds,
+                          currentScale: currentScale,
+                        ),
                       ),
-                    ),
-                    for (final node in data.nodes)
-                      _NodeMarker(
-                        key: ValueKey(node.id),
-                        position: _simulation.nodes[node.id]!.position,
-                        label: node.title,
-                        color:
-                            clusterColorByClusterId[node.clusterId] ?? TopicMapPalette.mutedInk(brightness),
-                        brightness: brightness,
-                        viewMode: viewMode,
-                        hasSelection: _selection != null,
-                        isHighlighted: highlight.nodeIds.contains(node.id),
-                        isGlowing: _isGlowing(node.id, highlight, viewMode),
-                        shrink: shrink,
-                        onTap: () => _selectNode(node.id),
-                      ),
-                    for (final ghost in data.ghostNodes)
-                      _NodeMarker(
-                        key: ValueKey(ghost.id),
-                        position: _simulation.nodes[ghost.id]!.position,
-                        label: ghost.name,
-                        color:
-                            clusterColorByClusterId[ghost.clusterId] ?? TopicMapPalette.mutedInk(brightness),
-                        brightness: brightness,
-                        viewMode: viewMode,
-                        hasSelection: _selection != null,
-                        isHighlighted: highlight.nodeIds.contains(ghost.id),
-                        isGlowing: _isGlowing(ghost.id, highlight, viewMode),
-                        isGhost: true,
-                        ghostFaded: ghost.status == GhostStatus.faded,
-                        shrink: shrink,
-                        onTap: () => _selectNode(ghost.id),
-                      ),
-                    for (final cluster in data.clusters)
-                      if (blobs[cluster.id] != null)
-                        if (viewMode == TopicMapViewMode.cluster &&
-                            currentScale <= _kClusterCenterLabelMaxScale)
-                          _ClusterCenterLabel(
-                            key: ValueKey('center-${cluster.id}'),
-                            anchor: clusterBlobCenter(blobs[cluster.id]!),
-                            name: cluster.name,
-                            color: clusterColorByClusterId[cluster.id]!,
-                            brightness: brightness,
-                            growFactor: clusterLabelGrowFactor(currentScale),
-                          )
-                        else
-                          _ClusterOutsideLabel(
-                            key: ValueKey('outside-${cluster.id}'),
-                            anchor: clusterBlobOutsideTopAnchor(blobs[cluster.id]!),
-                            name: cluster.name,
-                            color: clusterColorByClusterId[cluster.id]!,
-                            brightness: brightness,
-                            shrink: shrink,
-                          ),
-                  ],
+                      for (final node in data.nodes)
+                        _NodeMarker(
+                          key: ValueKey(node.id),
+                          position: _simulation.nodes[node.id]!.position,
+                          label: node.title,
+                          color:
+                              clusterColorByClusterId[node.clusterId] ??
+                              TopicMapPalette.mutedInk(brightness),
+                          brightness: brightness,
+                          viewMode: viewMode,
+                          hasSelection: _selection != null,
+                          isHighlighted: highlight.nodeIds.contains(node.id),
+                          isGlowing: _isGlowing(node.id, highlight, viewMode),
+                          shrink: shrink,
+                          onTap: () => _selectNode(node.id),
+                        ),
+                      for (final ghost in data.ghostNodes)
+                        _NodeMarker(
+                          key: ValueKey(ghost.id),
+                          position: _simulation.nodes[ghost.id]!.position,
+                          label: ghost.name,
+                          color:
+                              clusterColorByClusterId[ghost.clusterId] ??
+                              TopicMapPalette.mutedInk(brightness),
+                          brightness: brightness,
+                          viewMode: viewMode,
+                          hasSelection: _selection != null,
+                          isHighlighted: highlight.nodeIds.contains(ghost.id),
+                          isGlowing: _isGlowing(ghost.id, highlight, viewMode),
+                          isGhost: true,
+                          ghostFaded: ghost.status == GhostStatus.faded,
+                          shrink: shrink,
+                          onTap: () => _selectNode(ghost.id),
+                        ),
+                      for (final cluster in data.clusters)
+                        if (blobs[cluster.id] != null)
+                          if (viewMode == TopicMapViewMode.cluster &&
+                              currentScale <= _kClusterCenterLabelMaxScale)
+                            _ClusterCenterLabel(
+                              key: ValueKey('center-${cluster.id}'),
+                              anchor: clusterBlobCenter(blobs[cluster.id]!),
+                              name: cluster.name,
+                              color: clusterColorByClusterId[cluster.id]!,
+                              brightness: brightness,
+                              growFactor: clusterLabelGrowFactor(currentScale),
+                            )
+                          else
+                            _ClusterOutsideLabel(
+                              key: ValueKey('outside-${cluster.id}'),
+                              anchor: clusterBlobOutsideTopAnchor(
+                                blobs[cluster.id]!,
+                              ),
+                              name: cluster.name,
+                              color: clusterColorByClusterId[cluster.id]!,
+                              brightness: brightness,
+                              shrink: shrink,
+                            ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          _TopOverlay(
-            brightness: brightness,
-            viewMode: viewMode,
-            subtitle: _selectedEntityLabel(data),
-            totalLectures: data.totalLecturesCovered,
-            selectedLecture: _selection?.type == ClusterSelectionType.lecture ? int.parse(_selection!.id) : null,
-            onSelectLecture: _selectLecture,
-          ),
-        ],
+            if (widget.interactive)
+              _TopOverlay(
+                brightness: brightness,
+                viewMode: viewMode,
+                subtitle: _selectedEntityLabel(data),
+                totalLectures: data.totalLecturesCovered,
+                selectedLecture:
+                    _selection?.type == ClusterSelectionType.lecture
+                    ? int.parse(_selection!.id)
+                    : null,
+                onSelectLecture: _selectLecture,
+              ),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// Resolved content for the bottom detail panel -- see
+/// _ClusterMapViewState._loadPanelData.
+class _PanelData {
+  const _PanelData({
+    required this.lecture,
+    required this.lectureNum,
+    required this.topicNum,
+    required this.title,
+    required this.summary,
+    required this.clusterName,
+    required this.relatedTopics,
+  });
+
+  final Lecture lecture;
+  final int lectureNum;
+  final int? topicNum;
+  final String title;
+  final String? summary;
+
+  /// Topic View only -- null for Lecture View.
+  final String? clusterName;
+
+  /// Topic View only -- empty for Lecture View.
+  final List<RelatedTopicEdge> relatedTopics;
 }
 
 class _TopOverlay extends StatelessWidget {
@@ -548,42 +1008,56 @@ class _TopOverlay extends StatelessWidget {
       top: 0,
       left: 0,
       right: 0,
-      child: Container(
-        padding: const EdgeInsets.only(top: 14, bottom: 10),
-        decoration: BoxDecoration(
-          color: TopicMapPalette.surface(brightness).withValues(alpha: 0.92),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _modeTitle,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-                color: TopicMapPalette.primaryInk(brightness),
+      // ClusterMapView is sometimes embedded edge-to-edge (no enclosing
+      // AppBar/Scaffold reserving the status bar/notch inset for it), so
+      // this overlay has to claim that inset itself -- otherwise its title
+      // and lecture chips render partly underneath the system chrome.
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          padding: const EdgeInsets.only(top: 14, bottom: 10),
+          decoration: BoxDecoration(
+            color: TopicMapPalette.surface(brightness).withValues(alpha: 0.92),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-            ),
-            if (subtitle != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  subtitle!,
-                  style: TextStyle(fontSize: 11.5, color: TopicMapPalette.secondaryInk(brightness)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _modeTitle,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                  color: TopicMapPalette.primaryInk(brightness),
                 ),
               ),
-            const SizedBox(height: 8),
-            _LectureSelectorBar(
-              totalLectures: totalLectures,
-              selectedLecture: selectedLecture,
-              brightness: brightness,
-              onSelect: onSelectLecture,
-            ),
-          ],
+              if (subtitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: TopicMapPalette.secondaryInk(brightness),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              _LectureSelectorBar(
+                totalLectures: totalLectures,
+                selectedLecture: selectedLecture,
+                brightness: brightness,
+                onSelect: onSelectLecture,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -654,9 +1128,16 @@ class _LectureChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? ink : TopicMapPalette.surface(brightness),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: ink.withValues(alpha: selected ? 1.0 : 0.25), width: 1.2),
+          border: Border.all(
+            color: ink.withValues(alpha: selected ? 1.0 : 0.25),
+            width: 1.2,
+          ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 4, offset: const Offset(0, 1)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
           ],
         ),
         child: Text(
@@ -701,9 +1182,14 @@ class _ClusterCenterLabel extends StatelessWidget {
       child: IgnorePointer(
         child: Center(
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14 * growFactor, vertical: 7 * growFactor),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14 * growFactor,
+              vertical: 7 * growFactor,
+            ),
             decoration: BoxDecoration(
-              color: TopicMapPalette.surface(brightness).withValues(alpha: 0.85),
+              color: TopicMapPalette.surface(
+                brightness,
+              ).withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Text(
@@ -754,9 +1240,14 @@ class _ClusterOutsideLabel extends StatelessWidget {
       child: IgnorePointer(
         child: Center(
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8 * shrink, vertical: 2 * shrink),
+            padding: EdgeInsets.symmetric(
+              horizontal: 8 * shrink,
+              vertical: 2 * shrink,
+            ),
             decoration: BoxDecoration(
-              color: TopicMapPalette.surface(brightness).withValues(alpha: 0.88),
+              color: TopicMapPalette.surface(
+                brightness,
+              ).withValues(alpha: 0.88),
               borderRadius: BorderRadius.circular(10 * shrink),
               border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
             ),
@@ -765,7 +1256,11 @@ class _ClusterOutsideLabel extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11 * shrink, fontWeight: FontWeight.w700, color: color),
+              style: TextStyle(
+                fontSize: 11 * shrink,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ),
         ),
@@ -807,6 +1302,7 @@ class _NodeMarker extends StatelessWidget {
   final TopicMapViewMode viewMode;
   final bool hasSelection;
   final bool isHighlighted;
+
   /// Topic View: only the single tapped node (not its graph neighbors,
   /// even though they share [isHighlighted]). Lecture View: every node
   /// belonging to the selected lecture (same set as [isHighlighted]
@@ -856,12 +1352,12 @@ class _NodeMarker extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.95),
+                          color: Colors.white.withValues(alpha: 0.35),
                           blurRadius: 14 * shrink,
                           spreadRadius: 3 * shrink,
                         ),
                         BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: Colors.white.withValues(alpha: 0.15),
                           blurRadius: 26 * shrink,
                           spreadRadius: 1 * shrink,
                         ),
@@ -872,16 +1368,28 @@ class _NodeMarker extends StatelessWidget {
                 width: r * 2,
                 height: r * 2,
                 child: isGhost
-                    ? CustomPaint(painter: _DashedCirclePainter(color: color, opacity: opacity, shrink: shrink))
+                    ? CustomPaint(
+                        painter: _DashedCirclePainter(
+                          color: color,
+                          opacity: opacity,
+                          shrink: shrink,
+                        ),
+                      )
                     : Opacity(
                         opacity: opacity,
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: color,
-                            border: Border.all(color: TopicMapPalette.surface(brightness), width: 2.5 * shrink),
+                            border: Border.all(
+                              color: TopicMapPalette.surface(brightness),
+                              width: 2.5 * shrink,
+                            ),
                             boxShadow: [
-                              BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 5 * shrink),
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.3),
+                                blurRadius: 5 * shrink,
+                              ),
                             ],
                           ),
                         ),
@@ -912,7 +1420,11 @@ class _NodeMarker extends StatelessWidget {
 }
 
 class _DashedCirclePainter extends CustomPainter {
-  _DashedCirclePainter({required this.color, required this.opacity, required this.shrink});
+  _DashedCirclePainter({
+    required this.color,
+    required this.opacity,
+    required this.shrink,
+  });
 
   final Color color;
   final double opacity;
@@ -939,12 +1451,20 @@ class _DashedCirclePainter extends CustomPainter {
     var angle = 0.0;
     for (var i = 0; i < dashCount; i++) {
       final sweep = dashLength / radius;
-      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), angle, sweep, false, borderPaint);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        angle,
+        sweep,
+        false,
+        borderPaint,
+      );
       angle += angleStep;
     }
   }
 
   @override
   bool shouldRepaint(covariant _DashedCirclePainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.opacity != opacity || oldDelegate.shrink != shrink;
+      oldDelegate.color != color ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.shrink != shrink;
 }

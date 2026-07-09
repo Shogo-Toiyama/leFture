@@ -64,6 +64,7 @@ class ClusterMapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _paintClusterBlobs(canvas);
+    _paintGhostEdges(canvas);
     _paintEdges(canvas);
   }
 
@@ -110,6 +111,74 @@ class ClusterMapPainter extends CustomPainter {
 
   double _radiusFor(String nodeId, double shrink) =>
       (ghostNodeIds.contains(nodeId) ? kGhostNodeRadius : kNodeRadius) * shrink;
+
+  /// Ghost nodes have no entry in data.edges -- their only link back to the
+  /// real map is derived_from_topic_id, drawn here as a dashed line (echoing
+  /// the ghost node's own dashed-circle treatment) instead of the solid
+  /// arrows real edges get. Opacity follows the same view-mode rules as
+  /// _paintEdges, keyed off whether either endpoint is in the highlight set
+  /// (ghosts have no edgeIndexes entry to key off of instead).
+  void _paintGhostEdges(Canvas canvas) {
+    final hasSelection = selection != null;
+    final shrink = detailShrinkFactor(currentScale);
+
+    for (final ghost in data.ghostNodes) {
+      final sourceId = ghost.derivedFromTopicId;
+      if (sourceId == null) continue;
+      final from = simulation.nodes[sourceId]?.position;
+      final to = simulation.nodes[ghost.id]?.position;
+      if (from == null || to == null) continue;
+
+      final delta = to - from;
+      final dist = delta.distance;
+      if (dist < 0.001) continue;
+      final unit = delta / dist;
+
+      final trimmedStart = from + unit * _radiusFor(sourceId, shrink);
+      final trimmedEnd = to - unit * _radiusFor(ghost.id, shrink);
+
+      final isHighlighted = highlight.nodeIds.contains(sourceId) || highlight.nodeIds.contains(ghost.id);
+      final double opacity;
+      if (!hasSelection) {
+        opacity = dimOpacity;
+      } else if (viewMode == TopicMapViewMode.lecture) {
+        opacity = isHighlighted ? highlightOpacity : dimOpacity;
+      } else if (isHighlighted) {
+        opacity = highlightOpacity;
+      } else {
+        opacity = viewMode == TopicMapViewMode.topic ? suppressedOpacityTopic : suppressedOpacityCluster;
+      }
+
+      final color = TopicMapPalette.secondaryInk(brightness).withValues(alpha: opacity * 0.85);
+      final strokeWidth = baseEdgeWidth * shrink * 0.85;
+
+      _drawDashedLine(canvas, trimmedStart, trimmedEnd, color, strokeWidth, shrink);
+      _drawArrowhead(canvas, trimmedEnd, unit, Paint()..color = color, shrink);
+    }
+  }
+
+  void _drawDashedLine(Canvas canvas, Offset start, Offset end, Color color, double strokeWidth, double shrink) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final dashLength = 5.0 * shrink;
+    final gapLength = 4.0 * shrink;
+    final totalDist = (end - start).distance;
+    if (totalDist < 0.001) return;
+    final unit = (end - start) / totalDist;
+
+    var travelled = 0.0;
+    while (travelled < totalDist) {
+      final segStart = start + unit * travelled;
+      final segEndDist = min(travelled + dashLength, totalDist);
+      final segEnd = start + unit * segEndDist;
+      canvas.drawLine(segStart, segEnd, paint);
+      travelled += dashLength + gapLength;
+    }
+  }
 
   void _paintEdges(Canvas canvas) {
     final hasSelection = selection != null;

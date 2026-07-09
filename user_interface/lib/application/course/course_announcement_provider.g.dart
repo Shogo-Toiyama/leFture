@@ -153,7 +153,7 @@ final class ActiveAnnouncementsForCourseProvider
 }
 
 String _$activeAnnouncementsForCourseHash() =>
-    r'2558f872aacd58b93263d1eb972925e332bf8efb';
+    r'ffc18afb975a497e64916c95215f6aa07540dd2b';
 
 /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
 /// AsyncNotifier として管理することで、Done/Undo 操作後も

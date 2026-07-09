@@ -24,6 +24,7 @@ import 'package:lecture_companion_ui/presentation/pages/review_cards/review_card
 import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_list_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_detail_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/transcript/transcript_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/topic_map/topic_map_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -150,6 +151,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final id = state.pathParameters['lectureId']!;
                       return TranscriptPage(lectureId: id);
+                    },
+                  ),
+
+                  // Topic Map: /home/notes/c/:courseId/topic-map
+                  GoRoute(
+                    path: AppRoutes.topicMap, // 'topic-map'
+                    builder: (context, state) {
+                      final id = state.pathParameters['courseId']!;
+                      return TopicMapPage(courseId: id);
                     },
                   ),
                 ],

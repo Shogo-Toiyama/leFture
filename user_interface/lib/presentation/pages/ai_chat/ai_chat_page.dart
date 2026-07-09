@@ -49,7 +49,9 @@ class _AiChatPageState extends State<AiChatPage> {
           if (data == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          return ClusterMapView(data: data);
+          // Dummy fixture, no real course behind it -- the detail sheet's
+          // lecture lookup will just no-op (empty lecture list) if tapped.
+          return ClusterMapView(data: data, courseId: 'dummy_course');
         },
       ),
     );

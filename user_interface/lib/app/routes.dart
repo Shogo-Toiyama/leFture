@@ -32,6 +32,9 @@ class AppRoutes {
   // Transcript (Nested under /home/notes/c/:courseId)
   static const transcript = 'transcript/:lectureId';          // transcript/:lectureId
 
+  // Topic Map (Nested under /home/notes/c/:courseId)
+  static const topicMap = 'topic-map';                        // topic-map
+
   // Absolute Navigation Paths
   static const notesRootPath = '/home/notes';
 }

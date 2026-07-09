@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/domain/entities/announcement.dart';
+import 'package:lecture_companion_ui/domain/entities/datetime_parameters_formatter.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 
@@ -88,7 +89,11 @@ class AnnouncementTile extends StatelessWidget {
                     Text(
                       [
                         if (courseName != null) courseName!,
-                        _dateFmt.format(announcement.createdAt.toLocal()),
+                        formatDatetimeParameters(
+                              announcement.datetimeParameters,
+                              anchor: announcement.createdAt,
+                            ) ??
+                            _dateFmt.format(announcement.createdAt.toLocal()),
                       ].join(' · '),
                       style: TextStyle(
                         color: AppColors.universe.textComet,

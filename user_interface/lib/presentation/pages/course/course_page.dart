@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
 
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
@@ -14,6 +15,8 @@ import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_de
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
+import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
+import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_selection.dart';
 
 import 'package:lecture_companion_ui/presentation/widgets/course_tile.dart';
 import 'package:lecture_companion_ui/presentation/widgets/lecture_tile.dart';
@@ -205,19 +208,25 @@ class _TermSection extends StatelessWidget {
               ],
             ),
           ),
-          ...courses.map((course) => CourseTile(
-                course: course,
-                onEdit: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Mock Edit Course: ${course.courseTitle}')),
-                  );
-                },
-                onDelete: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Mock Delete Course: ${course.courseTitle}')),
-                  );
-                },
-              )),
+          ...courses.map(
+            (course) => CourseTile(
+              course: course,
+              onEdit: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Mock Edit Course: ${course.courseTitle}'),
+                  ),
+                );
+              },
+              onDelete: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Mock Delete Course: ${course.courseTitle}'),
+                  ),
+                );
+              },
+            ),
+          ),
           const SizedBox(height: 8),
         ],
       ),
@@ -296,6 +305,14 @@ class _CourseLectureListView extends ConsumerWidget {
     final courses =
         ref.watch(courseListProvider).asData?.value ?? const <Course>[];
     final course = _findCourse(courses);
+    final topicMapAsync = ref.watch(topicMapForCourseProvider(courseId));
+    // Whether there's an actual map to show/open -- false while loading, on
+    // error, before the pipeline has generated one, or before this course
+    // has any lecture_num for a map to even cover (e.g. zero lectures yet).
+    final canOpenTopicMap = topicMapAsync.maybeWhen(
+      data: (topicMap) => topicMap != null && topicMap.totalLecturesCovered > 0,
+      orElse: () => false,
+    );
 
     // ローカルDBは新しい順に並ぶので、シラバス的に古い順（Week1が上）へ並べ替える
     final lectures =
@@ -494,7 +511,6 @@ class _CourseLectureListView extends ConsumerWidget {
                     const SizedBox(height: 20),
 
                     // Row 4: Topic Map
-                    // TODO: トピックマップは後で一緒に実装する（現状はプレースホルダーのまま）
                     Text(
                       'Topic Map',
                       style: TextStyle(
@@ -504,46 +520,96 @@ class _CourseLectureListView extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      height: 220,
-                      decoration: BoxDecoration(
-                        color: AppColors.universe.glassWhiteLow,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.universe.glassBorder,
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          // Map Drawing
-                          Positioned.fill(
-                            child: CustomPaint(painter: _TopicMapPainter()),
+                    GestureDetector(
+                      onTap: canOpenTopicMap
+                          ? () => context.push(
+                              '${AppRoutes.notesRootPath}/c/$courseId/${AppRoutes.topicMap}',
+                            )
+                          : null,
+                      child: Container(
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: AppColors.universe.glassWhiteLow,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.universe.glassBorder,
                           ),
-                          // Overlay Text
-                          Positioned(
-                            bottom: 16,
-                            left: 16,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.universe.voidBackground
-                                    .withValues(alpha: 0.8),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Coming soon',
-                                style: TextStyle(
-                                  color: AppColors.universe.textComet,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            children: [
+                              // Map Preview: the latest lecture's Lecture
+                              // View, non-interactive (tapping the whole card
+                              // opens the real TopicMapPage). Falls back to
+                              // the decorative painter while loading, on
+                              // error, or before the pipeline has generated a
+                              // map yet.
+                              Positioned.fill(
+                                child: topicMapAsync.maybeWhen(
+                                  data: (topicMap) {
+                                    if (topicMap == null ||
+                                        topicMap.totalLecturesCovered <= 0) {
+                                      return CustomPaint(
+                                        painter: _TopicMapPainter(),
+                                      );
+                                    }
+                                    return ClusterMapView(
+                                      data: topicMap,
+                                      courseId: courseId,
+                                      initialSelection:
+                                          ClusterSelection.lecture(
+                                            topicMap.totalLecturesCovered,
+                                          ),
+                                      interactive: false,
+                                    );
+                                  },
+                                  orElse: () =>
+                                      CustomPaint(painter: _TopicMapPainter()),
                                 ),
                               ),
-                            ),
+                              // Overlay Hint
+                              Positioned(
+                                bottom: 16,
+                                left: 16,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.universe.voidBackground
+                                        .withValues(alpha: 0.8),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        canOpenTopicMap
+                                            ? 'Open Topic Map'
+                                            : 'Not generated yet',
+                                        style: TextStyle(
+                                          color: AppColors.universe.textComet,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (canOpenTopicMap) ...[
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.arrow_forward,
+                                          color: AppColors.universe.textComet,
+                                          size: 14,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),

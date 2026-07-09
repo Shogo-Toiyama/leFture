@@ -88,7 +88,7 @@ final class ActiveAnnouncementsProvider
 }
 
 String _$activeAnnouncementsHash() =>
-    r'5acd345e5b91a802fadc4bb5c9c9af4c91fb1a6a';
+    r'7dbab5b5ff6b57988c6aa7eed00b1d92f772daa5';
 
 /// 未完了のアナウンスメント全件（新しい順）。
 /// AsyncNotifier として管理することで、Done/Undo 操作後も

@@ -245,20 +245,20 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
             continue
             
         if action == "create":
-            if not any(c.get("id") == cluster_id for c in new_graph.get("clusters", [])):
+            if not any(c.get("cluster_id") == cluster_id for c in new_graph.get("clusters", [])):
                 if "clusters" not in new_graph:
                     new_graph["clusters"] = []
                 new_graph["clusters"].append({
-                    "id": cluster_id,
+                    "cluster_id": cluster_id,
                     "name": name
                 })
         elif action == "rename":
             for c in new_graph.get("clusters", []):
-                if c.get("id") == cluster_id:
+                if c.get("cluster_id") == cluster_id:
                     c["name"] = name
                     break
         elif action == "remove":
-            new_graph["clusters"] = [c for c in new_graph.get("clusters", []) if c.get("id") != cluster_id]
+            new_graph["clusters"] = [c for c in new_graph.get("clusters", []) if c.get("cluster_id") != cluster_id]
 
     # 2. ノードの配置 (今日のトピックノードの追加・配置)
     todays_topics_map = {t.get("topic_id"): t for t in todays_topics}
@@ -273,8 +273,8 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
         if "nodes" not in new_graph:
             new_graph["nodes"] = []
             
-        existing_node = next((n for n in new_graph["nodes"] if n.get("id") == topic_id), None)
-        
+        existing_node = next((n for n in new_graph["nodes"] if n.get("topic_id") == topic_id), None)
+
         if existing_node:
             existing_node["cluster_id"] = cluster_id
         else:
@@ -285,7 +285,7 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
                 # そのまま出すフォールバックになるため、後で気づけるようログに残す。
                 _log(f"⚠️ Topic Mapping referenced an unknown topic_id in node_placements: {topic_id}")
             new_graph["nodes"].append({
-                "id": topic_id,
+                "topic_id": topic_id,
                 "title": topic_info.get("title", f"Topic {topic_id}"),
                 "cluster_id": cluster_id,
                 "topic_type": topic_info.get("topic_type", "ACADEMIC")
@@ -295,7 +295,7 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
     # add時は、source/targetが実在するノードかどうかを検証する。存在しないノードを
     # 参照するエッジは繋ぎようがない（宙に浮いた線になる）ため、そのエッジだけを
     # 無視する。ノードやクラスターなど他の情報はここでは一切失われない。
-    known_node_ids = {n.get("id") for n in new_graph.get("nodes", [])}
+    known_node_ids = {n.get("topic_id") for n in new_graph.get("nodes", [])}
 
     edge_actions = mutations.get("edge_actions", [])
     for action_item in edge_actions:
@@ -316,16 +316,19 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
                     f"(source={source_id}, target={target_id}): could not be connected."
                 )
                 continue
-            if not any(e.get("source") == source_id and e.get("target") == target_id for e in new_graph["edges"]):
+            if not any(
+                e.get("source_id") == source_id and e.get("target_id") == target_id
+                for e in new_graph["edges"]
+            ):
                 new_graph["edges"].append({
-                    "source": source_id,
-                    "target": target_id,
+                    "source_id": source_id,
+                    "target_id": target_id,
                     "relation_type": relation_type
                 })
         elif action == "remove":
             new_graph["edges"] = [
                 e for e in new_graph["edges"]
-                if not (e.get("source") == source_id and e.get("target") == target_id)
+                if not (e.get("source_id") == source_id and e.get("target_id") == target_id)
             ]
 
     # 4. ゴーストノードのアクション (create / resolve / remove)

@@ -43,13 +43,23 @@ class TopicMapNode {
   final String? clusterId;
   final int lectureNum;
 
+  /// The pipeline never stamps a separate lecture_num field -- topic_id
+  /// itself always encodes it (see task_runners.py: `f"node_lc{lecture_num}_{i}"`),
+  /// so that's the only source of truth for it.
+  static final RegExp _lectureNumPattern = RegExp(r'^node_lc(\d+)_');
+
+  static int _lectureNumFromTopicId(String topicId) {
+    return int.tryParse(_lectureNumPattern.firstMatch(topicId)?.group(1) ?? '') ?? 0;
+  }
+
   factory TopicMapNode.fromJson(Map<String, dynamic> json) {
+    final topicId = json['topic_id'] as String;
     return TopicMapNode(
-      id: json['topic_id'] as String,
-      title: json['title'] as String? ?? json['topic_id'] as String,
+      id: topicId,
+      title: json['title'] as String? ?? topicId,
       topicType: json['topic_type'] as String? ?? 'ACADEMIC',
       clusterId: json['cluster_id'] as String?,
-      lectureNum: (json['lecture_num'] as num?)?.toInt() ?? 0,
+      lectureNum: _lectureNumFromTopicId(topicId),
     );
   }
 }
@@ -123,10 +133,21 @@ class TopicMapData {
   final List<TopicMapEdge> edges;
   final List<TopicMapGhostNode> ghostNodes;
 
-  factory TopicMapData.fromJson(Map<String, dynamic> json) {
+  /// The real pipeline never writes course_title/total_lectures_covered into
+  /// the map jsonb at all -- those belong to the courses/lectures tables,
+  /// not this course-scoped map. [courseTitle]/[totalLecturesCovered] let a
+  /// caller that has that data (see topic_map_provider.dart) supply the
+  /// real values; when omitted, falls back to reading the json (only
+  /// relevant for the standalone test fixture, which does inline them).
+  factory TopicMapData.fromJson(
+    Map<String, dynamic> json, {
+    String? courseTitle,
+    int? totalLecturesCovered,
+  }) {
     return TopicMapData(
-      courseTitle: json['course_title'] as String? ?? 'Untitled Course',
-      totalLecturesCovered: (json['total_lectures_covered'] as num?)?.toInt() ?? 0,
+      courseTitle: courseTitle ?? json['course_title'] as String? ?? 'Untitled Course',
+      totalLecturesCovered:
+          totalLecturesCovered ?? (json['total_lectures_covered'] as num?)?.toInt() ?? 0,
       clusters: (json['clusters'] as List<dynamic>? ?? [])
           .map((e) => TopicMapCluster.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -139,6 +160,17 @@ class TopicMapData {
       ghostNodes: (json['ghost_nodes'] as List<dynamic>? ?? [])
           .map((e) => TopicMapGhostNode.fromJson(e as Map<String, dynamic>))
           .toList(),
+    );
+  }
+
+  TopicMapData copyWith({String? courseTitle, int? totalLecturesCovered}) {
+    return TopicMapData(
+      courseTitle: courseTitle ?? this.courseTitle,
+      totalLecturesCovered: totalLecturesCovered ?? this.totalLecturesCovered,
+      clusters: clusters,
+      nodes: nodes,
+      edges: edges,
+      ghostNodes: ghostNodes,
     );
   }
 }
