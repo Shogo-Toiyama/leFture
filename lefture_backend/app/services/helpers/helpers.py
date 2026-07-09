@@ -343,14 +343,22 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
             new_graph["ghost_nodes"] = []
             
         if action == "create":
-            if not any(g.get("id") == ghost_id for g in new_graph["ghost_nodes"]):
+            derived_from_topic_id = action_item.get("derived_from_topic_id")
+            if derived_from_topic_id not in known_node_ids:
+                _log(
+                    f"⚠️ Ghost node '{ghost_id}' referenced a non-existent "
+                    f"derived_from_topic_id ({derived_from_topic_id}): storing as null."
+                )
+                derived_from_topic_id = None
+            if not any(g.get("ghost_id") == ghost_id for g in new_graph["ghost_nodes"]):
                 new_graph["ghost_nodes"].append({
-                    "id": ghost_id,
+                    "ghost_id": ghost_id,
                     "name": name,
-                    "cluster_id": cluster_id
+                    "cluster_id": cluster_id,
+                    "derived_from_topic_id": derived_from_topic_id
                 })
         elif action in ("resolve", "remove"):
-            new_graph["ghost_nodes"] = [g for g in new_graph["ghost_nodes"] if g.get("id") != ghost_id]
+            new_graph["ghost_nodes"] = [g for g in new_graph["ghost_nodes"] if g.get("ghost_id") != ghost_id]
         
     return new_graph
 

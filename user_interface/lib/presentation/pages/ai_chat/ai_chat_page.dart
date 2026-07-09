@@ -1,37 +1,56 @@
-import 'package:flutter/material.dart';
+// PROTOTYPE: this page's normal "AI Chat" content is temporarily replaced by
+// a Topic Map Cluster View prototype, loading the dummy fixture at
+// test_topic_map.json. Restore the original AiChatPage body once the
+// prototype has been validated and moved to its own route.
 
-class AiChatPage extends StatelessWidget {
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
+import 'package:lecture_companion_ui/presentation/widgets/topic_map/topic_map_models.dart';
+
+class AiChatPage extends StatefulWidget {
   const AiChatPage({super.key});
+
+  @override
+  State<AiChatPage> createState() => _AiChatPageState();
+}
+
+class _AiChatPageState extends State<AiChatPage> {
+  late final Future<TopicMapData> _dataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _dataFuture = _loadDummyTopicMap();
+  }
+
+  Future<TopicMapData> _loadDummyTopicMap() async {
+    final raw = await rootBundle.loadString(
+      'lib/presentation/pages/ai_chat/test_topic_map.json',
+    );
+    return TopicMapData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Chat'),
+        title: const Text('Topic Map – Cluster View (Prototype)'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 64,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Coming Soon',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'AI Chat feature is under development',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
+      body: FutureBuilder<TopicMapData>(
+        future: _dataFuture,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('読み込みに失敗しました: ${snapshot.error}'));
+          }
+          final data = snapshot.data;
+          if (data == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return ClusterMapView(data: data);
+        },
       ),
     );
   }

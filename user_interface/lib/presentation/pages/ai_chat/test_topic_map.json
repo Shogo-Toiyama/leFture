@@ -1,0 +1,141 @@
+{
+  "course_title": "Operating Systems (CS 111)",
+  "total_lectures_covered": 8,
+
+  "clusters": [
+    { "cluster_id": "cluster_os_foundations", "name": "OS基礎概念" },
+    { "cluster_id": "cluster_process_management", "name": "プロセス管理" },
+    { "cluster_id": "cluster_memory_systems", "name": "メモリ管理" },
+    { "cluster_id": "cluster_filesystems", "name": "ファイルシステム" },
+    { "cluster_id": "cluster_concurrency_advanced", "name": "並行処理応用" },
+    { "cluster_id": "cluster_io_systems", "name": "I/Oシステム" },
+    { "cluster_id": "cluster_distributed_systems", "name": "分散システム" },
+    { "cluster_id": "cluster_security", "name": "セキュリティ & 保護" }
+  ],
+
+  "nodes": [
+    { "topic_id": "node_lc1_1", "title": "Processes & Program Execution", "topic_type": "ACADEMIC", "cluster_id": "cluster_os_foundations", "lecture_num": 1 },
+    { "topic_id": "node_lc1_2", "title": "System Calls", "topic_type": "ACADEMIC", "cluster_id": "cluster_os_foundations", "lecture_num": 1 },
+    { "topic_id": "node_lc1_3", "title": "Kernel vs User Mode", "topic_type": "ACADEMIC", "cluster_id": "cluster_os_foundations", "lecture_num": 1 },
+    { "topic_id": "node_lc1_4", "title": "History of Unix", "topic_type": "ACADEMIC", "cluster_id": "cluster_os_foundations", "lecture_num": 1 },
+    { "topic_id": "node_lc1_5", "title": "Interrupts & Traps", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 1 },
+
+    { "topic_id": "node_lc2_1", "title": "Process Scheduling", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 2 },
+    { "topic_id": "node_lc2_2", "title": "Context Switching", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 2 },
+    { "topic_id": "node_lc2_3", "title": "Threads & Concurrency", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 2 },
+    { "topic_id": "node_lc2_4", "title": "Race Conditions", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 2 },
+    { "topic_id": "node_lc2_5", "title": "Mutex & Semaphores", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 2 },
+
+    { "topic_id": "node_lc3_1", "title": "Virtual Memory", "topic_type": "ACADEMIC", "cluster_id": "cluster_memory_systems", "lecture_num": 3 },
+    { "topic_id": "node_lc3_2", "title": "Paging", "topic_type": "ACADEMIC", "cluster_id": "cluster_memory_systems", "lecture_num": 3 },
+    { "topic_id": "node_lc3_3", "title": "Page Replacement Algorithms", "topic_type": "ACADEMIC", "cluster_id": "cluster_memory_systems", "lecture_num": 3 },
+    { "topic_id": "node_lc3_4", "title": "Segmentation", "topic_type": "ACADEMIC", "cluster_id": "cluster_memory_systems", "lecture_num": 3 },
+    { "topic_id": "node_lc3_5", "title": "TLB (Translation Lookaside Buffer)", "topic_type": "ACADEMIC", "cluster_id": "cluster_memory_systems", "lecture_num": 3 },
+
+    { "topic_id": "node_lc4_1", "title": "File System Basics", "topic_type": "ACADEMIC", "cluster_id": "cluster_filesystems", "lecture_num": 4 },
+    { "topic_id": "node_lc4_2", "title": "Inodes & Data Blocks", "topic_type": "ACADEMIC", "cluster_id": "cluster_filesystems", "lecture_num": 4 },
+    { "topic_id": "node_lc4_3", "title": "EXT2 Filesystem Structure", "topic_type": "ACADEMIC", "cluster_id": "cluster_filesystems", "lecture_num": 4 },
+    { "topic_id": "node_lc4_4", "title": "Journaling Filesystems", "topic_type": "ACADEMIC", "cluster_id": "cluster_filesystems", "lecture_num": 4 },
+    { "topic_id": "node_lc4_5", "title": "Disk I/O & Caching", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 4 },
+
+    { "topic_id": "node_lc5_1", "title": "Deadlock Detection & Prevention", "topic_type": "ACADEMIC", "cluster_id": "cluster_concurrency_advanced", "lecture_num": 5 },
+    { "topic_id": "node_lc5_2", "title": "Inter-Process Communication", "topic_type": "ACADEMIC", "cluster_id": "cluster_concurrency_advanced", "lecture_num": 5 },
+    { "topic_id": "node_lc5_3", "title": "Producer-Consumer Problem", "topic_type": "ACADEMIC", "cluster_id": "cluster_concurrency_advanced", "lecture_num": 5 },
+    { "topic_id": "node_lc5_4", "title": "Readers-Writers Problem", "topic_type": "ACADEMIC", "cluster_id": "cluster_concurrency_advanced", "lecture_num": 5 },
+    { "topic_id": "node_lc5_5", "title": "Monitors & Condition Variables", "topic_type": "ACADEMIC", "cluster_id": "cluster_concurrency_advanced", "lecture_num": 5 },
+
+    { "topic_id": "node_lc6_1", "title": "Device Drivers & I/O Subsystem", "topic_type": "ACADEMIC", "cluster_id": "cluster_io_systems", "lecture_num": 6 },
+    { "topic_id": "node_lc6_2", "title": "Interrupt-Driven I/O", "topic_type": "ACADEMIC", "cluster_id": "cluster_process_management", "lecture_num": 6 },
+    { "topic_id": "node_lc6_3", "title": "DMA (Direct Memory Access)", "topic_type": "ACADEMIC", "cluster_id": "cluster_io_systems", "lecture_num": 6 },
+    { "topic_id": "node_lc6_4", "title": "Disk Scheduling Algorithms", "topic_type": "ACADEMIC", "cluster_id": "cluster_io_systems", "lecture_num": 6 },
+    { "topic_id": "node_lc6_5", "title": "RAID & Storage Reliability", "topic_type": "ACADEMIC", "cluster_id": "cluster_filesystems", "lecture_num": 6 },
+
+    { "topic_id": "node_lc7_1", "title": "Distributed File Systems", "topic_type": "ACADEMIC", "cluster_id": "cluster_distributed_systems", "lecture_num": 7 },
+    { "topic_id": "node_lc7_2", "title": "Network File System (NFS)", "topic_type": "ACADEMIC", "cluster_id": "cluster_distributed_systems", "lecture_num": 7 },
+    { "topic_id": "node_lc7_3", "title": "Remote Procedure Calls (RPC)", "topic_type": "ACADEMIC", "cluster_id": "cluster_distributed_systems", "lecture_num": 7 },
+    { "topic_id": "node_lc7_4", "title": "Consistency Models", "topic_type": "ACADEMIC", "cluster_id": "cluster_distributed_systems", "lecture_num": 7 },
+    { "topic_id": "node_lc7_5", "title": "CAP Theorem", "topic_type": "ACADEMIC", "cluster_id": null, "lecture_num": 7 },
+
+    { "topic_id": "node_lc8_1", "title": "Access Control & Permissions", "topic_type": "ACADEMIC", "cluster_id": "cluster_security", "lecture_num": 8 },
+    { "topic_id": "node_lc8_2", "title": "Authentication Mechanisms", "topic_type": "ACADEMIC", "cluster_id": "cluster_security", "lecture_num": 8 },
+    { "topic_id": "node_lc8_3", "title": "Buffer Overflow & Memory Safety", "topic_type": "ACADEMIC", "cluster_id": "cluster_memory_systems", "lecture_num": 8 },
+    { "topic_id": "node_lc8_4", "title": "Sandboxing & Isolation", "topic_type": "ACADEMIC", "cluster_id": null, "lecture_num": 8 },
+    { "topic_id": "node_lc8_5", "title": "Virtualization & Hypervisors", "topic_type": "ACADEMIC", "cluster_id": "cluster_os_foundations", "lecture_num": 8 },
+    { "topic_id": "node_lc8_6", "title": "Browser Security Arch", "topic_type": "ACADEMIC", "cluster_id": "cluster_security", "lecture_num": 8 }
+  ],
+
+  "edges": [
+    { "source_id": "node_lc1_4", "target_id": "node_lc1_1", "relation_type": "derives_from" },
+    { "source_id": "node_lc1_1", "target_id": "node_lc1_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_3", "target_id": "node_lc1_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_1", "target_id": "node_lc1_5", "relation_type": "cause_effect" },
+
+    { "source_id": "node_lc1_1", "target_id": "node_lc2_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_2", "target_id": "node_lc2_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc2_1", "target_id": "node_lc2_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_5", "target_id": "node_lc2_2", "relation_type": "cause_effect" },
+    { "source_id": "node_lc2_2", "target_id": "node_lc2_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc2_3", "target_id": "node_lc2_4", "relation_type": "cause_effect" },
+    { "source_id": "node_lc2_4", "target_id": "node_lc2_5", "relation_type": "problem_solution" },
+
+    { "source_id": "node_lc1_3", "target_id": "node_lc3_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_2", "target_id": "node_lc3_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc3_1", "target_id": "node_lc3_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc3_2", "target_id": "node_lc3_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc3_2", "target_id": "node_lc3_4", "relation_type": "compares_to" },
+    { "source_id": "node_lc3_2", "target_id": "node_lc3_5", "relation_type": "part_of" },
+
+    { "source_id": "node_lc1_2", "target_id": "node_lc4_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc4_1", "target_id": "node_lc4_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc4_2", "target_id": "node_lc4_3", "relation_type": "derives_from" },
+    { "source_id": "node_lc4_3", "target_id": "node_lc4_4", "relation_type": "problem_solution" },
+    { "source_id": "node_lc3_5", "target_id": "node_lc4_5", "relation_type": "compares_to" },
+    { "source_id": "node_lc4_1", "target_id": "node_lc4_5", "relation_type": "builds_on" },
+
+    { "source_id": "node_lc2_5", "target_id": "node_lc5_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc2_4", "target_id": "node_lc5_1", "relation_type": "cause_effect" },
+    { "source_id": "node_lc2_3", "target_id": "node_lc5_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_2", "target_id": "node_lc5_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc2_5", "target_id": "node_lc5_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc5_2", "target_id": "node_lc5_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc5_3", "target_id": "node_lc5_4", "relation_type": "compares_to" },
+    { "source_id": "node_lc2_5", "target_id": "node_lc5_5", "relation_type": "builds_on" },
+    { "source_id": "node_lc5_4", "target_id": "node_lc5_5", "relation_type": "derives_from" },
+
+    { "source_id": "node_lc1_5", "target_id": "node_lc6_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc4_5", "target_id": "node_lc6_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_5", "target_id": "node_lc6_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc6_1", "target_id": "node_lc6_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc6_2", "target_id": "node_lc6_3", "relation_type": "derives_from" },
+    { "source_id": "node_lc6_1", "target_id": "node_lc6_4", "relation_type": "builds_on" },
+    { "source_id": "node_lc2_1", "target_id": "node_lc6_4", "relation_type": "builds_on" },
+    { "source_id": "node_lc4_4", "target_id": "node_lc6_5", "relation_type": "compares_to" },
+    { "source_id": "node_lc6_4", "target_id": "node_lc6_5", "relation_type": "builds_on" },
+
+    { "source_id": "node_lc4_1", "target_id": "node_lc7_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc6_5", "target_id": "node_lc7_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc7_1", "target_id": "node_lc7_2", "relation_type": "derives_from" },
+    { "source_id": "node_lc1_2", "target_id": "node_lc7_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc7_2", "target_id": "node_lc7_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc7_3", "target_id": "node_lc7_4", "relation_type": "cause_effect" },
+    { "source_id": "node_lc7_4", "target_id": "node_lc7_5", "relation_type": "derives_from" },
+
+    { "source_id": "node_lc1_3", "target_id": "node_lc8_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc4_2", "target_id": "node_lc8_1", "relation_type": "builds_on" },
+    { "source_id": "node_lc8_1", "target_id": "node_lc8_2", "relation_type": "builds_on" },
+    { "source_id": "node_lc3_1", "target_id": "node_lc8_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc3_4", "target_id": "node_lc8_3", "relation_type": "builds_on" },
+    { "source_id": "node_lc1_3", "target_id": "node_lc8_5", "relation_type": "builds_on" },
+    { "source_id": "node_lc8_1", "target_id": "node_lc8_5", "relation_type": "builds_on" },
+    { "source_id": "node_lc8_4", "target_id": "node_lc8_6", "relation_type": "builds_on" }
+  ],
+
+  "ghost_nodes": [
+    { "ghost_id": "ghost_cache_coherence", "name": "Cache Coherence", "cluster_id": "cluster_memory_systems", "status": "active", "derived_from_topic_id": "node_lc3_5" },
+    { "ghost_id": "ghost_capability_systems", "name": "Capability-Based Security", "cluster_id": "cluster_security", "status": "active", "derived_from_topic_id": "node_lc8_1" },
+    { "ghost_id": "ghost_encryption_at_rest", "name": "Encryption & Data Protection", "cluster_id": "cluster_security", "status": "active", "derived_from_topic_id": "node_lc8_2" },
+    { "ghost_id": "ghost_microservices_arch", "name": "Microservices Architecture", "cluster_id": "cluster_distributed_systems", "status": "faded", "derived_from_topic_id": "node_lc7_3" },
+    { "ghost_id": "ghost_container_virtualization", "name": "Containers vs Virtual Machines", "cluster_id": "cluster_os_foundations", "status": "active", "derived_from_topic_id": "node_lc8_5" },
+    { "ghost_id": "ghost_nvme_storage", "name": "NVMe & Modern Storage", "cluster_id": "cluster_io_systems", "status": "faded", "derived_from_topic_id": "node_lc6_3" }
+  ]
+}

@@ -980,11 +980,11 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
 
         course_id, lecture_num = await asyncio.to_thread(_fetch_course_and_lecture_num_sync)
 
-        # ACADEMICトピックのみの連番で node_wkX_Y を付与
+        # ACADEMICトピックのみの連番で node_lcX_Y を付与
         todays_topics_list = []
         for i, t in enumerate(academic_topics, start=1):
             topic_copy = t.copy()
-            topic_copy["topic_id"] = f"node_wk{lecture_num}_{i}"
+            topic_copy["topic_id"] = f"node_lc{lecture_num}_{i}"
             todays_topics_list.append(topic_copy)
             
         todays_macro_topics = {

@@ -72,6 +72,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/lecture_folder_test.svg
+    - lib/presentation/pages/ai_chat/test_topic_map.json
 
 flutter_launcher_icons:
   ios: true
