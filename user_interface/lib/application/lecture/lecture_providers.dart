@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../infrastructure/repositories/lecture_artifact_repository.dart';
+import '../../infrastructure/supabase/repositories/lecture_topic_repository_supabase.dart';
 import '../../domain/entities/lecture_data.dart';
 import '../../domain/entities/lecture.dart';
 
@@ -49,4 +50,10 @@ Future<List<TranscriptSentence>?> transcript(
 @riverpod
 Future<File?> artifactFile(Ref ref, String storagePath) {
   return ref.watch(lectureArtifactRepositoryProvider).getArtifactFile(storagePath);
+}
+
+// レクチャーの最初のトピック（index = 1）の image_path を取得するProvider
+@riverpod
+Future<String?> firstTopicImagePath(Ref ref, String lectureId) {
+  return ref.watch(lectureTopicRepositoryProvider).firstTopicImagePath(lectureId);
 }

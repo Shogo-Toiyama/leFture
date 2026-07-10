@@ -279,3 +279,73 @@ final class ArtifactFileFamily extends $Family
   @override
   String toString() => r'artifactFileProvider';
 }
+
+@ProviderFor(firstTopicImagePath)
+final firstTopicImagePathProvider = FirstTopicImagePathFamily._();
+
+final class FirstTopicImagePathProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
+    with $FutureModifier<String?>, $FutureProvider<String?> {
+  FirstTopicImagePathProvider._({
+    required FirstTopicImagePathFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'firstTopicImagePathProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$firstTopicImagePathHash();
+
+  @override
+  String toString() {
+    return r'firstTopicImagePathProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String?> create(Ref ref) {
+    final argument = this.argument as String;
+    return firstTopicImagePath(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FirstTopicImagePathProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$firstTopicImagePathHash() =>
+    r'1909e8f785c0e9c0b121cd92dc2f6ba5b9d3627f';
+
+final class FirstTopicImagePathFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<String?>, String> {
+  FirstTopicImagePathFamily._()
+    : super(
+        retry: null,
+        name: r'firstTopicImagePathProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FirstTopicImagePathProvider call(String lectureId) =>
+      FirstTopicImagePathProvider._(argument: lectureId, from: this);
+
+  @override
+  String toString() => r'firstTopicImagePathProvider';
+}

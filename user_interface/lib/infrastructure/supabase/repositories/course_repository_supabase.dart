@@ -132,13 +132,40 @@ class CourseRepositorySupabase {
     return Course.fromMap(updated);
   }
 
-  /// ソフトデリート
+  /// ソフトデリート。配下のLectureはcourse_idをnullに戻して無所属にする
+  /// （中身は消さない）。以前の所属先はmetadataに退避しておく。
   Future<void> deleteCourse(String courseId) async {
-    _requireUid();
+    final uid = _requireUid();
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    final lectures = await supabase
+        .from('lectures')
+        .select('id, metadata')
+        .eq('user_id', uid)
+        .eq('course_id', courseId)
+        .eq('is_deleted', false);
+
+    for (final row in lectures) {
+      final existingMetadata = (row['metadata'] as Map<String, dynamic>?) ?? {};
+      final mergedMetadata = {
+        ...existingMetadata,
+        'previous_course_id': courseId,
+        'unassigned_at': now,
+      };
+
+      await supabase
+          .from('lectures')
+          .update({
+            'course_id': null,
+            'metadata': mergedMetadata,
+            'updated_at': now,
+          })
+          .eq('id', row['id'] as String);
+    }
 
     await supabase
         .from(_table)
-        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .update({'deleted_at': now})
         .eq('id', courseId);
   }
 }

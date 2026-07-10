@@ -86,4 +86,28 @@ class LectureController extends _$LectureController {
     });
     link.close();
   }
+
+  /// 授業のタイトルと所属コースを更新する
+  Future<void> updateLecture({
+    required String lectureId,
+    required String? title,
+    required String? courseId,
+  }) async {
+    final link = ref.keepAlive();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(lectureRepositoryProvider).updateLectureTitleAndCourse(
+            lectureId: lectureId,
+            title: title,
+            courseId: courseId,
+          );
+
+      try {
+        await _sync().pushOutbox();
+      } catch (e) {
+        dev.log('⚠️ Background push failed (queued in outbox): $e');
+      }
+    });
+    link.close();
+  }
 }

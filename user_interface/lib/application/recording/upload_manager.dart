@@ -148,8 +148,15 @@ class UploadManager {
           
           // A. もし「未送信がゼロ」かつ「録音が終了している」なら、全部送り切った証拠！！
           if (remainingJobs.isEmpty && expectedChunks != null) {
+            // コースが未選択の場合は自動分析を開始しない
+            // （録音ページの警告文「Course未選択なら自動分析は始まらない」を実際に成立させるため）
+            if (lecture.courseId == null) {
+              DevLog.add('⏸️ コース未選択のため、自動分析はスキップします（手動でStart Analysisが必要）。');
+              continue;
+            }
+
             DevLog.add('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
-            
+
             try {
               // 1. Supabaseから現在のユーザーのJWTトークンを取得
               final session = supabase.auth.currentSession;

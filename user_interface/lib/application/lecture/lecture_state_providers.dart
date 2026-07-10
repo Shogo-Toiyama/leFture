@@ -86,7 +86,7 @@ Stream<LectureUIState> lectureState(Ref ref, String lectureId) async* {
 
   // A. Jobが存在する場合
   if (job != null) {
-    if (job.status == 'DONE') {
+    if (job.status == 'COMPLETED') {
       yield LectureUIState.complete;
       return;
     }

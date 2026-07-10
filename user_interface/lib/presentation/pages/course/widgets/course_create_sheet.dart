@@ -182,13 +182,45 @@ class CourseCreateSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 20),
 
-              Text(
-                isEditing ? 'Edit Course' : 'New Course',
-                style: TextStyle(
-                  color: AppColors.universe.textStarlight,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isEditing ? 'Edit Course' : 'New Course',
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: isSubmitting.value ? null : submit,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.starGold,
+                      disabledForegroundColor: AppColors.universe.textComet.withValues(alpha: 0.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: isSubmitting.value
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.starGold,
+                            ),
+                          )
+                        : const Text(
+                            'Save',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 
@@ -316,40 +348,6 @@ class CourseCreateSheet extends HookConsumerWidget {
                   ),
                 ),
               ],
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isSubmitting.value ? null : submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.starGold,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.universe.glassWhiteLow,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isSubmitting.value
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          isEditing ? 'Save Changes' : 'Create Course',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
             ],
           ),
         ),
@@ -406,7 +404,7 @@ class _AttributeField extends StatelessWidget {
             color: Colors.transparent,
             child: Container(
               margin: const EdgeInsets.only(top: 4),
-              constraints: const BoxConstraints(maxHeight: 180),
+              constraints: const BoxConstraints(maxHeight: 180, maxWidth: 220),
               decoration: BoxDecoration(
                 color: const Color(0xFF252740),
                 borderRadius: BorderRadius.circular(12),

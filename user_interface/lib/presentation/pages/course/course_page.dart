@@ -5,6 +5,7 @@ import 'package:lecture_companion_ui/application/course/course_announcement_prov
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
 
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
@@ -12,6 +13,9 @@ import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_announcements_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_details_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
+import 'package:lecture_companion_ui/presentation/widgets/delete_confirm_dialog.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
@@ -175,14 +179,14 @@ class _YearSection extends StatelessWidget {
   }
 }
 
-class _TermSection extends StatelessWidget {
+class _TermSection extends ConsumerWidget {
   const _TermSection({required this.termName, required this.courses});
 
   final String termName;
   final List<Course> courses;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: Column(
@@ -211,19 +215,29 @@ class _TermSection extends StatelessWidget {
           ...courses.map(
             (course) => CourseTile(
               course: course,
-              onEdit: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Mock Edit Course: ${course.courseTitle}'),
-                  ),
+              onEdit: () async {
+                await showModalBottomSheet<Course>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => CourseCreateSheet(existingCourse: course),
                 );
               },
-              onDelete: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Mock Delete Course: ${course.courseTitle}'),
-                  ),
-                );
+              onDelete: () async {
+                try {
+                  await ref.read(courseRepositoryProvider).deleteCourse(course.id);
+                  ref.invalidate(courseListProvider);
+                  // 配下のLectureがcourse_id=nullに変わったことをローカルにも反映する
+                  await ref
+                      .read(lectureControllerProvider.notifier)
+                      .bootstrapLectures(forceFullPull: true);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to delete course: $e')),
+                    );
+                  }
+                }
               },
             ),
           ),
@@ -654,23 +668,24 @@ class _CourseLectureListView extends ConsumerWidget {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: LectureTile(
                           lecture: lectures[index],
-                          onEdit: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Mock Edit Lecture: ${lectures[index].title ?? lectures[index].titleGenerated}',
-                                ),
-                              ),
+                          onEdit: () async {
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => LectureEditSheet(lecture: lectures[index]),
                             );
                           },
-                          onDelete: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Mock Delete Lecture: ${lectures[index].title ?? lectures[index].titleGenerated}',
-                                ),
-                              ),
+                          onDelete: () async {
+                            final confirm = await showConfirmDialog(
+                              context: context,
+                              title: 'Delete Lecture?',
+                              message: 'Are you sure you want to delete "${lectures[index].title ?? lectures[index].titleGenerated}"? This will delete the lecture and all associated data permanently.',
+                              confirmLabel: 'Delete',
                             );
+                            if (confirm == true) {
+                              await ref.read(lectureControllerProvider.notifier).deleteLecture(lectures[index].id);
+                            }
                           },
                         ),
                       );

@@ -124,3 +124,80 @@ final class JobStreamFamily extends $Family
   @override
   String toString() => r'jobStreamProvider';
 }
+
+@ProviderFor(jobTasksStream)
+final jobTasksStreamProvider = JobTasksStreamFamily._();
+
+final class JobTasksStreamProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ProcessingTask>>,
+          List<ProcessingTask>,
+          Stream<List<ProcessingTask>>
+        >
+    with
+        $FutureModifier<List<ProcessingTask>>,
+        $StreamProvider<List<ProcessingTask>> {
+  JobTasksStreamProvider._({
+    required JobTasksStreamFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'jobTasksStreamProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$jobTasksStreamHash();
+
+  @override
+  String toString() {
+    return r'jobTasksStreamProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<List<ProcessingTask>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<ProcessingTask>> create(Ref ref) {
+    final argument = this.argument as String;
+    return jobTasksStream(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is JobTasksStreamProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$jobTasksStreamHash() => r'060e93429c1dc67d3e1334cc1cd21f85d27e4c85';
+
+final class JobTasksStreamFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<List<ProcessingTask>>, String> {
+  JobTasksStreamFamily._()
+    : super(
+        retry: null,
+        name: r'jobTasksStreamProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  JobTasksStreamProvider call(String jobId) =>
+      JobTasksStreamProvider._(argument: jobId, from: this);
+
+  @override
+  String toString() => r'jobTasksStreamProvider';
+}

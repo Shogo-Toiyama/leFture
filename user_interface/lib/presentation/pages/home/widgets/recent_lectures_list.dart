@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-
 import 'package:lecture_companion_ui/presentation/widgets/lecture_tile.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
+import 'package:lecture_companion_ui/presentation/widgets/delete_confirm_dialog.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 
 class RecentLecturesList extends ConsumerWidget {
   const RecentLecturesList({super.key});
@@ -27,15 +29,24 @@ class RecentLecturesList extends ConsumerWidget {
             courseCode: courseCode,
             useRelativeTime: true,
             showChevron: true,
-            onEdit: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Mock Edit Lecture: ${lecture.title ?? lecture.titleGenerated}')),
+            onEdit: () async {
+              await showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => LectureEditSheet(lecture: lecture),
               );
             },
-            onDelete: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Mock Delete Lecture: ${lecture.title ?? lecture.titleGenerated}')),
+            onDelete: () async {
+              final confirm = await showConfirmDialog(
+                context: context,
+                title: 'Delete Lecture?',
+                message: 'Are you sure you want to delete "${lecture.title ?? lecture.titleGenerated}"? This will delete the lecture and all associated data permanently.',
+                confirmLabel: 'Delete',
               );
+              if (confirm == true) {
+                await ref.read(lectureControllerProvider.notifier).deleteLecture(lecture.id);
+              }
             },
           ),
         );

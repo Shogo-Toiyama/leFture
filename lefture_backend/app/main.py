@@ -87,6 +87,9 @@ class StartAnalysisRequest(BaseModel):
     lecture_id: str
     expected_chunks: int
 
+class RetryTaskRequest(BaseModel):
+    task_id: str
+
 class TranscribeChunkPayload(BaseModel):
     """Cloud Tasks から /worker/transcribe-chunk-process に渡されるデータ"""
     lecture_id: str
@@ -149,6 +152,21 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             status_code=400,
             detail=f"Failed to verify lecture course association: {str(e)}"
         )
+
+    # 3.6 同じlecture_idの古いjobがまだ残っていれば、その未完了タスクを無効化する。
+    # R2上のパスは {uid}/{lecture_id}/... のみで組まれておりjob_idを含まないため、
+    # 古いjobのタスクが後から（Cloud Tasksの遅延リトライ等で）動き出すと、新しいjobの
+    # 書き込みと衝突してデータが壊れる。CANCELLEDは orchestrator/patrol のどちらも
+    # 拾わない終端ステータスなので、これだけで再開を防げる。
+    old_jobs_res = admin_client.table("processing_jobs").select("id")\
+        .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED").execute()
+    for old_job in (old_jobs_res.data or []):
+        admin_client.table("processing_tasks").update({
+            "status": "CANCELLED",
+            "updated_at": datetime.now().isoformat(),
+        }).eq("job_id", old_job["id"]).in_(
+            "status", ["PENDING", "QUEUED", "RUNNING", "FAILED"]
+        ).execute()
 
     # 4. 親ジョブを作成 (processing_jobs)
     job_data = {
@@ -214,6 +232,60 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
     # 大成功！
     return {"message": "Analysis started successfully", "job_id": job_id}
+
+# ---------------------------------------------------------
+# 個別タスクのリトライ
+# ---------------------------------------------------------
+@app.post("/retry-task")
+async def retry_task(payload: RetryTaskRequest, request: Request):
+    """
+    FAILEDのまま自動リトライ(Cloud Tasksのmax_attempts)を使い切って止まっている
+    タスク1件だけをPENDINGに戻す。ジョブ全体を作り直さないので、既に完了した他の
+    タスクの成果は無駄にならない。PENDINGへの書き戻しは既存のSupabase Webhook経由で
+    /webhook/orchestrator の is_manually_retried 分岐が自動的に拾って再enqueueする。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+    user_id = user_res.user.id
+
+    admin_client = get_supabase_client()
+
+    task_res = admin_client.table("processing_tasks").select("id, job_id, status")\
+        .eq("id", payload.task_id).single().execute()
+    if not task_res.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task = task_res.data
+
+    # タスク→ジョブ経由で所有者を検証（他人のタスクを操作できないように）
+    job_res = admin_client.table("processing_jobs").select("id, user_id")\
+        .eq("id", task["job_id"]).single().execute()
+    if not job_res.data or job_res.data["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to retry this task")
+
+    if task["status"] != "FAILED":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Task is not in a retryable state (current status: {task['status']})",
+        )
+
+    admin_client.table("processing_tasks").update({
+        "status": "PENDING",
+        "error_message": None,
+        "updated_at": datetime.now().isoformat(),
+    }).eq("id", payload.task_id).eq("status", "FAILED").execute()
+
+    return {"message": "Task queued for retry", "task_id": payload.task_id}
 
 # ---------------------------------------------------------
 # 司令塔 (orchestrator)

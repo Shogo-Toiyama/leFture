@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class StatusView extends StatelessWidget {
   const StatusView({
@@ -24,58 +25,69 @@ class StatusView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isError 
-        ? Theme.of(context).colorScheme.error 
-        : Theme.of(context).colorScheme.primary;
+    final color = isError ? AppColors.correctionRed : AppColors.starGold;
 
-    return SingleChildScrollView(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 64, color: isError ? color : Colors.grey),
-              const SizedBox(height: 24),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: isError ? color : null,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-
-              if (onButtonPressed != null) ...[
-                const SizedBox(height: 32),
-                
-                isError
-                    ? OutlinedButton.icon(
-                        onPressed: isLoading ? null : onButtonPressed,
-                        icon: isLoading
-                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: color))
-                            : Icon(buttonIcon),
-                        label: Text(isLoading ? 'Processing...' : buttonLabel!),
-                        style: OutlinedButton.styleFrom(foregroundColor: color),
-                      )
-                    : TextButton.icon(
-                        onPressed: isLoading ? null : onButtonPressed,
-                        icon: isLoading
-                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: color))
-                            : Icon(buttonIcon),
-                        label: Text(isLoading ? 'Processing...' : buttonLabel!),
-                        style: TextButton.styleFrom(foregroundColor: color),
-                      ),
-              ],
-              if (message != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  message!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
+    return Container(
+      color: AppColors.universe.voidBackground,
+      child: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color.withValues(alpha: 0.35)),
+                  ),
+                  child: Icon(icon, size: 40, color: color),
                 ),
+                const SizedBox(height: 28),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (message != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    message!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
+                  ),
+                ],
+                if (onButtonPressed != null) ...[
+                  const SizedBox(height: 32),
+                  FilledButton.icon(
+                    onPressed: isLoading ? null : onButtonPressed,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: color.withValues(alpha: 0.4),
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Icon(buttonIcon),
+                    label: Text(isLoading ? 'Processing...' : buttonLabel!),
+                  ),
+                ],
+                const SizedBox(height: 80),
               ],
-              SizedBox(height: 80),
-            ],
+            ),
           ),
         ),
       ),

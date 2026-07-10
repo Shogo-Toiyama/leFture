@@ -11,8 +11,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../application/course/course_list_provider.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
+import '../../themes/app_colors.dart';
+import '../recording/widgets/course_picker_sheet.dart';
 import 'audio_fixture_converter.dart';
 import 'fixture_audio_recorder_service.dart';
 
@@ -32,6 +35,7 @@ class _SimulateRecordingTabState extends State<SimulateRecordingTab> {
   String? _pickedSourcePath;
   String? _convertedPcmPath;
   String? _errorMessage;
+  String? _selectedCourseId;
   FixtureAudioRecorderService? _fixtureService;
 
   @override
@@ -109,6 +113,8 @@ class _SimulateRecordingTabState extends State<SimulateRecordingTab> {
           ),
         _Stage.ready => _ReadyForm(
             speedController: _speedController,
+            selectedCourseId: _selectedCourseId,
+            onCourseSelected: (courseId) => setState(() => _selectedCourseId = courseId),
             onStart: _start,
             onPickDifferentFile: _reset,
           ),
@@ -118,6 +124,7 @@ class _SimulateRecordingTabState extends State<SimulateRecordingTab> {
             ],
             child: _SimulationRunner(
               fixtureService: _fixtureService!,
+              selectedCourseId: _selectedCourseId,
               onFinished: _reset,
             ),
           ),
@@ -170,23 +177,62 @@ class _PickForm extends StatelessWidget {
   }
 }
 
-class _ReadyForm extends StatelessWidget {
+class _ReadyForm extends ConsumerWidget {
   const _ReadyForm({
     required this.speedController,
+    required this.selectedCourseId,
+    required this.onCourseSelected,
     required this.onStart,
     required this.onPickDifferentFile,
   });
 
   final TextEditingController speedController;
+  final String? selectedCourseId;
+  final ValueChanged<String?> onCourseSelected;
   final VoidCallback onStart;
   final VoidCallback onPickDifferentFile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final courses = ref.watch(courseListProvider).asData?.value ?? const [];
+    final matches = courses.where((c) => c.id == selectedCourseId);
+    final selectedCourse = matches.isEmpty ? null : matches.first;
+
+    Future<void> pickCourse() async {
+      final result = await showModalBottomSheet<CoursePickerResult>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => CoursePickerSheet(initialSelectedCourseId: selectedCourseId),
+      );
+      if (result != null && result.confirmed) {
+        onCourseSelected(result.courseId);
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text('✅ Conversion done. Ready to simulate.'),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: pickCourse,
+          icon: Icon(
+            Icons.school_outlined,
+            color: selectedCourse != null ? AppColors.starGold : null,
+          ),
+          label: Text(
+            selectedCourse?.displayTitle ?? 'No course selected (tap to choose)',
+          ),
+        ),
+        if (selectedCourse == null) ...[
+          const SizedBox(height: 6),
+          const Text(
+            'Without a course, /start-analysis will NOT auto-fire after upload '
+            '(matches production behavior).',
+            style: TextStyle(fontSize: 11, color: Colors.grey),
+          ),
+        ],
         const SizedBox(height: 16),
         TextField(
           controller: speedController,
@@ -215,10 +261,12 @@ class _ReadyForm extends StatelessWidget {
 class _SimulationRunner extends ConsumerStatefulWidget {
   const _SimulationRunner({
     required this.fixtureService,
+    required this.selectedCourseId,
     required this.onFinished,
   });
 
   final FixtureAudioRecorderService fixtureService;
+  final String? selectedCourseId;
   final VoidCallback onFinished;
 
   @override
@@ -231,9 +279,10 @@ class _SimulationRunnerState extends ConsumerState<_SimulationRunner> {
   @override
   void initState() {
     super.initState();
-    // 録音ボタンを押したのと同じ呼び出しで開始する
-    Future.microtask(() {
-      ref.read(recordingControllerProvider.notifier).toggleStartStopResume();
+    // 録音ボタンを押したのと同じ呼び出しで開始する（コース選択があれば先に反映しておく）
+    Future.microtask(() async {
+      await ref.read(recordingControllerProvider.notifier).setCourseId(widget.selectedCourseId);
+      await ref.read(recordingControllerProvider.notifier).toggleStartStopResume();
     });
 
     // fixture音声を流し終えたら、Uploadボタンを押したのと同じ呼び出しを自動で行う
@@ -253,6 +302,8 @@ class _SimulationRunnerState extends ConsumerState<_SimulationRunner> {
       children: [
         Text('Lecture ID: ${state.currentLectureId ?? '-'}'),
         const SizedBox(height: 8),
+        Text('Course ID: ${state.courseId ?? '(none)'}'),
+        const SizedBox(height: 8),
         Text('Phase: ${state.phase.name}'),
         const SizedBox(height: 8),
         Text('Elapsed: ${state.elapsedSeconds}s'),
@@ -265,8 +316,10 @@ class _SimulationRunnerState extends ConsumerState<_SimulationRunner> {
         ],
         const SizedBox(height: 24),
         if (state.phase == RecordingPhase.queued)
-          const Text(
-            '✅ 全チャンク送信キューに登録済み。UploadManagerが送信し終えると自動で /start-analysis が発火します。',
+          Text(
+            state.courseId != null
+                ? '✅ 全チャンク送信キューに登録済み。UploadManagerが送信し終えると自動で /start-analysis が発火します。'
+                : '⚠️ コース未選択のため、送信完了後も /start-analysis は自動発火しません(本番と同じ挙動)。',
           ),
         const SizedBox(height: 24),
         OutlinedButton(

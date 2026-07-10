@@ -14,12 +14,14 @@ class CourseTile extends StatelessWidget {
     this.showChevron = true,
     this.onEdit,
     this.onDelete,
+    this.margin = const EdgeInsets.only(bottom: 8),
   });
 
   final Course course;
   final bool showChevron;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final EdgeInsetsGeometry margin;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +50,7 @@ class CourseTile extends StatelessWidget {
               )
           : null,
       child: Container(
+        margin: margin,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.universe.glassWhiteLow,

@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
+import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
+import 'package:lecture_companion_ui/application/recording/recording_state.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/tile_actions_sheet.dart';
 
-class LectureTile extends StatelessWidget {
+class LectureTile extends ConsumerWidget {
   const LectureTile({
     super.key,
     required this.lecture,
@@ -54,7 +59,18 @@ class LectureTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final imagePath = ref.watch(firstTopicImagePathProvider(lecture.id)).asData?.value;
+    final imageFile = imagePath == null ? null : ref.watch(artifactFileProvider(imagePath)).asData?.value;
+    final uiState = ref.watch(lectureStateProvider(lecture.id)).asData?.value;
+
+    final recordingState = ref.watch(recordingControllerProvider);
+    final isActivelyRecording = recordingState.lectureId == lecture.id &&
+        (recordingState.phase == RecordingPhase.recording ||
+            recordingState.phase == RecordingPhase.paused ||
+            recordingState.phase == RecordingPhase.requestingPermission ||
+            recordingState.phase == RecordingPhase.uploading);
+
     final titleText = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
         : (lecture.titleGenerated?.trim().isNotEmpty == true
@@ -65,7 +81,9 @@ class LectureTile extends StatelessWidget {
     final hasCourseCode = code != null && code.isNotEmpty;
 
     return GestureDetector(
-      onTap: () => context.go('${AppRoutes.notesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
+      onTap: () => isActivelyRecording
+          ? context.push(AppRoutes.recording)
+          : context.go('${AppRoutes.notesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
       onLongPress: (onEdit != null || onDelete != null)
           ? () => showTileActionsSheet(
                 context: context,
@@ -103,27 +121,47 @@ class LectureTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.universe.glassWhiteHigh,
                 borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: AppColors.universe.glassBorder),
+                image: imageFile != null
+                    ? DecorationImage(image: FileImage(imageFile), fit: BoxFit.cover)
+                    : null,
               ),
-              child: const Icon(
-                Icons.description_outlined,
-                color: AppColors.starGold,
-                size: 22,
-              ),
+              child: imageFile == null
+                  ? const Icon(
+                      Icons.description_outlined,
+                      color: AppColors.starGold,
+                      size: 22,
+                    )
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    titleText,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          titleText,
+                          style: TextStyle(
+                            color: AppColors.universe.textStarlight,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isActivelyRecording) ...[
+                        const SizedBox(width: 6),
+                        const _RecordingBadge(),
+                      ] else if (uiState == LectureUIState.processing ||
+                          uiState == LectureUIState.failed) ...[
+                        const SizedBox(width: 6),
+                        _StatusBadge(state: uiState!),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -168,6 +206,81 @@ class LectureTile extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RecordingBadge extends StatelessWidget {
+  const _RecordingBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    const color = AppColors.correctionRed;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            'Recording',
+            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.state});
+
+  final LectureUIState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFailed = state == LectureUIState.failed;
+    final color = isFailed ? AppColors.correctionRed : AppColors.starGold;
+    final label = isFailed ? 'Failed' : 'Processing';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isFailed) ...[
+            SizedBox(
+              width: 8,
+              height: 8,
+              child: CircularProgressIndicator(strokeWidth: 1.5, color: color),
+            ),
+            const SizedBox(width: 4),
+          ] else ...[
+            Icon(Icons.error_outline, size: 10, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }

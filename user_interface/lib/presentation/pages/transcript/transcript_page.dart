@@ -405,14 +405,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                               : AppColors.paper.textInk;
 
                           final isPlayingActive = idx == activeIndex;
-                          final weakHighlightIndices = <int>{
-                            2,
-                            3,
-                          }; // Placeholder to demonstrate contiguous merging
-                          final isWeakHighlighted = weakHighlightIndices
-                              .contains(idx);
-                          final isHighlighted =
-                              isPlayingActive || isWeakHighlighted;
+                          const isWeakHighlighted = false;
+                          final isHighlighted = isPlayingActive || isWeakHighlighted;
 
                           BoxDecoration? itemDecoration;
                           if (isHighlighted) {

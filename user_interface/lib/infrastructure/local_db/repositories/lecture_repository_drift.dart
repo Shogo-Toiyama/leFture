@@ -61,6 +61,44 @@ class LectureRepositoryDrift {
     });
   }
 
+  /// タイトルと所属コースを更新し、Outboxに登録する (Transaction)
+  Future<void> updateLectureTitleAndCourse({
+    required String lectureId,
+    required String? title,
+    required String? courseId,
+  }) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    await _db.transaction(() async {
+      // 1. ローカルDBを更新
+      await (_db.update(_db.localLectures)
+            ..where((t) => t.id.equals(lectureId)))
+          .write(LocalLecturesCompanion(
+        title: Value(title),
+        courseId: Value(courseId),
+        syncStatus: const Value('needs_sync'),
+        updatedAt: Value(DateTime.now()),
+      ));
+
+      // 2. Outboxに登録
+      final payload = {
+        'id': lectureId,
+        'title': title,
+        'course_id': courseId,
+      };
+
+      await _db.into(_db.localOutbox).insert(
+            LocalOutboxCompanion.insert(
+              entityType: 'lecture',
+              entityId: lectureId,
+              op: 'update',
+              payloadJson: jsonEncode(payload),
+            ),
+          );
+    });
+  }
+
   Lecture _toDomain(LocalLecture row) {
     return Lecture(
       id: row.id,

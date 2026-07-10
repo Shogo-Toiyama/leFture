@@ -16,6 +16,10 @@ class Lecture {
   /// DB側で採番するなら nullable か、0 を許容して trigger に任せる
   final int sortOrder;
 
+  /// 汎用メタデータ。例: コース削除時に退避する
+  /// {"previous_course_id": "...", "unassigned_at": "..."}
+  final Map<String, dynamic>? metadata;
+
   final DateTime lectureDatetime;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -30,6 +34,7 @@ class Lecture {
     this.audioPath,
     required this.isDeleted,
     required this.sortOrder,
+    this.metadata,
     required this.lectureDatetime,
     required this.createdAt,
     required this.updatedAt,
@@ -46,6 +51,7 @@ class Lecture {
       audioPath: map['audio_path'] as String?,
       isDeleted: (map['is_deleted'] as bool?) ?? false,
       sortOrder: (map['sort_order'] as int?) ?? 0,
+      metadata: map['metadata'] as Map<String, dynamic>?,
       lectureDatetime: DateTime.parse(map['lecture_datetime'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),

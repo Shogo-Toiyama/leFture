@@ -22,4 +22,16 @@ class LectureTopicRepositorySupabase {
 
     return rows.map((e) => LectureTopic.fromMap(e)).toList();
   }
+
+  /// 最初のトピック（index = 1）の image_path を取得
+  Future<String?> firstTopicImagePath(String lectureId) async {
+    final row = await supabase
+        .from(_table)
+        .select('image_path')
+        .eq('lecture_id', lectureId)
+        .eq('index', 1)
+        .maybeSingle();
+
+    return row?['image_path'] as String?;
+  }
 }
