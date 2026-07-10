@@ -140,7 +140,6 @@ class _FunFactCard extends ConsumerWidget {
         courseId: null,
         title: null,
         titleGenerated: null,
-        isDeleted: false,
         sortOrder: 0,
         lectureDatetime: DateTime.now(),
         createdAt: DateTime.now(),

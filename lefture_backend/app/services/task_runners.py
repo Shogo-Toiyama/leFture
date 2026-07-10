@@ -969,7 +969,7 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
                 lectures_res = supabase.table("lectures")\
                     .select("id")\
                     .eq("course_id", course_id)\
-                    .eq("is_deleted", False)\
+                    .is_("deleted_at", "null")\
                     .order("created_at")\
                     .execute()
                 if lectures_res.data:

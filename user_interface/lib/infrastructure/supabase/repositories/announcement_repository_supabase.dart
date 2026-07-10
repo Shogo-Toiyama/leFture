@@ -28,6 +28,7 @@ class AnnouncementRepositorySupabase {
         .select()
         .eq('user_id', uid)
         .isFilter('completed_at', null)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
@@ -45,17 +46,19 @@ class AnnouncementRepositorySupabase {
         .select()
         .eq('user_id', uid)
         .isFilter('completed_at', null)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: false);
 
     return rows.map((e) => Announcement.fromMap(e)).toList();
   }
 
-  /// 指定レクチャーのアナウンスメント一覧（講義内での発生順）
+  /// 指定レクチャーのアナウンスメント一覧（講義内での発生順、論理削除除外）
   Future<List<Announcement>> listForLecture(String lectureId) async {
     final rows = await supabase
         .from(_table)
         .select()
         .eq('lecture_id', lectureId)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: true);
 
     return rows.map((e) => Announcement.fromMap(e)).toList();
@@ -72,6 +75,7 @@ class AnnouncementRepositorySupabase {
         .eq('user_id', uid)
         .inFilter('lecture_id', lectureIds)
         .isFilter('completed_at', null)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
@@ -91,6 +95,7 @@ class AnnouncementRepositorySupabase {
         .eq('user_id', uid)
         .inFilter('lecture_id', lectureIds)
         .isFilter('completed_at', null)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: false);
 
     return rows.map((e) => Announcement.fromMap(e)).toList();
@@ -102,5 +107,13 @@ class AnnouncementRepositorySupabase {
       'completed_at': completedAt?.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', id);
+  }
+
+  /// 指定レクチャーに紐づく全アナウンスメントを論理削除する（Lecture削除時のカスケード用）
+  Future<void> softDeleteForLecture(String lectureId) async {
+    await supabase
+        .from(_table)
+        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('lecture_id', lectureId);
   }
 }

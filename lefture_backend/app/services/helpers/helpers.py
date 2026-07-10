@@ -393,7 +393,7 @@ def _get_sentence_review_context(lecture_id: str) -> tuple[str, str]:
         prev_res = supabase.table("lectures")\
             .select("id")\
             .eq("course_id", course_id)\
-            .eq("is_deleted", False)\
+            .is_("deleted_at", "null")\
             .lt("created_at", created_at)\
             .order("created_at", desc=True)\
             .limit(1)\

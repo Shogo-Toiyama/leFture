@@ -143,7 +143,7 @@ class CourseRepositorySupabase {
         .select('id, metadata')
         .eq('user_id', uid)
         .eq('course_id', courseId)
-        .eq('is_deleted', false);
+        .isFilter('deleted_at', null);
 
     for (final row in lectures) {
       final existingMetadata = (row['metadata'] as Map<String, dynamic>?) ?? {};

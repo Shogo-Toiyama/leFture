@@ -23,4 +23,12 @@ class KeywordRepositorySupabase {
 
     return rows.map((e) => Keyword.fromMap(e)).toList();
   }
+
+  /// 指定レクチャーに紐づく全キーワードを論理削除する（Lecture削除時のカスケード用）
+  Future<void> softDeleteForLecture(String lectureId) async {
+    await supabase
+        .from(_table)
+        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('lecture_id', lectureId);
+  }
 }

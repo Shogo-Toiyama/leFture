@@ -36,7 +36,6 @@ class LectureViewerPage extends HookConsumerWidget {
         userId: 'dummy_user',
         courseId: 'dummy_course',
         title: 'Introduction to OOP & Classes',
-        isDeleted: false,
         sortOrder: 0,
         lectureDatetime: DateTime.now().subtract(const Duration(days: 2)),
         createdAt: DateTime.now(),

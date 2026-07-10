@@ -9,7 +9,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart
 import 'package:lecture_companion_ui/application/job/job_providers.dart'; // エラー詳細用
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:lecture_companion_ui/presentation/widgets/delete_confirm_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
 import 'views/processing_view.dart';
 import 'views/not_started_view.dart';
@@ -93,11 +93,13 @@ class LectureStatusScaffold extends ConsumerWidget {
                 buttonIcon: Icons.delete,
                 buttonLabel: 'Delete Lecture',
                 onButtonPressed: () async {
-                  final ok = await showConfirmDialog(
+                  final ok = await showCustomDialog(
                     context: context,
                     title: 'Delete folder',
                     message: 'Are you sure you want to delete "${lecture.title}"?',
                     confirmLabel: 'Delete',
+                    icon: Icons.delete_outline,
+                    isDestructive: true,
                   );
                   if (ok == true) {
                     await ref.read(lectureControllerProvider.notifier).deleteLecture(lecture.id);

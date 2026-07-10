@@ -6,7 +6,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/delete_confirm_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
 class LectureEditSheet extends HookConsumerWidget {
   const LectureEditSheet({
@@ -34,11 +34,12 @@ class LectureEditSheet extends HookConsumerWidget {
 
       if (courseId != lecture.courseId) {
         // 所属コースの変更を警告する
-        final confirm = await showConfirmDialog(
+        final confirm = await showCustomDialog(
           context: context,
           title: 'Change Course?',
           message: 'Changing the course of this lecture will modify Topic Map structures and might affect synchronization. Are you sure you want to proceed?',
           confirmLabel: 'Proceed',
+          icon: Icons.swap_horiz,
         );
         if (confirm != true) return;
       }

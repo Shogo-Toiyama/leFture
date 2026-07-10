@@ -12,12 +12,13 @@ LectureTopicRepositorySupabase lectureTopicRepository(Ref ref) {
 class LectureTopicRepositorySupabase {
   static const _table = 'lecture_topics';
 
-  /// 指定レクチャーのトピック一覧（index昇順）
+  /// 指定レクチャーのトピック一覧（index昇順、論理削除除外）
   Future<List<LectureTopic>> listForLecture(String lectureId) async {
     final rows = await supabase
         .from(_table)
         .select()
         .eq('lecture_id', lectureId)
+        .isFilter('deleted_at', null)
         .order('index', ascending: true);
 
     return rows.map((e) => LectureTopic.fromMap(e)).toList();
@@ -30,8 +31,17 @@ class LectureTopicRepositorySupabase {
         .select('image_path')
         .eq('lecture_id', lectureId)
         .eq('index', 1)
+        .isFilter('deleted_at', null)
         .maybeSingle();
 
     return row?['image_path'] as String?;
+  }
+
+  /// 指定レクチャーに紐づく全トピックを論理削除する（Lecture削除時のカスケード用）
+  Future<void> softDeleteForLecture(String lectureId) async {
+    await supabase
+        .from(_table)
+        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('lecture_id', lectureId);
   }
 }

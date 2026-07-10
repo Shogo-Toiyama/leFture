@@ -19,7 +19,6 @@ class LectureWriteService {
     String? courseId,
     String? title,
     DateTime? lectureDateTimeUtc,
-    bool isDeleted = false,
   }) async {
 
     final payload = <String, dynamic>{
@@ -28,7 +27,6 @@ class LectureWriteService {
       'course_id': courseId,
       'title': (title != null && title.trim().isNotEmpty) ? title.trim() : 'Untitled Lecture',
       'lecture_datetime': (lectureDateTimeUtc ?? DateTime.now().toUtc()).toIso8601String(),
-      'is_deleted': isDeleted,
     };
 
     await _client.from('lectures').upsert(

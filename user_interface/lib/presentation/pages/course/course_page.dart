@@ -14,7 +14,6 @@ import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_an
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_details_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
-import 'package:lecture_companion_ui/presentation/widgets/delete_confirm_dialog.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
@@ -677,15 +676,7 @@ class _CourseLectureListView extends ConsumerWidget {
                             );
                           },
                           onDelete: () async {
-                            final confirm = await showConfirmDialog(
-                              context: context,
-                              title: 'Delete Lecture?',
-                              message: 'Are you sure you want to delete "${lectures[index].title ?? lectures[index].titleGenerated}"? This will delete the lecture and all associated data permanently.',
-                              confirmLabel: 'Delete',
-                            );
-                            if (confirm == true) {
-                              await ref.read(lectureControllerProvider.notifier).deleteLecture(lectures[index].id);
-                            }
+                            await ref.read(lectureControllerProvider.notifier).deleteLecture(lectures[index].id);
                           },
                         ),
                       );

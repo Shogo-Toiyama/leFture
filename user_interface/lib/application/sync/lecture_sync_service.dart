@@ -49,9 +49,7 @@ class LectureSyncService {
         break;
       
       case 'delete':
-        // 論理削除なら update is_deleted = true
-        // 物理削除なら delete
-        // ここでは論理削除（is_deletedフラグ）を想定して payload に is_deleted: true が入っているなら upsert
+        // 論理削除。payload に deleted_at (ISO8601) が入っている想定でupsert
         await supabase.from('lectures').upsert(payload);
         break;
         
@@ -93,9 +91,9 @@ class LectureSyncService {
         sortOrder: Value(json['sort_order'] as int?),
         createdAt: Value(DateTime.parse(json['created_at'])),
         updatedAt: Value(DateTime.parse(json['updated_at'])),
-        deletedAt: json['is_deleted'] == true 
-            ? Value(DateTime.now()) // deletedフラグがtrueならdeletedAtを入れる
-            : const Value(null),
+        deletedAt: Value(
+          json['deleted_at'] == null ? null : DateTime.parse(json['deleted_at'] as String),
+        ),
         syncStatus: const Value('synced'), // 同期直後なのでsynced
       );
     }).toList();

@@ -26,21 +26,31 @@ class FunFactRepositorySupabase {
         .from(_table)
         .select()
         .eq('user_id', uid)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: false)
         .limit(limit);
 
     return rows.map((e) => FunFact.fromMap(e)).toList();
   }
 
-  /// 指定レクチャーのFunFact一覧（新しい順）
+  /// 指定レクチャーのFunFact一覧（新しい順、論理削除除外）
   Future<List<FunFact>> listForLecture(String lectureId) async {
     final rows = await supabase
         .from(_table)
         .select()
         .eq('lecture_id', lectureId)
+        .isFilter('deleted_at', null)
         .order('created_at', ascending: false);
 
     return rows.map((e) => FunFact.fromMap(e)).toList();
+  }
+
+  /// 指定レクチャーに紐づく全FunFactを論理削除する（Lecture削除時のカスケード用）
+  Future<void> softDeleteForLecture(String lectureId) async {
+    await supabase
+        .from(_table)
+        .update({'deleted_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('lecture_id', lectureId);
   }
 
   /// metadataにreactionを設定して更新

@@ -30,15 +30,16 @@ class LectureRepositoryDrift {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
 
+    final now = DateTime.now();
+
     await _db.transaction(() async {
       // 1. ローカルDBで論理削除
-      // deletedAt を入れ、syncStatus を 'needs_sync' に変更
       await (_db.update(_db.localLectures)
             ..where((t) => t.id.equals(lectureId)))
           .write(LocalLecturesCompanion(
-        deletedAt: Value(DateTime.now()),
+        deletedAt: Value(now),
         syncStatus: const Value('needs_sync'), // テキスト型に合わせて修正
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(now),
       ));
 
       // 2. Outboxに登録
@@ -46,7 +47,8 @@ class LectureRepositoryDrift {
       // トランザクション内で確実に処理するため直接 insert します
       final payload = {
         'id': lectureId,
-        'is_deleted': true,
+        'deleted_at': now.toUtc().toIso8601String(),
+        'updated_at': now.toUtc().toIso8601String(),
       };
 
       await _db.into(_db.localOutbox).insert(
@@ -106,7 +108,7 @@ class LectureRepositoryDrift {
       courseId: row.courseId,
       title: row.title,
       titleGenerated: row.titleGenerated,
-      isDeleted: row.deletedAt != null,
+      deletedAt: row.deletedAt,
       sortOrder: row.sortOrder ?? 0,
       lectureDatetime: row.lectureDatetime ?? row.createdAt,
       createdAt: row.createdAt,
