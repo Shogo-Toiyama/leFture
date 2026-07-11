@@ -226,7 +226,7 @@ class _TermSection extends ConsumerWidget {
                 try {
                   await ref.read(courseRepositoryProvider).deleteCourse(course.id);
                   ref.invalidate(courseListProvider);
-                  // 配下のLectureがcourse_id=nullに変わったことをローカルにも反映する
+                  // カスケードで削除された配下のLectureをローカルにも反映する
                   await ref
                       .read(lectureControllerProvider.notifier)
                       .bootstrapLectures(forceFullPull: true);

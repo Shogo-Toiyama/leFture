@@ -73,7 +73,9 @@ class LectureSyncService {
 
     // ローカルにデータが存在し、かつ前回同期時刻がある場合のみ差分同期を行う
     if (lastPullAt != null && localCount > 0) {
-      query = query.gt('updated_at', lastPullAt.toIso8601String());
+      // 5分間のバッファを差し引くことで、端末とサーバーの時計のズレによる同期漏れを防ぎます
+      final skewBuffer = lastPullAt.subtract(const Duration(minutes: 5));
+      query = query.gt('updated_at', skewBuffer.toIso8601String());
     }
 
     final List<dynamic> data = await query;

@@ -10,12 +10,14 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
 
 [STRICT RULES]
 1. FIX ASR ERRORS & PUNCTUATION: Correct obvious misheard phonetics, fix capitalization (e.g., api -> API, nasa -> NASA), and ensure terminology consistency based on the subject context.
-2. MERGE OVERLAPPING TEXT: Because the audio chunks overlap by 2 seconds, consecutive tags often contain duplicated words. You MUST seamlessly merge these duplicates into a single, flowing sentence and leave the redundant tag empty.
-3. DELETE SILENCE HALLUCINATIONS: The AI hallucinates predictable phrases during silence. You MUST completely DELETE phrases like "Thank you.", "Thank you for watching", "Subtitles by...", "Amara.org", or sudden, isolated random words that have absolutely no connection to the lecture context. Leave their tags completely empty.
+2. MERGE OVERLAPS AT CHUNK BOUNDARIES: 
+ - Tags follow the format `<s[ChunkID: 3 digits][SentenceID: 3 digits]>` (e.g., `<s001001>`). The 2-second audio overlaps occur ONLY when the Chunk ID changes (e.g., from `<s001...>` to `<s002...>`). You MUST strictly detect and merge duplicated words across these boundaries into a single, flowing sentence. Represent the redundant tags as an empty tag pair with absolutely no text inside (e.g., `<s002002></s002002>`). 
+ - For repeated words WITHIN the same chunk, apply smart filtering: DELETE unintentional stutters or false starts (e.g., "the, the, the", "we need to... we need to look") to improve readability, but PRESERVE intentional rhetorical emphasis (e.g., "very, very important", "never, never").
+3. DELETE SILENCE HALLUCINATIONS: The AI hallucinates predictable phrases during silence. You MUST DELETE phrases like "Thank you for watching." or "Subtitles by..." if you considered them as hallucinations. Only if a tag contains *absolutely nothing* but a hallucination, output it as an empty tag pair (e.g., `<s001004></s001004>`).
 4. PRESERVE SPOKEN PHRASING & APPLY SMART FORMATTING:
  - DO NOT summarize, paraphrase, or change the speaker's original intent. 
  - Keep the professor's natural speaking style, including jokes, metaphors, and informal spoken analogies. 
- - [SMART FORMATTING ALLOWED]: You MUST convert spoken academic terms into their standard written symbols or acronyms to improve readability for students (e.g., "h two o" -> "H2O", "delta" -> "δ"). 
+ - [SMART FORMATTING ALLOWED]: You should convert spoken academic terms into their standard written symbols or acronyms to improve readability for students (e.g., "h two o" -> "H2O", "delta" -> "δ"). 
  - [NO ADVANCED SUBSTITUTIONS]: Do NOT introduce advanced concepts or jargon that the professor did not explicitly vocalize. For example, if the professor simply says "water", keep it as "water". Do NOT change it to "H2O" unless they explicitly pronounce the letters.
 5. NO CHAT, NO EXPLANATION: Output ONLY the corrected text with its XML tags. Do not wrap the output in markdown blocks (like ```xml). Do not say "Here is the corrected text".
 
@@ -24,7 +26,7 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
 2. NO EXTRA CHARACTERS: Output the XML tags as a single continuous line. Do NOT add spaces, newlines (\n), or quotation marks outside or between the tags.
    - NG: <s001001> Hello. </s001001> \n <s001002> World. </s001002>
    - OK: <s001001>Hello.</s001001><s001002>World.</s001002>
-3. SENTENCE MERGING: If you need to combine fragmented words across multiple tags into a single valid sentence, place the completed sentence in the earliest, most logical tag, and leave the merged tags completely EMPTY.
+3. SENTENCE MERGING: If you need to combine fragmented words across multiple tags into a single valid sentence, place the completed sentence in the earliest, most logical tag, and represent the merged tags as an empty tag pair.
    - Input: <s002002>This apple.</s002002><s002003>Apple is.</s002003><s002004>Red.</s002004>
    - Output: <s002002>This apple is red.</s002002><s002003></s002003><s002004></s002004>
 4. MULTIPLE SENTENCES IN ONE TAG: If a single tag contains multiple distinct sentences after correction, you must separate them with proper punctuation and exactly ONE space (e.g., ". " or "? ").

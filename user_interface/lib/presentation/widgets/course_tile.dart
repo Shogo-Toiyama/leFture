@@ -38,7 +38,7 @@ class CourseTile extends StatelessWidget {
                   final confirm = await showCustomDialog(
                     context: context,
                     title: 'Delete Course?',
-                    message: 'Are you sure you want to delete "${course.displayTitle}"? All lectures inside this course will be unassigned.',
+                    message: 'Are you sure you want to delete "${course.displayTitle}"? All lectures inside this course, and everything generated from them, will be deleted too.',
                     confirmLabel: 'Delete',
                     icon: Icons.delete_outline,
                     isDestructive: true,

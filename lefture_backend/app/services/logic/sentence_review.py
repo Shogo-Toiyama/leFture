@@ -10,7 +10,7 @@ class SentenceReviewService:
         self.llm = llm
         self.logger = logger
         # LiteLLM 経由で呼び出すモデル
-        self.model_alias = "together_ai/openai/gpt-oss-120b"
+        self.model_alias = "gemini/gemini-2.5-flash-lite"
 
     async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
         self.logger.log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")

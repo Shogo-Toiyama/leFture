@@ -759,6 +759,7 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
         # 検索しやすくするための辞書を作成
         sid_to_text = {item["sid"]: item["text"] for item in transcript_data if "sid" in item}
         formatted_blocks = []
+        extracted_sids = set()
 
         # ==========================================
         # ① CORE_EXTRACTION で丸ごと LOGISTICS と判定されたブロック
@@ -779,6 +780,7 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
                         sid = _int_to_sid(i)
                         if sid in sid_to_text:
                             block_lines.append(f"{sid}: {sid_to_text[sid]}")
+                            extracted_sids.add(sid)
 
                     formatted_blocks.append("\n".join(block_lines))
 
@@ -789,6 +791,10 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
         safety_net_catch_count = 0 # ログ出力用
         
         for i, sentence in enumerate(classified_data):
+            sid = sentence.get("sid")
+            if sid in extracted_sids:
+                continue
+
             text = sentence.get("text", "")
             
             # 1. AIによる判定

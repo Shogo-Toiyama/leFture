@@ -132,8 +132,13 @@ class CourseRepositorySupabase {
     return Course.fromMap(updated);
   }
 
-  /// ソフトデリート。配下のLectureはcourse_idをnullに戻して無所属にする
-  /// （中身は消さない）。以前の所属先はmetadataに退避しておく。
+  /// ソフトデリート。配下のLecture（とその関連データ）もまとめてソフトデリートする
+  /// （「フォルダを消したら中身も消える」という一般的な感覚に合わせる）。
+  /// course_idは書き換えず残しておく — ゴミ箱機能を作る際、コースを復元すれば
+  /// このカスケードで消えたLectureも一緒に復元できるようにするため。
+  /// deleted_via_course_cascadeだけmetadataに記録し、「個別に削除されていた
+  /// Lecture」と区別できるようにする（削除日時はdeleted_at列自体を見ればよい
+  /// ので重複させない）。
   Future<void> deleteCourse(String courseId) async {
     final uid = _requireUid();
     final now = DateTime.now().toUtc().toIso8601String();
@@ -145,22 +150,44 @@ class CourseRepositorySupabase {
         .eq('course_id', courseId)
         .isFilter('deleted_at', null);
 
+    final lectureIds = <String>[];
+
     for (final row in lectures) {
+      final lectureId = row['id'] as String;
+      lectureIds.add(lectureId);
+
       final existingMetadata = (row['metadata'] as Map<String, dynamic>?) ?? {};
       final mergedMetadata = {
         ...existingMetadata,
-        'previous_course_id': courseId,
-        'unassigned_at': now,
+        'deleted_via_course_cascade': true,
       };
 
       await supabase
           .from('lectures')
           .update({
-            'course_id': null,
+            'deleted_at': now,
             'metadata': mergedMetadata,
             'updated_at': now,
           })
-          .eq('id', row['id'] as String);
+          .eq('id', lectureId);
+    }
+
+    // 関連データ（Announcement/ReviewCard/FunFact/LectureTopic/DeepNote/Keyword）も
+    // まとめてソフトデリート
+    if (lectureIds.isNotEmpty) {
+      for (final table in const [
+        'announcements',
+        'review_cards',
+        'fun_facts',
+        'lecture_topics',
+        'deep_notes',
+        'keywords',
+      ]) {
+        await supabase
+            .from(table)
+            .update({'deleted_at': now})
+            .inFilter('lecture_id', lectureIds);
+      }
     }
 
     await supabase

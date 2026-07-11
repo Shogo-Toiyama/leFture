@@ -26,6 +26,12 @@ class LectureStatusScaffold extends ConsumerWidget {
     final controllerState = ref.watch(lectureControllerProvider);
     final isActionLoading = controllerState.isLoading;
 
+    final displayTitle = lecture.title?.trim().isNotEmpty == true
+        ? lecture.title!
+        : (lecture.titleGenerated?.trim().isNotEmpty == true
+            ? lecture.titleGenerated!
+            : 'Untitled Lecture');
+
     ref.listen<AsyncValue<LectureUIState>>(
       lectureStateProvider(lecture.id),
       (previous, next) {
@@ -35,6 +41,8 @@ class LectureStatusScaffold extends ConsumerWidget {
             if (uid != null) {
               ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
             }
+            // Trigger sync immediately to fetch newly generated title and summary
+            ref.read(lectureControllerProvider.notifier).bootstrapLectures();
           }
         });
       }
@@ -96,7 +104,7 @@ class LectureStatusScaffold extends ConsumerWidget {
                   final ok = await showCustomDialog(
                     context: context,
                     title: 'Delete folder',
-                    message: 'Are you sure you want to delete "${lecture.title}"?',
+                    message: 'Are you sure you want to delete "$displayTitle"?',
                     confirmLabel: 'Delete',
                     icon: Icons.delete_outline,
                     isDestructive: true,

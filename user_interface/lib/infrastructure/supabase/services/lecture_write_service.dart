@@ -25,7 +25,10 @@ class LectureWriteService {
       'id': lectureId,
       'user_id': userId,
       'course_id': courseId,
-      'title': (title != null && title.trim().isNotEmpty) ? title.trim() : 'Untitled Lecture',
+      // 未入力ならnullのままにする（AIが生成するtitle_generatedか、
+      // 表示側のフォールバックに委ねる。'Untitled Lecture'を実データとして
+      // 永続化しない）
+      'title': (title != null && title.trim().isNotEmpty) ? title.trim() : null,
       'lecture_datetime': (lectureDateTimeUtc ?? DateTime.now().toUtc()).toIso8601String(),
     };
 

@@ -32,6 +32,12 @@ class LectureNotePage extends StatelessWidget {
       markdownContent.writeln(_cleanContent(segment.funFact!));
     }
 
+    final displayTitle = lecture.title?.trim().isNotEmpty == true
+        ? lecture.title!
+        : (lecture.titleGenerated?.trim().isNotEmpty == true
+            ? lecture.titleGenerated!
+            : 'Untitled Lecture');
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -42,7 +48,7 @@ class LectureNotePage extends StatelessWidget {
               style: Theme.of(context).textTheme.labelSmall,
             ),
             Text(
-              lecture.title ?? 'Untitled Lecture',
+              displayTitle,
               style: Theme.of(context).textTheme.titleSmall,
               overflow: TextOverflow.ellipsis,
             ),
