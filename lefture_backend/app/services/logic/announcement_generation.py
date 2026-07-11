@@ -8,7 +8,7 @@ class AnnouncementGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "together_ai/openai/gpt-oss-20b"
+        self.model_alias = "gemini/gemini-2.5-flash-lite"
 
     async def run_from_memory(self, formatted_transcript: str) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Announcement Generation with {self.model_alias}")
@@ -19,7 +19,7 @@ class AnnouncementGenerationService:
             return {"announcements": []}
 
         prompt = _load_prompt("announcement_extraction_prompt.txt")
-        options_json = LLMOptions(output_type="json", temperature=0.3, reasoning_effort="low")
+        options_json = LLMOptions(output_type="json", temperature=0.3, reasoning_effort="low", max_tokens=8192)
 
         # プロンプト内の変数を実際のテキストに置換
         prompt_text = prompt.replace("${TRANSCRIPT_INPUT}", formatted_transcript)

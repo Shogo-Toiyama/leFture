@@ -1,0 +1,500 @@
+{
+  "announcements": [
+    {
+      "type": "INFO",
+      "title": "Course Webpage",
+      "description": "Visit the course webpage at www.cs.ucla.edu/classes/spring2016/cs111 for organizational material.",
+      "location": null,
+      "start_sid": "s000006",
+      "end_sid": "s000014",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Piazza Setup",
+      "description": "Join Piazza for course communication; setup is expected tomorrow.",
+      "location": "Piazza",
+      "start_sid": "s000017",
+      "end_sid": "s000023",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": {
+        "raw_time_text": "tomorrow",
+        "time_type": "point",
+        "is_time_specific": false,
+        "extracted_date": {
+          "type": "relative_day",
+          "month": null,
+          "day": null,
+          "weekday": null,
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": null
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "Enrollment Assistance",
+      "description": "For enrollment issues, attend class and speak with the instructor on days other than today.",
+      "location": null,
+      "start_sid": "s000029",
+      "end_sid": "s000032",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": {
+        "raw_time_text": "not today, but maybe in later days",
+        "time_type": "point",
+        "is_time_specific": false,
+        "extracted_date": {
+          "type": "relative_day",
+          "month": null,
+          "day": null,
+          "weekday": null,
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": null
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "PPEs for Enrollment",
+      "description": "PPEs are given out in week two for students trying to get into the class.",
+      "location": null,
+      "start_sid": "s000035",
+      "end_sid": "s000035",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": {
+        "raw_time_text": "week two",
+        "time_type": "point",
+        "is_time_specific": false,
+        "extracted_date": {
+          "type": "relative_offset",
+          "month": null,
+          "day": null,
+          "weekday": null,
+          "modifier": null,
+          "offset_days": 14
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": null
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "Written Report Resources",
+      "description": "Consult the page on resources for written reports.",
+      "location": null,
+      "start_sid": "s000040",
+      "end_sid": "s000043",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Virtual Machine Setup",
+      "description": "Set up your virtual machine earlier rather than later, not 30 minutes before the due date.",
+      "location": null,
+      "start_sid": "s000052",
+      "end_sid": "s000055",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "UPE Tutoring",
+      "description": "Consult UPE Tutoring for course questions; they have regular office hours.",
+      "location": null,
+      "start_sid": "s000066",
+      "end_sid": "s000069",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "POSIX Documentation",
+      "description": "Resources on POSIX, the Portable Operating System Standard, are available.",
+      "location": null,
+      "start_sid": "s000070",
+      "end_sid": "s000075",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Linux Documentation",
+      "description": "Use the Linux documentation project for command pages and other Linux information.",
+      "location": null,
+      "start_sid": "s000076",
+      "end_sid": "s000081",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Operating Systems Wikipedia",
+      "description": "The Wikipedia page on operating systems can be a useful source of information.",
+      "location": null,
+      "start_sid": "s000084",
+      "end_sid": "s000084",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "ECM SIG OS",
+      "description": "The ECM special interest group in operating systems is for advanced topics.",
+      "location": null,
+      "start_sid": "s000085",
+      "end_sid": "s000087",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Lab Zero Weight",
+      "description": "Lab Zero is worth 3% of the total grade.",
+      "location": null,
+      "start_sid": "s000090",
+      "end_sid": "s000090",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Other Labs Weight",
+      "description": "Four more labs are worth 8% each, totaling 32% of the grade.",
+      "location": null,
+      "start_sid": "s000091",
+      "end_sid": "s000094",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Report Weight",
+      "description": "A report due near the end of the quarter is worth 3% of the grade.",
+      "location": null,
+      "start_sid": "s000094",
+      "end_sid": "s000097",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Class Participation",
+      "description": "Class participation on Piazza is worth 1% of the grade, with 0.1% per approved post, maxing out at 1%.",
+      "location": "Piazza",
+      "start_sid": "s000099",
+      "end_sid": "s000111",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Feedback Survey Credit",
+      "description": "Receive 0.25% credit for filling out a feedback survey mid-term and another at the end of the course.",
+      "location": null,
+      "start_sid": "s000115",
+      "end_sid": "s000116",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Course Evaluation Credit",
+      "description": "Receive 0.25% credit for each of the two course evaluations (instructor and TA), totaling 0.5%.",
+      "location": null,
+      "start_sid": "s000117",
+      "end_sid": "s000118",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Midterm Exam",
+      "description": "The midterm exam is worth 25% of the grade and will be held in this room during the fifth week, on Wednesday.",
+      "location": "in this room",
+      "start_sid": "s000121",
+      "end_sid": "s000126",
+      "related_topic_title": null,
+      "datetime_parameters": {
+        "raw_time_text": "Wednesday of the fifth week",
+        "time_type": "point",
+        "is_time_specific": false,
+        "extracted_date": {
+          "type": "relative_offset",
+          "month": null,
+          "day": null,
+          "weekday": "Wednesday",
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": null
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "Final Exam",
+      "description": "The final exam is worth 35% of the grade.",
+      "location": null,
+      "start_sid": "s000121",
+      "end_sid": "s000122",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Exam Rules",
+      "description": "Exams are open book and open notes, but only printed or written materials are allowed; no automated devices.",
+      "location": null,
+      "start_sid": "s000127",
+      "end_sid": "s000129",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Submission Deadline Rule",
+      "description": "Submissions are accepted up until 23:55 on the due date. Late submissions incur penalties.",
+      "location": null,
+      "start_sid": "s000130",
+      "end_sid": "s000132",
+      "related_topic_title": null,
+      "datetime_parameters": {
+        "raw_time_text": "up until five minutes before midnight on the due dates",
+        "time_type": "deadline",
+        "is_time_specific": true,
+        "extracted_date": {
+          "type": "relative_day",
+          "month": null,
+          "day": null,
+          "weekday": null,
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": "23:55:00"
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "Late Submission Penalty",
+      "description": "Late submissions incur a 1% penalty per day, with the penalty tripling for each extra day late.",
+      "location": null,
+      "start_sid": "s000133",
+      "end_sid": "s000139",
+      "related_topic_title": null,
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Final Assignment Deadline",
+      "description": "No assignments will be accepted after Friday of week 10 at 23:55.",
+      "location": null,
+      "start_sid": "s000144",
+      "end_sid": "s000146",
+      "related_topic_title": null,
+      "datetime_parameters": {
+        "raw_time_text": "Friday of week 10 at 2355",
+        "time_type": "deadline",
+        "is_time_specific": true,
+        "extracted_date": {
+          "type": "relative_offset",
+          "month": null,
+          "day": null,
+          "weekday": "Friday",
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": "23:55:00"
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "Plagiarism Policy",
+      "description": "Submitting copied work or work generated by AI without proper attribution is considered plagiarism and will be reported to the dean.",
+      "location": null,
+      "start_sid": "s000151",
+      "end_sid": "s000156",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Generative AI Usage",
+      "description": "Use generative AI as a study aid, not to solve problems directly. Include prompts and responses as an appendix if used.",
+      "location": null,
+      "start_sid": "s000157",
+      "end_sid": "s000165",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Sharing Answers",
+      "description": "Do not share answers or solutions with other students.",
+      "location": null,
+      "start_sid": "s000169",
+      "end_sid": "s000171",
+      "related_topic_title": "Course Logistics and Academic Integrity",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Email Communication",
+      "description": "Keep emails to the instructor short, preferably text-only, with a clear subject line, to avoid spam filters.",
+      "location": null,
+      "start_sid": "s000199",
+      "end_sid": "s000206",
+      "related_topic_title": "Operating Systems as Systems Engineering",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Email Attachments",
+      "description": "Avoid using attachments in emails to the instructor; if necessary, notify the instructor about the attachment.",
+      "location": null,
+      "start_sid": "s000210",
+      "end_sid": "s000214",
+      "related_topic_title": "Operating Systems as Systems Engineering",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Prerequisites",
+      "description": "Prerequisites include CS32 (C++ data structures, OOP), CS33 (machine organization, assembly), and CS35L (scripting, software tools).",
+      "location": null,
+      "start_sid": "s000219",
+      "end_sid": "s000224",
+      "related_topic_title": "Operating Systems as Systems Engineering",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Recommended Courses",
+      "description": "Networking (CS118) and Programming Languages are recommended but not required prerequisites.",
+      "location": null,
+      "start_sid": "s000226",
+      "end_sid": "s000241",
+      "related_topic_title": "Operating Systems as Systems Engineering",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Architecture Course",
+      "description": "CS151b (Architecture) is recommended.",
+      "location": null,
+      "start_sid": "s000245",
+      "end_sid": "s000247",
+      "related_topic_title": "Operating Systems as Systems Engineering",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Course Structure",
+      "description": "The course includes 4 hours of lecture, 2 hours of lab, and an estimated 9 hours of outside study per week.",
+      "location": null,
+      "start_sid": "s000300",
+      "end_sid": "s000301",
+      "related_topic_title": "Operating Systems as Systems Engineering",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Textbooks",
+      "description": "Two main textbooks are used: one free PDF (Remzi and Arpazzi-Basso) and one available on campus (Sasser & Kaser). Additional readings by Mark Camp are also assigned.",
+      "location": null,
+      "start_sid": "s000455",
+      "end_sid": "s000472",
+      "related_topic_title": "Defining the Operating System",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Break Time",
+      "description": "A break will be taken, resuming at 2 past the hour.",
+      "location": null,
+      "start_sid": "s000445",
+      "end_sid": "s000445",
+      "related_topic_title": "Defining the Operating System",
+      "datetime_parameters": {
+        "raw_time_text": "2 past the hour",
+        "time_type": "point",
+        "is_time_specific": false,
+        "extracted_date": {
+          "type": "relative_day",
+          "month": null,
+          "day": null,
+          "weekday": null,
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": null
+        },
+        "recurring_rule": null
+      }
+    },
+    {
+      "type": "INFO",
+      "title": "Operating System Definition",
+      "description": "The definition of an operating system from the American Heritage Dictionary (2000) is software designed to control hardware to allow users to utilize data processing systems.",
+      "location": null,
+      "start_sid": "s000608",
+      "end_sid": "s000611",
+      "related_topic_title": "Defining the Operating System",
+      "datetime_parameters": null
+    },
+    {
+      "type": "INFO",
+      "title": "Wikipedia Definition",
+      "description": "Wikipedia defines an operating system as system software that manages computer hardware and software resources and provides common services.",
+      "location": "Wikipedia",
+      "start_sid": "s000672",
+      "end_sid": "s000676",
+      "related_topic_title": "Defining the Operating System",
+      "datetime_parameters": {
+        "raw_time_text": "February 23rd",
+        "time_type": "point",
+        "is_time_specific": false,
+        "extracted_date": {
+          "type": "absolute",
+          "month": 2,
+          "day": 23,
+          "weekday": null,
+          "modifier": null,
+          "offset_days": null
+        },
+        "extracted_time": {
+          "start_24h": null,
+          "end_24h": null
+        },
+        "recurring_rule": null
+      }
+    }
+  ]
+}
