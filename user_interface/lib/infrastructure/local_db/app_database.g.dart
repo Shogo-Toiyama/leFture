@@ -552,6 +552,33 @@ class $LocalLecturesTable extends LocalLectures
     requiredDuringInsert: false,
     defaultValue: const Constant('local_only'),
   );
+  static const VerificationMeta _lastAccessedAtMeta = const VerificationMeta(
+    'lastAccessedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAccessedAt =
+      GeneratedColumn<DateTime>(
+        'last_accessed_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _isPinnedMeta = const VerificationMeta(
+    'isPinned',
+  );
+  @override
+  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
+    'is_pinned',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pinned" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -567,6 +594,8 @@ class $LocalLecturesTable extends LocalLectures
     deletedAt,
     whisperContext,
     syncStatus,
+    lastAccessedAt,
+    isPinned,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -671,6 +700,21 @@ class $LocalLecturesTable extends LocalLectures
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
       );
     }
+    if (data.containsKey('last_accessed_at')) {
+      context.handle(
+        _lastAccessedAtMeta,
+        lastAccessedAt.isAcceptableOrUnknown(
+          data['last_accessed_at']!,
+          _lastAccessedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_pinned')) {
+      context.handle(
+        _isPinnedMeta,
+        isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
+      );
+    }
     return context;
   }
 
@@ -732,6 +776,14 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      lastAccessedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_accessed_at'],
+      ),
+      isPinned: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pinned'],
+      )!,
     );
   }
 
@@ -755,6 +807,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final DateTime? deletedAt;
   final String? whisperContext;
   final String syncStatus;
+  final DateTime? lastAccessedAt;
+  final bool isPinned;
   const LocalLecture({
     required this.id,
     required this.userId,
@@ -769,6 +823,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     this.deletedAt,
     this.whisperContext,
     required this.syncStatus,
+    this.lastAccessedAt,
+    required this.isPinned,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -802,6 +858,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       map['whisper_context'] = Variable<String>(whisperContext);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || lastAccessedAt != null) {
+      map['last_accessed_at'] = Variable<DateTime>(lastAccessedAt);
+    }
+    map['is_pinned'] = Variable<bool>(isPinned);
     return map;
   }
 
@@ -836,6 +896,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ? const Value.absent()
           : Value(whisperContext),
       syncStatus: Value(syncStatus),
+      lastAccessedAt: lastAccessedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAccessedAt),
+      isPinned: Value(isPinned),
     );
   }
 
@@ -858,6 +922,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       whisperContext: serializer.fromJson<String?>(json['whisperContext']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      lastAccessedAt: serializer.fromJson<DateTime?>(json['lastAccessedAt']),
+      isPinned: serializer.fromJson<bool>(json['isPinned']),
     );
   }
   @override
@@ -877,6 +943,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'whisperContext': serializer.toJson<String?>(whisperContext),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'lastAccessedAt': serializer.toJson<DateTime?>(lastAccessedAt),
+      'isPinned': serializer.toJson<bool>(isPinned),
     };
   }
 
@@ -894,6 +962,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     Value<DateTime?> deletedAt = const Value.absent(),
     Value<String?> whisperContext = const Value.absent(),
     String? syncStatus,
+    Value<DateTime?> lastAccessedAt = const Value.absent(),
+    bool? isPinned,
   }) => LocalLecture(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -916,6 +986,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
         ? whisperContext.value
         : this.whisperContext,
     syncStatus: syncStatus ?? this.syncStatus,
+    lastAccessedAt: lastAccessedAt.present
+        ? lastAccessedAt.value
+        : this.lastAccessedAt,
+    isPinned: isPinned ?? this.isPinned,
   );
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
@@ -942,6 +1016,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      lastAccessedAt: data.lastAccessedAt.present
+          ? data.lastAccessedAt.value
+          : this.lastAccessedAt,
+      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
     );
   }
 
@@ -960,7 +1038,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('whisperContext: $whisperContext, ')
-          ..write('syncStatus: $syncStatus')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastAccessedAt: $lastAccessedAt, ')
+          ..write('isPinned: $isPinned')
           ..write(')'))
         .toString();
   }
@@ -980,6 +1060,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     deletedAt,
     whisperContext,
     syncStatus,
+    lastAccessedAt,
+    isPinned,
   );
   @override
   bool operator ==(Object other) =>
@@ -997,7 +1079,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.whisperContext == this.whisperContext &&
-          other.syncStatus == this.syncStatus);
+          other.syncStatus == this.syncStatus &&
+          other.lastAccessedAt == this.lastAccessedAt &&
+          other.isPinned == this.isPinned);
 }
 
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
@@ -1014,6 +1098,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<DateTime?> deletedAt;
   final Value<String?> whisperContext;
   final Value<String> syncStatus;
+  final Value<DateTime?> lastAccessedAt;
+  final Value<bool> isPinned;
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
@@ -1029,6 +1115,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.deletedAt = const Value.absent(),
     this.whisperContext = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.lastAccessedAt = const Value.absent(),
+    this.isPinned = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalLecturesCompanion.insert({
@@ -1045,6 +1133,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.deletedAt = const Value.absent(),
     this.whisperContext = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.lastAccessedAt = const Value.absent(),
+    this.isPinned = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId);
@@ -1062,6 +1152,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<DateTime>? deletedAt,
     Expression<String>? whisperContext,
     Expression<String>? syncStatus,
+    Expression<DateTime>? lastAccessedAt,
+    Expression<bool>? isPinned,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1078,6 +1170,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (whisperContext != null) 'whisper_context': whisperContext,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (lastAccessedAt != null) 'last_accessed_at': lastAccessedAt,
+      if (isPinned != null) 'is_pinned': isPinned,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1096,6 +1190,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<DateTime?>? deletedAt,
     Value<String?>? whisperContext,
     Value<String>? syncStatus,
+    Value<DateTime?>? lastAccessedAt,
+    Value<bool>? isPinned,
     Value<int>? rowid,
   }) {
     return LocalLecturesCompanion(
@@ -1112,6 +1208,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       deletedAt: deletedAt ?? this.deletedAt,
       whisperContext: whisperContext ?? this.whisperContext,
       syncStatus: syncStatus ?? this.syncStatus,
+      lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
+      isPinned: isPinned ?? this.isPinned,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1158,6 +1256,12 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
+    if (lastAccessedAt.present) {
+      map['last_accessed_at'] = Variable<DateTime>(lastAccessedAt.value);
+    }
+    if (isPinned.present) {
+      map['is_pinned'] = Variable<bool>(isPinned.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1180,6 +1284,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write('deletedAt: $deletedAt, ')
           ..write('whisperContext: $whisperContext, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('lastAccessedAt: $lastAccessedAt, ')
+          ..write('isPinned: $isPinned, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9065,6 +9171,417 @@ class LocalSyncCursorsCompanion extends UpdateCompanion<LocalSyncCursor> {
   }
 }
 
+class $LocalCacheEntriesTable extends LocalCacheEntries
+    with TableInfo<$LocalCacheEntriesTable, LocalCacheEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalCacheEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lectureIdMeta = const VerificationMeta(
+    'lectureId',
+  );
+  @override
+  late final GeneratedColumn<String> lectureId = GeneratedColumn<String>(
+    'lecture_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localFilePathMeta = const VerificationMeta(
+    'localFilePath',
+  );
+  @override
+  late final GeneratedColumn<String> localFilePath = GeneratedColumn<String>(
+    'local_file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cachedAtMeta = const VerificationMeta(
+    'cachedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> cachedAt = GeneratedColumn<DateTime>(
+    'cached_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    lectureId,
+    localFilePath,
+    sizeBytes,
+    cachedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_cache_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalCacheEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('lecture_id')) {
+      context.handle(
+        _lectureIdMeta,
+        lectureId.isAcceptableOrUnknown(data['lecture_id']!, _lectureIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lectureIdMeta);
+    }
+    if (data.containsKey('local_file_path')) {
+      context.handle(
+        _localFilePathMeta,
+        localFilePath.isAcceptableOrUnknown(
+          data['local_file_path']!,
+          _localFilePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localFilePathMeta);
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeBytesMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(
+        _cachedAtMeta,
+        cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id, userId};
+  @override
+  LocalCacheEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalCacheEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      lectureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lecture_id'],
+      )!,
+      localFilePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_file_path'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      cachedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cached_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalCacheEntriesTable createAlias(String alias) {
+    return $LocalCacheEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalCacheEntry extends DataClass implements Insertable<LocalCacheEntry> {
+  final String id;
+  final String userId;
+  final String lectureId;
+  final String localFilePath;
+  final int sizeBytes;
+  final DateTime cachedAt;
+  const LocalCacheEntry({
+    required this.id,
+    required this.userId,
+    required this.lectureId,
+    required this.localFilePath,
+    required this.sizeBytes,
+    required this.cachedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['lecture_id'] = Variable<String>(lectureId);
+    map['local_file_path'] = Variable<String>(localFilePath);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['cached_at'] = Variable<DateTime>(cachedAt);
+    return map;
+  }
+
+  LocalCacheEntriesCompanion toCompanion(bool nullToAbsent) {
+    return LocalCacheEntriesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      lectureId: Value(lectureId),
+      localFilePath: Value(localFilePath),
+      sizeBytes: Value(sizeBytes),
+      cachedAt: Value(cachedAt),
+    );
+  }
+
+  factory LocalCacheEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalCacheEntry(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      lectureId: serializer.fromJson<String>(json['lectureId']),
+      localFilePath: serializer.fromJson<String>(json['localFilePath']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'lectureId': serializer.toJson<String>(lectureId),
+      'localFilePath': serializer.toJson<String>(localFilePath),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'cachedAt': serializer.toJson<DateTime>(cachedAt),
+    };
+  }
+
+  LocalCacheEntry copyWith({
+    String? id,
+    String? userId,
+    String? lectureId,
+    String? localFilePath,
+    int? sizeBytes,
+    DateTime? cachedAt,
+  }) => LocalCacheEntry(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    lectureId: lectureId ?? this.lectureId,
+    localFilePath: localFilePath ?? this.localFilePath,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    cachedAt: cachedAt ?? this.cachedAt,
+  );
+  LocalCacheEntry copyWithCompanion(LocalCacheEntriesCompanion data) {
+    return LocalCacheEntry(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
+      localFilePath: data.localFilePath.present
+          ? data.localFilePath.value
+          : this.localFilePath,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCacheEntry(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lectureId: $lectureId, ')
+          ..write('localFilePath: $localFilePath, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, userId, lectureId, localFilePath, sizeBytes, cachedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalCacheEntry &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.lectureId == this.lectureId &&
+          other.localFilePath == this.localFilePath &&
+          other.sizeBytes == this.sizeBytes &&
+          other.cachedAt == this.cachedAt);
+}
+
+class LocalCacheEntriesCompanion extends UpdateCompanion<LocalCacheEntry> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> lectureId;
+  final Value<String> localFilePath;
+  final Value<int> sizeBytes;
+  final Value<DateTime> cachedAt;
+  final Value<int> rowid;
+  const LocalCacheEntriesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.lectureId = const Value.absent(),
+    this.localFilePath = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalCacheEntriesCompanion.insert({
+    required String id,
+    required String userId,
+    required String lectureId,
+    required String localFilePath,
+    required int sizeBytes,
+    this.cachedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       lectureId = Value(lectureId),
+       localFilePath = Value(localFilePath),
+       sizeBytes = Value(sizeBytes);
+  static Insertable<LocalCacheEntry> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? lectureId,
+    Expression<String>? localFilePath,
+    Expression<int>? sizeBytes,
+    Expression<DateTime>? cachedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (lectureId != null) 'lecture_id': lectureId,
+      if (localFilePath != null) 'local_file_path': localFilePath,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (cachedAt != null) 'cached_at': cachedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalCacheEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? lectureId,
+    Value<String>? localFilePath,
+    Value<int>? sizeBytes,
+    Value<DateTime>? cachedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalCacheEntriesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      lectureId: lectureId ?? this.lectureId,
+      localFilePath: localFilePath ?? this.localFilePath,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      cachedAt: cachedAt ?? this.cachedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (lectureId.present) {
+      map['lecture_id'] = Variable<String>(lectureId.value);
+    }
+    if (localFilePath.present) {
+      map['local_file_path'] = Variable<String>(localFilePath.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<DateTime>(cachedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCacheEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lectureId: $lectureId, ')
+          ..write('localFilePath: $localFilePath, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9092,6 +9609,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LocalSyncCursorsTable localSyncCursors = $LocalSyncCursorsTable(
     this,
   );
+  late final $LocalCacheEntriesTable localCacheEntries =
+      $LocalCacheEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9111,6 +9630,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localLectureTopics,
     localTopicMaps,
     localSyncCursors,
+    localCacheEntries,
   ];
 }
 
@@ -9348,6 +9868,8 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<DateTime?> deletedAt,
       Value<String?> whisperContext,
       Value<String> syncStatus,
+      Value<DateTime?> lastAccessedAt,
+      Value<bool> isPinned,
       Value<int> rowid,
     });
 typedef $$LocalLecturesTableUpdateCompanionBuilder =
@@ -9365,6 +9887,8 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<DateTime?> deletedAt,
       Value<String?> whisperContext,
       Value<String> syncStatus,
+      Value<DateTime?> lastAccessedAt,
+      Value<bool> isPinned,
       Value<int> rowid,
     });
 
@@ -9439,6 +9963,16 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAccessedAt => $composableBuilder(
+    column: $table.lastAccessedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9516,6 +10050,16 @@ class $$LocalLecturesTableOrderingComposer
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastAccessedAt => $composableBuilder(
+    column: $table.lastAccessedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalLecturesTableAnnotationComposer
@@ -9575,6 +10119,14 @@ class $$LocalLecturesTableAnnotationComposer
     column: $table.syncStatus,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get lastAccessedAt => $composableBuilder(
+    column: $table.lastAccessedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isPinned =>
+      $composableBuilder(column: $table.isPinned, builder: (column) => column);
 }
 
 class $$LocalLecturesTableTableManager
@@ -9621,6 +10173,8 @@ class $$LocalLecturesTableTableManager
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<String?> whisperContext = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<DateTime?> lastAccessedAt = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
@@ -9636,6 +10190,8 @@ class $$LocalLecturesTableTableManager
                 deletedAt: deletedAt,
                 whisperContext: whisperContext,
                 syncStatus: syncStatus,
+                lastAccessedAt: lastAccessedAt,
+                isPinned: isPinned,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9653,6 +10209,8 @@ class $$LocalLecturesTableTableManager
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<String?> whisperContext = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<DateTime?> lastAccessedAt = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
@@ -9668,6 +10226,8 @@ class $$LocalLecturesTableTableManager
                 deletedAt: deletedAt,
                 whisperContext: whisperContext,
                 syncStatus: syncStatus,
+                lastAccessedAt: lastAccessedAt,
+                isPinned: isPinned,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13568,6 +14128,236 @@ typedef $$LocalSyncCursorsTableProcessedTableManager =
       LocalSyncCursor,
       PrefetchHooks Function()
     >;
+typedef $$LocalCacheEntriesTableCreateCompanionBuilder =
+    LocalCacheEntriesCompanion Function({
+      required String id,
+      required String userId,
+      required String lectureId,
+      required String localFilePath,
+      required int sizeBytes,
+      Value<DateTime> cachedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalCacheEntriesTableUpdateCompanionBuilder =
+    LocalCacheEntriesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> lectureId,
+      Value<String> localFilePath,
+      Value<int> sizeBytes,
+      Value<DateTime> cachedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalCacheEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalCacheEntriesTable> {
+  $$LocalCacheEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lectureId => $composableBuilder(
+    column: $table.lectureId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localFilePath => $composableBuilder(
+    column: $table.localFilePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalCacheEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalCacheEntriesTable> {
+  $$LocalCacheEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lectureId => $composableBuilder(
+    column: $table.lectureId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localFilePath => $composableBuilder(
+    column: $table.localFilePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get cachedAt => $composableBuilder(
+    column: $table.cachedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalCacheEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalCacheEntriesTable> {
+  $$LocalCacheEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get lectureId =>
+      $composableBuilder(column: $table.lectureId, builder: (column) => column);
+
+  GeneratedColumn<String> get localFilePath => $composableBuilder(
+    column: $table.localFilePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get cachedAt =>
+      $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+}
+
+class $$LocalCacheEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalCacheEntriesTable,
+          LocalCacheEntry,
+          $$LocalCacheEntriesTableFilterComposer,
+          $$LocalCacheEntriesTableOrderingComposer,
+          $$LocalCacheEntriesTableAnnotationComposer,
+          $$LocalCacheEntriesTableCreateCompanionBuilder,
+          $$LocalCacheEntriesTableUpdateCompanionBuilder,
+          (
+            LocalCacheEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalCacheEntriesTable,
+              LocalCacheEntry
+            >,
+          ),
+          LocalCacheEntry,
+          PrefetchHooks Function()
+        > {
+  $$LocalCacheEntriesTableTableManager(
+    _$AppDatabase db,
+    $LocalCacheEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalCacheEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalCacheEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalCacheEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> lectureId = const Value.absent(),
+                Value<String> localFilePath = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
+                Value<DateTime> cachedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalCacheEntriesCompanion(
+                id: id,
+                userId: userId,
+                lectureId: lectureId,
+                localFilePath: localFilePath,
+                sizeBytes: sizeBytes,
+                cachedAt: cachedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String lectureId,
+                required String localFilePath,
+                required int sizeBytes,
+                Value<DateTime> cachedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalCacheEntriesCompanion.insert(
+                id: id,
+                userId: userId,
+                lectureId: lectureId,
+                localFilePath: localFilePath,
+                sizeBytes: sizeBytes,
+                cachedAt: cachedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalCacheEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalCacheEntriesTable,
+      LocalCacheEntry,
+      $$LocalCacheEntriesTableFilterComposer,
+      $$LocalCacheEntriesTableOrderingComposer,
+      $$LocalCacheEntriesTableAnnotationComposer,
+      $$LocalCacheEntriesTableCreateCompanionBuilder,
+      $$LocalCacheEntriesTableUpdateCompanionBuilder,
+      (
+        LocalCacheEntry,
+        BaseReferences<_$AppDatabase, $LocalCacheEntriesTable, LocalCacheEntry>,
+      ),
+      LocalCacheEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -13600,4 +14390,6 @@ class $AppDatabaseManager {
       $$LocalTopicMapsTableTableManager(_db, _db.localTopicMaps);
   $$LocalSyncCursorsTableTableManager get localSyncCursors =>
       $$LocalSyncCursorsTableTableManager(_db, _db.localSyncCursors);
+  $$LocalCacheEntriesTableTableManager get localCacheEntries =>
+      $$LocalCacheEntriesTableTableManager(_db, _db.localCacheEntries);
 }

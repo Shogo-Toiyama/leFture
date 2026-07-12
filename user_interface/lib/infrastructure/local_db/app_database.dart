@@ -50,6 +50,12 @@ class LocalLectures extends Table {
   TextColumn get syncStatus =>
       text().withDefault(const Constant('local_only'))();
 
+  // 講義詳細を最後に開いた時刻(ローカルキャッシュのLRU判定用)
+  DateTimeColumn get lastAccessedAt => dateTime().nullable()();
+
+  // trueの間は容量制限のLRU剥がし対象から除外する(明示的ダウンロード用)
+  BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id, userId};
 }
@@ -306,6 +312,26 @@ class LocalTopicMaps extends Table {
   Set<Column> get primaryKey => {courseId, userId};
 }
 
+// ===== ローカルキャッシュファイルの容量管理 =====
+
+/// R2からダウンロードしてローカルにキャッシュしたファイル(トランスクリプト/
+/// トピック画像等)を、講義単位で容量管理できるように記録するテーブル。
+/// ファイルシステムを毎回走査せずに済むよう、書き込み時にサイズを保存しておく。
+class LocalCacheEntries extends Table {
+  // 実体はstoragePath(例: "{uid}/{lectureId}/images/topic_1.jpg")をそのまま使う
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  TextColumn get localFilePath => text()();
+  IntColumn get sizeBytes => integer()();
+
+  DateTimeColumn get cachedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
 // ===== 同期カーソル管理(全エンティティタイプ共通) =====
 
 class LocalSyncCursors extends Table {
@@ -338,13 +364,14 @@ class LocalSyncCursors extends Table {
     LocalLectureTopics,
     LocalTopicMaps,
     LocalSyncCursors,
+    LocalCacheEntries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -390,6 +417,15 @@ class AppDatabase extends _$AppDatabase {
         // Courses/CourseAttributes/Announcements/FunFacts/ReviewCards/
         // DeepNotes/Keywords/LectureTopics/TopicMaps/SyncCursors を追加し、
         // LocalLectures.lastSyncError(未使用カラム)を削除。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 8) {
+        // バージョン8: ローカルキャッシュの容量管理に向けて
+        // LocalLectures に lastAccessedAt/isPinned を追加し、
+        // LocalCacheEntries(R2キャッシュファイルのサイズ追跡)を新設。
         for (final table in allTables) {
           await m.drop(table);
         }
@@ -493,6 +529,136 @@ class AppDatabase extends _$AppDatabase {
             : Value(current?.lastFullPulledAt),
       ),
     );
+  }
+
+  // --- Lecture access / pin (キャッシュ容量管理用) ---
+
+  /// 講義詳細を開いたタイミングで呼ぶ。LRU判定の基準時刻を更新する。
+  Future<void> touchLectureAccessed(String lectureId) async {
+    await (update(localLectures)..where((t) => t.id.equals(lectureId))).write(
+      LocalLecturesCompanion(lastAccessedAt: Value(DateTime.now().toUtc())),
+    );
+  }
+
+  Future<void> setLecturePinned(String lectureId, bool pinned) async {
+    await (update(localLectures)..where((t) => t.id.equals(lectureId)))
+        .write(LocalLecturesCompanion(isPinned: Value(pinned)));
+  }
+
+  Future<List<String>> getPinnedLectureIds(String userId) async {
+    final rows = await (select(localLectures)
+          ..where((t) => t.userId.equals(userId) & t.isPinned.equals(true)))
+        .get();
+    return rows.map((r) => r.id).toList();
+  }
+
+  Future<List<LocalLecture>> getLecturesByIds(String userId, List<String> ids) {
+    if (ids.isEmpty) return Future.value(const []);
+    return (select(localLectures)
+          ..where((t) => t.userId.equals(userId) & t.id.isIn(ids)))
+        .get();
+  }
+
+  Future<List<LocalLectureAsset>> getAssetsForLecture(String lectureId) {
+    return (select(localLectureAssets)..where((t) => t.lectureId.equals(lectureId))).get();
+  }
+
+  // --- 30日ハードデリート ---
+
+  Future<List<LocalLecture>> getExpiredSoftDeletedLectures({
+    required String userId,
+    required DateTime olderThan,
+  }) {
+    return (select(localLectures)
+          ..where((t) =>
+              t.userId.equals(userId) &
+              t.deletedAt.isNotNull() &
+              t.deletedAt.isSmallerThanValue(olderThan) &
+              t.syncStatus.equals('synced')))
+        .get();
+  }
+
+  /// 講義本体とその関連データ(音声アセット/アップロードジョブ/キャッシュ/
+  /// コンテンツキャッシュ各種)をまとめて物理削除する。ファイル実体はこの
+  /// メソッドの呼び出し側(LocalRetentionService)で事前に削除しておくこと。
+  Future<void> hardDeleteLectureCascade(String lectureId) async {
+    await transaction(() async {
+      await (delete(localLectureAssets)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localUploadJobs)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localCacheEntries)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localFunFacts)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localReviewCards)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localDeepNotes)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localKeywords)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localLectureTopics)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localAnnouncements)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localLectures)..where((t) => t.id.equals(lectureId))).go();
+    });
+  }
+
+  // --- ローカルキャッシュファイルの容量管理 ---
+
+  Future<void> upsertCacheEntry({
+    required String id,
+    required String userId,
+    required String lectureId,
+    required String localFilePath,
+    required int sizeBytes,
+  }) async {
+    await into(localCacheEntries).insertOnConflictUpdate(
+      LocalCacheEntriesCompanion.insert(
+        id: id,
+        userId: userId,
+        lectureId: lectureId,
+        localFilePath: localFilePath,
+        sizeBytes: sizeBytes,
+      ),
+    );
+  }
+
+  Future<void> deleteCacheEntry({required String id, required String userId}) async {
+    await (delete(localCacheEntries)
+          ..where((t) => t.id.equals(id) & t.userId.equals(userId)))
+        .go();
+  }
+
+  Future<List<LocalCacheEntry>> getAllCacheEntries(String userId) {
+    return (select(localCacheEntries)..where((t) => t.userId.equals(userId))).get();
+  }
+
+  Future<List<LocalCacheEntry>> getCacheEntriesForLecture(String userId, String lectureId) {
+    return (select(localCacheEntries)
+          ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+        .get();
+  }
+
+  /// 講義のキャッシュ(R2キャッシュファイルの記録)と、キャッシュ済みコンテンツ
+  /// (FunFacts等、将来pull実装が入った時のため先取りで対応)を削除する。
+  /// 講義本体(LocalLectures行)は消さない — 一覧に軽量メタデータとして残す。
+  Future<void> deleteCacheEntriesForLecture({
+    required String userId,
+    required String lectureId,
+  }) async {
+    await transaction(() async {
+      await (delete(localCacheEntries)
+            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+          .go();
+      await (delete(localFunFacts)
+            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+          .go();
+      await (delete(localReviewCards)
+            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+          .go();
+      await (delete(localDeepNotes)
+            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+          .go();
+      await (delete(localKeywords)
+            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+          .go();
+      await (delete(localLectureTopics)
+            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+          .go();
+    });
   }
 }
 
