@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../infrastructure/local_db/app_database_provider.dart';
 import '../../infrastructure/repositories/lecture_artifact_repository.dart';
 import '../../infrastructure/supabase/repositories/lecture_topic_repository_supabase.dart';
 import '../../domain/entities/lecture_data.dart';
@@ -15,7 +16,7 @@ part 'lecture_providers.g.dart';
 // Repository自体のProvider
 @riverpod
 LectureArtifactRepository lectureArtifactRepository(Ref ref) {
-  return LectureArtifactRepository(Supabase.instance.client);
+  return LectureArtifactRepository(Supabase.instance.client, ref.watch(appDatabaseProvider));
 }
 // -----------------------------------------------------------------------------
 // 単一の授業メタデータ（タイトル、日付など）を取得するProvider

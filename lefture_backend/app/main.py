@@ -65,6 +65,8 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET") # 追加: Supabase Webhookからのリクエストを検証するシークレット
 STALE_TASK_TIMEOUT_MINUTES = int(os.getenv("STALE_TASK_TIMEOUT_MINUTES", "20")) # Cloud Scheduler駆動のリカバリが「止まっている」と判定するまでの分数
+LECTURE_HARD_DELETE_RETENTION_DAYS = int(os.getenv("LECTURE_HARD_DELETE_RETENTION_DAYS", "30")) # ソフト削除(deleted_at)からハードデリートまでの日数
+PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "50")) # Patrol1回あたりでハードデリートする講義数の上限(タイムアウト防止。溢れた分は次回実行で処理される)
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -740,9 +742,85 @@ async def _patrol_reap_stale_dag_tasks() -> dict:
 # async def _patrol_cleanup_soft_deleted() -> dict: ...
 # async def _patrol_collect_error_reports() -> dict: ...
 
+
+async def _hard_delete_lecture(admin_client, uid: str, lecture_id: str) -> None:
+    """
+    講義1件を、関連する子テーブル・R2上のファイルとともに完全に削除する。
+    Supabase側にON DELETE CASCADEがあるかどうかに依存しないよう、
+    子テーブル→親テーブルの順で明示的に削除する。
+    """
+    # processing_tasksはlecture_idを持たずjob_id経由でしか紐づかないため、
+    # 先にこの講義のprocessing_jobs.id一覧を取得する
+    jobs_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").select("id").eq("lecture_id", lecture_id).execute()
+    )
+    job_ids = [j["id"] for j in (jobs_res.data or [])]
+    if job_ids:
+        await asyncio.to_thread(
+            lambda: admin_client.table("processing_tasks").delete().in_("job_id", job_ids).execute()
+        )
+
+    # lecture_idを直接持つ子テーブルを削除
+    child_tables = [
+        "fun_facts", "review_cards", "deep_notes", "keywords",
+        "lecture_topics", "announcements", "lecture_transcripts", "processing_jobs",
+    ]
+    for table in child_tables:
+        await asyncio.to_thread(
+            lambda t=table: admin_client.table(t).delete().eq("lecture_id", lecture_id).execute()
+        )
+
+    # R2上のファイル実体を削除({uid}/{lecture_id}/ 配下全て。パス構造は全パイプラインで統一されている)
+    from app.core.r2_storage import storage_service
+    await asyncio.to_thread(storage_service.delete_prefix, f"{uid}/{lecture_id}/")
+
+    # 講義本体を最後に削除
+    await asyncio.to_thread(
+        lambda: admin_client.table("lectures").delete().eq("id", lecture_id).execute()
+    )
+
+
+async def _patrol_hard_delete_expired_lectures() -> dict:
+    """
+    deleted_atからLECTURE_HARD_DELETE_RETENTION_DAYS(既定30日)を過ぎた講義を、
+    関連する子テーブル・R2上のファイルとともに完全に削除する。
+    講義単位でtry/exceptし、1件の失敗が他の講義の削除を止めないようにする。
+    deleted_atは削除操作以外では変化しないため、失敗して取り残された行や
+    PATROL_HARD_DELETE_BATCH_SIZEを超えた分は次回のPatrol実行で自然に再試行される。
+    """
+    admin_client = get_supabase_client()
+    threshold = (
+        datetime.now(timezone.utc) - timedelta(days=LECTURE_HARD_DELETE_RETENTION_DAYS)
+    ).isoformat()
+
+    expired_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .select("id, user_id")
+            .not_.is_("deleted_at", "null")
+            .lt("deleted_at", threshold)
+            .limit(PATROL_HARD_DELETE_BATCH_SIZE)
+            .execute()
+    )
+
+    deleted = 0
+    failed = 0
+    for row in (expired_res.data or []):
+        lecture_id, uid = row["id"], row["user_id"]
+        try:
+            await _hard_delete_lecture(admin_client, uid, lecture_id)
+            deleted += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Patrol failed to hard-delete lecture {lecture_id}: {e}")
+
+    return {"hard_deleted": deleted, "failed": failed, "retention_days": LECTURE_HARD_DELETE_RETENTION_DAYS}
+
+
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
+    ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
 ]
+
 
 
 @app.post("/maintenance/patrol")

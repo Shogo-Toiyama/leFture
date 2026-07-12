@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/announcement.dart';
@@ -29,6 +31,15 @@ class LectureViewerPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDummy = lectureId.startsWith('dummy_');
+
+    // 講義詳細を開いたタイミングでlastAccessedAtを更新する(キャッシュ容量管理の
+    // LRU判定用)。lectureIdが変わった時だけ実行し、再ビルドの度には走らない。
+    useEffect(() {
+      if (!isDummy) {
+        ref.read(appDatabaseProvider).touchLectureAccessed(lectureId);
+      }
+      return null;
+    }, [lectureId]);
 
     if (isDummy) {
       final dummyLecture = Lecture(

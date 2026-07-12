@@ -112,6 +112,33 @@ class R2StorageService:
         )
         return url, path
 
+    def delete_prefix(self, prefix: str) -> int:
+        """
+        指定prefix配下の全オブジェクトを削除する。削除件数を返す。
+        delete_objectsは1回最大1000件までのため、list_objects_v2の
+        ページング(IsTruncated/NextContinuationToken)にも対応する。
+        """
+        deleted = 0
+        continuation_token = None
+        while True:
+            list_kwargs = {"Bucket": self.bucket_name, "Prefix": prefix}
+            if continuation_token:
+                list_kwargs["ContinuationToken"] = continuation_token
+            response = self.s3.list_objects_v2(**list_kwargs)
+            contents = response.get("Contents", [])
+            if not contents:
+                break
+
+            keys = [{"Key": obj["Key"]} for obj in contents]
+            self.s3.delete_objects(Bucket=self.bucket_name, Delete={"Objects": keys})
+            deleted += len(keys)
+
+            if not response.get("IsTruncated"):
+                break
+            continuation_token = response.get("NextContinuationToken")
+
+        return deleted
+
     def object_exists(self, storage_path: str) -> bool:
         """R2上に指定パスのオブジェクトが実在するか確認する。"""
         try:

@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 
 import '../../domain/entities/lecture_data.dart';
+import '../local_db/app_database.dart';
 
 /// R2に保存された成果物(トランスクリプトJSON・トピック画像など)を取得するリポジトリ。
 ///
@@ -19,8 +20,9 @@ import '../../domain/entities/lecture_data.dart';
 /// 2回目以降はネットワークを使わない。
 class LectureArtifactRepository {
   final SupabaseClient _supabase;
+  final AppDatabase _db;
 
-  LectureArtifactRepository(this._supabase);
+  LectureArtifactRepository(this._supabase, this._db);
 
   static const _workerBaseUrl = 'https://lefture-artifact-worker.shogo-toiyama.workers.dev';
 
@@ -30,9 +32,15 @@ class LectureArtifactRepository {
 
   /// [storagePath] (例: "{uid}/{lectureId}/images/topic_1.jpg") のファイルを
   /// キャッシュ優先で取得する。存在しない/取得失敗時はnull。
+  ///
+  /// 取得できたファイルは容量管理(LocalRetentionService)がLRU判定できるよう
+  /// [LocalCacheEntries] にサイズを記録する。すでにキャッシュ済みの場合も、
+  /// このテーブル追加より前にダウンロードされたファイルを後から拾えるように
+  /// 都度upsertしておく。
   Future<File?> getArtifactFile(String storagePath) async {
     final localFile = await _localCacheFile(storagePath);
     if (localFile.existsSync() && localFile.lengthSync() > 0) {
+      await _registerCacheEntry(storagePath, localFile);
       return localFile;
     }
 
@@ -55,10 +63,34 @@ class LectureArtifactRepository {
         return null;
       }
       await localFile.writeAsBytes(response.bodyBytes);
+      await _registerCacheEntry(storagePath, localFile);
       return localFile;
     } catch (e) {
       debugPrint('Artifact download error: $e');
       return null;
+    }
+  }
+
+  /// [storagePath]は"{uid}/{lectureId}/..."形式であることを前提に、
+  /// 容量管理用のキャッシュエントリを記録する。形式が想定と異なる場合は
+  /// キャッシュ管理をスキップする(ファイル自体の取得は成功させたいため)。
+  Future<void> _registerCacheEntry(String storagePath, File file) async {
+    final segments = storagePath.split('/');
+    if (segments.length < 2) return;
+    final uid = segments[0];
+    final lectureId = segments[1];
+
+    try {
+      final sizeBytes = await file.length();
+      await _db.upsertCacheEntry(
+        id: storagePath,
+        userId: uid,
+        lectureId: lectureId,
+        localFilePath: file.path,
+        sizeBytes: sizeBytes,
+      );
+    } catch (e) {
+      debugPrint('Cache entry registration failed for $storagePath: $e');
     }
   }
 
@@ -96,8 +128,12 @@ class LectureArtifactRepository {
       } catch (e) {
         debugPrint('Transcript parse error ($fileName): $e');
         // パースできない壊れたキャッシュは消して次の候補へ
+        final storagePath = '$uid/$lectureId/$fileName';
         try {
           await file.delete();
+        } catch (_) {}
+        try {
+          await _db.deleteCacheEntry(id: storagePath, userId: uid);
         } catch (_) {}
       }
     }

@@ -110,7 +110,9 @@ class LectureStatusScaffold extends ConsumerWidget {
                     isDestructive: true,
                   );
                   if (ok == true) {
-                    await ref.read(lectureControllerProvider.notifier).deleteLecture(lecture.id);
+                    await ref
+                        .read(lectureControllerProvider.notifier)
+                        .deleteLecture(lecture.id, courseId: lecture.courseId);
                     if (context.mounted) context.pop();
                   }
                 },

@@ -52,6 +52,7 @@ class LectureEditSheet extends HookConsumerWidget {
               lectureId: lecture.id,
               title: title.isEmpty ? null : title,
               courseId: courseId,
+              previousCourseId: lecture.courseId,
             );
         if (context.mounted) {
           Navigator.of(context).pop();

@@ -37,7 +37,9 @@ class RecentLecturesList extends ConsumerWidget {
               );
             },
             onDelete: () async {
-              await ref.read(lectureControllerProvider.notifier).deleteLecture(lecture.id);
+              await ref
+                  .read(lectureControllerProvider.notifier)
+                  .deleteLecture(lecture.id, courseId: lecture.courseId);
             },
           ),
         );

@@ -55,7 +55,7 @@ final class LectureArtifactRepositoryProvider
 }
 
 String _$lectureArtifactRepositoryHash() =>
-    r'bd716409738b2114684a5442b088d34e9f2b5fc0';
+    r'f807e40f75d071b1590434870fe67f128a95338a';
 
 @ProviderFor(lecture)
 final lectureProvider = LectureFamily._();

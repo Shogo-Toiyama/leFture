@@ -127,11 +127,30 @@ class UploadManager {
 
           // 成功！ -> Jobを完了にする
           await _repo.updateJobStatus(
-            jobId: job.id, 
+            jobId: job.id,
             status: 'done',
             lastError: null,
           );
-          
+
+          // チャンク音声はアップロード完了後、ローカルの一時ファイルはもう不要。
+          // マスター音声側(_performUpload内)では既に削除しているが、こちらの
+          // チャンク側は削除処理が漏れていたため、ここで同様に掃除する。
+          if (job.kind == 'audio_upload') {
+            final asset = await _repo.getAsset(job.assetId);
+            final localPath = asset?.localPath;
+            if (localPath != null) {
+              try {
+                final file = File(localPath);
+                if (await file.exists()) {
+                  await file.delete();
+                  DevLog.add('🧹 [UploadManager] Chunk audio local file deleted.');
+                }
+              } catch (cleanupError) {
+                DevLog.add('⚠️ [UploadManager] Chunk audio cleanup failed: $cleanupError');
+              }
+            }
+          }
+
           // Q1. この授業の未送信「チャンク」ジョブはまだ残っているか？
           // ★ マスター音声(kind: master_audio_upload)は分析の入力ではなく再生用途
           // でしかないため、ここでは意図的に見ない。マスター音声の失敗・保留が
