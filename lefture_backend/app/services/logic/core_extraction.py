@@ -210,6 +210,7 @@ class CoreExtractionService:
         previous_start_order = 0
         previous_topic: dict | None = None
         normalized_topics: list[dict] = []
+        academic_count = 0
 
         for start_order, end_order, topic in topics_with_order:
             if previous_topic is not None and start_order <= previous_end_order:
@@ -248,7 +249,15 @@ class CoreExtractionService:
                 topic["start_sid"] = order_to_sid[new_start_order]
                 start_order = new_start_order
 
-            topic["idx"] = len(normalized_topics) + 1
+            # idxはACADEMICトピックのみに連番で振る（LOGISTICSは画像やカードを
+            # 生成しないため、R2の images/topic_{idx}.jpg やDBのtopic_numberが
+            # ACADEMICの通し番号と一致するようにするため）。
+            if topic["topic_type"] == "ACADEMIC":
+                academic_count += 1
+                topic["idx"] = academic_count
+            else:
+                topic["idx"] = None
+
             normalized_topics.append(topic)
             previous_end_order = end_order
             previous_start_order = start_order

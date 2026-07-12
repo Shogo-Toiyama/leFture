@@ -225,12 +225,40 @@ class SentenceReviewService:
         updated_chunks_dict = defaultdict(lambda: {"segments": [], "text": ""})
         counters = defaultdict(int)
 
+        # 1. chunks_to_review の初期化
         for chunk in chunks_to_review:
             c_idx = chunk["chunk_index"]
             updated_chunks_dict[c_idx] = chunk.copy()
             updated_chunks_dict[c_idx]["segments"] = []
             updated_chunks_dict[c_idx]["text"] = ""
 
+        # 2. previous_chunk の未編集セグメント（前半部分）の退避と初期化
+        if previous_chunk:
+            prev_segs = previous_chunk.get("segments_reviewed")
+            is_absolute = True
+            if prev_segs is None:
+                prev_segs = previous_chunk.get("segments_stt") or []
+                is_absolute = False
+
+            prev_idx = previous_chunk["chunk_index"]
+            prev_start_time = previous_chunk.get("start_time") or 0.0
+            
+            # 後半3つ以外のセグメント（編集対象外の過去データ）を取り出す
+            earlier_segs = []
+            for seg in prev_segs[:-3]:
+                new_seg = seg.copy()
+                if not is_absolute:
+                    new_seg["start"] += prev_start_time
+                    new_seg["end"] += prev_start_time
+                earlier_segs.append(new_seg)
+
+            # previous_chunk 用の初期データをセット
+            updated_chunks_dict[prev_idx] = previous_chunk.copy()
+            updated_chunks_dict[prev_idx]["segments"] = earlier_segs
+            updated_chunks_dict[prev_idx]["text"] = " ".join(s["text"] for s in earlier_segs) + " " if earlier_segs else ""
+            counters[prev_idx] = len(earlier_segs)
+
+        # 3. レビュー結果の割り当て
         for seg in final_segments:
             c_idx = seg["chunk_index"]
             counters[c_idx] += 1

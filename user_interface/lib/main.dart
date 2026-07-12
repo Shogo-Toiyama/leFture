@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 
@@ -33,8 +31,6 @@ Future<void> main() async {
       return true;
     };
 
-    final prefs = await SharedPreferences.getInstance();
-
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
@@ -42,9 +38,6 @@ Future<void> main() async {
 
     runApp(
       ProviderScope(
-        overrides: [
-          sharedPrefsProvider.overrideWithValue(prefs),
-        ],
         child: MyApp(),
       ),
     );

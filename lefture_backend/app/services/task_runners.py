@@ -638,6 +638,10 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         def _insert_keywords_sync():
             supabase.table("keywords").delete().eq("lecture_id", lecture_id).execute()
             for topic in extraction_result.get("topics", []):
+                if topic.get("topic_type") != "ACADEMIC":
+                    # LOGISTICSはidxがNoneのため対象外（そもそもkeywordsも
+                    # 生成されない想定だが念のため明示的にスキップする）。
+                    continue
                 topic_idx = topic.get("idx")
                 topic_keywords = topic.get("keywords", [])
                 for kw in topic_keywords:

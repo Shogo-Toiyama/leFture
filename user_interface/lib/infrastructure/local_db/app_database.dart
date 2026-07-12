@@ -50,8 +50,6 @@ class LocalLectures extends Table {
   TextColumn get syncStatus =>
       text().withDefault(const Constant('local_only'))();
 
-  TextColumn get lastSyncError => text().nullable()();
-
   @override
   Set<Column> get primaryKey => {id, userId};
 }
@@ -110,19 +108,243 @@ class LocalUploadJobs extends Table {
   Set<Column> get primaryKey => {id, userId};
 }
 
+class LocalCourses extends Table {
+  TextColumn get id => text()(); // uuid
+  TextColumn get userId => text()();
+
+  TextColumn get courseTitle => text()();
+  TextColumn get courseCode => text().nullable()();
+  TextColumn get summary => text().nullable()();
+
+  // course_attributes への参照
+  TextColumn get schoolId => text().nullable()();
+  TextColumn get yearId => text().nullable()();
+  TextColumn get termId => text().nullable()();
+  TextColumn get subjectId => text().nullable()();
+  TextColumn get professorId => text().nullable()();
+
+  // icon/color 等。jsonbはTEXTでシリアライズしてそのまま保存
+  TextColumn get metadataJson => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant('local_only'))();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalCourseAttributes extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+
+  // "school" / "year" / "term" / "subject"
+  TextColumn get attributeType => text()();
+  TextColumn get attributeName => text()();
+  TextColumn get metadataJson => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant('local_only'))();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalAnnouncements extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  // TODO / EVENT / HINT / INFO
+  TextColumn get type => text()();
+  TextColumn get title => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get location => text().nullable()();
+  IntColumn get startSid => integer().nullable()();
+  IntColumn get endSid => integer().nullable()();
+  TextColumn get relatedTopicTitle => text().nullable()();
+  TextColumn get datetimeParametersJson => text().nullable()();
+
+  // ユーザーがローカルで「完了」をトグルできるため書き込み系に分類
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  TextColumn get metadataJson => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant('local_only'))();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+// ===== 読み取り専用キャッシュ(サーバー生成コンテンツ、ローカル編集なし) =====
+
+class LocalFunFacts extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  TextColumn get title => text().nullable()();
+  TextColumn get hook => text()();
+  TextColumn get body => text()();
+  TextColumn get metadataJson => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  // このローカル行をいつ取得したか(差分Pullの鮮度管理用)
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalReviewCards extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  IntColumn get topicNumber => integer()();
+  // jsonb配列 [{type, text, items[]}, ...] をそのままTEXTで保存
+  TextColumn get cardContentJson => text()();
+  // hook / core_why / gotcha / next_action
+  TextColumn get cardType => text()();
+  TextColumn get title => text().nullable()();
+  TextColumn get heroEmoji => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalDeepNotes extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  IntColumn get topicNumber => integer()();
+  TextColumn get noteContents => text()(); // Markdown文字列
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalKeywords extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  IntColumn get topicNumber => integer()();
+  TextColumn get keyword => text()();
+  TextColumn get definition => text()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalLectureTopics extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  // Supabase側カラム名は `index`(SQL予約語のためリネーム)
+  IntColumn get topicIndex => integer()();
+  TextColumn get topicTitle => text()();
+  TextColumn get topicType => text()();
+  TextColumn get summary => text().nullable()();
+  IntColumn get startSid => integer().nullable()();
+  IntColumn get endSid => integer().nullable()();
+  // R2キャッシュ(r2_cache/)と連携するstorage path。実ファイル本体はここに持たない
+  TextColumn get imagePath => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalTopicMaps extends Table {
+  TextColumn get courseId => text()();
+  TextColumn get userId => text()();
+
+  TextColumn get mapJson => text()(); // jsonb(ノード/エッジ構造)をそのまま保存
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {courseId, userId};
+}
+
+// ===== 同期カーソル管理(全エンティティタイプ共通) =====
+
+class LocalSyncCursors extends Table {
+  TextColumn get userId => text()();
+  // "lecture" / "fun_fact" / "review_card" / "course" / ...
+  TextColumn get entityType => text()();
+
+  // 前回pullで実際に取得した行のうち最大のupdated_at(wall-clockではない)
+  DateTimeColumn get lastPulledAt => dateTime().nullable()();
+  // 前回「全件Pull」を実行した時刻(セーフティネットの間隔判定用)
+  DateTimeColumn get lastFullPulledAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {userId, entityType};
+}
+
 @DriftDatabase(
   tables: [
     LocalOutbox,
     LocalLectures,
     LocalLectureAssets,
     LocalUploadJobs,
+    LocalCourses,
+    LocalCourseAttributes,
+    LocalAnnouncements,
+    LocalFunFacts,
+    LocalReviewCards,
+    LocalDeepNotes,
+    LocalKeywords,
+    LocalLectureTopics,
+    LocalTopicMaps,
+    LocalSyncCursors,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -158,6 +380,16 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         // バージョン6: LocalLectures に titleGenerated カラム追加
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 7) {
+        // バージョン7: オフライン優先化に向けたスキーマ再設計。
+        // Courses/CourseAttributes/Announcements/FunFacts/ReviewCards/
+        // DeepNotes/Keywords/LectureTopics/TopicMaps/SyncCursors を追加し、
+        // LocalLectures.lastSyncError(未使用カラム)を削除。
         for (final table in allTables) {
           await m.drop(table);
         }
@@ -227,6 +459,40 @@ class AppDatabase extends _$AppDatabase {
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull());
     final list = await query.get();
     return list.length;
+  }
+
+  // --- Sync Cursors ---
+
+  Future<LocalSyncCursor?> getSyncCursor(String userId, String entityType) {
+    return (select(localSyncCursors)
+          ..where((t) => t.userId.equals(userId) & t.entityType.equals(entityType)))
+        .getSingleOrNull();
+  }
+
+  /// 指定エンティティタイプのカーソルを更新する。
+  /// [lastPulledAt] / [lastFullPulledAt] を省略した場合は既存値を保持する
+  /// (差分Pullのみ実行した回はlastFullPulledAtを書き換えない、といった使い方を想定)。
+  Future<void> upsertSyncCursor({
+    required String userId,
+    required String entityType,
+    DateTime? lastPulledAt,
+    bool updateLastPulledAt = true,
+    DateTime? lastFullPulledAt,
+    bool updateLastFullPulledAt = false,
+  }) async {
+    final current = await getSyncCursor(userId, entityType);
+    await into(localSyncCursors).insertOnConflictUpdate(
+      LocalSyncCursorsCompanion(
+        userId: Value(userId),
+        entityType: Value(entityType),
+        lastPulledAt: updateLastPulledAt
+            ? Value(lastPulledAt)
+            : Value(current?.lastPulledAt),
+        lastFullPulledAt: updateLastFullPulledAt
+            ? Value(lastFullPulledAt)
+            : Value(current?.lastFullPulledAt),
+      ),
+    );
   }
 }
 

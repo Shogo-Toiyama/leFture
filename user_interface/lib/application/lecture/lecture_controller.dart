@@ -2,7 +2,6 @@
 
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/application/navigation/nav_state_store.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/application/sync/lecture_sync_service.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart'; // jobRepository
@@ -30,9 +29,15 @@ class LectureController extends _$LectureController {
 
   // --- Sync / Bootstrap Logic ---
 
+  /// UIイベント(Home画面表示・Pull-to-Refreshなど)による連続呼び出しを
+  /// 間引くための、プロセス内だけのタイムスタンプ。永続化はしない —
+  /// アプリがコールドスタートした直後は常にnullになるため、
+  /// 起動ごとに1回は必ずbootstrapが走ることも意図している。
+  DateTime? _lastBootstrapAttemptAt;
+
   Future<void> bootstrapLectures({bool forceFullPull = false}) async {
+    _lastBootstrapAttemptAt = DateTime.now().toUtc();
     final sync = _sync();
-    final nav = ref.read(navStateStoreProvider);
 
     try {
       await sync.pushOutbox();
@@ -41,19 +46,16 @@ class LectureController extends _$LectureController {
     }
 
     try {
-      final lastSync = forceFullPull ? null : nav.lastLectureSyncAt;
-      await sync.pull(lastPullAt: lastSync);
-      await nav.setLastLectureSyncAt(DateTime.now().toUtc());
+      await sync.pull(forceFullPull: forceFullPull);
     } catch (e, st) {
       dev.log('⚠️ Lecture pull skipped: $e', error: e, stackTrace: st);
     }
   }
 
   Future<void> bootstrapIfNeeded({Duration interval = const Duration(minutes: 15)}) async {
-    final nav = ref.read(navStateStoreProvider);
-    final last = nav.lastLectureSyncAt;
+    final last = _lastBootstrapAttemptAt;
     final now = DateTime.now().toUtc();
-    
+
     final should = (last == null) || now.difference(last) >= interval;
     if (!should) return;
 

@@ -544,12 +544,10 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
   /// fields, so it's always null there.
   /// Topic View: title is the map node's own title, but its summary has to
   /// come from `lecture_topics.summary` -- the map itself never carries
-  /// one. topicNum (from the topic_id) is 1-based position among *only*
-  /// this lecture's ACADEMIC topics (see task_runners.py's
-  /// `academic_topics` filter), whereas lecture_topics.index is the row's
-  /// raw position among *all* topic types (ACADEMIC and LOGISTICS mixed) --
-  /// so the match has to replicate that same "filter to ACADEMIC, then
-  /// take the Nth" step client-side rather than compare index directly.
+  /// one. topicNum (from the topic_id) and lecture_topics.index are both
+  /// 1-based positions among this lecture's ACADEMIC topics only (see
+  /// core_extraction.py's idx assignment and task_runners.py's
+  /// `academic_topics` filter), so they can be matched directly.
   ///
   /// Lectures are streamed newest-first from the local DB; lecture_num is
   /// assigned by oldest-first position (see task_runners.py's
@@ -592,10 +590,11 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
         topicNum = _topicNumFromTopicId(topicNode.id);
         if (topicNum != null) {
           final lectureTopics = await ref.read(lectureTopicsProvider(lecture.id).future);
-          final academicTopics = lectureTopics.where((t) => t.topicType == 'ACADEMIC').toList();
-          if (topicNum >= 1 && topicNum <= academicTopics.length) {
-            final matched = academicTopics[topicNum - 1];
-            summary = matched.summary == null ? null : stripSidCitations(matched.summary!);
+          for (final t in lectureTopics) {
+            if (t.index == topicNum) {
+              summary = t.summary == null ? null : stripSidCitations(t.summary!);
+              break;
+            }
           }
         }
       }
