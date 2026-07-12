@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
@@ -25,7 +26,18 @@ class LectureRepositoryDrift {
     });
   }
 
+  /// 講義詳細ページ用。単一講義をIDで監視する。
+  Stream<Lecture?> watchLectureById(String lectureId) {
+    return _db.watchLectureById(lectureId).map((row) => row == null ? null : _toDomain(row));
+  }
+
   /// 論理削除を実行し、Outboxに登録する (Transaction)
+  ///
+  /// Outboxへは「entityId」だけを登録する。実際にSupabaseへ送るpayloadは
+  /// [LectureOutboxPushHandler]がpush実行時に[LocalLectures]の最新行から
+  /// 都度組み立てる(自己修復設計 — payload構築ロジックのバグを直すコードを
+  /// リリースするだけで、既存の保留中Outbox行も次回のpushで自動的に正しい
+  /// 内容で再送されるようにするため)。
   Future<void> softDeleteLecture({required String lectureId}) async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
@@ -43,23 +55,11 @@ class LectureRepositoryDrift {
       ));
 
       // 2. Outboxに登録
-      // AppDatabaseの enqueueOutbox を使ってもいいですが、
-      // トランザクション内で確実に処理するため直接 insert します
-      final payload = {
-        'id': lectureId,
-        'deleted_at': now.toUtc().toIso8601String(),
-        'updated_at': now.toUtc().toIso8601String(),
-      };
-
-      await _db.into(_db.localOutbox).insert(
-            LocalOutboxCompanion.insert(
-              entityType: 'lecture',
-              entityId: lectureId,
-              op: 'update', // 論理削除なので update 扱い
-              payloadJson: jsonEncode(payload),
-              // enqueuedAt はデフォルト値が入るので省略OK
-            ),
-          );
+      await _db.enqueueOutbox(
+        entityType: 'lecture',
+        entityId: lectureId,
+        op: 'update', // 論理削除なので update 扱い
+      );
     });
   }
 
@@ -83,21 +83,12 @@ class LectureRepositoryDrift {
         updatedAt: Value(DateTime.now()),
       ));
 
-      // 2. Outboxに登録
-      final payload = {
-        'id': lectureId,
-        'title': title,
-        'course_id': courseId,
-      };
-
-      await _db.into(_db.localOutbox).insert(
-            LocalOutboxCompanion.insert(
-              entityType: 'lecture',
-              entityId: lectureId,
-              op: 'update',
-              payloadJson: jsonEncode(payload),
-            ),
-          );
+      // 2. Outboxに登録(softDeleteLectureと同様、entityIdのみでよい)
+      await _db.enqueueOutbox(
+        entityType: 'lecture',
+        entityId: lectureId,
+        op: 'update',
+      );
     });
   }
 
@@ -108,6 +99,11 @@ class LectureRepositoryDrift {
       courseId: row.courseId,
       title: row.title,
       titleGenerated: row.titleGenerated,
+      summary: row.summary,
+      audioPath: row.audioPath,
+      metadata: row.metadataJson != null
+          ? Map<String, dynamic>.from(jsonDecode(row.metadataJson!) as Map)
+          : null,
       deletedAt: row.deletedAt,
       sortOrder: row.sortOrder ?? 0,
       lectureDatetime: row.lectureDatetime ?? row.createdAt,

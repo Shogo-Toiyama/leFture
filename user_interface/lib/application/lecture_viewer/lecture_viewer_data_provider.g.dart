@@ -8,24 +8,24 @@ part of 'lecture_viewer_data_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 講義のトピック一覧（index昇順）
+/// 講義のトピック一覧（index昇順、ローカルDB経由でオフライン優先）
 
 @ProviderFor(lectureTopics)
 final lectureTopicsProvider = LectureTopicsFamily._();
 
-/// 講義のトピック一覧（index昇順）
+/// 講義のトピック一覧（index昇順、ローカルDB経由でオフライン優先）
 
 final class LectureTopicsProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<LectureTopic>>,
           List<LectureTopic>,
-          FutureOr<List<LectureTopic>>
+          Stream<List<LectureTopic>>
         >
     with
         $FutureModifier<List<LectureTopic>>,
-        $FutureProvider<List<LectureTopic>> {
-  /// 講義のトピック一覧（index昇順）
+        $StreamProvider<List<LectureTopic>> {
+  /// 講義のトピック一覧（index昇順、ローカルDB経由でオフライン優先）
   LectureTopicsProvider._({
     required LectureTopicsFamily super.from,
     required String super.argument,
@@ -49,12 +49,12 @@ final class LectureTopicsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<LectureTopic>> $createElement(
+  $StreamProviderElement<List<LectureTopic>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<LectureTopic>> create(Ref ref) {
+  Stream<List<LectureTopic>> create(Ref ref) {
     final argument = this.argument as String;
     return lectureTopics(ref, argument);
   }
@@ -70,12 +70,12 @@ final class LectureTopicsProvider
   }
 }
 
-String _$lectureTopicsHash() => r'5bcbcfae132991f7cfa0032474b126230afffeeb';
+String _$lectureTopicsHash() => r'05affb2cbabad7dd0814aeec1023abb85bc553d2';
 
-/// 講義のトピック一覧（index昇順）
+/// 講義のトピック一覧（index昇順、ローカルDB経由でオフライン優先）
 
 final class LectureTopicsFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<LectureTopic>>, String> {
+    with $FunctionalFamilyOverride<Stream<List<LectureTopic>>, String> {
   LectureTopicsFamily._()
     : super(
         retry: null,
@@ -85,7 +85,7 @@ final class LectureTopicsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 講義のトピック一覧（index昇順）
+  /// 講義のトピック一覧（index昇順、ローカルDB経由でオフライン優先）
 
   LectureTopicsProvider call(String lectureId) =>
       LectureTopicsProvider._(argument: lectureId, from: this);
@@ -94,22 +94,22 @@ final class LectureTopicsFamily extends $Family
   String toString() => r'lectureTopicsProvider';
 }
 
-/// 講義のDeep Note一覧（topic_number昇順）
+/// 講義のDeep Note一覧（topic_number昇順、ローカルDB経由でオフライン優先）
 
 @ProviderFor(deepNotes)
 final deepNotesProvider = DeepNotesFamily._();
 
-/// 講義のDeep Note一覧（topic_number昇順）
+/// 講義のDeep Note一覧（topic_number昇順、ローカルDB経由でオフライン優先）
 
 final class DeepNotesProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<DeepNote>>,
           List<DeepNote>,
-          FutureOr<List<DeepNote>>
+          Stream<List<DeepNote>>
         >
-    with $FutureModifier<List<DeepNote>>, $FutureProvider<List<DeepNote>> {
-  /// 講義のDeep Note一覧（topic_number昇順）
+    with $FutureModifier<List<DeepNote>>, $StreamProvider<List<DeepNote>> {
+  /// 講義のDeep Note一覧（topic_number昇順、ローカルDB経由でオフライン優先）
   DeepNotesProvider._({
     required DeepNotesFamily super.from,
     required String super.argument,
@@ -133,12 +133,12 @@ final class DeepNotesProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<DeepNote>> $createElement(
+  $StreamProviderElement<List<DeepNote>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<DeepNote>> create(Ref ref) {
+  Stream<List<DeepNote>> create(Ref ref) {
     final argument = this.argument as String;
     return deepNotes(ref, argument);
   }
@@ -154,12 +154,12 @@ final class DeepNotesProvider
   }
 }
 
-String _$deepNotesHash() => r'd1ef02fe0dad1b18043f4299e7a5350db63bcd83';
+String _$deepNotesHash() => r'0dcfe1befd577b036b328a0ba3e90f8513378624';
 
-/// 講義のDeep Note一覧（topic_number昇順）
+/// 講義のDeep Note一覧（topic_number昇順、ローカルDB経由でオフライン優先）
 
 final class DeepNotesFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<DeepNote>>, String> {
+    with $FunctionalFamilyOverride<Stream<List<DeepNote>>, String> {
   DeepNotesFamily._()
     : super(
         retry: null,
@@ -169,7 +169,7 @@ final class DeepNotesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 講義のDeep Note一覧（topic_number昇順）
+  /// 講義のDeep Note一覧（topic_number昇順、ローカルDB経由でオフライン優先）
 
   DeepNotesProvider call(String lectureId) =>
       DeepNotesProvider._(argument: lectureId, from: this);
@@ -178,22 +178,22 @@ final class DeepNotesFamily extends $Family
   String toString() => r'deepNotesProvider';
 }
 
-/// 講義のキーワード一覧
+/// 講義のキーワード一覧（ローカルDB経由でオフライン優先）
 
 @ProviderFor(lectureKeywords)
 final lectureKeywordsProvider = LectureKeywordsFamily._();
 
-/// 講義のキーワード一覧
+/// 講義のキーワード一覧（ローカルDB経由でオフライン優先）
 
 final class LectureKeywordsProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<Keyword>>,
           List<Keyword>,
-          FutureOr<List<Keyword>>
+          Stream<List<Keyword>>
         >
-    with $FutureModifier<List<Keyword>>, $FutureProvider<List<Keyword>> {
-  /// 講義のキーワード一覧
+    with $FutureModifier<List<Keyword>>, $StreamProvider<List<Keyword>> {
+  /// 講義のキーワード一覧（ローカルDB経由でオフライン優先）
   LectureKeywordsProvider._({
     required LectureKeywordsFamily super.from,
     required String super.argument,
@@ -217,12 +217,12 @@ final class LectureKeywordsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Keyword>> $createElement(
+  $StreamProviderElement<List<Keyword>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<Keyword>> create(Ref ref) {
+  Stream<List<Keyword>> create(Ref ref) {
     final argument = this.argument as String;
     return lectureKeywords(ref, argument);
   }
@@ -238,12 +238,12 @@ final class LectureKeywordsProvider
   }
 }
 
-String _$lectureKeywordsHash() => r'bc73a407549a49a5ce9e6ccd0019d2b80725b828';
+String _$lectureKeywordsHash() => r'ab1290bf9028bcf4058a3d1358f6c3909e188c03';
 
-/// 講義のキーワード一覧
+/// 講義のキーワード一覧（ローカルDB経由でオフライン優先）
 
 final class LectureKeywordsFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Keyword>>, String> {
+    with $FunctionalFamilyOverride<Stream<List<Keyword>>, String> {
   LectureKeywordsFamily._()
     : super(
         retry: null,
@@ -253,7 +253,7 @@ final class LectureKeywordsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 講義のキーワード一覧
+  /// 講義のキーワード一覧（ローカルDB経由でオフライン優先）
 
   LectureKeywordsProvider call(String lectureId) =>
       LectureKeywordsProvider._(argument: lectureId, from: this);
@@ -262,22 +262,22 @@ final class LectureKeywordsFamily extends $Family
   String toString() => r'lectureKeywordsProvider';
 }
 
-/// 講義のレビューカード一覧
+/// 講義のレビューカード一覧（ローカルDB経由でオフライン優先）
 
 @ProviderFor(reviewCards)
 final reviewCardsProvider = ReviewCardsFamily._();
 
-/// 講義のレビューカード一覧
+/// 講義のレビューカード一覧（ローカルDB経由でオフライン優先）
 
 final class ReviewCardsProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<ReviewCard>>,
           List<ReviewCard>,
-          FutureOr<List<ReviewCard>>
+          Stream<List<ReviewCard>>
         >
-    with $FutureModifier<List<ReviewCard>>, $FutureProvider<List<ReviewCard>> {
-  /// 講義のレビューカード一覧
+    with $FutureModifier<List<ReviewCard>>, $StreamProvider<List<ReviewCard>> {
+  /// 講義のレビューカード一覧（ローカルDB経由でオフライン優先）
   ReviewCardsProvider._({
     required ReviewCardsFamily super.from,
     required String super.argument,
@@ -301,12 +301,12 @@ final class ReviewCardsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<ReviewCard>> $createElement(
+  $StreamProviderElement<List<ReviewCard>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<ReviewCard>> create(Ref ref) {
+  Stream<List<ReviewCard>> create(Ref ref) {
     final argument = this.argument as String;
     return reviewCards(ref, argument);
   }
@@ -322,12 +322,12 @@ final class ReviewCardsProvider
   }
 }
 
-String _$reviewCardsHash() => r'e2e0fbe885428513653aa63a037143a03b41624d';
+String _$reviewCardsHash() => r'9294b8904f4149e4083fccf78a5ae32e4ecbbf85';
 
-/// 講義のレビューカード一覧
+/// 講義のレビューカード一覧（ローカルDB経由でオフライン優先）
 
 final class ReviewCardsFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<ReviewCard>>, String> {
+    with $FunctionalFamilyOverride<Stream<List<ReviewCard>>, String> {
   ReviewCardsFamily._()
     : super(
         retry: null,
@@ -337,7 +337,7 @@ final class ReviewCardsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 講義のレビューカード一覧
+  /// 講義のレビューカード一覧（ローカルDB経由でオフライン優先）
 
   ReviewCardsProvider call(String lectureId) =>
       ReviewCardsProvider._(argument: lectureId, from: this);
@@ -346,22 +346,22 @@ final class ReviewCardsFamily extends $Family
   String toString() => r'reviewCardsProvider';
 }
 
-/// 講義のFunFact一覧
+/// 講義のFunFact一覧(ローカルDB経由でオフライン優先)
 
 @ProviderFor(funFactsForLecture)
 final funFactsForLectureProvider = FunFactsForLectureFamily._();
 
-/// 講義のFunFact一覧
+/// 講義のFunFact一覧(ローカルDB経由でオフライン優先)
 
 final class FunFactsForLectureProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<FunFact>>,
           List<FunFact>,
-          FutureOr<List<FunFact>>
+          Stream<List<FunFact>>
         >
-    with $FutureModifier<List<FunFact>>, $FutureProvider<List<FunFact>> {
-  /// 講義のFunFact一覧
+    with $FutureModifier<List<FunFact>>, $StreamProvider<List<FunFact>> {
+  /// 講義のFunFact一覧(ローカルDB経由でオフライン優先)
   FunFactsForLectureProvider._({
     required FunFactsForLectureFamily super.from,
     required String super.argument,
@@ -385,12 +385,12 @@ final class FunFactsForLectureProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<FunFact>> $createElement(
+  $StreamProviderElement<List<FunFact>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<FunFact>> create(Ref ref) {
+  Stream<List<FunFact>> create(Ref ref) {
     final argument = this.argument as String;
     return funFactsForLecture(ref, argument);
   }
@@ -407,12 +407,12 @@ final class FunFactsForLectureProvider
 }
 
 String _$funFactsForLectureHash() =>
-    r'e9b9f9a9ca16da18876f1251edb297eb86a150d0';
+    r'6cf3b22cea80bef05ab9d7d443cf5ac036a7f288';
 
-/// 講義のFunFact一覧
+/// 講義のFunFact一覧(ローカルDB経由でオフライン優先)
 
 final class FunFactsForLectureFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<FunFact>>, String> {
+    with $FunctionalFamilyOverride<Stream<List<FunFact>>, String> {
   FunFactsForLectureFamily._()
     : super(
         retry: null,
@@ -422,7 +422,7 @@ final class FunFactsForLectureFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 講義のFunFact一覧
+  /// 講義のFunFact一覧(ローカルDB経由でオフライン優先)
 
   FunFactsForLectureProvider call(String lectureId) =>
       FunFactsForLectureProvider._(argument: lectureId, from: this);
@@ -432,21 +432,29 @@ final class FunFactsForLectureFamily extends $Family
 }
 
 /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+/// そのまま反映される。
 
-@ProviderFor(AnnouncementsForLecture)
+@ProviderFor(announcementsForLecture)
 final announcementsForLectureProvider = AnnouncementsForLectureFamily._();
 
 /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+/// そのまま反映される。
+
 final class AnnouncementsForLectureProvider
     extends
-        $AsyncNotifierProvider<AnnouncementsForLecture, List<Announcement>> {
+        $FunctionalProvider<
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          Stream<List<Announcement>>
+        >
+    with
+        $FutureModifier<List<Announcement>>,
+        $StreamProvider<List<Announcement>> {
   /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
-  /// AsyncNotifier として管理することで、Done/Undo 操作後も
-  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+  /// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+  /// そのまま反映される。
   AnnouncementsForLectureProvider._({
     required AnnouncementsForLectureFamily super.from,
     required String super.argument,
@@ -470,7 +478,15 @@ final class AnnouncementsForLectureProvider
 
   @$internal
   @override
-  AnnouncementsForLecture create() => AnnouncementsForLecture();
+  $StreamProviderElement<List<Announcement>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Announcement>> create(Ref ref) {
+    final argument = this.argument as String;
+    return announcementsForLecture(ref, argument);
+  }
 
   @override
   bool operator ==(Object other) {
@@ -485,21 +501,14 @@ final class AnnouncementsForLectureProvider
 }
 
 String _$announcementsForLectureHash() =>
-    r'ade9203750620a65c0d0751fbd0df4ff72852f0e';
+    r'871b43a04aee216e2e20d97dc6d5db16cd9c7dcd';
 
 /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+/// そのまま反映される。
 
 final class AnnouncementsForLectureFamily extends $Family
-    with
-        $ClassFamilyOverride<
-          AnnouncementsForLecture,
-          AsyncValue<List<Announcement>>,
-          List<Announcement>,
-          FutureOr<List<Announcement>>,
-          String
-        > {
+    with $FunctionalFamilyOverride<Stream<List<Announcement>>, String> {
   AnnouncementsForLectureFamily._()
     : super(
         retry: null,
@@ -510,39 +519,12 @@ final class AnnouncementsForLectureFamily extends $Family
       );
 
   /// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
-  /// AsyncNotifier として管理することで、Done/Undo 操作後も
-  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+  /// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+  /// そのまま反映される。
 
   AnnouncementsForLectureProvider call(String lectureId) =>
       AnnouncementsForLectureProvider._(argument: lectureId, from: this);
 
   @override
   String toString() => r'announcementsForLectureProvider';
-}
-
-/// 講義のアナウンスメント一覧（全件・completed_atを問わず）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
-
-abstract class _$AnnouncementsForLecture
-    extends $AsyncNotifier<List<Announcement>> {
-  late final _$args = ref.$arg as String;
-  String get lectureId => _$args;
-
-  FutureOr<List<Announcement>> build(String lectureId);
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final ref =
-        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
-              AsyncValue<List<Announcement>>,
-              Object?,
-              Object?
-            >;
-    element.handleCreate(ref, () => build(_$args));
-  }
 }

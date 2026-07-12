@@ -7,7 +7,7 @@ import 'package:lecture_companion_ui/core/utils/text_preview.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/fun_fact_repository_supabase.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class FunFactsCarousel extends ConsumerStatefulWidget {
@@ -228,13 +228,13 @@ class _FunFactCard extends ConsumerWidget {
                   _ReactionButton(
                     factId: fact.id,
                     reaction: 'like',
-                    currentReaction: fact.metadata?['reaction'] as String?,
+                    currentReaction: fact.reaction,
                   ),
                   const SizedBox(width: 8),
                   _ReactionButton(
                     factId: fact.id,
                     reaction: 'dislike',
-                    currentReaction: fact.metadata?['reaction'] as String?,
+                    currentReaction: fact.reaction,
                   ),
                 ],
               ),
@@ -278,9 +278,11 @@ class _ReactionButton extends ConsumerWidget {
       onPressed: () async {
         final newReaction = isActive ? null : reaction;
         try {
-          await ref.read(funFactRepositoryProvider).updateReaction(factId, newReaction);
-          // 状態をリフレッシュして再ロード
-          ref.invalidate(recentFunFactsProvider);
+          // ローカルDBを即時更新(楽観的UI)。Streamが自動的にUIへ反映するため
+          // invalidateは不要。Supabaseへの反映はバックグラウンドのOutbox経由。
+          await ref
+              .read(funFactRepositoryDriftProvider)
+              .updateReaction(id: factId, reaction: newReaction);
         } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(

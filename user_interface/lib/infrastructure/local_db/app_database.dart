@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,11 +19,22 @@ class LocalOutbox extends Table {
   // rename / favorite / delete / move / create 等
   TextColumn get op => text()();
 
-  // JSON文字列でpayload（DriftはTextでOK）
-  TextColumn get payloadJson => text()();
+  // 書き込み時点のスナップショットは持たない設計に変更(OutboxPushHandlerが
+  // push実行時に対応するLocal*テーブルの最新行から都度payloadを組み立てるため)。
+  // 過去互換のため列自体は残すが、新しい書き込み経路では使わない。
+  TextColumn get payloadJson => text().nullable()();
 
   // サーバ時刻ではなくローカルキュー順序用
   DateTimeColumn get enqueuedAt => dateTime().withDefault(currentDateAndTime)();
+
+  // リトライ管理(LocalUploadJobsと同じパターン)
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  DateTimeColumn get nextRetryAt => dateTime().nullable()();
+
+  // 最大リトライ回数を超えた行。削除はせず、自動リトライの対象から外すだけ
+  // (診断・手動リカバリのためデータは残す)。
+  BoolColumn get givenUp => boolean().withDefault(const Constant(false))();
 }
 
 class LocalLectures extends Table {
@@ -45,6 +57,13 @@ class LocalLectures extends Table {
 
   // Groq Whisper に渡すコンテキスト文字列（コースタイトル＋過去キーワード）
   TextColumn get whisperContext => text().nullable()();
+
+  // AI生成サマリー、マスター音声のR2 storage path、汎用メタデータ(jsonb)。
+  // 講義詳細ページのオフライン化のため追加(いずれもクライアントからは
+  // 編集しないので、Outbox送信側では扱わずPullでのみ更新する)。
+  TextColumn get summary => text().nullable()();
+  TextColumn get audioPath => text().nullable()();
+  TextColumn get metadataJson => text().nullable()();
 
   // local_only / synced / needs_sync
   TextColumn get syncStatus =>
@@ -173,8 +192,9 @@ class LocalAnnouncements extends Table {
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
   TextColumn get location => text().nullable()();
-  IntColumn get startSid => integer().nullable()();
-  IntColumn get endSid => integer().nullable()();
+  // SID(例: "S042")は文字列参照であり数値ではない。Supabase側も文字列。
+  TextColumn get startSid => text().nullable()();
+  TextColumn get endSid => text().nullable()();
   TextColumn get relatedTopicTitle => text().nullable()();
   TextColumn get datetimeParametersJson => text().nullable()();
 
@@ -193,7 +213,7 @@ class LocalAnnouncements extends Table {
   Set<Column> get primaryKey => {id, userId};
 }
 
-// ===== 読み取り専用キャッシュ(サーバー生成コンテンツ、ローカル編集なし) =====
+// ===== 読み取り専用キャッシュ(サーバー生成コンテンツ)、一部ローカル編集可 =====
 
 class LocalFunFacts extends Table {
   TextColumn get id => text()();
@@ -203,9 +223,18 @@ class LocalFunFacts extends Table {
   TextColumn get title => text().nullable()();
   TextColumn get hook => text()();
   TextColumn get body => text()();
+  // サーバーの`metadata`(jsonb)のキャッシュ。reactionは別カラムで管理するため
+  // ここには含まれない可能性がある(push時にreaction列の値をマージする)。
   TextColumn get metadataJson => text().nullable()();
 
+  // ユーザーがローカルで即時更新できる唯一のフィールド(Like/Dislike)。
+  // "like" / "dislike" / null
+  TextColumn get reaction => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
+  // Supabase側に自動更新トリガーが設定されたため、差分Pullの基準を
+  // created_atからこちらに統一した。
+  DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   // このローカル行をいつ取得したか(差分Pullの鮮度管理用)
@@ -230,6 +259,7 @@ class LocalReviewCards extends Table {
   TextColumn get heroEmoji => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   DateTimeColumn get lastSyncedAt =>
       dateTime().withDefault(currentDateAndTime)();
@@ -247,6 +277,7 @@ class LocalDeepNotes extends Table {
   TextColumn get noteContents => text()(); // Markdown文字列
 
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   DateTimeColumn get lastSyncedAt =>
       dateTime().withDefault(currentDateAndTime)();
@@ -284,8 +315,9 @@ class LocalLectureTopics extends Table {
   TextColumn get topicTitle => text()();
   TextColumn get topicType => text()();
   TextColumn get summary => text().nullable()();
-  IntColumn get startSid => integer().nullable()();
-  IntColumn get endSid => integer().nullable()();
+  // SID(例: "S042")は文字列参照であり数値ではない。Supabase側も文字列。
+  TextColumn get startSid => text().nullable()();
+  TextColumn get endSid => text().nullable()();
   // R2キャッシュ(r2_cache/)と連携するstorage path。実ファイル本体はここに持たない
   TextColumn get imagePath => text().nullable()();
 
@@ -371,7 +403,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -431,6 +463,42 @@ class AppDatabase extends _$AppDatabase {
         }
         await m.createAll();
       }
+      if (from < 9) {
+        // バージョン9: Outboxの汎用化。attemptCount/lastError/nextRetryAt/
+        // givenUpを追加し、payloadJsonをnullableに変更(push時に最新のローカル
+        // 行から再構築する自己修復設計に変更したため)。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 10) {
+        // バージョン10: FunFactのLike/Dislikeをローカルファースト化するため
+        // LocalFunFacts.reaction を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 11) {
+        // バージョン11: LocalAnnouncements/LocalLectureTopicsのstartSid/endSidが
+        // 誤ってIntColumnになっていたのをTextColumnに修正(SIDは"S042"のような
+        // 文字列参照でSupabase側もtext型)。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 12) {
+        // バージョン12: 講義詳細ページのオフライン化に向けてLocalLecturesに
+        // summary/audioPath/metadataJsonを追加。Supabase側にupdated_at自動更新
+        // トリガーが整備されたため、LocalFunFacts/LocalReviewCards/LocalDeepNotes
+        // にもupdatedAtを追加し、差分Pullをupdated_at基準に統一。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
     },
   );
 
@@ -459,19 +527,29 @@ class AppDatabase extends _$AppDatabase {
     return query.watch();
   }
 
+  /// 講義詳細ページ用。単一講義をIDで監視する(以前はSupabase Realtimeで
+  /// 直接ストリーミングしていたが、Realtimeが有効化されていなかったため
+  /// 実質更新を受け取れていなかった。ローカルDB経由でオフライン優先に統一する)。
+  Stream<LocalLecture?> watchLectureById(String lectureId) {
+    return (select(localLectures)..where((t) => t.id.equals(lectureId)))
+        .watchSingleOrNull();
+  }
+
   // --- Outbox ---
 
+  /// [payloadJson]は基本的に不要(OutboxPushHandlerがpush実行時に対応する
+  /// Local*テーブルの最新行から都度payloadを組み立てる)。指定しなくてよい。
   Future<void> enqueueOutbox({
     required String entityType,
     required String entityId,
     required String op,
-    required String payloadJson,
+    String? payloadJson,
   }) async {
     await into(localOutbox).insert(LocalOutboxCompanion.insert(
       entityType: entityType,
       entityId: entityId,
       op: op,
-      payloadJson: payloadJson,
+      payloadJson: Value(payloadJson),
     ));
   }
 
@@ -480,6 +558,56 @@ class AppDatabase extends _$AppDatabase {
           ..orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc)])
           ..limit(limit))
         .get();
+  }
+
+  /// 自動リトライ対象の行(ギブアップしておらず、バックオフ待ち時間を過ぎた)
+  /// を古い順に取得する。
+  Future<List<LocalOutboxData>> dequeuePendingOutbox({int limit = 50}) async {
+    final now = DateTime.now().toUtc();
+    return (select(localOutbox)
+          ..where((t) =>
+              t.givenUp.equals(false) &
+              (t.nextRetryAt.isNull() | t.nextRetryAt.isSmallerThanValue(now)))
+          ..orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc)])
+          ..limit(limit))
+        .get();
+  }
+
+  /// Outbox行のPush失敗を記録する。指数バックオフ(30秒→上限5分)で
+  /// [nextRetryAt]を設定し、[maxAttempts]を超えたら削除せず`givenUp`にする
+  /// (診断・手動リカバリのためデータは残す)。
+  Future<void> recordOutboxFailure(
+    int id,
+    String error, {
+    int maxAttempts = 10,
+  }) async {
+    final row = await (select(localOutbox)..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null) return;
+
+    final nextAttempt = row.attemptCount + 1;
+
+    if (nextAttempt >= maxAttempts) {
+      await (update(localOutbox)..where((t) => t.id.equals(id))).write(
+        LocalOutboxCompanion(
+          attemptCount: Value(nextAttempt),
+          lastError: Value(error),
+          givenUp: const Value(true),
+        ),
+      );
+      return;
+    }
+
+    const maxBackoffSeconds = 5 * 60;
+    final delaySeconds = min(30 * pow(2, nextAttempt - 1).toInt(), maxBackoffSeconds);
+    final nextRetryAt = DateTime.now().toUtc().add(Duration(seconds: delaySeconds));
+
+    await (update(localOutbox)..where((t) => t.id.equals(id))).write(
+      LocalOutboxCompanion(
+        attemptCount: Value(nextAttempt),
+        lastError: Value(error),
+        nextRetryAt: Value(nextRetryAt),
+      ),
+    );
   }
 
   Future<void> deleteOutboxIds(List<int> ids) async {
@@ -495,6 +623,23 @@ class AppDatabase extends _$AppDatabase {
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull());
     final list = await query.get();
     return list.length;
+  }
+
+  Future<int> getLocalFunFactsCount(String userId) async {
+    final query = select(localFunFacts)
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull());
+    final list = await query.get();
+    return list.length;
+  }
+
+  /// 指定entityTypeでギブアップしていないOutbox行のentityIdの集合を返す。
+  /// Pull処理が、まだPushできていないローカルの変更をサーバーの古い値で
+  /// 上書きしてしまわないようにするためのガード用。
+  Future<Set<String>> getPendingOutboxEntityIds(String entityType) async {
+    final rows = await (select(localOutbox)
+          ..where((t) => t.entityType.equals(entityType) & t.givenUp.equals(false)))
+        .get();
+    return rows.map((r) => r.entityId).toSet();
   }
 
   // --- Sync Cursors ---

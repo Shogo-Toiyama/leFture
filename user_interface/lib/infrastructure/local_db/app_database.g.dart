@@ -60,9 +60,9 @@ class $LocalOutboxTable extends LocalOutbox
   late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
     'payload_json',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _enqueuedAtMeta = const VerificationMeta(
     'enqueuedAt',
@@ -76,6 +76,55 @@ class $LocalOutboxTable extends LocalOutbox
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nextRetryAtMeta = const VerificationMeta(
+    'nextRetryAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextRetryAt = GeneratedColumn<DateTime>(
+    'next_retry_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _givenUpMeta = const VerificationMeta(
+    'givenUp',
+  );
+  @override
+  late final GeneratedColumn<bool> givenUp = GeneratedColumn<bool>(
+    'given_up',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("given_up" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -84,6 +133,10 @@ class $LocalOutboxTable extends LocalOutbox
     op,
     payloadJson,
     enqueuedAt,
+    attemptCount,
+    lastError,
+    nextRetryAt,
+    givenUp,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -129,13 +182,41 @@ class $LocalOutboxTable extends LocalOutbox
           _payloadJsonMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_payloadJsonMeta);
     }
     if (data.containsKey('enqueued_at')) {
       context.handle(
         _enqueuedAtMeta,
         enqueuedAt.isAcceptableOrUnknown(data['enqueued_at']!, _enqueuedAtMeta),
+      );
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('next_retry_at')) {
+      context.handle(
+        _nextRetryAtMeta,
+        nextRetryAt.isAcceptableOrUnknown(
+          data['next_retry_at']!,
+          _nextRetryAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('given_up')) {
+      context.handle(
+        _givenUpMeta,
+        givenUp.isAcceptableOrUnknown(data['given_up']!, _givenUpMeta),
       );
     }
     return context;
@@ -166,10 +247,26 @@ class $LocalOutboxTable extends LocalOutbox
       payloadJson: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}payload_json'],
-      )!,
+      ),
       enqueuedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}enqueued_at'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      nextRetryAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_retry_at'],
+      ),
+      givenUp: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}given_up'],
       )!,
     );
   }
@@ -185,15 +282,23 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
   final String entityType;
   final String entityId;
   final String op;
-  final String payloadJson;
+  final String? payloadJson;
   final DateTime enqueuedAt;
+  final int attemptCount;
+  final String? lastError;
+  final DateTime? nextRetryAt;
+  final bool givenUp;
   const LocalOutboxData({
     required this.id,
     required this.entityType,
     required this.entityId,
     required this.op,
-    required this.payloadJson,
+    this.payloadJson,
     required this.enqueuedAt,
+    required this.attemptCount,
+    this.lastError,
+    this.nextRetryAt,
+    required this.givenUp,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -202,8 +307,18 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
     map['entity_type'] = Variable<String>(entityType);
     map['entity_id'] = Variable<String>(entityId);
     map['op'] = Variable<String>(op);
-    map['payload_json'] = Variable<String>(payloadJson);
+    if (!nullToAbsent || payloadJson != null) {
+      map['payload_json'] = Variable<String>(payloadJson);
+    }
     map['enqueued_at'] = Variable<DateTime>(enqueuedAt);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || nextRetryAt != null) {
+      map['next_retry_at'] = Variable<DateTime>(nextRetryAt);
+    }
+    map['given_up'] = Variable<bool>(givenUp);
     return map;
   }
 
@@ -213,8 +328,18 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
       entityType: Value(entityType),
       entityId: Value(entityId),
       op: Value(op),
-      payloadJson: Value(payloadJson),
+      payloadJson: payloadJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(payloadJson),
       enqueuedAt: Value(enqueuedAt),
+      attemptCount: Value(attemptCount),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      nextRetryAt: nextRetryAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextRetryAt),
+      givenUp: Value(givenUp),
     );
   }
 
@@ -228,8 +353,12 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
       entityType: serializer.fromJson<String>(json['entityType']),
       entityId: serializer.fromJson<String>(json['entityId']),
       op: serializer.fromJson<String>(json['op']),
-      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      payloadJson: serializer.fromJson<String?>(json['payloadJson']),
       enqueuedAt: serializer.fromJson<DateTime>(json['enqueuedAt']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      nextRetryAt: serializer.fromJson<DateTime?>(json['nextRetryAt']),
+      givenUp: serializer.fromJson<bool>(json['givenUp']),
     );
   }
   @override
@@ -240,8 +369,12 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
       'entityType': serializer.toJson<String>(entityType),
       'entityId': serializer.toJson<String>(entityId),
       'op': serializer.toJson<String>(op),
-      'payloadJson': serializer.toJson<String>(payloadJson),
+      'payloadJson': serializer.toJson<String?>(payloadJson),
       'enqueuedAt': serializer.toJson<DateTime>(enqueuedAt),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'lastError': serializer.toJson<String?>(lastError),
+      'nextRetryAt': serializer.toJson<DateTime?>(nextRetryAt),
+      'givenUp': serializer.toJson<bool>(givenUp),
     };
   }
 
@@ -250,15 +383,23 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
     String? entityType,
     String? entityId,
     String? op,
-    String? payloadJson,
+    Value<String?> payloadJson = const Value.absent(),
     DateTime? enqueuedAt,
+    int? attemptCount,
+    Value<String?> lastError = const Value.absent(),
+    Value<DateTime?> nextRetryAt = const Value.absent(),
+    bool? givenUp,
   }) => LocalOutboxData(
     id: id ?? this.id,
     entityType: entityType ?? this.entityType,
     entityId: entityId ?? this.entityId,
     op: op ?? this.op,
-    payloadJson: payloadJson ?? this.payloadJson,
+    payloadJson: payloadJson.present ? payloadJson.value : this.payloadJson,
     enqueuedAt: enqueuedAt ?? this.enqueuedAt,
+    attemptCount: attemptCount ?? this.attemptCount,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    nextRetryAt: nextRetryAt.present ? nextRetryAt.value : this.nextRetryAt,
+    givenUp: givenUp ?? this.givenUp,
   );
   LocalOutboxData copyWithCompanion(LocalOutboxCompanion data) {
     return LocalOutboxData(
@@ -274,6 +415,14 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
       enqueuedAt: data.enqueuedAt.present
           ? data.enqueuedAt.value
           : this.enqueuedAt,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      nextRetryAt: data.nextRetryAt.present
+          ? data.nextRetryAt.value
+          : this.nextRetryAt,
+      givenUp: data.givenUp.present ? data.givenUp.value : this.givenUp,
     );
   }
 
@@ -285,14 +434,28 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
           ..write('entityId: $entityId, ')
           ..write('op: $op, ')
           ..write('payloadJson: $payloadJson, ')
-          ..write('enqueuedAt: $enqueuedAt')
+          ..write('enqueuedAt: $enqueuedAt, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('nextRetryAt: $nextRetryAt, ')
+          ..write('givenUp: $givenUp')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, entityType, entityId, op, payloadJson, enqueuedAt);
+  int get hashCode => Object.hash(
+    id,
+    entityType,
+    entityId,
+    op,
+    payloadJson,
+    enqueuedAt,
+    attemptCount,
+    lastError,
+    nextRetryAt,
+    givenUp,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -302,7 +465,11 @@ class LocalOutboxData extends DataClass implements Insertable<LocalOutboxData> {
           other.entityId == this.entityId &&
           other.op == this.op &&
           other.payloadJson == this.payloadJson &&
-          other.enqueuedAt == this.enqueuedAt);
+          other.enqueuedAt == this.enqueuedAt &&
+          other.attemptCount == this.attemptCount &&
+          other.lastError == this.lastError &&
+          other.nextRetryAt == this.nextRetryAt &&
+          other.givenUp == this.givenUp);
 }
 
 class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
@@ -310,8 +477,12 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
   final Value<String> entityType;
   final Value<String> entityId;
   final Value<String> op;
-  final Value<String> payloadJson;
+  final Value<String?> payloadJson;
   final Value<DateTime> enqueuedAt;
+  final Value<int> attemptCount;
+  final Value<String?> lastError;
+  final Value<DateTime?> nextRetryAt;
+  final Value<bool> givenUp;
   const LocalOutboxCompanion({
     this.id = const Value.absent(),
     this.entityType = const Value.absent(),
@@ -319,18 +490,25 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
     this.op = const Value.absent(),
     this.payloadJson = const Value.absent(),
     this.enqueuedAt = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.nextRetryAt = const Value.absent(),
+    this.givenUp = const Value.absent(),
   });
   LocalOutboxCompanion.insert({
     this.id = const Value.absent(),
     required String entityType,
     required String entityId,
     required String op,
-    required String payloadJson,
+    this.payloadJson = const Value.absent(),
     this.enqueuedAt = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.nextRetryAt = const Value.absent(),
+    this.givenUp = const Value.absent(),
   }) : entityType = Value(entityType),
        entityId = Value(entityId),
-       op = Value(op),
-       payloadJson = Value(payloadJson);
+       op = Value(op);
   static Insertable<LocalOutboxData> custom({
     Expression<int>? id,
     Expression<String>? entityType,
@@ -338,6 +516,10 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
     Expression<String>? op,
     Expression<String>? payloadJson,
     Expression<DateTime>? enqueuedAt,
+    Expression<int>? attemptCount,
+    Expression<String>? lastError,
+    Expression<DateTime>? nextRetryAt,
+    Expression<bool>? givenUp,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -346,6 +528,10 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
       if (op != null) 'op': op,
       if (payloadJson != null) 'payload_json': payloadJson,
       if (enqueuedAt != null) 'enqueued_at': enqueuedAt,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (lastError != null) 'last_error': lastError,
+      if (nextRetryAt != null) 'next_retry_at': nextRetryAt,
+      if (givenUp != null) 'given_up': givenUp,
     });
   }
 
@@ -354,8 +540,12 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
     Value<String>? entityType,
     Value<String>? entityId,
     Value<String>? op,
-    Value<String>? payloadJson,
+    Value<String?>? payloadJson,
     Value<DateTime>? enqueuedAt,
+    Value<int>? attemptCount,
+    Value<String?>? lastError,
+    Value<DateTime?>? nextRetryAt,
+    Value<bool>? givenUp,
   }) {
     return LocalOutboxCompanion(
       id: id ?? this.id,
@@ -364,6 +554,10 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
       op: op ?? this.op,
       payloadJson: payloadJson ?? this.payloadJson,
       enqueuedAt: enqueuedAt ?? this.enqueuedAt,
+      attemptCount: attemptCount ?? this.attemptCount,
+      lastError: lastError ?? this.lastError,
+      nextRetryAt: nextRetryAt ?? this.nextRetryAt,
+      givenUp: givenUp ?? this.givenUp,
     );
   }
 
@@ -388,6 +582,18 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
     if (enqueuedAt.present) {
       map['enqueued_at'] = Variable<DateTime>(enqueuedAt.value);
     }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (nextRetryAt.present) {
+      map['next_retry_at'] = Variable<DateTime>(nextRetryAt.value);
+    }
+    if (givenUp.present) {
+      map['given_up'] = Variable<bool>(givenUp.value);
+    }
     return map;
   }
 
@@ -399,7 +605,11 @@ class LocalOutboxCompanion extends UpdateCompanion<LocalOutboxData> {
           ..write('entityId: $entityId, ')
           ..write('op: $op, ')
           ..write('payloadJson: $payloadJson, ')
-          ..write('enqueuedAt: $enqueuedAt')
+          ..write('enqueuedAt: $enqueuedAt, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('nextRetryAt: $nextRetryAt, ')
+          ..write('givenUp: $givenUp')
           ..write(')'))
         .toString();
   }
@@ -540,6 +750,39 @@ class $LocalLecturesTable extends LocalLectures
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _summaryMeta = const VerificationMeta(
+    'summary',
+  );
+  @override
+  late final GeneratedColumn<String> summary = GeneratedColumn<String>(
+    'summary',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audioPathMeta = const VerificationMeta(
+    'audioPath',
+  );
+  @override
+  late final GeneratedColumn<String> audioPath = GeneratedColumn<String>(
+    'audio_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metadataJsonMeta = const VerificationMeta(
+    'metadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+    'metadata_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -593,6 +836,9 @@ class $LocalLecturesTable extends LocalLectures
     updatedAt,
     deletedAt,
     whisperContext,
+    summary,
+    audioPath,
+    metadataJson,
     syncStatus,
     lastAccessedAt,
     isPinned,
@@ -694,6 +940,27 @@ class $LocalLecturesTable extends LocalLectures
         ),
       );
     }
+    if (data.containsKey('summary')) {
+      context.handle(
+        _summaryMeta,
+        summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
+      );
+    }
+    if (data.containsKey('audio_path')) {
+      context.handle(
+        _audioPathMeta,
+        audioPath.isAcceptableOrUnknown(data['audio_path']!, _audioPathMeta),
+      );
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+        _metadataJsonMeta,
+        metadataJson.isAcceptableOrUnknown(
+          data['metadata_json']!,
+          _metadataJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -772,6 +1039,18 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}whisper_context'],
       ),
+      summary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary'],
+      ),
+      audioPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}audio_path'],
+      ),
+      metadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata_json'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -806,6 +1085,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final DateTime updatedAt;
   final DateTime? deletedAt;
   final String? whisperContext;
+  final String? summary;
+  final String? audioPath;
+  final String? metadataJson;
   final String syncStatus;
   final DateTime? lastAccessedAt;
   final bool isPinned;
@@ -822,6 +1104,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     required this.updatedAt,
     this.deletedAt,
     this.whisperContext,
+    this.summary,
+    this.audioPath,
+    this.metadataJson,
     required this.syncStatus,
     this.lastAccessedAt,
     required this.isPinned,
@@ -856,6 +1141,15 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     }
     if (!nullToAbsent || whisperContext != null) {
       map['whisper_context'] = Variable<String>(whisperContext);
+    }
+    if (!nullToAbsent || summary != null) {
+      map['summary'] = Variable<String>(summary);
+    }
+    if (!nullToAbsent || audioPath != null) {
+      map['audio_path'] = Variable<String>(audioPath);
+    }
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || lastAccessedAt != null) {
@@ -895,6 +1189,15 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       whisperContext: whisperContext == null && nullToAbsent
           ? const Value.absent()
           : Value(whisperContext),
+      summary: summary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(summary),
+      audioPath: audioPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioPath),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
       syncStatus: Value(syncStatus),
       lastAccessedAt: lastAccessedAt == null && nullToAbsent
           ? const Value.absent()
@@ -921,6 +1224,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       whisperContext: serializer.fromJson<String?>(json['whisperContext']),
+      summary: serializer.fromJson<String?>(json['summary']),
+      audioPath: serializer.fromJson<String?>(json['audioPath']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastAccessedAt: serializer.fromJson<DateTime?>(json['lastAccessedAt']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
@@ -942,6 +1248,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'whisperContext': serializer.toJson<String?>(whisperContext),
+      'summary': serializer.toJson<String?>(summary),
+      'audioPath': serializer.toJson<String?>(audioPath),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastAccessedAt': serializer.toJson<DateTime?>(lastAccessedAt),
       'isPinned': serializer.toJson<bool>(isPinned),
@@ -961,6 +1270,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
     Value<String?> whisperContext = const Value.absent(),
+    Value<String?> summary = const Value.absent(),
+    Value<String?> audioPath = const Value.absent(),
+    Value<String?> metadataJson = const Value.absent(),
     String? syncStatus,
     Value<DateTime?> lastAccessedAt = const Value.absent(),
     bool? isPinned,
@@ -985,6 +1297,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     whisperContext: whisperContext.present
         ? whisperContext.value
         : this.whisperContext,
+    summary: summary.present ? summary.value : this.summary,
+    audioPath: audioPath.present ? audioPath.value : this.audioPath,
+    metadataJson: metadataJson.present ? metadataJson.value : this.metadataJson,
     syncStatus: syncStatus ?? this.syncStatus,
     lastAccessedAt: lastAccessedAt.present
         ? lastAccessedAt.value
@@ -1013,6 +1328,11 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       whisperContext: data.whisperContext.present
           ? data.whisperContext.value
           : this.whisperContext,
+      summary: data.summary.present ? data.summary.value : this.summary,
+      audioPath: data.audioPath.present ? data.audioPath.value : this.audioPath,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -1038,6 +1358,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('whisperContext: $whisperContext, ')
+          ..write('summary: $summary, ')
+          ..write('audioPath: $audioPath, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastAccessedAt: $lastAccessedAt, ')
           ..write('isPinned: $isPinned')
@@ -1059,6 +1382,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     updatedAt,
     deletedAt,
     whisperContext,
+    summary,
+    audioPath,
+    metadataJson,
     syncStatus,
     lastAccessedAt,
     isPinned,
@@ -1079,6 +1405,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.whisperContext == this.whisperContext &&
+          other.summary == this.summary &&
+          other.audioPath == this.audioPath &&
+          other.metadataJson == this.metadataJson &&
           other.syncStatus == this.syncStatus &&
           other.lastAccessedAt == this.lastAccessedAt &&
           other.isPinned == this.isPinned);
@@ -1097,6 +1426,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
   final Value<String?> whisperContext;
+  final Value<String?> summary;
+  final Value<String?> audioPath;
+  final Value<String?> metadataJson;
   final Value<String> syncStatus;
   final Value<DateTime?> lastAccessedAt;
   final Value<bool> isPinned;
@@ -1114,6 +1446,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.whisperContext = const Value.absent(),
+    this.summary = const Value.absent(),
+    this.audioPath = const Value.absent(),
+    this.metadataJson = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastAccessedAt = const Value.absent(),
     this.isPinned = const Value.absent(),
@@ -1132,6 +1467,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.whisperContext = const Value.absent(),
+    this.summary = const Value.absent(),
+    this.audioPath = const Value.absent(),
+    this.metadataJson = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastAccessedAt = const Value.absent(),
     this.isPinned = const Value.absent(),
@@ -1151,6 +1489,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
     Expression<String>? whisperContext,
+    Expression<String>? summary,
+    Expression<String>? audioPath,
+    Expression<String>? metadataJson,
     Expression<String>? syncStatus,
     Expression<DateTime>? lastAccessedAt,
     Expression<bool>? isPinned,
@@ -1169,6 +1510,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (whisperContext != null) 'whisper_context': whisperContext,
+      if (summary != null) 'summary': summary,
+      if (audioPath != null) 'audio_path': audioPath,
+      if (metadataJson != null) 'metadata_json': metadataJson,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastAccessedAt != null) 'last_accessed_at': lastAccessedAt,
       if (isPinned != null) 'is_pinned': isPinned,
@@ -1189,6 +1533,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
     Value<String?>? whisperContext,
+    Value<String?>? summary,
+    Value<String?>? audioPath,
+    Value<String?>? metadataJson,
     Value<String>? syncStatus,
     Value<DateTime?>? lastAccessedAt,
     Value<bool>? isPinned,
@@ -1207,6 +1554,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       whisperContext: whisperContext ?? this.whisperContext,
+      summary: summary ?? this.summary,
+      audioPath: audioPath ?? this.audioPath,
+      metadataJson: metadataJson ?? this.metadataJson,
       syncStatus: syncStatus ?? this.syncStatus,
       lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
       isPinned: isPinned ?? this.isPinned,
@@ -1253,6 +1603,15 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (whisperContext.present) {
       map['whisper_context'] = Variable<String>(whisperContext.value);
     }
+    if (summary.present) {
+      map['summary'] = Variable<String>(summary.value);
+    }
+    if (audioPath.present) {
+      map['audio_path'] = Variable<String>(audioPath.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -1283,6 +1642,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('whisperContext: $whisperContext, ')
+          ..write('summary: $summary, ')
+          ..write('audioPath: $audioPath, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastAccessedAt: $lastAccessedAt, ')
           ..write('isPinned: $isPinned, ')
@@ -4330,20 +4692,20 @@ class $LocalAnnouncementsTable extends LocalAnnouncements
     'startSid',
   );
   @override
-  late final GeneratedColumn<int> startSid = GeneratedColumn<int>(
+  late final GeneratedColumn<String> startSid = GeneratedColumn<String>(
     'start_sid',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _endSidMeta = const VerificationMeta('endSid');
   @override
-  late final GeneratedColumn<int> endSid = GeneratedColumn<int>(
+  late final GeneratedColumn<String> endSid = GeneratedColumn<String>(
     'end_sid',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _relatedTopicTitleMeta = const VerificationMeta(
@@ -4632,11 +4994,11 @@ class $LocalAnnouncementsTable extends LocalAnnouncements
         data['${effectivePrefix}location'],
       ),
       startSid: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}start_sid'],
       ),
       endSid: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}end_sid'],
       ),
       relatedTopicTitle: attachedDatabase.typeMapping.read(
@@ -4689,8 +5051,8 @@ class LocalAnnouncement extends DataClass
   final String title;
   final String? description;
   final String? location;
-  final int? startSid;
-  final int? endSid;
+  final String? startSid;
+  final String? endSid;
   final String? relatedTopicTitle;
   final String? datetimeParametersJson;
   final DateTime? completedAt;
@@ -4733,10 +5095,10 @@ class LocalAnnouncement extends DataClass
       map['location'] = Variable<String>(location);
     }
     if (!nullToAbsent || startSid != null) {
-      map['start_sid'] = Variable<int>(startSid);
+      map['start_sid'] = Variable<String>(startSid);
     }
     if (!nullToAbsent || endSid != null) {
-      map['end_sid'] = Variable<int>(endSid);
+      map['end_sid'] = Variable<String>(endSid);
     }
     if (!nullToAbsent || relatedTopicTitle != null) {
       map['related_topic_title'] = Variable<String>(relatedTopicTitle);
@@ -4814,8 +5176,8 @@ class LocalAnnouncement extends DataClass
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
       location: serializer.fromJson<String?>(json['location']),
-      startSid: serializer.fromJson<int?>(json['startSid']),
-      endSid: serializer.fromJson<int?>(json['endSid']),
+      startSid: serializer.fromJson<String?>(json['startSid']),
+      endSid: serializer.fromJson<String?>(json['endSid']),
       relatedTopicTitle: serializer.fromJson<String?>(
         json['relatedTopicTitle'],
       ),
@@ -4841,8 +5203,8 @@ class LocalAnnouncement extends DataClass
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
       'location': serializer.toJson<String?>(location),
-      'startSid': serializer.toJson<int?>(startSid),
-      'endSid': serializer.toJson<int?>(endSid),
+      'startSid': serializer.toJson<String?>(startSid),
+      'endSid': serializer.toJson<String?>(endSid),
       'relatedTopicTitle': serializer.toJson<String?>(relatedTopicTitle),
       'datetimeParametersJson': serializer.toJson<String?>(
         datetimeParametersJson,
@@ -4864,8 +5226,8 @@ class LocalAnnouncement extends DataClass
     String? title,
     Value<String?> description = const Value.absent(),
     Value<String?> location = const Value.absent(),
-    Value<int?> startSid = const Value.absent(),
-    Value<int?> endSid = const Value.absent(),
+    Value<String?> startSid = const Value.absent(),
+    Value<String?> endSid = const Value.absent(),
     Value<String?> relatedTopicTitle = const Value.absent(),
     Value<String?> datetimeParametersJson = const Value.absent(),
     Value<DateTime?> completedAt = const Value.absent(),
@@ -5006,8 +5368,8 @@ class LocalAnnouncementsCompanion extends UpdateCompanion<LocalAnnouncement> {
   final Value<String> title;
   final Value<String?> description;
   final Value<String?> location;
-  final Value<int?> startSid;
-  final Value<int?> endSid;
+  final Value<String?> startSid;
+  final Value<String?> endSid;
   final Value<String?> relatedTopicTitle;
   final Value<String?> datetimeParametersJson;
   final Value<DateTime?> completedAt;
@@ -5069,8 +5431,8 @@ class LocalAnnouncementsCompanion extends UpdateCompanion<LocalAnnouncement> {
     Expression<String>? title,
     Expression<String>? description,
     Expression<String>? location,
-    Expression<int>? startSid,
-    Expression<int>? endSid,
+    Expression<String>? startSid,
+    Expression<String>? endSid,
     Expression<String>? relatedTopicTitle,
     Expression<String>? datetimeParametersJson,
     Expression<DateTime>? completedAt,
@@ -5112,8 +5474,8 @@ class LocalAnnouncementsCompanion extends UpdateCompanion<LocalAnnouncement> {
     Value<String>? title,
     Value<String?>? description,
     Value<String?>? location,
-    Value<int?>? startSid,
-    Value<int?>? endSid,
+    Value<String?>? startSid,
+    Value<String?>? endSid,
     Value<String?>? relatedTopicTitle,
     Value<String?>? datetimeParametersJson,
     Value<DateTime?>? completedAt,
@@ -5172,10 +5534,10 @@ class LocalAnnouncementsCompanion extends UpdateCompanion<LocalAnnouncement> {
       map['location'] = Variable<String>(location.value);
     }
     if (startSid.present) {
-      map['start_sid'] = Variable<int>(startSid.value);
+      map['start_sid'] = Variable<String>(startSid.value);
     }
     if (endSid.present) {
-      map['end_sid'] = Variable<int>(endSid.value);
+      map['end_sid'] = Variable<String>(endSid.value);
     }
     if (relatedTopicTitle.present) {
       map['related_topic_title'] = Variable<String>(relatedTopicTitle.value);
@@ -5308,12 +5670,34 @@ class $LocalFunFactsTable extends LocalFunFacts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _reactionMeta = const VerificationMeta(
+    'reaction',
+  );
+  @override
+  late final GeneratedColumn<String> reaction = GeneratedColumn<String>(
+    'reaction',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
     'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
     aliasedName,
     false,
     type: DriftSqlType.dateTime,
@@ -5351,7 +5735,9 @@ class $LocalFunFactsTable extends LocalFunFacts
     hook,
     body,
     metadataJson,
+    reaction,
     createdAt,
+    updatedAt,
     deletedAt,
     lastSyncedAt,
   ];
@@ -5419,6 +5805,12 @@ class $LocalFunFactsTable extends LocalFunFacts
         ),
       );
     }
+    if (data.containsKey('reaction')) {
+      context.handle(
+        _reactionMeta,
+        reaction.isAcceptableOrUnknown(data['reaction']!, _reactionMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -5426,6 +5818,14 @@ class $LocalFunFactsTable extends LocalFunFacts
       );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted_at')) {
       context.handle(
@@ -5479,9 +5879,17 @@ class $LocalFunFactsTable extends LocalFunFacts
         DriftSqlType.string,
         data['${effectivePrefix}metadata_json'],
       ),
+      reaction: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reaction'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
       )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -5508,7 +5916,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
   final String hook;
   final String body;
   final String? metadataJson;
+  final String? reaction;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final DateTime? deletedAt;
   final DateTime lastSyncedAt;
   const LocalFunFact({
@@ -5519,7 +5929,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
     required this.hook,
     required this.body,
     this.metadataJson,
+    this.reaction,
     required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
     required this.lastSyncedAt,
   });
@@ -5537,7 +5949,11 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
     if (!nullToAbsent || metadataJson != null) {
       map['metadata_json'] = Variable<String>(metadataJson);
     }
+    if (!nullToAbsent || reaction != null) {
+      map['reaction'] = Variable<String>(reaction);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -5558,7 +5974,11 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
       metadataJson: metadataJson == null && nullToAbsent
           ? const Value.absent()
           : Value(metadataJson),
+      reaction: reaction == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reaction),
       createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -5579,7 +5999,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
       hook: serializer.fromJson<String>(json['hook']),
       body: serializer.fromJson<String>(json['body']),
       metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      reaction: serializer.fromJson<String?>(json['reaction']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       lastSyncedAt: serializer.fromJson<DateTime>(json['lastSyncedAt']),
     );
@@ -5595,7 +6017,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
       'hook': serializer.toJson<String>(hook),
       'body': serializer.toJson<String>(body),
       'metadataJson': serializer.toJson<String?>(metadataJson),
+      'reaction': serializer.toJson<String?>(reaction),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'lastSyncedAt': serializer.toJson<DateTime>(lastSyncedAt),
     };
@@ -5609,7 +6033,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
     String? hook,
     String? body,
     Value<String?> metadataJson = const Value.absent(),
+    Value<String?> reaction = const Value.absent(),
     DateTime? createdAt,
+    DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
     DateTime? lastSyncedAt,
   }) => LocalFunFact(
@@ -5620,7 +6046,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
     hook: hook ?? this.hook,
     body: body ?? this.body,
     metadataJson: metadataJson.present ? metadataJson.value : this.metadataJson,
+    reaction: reaction.present ? reaction.value : this.reaction,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
   );
@@ -5635,7 +6063,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
       metadataJson: data.metadataJson.present
           ? data.metadataJson.value
           : this.metadataJson,
+      reaction: data.reaction.present ? data.reaction.value : this.reaction,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
@@ -5653,7 +6083,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
           ..write('hook: $hook, ')
           ..write('body: $body, ')
           ..write('metadataJson: $metadataJson, ')
+          ..write('reaction: $reaction, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
@@ -5669,7 +6101,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
     hook,
     body,
     metadataJson,
+    reaction,
     createdAt,
+    updatedAt,
     deletedAt,
     lastSyncedAt,
   );
@@ -5684,7 +6118,9 @@ class LocalFunFact extends DataClass implements Insertable<LocalFunFact> {
           other.hook == this.hook &&
           other.body == this.body &&
           other.metadataJson == this.metadataJson &&
+          other.reaction == this.reaction &&
           other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.lastSyncedAt == this.lastSyncedAt);
 }
@@ -5697,7 +6133,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
   final Value<String> hook;
   final Value<String> body;
   final Value<String?> metadataJson;
+  final Value<String?> reaction;
   final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
   final Value<DateTime> lastSyncedAt;
   final Value<int> rowid;
@@ -5709,7 +6147,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
     this.hook = const Value.absent(),
     this.body = const Value.absent(),
     this.metadataJson = const Value.absent(),
+    this.reaction = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5722,7 +6162,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
     required String hook,
     required String body,
     this.metadataJson = const Value.absent(),
+    this.reaction = const Value.absent(),
     required DateTime createdAt,
+    required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5731,7 +6173,8 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
        lectureId = Value(lectureId),
        hook = Value(hook),
        body = Value(body),
-       createdAt = Value(createdAt);
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<LocalFunFact> custom({
     Expression<String>? id,
     Expression<String>? userId,
@@ -5740,7 +6183,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
     Expression<String>? hook,
     Expression<String>? body,
     Expression<String>? metadataJson,
+    Expression<String>? reaction,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
     Expression<DateTime>? lastSyncedAt,
     Expression<int>? rowid,
@@ -5753,7 +6198,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
       if (hook != null) 'hook': hook,
       if (body != null) 'body': body,
       if (metadataJson != null) 'metadata_json': metadataJson,
+      if (reaction != null) 'reaction': reaction,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -5768,7 +6215,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
     Value<String>? hook,
     Value<String>? body,
     Value<String?>? metadataJson,
+    Value<String?>? reaction,
     Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
     Value<DateTime>? lastSyncedAt,
     Value<int>? rowid,
@@ -5781,7 +6230,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
       hook: hook ?? this.hook,
       body: body ?? this.body,
       metadataJson: metadataJson ?? this.metadataJson,
+      reaction: reaction ?? this.reaction,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       rowid: rowid ?? this.rowid,
@@ -5812,8 +6263,14 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
     if (metadataJson.present) {
       map['metadata_json'] = Variable<String>(metadataJson.value);
     }
+    if (reaction.present) {
+      map['reaction'] = Variable<String>(reaction.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
@@ -5837,7 +6294,9 @@ class LocalFunFactsCompanion extends UpdateCompanion<LocalFunFact> {
           ..write('hook: $hook, ')
           ..write('body: $body, ')
           ..write('metadataJson: $metadataJson, ')
+          ..write('reaction: $reaction, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
           ..write('rowid: $rowid')
@@ -5945,6 +6404,17 @@ class $LocalReviewCardsTable extends LocalReviewCards
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -5979,6 +6449,7 @@ class $LocalReviewCardsTable extends LocalReviewCards
     title,
     heroEmoji,
     createdAt,
+    updatedAt,
     deletedAt,
     lastSyncedAt,
   ];
@@ -6065,6 +6536,14 @@ class $LocalReviewCardsTable extends LocalReviewCards
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -6125,6 +6604,10 @@ class $LocalReviewCardsTable extends LocalReviewCards
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -6152,6 +6635,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
   final String? title;
   final String? heroEmoji;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final DateTime? deletedAt;
   final DateTime lastSyncedAt;
   const LocalReviewCard({
@@ -6164,6 +6648,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     this.title,
     this.heroEmoji,
     required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
     required this.lastSyncedAt,
   });
@@ -6183,6 +6668,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       map['hero_emoji'] = Variable<String>(heroEmoji);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -6205,6 +6691,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
           ? const Value.absent()
           : Value(heroEmoji),
       createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -6227,6 +6714,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       title: serializer.fromJson<String?>(json['title']),
       heroEmoji: serializer.fromJson<String?>(json['heroEmoji']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       lastSyncedAt: serializer.fromJson<DateTime>(json['lastSyncedAt']),
     );
@@ -6244,6 +6732,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       'title': serializer.toJson<String?>(title),
       'heroEmoji': serializer.toJson<String?>(heroEmoji),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'lastSyncedAt': serializer.toJson<DateTime>(lastSyncedAt),
     };
@@ -6259,6 +6748,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     Value<String?> title = const Value.absent(),
     Value<String?> heroEmoji = const Value.absent(),
     DateTime? createdAt,
+    DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
     DateTime? lastSyncedAt,
   }) => LocalReviewCard(
@@ -6271,6 +6761,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     title: title.present ? title.value : this.title,
     heroEmoji: heroEmoji.present ? heroEmoji.value : this.heroEmoji,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
   );
@@ -6289,6 +6780,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       title: data.title.present ? data.title.value : this.title,
       heroEmoji: data.heroEmoji.present ? data.heroEmoji.value : this.heroEmoji,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
@@ -6308,6 +6800,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
           ..write('title: $title, ')
           ..write('heroEmoji: $heroEmoji, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
@@ -6325,6 +6818,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     title,
     heroEmoji,
     createdAt,
+    updatedAt,
     deletedAt,
     lastSyncedAt,
   );
@@ -6341,6 +6835,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
           other.title == this.title &&
           other.heroEmoji == this.heroEmoji &&
           other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.lastSyncedAt == this.lastSyncedAt);
 }
@@ -6355,6 +6850,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
   final Value<String?> title;
   final Value<String?> heroEmoji;
   final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
   final Value<DateTime> lastSyncedAt;
   final Value<int> rowid;
@@ -6368,6 +6864,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     this.title = const Value.absent(),
     this.heroEmoji = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6382,6 +6879,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     this.title = const Value.absent(),
     this.heroEmoji = const Value.absent(),
     required DateTime createdAt,
+    required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6391,7 +6889,8 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
        topicNumber = Value(topicNumber),
        cardContentJson = Value(cardContentJson),
        cardType = Value(cardType),
-       createdAt = Value(createdAt);
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<LocalReviewCard> custom({
     Expression<String>? id,
     Expression<String>? userId,
@@ -6402,6 +6901,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     Expression<String>? title,
     Expression<String>? heroEmoji,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
     Expression<DateTime>? lastSyncedAt,
     Expression<int>? rowid,
@@ -6416,6 +6916,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
       if (title != null) 'title': title,
       if (heroEmoji != null) 'hero_emoji': heroEmoji,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -6432,6 +6933,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     Value<String?>? title,
     Value<String?>? heroEmoji,
     Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
     Value<DateTime>? lastSyncedAt,
     Value<int>? rowid,
@@ -6446,6 +6948,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
       title: title ?? this.title,
       heroEmoji: heroEmoji ?? this.heroEmoji,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       rowid: rowid ?? this.rowid,
@@ -6482,6 +6985,9 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -6506,6 +7012,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
           ..write('title: $title, ')
           ..write('heroEmoji: $heroEmoji, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
           ..write('rowid: $rowid')
@@ -6582,6 +7089,17 @@ class $LocalDeepNotesTable extends LocalDeepNotes
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -6613,6 +7131,7 @@ class $LocalDeepNotesTable extends LocalDeepNotes
     topicNumber,
     noteContents,
     createdAt,
+    updatedAt,
     deletedAt,
     lastSyncedAt,
   ];
@@ -6679,6 +7198,14 @@ class $LocalDeepNotesTable extends LocalDeepNotes
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -6727,6 +7254,10 @@ class $LocalDeepNotesTable extends LocalDeepNotes
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -6751,6 +7282,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
   final int topicNumber;
   final String noteContents;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final DateTime? deletedAt;
   final DateTime lastSyncedAt;
   const LocalDeepNote({
@@ -6760,6 +7292,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     required this.topicNumber,
     required this.noteContents,
     required this.createdAt,
+    required this.updatedAt,
     this.deletedAt,
     required this.lastSyncedAt,
   });
@@ -6772,6 +7305,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     map['topic_number'] = Variable<int>(topicNumber);
     map['note_contents'] = Variable<String>(noteContents);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -6787,6 +7321,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       topicNumber: Value(topicNumber),
       noteContents: Value(noteContents),
       createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -6806,6 +7341,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       topicNumber: serializer.fromJson<int>(json['topicNumber']),
       noteContents: serializer.fromJson<String>(json['noteContents']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       lastSyncedAt: serializer.fromJson<DateTime>(json['lastSyncedAt']),
     );
@@ -6820,6 +7356,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       'topicNumber': serializer.toJson<int>(topicNumber),
       'noteContents': serializer.toJson<String>(noteContents),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'lastSyncedAt': serializer.toJson<DateTime>(lastSyncedAt),
     };
@@ -6832,6 +7369,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     int? topicNumber,
     String? noteContents,
     DateTime? createdAt,
+    DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
     DateTime? lastSyncedAt,
   }) => LocalDeepNote(
@@ -6841,6 +7379,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     topicNumber: topicNumber ?? this.topicNumber,
     noteContents: noteContents ?? this.noteContents,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
   );
@@ -6856,6 +7395,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
           ? data.noteContents.value
           : this.noteContents,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
@@ -6872,6 +7412,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
           ..write('topicNumber: $topicNumber, ')
           ..write('noteContents: $noteContents, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
@@ -6886,6 +7427,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     topicNumber,
     noteContents,
     createdAt,
+    updatedAt,
     deletedAt,
     lastSyncedAt,
   );
@@ -6899,6 +7441,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
           other.topicNumber == this.topicNumber &&
           other.noteContents == this.noteContents &&
           other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.lastSyncedAt == this.lastSyncedAt);
 }
@@ -6910,6 +7453,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
   final Value<int> topicNumber;
   final Value<String> noteContents;
   final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
   final Value<DateTime> lastSyncedAt;
   final Value<int> rowid;
@@ -6920,6 +7464,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     this.topicNumber = const Value.absent(),
     this.noteContents = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6931,6 +7476,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     required int topicNumber,
     required String noteContents,
     required DateTime createdAt,
+    required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6939,7 +7485,8 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
        lectureId = Value(lectureId),
        topicNumber = Value(topicNumber),
        noteContents = Value(noteContents),
-       createdAt = Value(createdAt);
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<LocalDeepNote> custom({
     Expression<String>? id,
     Expression<String>? userId,
@@ -6947,6 +7494,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     Expression<int>? topicNumber,
     Expression<String>? noteContents,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
     Expression<DateTime>? lastSyncedAt,
     Expression<int>? rowid,
@@ -6958,6 +7506,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
       if (topicNumber != null) 'topic_number': topicNumber,
       if (noteContents != null) 'note_contents': noteContents,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -6971,6 +7520,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     Value<int>? topicNumber,
     Value<String>? noteContents,
     Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
     Value<DateTime>? lastSyncedAt,
     Value<int>? rowid,
@@ -6982,6 +7532,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
       topicNumber: topicNumber ?? this.topicNumber,
       noteContents: noteContents ?? this.noteContents,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       rowid: rowid ?? this.rowid,
@@ -7009,6 +7560,9 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -7030,6 +7584,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
           ..write('topicNumber: $topicNumber, ')
           ..write('noteContents: $noteContents, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
           ..write('rowid: $rowid')
@@ -7738,20 +8293,20 @@ class $LocalLectureTopicsTable extends LocalLectureTopics
     'startSid',
   );
   @override
-  late final GeneratedColumn<int> startSid = GeneratedColumn<int>(
+  late final GeneratedColumn<String> startSid = GeneratedColumn<String>(
     'start_sid',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _endSidMeta = const VerificationMeta('endSid');
   @override
-  late final GeneratedColumn<int> endSid = GeneratedColumn<int>(
+  late final GeneratedColumn<String> endSid = GeneratedColumn<String>(
     'end_sid',
     aliasedName,
     true,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _imagePathMeta = const VerificationMeta(
@@ -7977,11 +8532,11 @@ class $LocalLectureTopicsTable extends LocalLectureTopics
         data['${effectivePrefix}summary'],
       ),
       startSid: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}start_sid'],
       ),
       endSid: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}end_sid'],
       ),
       imagePath: attachedDatabase.typeMapping.read(
@@ -8022,8 +8577,8 @@ class LocalLectureTopic extends DataClass
   final String topicTitle;
   final String topicType;
   final String? summary;
-  final int? startSid;
-  final int? endSid;
+  final String? startSid;
+  final String? endSid;
   final String? imagePath;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -8058,10 +8613,10 @@ class LocalLectureTopic extends DataClass
       map['summary'] = Variable<String>(summary);
     }
     if (!nullToAbsent || startSid != null) {
-      map['start_sid'] = Variable<int>(startSid);
+      map['start_sid'] = Variable<String>(startSid);
     }
     if (!nullToAbsent || endSid != null) {
-      map['end_sid'] = Variable<int>(endSid);
+      map['end_sid'] = Variable<String>(endSid);
     }
     if (!nullToAbsent || imagePath != null) {
       map['image_path'] = Variable<String>(imagePath);
@@ -8117,8 +8672,8 @@ class LocalLectureTopic extends DataClass
       topicTitle: serializer.fromJson<String>(json['topicTitle']),
       topicType: serializer.fromJson<String>(json['topicType']),
       summary: serializer.fromJson<String?>(json['summary']),
-      startSid: serializer.fromJson<int?>(json['startSid']),
-      endSid: serializer.fromJson<int?>(json['endSid']),
+      startSid: serializer.fromJson<String?>(json['startSid']),
+      endSid: serializer.fromJson<String?>(json['endSid']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -8137,8 +8692,8 @@ class LocalLectureTopic extends DataClass
       'topicTitle': serializer.toJson<String>(topicTitle),
       'topicType': serializer.toJson<String>(topicType),
       'summary': serializer.toJson<String?>(summary),
-      'startSid': serializer.toJson<int?>(startSid),
-      'endSid': serializer.toJson<int?>(endSid),
+      'startSid': serializer.toJson<String?>(startSid),
+      'endSid': serializer.toJson<String?>(endSid),
       'imagePath': serializer.toJson<String?>(imagePath),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -8155,8 +8710,8 @@ class LocalLectureTopic extends DataClass
     String? topicTitle,
     String? topicType,
     Value<String?> summary = const Value.absent(),
-    Value<int?> startSid = const Value.absent(),
-    Value<int?> endSid = const Value.absent(),
+    Value<String?> startSid = const Value.absent(),
+    Value<String?> endSid = const Value.absent(),
     Value<String?> imagePath = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -8269,8 +8824,8 @@ class LocalLectureTopicsCompanion extends UpdateCompanion<LocalLectureTopic> {
   final Value<String> topicTitle;
   final Value<String> topicType;
   final Value<String?> summary;
-  final Value<int?> startSid;
-  final Value<int?> endSid;
+  final Value<String?> startSid;
+  final Value<String?> endSid;
   final Value<String?> imagePath;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -8326,8 +8881,8 @@ class LocalLectureTopicsCompanion extends UpdateCompanion<LocalLectureTopic> {
     Expression<String>? topicTitle,
     Expression<String>? topicType,
     Expression<String>? summary,
-    Expression<int>? startSid,
-    Expression<int>? endSid,
+    Expression<String>? startSid,
+    Expression<String>? endSid,
     Expression<String>? imagePath,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -8362,8 +8917,8 @@ class LocalLectureTopicsCompanion extends UpdateCompanion<LocalLectureTopic> {
     Value<String>? topicTitle,
     Value<String>? topicType,
     Value<String?>? summary,
-    Value<int?>? startSid,
-    Value<int?>? endSid,
+    Value<String?>? startSid,
+    Value<String?>? endSid,
     Value<String?>? imagePath,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -8415,10 +8970,10 @@ class LocalLectureTopicsCompanion extends UpdateCompanion<LocalLectureTopic> {
       map['summary'] = Variable<String>(summary.value);
     }
     if (startSid.present) {
-      map['start_sid'] = Variable<int>(startSid.value);
+      map['start_sid'] = Variable<String>(startSid.value);
     }
     if (endSid.present) {
-      map['end_sid'] = Variable<int>(endSid.value);
+      map['end_sid'] = Variable<String>(endSid.value);
     }
     if (imagePath.present) {
       map['image_path'] = Variable<String>(imagePath.value);
@@ -9640,8 +10195,12 @@ typedef $$LocalOutboxTableCreateCompanionBuilder =
       required String entityType,
       required String entityId,
       required String op,
-      required String payloadJson,
+      Value<String?> payloadJson,
       Value<DateTime> enqueuedAt,
+      Value<int> attemptCount,
+      Value<String?> lastError,
+      Value<DateTime?> nextRetryAt,
+      Value<bool> givenUp,
     });
 typedef $$LocalOutboxTableUpdateCompanionBuilder =
     LocalOutboxCompanion Function({
@@ -9649,8 +10208,12 @@ typedef $$LocalOutboxTableUpdateCompanionBuilder =
       Value<String> entityType,
       Value<String> entityId,
       Value<String> op,
-      Value<String> payloadJson,
+      Value<String?> payloadJson,
       Value<DateTime> enqueuedAt,
+      Value<int> attemptCount,
+      Value<String?> lastError,
+      Value<DateTime?> nextRetryAt,
+      Value<bool> givenUp,
     });
 
 class $$LocalOutboxTableFilterComposer
@@ -9689,6 +10252,26 @@ class $$LocalOutboxTableFilterComposer
 
   ColumnFilters<DateTime> get enqueuedAt => $composableBuilder(
     column: $table.enqueuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextRetryAt => $composableBuilder(
+    column: $table.nextRetryAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get givenUp => $composableBuilder(
+    column: $table.givenUp,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9731,6 +10314,26 @@ class $$LocalOutboxTableOrderingComposer
     column: $table.enqueuedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextRetryAt => $composableBuilder(
+    column: $table.nextRetryAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get givenUp => $composableBuilder(
+    column: $table.givenUp,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalOutboxTableAnnotationComposer
@@ -9765,6 +10368,22 @@ class $$LocalOutboxTableAnnotationComposer
     column: $table.enqueuedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get nextRetryAt => $composableBuilder(
+    column: $table.nextRetryAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get givenUp =>
+      $composableBuilder(column: $table.givenUp, builder: (column) => column);
 }
 
 class $$LocalOutboxTableTableManager
@@ -9802,8 +10421,12 @@ class $$LocalOutboxTableTableManager
                 Value<String> entityType = const Value.absent(),
                 Value<String> entityId = const Value.absent(),
                 Value<String> op = const Value.absent(),
-                Value<String> payloadJson = const Value.absent(),
+                Value<String?> payloadJson = const Value.absent(),
                 Value<DateTime> enqueuedAt = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> nextRetryAt = const Value.absent(),
+                Value<bool> givenUp = const Value.absent(),
               }) => LocalOutboxCompanion(
                 id: id,
                 entityType: entityType,
@@ -9811,6 +10434,10 @@ class $$LocalOutboxTableTableManager
                 op: op,
                 payloadJson: payloadJson,
                 enqueuedAt: enqueuedAt,
+                attemptCount: attemptCount,
+                lastError: lastError,
+                nextRetryAt: nextRetryAt,
+                givenUp: givenUp,
               ),
           createCompanionCallback:
               ({
@@ -9818,8 +10445,12 @@ class $$LocalOutboxTableTableManager
                 required String entityType,
                 required String entityId,
                 required String op,
-                required String payloadJson,
+                Value<String?> payloadJson = const Value.absent(),
                 Value<DateTime> enqueuedAt = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> nextRetryAt = const Value.absent(),
+                Value<bool> givenUp = const Value.absent(),
               }) => LocalOutboxCompanion.insert(
                 id: id,
                 entityType: entityType,
@@ -9827,6 +10458,10 @@ class $$LocalOutboxTableTableManager
                 op: op,
                 payloadJson: payloadJson,
                 enqueuedAt: enqueuedAt,
+                attemptCount: attemptCount,
+                lastError: lastError,
+                nextRetryAt: nextRetryAt,
+                givenUp: givenUp,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -9867,6 +10502,9 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
       Value<String?> whisperContext,
+      Value<String?> summary,
+      Value<String?> audioPath,
+      Value<String?> metadataJson,
       Value<String> syncStatus,
       Value<DateTime?> lastAccessedAt,
       Value<bool> isPinned,
@@ -9886,6 +10524,9 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
       Value<String?> whisperContext,
+      Value<String?> summary,
+      Value<String?> audioPath,
+      Value<String?> metadataJson,
       Value<String> syncStatus,
       Value<DateTime?> lastAccessedAt,
       Value<bool> isPinned,
@@ -9958,6 +10599,21 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<String> get whisperContext => $composableBuilder(
     column: $table.whisperContext,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get audioPath => $composableBuilder(
+    column: $table.audioPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10046,6 +10702,21 @@ class $$LocalLecturesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get audioPath => $composableBuilder(
+    column: $table.audioPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -10115,6 +10786,17 @@ class $$LocalLecturesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get summary =>
+      $composableBuilder(column: $table.summary, builder: (column) => column);
+
+  GeneratedColumn<String> get audioPath =>
+      $composableBuilder(column: $table.audioPath, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => column,
@@ -10172,6 +10854,9 @@ class $$LocalLecturesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<String?> whisperContext = const Value.absent(),
+                Value<String?> summary = const Value.absent(),
+                Value<String?> audioPath = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastAccessedAt = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
@@ -10189,6 +10874,9 @@ class $$LocalLecturesTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 whisperContext: whisperContext,
+                summary: summary,
+                audioPath: audioPath,
+                metadataJson: metadataJson,
                 syncStatus: syncStatus,
                 lastAccessedAt: lastAccessedAt,
                 isPinned: isPinned,
@@ -10208,6 +10896,9 @@ class $$LocalLecturesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<String?> whisperContext = const Value.absent(),
+                Value<String?> summary = const Value.absent(),
+                Value<String?> audioPath = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastAccessedAt = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
@@ -10225,6 +10916,9 @@ class $$LocalLecturesTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 whisperContext: whisperContext,
+                summary: summary,
+                audioPath: audioPath,
+                metadataJson: metadataJson,
                 syncStatus: syncStatus,
                 lastAccessedAt: lastAccessedAt,
                 isPinned: isPinned,
@@ -11706,8 +12400,8 @@ typedef $$LocalAnnouncementsTableCreateCompanionBuilder =
       required String title,
       Value<String?> description,
       Value<String?> location,
-      Value<int?> startSid,
-      Value<int?> endSid,
+      Value<String?> startSid,
+      Value<String?> endSid,
       Value<String?> relatedTopicTitle,
       Value<String?> datetimeParametersJson,
       Value<DateTime?> completedAt,
@@ -11727,8 +12421,8 @@ typedef $$LocalAnnouncementsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String?> description,
       Value<String?> location,
-      Value<int?> startSid,
-      Value<int?> endSid,
+      Value<String?> startSid,
+      Value<String?> endSid,
       Value<String?> relatedTopicTitle,
       Value<String?> datetimeParametersJson,
       Value<DateTime?> completedAt,
@@ -11784,12 +12478,12 @@ class $$LocalAnnouncementsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get startSid => $composableBuilder(
+  ColumnFilters<String> get startSid => $composableBuilder(
     column: $table.startSid,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get endSid => $composableBuilder(
+  ColumnFilters<String> get endSid => $composableBuilder(
     column: $table.endSid,
     builder: (column) => ColumnFilters(column),
   );
@@ -11879,12 +12573,12 @@ class $$LocalAnnouncementsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get startSid => $composableBuilder(
+  ColumnOrderings<String> get startSid => $composableBuilder(
     column: $table.startSid,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get endSid => $composableBuilder(
+  ColumnOrderings<String> get endSid => $composableBuilder(
     column: $table.endSid,
     builder: (column) => ColumnOrderings(column),
   );
@@ -11962,10 +12656,10 @@ class $$LocalAnnouncementsTableAnnotationComposer
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
 
-  GeneratedColumn<int> get startSid =>
+  GeneratedColumn<String> get startSid =>
       $composableBuilder(column: $table.startSid, builder: (column) => column);
 
-  GeneratedColumn<int> get endSid =>
+  GeneratedColumn<String> get endSid =>
       $composableBuilder(column: $table.endSid, builder: (column) => column);
 
   GeneratedColumn<String> get relatedTopicTitle => $composableBuilder(
@@ -12050,8 +12744,8 @@ class $$LocalAnnouncementsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String?> location = const Value.absent(),
-                Value<int?> startSid = const Value.absent(),
-                Value<int?> endSid = const Value.absent(),
+                Value<String?> startSid = const Value.absent(),
+                Value<String?> endSid = const Value.absent(),
                 Value<String?> relatedTopicTitle = const Value.absent(),
                 Value<String?> datetimeParametersJson = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -12090,8 +12784,8 @@ class $$LocalAnnouncementsTableTableManager
                 required String title,
                 Value<String?> description = const Value.absent(),
                 Value<String?> location = const Value.absent(),
-                Value<int?> startSid = const Value.absent(),
-                Value<int?> endSid = const Value.absent(),
+                Value<String?> startSid = const Value.absent(),
+                Value<String?> endSid = const Value.absent(),
                 Value<String?> relatedTopicTitle = const Value.absent(),
                 Value<String?> datetimeParametersJson = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
@@ -12159,7 +12853,9 @@ typedef $$LocalFunFactsTableCreateCompanionBuilder =
       required String hook,
       required String body,
       Value<String?> metadataJson,
+      Value<String?> reaction,
       required DateTime createdAt,
+      required DateTime updatedAt,
       Value<DateTime?> deletedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -12173,7 +12869,9 @@ typedef $$LocalFunFactsTableUpdateCompanionBuilder =
       Value<String> hook,
       Value<String> body,
       Value<String?> metadataJson,
+      Value<String?> reaction,
       Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -12223,8 +12921,18 @@ class $$LocalFunFactsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get reaction => $composableBuilder(
+    column: $table.reaction,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12283,8 +12991,18 @@ class $$LocalFunFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get reaction => $composableBuilder(
+    column: $table.reaction,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12331,8 +13049,14 @@ class $$LocalFunFactsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get reaction =>
+      $composableBuilder(column: $table.reaction, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
@@ -12381,7 +13105,9 @@ class $$LocalFunFactsTableTableManager
                 Value<String> hook = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<String?> metadataJson = const Value.absent(),
+                Value<String?> reaction = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12393,7 +13119,9 @@ class $$LocalFunFactsTableTableManager
                 hook: hook,
                 body: body,
                 metadataJson: metadataJson,
+                reaction: reaction,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -12407,7 +13135,9 @@ class $$LocalFunFactsTableTableManager
                 required String hook,
                 required String body,
                 Value<String?> metadataJson = const Value.absent(),
+                Value<String?> reaction = const Value.absent(),
                 required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12419,7 +13149,9 @@ class $$LocalFunFactsTableTableManager
                 hook: hook,
                 body: body,
                 metadataJson: metadataJson,
+                reaction: reaction,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -12460,6 +13192,7 @@ typedef $$LocalReviewCardsTableCreateCompanionBuilder =
       Value<String?> title,
       Value<String?> heroEmoji,
       required DateTime createdAt,
+      required DateTime updatedAt,
       Value<DateTime?> deletedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -12475,6 +13208,7 @@ typedef $$LocalReviewCardsTableUpdateCompanionBuilder =
       Value<String?> title,
       Value<String?> heroEmoji,
       Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -12531,6 +13265,11 @@ class $$LocalReviewCardsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12599,6 +13338,11 @@ class $$LocalReviewCardsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
@@ -12649,6 +13393,9 @@ class $$LocalReviewCardsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
@@ -12705,6 +13452,7 @@ class $$LocalReviewCardsTableTableManager
                 Value<String?> title = const Value.absent(),
                 Value<String?> heroEmoji = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12718,6 +13466,7 @@ class $$LocalReviewCardsTableTableManager
                 title: title,
                 heroEmoji: heroEmoji,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -12733,6 +13482,7 @@ class $$LocalReviewCardsTableTableManager
                 Value<String?> title = const Value.absent(),
                 Value<String?> heroEmoji = const Value.absent(),
                 required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12746,6 +13496,7 @@ class $$LocalReviewCardsTableTableManager
                 title: title,
                 heroEmoji: heroEmoji,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -12783,6 +13534,7 @@ typedef $$LocalDeepNotesTableCreateCompanionBuilder =
       required int topicNumber,
       required String noteContents,
       required DateTime createdAt,
+      required DateTime updatedAt,
       Value<DateTime?> deletedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -12795,6 +13547,7 @@ typedef $$LocalDeepNotesTableUpdateCompanionBuilder =
       Value<int> topicNumber,
       Value<String> noteContents,
       Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -12836,6 +13589,11 @@ class $$LocalDeepNotesTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12889,6 +13647,11 @@ class $$LocalDeepNotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
@@ -12930,6 +13693,9 @@ class $$LocalDeepNotesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
@@ -12979,6 +13745,7 @@ class $$LocalDeepNotesTableTableManager
                 Value<int> topicNumber = const Value.absent(),
                 Value<String> noteContents = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12989,6 +13756,7 @@ class $$LocalDeepNotesTableTableManager
                 topicNumber: topicNumber,
                 noteContents: noteContents,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -13001,6 +13769,7 @@ class $$LocalDeepNotesTableTableManager
                 required int topicNumber,
                 required String noteContents,
                 required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -13011,6 +13780,7 @@ class $$LocalDeepNotesTableTableManager
                 topicNumber: topicNumber,
                 noteContents: noteContents,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -13350,8 +14120,8 @@ typedef $$LocalLectureTopicsTableCreateCompanionBuilder =
       required String topicTitle,
       required String topicType,
       Value<String?> summary,
-      Value<int?> startSid,
-      Value<int?> endSid,
+      Value<String?> startSid,
+      Value<String?> endSid,
       Value<String?> imagePath,
       required DateTime createdAt,
       required DateTime updatedAt,
@@ -13368,8 +14138,8 @@ typedef $$LocalLectureTopicsTableUpdateCompanionBuilder =
       Value<String> topicTitle,
       Value<String> topicType,
       Value<String?> summary,
-      Value<int?> startSid,
-      Value<int?> endSid,
+      Value<String?> startSid,
+      Value<String?> endSid,
       Value<String?> imagePath,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -13422,12 +14192,12 @@ class $$LocalLectureTopicsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get startSid => $composableBuilder(
+  ColumnFilters<String> get startSid => $composableBuilder(
     column: $table.startSid,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get endSid => $composableBuilder(
+  ColumnFilters<String> get endSid => $composableBuilder(
     column: $table.endSid,
     builder: (column) => ColumnFilters(column),
   );
@@ -13502,12 +14272,12 @@ class $$LocalLectureTopicsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get startSid => $composableBuilder(
+  ColumnOrderings<String> get startSid => $composableBuilder(
     column: $table.startSid,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get endSid => $composableBuilder(
+  ColumnOrderings<String> get endSid => $composableBuilder(
     column: $table.endSid,
     builder: (column) => ColumnOrderings(column),
   );
@@ -13572,10 +14342,10 @@ class $$LocalLectureTopicsTableAnnotationComposer
   GeneratedColumn<String> get summary =>
       $composableBuilder(column: $table.summary, builder: (column) => column);
 
-  GeneratedColumn<int> get startSid =>
+  GeneratedColumn<String> get startSid =>
       $composableBuilder(column: $table.startSid, builder: (column) => column);
 
-  GeneratedColumn<int> get endSid =>
+  GeneratedColumn<String> get endSid =>
       $composableBuilder(column: $table.endSid, builder: (column) => column);
 
   GeneratedColumn<String> get imagePath =>
@@ -13643,8 +14413,8 @@ class $$LocalLectureTopicsTableTableManager
                 Value<String> topicTitle = const Value.absent(),
                 Value<String> topicType = const Value.absent(),
                 Value<String?> summary = const Value.absent(),
-                Value<int?> startSid = const Value.absent(),
-                Value<int?> endSid = const Value.absent(),
+                Value<String?> startSid = const Value.absent(),
+                Value<String?> endSid = const Value.absent(),
                 Value<String?> imagePath = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -13677,8 +14447,8 @@ class $$LocalLectureTopicsTableTableManager
                 required String topicTitle,
                 required String topicType,
                 Value<String?> summary = const Value.absent(),
-                Value<int?> startSid = const Value.absent(),
-                Value<int?> endSid = const Value.absent(),
+                Value<String?> startSid = const Value.absent(),
+                Value<String?> endSid = const Value.absent(),
                 Value<String?> imagePath = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,

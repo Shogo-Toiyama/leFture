@@ -8,22 +8,22 @@ part of 'fun_fact_list_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 最新のFunFact一覧（最大5件）
+/// 最新のFunFact一覧（最大5件、ローカルDB経由でオフライン優先)
 
 @ProviderFor(recentFunFacts)
 final recentFunFactsProvider = RecentFunFactsProvider._();
 
-/// 最新のFunFact一覧（最大5件）
+/// 最新のFunFact一覧（最大5件、ローカルDB経由でオフライン優先)
 
 final class RecentFunFactsProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<FunFact>>,
           List<FunFact>,
-          FutureOr<List<FunFact>>
+          Stream<List<FunFact>>
         >
-    with $FutureModifier<List<FunFact>>, $FutureProvider<List<FunFact>> {
-  /// 最新のFunFact一覧（最大5件）
+    with $FutureModifier<List<FunFact>>, $StreamProvider<List<FunFact>> {
+  /// 最新のFunFact一覧（最大5件、ローカルDB経由でオフライン優先)
   RecentFunFactsProvider._()
     : super(
         from: null,
@@ -40,14 +40,14 @@ final class RecentFunFactsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<FunFact>> $createElement(
+  $StreamProviderElement<List<FunFact>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<FunFact>> create(Ref ref) {
+  Stream<List<FunFact>> create(Ref ref) {
     return recentFunFacts(ref);
   }
 }
 
-String _$recentFunFactsHash() => r'4923dfc9f25e67afe03220da1f714803a77e8280';
+String _$recentFunFactsHash() => r'cfde53d87c594e891153f61e37291565aa889d64';

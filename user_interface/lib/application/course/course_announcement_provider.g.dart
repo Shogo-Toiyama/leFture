@@ -8,23 +8,26 @@ part of 'course_announcement_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
+/// ローカルDB経由でオフライン優先。
 
 @ProviderFor(latestAnnouncementForCourse)
 final latestAnnouncementForCourseProvider =
     LatestAnnouncementForCourseFamily._();
 
-/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
+/// ローカルDB経由でオフライン優先。
 
 final class LatestAnnouncementForCourseProvider
     extends
         $FunctionalProvider<
           AsyncValue<Announcement?>,
           Announcement?,
-          FutureOr<Announcement?>
+          Stream<Announcement?>
         >
-    with $FutureModifier<Announcement?>, $FutureProvider<Announcement?> {
-  /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+    with $FutureModifier<Announcement?>, $StreamProvider<Announcement?> {
+  /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
+  /// ローカルDB経由でオフライン優先。
   LatestAnnouncementForCourseProvider._({
     required LatestAnnouncementForCourseFamily super.from,
     required String super.argument,
@@ -48,12 +51,12 @@ final class LatestAnnouncementForCourseProvider
 
   @$internal
   @override
-  $FutureProviderElement<Announcement?> $createElement(
+  $StreamProviderElement<Announcement?> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<Announcement?> create(Ref ref) {
+  Stream<Announcement?> create(Ref ref) {
     final argument = this.argument as String;
     return latestAnnouncementForCourse(ref, argument);
   }
@@ -71,12 +74,13 @@ final class LatestAnnouncementForCourseProvider
 }
 
 String _$latestAnnouncementForCourseHash() =>
-    r'16430eafe18535239da7b500c9041ebdd7523b1d';
+    r'26e48612b633de618911cf51f5da335745571baa';
 
-/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+/// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
+/// ローカルDB経由でオフライン優先。
 
 final class LatestAnnouncementForCourseFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<Announcement?>, String> {
+    with $FunctionalFamilyOverride<Stream<Announcement?>, String> {
   LatestAnnouncementForCourseFamily._()
     : super(
         retry: null,
@@ -86,7 +90,8 @@ final class LatestAnnouncementForCourseFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント
+  /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
+  /// ローカルDB経由でオフライン優先。
 
   LatestAnnouncementForCourseProvider call(String courseId) =>
       LatestAnnouncementForCourseProvider._(argument: courseId, from: this);
@@ -96,25 +101,30 @@ final class LatestAnnouncementForCourseFamily extends $Family
 }
 
 /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+/// そのまま反映される。
 
-@ProviderFor(ActiveAnnouncementsForCourse)
+@ProviderFor(activeAnnouncementsForCourse)
 final activeAnnouncementsForCourseProvider =
     ActiveAnnouncementsForCourseFamily._();
 
 /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+/// そのまま反映される。
+
 final class ActiveAnnouncementsForCourseProvider
     extends
-        $AsyncNotifierProvider<
-          ActiveAnnouncementsForCourse,
-          List<Announcement>
-        > {
+        $FunctionalProvider<
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          Stream<List<Announcement>>
+        >
+    with
+        $FutureModifier<List<Announcement>>,
+        $StreamProvider<List<Announcement>> {
   /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-  /// AsyncNotifier として管理することで、Done/Undo 操作後も
-  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+  /// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+  /// そのまま反映される。
   ActiveAnnouncementsForCourseProvider._({
     required ActiveAnnouncementsForCourseFamily super.from,
     required String super.argument,
@@ -138,7 +148,15 @@ final class ActiveAnnouncementsForCourseProvider
 
   @$internal
   @override
-  ActiveAnnouncementsForCourse create() => ActiveAnnouncementsForCourse();
+  $StreamProviderElement<List<Announcement>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Announcement>> create(Ref ref) {
+    final argument = this.argument as String;
+    return activeAnnouncementsForCourse(ref, argument);
+  }
 
   @override
   bool operator ==(Object other) {
@@ -153,21 +171,14 @@ final class ActiveAnnouncementsForCourseProvider
 }
 
 String _$activeAnnouncementsForCourseHash() =>
-    r'ffc18afb975a497e64916c95215f6aa07540dd2b';
+    r'555b08f2f6d589d291e61ce3e4640fdd466e1d99';
 
 /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+/// そのまま反映される。
 
 final class ActiveAnnouncementsForCourseFamily extends $Family
-    with
-        $ClassFamilyOverride<
-          ActiveAnnouncementsForCourse,
-          AsyncValue<List<Announcement>>,
-          List<Announcement>,
-          FutureOr<List<Announcement>>,
-          String
-        > {
+    with $FunctionalFamilyOverride<Stream<List<Announcement>>, String> {
   ActiveAnnouncementsForCourseFamily._()
     : super(
         retry: null,
@@ -178,39 +189,12 @@ final class ActiveAnnouncementsForCourseFamily extends $Family
       );
 
   /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-  /// AsyncNotifier として管理することで、Done/Undo 操作後も
-  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+  /// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
+  /// そのまま反映される。
 
   ActiveAnnouncementsForCourseProvider call(String courseId) =>
       ActiveAnnouncementsForCourseProvider._(argument: courseId, from: this);
 
   @override
   String toString() => r'activeAnnouncementsForCourseProvider';
-}
-
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
-
-abstract class _$ActiveAnnouncementsForCourse
-    extends $AsyncNotifier<List<Announcement>> {
-  late final _$args = ref.$arg as String;
-  String get courseId => _$args;
-
-  FutureOr<List<Announcement>> build(String courseId);
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final ref =
-        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
-              AsyncValue<List<Announcement>>,
-              Object?,
-              Object?
-            >;
-    element.handleCreate(ref, () => build(_$args));
-  }
 }

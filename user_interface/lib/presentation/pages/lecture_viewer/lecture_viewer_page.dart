@@ -17,8 +17,12 @@ import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.d
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/fun_fact_repository_supabase.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
+
 
 class LectureViewerPage extends HookConsumerWidget {
   const LectureViewerPage({
@@ -87,13 +91,35 @@ class LectureViewerPage extends HookConsumerWidget {
           );
         }
 
-        return Scaffold(
-          backgroundColor: AppColors.universe.voidBackground,
-          body: _buildViewerBody(
-            context: context,
-            ref: ref,
-            lecture: lecture,
+        final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
+
+        return uiStateAsync.when(
+          loading: () => Scaffold(
+            backgroundColor: AppColors.universe.voidBackground,
+            body: const Center(
+              child: CircularProgressIndicator(color: AppColors.starGold),
+            ),
           ),
+          error: (err, stack) => Scaffold(
+            backgroundColor: AppColors.universe.voidBackground,
+            body: Center(
+              child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
+            ),
+          ),
+          data: (uiState) {
+            if (uiState == LectureUIState.complete) {
+              return Scaffold(
+                backgroundColor: AppColors.universe.voidBackground,
+                body: _buildViewerBody(
+                  context: context,
+                  ref: ref,
+                  lecture: lecture,
+                ),
+              );
+            }
+
+            return LectureStatusScaffold(lecture: lecture);
+          },
         );
       },
     );
@@ -610,7 +636,7 @@ class _ViewerFunFactCard extends HookConsumerWidget {
     final body = fact.body?.trim() ?? '';
     final fullText = (hook != null && hook.isNotEmpty) ? '$hook\n\n$body' : body;
 
-    final currentReaction = fact.metadata?['reaction'] as String?;
+    final currentReaction = fact.reaction;
 
     return Container(
       decoration: BoxDecoration(
@@ -710,9 +736,11 @@ class _ViewerReactionButton extends ConsumerWidget {
       onPressed: () async {
         final newReaction = isActive ? null : reaction;
         try {
-          await ref.read(funFactRepositoryProvider).updateReaction(factId, newReaction);
-          // Invalidate to update reactively
-          ref.invalidate(funFactsForLectureProvider(lectureId));
+          // ローカルDBを即時更新(楽観的UI)。Streamが自動的にUIへ反映するため
+          // invalidateは不要。Supabaseへの反映はバックグラウンドのOutbox経由。
+          await ref
+              .read(funFactRepositoryDriftProvider)
+              .updateReaction(id: factId, reaction: newReaction);
         } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -787,8 +815,9 @@ class _LectureInfoSheet extends ConsumerWidget {
               (a) => AnnouncementTile(
                 announcement: a,
                 showTimestamp: false,
-                onToggleComplete: (ann) =>
-                    ref.read(announcementsForLectureProvider(lectureId).notifier).toggleComplete(ann),
+                onToggleComplete: (ann) => ref
+                    .read(announcementRepositoryDriftProvider)
+                    .toggleComplete(id: ann.id, completed: !ann.isCompleted),
               ),
             )
             .toList();

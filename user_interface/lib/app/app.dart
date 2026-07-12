@@ -5,6 +5,7 @@ import 'package:lecture_companion_ui/application/sync/app_lifecycle_sync_watcher
 import 'package:lecture_companion_ui/presentation/pages/dev_tools/dev_log_overlay.dart';
 import 'package:lecture_companion_ui/presentation/pages/dev_tools/test_mode_flag.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_theme.dart';
+import 'package:lecture_companion_ui/presentation/widgets/offline_banner.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
@@ -26,10 +27,10 @@ class MyApp extends ConsumerWidget {
       // DevLogOverlayのStackをここでラップする(MaterialAppの外側で
       // ラップするとDirectionalityが無くエラーになる)。
       builder: (context, child) {
-        if (isTestMode && child != null) {
-          return DevLogOverlay(child: child);
-        }
-        return child!;
+        if (child == null) return const SizedBox.shrink();
+
+        final wrapped = OfflineBanner(child: child);
+        return isTestMode ? DevLogOverlay(child: wrapped) : wrapped;
       },
     );
   }

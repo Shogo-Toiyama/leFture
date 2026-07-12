@@ -1,46 +1,27 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/announcement_repository_supabase.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
 part 'announcement_provider.g.dart';
 
-/// 未完了のうち最新のアナウンスメント（無ければnull）
+/// 未完了のうち最新のアナウンスメント（無ければnull）。ローカルDB経由でオフライン優先。
 @riverpod
-Future<Announcement?> latestAnnouncement(Ref ref) async {
-  final repo = ref.watch(announcementRepositoryProvider);
-  return repo.getLatestActive();
+Stream<Announcement?> latestAnnouncement(Ref ref) {
+  final uid = supabase.auth.currentUser?.id;
+  if (uid == null) return Stream.value(null);
+  return ref
+      .watch(announcementRepositoryDriftProvider)
+      .watchActiveAnnouncements(uid)
+      .map((list) => list.isEmpty ? null : list.first);
 }
 
-/// 未完了のアナウンスメント全件（新しい順）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+/// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
+/// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
 @riverpod
-class ActiveAnnouncements extends _$ActiveAnnouncements {
-  @override
-  Future<List<Announcement>> build() async {
-    final repo = ref.watch(announcementRepositoryProvider);
-    return repo.listActive();
-  }
-
-  /// 指定アナウンスメントの完了/未完了をトグルして楽観的に状態を更新する。
-  Future<void> toggleComplete(Announcement announcement) async {
-    final repo = ref.read(announcementRepositoryProvider);
-    final newCompletedAt = announcement.isCompleted ? null : DateTime.now();
-
-    // 楽観的UI更新: ローカル状態のみ書き換え
-    state = AsyncData(
-      (state.value ?? []).map((a) {
-        if (a.id == announcement.id) {
-          return a.copyWith(completedAt: () => newCompletedAt);
-        }
-        return a;
-      }).toList(),
-    );
-
-    // Supabase にも非同期で書き込む
-    await repo.markAsCompleted(announcement.id, newCompletedAt);
-
-    // latestAnnouncement（AnnouncementBar用）は再フェッチで最新を反映
-    ref.invalidate(latestAnnouncementProvider);
-  }
+Stream<List<Announcement>> activeAnnouncements(Ref ref) {
+  final uid = supabase.auth.currentUser?.id;
+  if (uid == null) return const Stream.empty();
+  return ref.watch(announcementRepositoryDriftProvider).watchActiveAnnouncements(uid);
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
+import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_lifecycle_sync_watcher.g.dart';
@@ -36,7 +37,7 @@ class AppLifecycleSyncWatcher {
 
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen((event) {
-      final isOffline = _isOffline(event);
+      final isOffline = isConnectivityOffline(event);
       if (_wasOffline && !isOffline) {
         _triggerBootstrap();
       }
@@ -51,15 +52,5 @@ class AppLifecycleSyncWatcher {
 
   void _triggerBootstrap() {
     _ref.read(lectureControllerProvider.notifier).bootstrapIfNeeded();
-  }
-
-  bool _isOffline(dynamic results) {
-    if (results is List<ConnectivityResult>) {
-      return results.contains(ConnectivityResult.none);
-    }
-    if (results is ConnectivityResult) {
-      return results == ConnectivityResult.none;
-    }
-    return false;
   }
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/utils/network_constants.dart';
 import '../../domain/entities/processing_jobs.dart';
 import '../../domain/entities/processing_task.dart';
 
@@ -13,47 +14,81 @@ class JobRepository {
 
   static const _cloudRunBaseUrl = 'https://lefture-511705914929.us-west1.run.app';
 
-  Stream<ProcessingJobs?> watchJob(String lectureId) {
-    // dev.log('👀 Start watching Job for: $lectureId');
+  // 分析進捗の表示は12ステップ中どこまで進んだかという粗い比率のみで、
+  // 秒単位の追従は不要(講義全体の分析は数分〜十数分規模)。以前はSupabase
+  // Realtimeの.stream()に依存していたが、どのテーブルもRealtimeが
+  // 有効化されておらず実質「画面を開いた瞬間の1回分」しか更新を受け取れて
+  // いなかったため、ポーリングに切り替える。
+  static const _pollInterval = Duration(seconds: 3);
 
-    return _supabase
-        .from('processing_jobs')
-        .stream(primaryKey: ['id'])
-        .eq('lecture_id', lectureId)
-        .map((maps) {
-          if (maps.isEmpty) {
-            // dev.log('📭 Job list is empty');
-            return null;
-          }
+  /// 指定講義の最新ジョブをポーリング監視する。ジョブがCOMPLETEDになったら
+  /// 最後の値をyieldしてポーリングを終了する(それ以上変化しないため)。
+  Stream<ProcessingJobs?> watchJob(String lectureId) async* {
+    while (true) {
+      ProcessingJobs? job;
+      try {
+        final maps = await _supabase
+            .from('processing_jobs')
+            .select()
+            .eq('lecture_id', lectureId)
+            .timeout(networkTimeout);
 
+        if (maps.isNotEmpty) {
           // 日付で並べ替え
-          maps.sort((a, b) {
-             final aTime = a['created_at'] as String? ?? '';
-             final bTime = b['created_at'] as String? ?? '';
-             return bTime.compareTo(aTime);
+          final sorted = [...maps]..sort((a, b) {
+            final aTime = a['created_at'] as String? ?? '';
+            final bTime = b['created_at'] as String? ?? '';
+            return bTime.compareTo(aTime);
           });
 
-          final latestMap = maps.first;
-          // dev.log('📄 Processing map: $latestMap'); // ★ここ重要：生データを見る
-
           try {
-            // ここで変換エラーが起きているはず！
-            return ProcessingJobs.fromJson(latestMap);
+            job = ProcessingJobs.fromJson(sorted.first);
           } catch (e, s) {
             dev.log('🚨 Parse Error: $e'); // エラー内容を表示
             dev.log('Stack trace: $s');
-            return null; // エラーなら一旦nullを返してアプリを落とさない
           }
-        });
+        }
+      } catch (e, s) {
+        // 通信エラー等。落とさずに次回のポーリングでリトライする。
+        dev.log('🚨 watchJob poll error: $e');
+        dev.log('Stack trace: $s');
+      }
+
+      yield job;
+
+      if (job != null && job.status == 'COMPLETED') break;
+      await Future.delayed(_pollInterval);
+    }
   }
 
-  /// 指定ジョブに紐づく全タスク（進捗・エラー表示用）をRealtime監視する
-  Stream<List<ProcessingTask>> watchTasksForJob(String jobId) {
-    return _supabase
-        .from('processing_tasks')
-        .stream(primaryKey: ['id'])
-        .eq('job_id', jobId)
-        .map((rows) => rows.map((e) => ProcessingTask.fromMap(e)).toList());
+  /// 指定ジョブに紐づく全タスク（進捗・エラー表示用）をポーリング監視する。
+  /// 全タスクが終端状態(COMPLETED/FAILED/CANCELLED)になったらポーリングを
+  /// 終了する。
+  Stream<List<ProcessingTask>> watchTasksForJob(String jobId) async* {
+    const terminalStatuses = {'COMPLETED', 'FAILED', 'CANCELLED'};
+
+    while (true) {
+      List<ProcessingTask> tasks = const [];
+      try {
+        final rows = await _supabase
+            .from('processing_tasks')
+            .select()
+            .eq('job_id', jobId)
+            .timeout(networkTimeout);
+        tasks = rows.map((e) => ProcessingTask.fromMap(e)).toList();
+      } catch (e, s) {
+        // 通信エラー等。落とさずに次回のポーリングでリトライする。
+        dev.log('🚨 watchTasksForJob poll error: $e');
+        dev.log('Stack trace: $s');
+      }
+
+      yield tasks;
+
+      final allTerminal =
+          tasks.isNotEmpty && tasks.every((t) => terminalStatuses.contains(t.status));
+      if (allTerminal) break;
+      await Future.delayed(_pollInterval);
+    }
   }
 
   /// 分析を開始する（Cloud RunのDAGパイプラインを起動）。
@@ -64,7 +99,8 @@ class JobRepository {
     final expectedChunks = await _supabase
         .from('lecture_transcripts')
         .count()
-        .eq('lecture_id', lectureId);
+        .eq('lecture_id', lectureId)
+        .timeout(networkTimeout);
 
     final jwt = _supabase.auth.currentSession?.accessToken;
     if (jwt == null) {
@@ -78,7 +114,7 @@ class JobRepository {
         'Authorization': 'Bearer $jwt',
       },
       body: jsonEncode({'lecture_id': lectureId, 'expected_chunks': expectedChunks}),
-    );
+    ).timeout(networkTimeout);
 
     if (response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Failed to start analysis (${response.statusCode}): ${response.body}');
@@ -100,7 +136,7 @@ class JobRepository {
         'Authorization': 'Bearer $jwt',
       },
       body: jsonEncode({'task_id': taskId}),
-    );
+    ).timeout(networkTimeout);
 
     if (response.statusCode != 200) {
       throw Exception('Failed to retry task (${response.statusCode}): ${response.body}');

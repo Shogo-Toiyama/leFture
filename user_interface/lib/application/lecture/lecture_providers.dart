@@ -6,7 +6,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../infrastructure/local_db/app_database_provider.dart';
 import '../../infrastructure/repositories/lecture_artifact_repository.dart';
-import '../../infrastructure/supabase/repositories/lecture_topic_repository_supabase.dart';
+import '../../infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
+import 'lecture_list_provider.dart';
 import '../../domain/entities/lecture_data.dart';
 import '../../domain/entities/lecture.dart';
 
@@ -21,13 +22,12 @@ LectureArtifactRepository lectureArtifactRepository(Ref ref) {
 // -----------------------------------------------------------------------------
 // 単一の授業メタデータ（タイトル、日付など）を取得するProvider
 // -----------------------------------------------------------------------------
+// 以前はSupabase Realtimeで直接ストリーミングしていたが、Realtimeがどの
+// テーブルでも有効化されていなかったため実質「画面を開いた瞬間の1回分」しか
+// 更新を受け取れていなかった。ローカルDB経由でオフライン優先に統一する。
 @riverpod
 Stream<Lecture?> lecture(Ref ref, String id) {
-  return Supabase.instance.client
-      .from('lectures')
-      .stream(primaryKey: ['id'])
-      .eq('id', id)
-      .map((data) => data.isNotEmpty ? Lecture.fromMap(data.first) : null);
+  return ref.watch(lectureRepositoryProvider).watchLectureById(id);
 }
 
 // -----------------------------------------------------------------------------
@@ -54,7 +54,8 @@ Future<File?> artifactFile(Ref ref, String storagePath) {
 }
 
 // レクチャーの最初のトピック（index = 1）の image_path を取得するProvider
+// (ローカルDB経由でオフライン優先)
 @riverpod
 Future<String?> firstTopicImagePath(Ref ref, String lectureId) {
-  return ref.watch(lectureTopicRepositoryProvider).firstTopicImagePath(lectureId);
+  return ref.watch(lectureTopicRepositoryDriftProvider).firstTopicImagePath(lectureId);
 }

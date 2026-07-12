@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 
@@ -78,8 +79,8 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
                         announcement: announcements[index],
                         showTimestamp: true,
                         onToggleComplete: (a) => ref
-                            .read(activeAnnouncementsForCourseProvider(courseId).notifier)
-                            .toggleComplete(a),
+                            .read(announcementRepositoryDriftProvider)
+                            .toggleComplete(id: a.id, completed: !a.isCompleted),
                       ),
                     );
                   },

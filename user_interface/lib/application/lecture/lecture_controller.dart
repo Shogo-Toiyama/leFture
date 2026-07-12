@@ -5,7 +5,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/application/sync/lecture_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/fun_fact_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/announcement_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/keyword_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/lecture_topic_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/review_card_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/deep_note_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/lecture_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/fun_fact_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/announcement_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/maintenance/local_retention_service.dart';
+import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart'; // jobRepository
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/announcement_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/review_card_repository_supabase.dart';
@@ -14,7 +25,7 @@ import 'package:lecture_companion_ui/infrastructure/supabase/repositories/lectur
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/deep_note_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/keyword_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/topic_map_repository_supabase.dart';
-import 'dart:developer' as dev;
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 
 part 'lecture_controller.g.dart';
 
@@ -30,6 +41,17 @@ class LectureController extends _$LectureController {
     return LectureSyncService(db);
   }
 
+  /// entityTypeごとのPushハンドラを登録した汎用Outbox送信サービス。
+  /// フェーズ2/3でFunFact/Announcement用のハンドラもここに追加していく。
+  OutboxSyncService _outbox() {
+    final db = ref.read(appDatabaseProvider);
+    return OutboxSyncService(db, {
+      'lecture': LectureOutboxPushHandler(),
+      'fun_fact': FunFactOutboxPushHandler(),
+      'announcement': AnnouncementOutboxPushHandler(),
+    });
+  }
+
   // --- Sync / Bootstrap Logic ---
 
   /// UIイベント(Home画面表示・Pull-to-Refreshなど)による連続呼び出しを
@@ -39,31 +61,63 @@ class LectureController extends _$LectureController {
   DateTime? _lastBootstrapAttemptAt;
 
   Future<void> bootstrapLectures({bool forceFullPull = false}) async {
-    _lastBootstrapAttemptAt = DateTime.now().toUtc();
-    final sync = _sync();
-
+    // このメソッドはHome画面のuseEffect・バックグラウンド復帰・オンライン復帰など、
+    // 誰も画面を見ていない/watchしていないタイミングでも呼ばれる。LectureControllerは
+    // autoDisposeなので、keepAliveしないと非同期処理の途中でProviderが破棄され、
+    // 以降のref.read(...)が「Cannot use the Ref...after it has been disposed」で
+    // 失敗する(実際に発生していたバグ)。
+    final link = ref.keepAlive();
     try {
-      await sync.pushOutbox();
-    } catch (e, st) {
-      dev.log('⚠️ Lecture push skipped: $e', error: e, stackTrace: st);
-    }
+      _lastBootstrapAttemptAt = DateTime.now().toUtc();
+      final db = ref.read(appDatabaseProvider);
 
-    try {
-      await sync.pull(forceFullPull: forceFullPull);
-    } catch (e, st) {
-      dev.log('⚠️ Lecture pull skipped: $e', error: e, stackTrace: st);
-    }
+      // オフライン時はネットワーク処理を試みない。ここでチェックせずに
+      // 各Push/Pullをawaitすると、タイムアウトが発火するまで
+      // Pull-to-Refresh等の呼び出し元が長時間(プラットフォーム依存で
+      // 数十秒〜数分)ブロックされてしまう不具合が実際に起きていた。
+      if (await isDeviceOnline()) {
+        try {
+          await _outbox().pushAll();
+        } catch (e, st) {
+          DevLog.add('⚠️ [LectureController] Outbox push skipped: $e\n$st');
+        }
 
-    // ローカル保守処理(30日超の論理削除の物理削除・キャッシュ容量のLRU剥がし)。
-    // Push/Pullとは独立した処理なので、失敗してもSync自体は成功として扱う。
-    try {
-      final uid = supabase.auth.currentUser?.id;
-      if (uid != null) {
-        final db = ref.read(appDatabaseProvider);
-        await LocalRetentionService(db).runMaintenance(uid);
+        // Pull対象のエンティティ一覧。1つの失敗が他を止めないよう、
+        // それぞれ独立してtry/catchする。
+        final pulls = <String, Future<void> Function()>{
+          'lecture': () => _sync().pull(forceFullPull: forceFullPull),
+          'fun_fact': () => FunFactSyncService(db).pull(forceFullPull: forceFullPull),
+          'announcement': () => AnnouncementSyncService(db).pull(forceFullPull: forceFullPull),
+          'keyword': () => KeywordSyncService(db).pull(forceFullPull: forceFullPull),
+          'lecture_topic': () => LectureTopicSyncService(db).pull(forceFullPull: forceFullPull),
+          'review_card': () => ReviewCardSyncService(db).pull(forceFullPull: forceFullPull),
+          'deep_note': () => DeepNoteSyncService(db).pull(forceFullPull: forceFullPull),
+        };
+
+        for (final entry in pulls.entries) {
+          try {
+            await entry.value();
+          } catch (e, st) {
+            DevLog.add('⚠️ [LectureController] ${entry.key} pull skipped: $e\n$st');
+          }
+        }
+      } else {
+        DevLog.add('📴 [LectureController] Offline — skipping outbox push/pull.');
       }
-    } catch (e, st) {
-      dev.log('⚠️ Local retention maintenance skipped: $e', error: e, stackTrace: st);
+
+      // ローカル保守処理(30日超の論理削除の物理削除・キャッシュ容量のLRU剥がし)。
+      // Push/Pullとは独立した処理なので、失敗してもSync自体は成功として扱う。
+      try {
+        final uid = supabase.auth.currentUser?.id;
+        if (uid != null) {
+          final db = ref.read(appDatabaseProvider);
+          await LocalRetentionService(db).runMaintenance(uid);
+        }
+      } catch (e, st) {
+        DevLog.add('⚠️ [LectureController] Local retention maintenance skipped: $e\n$st');
+      }
+    } finally {
+      link.close();
     }
   }
 
@@ -105,12 +159,14 @@ class LectureController extends _$LectureController {
   /// 「Recreate Topic Map」操作か、Patrolのアイドルタイムアウトが後でまとめて行う
   /// (see topic_map_repository_supabase.dart / task_runners.py の設計議論)。
   Future<void> deleteLecture(String lectureId, {String? courseId}) async {
+    DevLog.add('🗑️ [LectureController] deleteLecture called: $lectureId');
     final link = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       // 1. Repository経由で論理削除 + Outbox登録
       // ※ lectureRepositoryProvider は lecture_list_provider.dart で定義されているはずです
       await ref.read(lectureRepositoryProvider).softDeleteLecture(lectureId: lectureId);
+      DevLog.add('🗑️ [LectureController] Local soft-delete + outbox enqueue done: $lectureId');
 
       // 2. 関連データをカスケードで論理削除する（都度Supabaseへ直接、best-effort）
       // ※ deleteCourse と同様、現時点ではオフラインファースト化していないため、
@@ -126,7 +182,7 @@ class LectureController extends _$LectureController {
           ref.read(keywordRepositoryProvider).softDeleteForLecture(lectureId),
         ]);
       } catch (e, st) {
-        dev.log('⚠️ Cascade soft-delete of related data failed: $e', error: e, stackTrace: st);
+        DevLog.add('⚠️ [LectureController] Cascade soft-delete of related data failed: $e\n$st');
       }
 
       // 2.5 Topic Mapをstaleとしてマーク（LLMは呼ばない軽量な記録だけ、best-effort）
@@ -138,15 +194,16 @@ class LectureController extends _$LectureController {
                 action: 'remove',
               );
         } catch (e, st) {
-          dev.log('⚠️ Failed to mark topic map stale: $e', error: e, stackTrace: st);
+          DevLog.add('⚠️ [LectureController] Failed to mark topic map stale: $e\n$st');
         }
       }
 
       // 3. 即座に同期を試みる (失敗してもOutboxにあるのでOK)
       try {
-        await _sync().pushOutbox();
+        await _outbox().pushAll();
+        DevLog.add('🗑️ [LectureController] Outbox push after delete completed: $lectureId');
       } catch (e) {
-        dev.log('⚠️ Background push failed (queued in outbox): $e');
+        DevLog.add('⚠️ [LectureController] Background push failed (queued in outbox): $e');
       }
     });
     link.close();
@@ -189,14 +246,14 @@ class LectureController extends _$LectureController {
               ),
           ]);
         } catch (e, st) {
-          dev.log('⚠️ Failed to mark topic map(s) stale after course move: $e', error: e, stackTrace: st);
+          DevLog.add('⚠️ [LectureController] Failed to mark topic map(s) stale after course move: $e\n$st');
         }
       }
 
       try {
-        await _sync().pushOutbox();
+        await _outbox().pushAll();
       } catch (e) {
-        dev.log('⚠️ Background push failed (queued in outbox): $e');
+        DevLog.add('⚠️ [LectureController] Background push failed (queued in outbox): $e');
       }
     });
     link.close();

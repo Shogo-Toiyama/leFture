@@ -7,6 +7,7 @@ class FunFact {
     this.hook,
     this.body,
     this.metadata,
+    this.reaction,
     required this.createdAt,
   });
 
@@ -17,9 +18,13 @@ class FunFact {
   final String? hook;
   final String? body;
   final Map<String, dynamic>? metadata;
+  // "like" / "dislike" / null。ローカルファースト化以降はこちらが正
+  // (metadata['reaction']はサーバーの最終同期時点のキャッシュ)。
+  final String? reaction;
   final DateTime createdAt;
 
   factory FunFact.fromMap(Map<String, dynamic> map) {
+    final metadata = map['metadata'] as Map<String, dynamic>?;
     return FunFact(
       id: map['id'] as String,
       userId: map['user_id'] as String?,
@@ -27,7 +32,8 @@ class FunFact {
       title: map['title'] as String?,
       hook: map['hook'] as String?,
       body: map['body'] as String?,
-      metadata: map['metadata'] as Map<String, dynamic>?,
+      metadata: metadata,
+      reaction: metadata?['reaction'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }

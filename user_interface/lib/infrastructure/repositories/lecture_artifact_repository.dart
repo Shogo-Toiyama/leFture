@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/utils/network_constants.dart';
 import '../../domain/entities/lecture_data.dart';
 import '../local_db/app_database.dart';
 
@@ -56,7 +57,7 @@ class LectureArtifactRepository {
         headers: {
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(networkTimeout);
       if (response.statusCode != 200) {
         // まだ生成されていない(404)等。キャッシュせずnullを返す。
         debugPrint('Artifact GET ${response.statusCode}: $storagePath');

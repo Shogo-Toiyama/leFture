@@ -107,7 +107,7 @@ final class LectureProvider
   }
 }
 
-String _$lectureHash() => r'db41e0468b2cd7844d10f75425ce7f9f1329696b';
+String _$lectureHash() => r'fc9d87fe20c7ce3ed821e37cf9bdaccf59f6170b';
 
 final class LectureFamily extends $Family
     with $FunctionalFamilyOverride<Stream<Lecture?>, String> {
@@ -330,7 +330,7 @@ final class FirstTopicImagePathProvider
 }
 
 String _$firstTopicImagePathHash() =>
-    r'1909e8f785c0e9c0b121cd92dc2f6ba5b9d3627f';
+    r'17532fee25cdf099db1162907ba0f838a147e42e';
 
 final class FirstTopicImagePathFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<String?>, String> {

@@ -8,22 +8,22 @@ part of 'announcement_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 未完了のうち最新のアナウンスメント（無ければnull）
+/// 未完了のうち最新のアナウンスメント（無ければnull）。ローカルDB経由でオフライン優先。
 
 @ProviderFor(latestAnnouncement)
 final latestAnnouncementProvider = LatestAnnouncementProvider._();
 
-/// 未完了のうち最新のアナウンスメント（無ければnull）
+/// 未完了のうち最新のアナウンスメント（無ければnull）。ローカルDB経由でオフライン優先。
 
 final class LatestAnnouncementProvider
     extends
         $FunctionalProvider<
           AsyncValue<Announcement?>,
           Announcement?,
-          FutureOr<Announcement?>
+          Stream<Announcement?>
         >
-    with $FutureModifier<Announcement?>, $FutureProvider<Announcement?> {
-  /// 未完了のうち最新のアナウンスメント（無ければnull）
+    with $FutureModifier<Announcement?>, $StreamProvider<Announcement?> {
+  /// 未完了のうち最新のアナウンスメント（無ければnull）。ローカルDB経由でオフライン優先。
   LatestAnnouncementProvider._()
     : super(
         from: null,
@@ -40,34 +40,43 @@ final class LatestAnnouncementProvider
 
   @$internal
   @override
-  $FutureProviderElement<Announcement?> $createElement(
+  $StreamProviderElement<Announcement?> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<Announcement?> create(Ref ref) {
+  Stream<Announcement?> create(Ref ref) {
     return latestAnnouncement(ref);
   }
 }
 
 String _$latestAnnouncementHash() =>
-    r'c2934070e6b7306b3dc3e834f5d64d402e4433cf';
+    r'7449ea611cde331e4b8f70db8d638e17a7714c54';
 
-/// 未完了のアナウンスメント全件（新しい順）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+/// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
+/// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
 
-@ProviderFor(ActiveAnnouncements)
+@ProviderFor(activeAnnouncements)
 final activeAnnouncementsProvider = ActiveAnnouncementsProvider._();
 
-/// 未完了のアナウンスメント全件（新しい順）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+/// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+/// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
+/// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
+
 final class ActiveAnnouncementsProvider
-    extends $AsyncNotifierProvider<ActiveAnnouncements, List<Announcement>> {
-  /// 未完了のアナウンスメント全件（新しい順）。
-  /// AsyncNotifier として管理することで、Done/Undo 操作後も
-  /// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          Stream<List<Announcement>>
+        >
+    with
+        $FutureModifier<List<Announcement>>,
+        $StreamProvider<List<Announcement>> {
+  /// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+  /// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
+  /// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
   ActiveAnnouncementsProvider._()
     : super(
         from: null,
@@ -84,32 +93,15 @@ final class ActiveAnnouncementsProvider
 
   @$internal
   @override
-  ActiveAnnouncements create() => ActiveAnnouncements();
+  $StreamProviderElement<List<Announcement>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Announcement>> create(Ref ref) {
+    return activeAnnouncements(ref);
+  }
 }
 
 String _$activeAnnouncementsHash() =>
-    r'7dbab5b5ff6b57988c6aa7eed00b1d92f772daa5';
-
-/// 未完了のアナウンスメント全件（新しい順）。
-/// AsyncNotifier として管理することで、Done/Undo 操作後も
-/// プロバイダを invalidate せずローカル状態だけを更新（シート閉じるまで表示維持）。
-
-abstract class _$ActiveAnnouncements
-    extends $AsyncNotifier<List<Announcement>> {
-  FutureOr<List<Announcement>> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final ref =
-        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
-              AsyncValue<List<Announcement>>,
-              Object?,
-              Object?
-            >;
-    element.handleCreate(ref, build);
-  }
-}
+    r'36bf20006850676efdb424e8d2587809fb71d5f7';

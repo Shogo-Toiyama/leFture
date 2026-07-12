@@ -12,6 +12,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/home_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
@@ -90,6 +91,18 @@ class HomePage extends HookConsumerWidget {
 
     // 銀河エリアを引っ張って離すとリロードする（下に表示されるレクチャー等の実データを再取得する）
     Future<void> handleRefresh() async {
+      // オフライン時はネットワーク処理を試みない(タイムアウトが発火するまで
+      // スピナーが固まって見える不具合を避けるため)。ローカルキャッシュは
+      // 既に表示されているので、ここでは通知だけする。
+      if (!await isDeviceOnline()) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("You're offline. Showing cached data.")),
+          );
+        }
+        return;
+      }
+
       await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
       ref.invalidate(courseListProvider);
       ref.invalidate(currentUserProfileProvider);

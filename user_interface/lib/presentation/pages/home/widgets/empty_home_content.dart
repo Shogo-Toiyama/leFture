@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/application/galaxy/galaxy_data_provider.dar
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
@@ -42,6 +43,15 @@ class EmptyHomeContent extends ConsumerWidget {
     final galaxyHeight = screenHeight * _kGalaxyHeightRatio;
 
     Future<void> handleRefresh() async {
+      if (!await isDeviceOnline()) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("You're offline. Showing cached data.")),
+          );
+        }
+        return;
+      }
+
       await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
       ref.invalidate(courseListProvider);
       ref.invalidate(currentUserProfileProvider);

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -46,7 +47,7 @@ class UploadManager {
   void initialize() {
     // 1. ネットワーク復帰監視
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((event) {
-      if (!_isOffline(event)) {
+      if (!isConnectivityOffline(event)) {
         _processQueue(); // ネットが戻ったら処理開始
       }
     });
@@ -65,16 +66,6 @@ class UploadManager {
     _connectivitySubscription?.cancel();
   }
 
-  bool _isOffline(dynamic results) {
-    if (results is List<ConnectivityResult>) {
-      return results.contains(ConnectivityResult.none);
-    }
-    if (results is ConnectivityResult) {
-      return results == ConnectivityResult.none;
-    }
-    return false;
-  }
-
   /// 外部から手動で呼び出す用（Refreshボタンなど）
   void tryProcessQueue() => _processQueue();
 
@@ -89,7 +80,7 @@ class UploadManager {
       // _isProcessingをfalseに戻す処理を素通りしてしまい、一度オフライン判定
       // (誤検知含む)が起きただけでアップロードが永久に止まってしまうバグになる。
       final connectivity = await Connectivity().checkConnectivity();
-      if (_isOffline(connectivity)) {
+      if (isConnectivityOffline(connectivity)) {
         DevLog.add('📡 [UploadManager] Offline detected, skipping this round.');
         return;
       }
@@ -97,7 +88,7 @@ class UploadManager {
       while (true) {
         // オフラインになったら中断
         final currentConn = await Connectivity().checkConnectivity();
-        if (_isOffline(currentConn)) break;
+        if (isConnectivityOffline(currentConn)) break;
 
         // 1. 次にやるべきジョブをDBから取得
         // (watchではなくgetで最新を取るのが安全)

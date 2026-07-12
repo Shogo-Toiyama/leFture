@@ -1,9 +1,15 @@
 import 'dart:convert';
-import 'dart:developer' as dev;
+
 import 'package:drift/drift.dart';
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
+import 'package:lecture_companion_ui/core/utils/network_constants.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart'; // supabaseインスタンス
 
+/// 講義のPull(Supabase→ローカルDB)専用のサービス。Push(Outboxの送信)は
+/// [OutboxSyncService]/[LectureOutboxPushHandler]に統合されている
+/// (書き込み時に固定されたpayloadではなく、push実行時に最新のローカル行
+/// から再構築する自己修復設計のため)。
 class LectureSyncService {
   final AppDatabase _db;
 
@@ -17,56 +23,7 @@ class LectureSyncService {
   static const _fullPullSafetyNet = Duration(hours: 24);
 
   /// ---------------------------------------------------------
-  /// 1. Push: ローカルの未送信変更 (Outbox) をSupabaseへ送る
-  /// ---------------------------------------------------------
-  Future<void> pushOutbox() async {
-    // lectureに関連するOutboxのみ取得するクエリが必要ですが、
-    // 汎用的にdequeueBatchで取ってきて、entityTypeでフィルタしてもOKです。
-    // ここではシンプルに「未処理のOutboxを順次処理」するイメージで書きます。
-    
-    // ※ 実際には app_database.dart に getOutboxByEntityType などがあると効率的ですが
-    // 一旦 dequeueBatch で全件取ってフィルタします。
-    final rows = await _db.dequeueBatch(); 
-    
-    for (final row in rows) {
-      if (row.entityType != 'lecture') continue;
-
-      try {
-        await _processOutboxItem(row);
-        // 成功したら削除
-        await _db.deleteOutboxIds([row.id]);
-      } catch (e) {
-        dev.log('Failed to process outbox item ${row.id}: $e');
-        // エラー時は削除せず、次回のRetryに任せる（必要ならRetryCountを増やすなど）
-      }
-    }
-  }
-
-  Future<void> _processOutboxItem(LocalOutboxData row) async {
-    final uid = supabase.auth.currentUser?.id;
-    if (uid == null) return;
-
-    final payload = jsonDecode(row.payloadJson) as Map<String, dynamic>;
-
-    switch (row.op) {
-      case 'create':
-      case 'update':
-        // SupabaseへUpsert
-        await supabase.from('lectures').upsert(payload);
-        break;
-      
-      case 'delete':
-        // 論理削除。payload に deleted_at (ISO8601) が入っている想定でupsert
-        await supabase.from('lectures').upsert(payload);
-        break;
-        
-      default:
-        dev.log('Unknown op: ${row.op}');
-    }
-  }
-
-  /// ---------------------------------------------------------
-  /// 2. Pull: Supabaseから変更分を取得してローカルDBへ
+  /// Pull: Supabaseから変更分を取得してローカルDBへ
   /// ---------------------------------------------------------
   ///
   /// カーソルは「クライアントのwall-clock」ではなく「実際に取得した行の
@@ -98,7 +55,7 @@ class LectureSyncService {
       query = query.gt('updated_at', skewBuffer.toIso8601String());
     }
 
-    final List<dynamic> data = await query;
+    final List<dynamic> data = await query.timeout(networkTimeout);
 
     DateTime? maxUpdatedAt = cursor?.lastPulledAt;
     if (data.isNotEmpty) {
@@ -107,12 +64,16 @@ class LectureSyncService {
         if (maxUpdatedAt == null || updatedAt.isAfter(maxUpdatedAt!)) {
           maxUpdatedAt = updatedAt;
         }
+        final metadata = json['metadata'] as Map<String, dynamic>?;
         return LocalLecturesCompanion(
           id: Value(json['id'] as String),
           userId: Value(json['user_id'] as String),
           courseId: Value(json['course_id'] as String?),
           title: Value(json['title'] as String?),
           titleGenerated: Value(json['title_generated'] as String?),
+          summary: Value(json['summary'] as String?),
+          audioPath: Value(json['audio_path'] as String?),
+          metadataJson: Value(metadata != null ? jsonEncode(metadata) : null),
           lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),
           sortOrder: Value(json['sort_order'] as int?),
           createdAt: Value(DateTime.parse(json['created_at'])),
@@ -128,7 +89,7 @@ class LectureSyncService {
         batch.insertAllOnConflictUpdate(_db.localLectures, companions);
       });
 
-      dev.log('📥 Pulled ${companions.length} lectures from cloud.');
+      DevLog.add('📥 [LectureSync] Pulled ${companions.length} lecture(s) from cloud.');
     }
 
     await _db.upsertSyncCursor(

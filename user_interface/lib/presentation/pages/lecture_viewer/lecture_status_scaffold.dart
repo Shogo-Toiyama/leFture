@@ -56,7 +56,7 @@ class LectureStatusScaffold extends ConsumerWidget {
           switch (uiState) {
             case LectureUIState.loading:
             case LectureUIState.complete:
-              return NotStartedView(lecture: lecture);
+              return const SizedBox.shrink();
 
             case LectureUIState.processing:
               return ProcessingView(lectureId: lecture.id);
