@@ -83,7 +83,7 @@ final class TopicMapForCourseProvider
   }
 }
 
-String _$topicMapForCourseHash() => r'567555af731b832899db476c5b33c82c45639cc0';
+String _$topicMapForCourseHash() => r'24ce1e579740377185718b44406a49205ebc2969';
 
 /// The course's topic map, or null if the pipeline hasn't generated one yet.
 ///

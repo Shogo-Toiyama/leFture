@@ -26,8 +26,22 @@ Future<TopicMapData?> topicMapForCourse(Ref ref, String courseId) async {
       );
   final lectures = await ref.watch(lectureListStreamProvider(courseId).future);
 
+  // ノードの「Lecture N」表示は保存されていない(topic_maps.mapには焼き込まない
+  // ---削除・移動があるたびに腐るため)。バックエンドがLLM呼び出し直前に
+  // 毎回計算し直すのと全く同じロジック(非削除Lectureをcreated_at昇順で
+  // 並べた位置)を、表示のたびにここで計算し直す。
+  final liveLectures = lectures.where((l) => !l.isDeleted).toList()
+    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  final lectureNumById = <String, int>{
+    for (var i = 0; i < liveLectures.length; i++) liveLectures[i].id: i + 1,
+  };
+  final annotatedNodes = raw.nodes
+      .map((n) => n.copyWith(lectureNum: lectureNumById[n.sourceLectureId]))
+      .toList();
+
   return raw.copyWith(
     courseTitle: course?.courseTitle?.trim().isNotEmpty == true ? course!.courseTitle : null,
     totalLecturesCovered: lectures.length,
+    nodes: annotatedNodes,
   );
 }

@@ -46,8 +46,8 @@ class LectureTopicDetailPanel extends StatelessWidget {
   final String courseTitle;
   final int lectureNum;
 
-  /// Null for Lecture View; set for Topic View (parsed from the topic_id's
-  /// trailing number -- see ClusterMapView._topicNumFromTopicId).
+  /// Null for Lecture View; set for Topic View (the node's fixed position
+  /// within its own lecture -- see TopicMapNode.topicIndexInLecture).
   final int? topicNum;
 
   /// Lecture View: the lecture's own display title. Topic View: the topic

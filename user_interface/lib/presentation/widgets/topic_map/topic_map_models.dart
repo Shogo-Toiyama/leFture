@@ -34,23 +34,33 @@ class TopicMapNode {
     required this.title,
     required this.topicType,
     required this.clusterId,
-    required this.lectureNum,
+    required this.sourceLectureId,
+    required this.topicIndexInLecture,
+    this.lectureNum,
   });
 
   final String id;
   final String title;
   final String topicType;
   final String? clusterId;
-  final int lectureNum;
 
-  /// The pipeline never stamps a separate lecture_num field -- topic_id
-  /// itself always encodes it (see task_runners.py: `f"node_lc{lecture_num}_{i}"`),
-  /// so that's the only source of truth for it.
-  static final RegExp _lectureNumPattern = RegExp(r'^node_lc(\d+)_');
+  /// The lecture this topic came from. This is the stable join key -- unlike
+  /// [lectureNum] below, it never changes even if other lectures in the
+  /// course are later deleted/reordered.
+  final String? sourceLectureId;
 
-  static int _lectureNumFromTopicId(String topicId) {
-    return int.tryParse(_lectureNumPattern.firstMatch(topicId)?.group(1) ?? '') ?? 0;
-  }
+  /// This topic's fixed 1-based position within its own lecture (stable,
+  /// never recomputed -- see core_extraction.py's per-lecture ACADEMIC idx).
+  final int? topicIndexInLecture;
+
+  /// The lecture's current 1-based position within the course. The pipeline
+  /// never persists this (see helpers.py: `_annotate_nodes_with_live_lecture_num`
+  /// is LLM-input-only and never written to topic_maps.map), because it can
+  /// change whenever an earlier lecture is deleted/moved. It is resolved
+  /// live from [sourceLectureId] by topic_map_provider.dart, using the same
+  /// "current lecture list order" the backend recomputes on every call --
+  /// so it's null until that composition step fills it in.
+  final int? lectureNum;
 
   factory TopicMapNode.fromJson(Map<String, dynamic> json) {
     final topicId = json['topic_id'] as String;
@@ -59,7 +69,25 @@ class TopicMapNode {
       title: json['title'] as String? ?? topicId,
       topicType: json['topic_type'] as String? ?? 'ACADEMIC',
       clusterId: json['cluster_id'] as String?,
-      lectureNum: _lectureNumFromTopicId(topicId),
+      sourceLectureId: json['source_lecture_id'] as String?,
+      topicIndexInLecture: (json['topic_index_in_lecture'] as num?)?.toInt(),
+      // The real pipeline never writes this into topic_maps.map (see the
+      // class-level doc on `lectureNum`); topic_map_provider.dart fills it
+      // in afterward via copyWith. Only the standalone test fixture
+      // (test_topic_map.json), which bypasses that provider, embeds it here.
+      lectureNum: (json['lecture_num'] as num?)?.toInt(),
+    );
+  }
+
+  TopicMapNode copyWith({int? lectureNum}) {
+    return TopicMapNode(
+      id: id,
+      title: title,
+      topicType: topicType,
+      clusterId: clusterId,
+      sourceLectureId: sourceLectureId,
+      topicIndexInLecture: topicIndexInLecture,
+      lectureNum: lectureNum ?? this.lectureNum,
     );
   }
 }
@@ -124,6 +152,7 @@ class TopicMapData {
     required this.nodes,
     required this.edges,
     required this.ghostNodes,
+    this.isStale = false,
   });
 
   final String courseTitle;
@@ -132,6 +161,14 @@ class TopicMapData {
   final List<TopicMapNode> nodes;
   final List<TopicMapEdge> edges;
   final List<TopicMapGhostNode> ghostNodes;
+
+  /// True when a lecture belonging to this course was deleted/moved and the
+  /// map hasn't been repaired yet (see topic_map_repository_supabase.dart's
+  /// `is_stale` column -- not part of the `map` jsonb itself, so it's always
+  /// supplied by the caller, never parsed out of [fromJson]'s json arg).
+  /// The UI should offer "Recreate Topic Map" instead of the normal view
+  /// while this is true.
+  final bool isStale;
 
   /// The real pipeline never writes course_title/total_lectures_covered into
   /// the map jsonb at all -- those belong to the courses/lectures tables,
@@ -143,6 +180,7 @@ class TopicMapData {
     Map<String, dynamic> json, {
     String? courseTitle,
     int? totalLecturesCovered,
+    bool isStale = false,
   }) {
     return TopicMapData(
       courseTitle: courseTitle ?? json['course_title'] as String? ?? 'Untitled Course',
@@ -160,17 +198,24 @@ class TopicMapData {
       ghostNodes: (json['ghost_nodes'] as List<dynamic>? ?? [])
           .map((e) => TopicMapGhostNode.fromJson(e as Map<String, dynamic>))
           .toList(),
+      isStale: isStale,
     );
   }
 
-  TopicMapData copyWith({String? courseTitle, int? totalLecturesCovered}) {
+  TopicMapData copyWith({
+    String? courseTitle,
+    int? totalLecturesCovered,
+    List<TopicMapNode>? nodes,
+    bool? isStale,
+  }) {
     return TopicMapData(
       courseTitle: courseTitle ?? this.courseTitle,
       totalLecturesCovered: totalLecturesCovered ?? this.totalLecturesCovered,
       clusters: clusters,
-      nodes: nodes,
+      nodes: nodes ?? this.nodes,
       edges: edges,
       ghostNodes: ghostNodes,
+      isStale: isStale ?? this.isStale,
     );
   }
 }

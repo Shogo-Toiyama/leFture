@@ -46,7 +46,7 @@ Map<String, String?> buildClusterIdByNodeId(TopicMapData data) {
 /// Ghost nodes have no lecture_num, so they're deliberately absent here --
 /// Lecture View highlighting only ever concerns real topic nodes.
 Map<String, int> buildLectureNumByNodeId(TopicMapData data) {
-  return {for (final node in data.nodes) node.id: node.lectureNum};
+  return {for (final node in data.nodes) node.id: node.lectureNum ?? 0};
 }
 
 /// Where a cluster's name sits front-and-center in Cluster View.

@@ -36,7 +36,10 @@ from app.services.task_runners import (
     run_detail_contents_task,
     run_image_prompt_generation_task,
     run_image_rendering_task,
-    run_finalize_job_task
+    run_finalize_job_task,
+    mark_topic_map_stale,
+    run_topic_map_reconstruction_task,
+    build_pending_addition_for_lecture
 )
 
 # ---------------------------------------------------------
@@ -65,6 +68,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET") # 追加: Supabase Webhookからのリクエストを検証するシークレット
 STALE_TASK_TIMEOUT_MINUTES = int(os.getenv("STALE_TASK_TIMEOUT_MINUTES", "20")) # Cloud Scheduler駆動のリカバリが「止まっている」と判定するまでの分数
+TOPIC_MAP_STALE_TIMEOUT_MINUTES = int(os.getenv("TOPIC_MAP_STALE_TIMEOUT_MINUTES", "60")) # Lecture削除/移動でstaleになったTopic Mapを、ユーザー操作が無くても自動でRecreateするまでの分数
 LECTURE_HARD_DELETE_RETENTION_DAYS = int(os.getenv("LECTURE_HARD_DELETE_RETENTION_DAYS", "30")) # ソフト削除(deleted_at)からハードデリートまでの日数
 PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "50")) # Patrol1回あたりでハードデリートする講義数の上限(タイムアウト防止。溢れた分は次回実行で処理される)
 
@@ -91,6 +95,16 @@ class StartAnalysisRequest(BaseModel):
 
 class RetryTaskRequest(BaseModel):
     task_id: str
+
+class TopicMapMarkStaleRequest(BaseModel):
+    """Lectureの削除・移動が起きた瞬間にFlutterから呼ばれる（LLMは呼ばず記録だけ）。"""
+    course_id: str
+    lecture_id: str
+    action: str  # "remove" | "add"
+
+class TopicMapReconstructRequest(BaseModel):
+    """「Recreate Topic Map」ボタンから呼ばれる（Phase A+Bを同期的に実行）。"""
+    course_id: str
 
 class TranscribeChunkPayload(BaseModel):
     """Cloud Tasks から /worker/transcribe-chunk-process に渡されるデータ"""
@@ -693,6 +707,57 @@ async def worker_finalize_job(payload: WorkerPayload):
 
 
 # ---------------------------------------------------------
+# 🗺️ Topic Map: Lecture削除/移動 と Recreate（processing_jobsのDAGとは独立）
+# ---------------------------------------------------------
+# この2本は録音パイプラインのjob_id/task_idチェーンに一切依存しない、クライアント
+# 発火の単発エンドポイント。mark-staleは記録だけの軽量な処理なので即時応答、
+# reconstructはLLM呼び出しを1回含むため数秒かかりうるが、依存関係のない単発処理
+# なのでCloud Tasksのキューに乗せず、リクエストの中で同期的に完結させている。
+
+@app.post("/topic-map/mark-stale")
+async def topic_map_mark_stale(payload: TopicMapMarkStaleRequest):
+    """
+    Lectureの削除・Course移動が起きた瞬間にFlutterから呼ばれる。LLMは呼ばず、
+    pending_removals/pending_additionsに記録してis_staleを立てるだけ。
+    実際のグラフ修復は「Recreate Topic Map」操作かPatrolのアイドルタイムアウトが行う。
+    """
+    if payload.action not in ("remove", "add"):
+        raise HTTPException(status_code=400, detail=f"Invalid action: {payload.action}")
+
+    lecture_title = None
+    lecture_topics = None
+    if payload.action == "add":
+        try:
+            addition = await build_pending_addition_for_lecture(payload.lecture_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to read lecture's core extraction result: {e}")
+        lecture_title = addition["lecture_title"]
+        lecture_topics = addition["topics"]
+
+    result = await mark_topic_map_stale(
+        course_id=payload.course_id,
+        action=payload.action,
+        lecture_id=payload.lecture_id,
+        lecture_topics=lecture_topics,
+        lecture_title=lecture_title,
+    )
+    return result
+
+
+@app.post("/topic-map/reconstruct")
+async def topic_map_reconstruct(payload: TopicMapReconstructRequest):
+    """
+    「Recreate Topic Map」ボタンから呼ばれる。pending_removals/pending_additionsを
+    まとめて消化し、Phase A(決定的除去)→Phase B(LLMによる修復)を同期的に実行する。
+    """
+    try:
+        result = await run_topic_map_reconstruction_task(payload.course_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Topic map reconstruction failed: {e}")
+    return result
+
+
+# ---------------------------------------------------------
 # 🩺 Patrol（Cloud Scheduler駆動の汎用メンテナンス・ディスパッチャー）
 # ---------------------------------------------------------
 # Cloud Schedulerのジョブは1つだけ用意し、このエンドポイントを叩いてもらう。
@@ -738,9 +803,38 @@ async def _patrol_reap_stale_dag_tasks() -> dict:
     return {"recovered_tasks": recovered, "threshold_minutes": STALE_TASK_TIMEOUT_MINUTES}
 
 
-# 将来ここに追加していく（例）:
-# async def _patrol_cleanup_soft_deleted() -> dict: ...
-# async def _patrol_collect_error_reports() -> dict: ...
+async def _patrol_reconstruct_stale_topic_maps() -> dict:
+    """
+    Lecture削除/移動でstaleになったTopic Mapのうち、stale_sinceから
+    TOPIC_MAP_STALE_TIMEOUT_MINUTES(既定60分)以上ユーザーが「Recreate Topic Map」を
+    押さずに放置しているものを、自動でまとめて再構成する。ユーザーが整理中に
+    連続で削除・移動しても、ここに来る前に手動でRecreateすれば即座に解消されるので、
+    これはあくまで「操作を忘れた/放置した」場合の保険。
+    1件の再構成失敗が他のCourseの処理を止めないよう、Course単位でtry/exceptする。
+    """
+    admin_client = get_supabase_client()
+    threshold = (datetime.now(timezone.utc) - timedelta(minutes=TOPIC_MAP_STALE_TIMEOUT_MINUTES)).isoformat()
+
+    stale_res = await asyncio.to_thread(
+        lambda: admin_client.table("topic_maps")
+            .select("course_id")
+            .eq("is_stale", True)
+            .lt("stale_since", threshold)
+            .execute()
+    )
+
+    reconstructed = 0
+    failed = 0
+    for row in (stale_res.data or []):
+        course_id = row["course_id"]
+        try:
+            await run_topic_map_reconstruction_task(course_id)
+            reconstructed += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Patrol failed to reconstruct topic map for course {course_id}: {e}")
+
+    return {"reconstructed": reconstructed, "failed": failed, "threshold_minutes": TOPIC_MAP_STALE_TIMEOUT_MINUTES}
 
 
 async def _hard_delete_lecture(admin_client, uid: str, lecture_id: str) -> None:
@@ -816,11 +910,14 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
     return {"hard_deleted": deleted, "failed": failed, "retention_days": LECTURE_HARD_DELETE_RETENTION_DAYS}
 
 
+# 将来ここに追加していく（例）:
+# async def _patrol_collect_error_reports() -> dict: ...
+
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
+    ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
     ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
 ]
-
 
 
 @app.post("/maintenance/patrol")

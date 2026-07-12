@@ -455,7 +455,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
       }
     }
     if (node != null) {
-      _loadPanelData(lectureNum: node.lectureNum, topicNode: node);
+      _loadPanelData(lectureNum: node.lectureNum ?? 0, topicNode: node);
     } else {
       setState(() {
         _panelData = null;
@@ -483,15 +483,6 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
     if (widget.interactive) {
       _loadPanelData(lectureNum: lectureNum, topicNode: null);
     }
-  }
-
-  /// Trailing number in a topic_id like "node_lc1_3" -> 3 (the topic's
-  /// position within its lecture) -- see task_runners.py's
-  /// `f"node_lc{lecture_num}_{i}"` for where that shape comes from.
-  static final RegExp _topicNumPattern = RegExp(r'_(\d+)$');
-
-  int? _topicNumFromTopicId(String topicId) {
-    return int.tryParse(_topicNumPattern.firstMatch(topicId)?.group(1) ?? '');
   }
 
   String _lectureDisplayTitle(Lecture lecture) {
@@ -544,10 +535,11 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
   /// fields, so it's always null there.
   /// Topic View: title is the map node's own title, but its summary has to
   /// come from `lecture_topics.summary` -- the map itself never carries
-  /// one. topicNum (from the topic_id) and lecture_topics.index are both
-  /// 1-based positions among this lecture's ACADEMIC topics only (see
-  /// core_extraction.py's idx assignment and task_runners.py's
-  /// `academic_topics` filter), so they can be matched directly.
+  /// one. `topicNode.topicIndexInLecture` and `lecture_topics.index` are
+  /// both the same 1-based position among this lecture's ACADEMIC topics
+  /// (see core_extraction.py's idx assignment), so they can be matched
+  /// directly. (Topic node IDs are opaque hashes now -- see
+  /// topic_map_models.dart -- so this can no longer be parsed from the id.)
   ///
   /// Lectures are streamed newest-first from the local DB; lecture_num is
   /// assigned by oldest-first position (see task_runners.py's
@@ -587,7 +579,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
         final rawSummary = row?['summary'] as String?;
         summary = rawSummary == null ? null : stripSidCitations(rawSummary);
       } else {
-        topicNum = _topicNumFromTopicId(topicNode.id);
+        topicNum = topicNode.topicIndexInLecture;
         if (topicNum != null) {
           final lectureTopics = await ref.read(lectureTopicsProvider(lecture.id).future);
           for (final t in lectureTopics) {

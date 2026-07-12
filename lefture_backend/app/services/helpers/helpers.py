@@ -1,5 +1,6 @@
 import re
 import json
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -223,6 +224,87 @@ def _parse_detail_contents(content: str) -> tuple[str, str]:
     return summary, clean_contents
 
 
+def _generate_topic_node_id(lecture_id: str, topic_index_in_lecture: int) -> str:
+    """
+    Topic MapのノードIDを、Lecture ID + Lecture内トピック番号から決定的に生成する。
+    タイトル文字列やLecture番号（位置）は使わない: タイトルは長文かつLLMに
+    一字一句コピーさせるのは事故りやすく、位置(lecture_num)はLecture削除・移動で
+    変わりうるため、IDに焼き込むと過去ノードの参照が腐る。lecture_id自体は
+    不変なので、同じトピックは常に同じIDになる（パイプラインがリトライされても
+    重複ノードを作らない）。
+    """
+    digest = hashlib.sha1(f"{lecture_id}:{topic_index_in_lecture}".encode("utf-8")).hexdigest()
+    return f"node_{digest[:10]}"
+
+
+def _fetch_live_lecture_order_sync(supabase, course_id: str) -> list[str]:
+    """
+    course_id内の非削除Lectureを created_at 昇順で並べた Lecture ID のリストを返す。
+    Topic Map上の「Lecture N」という順序は保存時点のスナップショットではなく、
+    呼び出しの都度これで計算する。こうすることで、過去に削除・移動があっても
+    LLMや画面表示に渡す順序は常に現在の状態を反映する（自己修復する）。
+    """
+    res = supabase.table("lectures").select("id")\
+        .eq("course_id", course_id)\
+        .is_("deleted_at", "null")\
+        .order("created_at")\
+        .execute()
+    return [l["id"] for l in (res.data or [])]
+
+
+def _annotate_nodes_with_live_lecture_num(nodes: list[dict], lecture_num_by_id: dict[str, int]) -> list[dict]:
+    """
+    ノード群のコピーに、現時点のLecture順序(lecture_num)を一時的に注記する。
+    これはLLMへの入力としてのみ使う揮発的な値で、topic_maps.mapには保存しない
+    （保存すると位置が固定化され、削除・移動のたびに腐っていくため）。
+    削除済み・見つからないLectureに属するノードは source_lecture_id が
+    現在のLecture一覧に無いため lecture_num=None になる。
+    """
+    annotated = []
+    for n in nodes:
+        n_copy = dict(n)
+        n_copy["lecture_num"] = lecture_num_by_id.get(n.get("source_lecture_id"))
+        annotated.append(n_copy)
+    return annotated
+
+
+def _prune_lecture_nodes(graph: dict, source_lecture_id: str, logger=None) -> dict:
+    """
+    Phase A: 指定Lectureに属するノードを、LLMを介さず決定的にグラフから除去する。
+    - source_lecture_id が一致するノードを nodes から削除
+    - どちらかの端点が消えたエッジを削除
+    - derived_from_topic_id が消えたノードを指していた ghost_node は削除
+      （どのトピックから予測されたか分からなくなったGhostは残さない方針）
+    クラスターは削除しない（空になっても、リネーム/削除が要るかはLLM側の
+    Reconciliationフェーズの判断に委ねる）。
+    """
+    import copy
+    new_graph = copy.deepcopy(graph)
+
+    def _log(msg: str) -> None:
+        if logger is not None:
+            logger.log(msg)
+
+    all_nodes = new_graph.get("nodes", [])
+    removed_ids = {n.get("topic_id") for n in all_nodes if n.get("source_lecture_id") == source_lecture_id}
+
+    if not removed_ids:
+        return new_graph
+
+    new_graph["nodes"] = [n for n in all_nodes if n.get("topic_id") not in removed_ids]
+    new_graph["edges"] = [
+        e for e in new_graph.get("edges", [])
+        if e.get("source_id") not in removed_ids and e.get("target_id") not in removed_ids
+    ]
+    new_graph["ghost_nodes"] = [
+        g for g in new_graph.get("ghost_nodes", [])
+        if g.get("derived_from_topic_id") not in removed_ids
+    ]
+
+    _log(f"🧹 Pruned {len(removed_ids)} node(s) for lecture {source_lecture_id} (and their edges/derived ghosts).")
+    return new_graph
+
+
 def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: list[dict], logger=None) -> dict:
     """
     Topic Mapping (LLM) から出力された差分(mutations)を、
@@ -288,7 +370,9 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
                 "topic_id": topic_id,
                 "title": topic_info.get("title", f"Topic {topic_id}"),
                 "cluster_id": cluster_id,
-                "topic_type": topic_info.get("topic_type", "ACADEMIC")
+                "topic_type": topic_info.get("topic_type", "ACADEMIC"),
+                "source_lecture_id": topic_info.get("source_lecture_id"),
+                "topic_index_in_lecture": topic_info.get("topic_index_in_lecture")
             })
 
     # 3. エッジのアクション (add / remove)
