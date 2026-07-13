@@ -139,7 +139,7 @@ class LectureViewerPage extends HookConsumerWidget {
                     if (page != null && page >= 0 && page < sortedLectures.length) {
                       final targetLecture = sortedLectures[page];
                       if (targetLecture.id != lectureId) {
-                        context.replace('${AppRoutes.notesRootPath}/c/${targetLecture.courseId}/v/${targetLecture.id}');
+                        context.replace('${AppRoutes.coursesRootPath}/c/${targetLecture.courseId}/v/${targetLecture.id}');
                       }
                     }
                   }
@@ -384,7 +384,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                         child: _LargeNavigatorCard(
                           icon: Icons.style_outlined,
                           title: 'Review Cards',
-                          onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0'),
+                          onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0'),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -392,7 +392,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                         child: _LargeNavigatorCard(
                           icon: Icons.description_outlined,
                           title: 'Deep Notes',
-                          onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0'),
+                          onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0'),
                         ),
                       ),
                     ],
@@ -417,7 +417,7 @@ class _LectureViewerBody extends HookConsumerWidget {
 
                   // Transcript Button (Bottom)
                   GestureDetector(
-                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/transcript/${lecture.id}'),
+                    onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/transcript/${lecture.id}'),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),

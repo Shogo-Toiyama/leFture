@@ -809,7 +809,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
                             _panelData = null;
                             _panelExtent = 0;
                           });
-                          context.push('${AppRoutes.notesRootPath}/c/$courseId/v/${lecture.id}');
+                          context.push('${AppRoutes.coursesRootPath}/c/$courseId/v/${lecture.id}');
                         },
                       ),
               ),

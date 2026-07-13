@@ -123,7 +123,7 @@ class DeepNotesListPage extends HookConsumerWidget {
         final hasContent = topic.content.trim().isNotEmpty;
         return GestureDetector(
           onTap: () => context.push(
-              '${AppRoutes.notesRootPath}/c/$courseId/dnd/$lectureId/${topic.index}',
+              '${AppRoutes.coursesRootPath}/c/$courseId/dnd/$lectureId/${topic.index}',
               extra: topics),
           child: Container(
             padding: const EdgeInsets.all(20),

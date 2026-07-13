@@ -158,8 +158,8 @@ class _FunFactCard extends ConsumerWidget {
     return GestureDetector(
       // FunFactの元になった講義のビューワーへ飛ぶ (講義が特定できない場合はコース一覧へ)
       onTap: () => fact.lectureId != null
-          ? context.go('${AppRoutes.notesRootPath}/c/${lecture.courseId}/v/${fact.lectureId}')
-          : context.push(AppRoutes.notesRootPath),
+          ? context.go('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${fact.lectureId}')
+          : context.push(AppRoutes.coursesRootPath),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
@@ -302,7 +302,7 @@ class _DefaultFunFactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(AppRoutes.notesRootPath),
+      onTap: () => context.push(AppRoutes.coursesRootPath),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(

@@ -26,7 +26,7 @@ class CourseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('${AppRoutes.notesRootPath}/c/${course.id}'),
+      onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${course.id}'),
       onLongPress: (onEdit != null || onDelete != null)
           ? () => showTileActionsSheet(
                 context: context,

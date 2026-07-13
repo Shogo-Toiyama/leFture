@@ -73,9 +73,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.home,
         builder: (context, state) => const HomePage(),
         routes: [
-          // 2. Notes System (Nested under /home)
+          // 2. Courses System (Nested under /home)
           GoRoute(
-            path: AppRoutes.notesRoot, // 'notes' -> /home/notes
+            path: AppRoutes.coursesRoot, // 'courses' -> /home/courses
             builder: (context, state) => const CoursePage(),
             routes: [
               // コース内: /home/notes/c/:courseId

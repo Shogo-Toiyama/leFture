@@ -15,7 +15,7 @@ class CoursesHeaderWidget extends StatelessWidget {
       children: [
         // Courses >
         InkWell(
-          onTap: () => context.push(AppRoutes.notesRootPath),
+          onTap: () => context.push(AppRoutes.coursesRootPath),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 6),
             child: Row(

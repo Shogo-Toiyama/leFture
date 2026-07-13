@@ -83,7 +83,7 @@ class LectureTile extends ConsumerWidget {
     return GestureDetector(
       onTap: () => isActivelyRecording
           ? context.push(AppRoutes.recording)
-          : context.go('${AppRoutes.notesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
+          : context.go('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
       onLongPress: (onEdit != null || onDelete != null)
           ? () => showTileActionsSheet(
                 context: context,

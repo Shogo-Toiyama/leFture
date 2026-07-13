@@ -166,7 +166,7 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                 itemBuilder: (context, tileIdx) {
                   if (tileIdx == 0) {
                     return GestureDetector(
-                      onTap: () => context.push('${AppRoutes.notesRootPath}/c/$courseId/rcv/$lectureId?index=$groupStart'),
+                      onTap: () => context.push('${AppRoutes.coursesRootPath}/c/$courseId/rcv/$lectureId?index=$groupStart'),
                       child: SizedBox(
                         width: 115,
                         child:
@@ -182,7 +182,7 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                               ? (card.cardContent.first.text ?? '')
                               : '');
                   return GestureDetector(
-                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/$courseId/rcv/$lectureId?index=${groupStart + tileIdx}'),
+                    onTap: () => context.push('${AppRoutes.coursesRootPath}/c/$courseId/rcv/$lectureId?index=${groupStart + tileIdx}'),
                     child: Container(
                       width: 115,
                       padding: const EdgeInsets.all(12),

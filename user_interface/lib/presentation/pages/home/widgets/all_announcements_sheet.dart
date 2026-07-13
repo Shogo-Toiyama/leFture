@@ -96,7 +96,7 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                               ? null
                               : () {
                                   Navigator.of(context).pop(); // シートを閉じてから遷移
-                                  context.push('${AppRoutes.notesRootPath}/c/$courseId');
+                                  context.push('${AppRoutes.coursesRootPath}/c/$courseId');
                                 },
                           onToggleComplete: (a) => ref
                               .read(announcementRepositoryDriftProvider)

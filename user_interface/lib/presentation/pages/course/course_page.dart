@@ -555,7 +555,7 @@ class _CourseLectureListView extends ConsumerWidget {
                                 ))
                           : (canOpenTopicMap
                               ? () => context.push(
-                                  '${AppRoutes.notesRootPath}/c/$courseId/${AppRoutes.topicMap}',
+                                  '${AppRoutes.coursesRootPath}/c/$courseId/${AppRoutes.topicMap}',
                                 )
                               : null),
                       child: Container(
