@@ -22,6 +22,10 @@ import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/widgets/lecture_hero_collage.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
 
 
@@ -59,15 +63,19 @@ class LectureViewerPage extends HookConsumerWidget {
       );
       return Scaffold(
         backgroundColor: AppColors.universe.voidBackground,
-        body: _buildViewerBody(
-          context: context,
-          ref: ref,
+        body: _LectureViewerBody(
           lecture: dummyLecture,
         ),
       );
     }
 
     final lectureAsync = ref.watch(lectureProvider(lectureId));
+    final initialLecture = lectureAsync.asData?.value;
+    final courseId = initialLecture?.courseId;
+
+    final lecturesAsync = courseId != null
+        ? ref.watch(lectureListStreamProvider(courseId))
+        : const AsyncValue<List<Lecture>>.loading();
 
     return lectureAsync.when(
       loading: () => Scaffold(
@@ -92,9 +100,7 @@ class LectureViewerPage extends HookConsumerWidget {
           );
         }
 
-        final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
-
-        return uiStateAsync.when(
+        return lecturesAsync.when(
           loading: () => Scaffold(
             backgroundColor: AppColors.universe.voidBackground,
             body: const Center(
@@ -107,30 +113,108 @@ class LectureViewerPage extends HookConsumerWidget {
               child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
             ),
           ),
-          data: (uiState) {
-            if (uiState == LectureUIState.complete) {
+          data: (lectures) {
+            // Sort ascending (chronological: oldest first, newer to the right)
+            final sortedLectures = [...lectures]
+              ..sort((a, b) => a.lectureDatetime.compareTo(b.lectureDatetime));
+
+            final initialIndex = sortedLectures.indexWhere((l) => l.id == lecture.id);
+
+            if (initialIndex == -1) {
+              // Fallback if current lecture is not found in the list (e.g. database syncing)
               return Scaffold(
                 backgroundColor: AppColors.universe.voidBackground,
-                body: _buildViewerBody(
-                  context: context,
-                  ref: ref,
-                  lecture: lecture,
-                ),
+                body: _LectureViewerBody(lecture: lecture),
               );
             }
 
-            return LectureStatusScaffold(lecture: lecture);
+            final pageController = usePageController(initialPage: initialIndex);
+
+            return Scaffold(
+              backgroundColor: AppColors.universe.voidBackground,
+              body: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollEndNotification) {
+                    final page = pageController.page?.round();
+                    if (page != null && page >= 0 && page < sortedLectures.length) {
+                      final targetLecture = sortedLectures[page];
+                      if (targetLecture.id != lectureId) {
+                        context.replace('${AppRoutes.notesRootPath}/c/${targetLecture.courseId}/v/${targetLecture.id}');
+                      }
+                    }
+                  }
+                  return false;
+                },
+                child: PageView.builder(
+                  controller: pageController,
+                  itemCount: sortedLectures.length,
+                  itemBuilder: (context, index) {
+                    final lectureItem = sortedLectures[index];
+                    return _LecturePageContent(lecture: lectureItem);
+                  },
+                ),
+              ),
+            );
           },
         );
       },
     );
   }
+}
 
-  Widget _buildViewerBody({
-    required BuildContext context,
-    required WidgetRef ref,
-    required Lecture lecture,
-  }) {
+class _LecturePageContent extends ConsumerWidget {
+  const _LecturePageContent({
+    required this.lecture,
+  });
+
+  final Lecture lecture;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
+
+    ref.listen<AsyncValue<LectureUIState>>(
+      lectureStateProvider(lecture.id),
+      (previous, next) {
+        next.whenData((state) {
+          if (state == LectureUIState.complete) {
+            final uid = supabase.auth.currentUser?.id;
+            if (uid != null) {
+              ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
+            }
+            ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+          }
+        });
+      },
+    );
+
+    return uiStateAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppColors.starGold),
+      ),
+      error: (err, stack) => Center(
+        child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
+      ),
+      data: (uiState) {
+        if (uiState == LectureUIState.complete) {
+          return _LectureViewerBody(lecture: lecture);
+        }
+
+        return LectureStatusScaffold(lecture: lecture);
+      },
+    );
+  }
+}
+
+class _LectureViewerBody extends HookConsumerWidget {
+  const _LectureViewerBody({
+    required this.lecture,
+  });
+
+  final Lecture lecture;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final topics = ref.watch(lectureTopicsProvider(lecture.id)).asData?.value ?? const <LectureTopic>[];
     final keywords = ref.watch(lectureKeywordsProvider(lecture.id)).asData?.value ?? const <Keyword>[];
     final funFacts = ref.watch(funFactsForLectureProvider(lecture.id)).asData?.value ?? const <FunFact>[];
@@ -162,205 +246,209 @@ class LectureViewerPage extends HookConsumerWidget {
                 children: [
                   const SizedBox(height: 16),
 
-            // Date & Course Code (left-aligned)
-            Row(
-              children: [
-                Text(
-                  DateFormat.yMMMd().format(lecture.lectureDatetime),
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                  // Date & Course Code (left-aligned) - Moved above collage
+                  Row(
+                    children: [
+                      Text(
+                        DateFormat.yMMMd().format(lecture.lectureDatetime),
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '  •  ',
+                        style: TextStyle(
+                          color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        courseCode,
+                        style: const TextStyle(
+                          color: AppColors.starGold,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  '  •  ',
-                  style: TextStyle(
-                    color: AppColors.universe.textComet.withValues(alpha: 0.5),
-                    fontSize: 13,
-                  ),
-                ),
-                Text(
-                  courseCode,
-                  style: const TextStyle(
-                    color: AppColors.starGold,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-            // Title
-            Text(
-              displayTitle,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 16),
+                  // Hero Collage View
+                  LectureHeroCollage(lectureId: lecture.id),
+                  const SizedBox(height: 20),
 
-            // Summary
-            Text(
-              (summary != null && summary.isNotEmpty)
-                  ? summary
-                  : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
-              style: TextStyle(
-                color: AppColors.universe.textStarlight,
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Start Review Session Button (horizontal capsule button)
-            GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Starting Review Session...')),
-                );
-              },
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.starGold, Color(0xFFFFD700)],
-                  ),
-                  borderRadius: BorderRadius.circular(26),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.starGold.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                  // Title
+                  Text(
+                    displayTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Start Review Session',
-                      style: TextStyle(
-                        color: AppColors.universe.voidBackground,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Summary
+                  Text(
+                    (summary != null && summary.isNotEmpty)
+                        ? summary
+                        : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Start Review Session Button (horizontal capsule button)
+                  GestureDetector(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Starting Review Session...')),
+                      );
+                    },
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.starGold, Color(0xFFFFD700)],
+                        ),
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.starGold.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Start Review Session',
+                            style: TextStyle(
+                              color: AppColors.universe.voidBackground,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+                  ),
+                  const SizedBox(height: 24),
 
-            // Horizontal Info Chips Row
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _HighlightChip(
-                    icon: Icons.campaign_outlined,
-                    label: '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
-                    onTap: announcements.isNotEmpty
-                        ? () => _showAnnouncementsSheet(context, lecture.id, announcements)
-                        : null,
+                  // Horizontal Info Chips Row
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _HighlightChip(
+                          icon: Icons.campaign_outlined,
+                          label: '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
+                          onTap: announcements.isNotEmpty
+                              ? () => _showAnnouncementsSheet(context, lecture.id, announcements)
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        _HighlightChip(
+                          icon: Icons.vpn_key_outlined,
+                          label: '${keywords.length} keyword${keywords.length == 1 ? '' : 's'}',
+                          onTap: keywords.isNotEmpty
+                              ? () => _showKeywordsSheet(context, keywords)
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        _HighlightChip(
+                          icon: Icons.hub_outlined,
+                          label: '${topics.length} topic${topics.length == 1 ? '' : 's'}',
+                          onTap: null, // Dummy/no-op
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _HighlightChip(
-                    icon: Icons.vpn_key_outlined,
-                    label: '${keywords.length} keyword${keywords.length == 1 ? '' : 's'}',
-                    onTap: keywords.isNotEmpty
-                        ? () => _showKeywordsSheet(context, keywords)
-                        : null,
+                  const SizedBox(height: 28),
+
+                  // Two Large Buttons: Review Cards & Deep Notes (横並びでどでかく)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _LargeNavigatorCard(
+                          icon: Icons.style_outlined,
+                          title: 'Review Cards',
+                          onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _LargeNavigatorCard(
+                          icon: Icons.description_outlined,
+                          title: 'Deep Notes',
+                          onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0'),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _HighlightChip(
-                    icon: Icons.hub_outlined,
-                    label: '${topics.length} topic${topics.length == 1 ? '' : 's'}',
-                    onTap: null, // Dummy/no-op
+                  const SizedBox(height: 28),
+
+                  // Fun Fact Section
+                  if (funFacts.isNotEmpty) ...[
+                    Text(
+                      'FUN FACT',
+                      style: TextStyle(
+                        color: AppColors.universe.textComet,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _ViewerFunFactCard(fact: funFacts.first),
+                    const SizedBox(height: 28),
+                  ],
+
+                  // Transcript Button (Bottom)
+                  GestureDetector(
+                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/transcript/${lecture.id}'),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.universe.glassWhiteLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.universe.glassBorder),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.receipt_long_outlined, color: AppColors.starGold, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Transcript',
+                            style: TextStyle(
+                              color: AppColors.universe.textStarlight,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-
-            // Two Large Buttons: Review Cards & Deep Notes (横並びでどでかく)
-            Row(
-              children: [
-                Expanded(
-                  child: _LargeNavigatorCard(
-                    icon: Icons.style_outlined,
-                    title: 'Review Cards',
-                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/rc/${lecture.id}'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _LargeNavigatorCard(
-                    icon: Icons.description_outlined,
-                    title: 'Deep Notes',
-                    onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/dn/${lecture.id}'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-
-            // Fun Fact Section
-            if (funFacts.isNotEmpty) ...[
-              Text(
-                'FUN FACT',
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _ViewerFunFactCard(fact: funFacts.first),
-              const SizedBox(height: 28),
-            ],
-
-            // Transcript Button (Bottom)
-            GestureDetector(
-              onTap: () => context.push('${AppRoutes.notesRootPath}/c/${lecture.courseId}/transcript/${lecture.id}'),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.universe.glassWhiteLow,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.universe.glassBorder),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.receipt_long_outlined, color: AppColors.starGold, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Transcript',
-                      style: TextStyle(
-                        color: AppColors.universe.textStarlight,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    ),
-  ],
-),
     );
   }
 

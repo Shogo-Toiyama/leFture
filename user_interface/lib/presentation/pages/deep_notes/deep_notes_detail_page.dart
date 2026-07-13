@@ -1,13 +1,12 @@
-// lib/presentation/pages/deep_notes/deep_notes_detail_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 
-
-
+import 'package:lecture_companion_ui/application_viewer/../application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
@@ -30,24 +29,61 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentIndex = useState<int>(topicIndex.clamp(0, topics.length - 1));
+    // If topics are passed from route state (e.g. from the list page), use them.
+    // Otherwise, fetch them directly.
+    final hasPassedTopics = topics.isNotEmpty;
+    
+    final topicsAsync = hasPassedTopics ? null : ref.watch(lectureTopicsProvider(lectureId));
+    final notesAsync  = hasPassedTopics ? null : ref.watch(deepNotesProvider(lectureId));
+
+    final resolvedTopics = useMemoized(() {
+      if (hasPassedTopics) return topics;
+
+      final rawTopics = topicsAsync?.asData?.value ?? <LectureTopic>[];
+      final notes     = notesAsync?.asData?.value  ?? <DeepNote>[];
+      final noteMap   = {for (final n in notes) n.topicNumber: n};
+
+      return rawTopics.asMap().entries.map((entry) {
+        final i = entry.key;
+        final t = entry.value;
+        final note = noteMap[t.index];
+        return DeepNoteTopic(
+          index: i,
+          title: t.displayTitle,
+          summary: t.summary ?? '',
+          content: note?.noteContents ?? '',
+        );
+      }).toList();
+    }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
+
+    final index = resolvedTopics.isEmpty ? 0 : topicIndex.clamp(0, resolvedTopics.length - 1);
+    final currentIndex = useState<int>(index);
     // 直近の遷移方向: 1=次のノートへ, -1=前のノートへ, 0=遷移直後ではない。
     // 遷移先のノートを開いた瞬間のスクロール位置を決めるために使う。
     final navigationDirection = useState<int>(0);
 
-    if (topics.isEmpty) {
+    // When resolvedTopics loads, update the currentIndex value to initial topicIndex
+    useEffect(() {
+      if (resolvedTopics.isNotEmpty) {
+        currentIndex.value = topicIndex.clamp(0, resolvedTopics.length - 1);
+      }
+      return null;
+    }, [resolvedTopics]);
+
+    if (resolvedTopics.isEmpty) {
+      final isLoading = (topicsAsync?.isLoading ?? false) || (notesAsync?.isLoading ?? false);
       return Scaffold(
         backgroundColor: AppColors.paper.background,
         body: SafeArea(
           child: Column(
             children: [
-              const CustomAppBar(
-                showHomeButton: true,
-                title: 'Deep Notes',
-                isLightBg: true,
-              ),
-              const Expanded(
-                child: Center(child: Text('No notes available')),
+              _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection)),
+              Expanded(
+                child: Center(
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: AppColors.deepGold)
+                      : const Text('No notes available'),
+                ),
               ),
             ],
           ),
@@ -55,57 +91,252 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       );
     }
 
-    final topic = topics[currentIndex.value];
-    final totalTopics = topics.length;
+    final topic = resolvedTopics[currentIndex.value];
+    final totalTopics = resolvedTopics.length;
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
       body: SafeArea(
         child: Column(
           children: [
-            CustomAppBar(
-              showHomeButton: true,
-              title: topic.title,
-              isLightBg: true,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    '${currentIndex.value + 1} / $totalTopics',
-                    style: TextStyle(
-                      color: AppColors.paper.textPencil,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildAppBar(context, ref, topic.title, currentIndex.value, totalTopics, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection)),
             Expanded(
               child: _NoteDetailContent(
                 topic: topic,
                 topicIndex: currentIndex.value,
                 totalTopics: totalTopics,
                 arrivalDirection: navigationDirection.value,
-        onNext: () {
-          if (currentIndex.value < totalTopics - 1) {
-            navigationDirection.value = 1;
-            currentIndex.value = currentIndex.value + 1;
-          }
-        },
-        onPrev: () {
-          if (currentIndex.value > 0) {
-            navigationDirection.value = -1;
-            currentIndex.value = currentIndex.value - 1;
-          }
-        },
+                onNext: () {
+                  if (currentIndex.value < totalTopics - 1) {
+                    navigationDirection.value = 1;
+                    currentIndex.value = currentIndex.value + 1;
+                  }
+                },
+                onPrev: () {
+                  if (currentIndex.value > 0) {
+                    navigationDirection.value = -1;
+                    currentIndex.value = currentIndex.value - 1;
+                  }
+                },
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAppBar(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    int currentIndex,
+    int totalCount,
+    VoidCallback onGridTap,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Row 1: Close button & Title
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.close, color: AppColors.paper.textInk),
+                onPressed: () => context.pop(),
+              ),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.paper.textInk,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 48), // keeps title centered
+            ],
+          ),
+        ),
+        // Row 2: Grid view button & Page counter
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: Icon(Icons.grid_view, color: AppColors.paper.textInk),
+                onPressed: onGridTap,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'View List',
+              ),
+              if (totalCount > 0)
+                Text(
+                  '${currentIndex + 1} / $totalCount',
+                  style: TextStyle(
+                    color: AppColors.paper.textPencil,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showNotesListSheet(
+    BuildContext context,
+    List<DeepNoteTopic> resolvedTopics,
+    ValueNotifier<int> currentIndex,
+    ValueNotifier<int> navigationDirection,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.paper.background,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.paper.line,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Deep Notes List',
+                          style: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: AppColors.paper.textInk),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+                      itemCount: resolvedTopics.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final topic = resolvedTopics[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            navigationDirection.value = 0;
+                            currentIndex.value = index;
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.paper.background,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: Colors.black.withValues(alpha: 0.07)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                // Index badge
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.deepGold.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        color: AppColors.deepGold,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        topic.title,
+                                        style: TextStyle(
+                                          color: AppColors.paper.textInk,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (topic.summary.isNotEmpty) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          topic.summary,
+                                          style: TextStyle(
+                                            color: AppColors.paper.textPencil,
+                                            fontSize: 13,
+                                            height: 1.4,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -20,6 +20,7 @@ import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_e
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_selection.dart';
@@ -92,7 +93,7 @@ class _CourseTreeView extends ConsumerWidget {
                   final grouped = _groupCourses(courses);
                   return RefreshIndicator(
                     color: AppColors.starGold,
-                    onRefresh: () async => ref.invalidate(courseListProvider),
+                    onRefresh: () => _handleRefresh(context, ref),
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                       children: grouped.entries.map((yearEntry) {
@@ -373,11 +374,7 @@ class _CourseLectureListView extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.starGold,
-          onRefresh: () async {
-            ref.invalidate(courseListProvider);
-            ref.invalidate(lectureListStreamProvider(courseId));
-            ref.invalidate(latestAnnouncementForCourseProvider(courseId));
-          },
+          onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
           child: CustomScrollView(
             slivers: [
               // 1. AppBar Area
@@ -883,4 +880,22 @@ class _TopicMapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+Future<void> _handleRefresh(BuildContext context, WidgetRef ref, {String? courseId}) async {
+  if (!await isDeviceOnline()) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You're offline. Showing cached data.")),
+      );
+    }
+    return;
+  }
+
+  await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+  ref.invalidate(courseListProvider);
+  if (courseId != null) {
+    ref.invalidate(lectureListStreamProvider(courseId));
+    ref.invalidate(latestAnnouncementForCourseProvider(courseId));
+  }
 }

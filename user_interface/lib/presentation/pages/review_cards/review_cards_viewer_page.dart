@@ -11,6 +11,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lecture_companion_ui/core/utils/text_preview.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -211,10 +212,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ── AppBar row ───────────────────────────────────────────────
+            // ── Row 1: Close button & Title ──
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
                 children: [
                   IconButton(
@@ -226,7 +226,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       topic.title,
                       style: TextStyle(
                         color: AppColors.paper.textInk,
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -234,12 +234,39 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 48), // keeps title centered
+                ],
+              ),
+            ),
+            // ── Row 2: Grid view button & Page counter ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.grid_view, color: AppColors.paper.textInk),
+                    onPressed: () => _showCardsListSheet(
+                      context,
+                      widgetRef,
+                      groups,
+                      groupStartIndex,
+                      imageFiles,
+                      flatItems,
+                      navigateTo,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'View List',
+                  ),
                   Text(
                     '${index + 1} / $totalCards',
                     style: TextStyle(
-                        color: AppColors.paper.textPencil, fontSize: 13),
+                      color: AppColors.paper.textPencil,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  const SizedBox(width: 8),
                 ],
               ),
             ),
@@ -400,6 +427,173 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showCardsListSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<_ReviewTopicGroup> groups,
+    List<int> groupStartIndex,
+    Map<int, File?> imageFiles,
+    List<_ReviewCardItem> flatItems,
+    void Function(int) navigateTo,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.paper.background,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.paper.line,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Review Cards List',
+                          style: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: AppColors.paper.textInk),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+                      itemCount: groups.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 28),
+                      itemBuilder: (context, idx) {
+                        final group = groups[idx];
+                        final groupStart = groupStartIndex[idx];
+                        final imageFile = imageFiles[idx];
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              group.title,
+                              style: TextStyle(
+                                color: AppColors.paper.textInk,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 155,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: group.cards.length + 1,
+                                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                                itemBuilder: (context, tileIdx) {
+                                  if (tileIdx == 0) {
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        navigateTo(groupStart);
+                                      },
+                                      child: SizedBox(
+                                        width: 115,
+                                        child: _CoverCardTile(title: group.title, imageFile: imageFile),
+                                      ),
+                                    );
+                                  }
+                                  final card = group.cards[tileIdx - 1];
+                                  final preview = card.title?.trim().isNotEmpty == true
+                                      ? card.title!.trim()
+                                      : plainTextPreview(
+                                          card.cardContent.isNotEmpty
+                                              ? (card.cardContent.first.text ?? '')
+                                              : '');
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      navigateTo(groupStart + tileIdx);
+                                    },
+                                    child: Container(
+                                      width: 115,
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.paper.surface,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                            color: Colors.black.withValues(alpha: 0.07)),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.03),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if (card.heroEmoji?.trim().isNotEmpty == true) ...[
+                                            Text(card.heroEmoji!.trim(),
+                                                style: const TextStyle(fontSize: 26)),
+                                            const SizedBox(height: 6),
+                                          ],
+                                          Text(
+                                            preview,
+                                            style: TextStyle(
+                                              color: AppColors.paper.textInk,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 4,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -628,5 +822,60 @@ class _ReviewCardBlockView extends StatelessWidget {
           styleSheet: _styleSheet(context),
         );
     }
+  }
+}
+
+class _CoverCardTile extends StatelessWidget {
+  const _CoverCardTile({required this.title, required this.imageFile});
+
+  final String title;
+  final File? imageFile;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (imageFile != null)
+            Image.file(imageFile!, fit: BoxFit.cover)
+          else
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+                ),
+              ),
+            ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              color: Colors.white.withValues(alpha: 0.75),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(color: Colors.white, blurRadius: 2),
+                    Shadow(color: Colors.white, blurRadius: 4),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
