@@ -14,6 +14,11 @@ part of 'topic_map_provider.dart';
 /// (see TopicMapData.fromJson) -- they belong to the courses/lectures
 /// tables, so this provider composes the raw map with courseListProvider
 /// and lectureListStreamProvider instead of trusting the json for them.
+///
+/// マップ本体はローカルDB経由(オフライン優先)。書き込み(markStale/
+/// reconstruct)は依然Supabase/Cloud Run直接なので、変更の反映は次のPull
+/// 以降になる(即時反映が必要な箇所はTopicMapReconstructControllerが
+/// 明示的に強制Pullしてから呼び直す)。
 
 @ProviderFor(topicMapForCourse)
 final topicMapForCourseProvider = TopicMapForCourseFamily._();
@@ -24,6 +29,11 @@ final topicMapForCourseProvider = TopicMapForCourseFamily._();
 /// (see TopicMapData.fromJson) -- they belong to the courses/lectures
 /// tables, so this provider composes the raw map with courseListProvider
 /// and lectureListStreamProvider instead of trusting the json for them.
+///
+/// マップ本体はローカルDB経由(オフライン優先)。書き込み(markStale/
+/// reconstruct)は依然Supabase/Cloud Run直接なので、変更の反映は次のPull
+/// 以降になる(即時反映が必要な箇所はTopicMapReconstructControllerが
+/// 明示的に強制Pullしてから呼び直す)。
 
 final class TopicMapForCourseProvider
     extends
@@ -39,6 +49,11 @@ final class TopicMapForCourseProvider
   /// (see TopicMapData.fromJson) -- they belong to the courses/lectures
   /// tables, so this provider composes the raw map with courseListProvider
   /// and lectureListStreamProvider instead of trusting the json for them.
+  ///
+  /// マップ本体はローカルDB経由(オフライン優先)。書き込み(markStale/
+  /// reconstruct)は依然Supabase/Cloud Run直接なので、変更の反映は次のPull
+  /// 以降になる(即時反映が必要な箇所はTopicMapReconstructControllerが
+  /// 明示的に強制Pullしてから呼び直す)。
   TopicMapForCourseProvider._({
     required TopicMapForCourseFamily super.from,
     required String super.argument,
@@ -83,7 +98,7 @@ final class TopicMapForCourseProvider
   }
 }
 
-String _$topicMapForCourseHash() => r'24ce1e579740377185718b44406a49205ebc2969';
+String _$topicMapForCourseHash() => r'c1e1c064b0c779f5251e0825ea1e6cce15054d00';
 
 /// The course's topic map, or null if the pipeline hasn't generated one yet.
 ///
@@ -91,6 +106,11 @@ String _$topicMapForCourseHash() => r'24ce1e579740377185718b44406a49205ebc2969';
 /// (see TopicMapData.fromJson) -- they belong to the courses/lectures
 /// tables, so this provider composes the raw map with courseListProvider
 /// and lectureListStreamProvider instead of trusting the json for them.
+///
+/// マップ本体はローカルDB経由(オフライン優先)。書き込み(markStale/
+/// reconstruct)は依然Supabase/Cloud Run直接なので、変更の反映は次のPull
+/// 以降になる(即時反映が必要な箇所はTopicMapReconstructControllerが
+/// 明示的に強制Pullしてから呼び直す)。
 
 final class TopicMapForCourseFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<TopicMapData?>, String> {
@@ -109,6 +129,11 @@ final class TopicMapForCourseFamily extends $Family
   /// (see TopicMapData.fromJson) -- they belong to the courses/lectures
   /// tables, so this provider composes the raw map with courseListProvider
   /// and lectureListStreamProvider instead of trusting the json for them.
+  ///
+  /// マップ本体はローカルDB経由(オフライン優先)。書き込み(markStale/
+  /// reconstruct)は依然Supabase/Cloud Run直接なので、変更の反映は次のPull
+  /// 以降になる(即時反映が必要な箇所はTopicMapReconstructControllerが
+  /// 明示的に強制Pullしてから呼び直す)。
 
   TopicMapForCourseProvider call(String courseId) =>
       TopicMapForCourseProvider._(argument: courseId, from: this);

@@ -336,6 +336,9 @@ class LocalTopicMaps extends Table {
   TextColumn get userId => text()();
 
   TextColumn get mapJson => text()(); // jsonb(ノード/エッジ構造)をそのまま保存
+  // Lectureの削除/移動でstaleになり、まだ修復されていないことを示す。
+  // trueの間はUIが「Recreate Topic Map」を案内する。
+  BoolColumn get isStale => boolean().withDefault(const Constant(false))();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get lastSyncedAt =>
       dateTime().withDefault(currentDateAndTime)();
@@ -403,7 +406,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -494,6 +497,14 @@ class AppDatabase extends _$AppDatabase {
         // summary/audioPath/metadataJsonを追加。Supabase側にupdated_at自動更新
         // トリガーが整備されたため、LocalFunFacts/LocalReviewCards/LocalDeepNotes
         // にもupdatedAtを追加し、差分Pullをupdated_at基準に統一。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 13) {
+        // バージョン13: TopicMapをオフライン優先化するため、LocalTopicMapsに
+        // isStale(「Recreate Topic Map」表示の判定用)を追加。
         for (final table in allTables) {
           await m.drop(table);
         }

@@ -65,7 +65,7 @@ final class TopicMapReconstructControllerProvider
 }
 
 String _$topicMapReconstructControllerHash() =>
-    r'cccdce463c7b9d67d557c69d43fcc807c1854a18';
+    r'5d6722fb69271e2f523557f945149e7de0280b2e';
 
 /// 「Recreate Topic Map」操作の状態管理。Lectureの削除・移動でstaleになった
 /// Courseに対して、Phase A(決定的除去)+Phase B(LLMによる修復)の一括再構成

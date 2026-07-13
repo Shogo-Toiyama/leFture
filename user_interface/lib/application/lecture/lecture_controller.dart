@@ -11,6 +11,7 @@ import 'package:lecture_companion_ui/application/sync/keyword_sync_service.dart'
 import 'package:lecture_companion_ui/application/sync/lecture_topic_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/review_card_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/deep_note_sync_service.dart';
+import 'package:lecture_companion_ui/application/sync/topic_map_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/lecture_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/fun_fact_outbox_push_handler.dart';
@@ -92,6 +93,7 @@ class LectureController extends _$LectureController {
           'lecture_topic': () => LectureTopicSyncService(db).pull(forceFullPull: forceFullPull),
           'review_card': () => ReviewCardSyncService(db).pull(forceFullPull: forceFullPull),
           'deep_note': () => DeepNoteSyncService(db).pull(forceFullPull: forceFullPull),
+          'topic_map': () => TopicMapSyncService(db).pull(forceFullPull: forceFullPull),
         };
 
         for (final entry in pulls.entries) {

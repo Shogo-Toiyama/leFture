@@ -33,7 +33,7 @@ final class LectureControllerProvider
   LectureController create() => LectureController();
 }
 
-String _$lectureControllerHash() => r'c3b15fd61fbb48260405edfe5c6a4e17d477f910';
+String _$lectureControllerHash() => r'a4deb348eca0a86eeb82f6fcec3a6fefe3affc9c';
 
 abstract class _$LectureController extends $AsyncNotifier<void> {
   FutureOr<void> build();

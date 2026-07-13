@@ -9056,6 +9056,21 @@ class $LocalTopicMapsTable extends LocalTopicMaps
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isStaleMeta = const VerificationMeta(
+    'isStale',
+  );
+  @override
+  late final GeneratedColumn<bool> isStale = GeneratedColumn<bool>(
+    'is_stale',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_stale" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -9084,6 +9099,7 @@ class $LocalTopicMapsTable extends LocalTopicMaps
     courseId,
     userId,
     mapJson,
+    isStale,
     updatedAt,
     lastSyncedAt,
   ];
@@ -9123,6 +9139,12 @@ class $LocalTopicMapsTable extends LocalTopicMaps
     } else if (isInserting) {
       context.missing(_mapJsonMeta);
     }
+    if (data.containsKey('is_stale')) {
+      context.handle(
+        _isStaleMeta,
+        isStale.isAcceptableOrUnknown(data['is_stale']!, _isStaleMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -9161,6 +9183,10 @@ class $LocalTopicMapsTable extends LocalTopicMaps
         DriftSqlType.string,
         data['${effectivePrefix}map_json'],
       )!,
+      isStale: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_stale'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -9182,12 +9208,14 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
   final String courseId;
   final String userId;
   final String mapJson;
+  final bool isStale;
   final DateTime updatedAt;
   final DateTime lastSyncedAt;
   const LocalTopicMap({
     required this.courseId,
     required this.userId,
     required this.mapJson,
+    required this.isStale,
     required this.updatedAt,
     required this.lastSyncedAt,
   });
@@ -9197,6 +9225,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
     map['course_id'] = Variable<String>(courseId);
     map['user_id'] = Variable<String>(userId);
     map['map_json'] = Variable<String>(mapJson);
+    map['is_stale'] = Variable<bool>(isStale);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
     return map;
@@ -9207,6 +9236,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
       courseId: Value(courseId),
       userId: Value(userId),
       mapJson: Value(mapJson),
+      isStale: Value(isStale),
       updatedAt: Value(updatedAt),
       lastSyncedAt: Value(lastSyncedAt),
     );
@@ -9221,6 +9251,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
       courseId: serializer.fromJson<String>(json['courseId']),
       userId: serializer.fromJson<String>(json['userId']),
       mapJson: serializer.fromJson<String>(json['mapJson']),
+      isStale: serializer.fromJson<bool>(json['isStale']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       lastSyncedAt: serializer.fromJson<DateTime>(json['lastSyncedAt']),
     );
@@ -9232,6 +9263,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
       'courseId': serializer.toJson<String>(courseId),
       'userId': serializer.toJson<String>(userId),
       'mapJson': serializer.toJson<String>(mapJson),
+      'isStale': serializer.toJson<bool>(isStale),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'lastSyncedAt': serializer.toJson<DateTime>(lastSyncedAt),
     };
@@ -9241,12 +9273,14 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
     String? courseId,
     String? userId,
     String? mapJson,
+    bool? isStale,
     DateTime? updatedAt,
     DateTime? lastSyncedAt,
   }) => LocalTopicMap(
     courseId: courseId ?? this.courseId,
     userId: userId ?? this.userId,
     mapJson: mapJson ?? this.mapJson,
+    isStale: isStale ?? this.isStale,
     updatedAt: updatedAt ?? this.updatedAt,
     lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
   );
@@ -9255,6 +9289,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
       userId: data.userId.present ? data.userId.value : this.userId,
       mapJson: data.mapJson.present ? data.mapJson.value : this.mapJson,
+      isStale: data.isStale.present ? data.isStale.value : this.isStale,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
@@ -9268,6 +9303,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
           ..write('courseId: $courseId, ')
           ..write('userId: $userId, ')
           ..write('mapJson: $mapJson, ')
+          ..write('isStale: $isStale, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
@@ -9276,7 +9312,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
 
   @override
   int get hashCode =>
-      Object.hash(courseId, userId, mapJson, updatedAt, lastSyncedAt);
+      Object.hash(courseId, userId, mapJson, isStale, updatedAt, lastSyncedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -9284,6 +9320,7 @@ class LocalTopicMap extends DataClass implements Insertable<LocalTopicMap> {
           other.courseId == this.courseId &&
           other.userId == this.userId &&
           other.mapJson == this.mapJson &&
+          other.isStale == this.isStale &&
           other.updatedAt == this.updatedAt &&
           other.lastSyncedAt == this.lastSyncedAt);
 }
@@ -9292,6 +9329,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
   final Value<String> courseId;
   final Value<String> userId;
   final Value<String> mapJson;
+  final Value<bool> isStale;
   final Value<DateTime> updatedAt;
   final Value<DateTime> lastSyncedAt;
   final Value<int> rowid;
@@ -9299,6 +9337,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
     this.courseId = const Value.absent(),
     this.userId = const Value.absent(),
     this.mapJson = const Value.absent(),
+    this.isStale = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -9307,6 +9346,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
     required String courseId,
     required String userId,
     required String mapJson,
+    this.isStale = const Value.absent(),
     required DateTime updatedAt,
     this.lastSyncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -9318,6 +9358,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
     Expression<String>? courseId,
     Expression<String>? userId,
     Expression<String>? mapJson,
+    Expression<bool>? isStale,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? lastSyncedAt,
     Expression<int>? rowid,
@@ -9326,6 +9367,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
       if (courseId != null) 'course_id': courseId,
       if (userId != null) 'user_id': userId,
       if (mapJson != null) 'map_json': mapJson,
+      if (isStale != null) 'is_stale': isStale,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -9336,6 +9378,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
     Value<String>? courseId,
     Value<String>? userId,
     Value<String>? mapJson,
+    Value<bool>? isStale,
     Value<DateTime>? updatedAt,
     Value<DateTime>? lastSyncedAt,
     Value<int>? rowid,
@@ -9344,6 +9387,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
       courseId: courseId ?? this.courseId,
       userId: userId ?? this.userId,
       mapJson: mapJson ?? this.mapJson,
+      isStale: isStale ?? this.isStale,
       updatedAt: updatedAt ?? this.updatedAt,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       rowid: rowid ?? this.rowid,
@@ -9361,6 +9405,9 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
     }
     if (mapJson.present) {
       map['map_json'] = Variable<String>(mapJson.value);
+    }
+    if (isStale.present) {
+      map['is_stale'] = Variable<bool>(isStale.value);
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
@@ -9380,6 +9427,7 @@ class LocalTopicMapsCompanion extends UpdateCompanion<LocalTopicMap> {
           ..write('courseId: $courseId, ')
           ..write('userId: $userId, ')
           ..write('mapJson: $mapJson, ')
+          ..write('isStale: $isStale, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
           ..write('rowid: $rowid')
@@ -14506,6 +14554,7 @@ typedef $$LocalTopicMapsTableCreateCompanionBuilder =
       required String courseId,
       required String userId,
       required String mapJson,
+      Value<bool> isStale,
       required DateTime updatedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -14515,6 +14564,7 @@ typedef $$LocalTopicMapsTableUpdateCompanionBuilder =
       Value<String> courseId,
       Value<String> userId,
       Value<String> mapJson,
+      Value<bool> isStale,
       Value<DateTime> updatedAt,
       Value<DateTime> lastSyncedAt,
       Value<int> rowid,
@@ -14541,6 +14591,11 @@ class $$LocalTopicMapsTableFilterComposer
 
   ColumnFilters<String> get mapJson => $composableBuilder(
     column: $table.mapJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isStale => $composableBuilder(
+    column: $table.isStale,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14579,6 +14634,11 @@ class $$LocalTopicMapsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isStale => $composableBuilder(
+    column: $table.isStale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -14607,6 +14667,9 @@ class $$LocalTopicMapsTableAnnotationComposer
 
   GeneratedColumn<String> get mapJson =>
       $composableBuilder(column: $table.mapJson, builder: (column) => column);
+
+  GeneratedColumn<bool> get isStale =>
+      $composableBuilder(column: $table.isStale, builder: (column) => column);
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -14653,6 +14716,7 @@ class $$LocalTopicMapsTableTableManager
                 Value<String> courseId = const Value.absent(),
                 Value<String> userId = const Value.absent(),
                 Value<String> mapJson = const Value.absent(),
+                Value<bool> isStale = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -14660,6 +14724,7 @@ class $$LocalTopicMapsTableTableManager
                 courseId: courseId,
                 userId: userId,
                 mapJson: mapJson,
+                isStale: isStale,
                 updatedAt: updatedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
@@ -14669,6 +14734,7 @@ class $$LocalTopicMapsTableTableManager
                 required String courseId,
                 required String userId,
                 required String mapJson,
+                Value<bool> isStale = const Value.absent(),
                 required DateTime updatedAt,
                 Value<DateTime> lastSyncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -14676,6 +14742,7 @@ class $$LocalTopicMapsTableTableManager
                 courseId: courseId,
                 userId: userId,
                 mapJson: mapJson,
+                isStale: isStale,
                 updatedAt: updatedAt,
                 lastSyncedAt: lastSyncedAt,
                 rowid: rowid,
