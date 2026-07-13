@@ -8,12 +8,15 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/core/utils/text_preview.dart';
+import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 // ---------------------------------------------------------------------------
@@ -128,6 +131,28 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
+    final lectureAsync = widgetRef.watch(lectureProvider(lectureId));
+    final lecture = lectureAsync.asData?.value;
+
+    final coursesAsync = widgetRef.watch(courseListProvider);
+    final courses = coursesAsync.asData?.value;
+    Course? course;
+    if (courses != null && lecture != null) {
+      for (final c in courses) {
+        if (c.id == lecture.courseId) {
+          course = c;
+          break;
+        }
+      }
+    }
+
+    final themeColor = course != null
+        ? CourseStyleHelper.hexToColor(course.color, fallback: AppColors.deepGold)
+        : AppColors.deepGold;
+
+    final HSLColor hsl = HSLColor.fromColor(themeColor);
+    final textThemeColor = hsl.lightness > 0.65 ? hsl.withLightness(0.5).toColor() : themeColor;
+
     final animationController =
         useAnimationController(duration: const Duration(milliseconds: 350));
     useAnimation(animationController);
@@ -200,7 +225,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           borderRadius: 24,
         );
       }
-      return _ContentCard(card: item.card!, imageFile: imageFile);
+      return _ContentCard(
+          card: item.card!, imageFile: imageFile, themeColor: textThemeColor);
     }
 
     final index = currentCardIndex.value.clamp(0, totalCards - 1);
@@ -209,9 +235,23 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: Container(
+        decoration: BoxDecoration(
+          color: AppColors.paper.background,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              textThemeColor.withValues(alpha: 0.22),
+              textThemeColor.withValues(alpha: 0.06),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
             // ── Row 1: Close button & Title ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -254,6 +294,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       imageFiles,
                       flatItems,
                       navigateTo,
+                      textThemeColor,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -295,11 +336,11 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                     horizontal: 1),
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? AppColors.starGold
+                                      ? textThemeColor
                                       : isFilled
-                                          ? AppColors.starGold
+                                          ? textThemeColor
                                               .withValues(alpha: 0.55)
-                                          : AppColors.paper.line,
+                                          : Colors.white,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
@@ -427,8 +468,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showCardsListSheet(
     BuildContext context,
@@ -438,6 +480,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     Map<int, File?> imageFiles,
     List<_ReviewCardItem> flatItems,
     void Function(int) navigateTo,
+    Color themeColor,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -545,7 +588,14 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                       width: 115,
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: AppColors.paper.surface,
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Color.lerp(AppColors.paper.surface, themeColor, 0.1)!,
+                                            AppColors.paper.surface,
+                                          ],
+                                        ),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
                                             color: Colors.black.withValues(alpha: 0.07)),
@@ -671,10 +721,15 @@ class _CoverCard extends StatelessWidget {
 // Content card
 // ---------------------------------------------------------------------------
 class _ContentCard extends StatelessWidget {
-  const _ContentCard({required this.card, required this.imageFile});
+  const _ContentCard({
+    required this.card,
+    required this.imageFile,
+    required this.themeColor,
+  });
 
   final ReviewCard card;
   final File? imageFile;
+  final Color themeColor;
 
   @override
   Widget build(BuildContext context) {
@@ -706,7 +761,7 @@ class _ContentCard extends StatelessWidget {
           ],
           ...card.cardContent.map((block) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _ReviewCardBlockView(block: block),
+                child: _ReviewCardBlockView(block: block, themeColor: themeColor),
               )),
         ],
       ),
@@ -723,9 +778,14 @@ class _ContentCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.16),
+              blurRadius: 36,
+              spreadRadius: 4,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 10,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -740,9 +800,14 @@ class _ContentCard extends StatelessWidget {
             DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 36,
+            spreadRadius: 4,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -762,9 +827,10 @@ class _ContentCard extends StatelessWidget {
 // Card block renderer
 // ---------------------------------------------------------------------------
 class _ReviewCardBlockView extends StatelessWidget {
-  const _ReviewCardBlockView({required this.block});
+  const _ReviewCardBlockView({required this.block, required this.themeColor});
 
   final ReviewCardBlock block;
+  final Color themeColor;
 
   MarkdownStyleSheet _styleSheet(BuildContext context,
       {bool italic = false}) {
@@ -784,7 +850,7 @@ class _ReviewCardBlockView extends StatelessWidget {
       em: style.copyWith(fontStyle: FontStyle.italic),
       code: style.copyWith(
           fontFamily: 'monospace', backgroundColor: Colors.transparent),
-      listBullet: style.copyWith(color: AppColors.starGold),
+      listBullet: style.copyWith(color: themeColor),
       textAlign: WrapAlignment.center,
     );
   }
@@ -796,9 +862,8 @@ class _ReviewCardBlockView extends StatelessWidget {
         return Container(
           padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: const BoxDecoration(
-            border: Border(
-                left: BorderSide(color: AppColors.starGold, width: 3)),
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: themeColor, width: 3)),
           ),
           child: MarkdownBody(
             data: stripSidCitations(block.text ?? ''),

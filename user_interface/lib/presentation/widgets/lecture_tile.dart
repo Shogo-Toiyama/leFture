@@ -3,11 +3,14 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
 import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
 import 'package:lecture_companion_ui/application/recording/recording_state.dart';
+import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
@@ -60,6 +63,21 @@ class LectureTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final coursesAsync = ref.watch(courseListProvider);
+    final courses = coursesAsync.asData?.value;
+    Course? parentCourse;
+    if (courses != null && lecture.courseId != null) {
+      for (final c in courses) {
+        if (c.id == lecture.courseId) {
+          parentCourse = c;
+          break;
+        }
+      }
+    }
+    final themeColor = parentCourse != null
+        ? CourseStyleHelper.hexToColor(parentCourse.color, fallback: AppColors.starGold)
+        : AppColors.starGold;
+
     final imagePath = ref.watch(firstTopicImagePathProvider(lecture.id)).asData?.value;
     final imageFile = imagePath == null ? null : ref.watch(artifactFileProvider(imagePath)).asData?.value;
     final uiState = ref.watch(lectureStateProvider(lecture.id)).asData?.value;
@@ -111,7 +129,9 @@ class LectureTile extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppColors.universe.glassWhiteLow,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.universe.glassBorder),
+          border: Border.all(
+            color: themeColor.withValues(alpha: 0.15),
+          ),
         ),
         child: Row(
           children: [
@@ -119,17 +139,19 @@ class LectureTile extends ConsumerWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.universe.glassWhiteHigh,
+                color: themeColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(11),
-                border: Border.all(color: AppColors.universe.glassBorder),
+                border: Border.all(
+                  color: themeColor.withValues(alpha: 0.3),
+                ),
                 image: imageFile != null
                     ? DecorationImage(image: FileImage(imageFile), fit: BoxFit.cover)
                     : null,
               ),
               child: imageFile == null
-                  ? const Icon(
+                  ? Icon(
                       Icons.description_outlined,
-                      color: AppColors.starGold,
+                      color: themeColor,
                       size: 22,
                     )
                   : null,
@@ -186,8 +208,9 @@ class LectureTile extends ConsumerWidget {
                         Text(
                           code,
                           style: TextStyle(
-                            color: AppColors.universe.textComet,
+                            color: themeColor.withValues(alpha: 0.6),
                             fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],

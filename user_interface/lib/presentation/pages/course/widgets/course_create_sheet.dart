@@ -6,6 +6,7 @@ import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/course_attribute.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_attribute_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 /// コース作成/編集ボトムシート。成功時に作成/更新した [Course] を返す。
@@ -27,33 +28,45 @@ class CourseCreateSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isEditing = existingCourse != null;
-
-    final titleCtl = useTextEditingController(
-      text: existingCourse?.courseTitle ?? '',
-    );
-    final yearCtl = useTextEditingController(
-      text: existingCourse?.year?.attributeName ?? preselectedYearName ?? '',
-    );
-    final termCtl = useTextEditingController(
-      text: existingCourse?.term?.attributeName ?? preselectedTermName ?? '',
-    );
-    // More Info (アコーディオン内) の項目
-    final codeCtl = useTextEditingController(
-      text: existingCourse?.courseCode ?? '',
-    );
-    final professorCtl = useTextEditingController(
-      text: existingCourse?.professor?.attributeName ?? '',
-    );
-    final schoolCtl = useTextEditingController(
-      text: existingCourse?.school?.attributeName ?? '',
-    );
-    final subjectCtl = useTextEditingController(
-      text: existingCourse?.subject?.attributeName ?? '',
-    );
-    final summaryCtl = useTextEditingController(
-      text: existingCourse?.summary ?? '',
-    );
+     final isEditing = existingCourse != null;
+ 
+     final titleCtl = useTextEditingController(
+       text: existingCourse?.courseTitle ?? '',
+     );
+     useListenable(titleCtl);
+ 
+     final yearCtl = useTextEditingController(
+       text: existingCourse?.year?.attributeName ?? preselectedYearName ?? '',
+     );
+     final termCtl = useTextEditingController(
+       text: existingCourse?.term?.attributeName ?? preselectedTermName ?? '',
+     );
+     // More Info (アコーディオン内) の項目
+     final codeCtl = useTextEditingController(
+       text: existingCourse?.courseCode ?? '',
+     );
+     final professorCtl = useTextEditingController(
+       text: existingCourse?.professor?.attributeName ?? '',
+     );
+     final schoolCtl = useTextEditingController(
+       text: existingCourse?.school?.attributeName ?? '',
+     );
+     final subjectCtl = useTextEditingController(
+       text: existingCourse?.subject?.attributeName ?? '',
+     );
+     final summaryCtl = useTextEditingController(
+       text: existingCourse?.summary ?? '',
+     );
+ 
+     final selectedColor = useState<Color>(
+       existingCourse?.color != null
+           ? CourseStyleHelper.hexToColor(existingCourse!.color)
+           : AppColors.starGold,
+     );
+     final selectedIconName = useState<String>(
+       existingCourse?.icon ?? 'school',
+     );
+     final selectedCategoryIndex = useState<int>(0);
 
     // 編集時にMore Info項目が既に入力されていれば、最初から開いておく
     final showMoreInfo = useState(
@@ -107,6 +120,12 @@ class CourseCreateSheet extends HookConsumerWidget {
         final code = codeCtl.text.trim();
         final summary = summaryCtl.text.trim();
 
+        final metadata = {
+          ...?existingCourse?.metadata,
+          'color': CourseStyleHelper.colorToHex(selectedColor.value),
+          'icon': selectedIconName.value,
+        };
+
         final course = isEditing
             ? await courseRepo.updateCourse(
                 courseId: existingCourse!.id,
@@ -118,6 +137,7 @@ class CourseCreateSheet extends HookConsumerWidget {
                 professorId: professor?.id,
                 schoolId: school?.id,
                 subjectId: subject?.id,
+                metadata: metadata,
               )
             : await courseRepo.createCourse(
                 courseTitle: title,
@@ -128,6 +148,7 @@ class CourseCreateSheet extends HookConsumerWidget {
                 professorId: professor?.id,
                 schoolId: school?.id,
                 subjectId: subject?.id,
+                metadata: metadata,
               );
 
         // 関連Providerを再フェッチ
@@ -223,6 +244,317 @@ class CourseCreateSheet extends HookConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
+
+              // Design - Live Preview Card
+              Text(
+                'Design Preview',
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: selectedColor.value.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: selectedColor.value.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: selectedColor.value.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: selectedColor.value.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selectedColor.value.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        CourseStyleHelper.getIcon(selectedIconName.value),
+                        color: selectedColor.value,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            titleCtl.text.isEmpty ? 'New Course Title' : titleCtl.text,
+                            style: TextStyle(
+                              color: AppColors.universe.textStarlight,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Visual Representation',
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Course Color Selector
+              Text(
+                'Course Color',
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    ...CourseStyleHelper.presetColors.map((color) {
+                      final isSelected = selectedColor.value == color;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: GestureDetector(
+                          onTap: () => selectedColor.value = color,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? Colors.white : Colors.transparent,
+                                width: 2.5,
+                              ),
+                              boxShadow: [
+                                if (isSelected)
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                              ],
+                            ),
+                            child: isSelected
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 18,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      );
+                    }),
+                    // If custom color is selected, show it as selected
+                    if (!CourseStyleHelper.presetColors.contains(selectedColor.value)) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: selectedColor.value,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: selectedColor.value.withValues(alpha: 0.5),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                    // Custom Color Picker Button
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: GestureDetector(
+                        onTap: () async {
+                          final Color? picked = await showDialog<Color>(
+                            context: context,
+                            builder: (context) => _CustomColorPickerDialog(
+                              initialColor: selectedColor.value,
+                            ),
+                          );
+                          if (picked != null) {
+                            selectedColor.value = picked;
+                          }
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.universe.glassBorder,
+                              width: 1.5,
+                            ),
+                            gradient: const SweepGradient(
+                              colors: [
+                                Colors.red,
+                                Colors.yellow,
+                                Colors.green,
+                                Colors.cyan,
+                                Colors.blue,
+                                Colors.purple,
+                                Colors.red,
+                              ],
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.colorize,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Course Icon Selector
+              Text(
+                'Course Icon',
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 36,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: courseIconCategories.length,
+                  itemBuilder: (context, index) {
+                    final cat = courseIconCategories[index];
+                    final isSelected = selectedCategoryIndex.value == index;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text('${cat.emoji} ${cat.title}'),
+                        selected: isSelected,
+                        onSelected: (val) {
+                          if (val) selectedCategoryIndex.value = index;
+                        },
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.black : AppColors.universe.textStarlight,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        selectedColor: selectedColor.value,
+                        backgroundColor: AppColors.universe.glassWhiteLow,
+                        checkmarkColor: Colors.black,
+                        showCheckmark: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: isSelected ? selectedColor.value : AppColors.universe.glassBorder,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.universe.glassWhiteLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.universe.glassBorder),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final currentCategory = courseIconCategories[selectedCategoryIndex.value];
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.start,
+                      children: currentCategory.iconNames.map((iconName) {
+                        final isSelected = selectedIconName.value == iconName;
+                        final iconData = CourseStyleHelper.iconMap[iconName] ?? Icons.help;
+                        return GestureDetector(
+                          onTap: () => selectedIconName.value = iconName,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: isSelected ? selectedColor.value.withValues(alpha: 0.2) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isSelected ? selectedColor.value : AppColors.universe.glassBorder.withValues(alpha: 0.3),
+                                width: isSelected ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Icon(
+                              iconData,
+                              color: isSelected ? selectedColor.value : AppColors.universe.textComet,
+                              size: 22,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              Container(
+                height: 1,
+                color: AppColors.universe.glassBorder.withValues(alpha: 0.2),
+              ),
+              const SizedBox(height: 20),
 
               // Year
               _AttributeField(
@@ -477,6 +809,206 @@ class _GlassTextField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+    );
+  }
+}
+
+class _CustomColorPickerDialog extends HookWidget {
+  const _CustomColorPickerDialog({required this.initialColor});
+
+  final Color initialColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final hsl = HSLColor.fromColor(initialColor);
+    final hue = useState(hsl.hue);
+    final lightness = useState(hsl.lightness.clamp(0.4, 1.0));
+
+    // Force saturation to 0.8 to keep custom colors vibrant and visually cohesive
+    final currentColor = HSLColor.fromAHSL(1.0, hue.value, 0.8, lightness.value).toColor();
+
+    final hexController = useTextEditingController(
+      text: CourseStyleHelper.colorToHex(currentColor),
+    );
+
+    void updateHexField(Color color) {
+      final hex = CourseStyleHelper.colorToHex(color);
+      if (hexController.text != hex) {
+        hexController.text = hex;
+      }
+    }
+
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1E203C),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.universe.glassBorder),
+      ),
+      title: Text(
+        'Custom Color',
+        style: TextStyle(color: AppColors.universe.textStarlight),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: currentColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: currentColor.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Hue',
+                style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 6),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: Colors.transparent,
+                inactiveTrackColor: Colors.transparent,
+                trackHeight: 12,
+              ),
+              child: Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFFF0000),
+                      Color(0xFFFFFF00),
+                      Color(0xFF00FF00),
+                      Color(0xFF00FFFF),
+                      Color(0xFF0000FF),
+                      Color(0xFFFF00FF),
+                      Color(0xFFFF0000),
+                    ],
+                  ),
+                ),
+                child: Slider(
+                  value: hue.value,
+                  min: 0.0,
+                  max: 360.0,
+                  onChanged: (val) {
+                    hue.value = val;
+                    updateHexField(HSLColor.fromAHSL(1.0, val, 0.8, lightness.value).toColor());
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Lightness',
+                style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 6),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: Colors.transparent,
+                inactiveTrackColor: Colors.transparent,
+                trackHeight: 12,
+              ),
+              child: Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  gradient: LinearGradient(
+                    colors: [
+                      HSLColor.fromAHSL(1.0, hue.value, 0.8, 0.4).toColor(),
+                      HSLColor.fromAHSL(1.0, hue.value, 0.8, 0.7).toColor(),
+                      Colors.white,
+                    ],
+                  ),
+                ),
+                child: Slider(
+                  value: lightness.value,
+                  min: 0.4,
+                  max: 1.0,
+                  onChanged: (val) {
+                    lightness.value = val;
+                    updateHexField(HSLColor.fromAHSL(1.0, hue.value, 0.8, val).toColor());
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            TextField(
+              controller: hexController,
+              style: TextStyle(color: AppColors.universe.textStarlight),
+              decoration: InputDecoration(
+                labelText: 'Hex Color Code',
+                labelStyle: TextStyle(color: AppColors.universe.textComet),
+                hintText: '#FFB300',
+                hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.5)),
+                prefixIcon: Icon(Icons.tag, color: AppColors.universe.textComet),
+                filled: true,
+                fillColor: AppColors.universe.glassWhiteLow,
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: AppColors.starGold),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (text) {
+                final cleanText = text.replaceFirst('#', '').trim();
+                if (cleanText.length == 6 || cleanText.length == 8) {
+                  try {
+                    final parsedColor = CourseStyleHelper.hexToColor('#$cleanText');
+                    final newHsl = HSLColor.fromColor(parsedColor);
+                    hue.value = newHsl.hue;
+                    lightness.value = newHsl.lightness.clamp(0.4, 1.0);
+                  } catch (_) {
+                    // Ignore parsing errors while typing
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: AppColors.universe.textComet),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.starGold,
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          onPressed: () => Navigator.of(context).pop(currentColor),
+          child: const Text('OK'),
+        ),
+      ],
     );
   }
 }

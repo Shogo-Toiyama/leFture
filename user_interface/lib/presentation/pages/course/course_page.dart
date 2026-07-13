@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.d
 import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
 import 'package:lecture_companion_ui/application/topic_map/topic_map_reconstruct_controller.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 
 
@@ -363,6 +364,9 @@ class _CourseLectureListView extends ConsumerWidget {
       );
     }
 
+    final themeColor = CourseStyleHelper.hexToColor(course.color, fallback: AppColors.starGold);
+    final iconData = CourseStyleHelper.getIcon(course.icon);
+
     final termYearParts = [
       course.term?.attributeName,
       course.year?.attributeName,
@@ -371,16 +375,29 @@ class _CourseLectureListView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.starGold,
-          onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
-          child: CustomScrollView(
-            slivers: [
-              // 1. AppBar Area
-              const SliverToBoxAdapter(
-                child: CustomAppBar(showHomeButton: true),
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              themeColor.withValues(alpha: 0.3),
+              themeColor.withValues(alpha: 0.08),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: RefreshIndicator(
+            color: AppColors.starGold,
+            onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
+            child: CustomScrollView(
+              slivers: [
+                // 1. AppBar Area
+                const SliverToBoxAdapter(
+                  child: CustomAppBar(showHomeButton: true),
+                ),
 
               // 2. Main content area padding
               SliverPadding(
@@ -428,6 +445,24 @@ class _CourseLectureListView extends ConsumerWidget {
                     // Row 2: Course Title & Edit Button
                     Row(
                       children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: themeColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: themeColor.withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            iconData,
+                            color: themeColor,
+                            size: 22,
+                          ),
+                        ),
                         Expanded(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
@@ -776,8 +811,9 @@ class _CourseLectureListView extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _openEditSheet(BuildContext context, Course course) async {
     await showModalBottomSheet<Course>(

@@ -1,14 +1,16 @@
-// lib/presentation/pages/lecture_viewer/lecture_status_scaffold.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart'; // Controller
 import 'package:lecture_companion_ui/application/job/job_providers.dart'; // エラー詳細用
+import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
 import 'views/processing_view.dart';
@@ -32,6 +34,21 @@ class LectureStatusScaffold extends ConsumerWidget {
             ? lecture.titleGenerated!
             : 'Untitled Lecture');
 
+    final coursesAsync = ref.watch(courseListProvider);
+    final courses = coursesAsync.asData?.value;
+    Course? parentCourse;
+    if (courses != null && lecture.courseId != null) {
+      for (final c in courses) {
+        if (c.id == lecture.courseId) {
+          parentCourse = c;
+          break;
+        }
+      }
+    }
+    final themeColor = parentCourse != null
+        ? CourseStyleHelper.hexToColor(parentCourse.color, fallback: AppColors.starGold)
+        : AppColors.starGold;
+
     ref.listen<AsyncValue<LectureUIState>>(
       lectureStateProvider(lecture.id),
       (previous, next) {
@@ -49,76 +66,91 @@ class LectureStatusScaffold extends ConsumerWidget {
     );
 
     return Scaffold(
-      body: uiStateAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (uiState) {
-          switch (uiState) {
-            case LectureUIState.loading:
-            case LectureUIState.complete:
-              return const SizedBox.shrink();
+      backgroundColor: AppColors.universe.voidBackground,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              themeColor.withValues(alpha: 0.3),
+              themeColor.withValues(alpha: 0.08),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: uiStateAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+          error: (err, stack) => Center(child: Text('Error: $err')),
+          data: (uiState) {
+            switch (uiState) {
+              case LectureUIState.loading:
+              case LectureUIState.complete:
+                return const SizedBox.shrink();
 
-            case LectureUIState.processing:
-              return ProcessingView(lectureId: lecture.id);
+              case LectureUIState.processing:
+                return ProcessingView(lectureId: lecture.id);
 
-            case LectureUIState.notStarted:
-              return NotStartedView(lecture: lecture);
+              case LectureUIState.notStarted:
+                return NotStartedView(lecture: lecture);
 
-            case LectureUIState.syncing:
-              return const StatusView(
-                icon: Icons.cloud_upload_outlined,
-                title: 'Syncing Audio...',
-                message: 'Please wait for the upload to complete.',
-              );
+              case LectureUIState.syncing:
+                return const StatusView(
+                  icon: Icons.cloud_upload_outlined,
+                  title: 'Syncing Audio...',
+                  message: 'Please wait for the upload to complete.',
+                );
 
-            case LectureUIState.failed:
-              // ★ エラーの詳細メッセージをJobから取得する
-              final jobAsync = ref.watch(jobStreamProvider(lecture.id));
-              final job = jobAsync.value;
-              // エラーメッセージがあれば表示、なければデフォルト文言
-              final errorMsg = job?.errorMessage?['message'] ?? 'Please try again later.';
+              case LectureUIState.failed:
+                // ★ エラーの詳細メッセージをJobから取得する
+                final jobAsync = ref.watch(jobStreamProvider(lecture.id));
+                final job = jobAsync.value;
+                // エラーメッセージがあれば表示、なければデフォルト文言
+                final errorMsg = job?.errorMessage?['message'] ?? 'Please try again later.';
 
-              return StatusView(
-                icon: Icons.error_outline,
-                title: 'Analysis Failed',
-                message: errorMsg.toString(), // サーバーからのエラーを表示
-                isError: true,
-                isLoading: isActionLoading, // ★ ボタンをクルクルさせる
-                buttonIcon: Icons.refresh,
-                buttonLabel: 'Retry',
-                onButtonPressed: () {
-                  // ★ 再試行ボタン：もう一度分析を開始する
-                  ref.read(lectureControllerProvider.notifier).startAnalysis(lecture.id);
-                },
-              );
+                return StatusView(
+                  icon: Icons.error_outline,
+                  title: 'Analysis Failed',
+                  message: errorMsg.toString(), // サーバーからのエラーを表示
+                  isError: true,
+                  isLoading: isActionLoading, // ★ ボタンをクルクルさせる
+                  buttonIcon: Icons.refresh,
+                  buttonLabel: 'Retry',
+                  onButtonPressed: () {
+                    // ★ 再試行ボタン：もう一度分析を開始する
+                    ref.read(lectureControllerProvider.notifier).startAnalysis(lecture.id);
+                  },
+                );
 
-            case LectureUIState.noAudio:
-              return StatusView(
-                icon: Icons.no_photography_outlined,
-                title: 'No Audio Found',
-                isError: true,
-                isLoading: isActionLoading, // 削除中もクルクル
-                buttonIcon: Icons.delete,
-                buttonLabel: 'Delete Lecture',
-                onButtonPressed: () async {
-                  final ok = await showCustomDialog(
-                    context: context,
-                    title: 'Delete folder',
-                    message: 'Are you sure you want to delete "$displayTitle"?',
-                    confirmLabel: 'Delete',
-                    icon: Icons.delete_outline,
-                    isDestructive: true,
-                  );
-                  if (ok == true) {
-                    await ref
-                        .read(lectureControllerProvider.notifier)
-                        .deleteLecture(lecture.id, courseId: lecture.courseId);
-                    if (context.mounted) context.pop();
-                  }
-                },
-              );
-          }
-        },
+              case LectureUIState.noAudio:
+                return StatusView(
+                  icon: Icons.no_photography_outlined,
+                  title: 'No Audio Found',
+                  isError: true,
+                  isLoading: isActionLoading, // 削除中もクルクル
+                  buttonIcon: Icons.delete,
+                  buttonLabel: 'Delete Lecture',
+                  onButtonPressed: () async {
+                    final ok = await showCustomDialog(
+                      context: context,
+                      title: 'Delete folder',
+                      message: 'Are you sure you want to delete "$displayTitle"?',
+                      confirmLabel: 'Delete',
+                      icon: Icons.delete_outline,
+                      isDestructive: true,
+                    );
+                    if (ok == true) {
+                      await ref
+                          .read(lectureControllerProvider.notifier)
+                          .deleteLecture(lecture.id, courseId: lecture.courseId);
+                      if (context.mounted) context.pop();
+                    }
+                  },
+                );
+            }
+          },
+        ),
       ),
     );
   }

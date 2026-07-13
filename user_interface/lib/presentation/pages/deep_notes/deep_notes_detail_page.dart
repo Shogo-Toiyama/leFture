@@ -4,10 +4,14 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:lecture_companion_ui/application_viewer/../application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
+import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
 import 'deep_notes_list_page.dart';
@@ -35,6 +39,29 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     
     final topicsAsync = hasPassedTopics ? null : ref.watch(lectureTopicsProvider(lectureId));
     final notesAsync  = hasPassedTopics ? null : ref.watch(deepNotesProvider(lectureId));
+
+    // Fetch lecture and parent course to get theme colors
+    final lectureAsync = ref.watch(lectureProvider(lectureId));
+    final lecture = lectureAsync.asData?.value;
+
+    final coursesAsync = ref.watch(courseListProvider);
+    final courses = coursesAsync.asData?.value;
+    Course? course;
+    if (courses != null && lecture != null) {
+      for (final c in courses) {
+        if (c.id == lecture.courseId) {
+          course = c;
+          break;
+        }
+      }
+    }
+
+    final themeColor = course != null
+        ? CourseStyleHelper.hexToColor(course.color, fallback: AppColors.deepGold)
+        : AppColors.deepGold;
+
+    final HSLColor hsl = HSLColor.fromColor(themeColor);
+    final textThemeColor = hsl.lightness > 0.65 ? hsl.withLightness(0.5).toColor() : themeColor;
 
     final resolvedTopics = useMemoized(() {
       if (hasPassedTopics) return topics;
@@ -74,18 +101,33 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       final isLoading = (topicsAsync?.isLoading ?? false) || (notesAsync?.isLoading ?? false);
       return Scaffold(
         backgroundColor: AppColors.paper.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection)),
-              Expanded(
-                child: Center(
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: AppColors.deepGold)
-                      : const Text('No notes available'),
+        body: Container(
+          decoration: BoxDecoration(
+            color: AppColors.paper.background,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                textThemeColor.withValues(alpha: 0.12),
+                textThemeColor.withValues(alpha: 0.02),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.4, 1.0],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor)),
+                Expanded(
+                  child: Center(
+                    child: isLoading
+                        ? CircularProgressIndicator(color: textThemeColor)
+                        : const Text('No notes available'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -96,31 +138,47 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(context, ref, topic.title, currentIndex.value, totalTopics, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection)),
-            Expanded(
-              child: _NoteDetailContent(
-                topic: topic,
-                topicIndex: currentIndex.value,
-                totalTopics: totalTopics,
-                arrivalDirection: navigationDirection.value,
-                onNext: () {
-                  if (currentIndex.value < totalTopics - 1) {
-                    navigationDirection.value = 1;
-                    currentIndex.value = currentIndex.value + 1;
-                  }
-                },
-                onPrev: () {
-                  if (currentIndex.value > 0) {
-                    navigationDirection.value = -1;
-                    currentIndex.value = currentIndex.value - 1;
-                  }
-                },
+      body: Container(
+        decoration: BoxDecoration(
+          color: AppColors.paper.background,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              textThemeColor.withValues(alpha: 0.12),
+              textThemeColor.withValues(alpha: 0.02),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(context, ref, topic.title, currentIndex.value, totalTopics, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor)),
+              Expanded(
+                child: _NoteDetailContent(
+                  topic: topic,
+                  topicIndex: currentIndex.value,
+                  totalTopics: totalTopics,
+                  arrivalDirection: navigationDirection.value,
+                  textThemeColor: textThemeColor,
+                  onNext: () {
+                    if (currentIndex.value < totalTopics - 1) {
+                      navigationDirection.value = 1;
+                      currentIndex.value = currentIndex.value + 1;
+                    }
+                  },
+                  onPrev: () {
+                    if (currentIndex.value > 0) {
+                      navigationDirection.value = -1;
+                      currentIndex.value = currentIndex.value - 1;
+                    }
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -197,6 +255,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     List<DeepNoteTopic> resolvedTopics,
     ValueNotifier<int> currentIndex,
     ValueNotifier<int> navigationDirection,
+    Color textThemeColor,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -248,31 +307,31 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   Expanded(
                     child: ListView.separated(
                       controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
                       itemCount: resolvedTopics.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      separatorBuilder: (_, index) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final topic = resolvedTopics[index];
+                        final isSelected = index == currentIndex.value;
                         return GestureDetector(
                           onTap: () {
-                            Navigator.pop(context);
-                            navigationDirection.value = 0;
+                            navigationDirection.value = 0; // jump directly
                             currentIndex.value = index;
+                            Navigator.pop(context);
                           },
                           child: Container(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.paper.background,
+                              color: isSelected
+                                  ? textThemeColor.withValues(alpha: 0.05)
+                                  : AppColors.paper.background,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: Colors.black.withValues(alpha: 0.07)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                                color: isSelected
+                                    ? textThemeColor.withValues(alpha: 0.3)
+                                    : Colors.black.withValues(alpha: 0.07),
+                                width: isSelected ? 1.5 : 1.0,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -281,14 +340,14 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: AppColors.deepGold.withValues(alpha: 0.12),
+                                    color: textThemeColor.withValues(alpha: 0.12),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(
                                     child: Text(
                                       '${index + 1}',
-                                      style: const TextStyle(
-                                        color: AppColors.deepGold,
+                                      style: TextStyle(
+                                        color: textThemeColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -352,6 +411,7 @@ class _NoteDetailContent extends HookWidget {
     required this.arrivalDirection,
     required this.onNext,
     required this.onPrev,
+    required this.textThemeColor,
   });
 
   final DeepNoteTopic topic;
@@ -360,6 +420,7 @@ class _NoteDetailContent extends HookWidget {
   final int arrivalDirection;
   final VoidCallback onNext;
   final VoidCallback onPrev;
+  final Color textThemeColor;
 
   @override
   Widget build(BuildContext context) {
@@ -472,7 +533,7 @@ class _NoteDetailContent extends HookWidget {
                         IconButton(
                           icon: Icon(
                             Icons.keyboard_arrow_up,
-                            color: AppColors.deepGold,
+                            color: textThemeColor,
                             size: 28,
                           ),
                           onPressed: onPrev,
@@ -496,6 +557,16 @@ class _NoteDetailContent extends HookWidget {
                     color: AppColors.paper.textInk,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: textThemeColor.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                      ),
+                      Shadow(
+                        color: textThemeColor.withValues(alpha: 0.15),
+                        blurRadius: 22,
+                      ),
+                    ],
                   ),
                 ),
 
@@ -541,8 +612,8 @@ class _NoteDetailContent extends HookWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
-                        listBullet: const TextStyle(
-                          color: AppColors.deepGold,
+                        listBullet: TextStyle(
+                          color: textThemeColor,
                           fontSize: 16,
                         ),
                         code: TextStyle(
@@ -578,7 +649,7 @@ class _NoteDetailContent extends HookWidget {
                         IconButton(
                           icon: Icon(
                             Icons.keyboard_arrow_down,
-                            color: AppColors.deepGold,
+                            color: textThemeColor,
                             size: 28,
                           ),
                           onPressed: onNext,

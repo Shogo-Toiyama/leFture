@@ -20,6 +20,7 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fa
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/widgets/lecture_hero_collage.dart';
@@ -233,12 +234,26 @@ class _LectureViewerBody extends HookConsumerWidget {
             ? lecture.titleGenerated!
             : 'Untitled Lecture');
     final summary = lecture.summary == null ? null : stripSidCitations(lecture.summary!).trim();
+    final themeColor = CourseStyleHelper.hexToColor(course?.color, fallback: AppColors.starGold);
 
-    return SafeArea(
-      child: Column(
-        children: [
-          const CustomAppBar(showHomeButton: true),
-          Expanded(
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            themeColor.withValues(alpha: 0.3),
+            themeColor.withValues(alpha: 0.08),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const CustomAppBar(showHomeButton: true),
+            Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
@@ -449,8 +464,9 @@ class _LectureViewerBody extends HookConsumerWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showAnnouncementsSheet(BuildContext context, String lectureId, List<Announcement> announcements) {
     showModalBottomSheet<void>(

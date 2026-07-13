@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
@@ -25,6 +26,9 @@ class CourseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = CourseStyleHelper.hexToColor(course.color, fallback: AppColors.starGold);
+    final iconData = CourseStyleHelper.getIcon(course.icon);
+
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${course.id}'),
       onLongPress: (onEdit != null || onDelete != null)
@@ -55,7 +59,9 @@ class CourseTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.universe.glassWhiteLow,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.universe.glassBorder),
+          border: Border.all(
+            color: themeColor.withValues(alpha: 0.2),
+          ),
         ),
         child: Row(
           children: [
@@ -63,12 +69,16 @@ class CourseTile extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: AppColors.universe.glassWhiteHigh,
+                color: themeColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: themeColor.withValues(alpha: 0.3),
+                  width: 1.0,
+                ),
               ),
-              child: const Icon(
-                Icons.school_outlined,
-                color: AppColors.starGold,
+              child: Icon(
+                iconData,
+                color: themeColor,
                 size: 20,
               ),
             ),

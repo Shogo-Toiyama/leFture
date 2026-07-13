@@ -8,11 +8,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/core/utils/text_preview.dart';
+import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 
@@ -78,20 +81,54 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
       return starts;
     }, [groups]);
 
+    final coursesAsync = ref.watch(courseListProvider);
+    final courses = coursesAsync.asData?.value;
+    Course? course;
+    if (courses != null && lecture != null) {
+      for (final c in courses) {
+        if (c.id == lecture.courseId) {
+          course = c;
+          break;
+        }
+      }
+    }
+
+    final themeColor = course != null
+        ? CourseStyleHelper.hexToColor(course.color, fallback: AppColors.deepGold)
+        : AppColors.deepGold;
+
+    final HSLColor hsl = HSLColor.fromColor(themeColor);
+    final textThemeColor = hsl.lightness > 0.65 ? hsl.withLightness(0.5).toColor() : themeColor;
+
     return Scaffold(
       backgroundColor: AppColors.paper.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const CustomAppBar(
-              showHomeButton: true,
-              title: 'Review Cards',
-              isLightBg: true,
-            ),
-            Expanded(
-              child: _buildBody(context, ref, groups, groupStartIndex, courseId),
-            ),
-          ],
+      body: Container(
+        decoration: BoxDecoration(
+          color: AppColors.paper.background,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              textThemeColor.withValues(alpha: 0.22),
+              textThemeColor.withValues(alpha: 0.06),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const CustomAppBar(
+                showHomeButton: true,
+                title: 'Review Cards',
+                isLightBg: true,
+              ),
+              Expanded(
+                child: _buildBody(context, ref, groups, groupStartIndex, courseId, textThemeColor),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -103,6 +140,7 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
     List<_ReviewTopicGroup> groups,
     List<int> groupStartIndex,
     String courseId,
+    Color themeColor,
   ) {
     final cardsAsync = ref.watch(reviewCardsProvider(lectureId));
 
@@ -187,7 +225,14 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                       width: 115,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.paper.surface,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color.lerp(AppColors.paper.surface, themeColor, 0.1)!,
+                            AppColors.paper.surface,
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                             color: Colors.black.withValues(alpha: 0.07)),
