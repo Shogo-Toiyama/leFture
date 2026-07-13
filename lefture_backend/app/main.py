@@ -71,6 +71,8 @@ STALE_TASK_TIMEOUT_MINUTES = int(os.getenv("STALE_TASK_TIMEOUT_MINUTES", "20")) 
 TOPIC_MAP_STALE_TIMEOUT_MINUTES = int(os.getenv("TOPIC_MAP_STALE_TIMEOUT_MINUTES", "60")) # Lecture削除/移動でstaleになったTopic Mapを、ユーザー操作が無くても自動でRecreateするまでの分数
 LECTURE_HARD_DELETE_RETENTION_DAYS = int(os.getenv("LECTURE_HARD_DELETE_RETENTION_DAYS", "30")) # ソフト削除(deleted_at)からハードデリートまでの日数
 PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "50")) # Patrol1回あたりでハードデリートする講義数の上限(タイムアウト防止。溢れた分は次回実行で処理される)
+CLOUD_TASKS_MAX_ATTEMPTS = int(os.getenv("CLOUD_TASKS_MAX_ATTEMPTS", "5")) # lefture-processing-queueのRetry Config(Max Attempts)と必ず一致させる。GCP側で変更したらここも変更すること
+STALE_FAILED_JOB_TIMEOUT_MINUTES = int(os.getenv("STALE_FAILED_JOB_TIMEOUT_MINUTES", "15")) # 即時判定(X-CloudTasks-TaskRetryCount)の取りこぼし対策。FAILEDのまま動きがないタスクを見て親ジョブをFAILED化するまでの分数
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -301,6 +303,10 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
         "updated_at": datetime.now().isoformat(),
     }).eq("id", payload.task_id).eq("status", "FAILED").execute()
 
+    # 詰まっていたジョブも「進行中」に戻す(FAILEDの時だけ・冪等)
+    admin_client.table("processing_jobs").update({"status": "RUNNING"}) \
+        .eq("id", task["job_id"]).eq("status", "FAILED").execute()
+
     return {"message": "Task queued for retry", "task_id": payload.task_id}
 
 # ---------------------------------------------------------
@@ -359,6 +365,10 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
         return {"message": "No ready tasks"}
 
     print(f"🚀 Found {len(ready_tasks)} ready task(s): {[t['task_type'] for t in ready_tasks]}")
+
+    # 4.5 最初のタスクが動き出す瞬間にジョブ全体をRUNNINGへ(PENDINGの時だけ・冪等)
+    admin_client.table("processing_jobs").update({"status": "RUNNING"}) \
+        .eq("id", job_id).eq("status", "PENDING").execute()
 
     # 5. 実行可能なタスクを処理
     for task in ready_tasks:
@@ -645,65 +655,78 @@ async def enqueue_transcribe_chunk_task(
 # 2. 【裏の顔: 職人たちの部屋】Cloud Tasks から呼ばれる専用エンドポイント
 # ---------------------------------------------------------
 
-@app.post("/worker/check-and-assemble")
-async def worker_check_and_assemble(payload: WorkerPayload):
-    await run_check_and_assemble_transcript_task(payload.job_id, payload.task_id)
+async def _run_worker_task(request: Request, payload: WorkerPayload, task_fn) -> dict:
+    """
+    /worker/* エンドポイントの共通実行部。タスク失敗時、Cloud Tasksが付与する
+    X-CloudTasks-TaskRetryCount ヘッダー(0始まりの現在の再送回数)を見て、
+    それが今回のリトライサイクルにおける最後の試行だった場合は、
+    Patrol(30分間隔)を待たずにその場で親ジョブをFAILEDにする。
+    processing_tasks側は各task_fn内で既にFAILED記録済みなので、
+    ここではjob側の判定だけ行う。
+    """
+    try:
+        await task_fn(payload.job_id, payload.task_id)
+    except Exception:
+        retry_count = int(request.headers.get("X-CloudTasks-TaskRetryCount", "0"))
+        if retry_count >= CLOUD_TASKS_MAX_ATTEMPTS - 1:
+            admin_client = get_supabase_client()
+            await asyncio.to_thread(
+                lambda: admin_client.table("processing_jobs")
+                    .update({"status": "FAILED"})
+                    .eq("id", payload.job_id)
+                    .not_.in_("status", ["COMPLETED", "FAILED"])
+                    .execute()
+            )
+        raise
     return {"status": "success"}
+
+@app.post("/worker/check-and-assemble")
+async def worker_check_and_assemble(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_check_and_assemble_transcript_task)
 
 @app.post("/worker/role-classification")
-async def worker_role_classification(payload: WorkerPayload):
-    await run_role_classification_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_role_classification(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_role_classification_task)
 
 @app.post("/worker/core-extraction")
-async def worker_core_extraction(payload: WorkerPayload):
-    await run_core_extraction_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_core_extraction(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_core_extraction_task)
 
 @app.post("/worker/announcement-generation")
-async def worker_announcement_generation(payload: WorkerPayload):
-    await run_announcement_generation_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_announcement_generation(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_announcement_generation_task)
 
 @app.post("/worker/topic-mapping")
-async def worker_topic_mapping(payload: WorkerPayload):
-    await run_topic_mapping_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_topic_mapping(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_topic_mapping_task)
 
 @app.post("/worker/review-card")
-async def worker_review_card(payload: WorkerPayload):
-    await run_review_card_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_review_card(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_review_card_task)
 
 @app.post("/worker/image-prompt-generation")
-async def worker_image_prompt_generation(payload: WorkerPayload):
-    await run_image_prompt_generation_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_image_prompt_generation(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_image_prompt_generation_task)
 
 @app.post("/worker/image-rendering")
-async def worker_image_rendering(payload: WorkerPayload):
-    await run_image_rendering_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_image_rendering(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_image_rendering_task)
 
 @app.post("/worker/fun-fact-search")
-async def worker_fun_fact_search(payload: WorkerPayload):
-    await run_fun_fact_search_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_fun_fact_search(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_fun_fact_search_task)
 
 @app.post("/worker/fun-facts-generation")
-async def worker_fun_facts_generation(payload: WorkerPayload):
-    await run_fun_facts_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_fun_facts_generation(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_fun_facts_task)
 
 @app.post("/worker/detail-contents")
-async def worker_detail_contents(payload: WorkerPayload):
-    await run_detail_contents_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_detail_contents(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_detail_contents_task)
 
 @app.post("/worker/finalize-job")
-async def worker_finalize_job(payload: WorkerPayload):
-    await run_finalize_job_task(payload.job_id, payload.task_id)
-    return {"status": "success"}
+async def worker_finalize_job(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_finalize_job_task)
 
 
 # ---------------------------------------------------------
@@ -801,6 +824,42 @@ async def _patrol_reap_stale_dag_tasks() -> dict:
             print(f"🩹 Recovered stale task {t['id']} ({t['task_type']}): reset to PENDING")
 
     return {"recovered_tasks": recovered, "threshold_minutes": STALE_TASK_TIMEOUT_MINUTES}
+
+
+async def _patrol_fail_stuck_jobs() -> dict:
+    """
+    /worker/* の即時判定(_run_worker_task内、X-CloudTasks-TaskRetryCountを見て
+    最終試行なら即FAILED化)が取りこぼした場合の緩いバックストップ。
+    processing_tasksがFAILEDのままSTALE_FAILED_JOB_TIMEOUT_MINUTES以上
+    updated_atが更新されていない行を見つけ、紐づくprocessing_jobsをFAILEDにする。
+    """
+    admin_client = get_supabase_client()
+    threshold = (datetime.now(timezone.utc) - timedelta(minutes=STALE_FAILED_JOB_TIMEOUT_MINUTES)).isoformat()
+
+    stuck_tasks_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks")
+            .select("job_id")
+            .eq("status", "FAILED")
+            .lt("updated_at", threshold)
+            .execute()
+    )
+
+    stuck_job_ids = {t["job_id"] for t in (stuck_tasks_res.data or [])}
+
+    failed = 0
+    for job_id in stuck_job_ids:
+        fail_res = await asyncio.to_thread(
+            lambda job_id=job_id: admin_client.table("processing_jobs")
+                .update({"status": "FAILED"})
+                .eq("id", job_id)
+                .not_.in_("status", ["COMPLETED", "FAILED"])
+                .execute()
+        )
+        if fail_res.data:
+            failed += 1
+            print(f"🩹 Marked stuck job {job_id} as FAILED (backstop)")
+
+    return {"failed_jobs": failed, "threshold_minutes": STALE_FAILED_JOB_TIMEOUT_MINUTES}
 
 
 async def _patrol_reconstruct_stale_topic_maps() -> dict:
@@ -915,6 +974,7 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
 
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
+    ("fail_stuck_jobs", _patrol_fail_stuck_jobs),
     ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
     ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
 ]
