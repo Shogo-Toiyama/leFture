@@ -14,7 +14,7 @@ import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/home_app_bar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
 
 import 'widgets/announcement_bar.dart';
@@ -325,7 +325,7 @@ class HomePage extends HookConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const HomeAppBar(),
+                      const CustomAppBar(),
                       const AnnouncementBar(),
                     ],
                   ),

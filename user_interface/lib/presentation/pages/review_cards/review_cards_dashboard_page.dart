@@ -14,6 +14,8 @@ import 'package:lecture_companion_ui/core/utils/text_preview.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
 
 // ---------------------------------------------------------------------------
 // Private data class
@@ -78,23 +80,20 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.paper.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Review Cards',
-          style: TextStyle(
-            color: AppColors.paper.textInk,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const CustomAppBar(
+              showHomeButton: true,
+              title: 'Review Cards',
+              isLightBg: true,
+            ),
+            Expanded(
+              child: _buildBody(context, ref, groups, groupStartIndex, courseId),
+            ),
+          ],
         ),
       ),
-      body: _buildBody(context, ref, groups, groupStartIndex, courseId),
     );
   }
 

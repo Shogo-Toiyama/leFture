@@ -11,6 +11,8 @@ import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_d
 import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
 
 // ---------------------------------------------------------------------------
 // Private data class (mirrors old _NoteTopic)
@@ -66,23 +68,20 @@ class DeepNotesListPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.paper.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Deep Notes',
-          style: TextStyle(
-            color: AppColors.paper.textInk,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const CustomAppBar(
+              showHomeButton: true,
+              title: 'Deep Notes',
+              isLightBg: true,
+            ),
+            Expanded(
+              child: _buildBody(context, topics, notesAsync.isLoading || topicsAsync.isLoading, courseId),
+            ),
+          ],
         ),
       ),
-      body: _buildBody(context, topics, notesAsync.isLoading || topicsAsync.isLoading, courseId),
     );
   }
 

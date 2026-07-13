@@ -7,6 +7,8 @@ import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.d
 import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
 import 'package:lecture_companion_ui/application/topic_map/topic_map_reconstruct_controller.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
 
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
@@ -19,7 +21,6 @@ import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
-import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
 import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_selection.dart';
 
@@ -57,18 +58,6 @@ class _CourseTreeView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Courses',
-          style: TextStyle(
-            color: AppColors.universe.textStarlight,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        iconTheme: IconThemeData(color: AppColors.universe.textStarlight),
-      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.starGold,
         foregroundColor: Colors.white,
@@ -76,37 +65,49 @@ class _CourseTreeView extends ConsumerWidget {
         label: const Text('New Course'),
         onPressed: () => _openCreateSheet(context, ref),
       ),
-      body: coursesAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.starGold),
-        ),
-        error: (e, _) => Center(
-          child: Text(
-            'Error: $e',
-            style: const TextStyle(color: AppColors.correctionRed),
-          ),
-        ),
-        data: (courses) {
-          if (courses.isEmpty) {
-            return _EmptyCoursesView(
-              onCreateTap: () => _openCreateSheet(context, ref),
-            );
-          }
-          final grouped = _groupCourses(courses);
-          return RefreshIndicator(
-            color: AppColors.starGold,
-            onRefresh: () async => ref.invalidate(courseListProvider),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              children: grouped.entries.map((yearEntry) {
-                return _YearSection(
-                  yearName: yearEntry.key,
-                  termMap: yearEntry.value,
-                );
-              }).toList(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const CustomAppBar(
+              showHomeButton: true,
+              title: 'Courses',
             ),
-          );
-        },
+            Expanded(
+              child: coursesAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.starGold),
+                ),
+                error: (e, _) => Center(
+                  child: Text(
+                    'Error: $e',
+                    style: const TextStyle(color: AppColors.correctionRed),
+                  ),
+                ),
+                data: (courses) {
+                  if (courses.isEmpty) {
+                    return _EmptyCoursesView(
+                      onCreateTap: () => _openCreateSheet(context, ref),
+                    );
+                  }
+                  final grouped = _groupCourses(courses);
+                  return RefreshIndicator(
+                    color: AppColors.starGold,
+                    onRefresh: () async => ref.invalidate(courseListProvider),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      children: grouped.entries.map((yearEntry) {
+                        return _YearSection(
+                          yearName: yearEntry.key,
+                          termMap: yearEntry.value,
+                        );
+                      }).toList(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -380,7 +381,9 @@ class _CourseLectureListView extends ConsumerWidget {
           child: CustomScrollView(
             slivers: [
               // 1. AppBar Area
-              const SliverToBoxAdapter(child: _CourseAppBar()),
+              const SliverToBoxAdapter(
+                child: CustomAppBar(showHomeButton: true),
+              ),
 
               // 2. Main content area padding
               SliverPadding(
@@ -826,60 +829,7 @@ class _CourseLectureListView extends ConsumerWidget {
   }
 }
 
-class _CourseAppBar extends StatelessWidget {
-  const _CourseAppBar();
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
-              const SizedBox(width: 8),
-              const RecordingTimerChip(),
-            ],
-          ),
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    value: 0.7,
-                    strokeWidth: 3,
-                    backgroundColor: AppColors.universe.glassWhiteLow,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.starGold,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
-                  child: const Icon(Icons.person, color: Colors.grey, size: 20),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _TopicMapPainter extends CustomPainter {
   @override

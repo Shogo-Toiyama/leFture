@@ -13,7 +13,7 @@ import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_cr
 import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
-import 'package:lecture_companion_ui/presentation/widgets/home_app_bar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 
 // 銀河ウィジェットの高さの、画面縦幅に対する割合。HomePageと同じ比率に揃える。
 const double _kGalaxyHeightRatio = 0.25;
@@ -62,7 +62,7 @@ class EmptyHomeContent extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const HomeAppBar(),
+            const CustomAppBar(),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {

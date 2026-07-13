@@ -13,7 +13,6 @@ import 'package:lecture_companion_ui/domain/entities/keyword.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/recording_timer_chip.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
@@ -22,6 +21,8 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announ
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
 
 
 class LectureViewerPage extends HookConsumerWidget {
@@ -150,13 +151,16 @@ class LectureViewerPage extends HookConsumerWidget {
     final summary = lecture.summary == null ? null : stripSidCitations(lecture.summary!).trim();
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _LectureAppBar(),
-            const SizedBox(height: 16),
+      child: Column(
+        children: [
+          const CustomAppBar(showHomeButton: true),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
 
             // Date & Course Code (left-aligned)
             Row(
@@ -354,6 +358,9 @@ class LectureViewerPage extends HookConsumerWidget {
           ],
         ),
       ),
+    ),
+  ],
+),
     );
   }
 
@@ -2171,59 +2178,7 @@ class _TranscriptView extends StatelessWidget {
 }
 */
 
-class _LectureAppBar extends StatelessWidget {
-  const _LectureAppBar();
 
-  @override
-  Widget build(BuildContext context) {
-    final safeTop = MediaQuery.of(context).padding.top;
-    return Padding(
-      padding: EdgeInsets.only(top: safeTop, left: 16, right: 16, bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
-              const SizedBox(width: 8),
-              const RecordingTimerChip(),
-            ],
-          ),
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    value: 0.7,
-                    strokeWidth: 3,
-                    backgroundColor: AppColors.universe.glassWhiteLow,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.starGold),
-                  ),
-                ),
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
-                  child: const Icon(Icons.person, color: Colors.grey, size: 20),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-}
 
 /*
 class _MeasureSize extends StatefulWidget {

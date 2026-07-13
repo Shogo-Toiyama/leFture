@@ -3,8 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
+
 
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -36,22 +38,20 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     if (topics.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.paper.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.paper.background,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
-            onPressed: () => context.pop(),
-          ),
-          title: Text(
-            'Deep Notes',
-            style: TextStyle(
-              color: AppColors.paper.textInk,
-              fontWeight: FontWeight.bold,
-            ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              const CustomAppBar(
+                showHomeButton: true,
+                title: 'Deep Notes',
+                isLightBg: true,
+              ),
+              const Expanded(
+                child: Center(child: Text('No notes available')),
+              ),
+            ],
           ),
         ),
-        body: const Center(child: Text('No notes available')),
       );
     }
 
@@ -60,43 +60,35 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.paper.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          topic.title,
-          style: TextStyle(
-            color: AppColors.paper.textInk,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text(
-                '${currentIndex.value + 1} / $totalTopics',
-                style: TextStyle(
-                  color: AppColors.paper.textPencil,
-                  fontSize: 13,
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            CustomAppBar(
+              showHomeButton: true,
+              title: topic.title,
+              isLightBg: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '${currentIndex.value + 1} / $totalTopics',
+                    style: TextStyle(
+                      color: AppColors.paper.textPencil,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
-      body: _NoteDetailContent(
-        topic: topic,
-        topicIndex: currentIndex.value,
-        totalTopics: totalTopics,
-        arrivalDirection: navigationDirection.value,
+            Expanded(
+              child: _NoteDetailContent(
+                topic: topic,
+                topicIndex: currentIndex.value,
+                totalTopics: totalTopics,
+                arrivalDirection: navigationDirection.value,
         onNext: () {
           if (currentIndex.value < totalTopics - 1) {
             navigationDirection.value = 1;
@@ -109,6 +101,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
             currentIndex.value = currentIndex.value - 1;
           }
         },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

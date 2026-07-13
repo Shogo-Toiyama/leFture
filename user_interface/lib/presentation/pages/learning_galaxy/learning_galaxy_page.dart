@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
+
 import 'package:lecture_companion_ui/application/galaxy/galaxy_state_provider.dart';
 
 class LearningGalaxyPage extends HookConsumerWidget {
@@ -46,16 +48,12 @@ class LearningGalaxyPage extends HookConsumerWidget {
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 400),
                     opacity: showOverlay.value ? 1.0 : 0.0,
-                    child: SafeArea(
+                    child: const SafeArea(
                       bottom: false,
-                      child: _buildTopHUD(context, () async {
-                        showOverlay.value = false;
-                        // HUDが完全にスライドアウトするのを待つ (400ms)
-                        await Future.delayed(const Duration(milliseconds: 400));
-                        if (context.mounted) {
-                          context.pop();
-                        }
-                      }),
+                      child: CustomAppBar(
+                        showHomeButton: true,
+                        title: 'ORBIT SECTOR MAP',
+                      ),
                     ),
                   ),
                 ),
@@ -82,92 +80,7 @@ class LearningGalaxyPage extends HookConsumerWidget {
     );
   }
 
-  // --- 上部 HUD 設計 ---
-  Widget _buildTopHUD(BuildContext context, VoidCallback onBack) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0x990A0E1A), // 半透明の青黒
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x334FA8FF)), // 薄いネオンブルー境界
-      ),
-      child: Row(
-        children: [
-          // コックピットに戻るボタン
-          CircleAvatar(
-            backgroundColor: AppColors.universe.glassWhiteLow,
-            radius: 20,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: onBack,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // 中央タイトル
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'ORBIT SECTOR MAP',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'SYSTEM: CS-101 | REGION: BULGE',
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          // テレメトリ（ステータス）
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'SYNCED',
-                  style: TextStyle(
-                    color: Color(0xFF10B981),
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   // --- 下部 HUD 設計 ---
   Widget _buildBottomHUD(BuildContext context, WidgetRef ref) {

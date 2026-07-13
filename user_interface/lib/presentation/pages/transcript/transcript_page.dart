@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
+
 
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
 
@@ -100,18 +102,22 @@ class TranscriptPage extends HookConsumerWidget {
       ),
       error: (err, _) => Scaffold(
         backgroundColor: AppColors.paper.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.paper.background,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
-            onPressed: () => context.pop(),
-          ),
-        ),
-        body: Center(
-          child: Text(
-            'Error loading lecture: $err',
-            style: TextStyle(color: AppColors.correctionRed),
+        body: SafeArea(
+          child: Column(
+            children: [
+              const CustomAppBar(
+                showHomeButton: true,
+                isLightBg: true,
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    'Error loading lecture: $err',
+                    style: TextStyle(color: AppColors.correctionRed),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -119,15 +125,19 @@ class TranscriptPage extends HookConsumerWidget {
         if (lecture == null) {
           return Scaffold(
             backgroundColor: AppColors.paper.background,
-            appBar: AppBar(
-              backgroundColor: AppColors.paper.background,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
-                onPressed: () => context.pop(),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  const CustomAppBar(
+                    showHomeButton: true,
+                    isLightBg: true,
+                  ),
+                  const Expanded(
+                    child: Center(child: Text('Lecture not found')),
+                  ),
+                ],
               ),
             ),
-            body: const Center(child: Text('Lecture not found')),
           );
         }
 
@@ -299,50 +309,32 @@ class _TranscriptPageContent extends HookConsumerWidget {
         child: Column(
           children: [
             // ── Custom AppBar ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
+            CustomAppBar(
+              showHomeButton: true,
+              title: 'Transcript',
+              isLightBg: true,
+              actions: [
+                if (hasAudioPath)
                   IconButton(
                     icon: Icon(
-                      Icons.arrow_back,
-                      color: AppColors.paper.textInk,
+                      autoScrollEnabled.value
+                          ? Icons.sync
+                          : Icons.sync_disabled,
+                      color: autoScrollEnabled.value
+                          ? AppColors.deepGold
+                          : AppColors.paper.textPencil,
                     ),
-                    onPressed: () => context.pop(),
+                    tooltip: autoScrollEnabled.value
+                        ? 'Auto-scroll Enabled'
+                        : 'Auto-scroll Disabled',
+                    onPressed: () {
+                      autoScrollEnabled.value = !autoScrollEnabled.value;
+                      if (autoScrollEnabled.value) {
+                        syncScrollPosition();
+                      }
+                    },
                   ),
-                  Expanded(
-                    child: Text(
-                      'Transcript',
-                      style: TextStyle(
-                        color: AppColors.paper.textInk,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  if (hasAudioPath) ...[
-                    IconButton(
-                      icon: Icon(
-                        autoScrollEnabled.value
-                            ? Icons.sync
-                            : Icons.sync_disabled,
-                        color: autoScrollEnabled.value
-                            ? AppColors.deepGold
-                            : AppColors.paper.textPencil,
-                      ),
-                      tooltip: autoScrollEnabled.value
-                          ? 'Auto-scroll Enabled'
-                          : 'Auto-scroll Disabled',
-                      onPressed: () {
-                        autoScrollEnabled.value = !autoScrollEnabled.value;
-                        if (autoScrollEnabled.value) {
-                          syncScrollPosition();
-                        }
-                      },
-                    ),
-                  ],
-                ],
-              ),
+              ],
             ),
 
             // ── Transcript Text List ───────────────────────────────────────
