@@ -90,11 +90,11 @@ Stream<LectureUIState> lectureState(Ref ref, String lectureId) async* {
       yield LectureUIState.complete;
       return;
     }
-    if (job.status == 'ERROR') {
+    if (job.status == 'FAILED') {
       yield LectureUIState.failed;
       return;
     }
-    // PENDING, PROCESSING
+    // PENDING, RUNNING
     yield LectureUIState.processing;
     return;
   }
