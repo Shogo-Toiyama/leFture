@@ -284,8 +284,8 @@ final class ArtifactFileFamily extends $Family
 final firstTopicImagePathProvider = FirstTopicImagePathFamily._();
 
 final class FirstTopicImagePathProvider
-    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
-    with $FutureModifier<String?>, $FutureProvider<String?> {
+    extends $FunctionalProvider<AsyncValue<String?>, String?, Stream<String?>>
+    with $FutureModifier<String?>, $StreamProvider<String?> {
   FirstTopicImagePathProvider._({
     required FirstTopicImagePathFamily super.from,
     required String super.argument,
@@ -309,11 +309,11 @@ final class FirstTopicImagePathProvider
 
   @$internal
   @override
-  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $StreamProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
 
   @override
-  FutureOr<String?> create(Ref ref) {
+  Stream<String?> create(Ref ref) {
     final argument = this.argument as String;
     return firstTopicImagePath(ref, argument);
   }
@@ -330,10 +330,10 @@ final class FirstTopicImagePathProvider
 }
 
 String _$firstTopicImagePathHash() =>
-    r'17532fee25cdf099db1162907ba0f838a147e42e';
+    r'547fa5f41c3bbed2ea2de80b6ee1a91173b59791';
 
 final class FirstTopicImagePathFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<String?>, String> {
+    with $FunctionalFamilyOverride<Stream<String?>, String> {
   FirstTopicImagePathFamily._()
     : super(
         retry: null,

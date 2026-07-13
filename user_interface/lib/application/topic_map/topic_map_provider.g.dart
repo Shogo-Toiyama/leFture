@@ -40,9 +40,9 @@ final class TopicMapForCourseProvider
         $FunctionalProvider<
           AsyncValue<TopicMapData?>,
           TopicMapData?,
-          FutureOr<TopicMapData?>
+          Stream<TopicMapData?>
         >
-    with $FutureModifier<TopicMapData?>, $FutureProvider<TopicMapData?> {
+    with $FutureModifier<TopicMapData?>, $StreamProvider<TopicMapData?> {
   /// The course's topic map, or null if the pipeline hasn't generated one yet.
   ///
   /// course_title/total_lectures_covered never live in the map jsonb itself
@@ -77,12 +77,12 @@ final class TopicMapForCourseProvider
 
   @$internal
   @override
-  $FutureProviderElement<TopicMapData?> $createElement(
+  $StreamProviderElement<TopicMapData?> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<TopicMapData?> create(Ref ref) {
+  Stream<TopicMapData?> create(Ref ref) {
     final argument = this.argument as String;
     return topicMapForCourse(ref, argument);
   }
@@ -98,7 +98,7 @@ final class TopicMapForCourseProvider
   }
 }
 
-String _$topicMapForCourseHash() => r'c1e1c064b0c779f5251e0825ea1e6cce15054d00';
+String _$topicMapForCourseHash() => r'3c4a0b412d7c3df2fe3ca776deefd72517365fba';
 
 /// The course's topic map, or null if the pipeline hasn't generated one yet.
 ///
@@ -113,7 +113,7 @@ String _$topicMapForCourseHash() => r'c1e1c064b0c779f5251e0825ea1e6cce15054d00';
 /// 明示的に強制Pullしてから呼び直す)。
 
 final class TopicMapForCourseFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<TopicMapData?>, String> {
+    with $FunctionalFamilyOverride<Stream<TopicMapData?>, String> {
   TopicMapForCourseFamily._()
     : super(
         retry: null,

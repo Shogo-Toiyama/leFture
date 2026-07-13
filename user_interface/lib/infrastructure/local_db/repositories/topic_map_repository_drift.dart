@@ -22,15 +22,14 @@ class TopicMapRepositoryDrift {
 
   TopicMapRepositoryDrift(this._db);
 
-  /// コースのTopic Mapを取得する。1コース1行想定(まだPipelineが生成して
-  /// いなければnull)。
-  Future<TopicMapData?> getTopicMapForCourse(String courseId) async {
-    final row = await (_db.select(_db.localTopicMaps)
-          ..where((t) => t.courseId.equals(courseId)))
-        .getSingleOrNull();
-    if (row == null) return null;
-
-    final mapJson = jsonDecode(row.mapJson) as Map<String, dynamic>;
-    return TopicMapData.fromJson(mapJson, isStale: row.isStale);
+  /// コース of Topic Mapを監視する。
+  Stream<TopicMapData?> watchTopicMapForCourse(String courseId) {
+    final query = _db.select(_db.localTopicMaps)
+      ..where((t) => t.courseId.equals(courseId));
+    return query.watchSingleOrNull().map((row) {
+      if (row == null) return null;
+      final mapJson = jsonDecode(row.mapJson) as Map<String, dynamic>;
+      return TopicMapData.fromJson(mapJson, isStale: row.isStale);
+    });
   }
 }

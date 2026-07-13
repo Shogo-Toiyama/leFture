@@ -25,15 +25,14 @@ class LectureTopicRepositoryDrift {
     return query.watch().map((rows) => rows.map(_toDomain).toList());
   }
 
-  /// 最初のトピック(index = 1)のimage_pathを取得
-  Future<String?> firstTopicImagePath(String lectureId) async {
-    final row = await (_db.select(_db.localLectureTopics)
-          ..where((t) =>
-              t.lectureId.equals(lectureId) &
-              t.topicIndex.equals(1) &
-              t.deletedAt.isNull()))
-        .getSingleOrNull();
-    return row?.imagePath;
+  /// 最初のトピック(index = 1)のimage_pathを監視
+  Stream<String?> watchFirstTopicImagePath(String lectureId) {
+    final query = _db.select(_db.localLectureTopics)
+      ..where((t) =>
+          t.lectureId.equals(lectureId) &
+          t.topicIndex.equals(1) &
+          t.deletedAt.isNull());
+    return query.watchSingleOrNull().map((row) => row?.imagePath);
   }
 
   LectureTopic _toDomain(LocalLectureTopic row) {

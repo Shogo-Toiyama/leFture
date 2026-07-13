@@ -53,9 +53,9 @@ Future<File?> artifactFile(Ref ref, String storagePath) {
   return ref.watch(lectureArtifactRepositoryProvider).getArtifactFile(storagePath);
 }
 
-// レクチャーの最初のトピック（index = 1）の image_path を取得するProvider
+// レクチャーの最初のトピック（index = 1）の image_path を監視するProvider
 // (ローカルDB経由でオフライン優先)
 @riverpod
-Future<String?> firstTopicImagePath(Ref ref, String lectureId) {
-  return ref.watch(lectureTopicRepositoryDriftProvider).firstTopicImagePath(lectureId);
+Stream<String?> firstTopicImagePath(Ref ref, String lectureId) {
+  return ref.watch(lectureTopicRepositoryDriftProvider).watchFirstTopicImagePath(lectureId);
 }

@@ -50,10 +50,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
 import '../force_layout/graph_force_simulation.dart';
 import '../topic_map_models.dart';
@@ -532,22 +531,41 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
   /// is fetched fresh from Supabase (see lectureProvider) -- summary is
   /// AI-generated well after recording, and the local-first Drift table
   /// (LocalLectures in app_database.dart) only mirrors recording-time
-  /// fields, so it's always null there.
+  /// fields, so it's always null there. There's no node here to carry a
+  /// stable id, so this is resolved the same way CoursePage does:
+  /// un-reversing the newest-first local stream and indexing by
+  /// lecture_num - 1 (lecture_num is assigned oldest-first, see
+  /// task_runners.py's `_fetch_course_and_lecture_num_sync`).
   /// Topic View: title is the map node's own title, but its summary has to
   /// come from `lecture_topics.summary` -- the map itself never carries
-  /// one. `topicNode.topicIndexInLecture` and `lecture_topics.index` are
-  /// both the same 1-based position among this lecture's ACADEMIC topics
-  /// (see core_extraction.py's idx assignment), so they can be matched
-  /// directly. (Topic node IDs are opaque hashes now -- see
-  /// topic_map_models.dart -- so this can no longer be parsed from the id.)
-  ///
-  /// Lectures are streamed newest-first from the local DB; lecture_num is
-  /// assigned by oldest-first position (see task_runners.py's
-  /// `_fetch_course_and_lecture_num_sync`), so this has to un-reverse the
-  /// same way CoursePage does before indexing by lecture_num - 1.
+  /// one, so it's looked up via `topicNode.sourceLectureId` (the stable
+  /// join key -- see topic_map_models.dart) and matched against
+  /// `lecture_topics.index`/`topic_title` using
+  /// `topicNode.topicIndexInLecture`/`.title`. Deliberately NOT resolved
+  /// via the lecture_num -> `lectures[lecture_num - 1]` lookup used for
+  /// Lecture View above: that list is ordered by `lectureDatetime` (see
+  /// AppDatabase.watchLectures), while `lecture_num` is assigned by
+  /// `createdAt` order (see topic_map_provider.dart / helpers.py's
+  /// `_fetch_live_lecture_order_sync`) -- the two orders silently diverge
+  /// whenever a lecture's datetime doesn't match its recording order
+  /// (e.g. after editing it), picking the wrong lecture entirely.
   Future<void> _loadPanelData({required int lectureNum, TopicMapNode? topicNode}) async {
     final lectures = (await ref.read(lectureListStreamProvider(widget.courseId).future)).reversed.toList();
-    if (lectureNum < 1 || lectureNum > lectures.length) {
+
+    Lecture? lecture;
+    if (topicNode != null) {
+      final sourceLectureId = topicNode.sourceLectureId;
+      for (final l in lectures) {
+        if (l.id == sourceLectureId) {
+          lecture = l;
+          break;
+        }
+      }
+    } else if (lectureNum >= 1 && lectureNum <= lectures.length) {
+      lecture = lectures[lectureNum - 1];
+    }
+
+    if (lecture == null) {
       if (mounted) {
         setState(() {
           _panelData = null;
@@ -556,8 +574,8 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
       }
       return;
     }
-    final lecture = lectures[lectureNum - 1];
-    final title = topicNode?.title ?? _lectureDisplayTitle(lecture);
+    final resolvedLecture = lecture;
+    final title = topicNode?.title ?? _lectureDisplayTitle(resolvedLecture);
     int? topicNum;
     String? summary;
 
@@ -568,25 +586,25 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
     // the panel would never appear at all.
     try {
       if (topicNode == null) {
-        // A plain one-shot query, not the realtime `lectureProvider` stream
-        // -- this fires on every tap, and there's no reason to open/tear
-        // down a realtime channel just to read one field once.
-        final row = await supabase
-            .from('lectures')
-            .select('summary')
-            .eq('id', lecture.id)
-            .maybeSingle();
-        final rawSummary = row?['summary'] as String?;
-        summary = rawSummary == null ? null : stripSidCitations(rawSummary);
+        summary = resolvedLecture.summary == null ? null : stripSidCitations(resolvedLecture.summary!);
       } else {
         topicNum = topicNode.topicIndexInLecture;
-        if (topicNum != null) {
-          final lectureTopics = await ref.read(lectureTopicsProvider(lecture.id).future);
-          for (final t in lectureTopics) {
-            if (t.index == topicNum) {
-              summary = t.summary == null ? null : stripSidCitations(t.summary!);
-              break;
-            }
+        // Reads straight from the (keepAlive) repository instead of the
+        // autoDispose lectureTopicsProvider -- that provider was getting
+        // torn down mid-load (nothing else was watching it, since this
+        // whole function runs detached from build/_selectNode's fire-and
+        // -forget call), throwing "provider was disposed during loading
+        // state" and landing us in the catch below on every tap.
+        final lectureTopics = await ref
+            .read(lectureTopicRepositoryDriftProvider)
+            .watchTopicsForLecture(resolvedLecture.id)
+            .first;
+        for (final t in lectureTopics) {
+          final isIndexMatch = topicNum != null && t.index == topicNum;
+          final isTitleMatch = t.topicTitle == topicNode.title || t.displayTitle == topicNode.title;
+          if (isIndexMatch || isTitleMatch) {
+            summary = t.summary == null ? null : stripSidCitations(t.summary!);
+            break;
           }
         }
       }
@@ -600,7 +618,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
     if (!mounted) return;
     setState(() {
       _panelData = _PanelData(
-        lecture: lecture,
+        lecture: resolvedLecture,
         lectureNum: lectureNum,
         topicNum: topicNum,
         title: title,
