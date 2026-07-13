@@ -43,6 +43,13 @@ class ImageRenderingService:
     async def render_single_image(self, uid: str, lecture_id: str, topic: dict, client: httpx.AsyncClient) -> dict:
         topic_idx = topic.get("topic_idx", "unknown")
         
+        # 💡 R2上に既に画像が存在するか確認（キャッシュ）
+        expected_r2_path = f"{uid}/{lecture_id}/images/topic_{topic_idx}.jpg"
+        exists = await asyncio.to_thread(storage_service.object_exists, expected_r2_path)
+        if exists:
+            self.logger.log(f"   [Cache] Topic {topic_idx}: Image already exists in R2, skipping generation.")
+            return {"topic_idx": topic_idx, "image_path": expected_r2_path}
+
         # IMAGE_PROMPT_GENERATIONで生成されたプロンプトを取得
         prompt_text = (
             topic.get("flux_prompt")
@@ -117,5 +124,15 @@ class ImageRenderingService:
             tasks = [self.render_single_image(uid, lecture_id, prompt_data, client) for prompt_data in image_prompts]
             # asyncio.gather で一気に実行！ (Cloudflareの720RPMなら5枚同時でも全く問題なし)
             results = await asyncio.gather(*tasks)
+
+        # 💡 エラーが発生したトピックを収集して例外を送出する
+        failed_topic_indices = [r.get("topic_idx") for r in results if r.get("image_path") is None]
+        if failed_topic_indices:
+            raise ValueError(
+                f"Image rendering failed for {len(failed_topic_indices)} topic(s): "
+                f"indices={failed_topic_indices}. "
+                f"Successfully cached/generated {len(results) - len(failed_topic_indices)} topic(s). "
+                f"Retry will skip cached/existing images."
+            )
 
         return results
