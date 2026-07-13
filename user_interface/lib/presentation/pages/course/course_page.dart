@@ -339,11 +339,10 @@ class _CourseLectureListView extends ConsumerWidget {
         .watch(topicMapReconstructControllerProvider(courseId))
         .isLoading;
 
-    // ローカルDBは新しい順に並ぶので、シラバス的に古い順（Week1が上）へ並べ替える
+    // 講義日時（lecture_datetime）が新しい順にリストを表示する
     final lectures =
         (ref.watch(lectureListStreamProvider(courseId)).asData?.value ??
                 const <Lecture>[])
-            .reversed
             .toList();
 
     final announcement = ref

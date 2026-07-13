@@ -7,6 +7,8 @@ import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
+import 'package:intl/intl.dart';
+
 
 class LectureEditSheet extends HookConsumerWidget {
   const LectureEditSheet({
@@ -22,6 +24,7 @@ class LectureEditSheet extends HookConsumerWidget {
       text: lecture.title ?? '',
     );
     final selectedCourseId = useState<String?>(lecture.courseId);
+    final selectedDateTime = useState<DateTime>(lecture.lectureDatetime);
     final isSubmitting = useState(false);
     final errorMsg = useState<String?>(null);
 
@@ -53,6 +56,7 @@ class LectureEditSheet extends HookConsumerWidget {
               title: title.isEmpty ? null : title,
               courseId: courseId,
               previousCourseId: lecture.courseId,
+              lectureDatetime: selectedDateTime.value,
             );
         if (context.mounted) {
           Navigator.of(context).pop();
@@ -140,35 +144,7 @@ class LectureEditSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // Title Field
-              TextField(
-                controller: titleCtl,
-                style: TextStyle(color: AppColors.universe.textStarlight),
-                decoration: InputDecoration(
-                  labelText: 'Title',
-                  hintText: lecture.titleGenerated?.trim().isNotEmpty == true
-                      ? '${lecture.titleGenerated} (Default)'
-                      : 'Untitled Lecture',
-                  labelStyle: TextStyle(color: AppColors.universe.textComet),
-                  hintStyle: TextStyle(
-                    color: AppColors.universe.textComet.withValues(alpha: 0.5),
-                  ),
-                  prefixIcon: Icon(Icons.title, color: AppColors.universe.textComet),
-                  filled: true,
-                  fillColor: AppColors.universe.glassWhiteLow,
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.universe.glassBorder),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: AppColors.starGold),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Course Selection Dropdown
+              // 1. Course Selection Dropdown
               Text(
                 'Course',
                 style: TextStyle(
@@ -211,6 +187,90 @@ class LectureEditSheet extends HookConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+
+              // 2. Lecture Date & Time (DatePicker / TimePicker)
+              Text(
+                'Lecture Date & Time',
+                style: TextStyle(
+                  color: AppColors.universe.textStarlight,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // TODO: 将来的にはかっこいいカスタムカレンダーUIに置き換える
+              GestureDetector(
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDateTime.value,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (pickedDate == null) return;
+                  if (!context.mounted) return;
+                  final pickedTime = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(selectedDateTime.value),
+                  );
+                  if (pickedTime == null) return;
+                  selectedDateTime.value = DateTime(
+                    pickedDate.year,
+                    pickedDate.month,
+                    pickedDate.day,
+                    pickedTime.hour,
+                    pickedTime.minute,
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.universe.glassWhiteLow,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.universe.glassBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat('yyyy-MM-dd HH:mm').format(selectedDateTime.value),
+                        style: TextStyle(color: AppColors.universe.textStarlight),
+                      ),
+                      Icon(Icons.calendar_today, color: AppColors.universe.textComet, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 3. Title Field
+              TextField(
+                controller: titleCtl,
+                style: TextStyle(color: AppColors.universe.textStarlight),
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  hintText: lecture.titleGenerated?.trim().isNotEmpty == true
+                      ? '${lecture.titleGenerated} (Default)'
+                      : 'Untitled Lecture',
+                  labelStyle: TextStyle(color: AppColors.universe.textComet),
+                  hintStyle: TextStyle(
+                    color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                  ),
+                  prefixIcon: Icon(Icons.title, color: AppColors.universe.textComet),
+                  filled: true,
+                  fillColor: AppColors.universe.glassWhiteLow,
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: AppColors.starGold),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
 
               if (errorMsg.value != null) ...[
                 const SizedBox(height: 12),

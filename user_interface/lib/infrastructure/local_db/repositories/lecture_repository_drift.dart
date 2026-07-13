@@ -68,6 +68,7 @@ class LectureRepositoryDrift {
     required String lectureId,
     required String? title,
     required String? courseId,
+    DateTime? lectureDatetime,
   }) async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
@@ -79,6 +80,7 @@ class LectureRepositoryDrift {
           .write(LocalLecturesCompanion(
         title: Value(title),
         courseId: Value(courseId),
+        lectureDatetime: Value(lectureDatetime),
         syncStatus: const Value('needs_sync'),
         updatedAt: Value(DateTime.now()),
       ));

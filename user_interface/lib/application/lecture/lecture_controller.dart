@@ -218,6 +218,7 @@ class LectureController extends _$LectureController {
     required String? title,
     required String? courseId,
     String? previousCourseId,
+    DateTime? lectureDatetime,
   }) async {
     final link = ref.keepAlive();
     state = const AsyncLoading();
@@ -226,6 +227,7 @@ class LectureController extends _$LectureController {
             lectureId: lectureId,
             title: title,
             courseId: courseId,
+            lectureDatetime: lectureDatetime,
           );
 
       if (courseId != previousCourseId) {

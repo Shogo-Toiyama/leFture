@@ -252,7 +252,7 @@ class UploadManager {
       userId: lecture.userId,
       courseId: lecture.courseId,
       title: lecture.title,
-      lectureDateTimeUtc: lecture.lectureDatetime,
+      lectureDateTimeUtc: lecture.lectureDatetime ?? lecture.createdAt,
     );
 
     // 3. ジョブの種類に応じてアップロード処理を分岐
