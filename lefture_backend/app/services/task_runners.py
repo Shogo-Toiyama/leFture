@@ -573,6 +573,10 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
             billing=billing
         )
 
+        # このチャンクの完了で「全チャンクが揃った」ならCHECK_AND_ASSEMBLEを
+        # 必要な時にだけ起こす(イベント駆動。busy-retryの代わり)。
+        await _maybe_wake_check_and_assemble(supabase, lecture_id, uid, logger)
+
         # 📊 レポートの出力とログの保存
         logger.log(billing.report())
         logger.save_to_r2(storage_service)
@@ -588,6 +592,70 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
         )
         logger.save_to_r2(storage_service)
         raise e
+
+async def _maybe_wake_check_and_assemble(supabase, lecture_id: str, uid: str, logger: TaskLogger):
+    """
+    チャンクが1つ完了する(TRANSCRIBED/REVIEWEDになる)たびに呼ばれる。
+    CHECK_AND_ASSEMBLEは、まだチャンクが揃っていなければ例外を投げずに黙って
+    WAITING(専用の中間ステータス)へ戻るだけの設計にしてある(busy-retryをやめた
+    ため)。WAITINGは通常のDAG状態機械(PENDING/QUEUED/RUNNING/COMPLETED/FAILED/
+    CANCELLED)には含まれない、CHECK_AND_ASSEMBLEだけが意味を知っている状態
+    ——orchestrator_webhookのDAG判定は`status == 'PENDING'`のタスクしか見ないため、
+    WAITINGのタスクには一切反応しない(＝他タスク種別のRUNNING→PENDING遷移による
+    即時クラッシュ復旧を犠牲にせずに済む)。
+    ここでは「実際にチャンクが1つ揃った」というこのイベントで初めて、必要な時
+    にだけCHECK_AND_ASSEMBLEを起こす。全チャンクがまだ揃っていなければ何もしない
+    （WAITINGタスクを放置するだけで、ポーリングも例外も発生しない）。
+    """
+    job_res = await asyncio.to_thread(
+        lambda: supabase.table("processing_jobs").select("id, expected_chunks")
+            .eq("lecture_id", lecture_id).in_("status", ["PENDING", "RUNNING"])
+            .order("created_at", desc=True).limit(1).execute()
+    )
+    jobs = job_res.data or []
+    if not jobs:
+        return
+    job = jobs[0]
+    expected_chunks = job.get("expected_chunks") or 0
+    if expected_chunks == 0:
+        return
+
+    count_res = await asyncio.to_thread(
+        lambda: supabase.table("lecture_transcripts").select("id", count="exact")
+            .eq("lecture_id", lecture_id).in_("status", ["TRANSCRIBED", "REVIEWED"]).execute()
+    )
+    if (count_res.count or 0) < expected_chunks:
+        return
+
+    task_res = await asyncio.to_thread(
+        lambda: supabase.table("processing_tasks").select("id, status")
+            .eq("job_id", job["id"]).eq("task_type", "CHECK_AND_ASSEMBLE").single().execute()
+    )
+    task = task_res.data
+    # WAITINGからのみ起こす。FAILEDは本当のエラー(assemble失敗等)を意味するため、
+    # チャンク完了という無関係のイベントで自動リトライせず、Cloud Tasksの
+    # 通常リトライや/retry-taskでの明示的な再実行に委ねる。
+    if not task or task.get("status") != "WAITING":
+        return
+
+    # アトミックにQUEUED化。他プロセス(patrolや別チャンクの完了通知)が同時に
+    # 拾っていた場合はupdated件数0件になるので、二重enqueueは起きない。
+    update_res = await asyncio.to_thread(
+        lambda: supabase.table("processing_tasks")
+            .update({"status": "QUEUED", "updated_at": datetime.now().isoformat()})
+            .eq("id", task["id"]).eq("status", "WAITING").execute()
+    )
+    if not (update_res.data or []):
+        return
+
+    # main.pyとの循環importを避けるためローカルimport（他の関数と同じ流儀）
+    from app.main import enqueue_task, EnqueuePayload
+    try:
+        await enqueue_task(EnqueuePayload(job_id=job["id"], task_id=task["id"], task_type="CHECK_AND_ASSEMBLE"))
+        logger.log(f"🔔 All {expected_chunks} chunks ready — woke CHECK_AND_ASSEMBLE (event-driven, no busy-retry).")
+    except Exception as e:
+        logger.log(f"⚠️ Failed to wake CHECK_AND_ASSEMBLE: {e}")
+
 
 # ---------------------------------------------------------
 # 2. Check and Assemble (文字起こしの待ち合わせ＆組み立て)
@@ -631,17 +699,29 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         
         # 待ち合わせロジック
         if len(processed_chunks) < expected_chunks:
-            error_msg = f"⏳ Waiting for Whisper transcripts... ({len(processed_chunks)}/{expected_chunks})"
-            logger.log(error_msg)
+            logger.log(f"⏳ Waiting for Whisper transcripts... ({len(processed_chunks)}/{expected_chunks})")
 
             # 詰まっているチャンクが無いか確認し、あれば再enqueueする。
-            # CHECK_AND_ASSEMBLEはチャンクが揃うまでこの関数が繰り返しリトライされる
-            # ため、専用のスケジューラーやポーリングを別途用意しなくても、この
-            # 待ち合わせループ自体が「音声チャンクの詰まり」の回収役を兼ねられる。
             await _recover_stuck_chunks(supabase, lecture_id, all_chunks, uid, logger)
 
-            # わざとエラーを投げることでリトライさせる
-            raise Exception(error_msg)
+            # ★ ここで例外を投げてCloud Tasksにリトライさせる(busy-retry)のは
+            # やめている。代わりに、DAGの通常状態機械には含まれない専用の
+            # WAITINGステータスへ黙って戻って200を返すだけにする。
+            # WAITINGはorchestrator_webhookのDAG判定(status=='PENDING'のみ対象)
+            # から完全に見えないため、「揃うまで待っている」だけで無限に
+            # 再キューされることがない(以前はdependenciesが空なせいでPENDINGに
+            # 戻すたびに即「実行可能」と誤判定され、録音終盤のチャンク密集
+            # タイミングでリクエストstormを起こし、Cloud Run側のevent loop
+            # 詰まり経由でpg_net webhookのタイムアウトを誘発していた)。
+            # 実際の再起動は「最後のチャンクが揃った」タイミングで
+            # process_transcribe_chunk側の _maybe_wake_check_and_assemble が
+            # イベント駆動で1回だけ、WAITING→QUEUEDへアトミックに起こす。
+            # 万一そのイベントを取りこぼしても(音声チャンク自体が詰まって二度と
+            # 完了しない等)、_patrol_wake_waiting_check_and_assembleが数分おきに
+            # WAITINGのまま動きが無いタスクを見つけて強制的に一度起こし直す。
+            await _update_task_status(task_id, "WAITING")
+            logger.save_to_r2(storage_service)
+            return
 
         # ---------------------------------------------------------
         # B. 端数の Sentence Review
@@ -729,16 +809,12 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         logger.save_to_r2(storage_service)
 
     except Exception as e:
-        if "Waiting for" in str(e):
-            await _update_task_status(task_id, "PENDING") 
-            raise e
-            
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
         logger.log(f"❌ CHECK_AND_ASSEMBLE Failed: {error_msg}")
         await _update_task_status(task_id, "FAILED", error_msg=error_msg)
         logger.save_to_r2(storage_service)
         raise e
-        
+
     finally:
         # ローカルの一時ファイルはお掃除
         if work_dir.exists():

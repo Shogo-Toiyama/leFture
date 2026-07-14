@@ -26,7 +26,7 @@ class LectureEditSheet extends HookConsumerWidget {
       text: lecture.title ?? '',
     );
     final selectedCourseId = useState<String?>(lecture.courseId);
-    final selectedDateTime = useState<DateTime>(lecture.lectureDatetime);
+    final selectedDateTime = useState<DateTime>(lecture.lectureDatetime.toLocal());
     final isSubmitting = useState(false);
     final errorMsg = useState<String?>(null);
 

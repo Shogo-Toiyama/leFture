@@ -39,7 +39,8 @@ from app.services.task_runners import (
     run_finalize_job_task,
     mark_topic_map_stale,
     run_topic_map_reconstruction_task,
-    build_pending_addition_for_lecture
+    build_pending_addition_for_lecture,
+    CHUNK_STALE_TIMEOUT_MINUTES,
 )
 
 # ---------------------------------------------------------
@@ -162,7 +163,9 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
     # 3.5 講義情報を取得し、course_id が存在するか検証する
     try:
-        lec_res = admin_client.table("lectures").select("course_id").eq("id", payload.lecture_id).single().execute()
+        lec_res = await asyncio.to_thread(
+            lambda: admin_client.table("lectures").select("course_id").eq("id", payload.lecture_id).single().execute()
+        )
         if not lec_res.data or not lec_res.data.get("course_id"):
             raise HTTPException(
                 status_code=400,
@@ -177,9 +180,11 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
         )
 
     # 3.6 同じlecture_idの未完了(!=COMPLETED)jobが既にあるか確認する。
-    old_jobs_res = admin_client.table("processing_jobs").select("id")\
-        .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED")\
-        .order("created_at", desc=True).execute()
+    old_jobs_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").select("id")
+            .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED")
+            .order("created_at", desc=True).execute()
+    )
     old_jobs = old_jobs_res.data or []
 
     # force=False(自動発火)で既に未完了jobがある場合は、新規作成せず既存jobを
@@ -200,12 +205,14 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     # 書き込みと衝突してデータが壊れる。CANCELLEDは orchestrator/patrol のどちらも
     # 拾わない終端ステータスなので、これだけで再開を防げる。
     for old_job in old_jobs:
-        admin_client.table("processing_tasks").update({
-            "status": "CANCELLED",
-            "updated_at": datetime.now().isoformat(),
-        }).eq("job_id", old_job["id"]).in_(
-            "status", ["PENDING", "QUEUED", "RUNNING", "FAILED"]
-        ).execute()
+        await asyncio.to_thread(
+            lambda old_job=old_job: admin_client.table("processing_tasks").update({
+                "status": "CANCELLED",
+                "updated_at": datetime.now().isoformat(),
+            }).eq("job_id", old_job["id"]).in_(
+                "status", ["PENDING", "QUEUED", "RUNNING", "FAILED"]
+            ).execute()
+        )
 
     # 4. 親ジョブを作成 (processing_jobs)
     job_data = {
@@ -214,7 +221,9 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
       "expected_chunks": payload.expected_chunks,
       "status": "PENDING"
     }
-    job_res = admin_client.table("processing_jobs").insert(job_data).execute()
+    job_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").insert(job_data).execute()
+    )
     job_id = job_res.data[0]["id"]
 
     # 5. タスクの設計図（DAG）を定義
@@ -267,7 +276,9 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     ]
 
     # 7. 子タスクを一気に登録 (processing_tasks)
-    admin_client.table("processing_tasks").insert(insert_data).execute()
+    await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks").insert(insert_data).execute()
+    )
 
     # 大成功！
     return {"message": "Analysis started successfully", "job_id": job_id}
@@ -342,15 +353,19 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
 
     admin_client = get_supabase_client()
 
-    task_res = admin_client.table("processing_tasks").select("id, job_id, task_type, status")\
-        .eq("id", payload.task_id).single().execute()
+    task_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks").select("id, job_id, task_type, status")
+            .eq("id", payload.task_id).single().execute()
+    )
     if not task_res.data:
         raise HTTPException(status_code=404, detail="Task not found")
     task = task_res.data
 
     # タスク→ジョブ経由で所有者を検証（他人のタスクを操作できないように）
-    job_res = admin_client.table("processing_jobs").select("id, user_id, lecture_id")\
-        .eq("id", task["job_id"]).single().execute()
+    job_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").select("id, user_id, lecture_id")
+            .eq("id", task["job_id"]).single().execute()
+    )
     if not job_res.data or job_res.data["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to retry this task")
 
@@ -360,8 +375,10 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
             detail=f"Task is not in a retryable state (current status: {task['status']})",
         )
 
-    all_tasks_res = admin_client.table("processing_tasks")\
-        .select("id, task_type, status, dependencies").eq("job_id", task["job_id"]).execute()
+    all_tasks_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks")
+            .select("id, task_type, status, dependencies").eq("job_id", task["job_id"]).execute()
+    )
     all_tasks = all_tasks_res.data or []
 
     affected_types = _compute_cascade_task_types(all_tasks, task["task_type"])
@@ -377,11 +394,13 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
 
     resettable_ids = [t["id"] for t in affected_tasks if t["status"] != "PENDING"]
     if resettable_ids:
-        admin_client.table("processing_tasks").update({
-            "status": "PENDING",
-            "error_message": None,
-            "updated_at": datetime.now().isoformat(),
-        }).in_("id", resettable_ids).execute()
+        await asyncio.to_thread(
+            lambda: admin_client.table("processing_tasks").update({
+                "status": "PENDING",
+                "error_message": None,
+                "updated_at": datetime.now().isoformat(),
+            }).in_("id", resettable_ids).execute()
+        )
 
     # 再生成スキップ用のR2キャッシュを持つtask_typeが対象に含まれていたら、
     # あわせてキャッシュも消して確実に再生成させる
@@ -392,8 +411,10 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
             await asyncio.to_thread(storage_service.delete_prefix, prefix_fn(uid, lecture_id))
 
     # 詰まっていた/完了済みだったジョブも「進行中」に戻す(冪等)
-    admin_client.table("processing_jobs").update({"status": "RUNNING"}) \
-        .eq("id", task["job_id"]).in_("status", ["FAILED", "COMPLETED"]).execute()
+    await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").update({"status": "RUNNING"})
+            .eq("id", task["job_id"]).in_("status", ["FAILED", "COMPLETED"]).execute()
+    )
 
     return {
         "message": "Task queued for retry",
@@ -419,6 +440,11 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
     # 1. 反応すべきイベントかチェック
     is_new = (event_type == "INSERT" and record.get("status") == "PENDING")
     is_newly_completed = (event_type == "UPDATE" and record.get("status") == "COMPLETED" and old_record.get("status") != "COMPLETED")
+    # CHECK_AND_ASSEMBLEのように「揃うまで待つ」タスクは、待機中はPENDINGではなく
+    # 専用のWAITINGステータスに入るため(このDAG判定はstatus=='PENDING'のみを
+    # 対象にしている)、ここは元のシンプルな判定のままでよい。RUNNING→PENDINGの
+    # 遷移(=stale reaperによるクラッシュ復旧など、本当に再実行してほしいケース)
+    # は今まで通り即座に拾われる。
     is_manually_retried = (event_type == "UPDATE" and record.get("status") == "PENDING" and old_record.get("status") != "PENDING")
 
     if not (is_new or is_newly_completed or is_manually_retried):
@@ -432,7 +458,16 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
     job_id = record.get("job_id")
 
     # 3. このジョブに紐づく「すべてのタスク」の最新状態を取得
-    res = admin_client.table("processing_tasks").select("*").eq("job_id", job_id).execute()
+    # ★ 同期I/O(Supabase)を必ずスレッドに逃がす: CHECK_AND_ASSEMBLEは待ち合わせ中
+    # 例外→PENDING遷移で毎回このwebhookを起こすため、同時多発的にこのハンドラが
+    # 走ることがある。ここを直接awaitせず同期実行すると、単一のasyncioイベント
+    # ループがブロックされて他のリクエスト(他のwebhook呼び出しや後続タスクの
+    # COMPLETED通知など)が処理待ちで詰まり、Supabase側のpg_net webhookタイムアウト
+    # (既定10秒、失敗時の自動再送なし)を誘発してオーケストレーションが永久に
+    # 止まってしまう。これが実際に起きた不具合の直接原因だった。
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks").select("*").eq("job_id", job_id).execute()
+    )
     all_tasks = res.data
 
     # すでに完了しているタスクのリスト
@@ -443,11 +478,11 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
     for t in all_tasks:
         if t["status"] != "PENDING":
             continue
-        
+
         # 依存関係（JSON文字列になっている可能性を考慮）をリストにする
         deps_data = t.get("dependencies", [])
         deps = json.loads(deps_data) if isinstance(deps_data, str) else deps_data
-        
+
         # 依存しているタスクが「すべて」completed_typesに含まれていれば実行可能！
         if all(dep in completed_types for dep in deps):
             ready_tasks.append(t)
@@ -459,20 +494,24 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
     print(f"🚀 Found {len(ready_tasks)} ready task(s): {[t['task_type'] for t in ready_tasks]}")
 
     # 4.5 最初のタスクが動き出す瞬間にジョブ全体をRUNNINGへ(PENDINGの時だけ・冪等)
-    admin_client.table("processing_jobs").update({"status": "RUNNING"}) \
-        .eq("id", job_id).eq("status", "PENDING").execute()
+    await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").update({"status": "RUNNING"})
+            .eq("id", job_id).eq("status", "PENDING").execute()
+    )
 
     # 5. 実行可能なタスクを処理
     for task in ready_tasks:
         # 5-1. 二重起動を防ぐため、DBのステータスを 'QUEUED' に更新する
         # updated_at も明示的に更新しておく（reap-stale-tasksがこの時刻を基準に
         # 「QUEUEDのままenqueueに失敗して止まっているタスク」を検出するため）
-        update_res = admin_client.table("processing_tasks")\
-            .update({"status": "QUEUED", "updated_at": datetime.now().isoformat()})\
-            .eq("id", task["id"])\
-            .eq("status", "PENDING")\
-            .execute()
-        
+        update_res = await asyncio.to_thread(
+            lambda task=task: admin_client.table("processing_tasks")
+                .update({"status": "QUEUED", "updated_at": datetime.now().isoformat()})
+                .eq("id", task["id"])
+                .eq("status", "PENDING")
+                .execute()
+        )
+
         if not update_res.data:
             print(f"⚠️ Failed to update task {task['task_type']} to QUEUED (might be already processing)")
             continue
@@ -988,6 +1027,50 @@ async def _patrol_advance_stalled_dags() -> dict:
     return {"advanced_tasks": advanced}
 
 
+async def _patrol_wake_waiting_check_and_assemble() -> dict:
+    """
+    CHECK_AND_ASSEMBLEはチャンクが揃うまで、通常のDAG状態機械には含まれない
+    専用のWAITINGステータスで待機する(orchestrator_webhookのDAG判定は
+    status=='PENDING'のタスクしか見ないため、WAITINGには一切反応しない設計)。
+    復帰は基本的にチャンク完了イベント(_maybe_wake_check_and_assemble)が
+    即座に行うが、音声チャンク自体が詰まって二度と完了しない場合はその
+    イベントが永遠に発生しない。ここでWAITINGのままCHUNK_STALE_TIMEOUT_MINUTES
+    以上動きが無いタスクを定期的に見つけて強制的に一度起こし、
+    run_check_and_assemble_transcript_task自身の詰まりチャンク回収
+    (_recover_stuck_chunks)を回す。まだ準備が整っていなければまたWAITINGに
+    戻るだけなので、無限リトライにはならない。
+    """
+    admin_client = get_supabase_client()
+    threshold = (datetime.now(timezone.utc) - timedelta(minutes=CHUNK_STALE_TIMEOUT_MINUTES)).isoformat()
+
+    stale_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks")
+            .select("id, job_id")
+            .eq("task_type", "CHECK_AND_ASSEMBLE")
+            .eq("status", "WAITING")
+            .lt("updated_at", threshold)
+            .execute()
+    )
+
+    woken = 0
+    for t in (stale_res.data or []):
+        update_res = await asyncio.to_thread(
+            lambda t=t: admin_client.table("processing_tasks")
+                .update({"status": "QUEUED", "updated_at": datetime.now().isoformat()})
+                .eq("id", t["id"]).eq("status", "WAITING").execute()
+        )
+        if not update_res.data:
+            continue
+        try:
+            await enqueue_task(EnqueuePayload(job_id=t["job_id"], task_id=t["id"], task_type="CHECK_AND_ASSEMBLE"))
+            woken += 1
+            print(f"🩹 Patrol woke stalled WAITING CHECK_AND_ASSEMBLE task {t['id']}")
+        except Exception as e:
+            print(f"⚠️ Patrol failed to wake CHECK_AND_ASSEMBLE task {t['id']}: {e}")
+
+    return {"woken_tasks": woken, "threshold_minutes": CHUNK_STALE_TIMEOUT_MINUTES}
+
+
 async def _patrol_fail_stuck_jobs() -> dict:
     """
     /worker/* の即時判定(_run_worker_task内、X-CloudTasks-TaskRetryCountを見て
@@ -1149,6 +1232,7 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
     ("advance_stalled_dags", _patrol_advance_stalled_dags),
+    ("wake_waiting_check_and_assemble", _patrol_wake_waiting_check_and_assemble),
     ("fail_stuck_jobs", _patrol_fail_stuck_jobs),
     ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
     ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
