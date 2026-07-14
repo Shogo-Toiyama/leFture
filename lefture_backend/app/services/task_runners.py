@@ -261,6 +261,156 @@ async def receive_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
     )
 
 
+async def trigger_sentence_review_for_batch_if_ready(
+    supabase,
+    lecture_id: str,
+    batch_start: int,
+    uid: str,
+    logger: TaskLogger,
+    billing: BillingEngine
+) -> bool:
+    """
+    指定されたバッチ (batch_start から 4つのチャンク) の Sentence Review 実行可否を確認し、
+    条件を満たしていればアトミックにロックを取って Sentence Review を実行する。
+    また、処理完了後は次のバッチを連鎖的（カスケード）にチェック＆実行する。
+    """
+    batch_indices = [batch_start + i for i in range(4)]
+
+    # 1. 前方のすべてのチャンクが 'REVIEWED' になっているか確認
+    # (順序制御: 前のバッチがまだ完了していなければ、このバッチの進行を抑止する)
+    if batch_start > 0:
+        prev_res = await asyncio.to_thread(
+            lambda: supabase.table("lecture_transcripts")
+                .select("chunk_index, status")
+                .eq("lecture_id", lecture_id)
+                .lt("chunk_index", batch_start)
+                .execute()
+        )
+        prev_chunks = prev_res.data or []
+        not_reviewed = [c for c in prev_chunks if c["status"] != "REVIEWED"]
+        if not_reviewed:
+            logger.log(f"⏭️ Progressive review for batch {batch_start} waiting for previous chunks to be REVIEWED: {[(c['chunk_index'], c['status']) for c in not_reviewed]}")
+            return False
+
+    # 2. 対象バッチの4つのチャンクの状態を確認
+    check_res = await asyncio.to_thread(
+        lambda: supabase.table("lecture_transcripts")
+            .select("chunk_index, status")
+            .eq("lecture_id", lecture_id)
+            .in_("chunk_index", batch_indices)
+            .execute()
+    )
+
+    chunks_status = {c["chunk_index"]: c["status"] for c in check_res.data or []}
+    all_ready = len(chunks_status) == 4 and all(status == "TRANSCRIBED" for status in chunks_status.values())
+
+    if not all_ready:
+        logger.log(f"⏭️ Batch {batch_start} is not fully TRANSCRIBED yet. Statuses: {chunks_status}")
+        return False
+
+    # 3. 4つのチャンクをアトミックに 'REVIEWING' に更新 (TRANSCRIBED であるもののみ)
+    # 同時実行された場合、先に更新に成功した1プロセスのみが更新件数4を獲得する
+    lock_res = await asyncio.to_thread(
+        lambda: supabase.table("lecture_transcripts")
+            .update({"status": "REVIEWING"})
+            .eq("lecture_id", lecture_id)
+            .in_("chunk_index", batch_indices)
+            .eq("status", "TRANSCRIBED")
+            .execute()
+    )
+
+    updated_chunks = lock_res.data or []
+
+    if len(updated_chunks) == 4:
+        logger.log(f"🔒 Lock acquired for batch {batch_start}! Executing Sentence Review...")
+
+        try:
+            # 最新のデータを再度取得してインデックス順にソート
+            batch_res = await asyncio.to_thread(
+                lambda: supabase.table("lecture_transcripts")
+                    .select("*")
+                    .eq("lecture_id", lecture_id)
+                    .in_("chunk_index", batch_indices)
+                    .order("chunk_index")
+                    .execute()
+            )
+
+            chunks_to_review = batch_res.data or []
+
+            # タイムライン再構築のために、このバッチまでのすべての履歴を取得
+            history_res = await asyncio.to_thread(
+                lambda: supabase.table("lecture_transcripts")
+                    .select("*")
+                    .eq("lecture_id", lecture_id)
+                    .lte("chunk_index", batch_start + 3)
+                    .order("chunk_index")
+                    .execute()
+            )
+
+            adjusted_history = reconstruct_chunk_start_times(history_res.data or [])
+
+            # 補正済みのリストから chunks_to_review と prev_chunk を抽出
+            adjusted_review_map = {c["chunk_index"]: c for c in adjusted_history}
+            chunks_to_review = [adjusted_review_map[c["chunk_index"]] for c in chunks_to_review if c["chunk_index"] in adjusted_review_map]
+
+            prev_chunk = adjusted_review_map.get(batch_start - 1) if batch_start > 0 else None
+
+            logger.log(f"🚀 Triggering Sentence Review for chunks {batch_start} to {batch_start + 3}")
+
+            # SentenceReviewService を呼び出し
+            course_title, keywords_list = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
+
+            llm = UnifiedLLM(billing)
+            reviewer = SentenceReviewService(llm, logger)
+            reviewed_chunks = await reviewer.run_from_memory(
+                chunks_to_review=chunks_to_review,
+                previous_chunk=prev_chunk,
+                course_title=course_title,
+                keywords_list=keywords_list
+            )
+
+            # 返ってきた綺麗なデータを DB に書き込み REVIEWED に更新
+            def _write_reviewed_chunks_sync():
+                for rc in reviewed_chunks:
+                    supabase.table("lecture_transcripts").update({
+                        "status": "REVIEWED",
+                        "text_reviewed": rc["text"],
+                        "segments_reviewed": rc["segments"]
+                    }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
+
+            await asyncio.to_thread(_write_reviewed_chunks_sync)
+            logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB!")
+
+            # 4. カスケードトリガー: 自分が完了したので、次のバッチが準備完了なら連鎖的にレビューを実行する
+            next_batch_start = batch_start + 4
+            logger.log(f"🔗 Cascade triggering Sentence Review check for next batch {next_batch_start}...")
+            asyncio.create_task(
+                trigger_sentence_review_for_batch_if_ready(
+                    supabase=supabase,
+                    lecture_id=lecture_id,
+                    batch_start=next_batch_start,
+                    uid=uid,
+                    logger=logger,
+                    billing=billing
+                )
+            )
+            return True
+
+        except Exception as review_err:
+            logger.log(f"❌ Error in progressive Sentence Review for batch {batch_start}: {review_err}\n{traceback.format_exc()}")
+            # エラー時は状態を TRANSCRIBED に戻して再試行できるようにする
+            await asyncio.to_thread(
+                lambda: supabase.table("lecture_transcripts")
+                    .update({"status": "TRANSCRIBED"})
+                    .eq("lecture_id", lecture_id)
+                    .in_("chunk_index", batch_indices)
+                    .execute()
+            )
+            return False
+
+    return False
+
+
 async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time: float, whisper_context: str, r2_audio_path: str, uid: str):
     """
     receive_transcribe_chunk がenqueueしたタスクを実際に処理する（Cloud Tasksから呼ばれる）。
@@ -329,105 +479,15 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
         # =========================================================
         # Sentence Review のトリガー (4枚区切りでアトミックに並行制御)
         # =========================================================
-
-        # 1. 自分が所属するバッチ（4つ区切り）を特定
         batch_start = (chunk_index // 4) * 4
-        batch_indices = [batch_start + i for i in range(4)]
-
-        logger.log(f"🔍 Checking progressive Sentence Review batch starting at {batch_start} (Chunks: {batch_indices})")
-
-        try:
-            # 2. バッチの4つのチャンクの状態を確認
-            check_res = await asyncio.to_thread(
-                lambda: supabase.table("lecture_transcripts")
-                    .select("chunk_index, status")
-                    .eq("lecture_id", lecture_id)
-                    .in_("chunk_index", batch_indices)
-                    .execute()
-            )
-
-            chunks_status = {c["chunk_index"]: c["status"] for c in check_res.data or []}
-            all_ready = len(chunks_status) == 4 and all(status == "TRANSCRIBED" for status in chunks_status.values())
-
-            if all_ready:
-                # 3. 4つのチャンクをアトミックに 'REVIEWING' に更新 (TRANSCRIBED であるもののみ)
-                # 同時実行された場合、先に更新に成功した1プロセスのみが更新件数4を獲得する
-                lock_res = await asyncio.to_thread(
-                    lambda: supabase.table("lecture_transcripts")
-                        .update({"status": "REVIEWING"})
-                        .eq("lecture_id", lecture_id)
-                        .in_("chunk_index", batch_indices)
-                        .eq("status", "TRANSCRIBED")
-                        .execute()
-                )
-
-                updated_chunks = lock_res.data or []
-
-                if len(updated_chunks) == 4:
-                    logger.log(f"🔒 Lock acquired for batch {batch_start}! Executing Sentence Review...")
-
-                    # 最新のデータを再度取得してインデックス順にソート
-                    batch_res = await asyncio.to_thread(
-                        lambda: supabase.table("lecture_transcripts")
-                            .select("*")
-                            .eq("lecture_id", lecture_id)
-                            .in_("chunk_index", batch_indices)
-                            .order("chunk_index")
-                            .execute()
-                    )
-
-                    chunks_to_review = batch_res.data or []
-
-                    # タイムライン再構築のために、このバッチまでのすべての履歴を取得
-                    history_res = await asyncio.to_thread(
-                        lambda: supabase.table("lecture_transcripts")
-                            .select("*")
-                            .eq("lecture_id", lecture_id)
-                            .lte("chunk_index", batch_start + 3)
-                            .order("chunk_index")
-                            .execute()
-                    )
-
-                    adjusted_history = reconstruct_chunk_start_times(history_res.data or [])
-
-                    # 補正済みのリストから chunks_to_review と prev_chunk を抽出
-                    adjusted_review_map = {c["chunk_index"]: c for c in adjusted_history}
-                    chunks_to_review = [adjusted_review_map[c["chunk_index"]] for c in chunks_to_review if c["chunk_index"] in adjusted_review_map]
-
-                    prev_chunk = adjusted_review_map.get(batch_start - 1) if batch_start > 0 else None
-
-                    logger.log(f"🚀 Triggering Sentence Review for chunks {batch_start} to {batch_start + 3}")
-
-                    # SentenceReviewService を呼び出し
-                    course_title, keywords_list = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
-
-                    llm = UnifiedLLM(billing)
-                    reviewer = SentenceReviewService(llm, logger)
-                    reviewed_chunks = await reviewer.run_from_memory(
-                        chunks_to_review=chunks_to_review,
-                        previous_chunk=prev_chunk,
-                        course_title=course_title,
-                        keywords_list=keywords_list
-                    )
-
-                    # 返ってきた綺麗なデータを DB に書き込み REVIEWED に更新
-                    def _write_reviewed_chunks_sync():
-                        for rc in reviewed_chunks:
-                            supabase.table("lecture_transcripts").update({
-                                "status": "REVIEWED",
-                                "text_reviewed": rc["text"],
-                                "segments_reviewed": rc["segments"]
-                            }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
-
-                    await asyncio.to_thread(_write_reviewed_chunks_sync)
-
-                    logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB!")
-                else:
-                    logger.log(f"⚠️ Lock contention: another worker acquired the lock for batch {batch_start}. Skipping review.")
-            else:
-                logger.log(f"⏳ Batch starting at {batch_start} is not fully ready yet (statuses: {chunks_status}). Skipping review.")
-        except Exception as review_trigger_error:
-            logger.log(f"⚠️ Error in progressive Sentence Review trigger: {review_trigger_error}")
+        await trigger_sentence_review_for_batch_if_ready(
+            supabase=supabase,
+            lecture_id=lecture_id,
+            batch_start=batch_start,
+            uid=uid,
+            logger=logger,
+            billing=billing
+        )
 
         # 📊 レポートの出力とログの保存
         logger.log(billing.report())

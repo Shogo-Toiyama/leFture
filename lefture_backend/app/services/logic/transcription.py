@@ -75,19 +75,9 @@ class TranscriptionService:
         self.logger.log(f"   [Logic] Calling Groq Whisper API...")
         start_time = time.perf_counter()
         
-        try:
-            # Groq API は (ファイル名, バイナリ) のタプルでファイルデータを受け取る
-            file_payload = (f"chunk_{chunk_index}.m4a", audio_bytes)
-            result = await _call_groq_whisper(self.client, self.model, file_payload, prompt_keywords)
-
-        except Exception as e:
-            self.logger.log(f"   [Logic] ❌ Groq API Error: {e}")
-            # APIエラー時は空データを返す
-            return {
-                "text": "",
-                "segments": [],
-                "audio_duration": actual_duration
-            }
+        # Groq API は (ファイル名, バイナリ) のタプルでファイルデータを受け取る
+        file_payload = (f"chunk_{chunk_index}.m4a", audio_bytes)
+        result = await _call_groq_whisper(self.client, self.model, file_payload, prompt_keywords)
             
         elapsed_time = time.perf_counter() - start_time
         self.billing.add_time_cost("groq/whisper-large-v3-turbo", actual_duration, note="Audio transcription")
