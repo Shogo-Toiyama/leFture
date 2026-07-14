@@ -29,8 +29,8 @@ class StatusView extends StatelessWidget {
 
     return Container(
       color: AppColors.universe.voidBackground,
-      child: SingleChildScrollView(
-        child: Center(
+      child: Center(
+        child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
             child: Column(

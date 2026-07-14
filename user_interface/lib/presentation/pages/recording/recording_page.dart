@@ -6,6 +6,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
 
+import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart'; // 色追加
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
@@ -46,6 +48,23 @@ class RecordingPage extends HookConsumerWidget {
 
     final state = ref.watch(recordingControllerProvider);
     final controller = ref.read(recordingControllerProvider.notifier);
+
+    final coursesAsync = ref.watch(courseListProvider);
+    final courses = coursesAsync.asData?.value ?? const [];
+    final selectedCourse = state.courseId != null
+        ? courses.any((c) => c.id == state.courseId)
+            ? courses.firstWhere((c) => c.id == state.courseId)
+            : null
+        : null;
+
+    final courseColor = selectedCourse != null
+        ? CourseStyleHelper.hexToColor(selectedCourse.color, fallback: AppColors.starGold)
+        : AppColors.starGold;
+    final HSLColor hsl = HSLColor.fromColor(courseColor);
+    final displayIconColor = hsl.lightness < 0.45 ? hsl.withLightness(0.55).toColor() : courseColor;
+    final iconData = selectedCourse != null
+        ? CourseStyleHelper.getIcon(selectedCourse.icon)
+        : Icons.folder_outlined;
 
     // 録音完了時の自動クローズ監視
     ref.listen<RecordingState>(recordingControllerProvider, (previous, next) {
@@ -134,7 +153,6 @@ class RecordingPage extends HookConsumerWidget {
     }
 
     // コース選択ロジック
-    final courseLabel = state.courseId != null ? 'Course selected' : 'No course selected';
 
     Future<void> openCoursePicker() async {
       final result = await showModalBottomSheet<CoursePickerResult>(
@@ -198,10 +216,16 @@ class RecordingPage extends HookConsumerWidget {
                               border: Border.all(color: AppColors.universe.glassBorder),
                             ),
                             child: ListTile(
-                              leading: Icon(Icons.folder_outlined, color: AppColors.universe.textComet),
+                              leading: Icon(
+                                selectedCourse != null ? iconData : Icons.folder_outlined,
+                                color: selectedCourse != null ? displayIconColor : AppColors.universe.textComet,
+                              ),
                               title: Text('Course', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
                               subtitle: LayoutBuilder(
                                 builder: (context, constraints) {
+                                  final text = selectedCourse != null
+                                      ? selectedCourse.displayTitle
+                                      : 'No course selected';
                                   // 1. テキストのスタイル定義
                                   final style = TextStyle(
                                     color: AppColors.universe.textStarlight,
@@ -222,29 +246,25 @@ class RecordingPage extends HookConsumerWidget {
                                   }
 
                                   // A. そのままで入るならそのまま表示
-                                  if (checkFit(courseLabel)) {
-                                    return Text(courseLabel, style: style, maxLines: 1);
+                                  if (checkFit(text)) {
+                                    return Text(text, style: style, maxLines: 1);
                                   }
 
                                   // B. 入らない場合、パス区切り「 / 」で分解して、左から削っていく
-                                  // 例: "Home / A / B / C" -> ["Home", "A", "B", "C"]
-                                  final parts = courseLabel.split(' / ');
+                                  final parts = text.split(' / ');
                                   
                                   // 左端から1つずつ削って「... / 」に置き換えて試す
                                   for (int i = 1; i < parts.length; i++) {
-                                    // 候補作成: "... / B / C"
                                     final candidate = '... / ${parts.sublist(i).join(' / ')}';
                                     
                                     if (checkFit(candidate)) {
                                       return Text(candidate, style: style, maxLines: 1);
-                                      // 見つかったらループ終了＆表示
                                     }
                                   }
 
                                   // C. それでも入らない場合（最後の1フォルダすら長い場合）
-                                  // 最後のフォルダ名だけで標準のellipsisを使う
                                   return Text(
-                                    parts.isNotEmpty ? parts.last : courseLabel,
+                                    parts.isNotEmpty ? parts.last : text,
                                     style: style,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -508,10 +528,13 @@ class RecordingPage extends HookConsumerWidget {
                               border: Border.all(color: AppColors.universe.glassBorder),
                             ),
                             child: ListTile(
-                              leading: Icon(Icons.folder_outlined, color: AppColors.universe.textComet),
+                              leading: Icon(
+                                selectedCourse != null ? iconData : Icons.folder_outlined,
+                                color: selectedCourse != null ? displayIconColor : AppColors.universe.textComet,
+                              ),
                               title: Text('Course', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
                               subtitle: Text(
-                                courseLabel,
+                                selectedCourse != null ? selectedCourse.displayTitle : 'No course selected',
                                 maxLines: 1, 
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(color: AppColors.universe.textStarlight, fontWeight: FontWeight.bold),

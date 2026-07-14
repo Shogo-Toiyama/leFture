@@ -5,7 +5,6 @@ import 'package:lecture_companion_ui/application/course/course_list_provider.dar
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart'; // Controller
-import 'package:lecture_companion_ui/application/job/job_providers.dart'; // エラー詳細用
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
@@ -90,6 +89,11 @@ class LectureStatusScaffold extends ConsumerWidget {
                 return const SizedBox.shrink();
 
               case LectureUIState.processing:
+              case LectureUIState.failed:
+                // 分析中/失敗どちらもProcessingView側でjob.statusを見て
+                // 見た目(ヘッダー色・Start Overの出し方)を切り替える。
+                // ステップ単位の内訳・詳細エラー・粒度の細かいリトライも
+                // ここで一貫して表示できるため、専用のStatusViewは使わない。
                 return ProcessingView(lectureId: lecture.id);
 
               case LectureUIState.notStarted:
@@ -100,27 +104,6 @@ class LectureStatusScaffold extends ConsumerWidget {
                   icon: Icons.cloud_upload_outlined,
                   title: 'Syncing Audio...',
                   message: 'Please wait for the upload to complete.',
-                );
-
-              case LectureUIState.failed:
-                // ★ エラーの詳細メッセージをJobから取得する
-                final jobAsync = ref.watch(jobStreamProvider(lecture.id));
-                final job = jobAsync.value;
-                // エラーメッセージがあれば表示、なければデフォルト文言
-                final errorMsg = job?.errorMessage?['message'] ?? 'Please try again later.';
-
-                return StatusView(
-                  icon: Icons.error_outline,
-                  title: 'Analysis Failed',
-                  message: errorMsg.toString(), // サーバーからのエラーを表示
-                  isError: true,
-                  isLoading: isActionLoading, // ★ ボタンをクルクルさせる
-                  buttonIcon: Icons.refresh,
-                  buttonLabel: 'Retry',
-                  onButtonPressed: () {
-                    // ★ 再試行ボタン：もう一度分析を開始する
-                    ref.read(lectureControllerProvider.notifier).startAnalysis(lecture.id);
-                  },
                 );
 
               case LectureUIState.noAudio:

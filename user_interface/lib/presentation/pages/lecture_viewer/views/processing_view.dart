@@ -4,9 +4,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/domain/entities/processing_task.dart';
+import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/views/pipeline_steps_list.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
+/// 分析中(RUNNING/PENDING)とAnalysis Failed(FAILED)の両方を1つのウィジェットで
+/// 描画する。両者はヘッダーの色/文言とStart Overボタンの見せ方が違うだけで、
+/// 中身のステップ内訳(PipelineStepsList)は完全に共通のため。
 class ProcessingView extends HookConsumerWidget {
   const ProcessingView({super.key, required this.lectureId});
 
@@ -16,6 +20,7 @@ class ProcessingView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final jobAsync = ref.watch(jobStreamProvider(lectureId));
     final job = jobAsync.value;
+    final jobFailed = job?.status == 'FAILED';
 
     final tasksAsync = job == null
         ? const AsyncValue<List<ProcessingTask>>.data([])
@@ -24,18 +29,8 @@ class ProcessingView extends HookConsumerWidget {
 
     final total = tasks.isEmpty ? processingTaskOrder.length : tasks.length;
     final completed = tasks.where((t) => t.isCompleted).length;
-    final staleFailed = tasks.where((t) => t.isStaleFailed).toList();
 
-    // ブループリント順で「今動いていそうな」タスクを1つ選ぶ（表示用）
-    String? currentLabel;
-    final byType = {for (final t in tasks) t.taskType: t};
-    for (final type in processingTaskOrder) {
-      final t = byType[type];
-      if (t == null || (!t.isCompleted && !t.isCancelled && !t.isStaleFailed)) {
-        currentLabel = processingTaskLabel(type);
-        break;
-      }
-    }
+    final themeColor = jobFailed ? AppColors.correctionRed : AppColors.starGold;
 
     final restartState = useState(false);
 
@@ -68,7 +63,7 @@ class ProcessingView extends HookConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onLongPress: restartState.value ? null : startOver,
+                onLongPress: (!jobFailed && !restartState.value) ? startOver : null,
                 child: SizedBox(
                   width: 72,
                   height: 72,
@@ -82,17 +77,21 @@ class ProcessingView extends HookConsumerWidget {
                           strokeWidth: 3,
                           value: total > 0 ? completed / total : null,
                           backgroundColor: AppColors.universe.glassWhiteLow,
-                          valueColor: const AlwaysStoppedAnimation(AppColors.starGold),
+                          valueColor: AlwaysStoppedAnimation(themeColor),
                         ),
                       ),
-                      const Icon(Icons.auto_awesome, color: AppColors.starGold, size: 26),
+                      Icon(
+                        jobFailed ? Icons.error_outline : Icons.auto_awesome,
+                        color: themeColor,
+                        size: 26,
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 28),
               Text(
-                'Analyzing Lecture...',
+                jobFailed ? 'Analysis Failed' : 'Analyzing Lecture...',
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 20,
@@ -102,142 +101,45 @@ class ProcessingView extends HookConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 '$completed / $total steps completed',
-                style: const TextStyle(
-                  color: AppColors.starGold,
+                style: TextStyle(
+                  color: themeColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (currentLabel != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  currentLabel,
-                  style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                ),
-              ],
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  'Hold the icon above to start over from scratch.',
-                  style: TextStyle(
-                    color: AppColors.universe.textComet.withValues(alpha: 0.6),
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              if (staleFailed.isNotEmpty) ...[
-                const SizedBox(height: 32),
-                Align(
-                  alignment: Alignment.centerLeft,
+              if (!jobFailed) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
                   child: Text(
-                    'Needs attention',
+                    'Hold the icon above to start over from scratch.',
                     style: TextStyle(
-                      color: AppColors.correctionRed,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      color: AppColors.universe.textComet.withValues(alpha: 0.6),
+                      fontSize: 11,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                for (final task in staleFailed)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _StuckTaskCard(task: task),
+              ] else ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: TextButton.icon(
+                    onPressed: restartState.value ? null : startOver,
+                    icon: restartState.value
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh, size: 16),
+                    label: Text(restartState.value ? 'Starting over...' : 'Start over from scratch'),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.universe.textComet),
                   ),
+                ),
               ],
+              const SizedBox(height: 24),
+              PipelineStepsList(tasks: tasks, jobFailed: jobFailed),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _StuckTaskCard extends HookConsumerWidget {
-  const _StuckTaskCard({required this.task});
-
-  final ProcessingTask task;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isRetrying = useState(false);
-    final error = useState<String?>(null);
-
-    Future<void> retry() async {
-      isRetrying.value = true;
-      error.value = null;
-      try {
-        await ref.read(jobRepositoryProvider).retryTask(taskId: task.id);
-      } catch (e) {
-        error.value = e.toString();
-      } finally {
-        if (context.mounted) isRetrying.value = false;
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.correctionRed.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.error_outline, color: AppColors.correctionRed, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  processingTaskLabel(task.taskType),
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (task.errorMessage != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              task.errorMessage!,
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          if (error.value != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              error.value!,
-              style: const TextStyle(color: AppColors.correctionRed, fontSize: 11),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              onPressed: isRetrying.value ? null : retry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.correctionRed,
-                side: BorderSide(color: AppColors.correctionRed.withValues(alpha: 0.5)),
-              ),
-              icon: isRetrying.value
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.correctionRed),
-                    )
-                  : const Icon(Icons.refresh, size: 16),
-              label: Text(isRetrying.value ? 'Retrying...' : 'Retry this step'),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -3,7 +3,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+
 
 class CoursePickerResult {
   const CoursePickerResult({this.courseId, required this.confirmed});
@@ -74,21 +77,58 @@ class CoursePickerSheet extends HookConsumerWidget {
           // 検索バー
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: searchCtl,
-              style: TextStyle(color: AppColors.universe.textStarlight),
-              decoration: InputDecoration(
-                hintText: 'Search courses...',
-                hintStyle: TextStyle(color: AppColors.universe.textComet),
-                prefixIcon: Icon(Icons.search, color: AppColors.universe.textComet),
-                filled: true,
-                fillColor: AppColors.universe.glassWhiteLow,
-                border: OutlineInputBorder(
-                  borderSide: BorderSide.none,
-                  borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchCtl,
+                    style: TextStyle(color: AppColors.universe.textStarlight),
+                    decoration: InputDecoration(
+                      hintText: 'Search courses...',
+                      hintStyle: TextStyle(color: AppColors.universe.textComet),
+                      prefixIcon: Icon(Icons.search, color: AppColors.universe.textComet),
+                      filled: true,
+                      fillColor: AppColors.universe.glassWhiteLow,
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              ),
+                const SizedBox(width: 8),
+                Container(
+                  height: 40,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.universe.glassWhiteLow,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        final newCourse = await showModalBottomSheet<Course>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const CourseCreateSheet(),
+                        );
+                        if (newCourse != null) {
+                          selectedId.value = newCourse.id;
+                        }
+                      },
+                      child: const Icon(
+                        Icons.add,
+                        color: AppColors.starGold,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -185,6 +225,13 @@ class _CoursePickerTile extends StatelessWidget {
     ];
     final subtitle = parts.isEmpty ? null : parts.join(' / ');
 
+    final courseColor = CourseStyleHelper.hexToColor(course.color, fallback: AppColors.deepGold);
+    final iconData = CourseStyleHelper.getIcon(course.icon);
+
+    // Adjust color for dark mode sheet contrast
+    final HSLColor hsl = HSLColor.fromColor(courseColor);
+    final displayIconColor = hsl.lightness < 0.45 ? hsl.withLightness(0.55).toColor() : courseColor;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -208,12 +255,12 @@ class _CoursePickerTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.starGold.withValues(alpha: 0.2)
-                    : AppColors.universe.glassWhiteHigh,
+                    : displayIconColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                Icons.school_outlined,
-                color: isSelected ? AppColors.starGold : AppColors.universe.textComet,
+                iconData,
+                color: displayIconColor,
                 size: 20,
               ),
             ),

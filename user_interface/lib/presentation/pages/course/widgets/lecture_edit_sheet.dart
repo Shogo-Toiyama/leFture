@@ -5,6 +5,8 @@ import 'package:lecture_companion_ui/application/course/course_list_provider.dar
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lecture_companion_ui/presentation/pages/recording/widgets/course_picker_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:intl/intl.dart';
@@ -154,36 +156,77 @@ class LectureEditSheet extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.universe.glassWhiteLow,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.universe.glassBorder),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String?>(
-                    value: selectedCourseId.value,
-                    dropdownColor: const Color(0xFF1E2038),
-                    style: TextStyle(color: AppColors.universe.textStarlight),
-                    icon: Icon(Icons.arrow_drop_down, color: AppColors.universe.textComet),
-                    isExpanded: true,
-                    items: [
-                      DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text(
-                          'No Course (Unassigned)',
-                          style: TextStyle(color: AppColors.universe.textComet),
+              GestureDetector(
+                onTap: () async {
+                  final result = await showModalBottomSheet<CoursePickerResult>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => CoursePickerSheet(
+                      initialSelectedCourseId: selectedCourseId.value,
+                    ),
+                  );
+                  if (result != null && result.confirmed) {
+                    selectedCourseId.value = result.courseId;
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.universe.glassWhiteLow,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.universe.glassBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Builder(
+                          builder: (context) {
+                            final currentId = selectedCourseId.value;
+                            if (currentId == null) {
+                              return Text(
+                                'No Course (Unassigned)',
+                                style: TextStyle(color: AppColors.universe.textComet),
+                              );
+                            }
+                            final selectedCourse = courses.firstWhere(
+                              (c) => c.id == currentId,
+                              orElse: () => Course(
+                                id: currentId,
+                                userId: '',
+                                courseTitle: 'Unknown Course',
+                                metadata: const {
+                                  'color': '#E5A93B',
+                                  'icon': 'school',
+                                },
+                                createdAt: DateTime.now(),
+                                updatedAt: DateTime.now(),
+                              ),
+                            );
+                            return Row(
+                              children: [
+                                Icon(
+                                  CourseStyleHelper.getIcon(selectedCourse.icon),
+                                  color: CourseStyleHelper.hexToColor(selectedCourse.color, fallback: AppColors.starGold),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    selectedCourse.displayTitle,
+                                    style: TextStyle(color: AppColors.universe.textStarlight),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
-                      ...courses.map((course) {
-                        return DropdownMenuItem<String?>(
-                          value: course.id,
-                          child: Text(course.displayTitle),
-                        );
-                      }),
+                      Icon(Icons.arrow_drop_down, color: AppColors.universe.textComet),
                     ],
-                    onChanged: (value) => selectedCourseId.value = value,
                   ),
                 ),
               ),
