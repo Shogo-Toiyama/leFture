@@ -293,7 +293,7 @@ class UploadManager {
         'storage_path': storagePath, // 予測されるパスを先に入れておく
         'status': 'PROCESSING',
         'start_time': asset.startTime,
-      });
+      }, onConflict: 'lecture_id,chunk_index');
       DevLog.add('📝 [UploadManager] 処理開始(PROCESSING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
     } catch (e) {
       DevLog.add('❌ [UploadManager] DBへの受付票登録に失敗: $e');

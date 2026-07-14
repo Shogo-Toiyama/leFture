@@ -2,57 +2,63 @@ import io
 import math
 import time
 import os
+import base64
 import asyncio
+import requests
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 from pydub import AudioSegment
-from groq import AsyncGroq, APIStatusError, APIConnectionError, RateLimitError
-from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 from app.services.helpers.helpers import TaskLogger
 from app.services.helpers.llm_unified import BillingEngine
 
 
-def _is_retryable_groq_error(exc: BaseException) -> bool:
-    if isinstance(exc, (APIConnectionError, RateLimitError)):
-        return True
-    if isinstance(exc, APIStatusError):
-        return exc.status_code >= 500
-    return False
+class _RetryableCloudflareError(Exception):
+    """429/5xx等、リトライすれば成功する見込みがあるCloudflare APIエラー。"""
+    pass
 
 
 @retry(
-    retry=retry_if_exception(_is_retryable_groq_error),
+    retry=retry_if_exception_type((_RetryableCloudflareError, requests.exceptions.RequestException)),
     stop=stop_after_attempt(3),
     wait=wait_exponential_jitter(initial=1, max=8),
     reraise=True,
 )
-async def _call_groq_whisper(client: AsyncGroq, model: str, file_payload: tuple, prompt_keywords: str):
+async def _call_cloudflare_whisper(url: str, headers: dict, payload: dict) -> dict:
     """
-    Groq Whisper APIを呼び出す。429や5xxなどの一時的エラーはリトライする。
+    Cloudflare Whisper APIを呼び出す。429/5xx/接続エラーは指数バックオフ＋ジッターで
+    リトライし、400等のクライアントエラーはリトライしても無駄なのでそのまま送出する。
     """
-    return await client.audio.transcriptions.create(
-        file=file_payload,
-        model=model,
-        response_format="verbose_json",
-        language="en",
-        prompt=prompt_keywords or None
-    )
+    response = await asyncio.to_thread(requests.post, url, headers=headers, json=payload, timeout=60)
+
+    if response.status_code == 429 or response.status_code >= 500:
+        raise _RetryableCloudflareError(f"HTTP {response.status_code}: {response.text}")
+    if response.status_code != 200:
+        raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+    res_json = response.json()
+    if not res_json.get("success"):
+        errors = res_json.get("errors", [])
+        err_msg = errors[0].get("message") if errors else "Unknown error"
+        raise Exception(f"Cloudflare AI Error: {err_msg}")
+
+    return res_json.get("result") or {}
 
 
 class TranscriptionService:
     def __init__(self, logger: TaskLogger, billing: BillingEngine):
         self.logger = logger
         self.billing = billing
-        self.api_key = os.getenv("GROQ_API_KEY")
-        self.model = "whisper-large-v3-turbo"
-        self.client = AsyncGroq(api_key=self.api_key) if self.api_key else None
+        self.account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+        self.api_key = os.getenv("CLOUDFLARE_API_KEY")
+        self.model = "@cf/openai/whisper-large-v3-turbo"
         
-        if not self.api_key:
-            self.logger.log("⚠️ GROQ_API_KEY is not set in environment variables.")
+        if not self.account_id or not self.api_key:
+            self.logger.log("⚠️ CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_KEY is not set in environment variables.")
 
     async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
         """
         [究極のシンプルパイプライン]
-        Flutterから送られてきた34秒（オーバーラップ込み）のM4A(AAC)データを直接Groq APIへ送信し、
-        Whisper-large-v3-turboモデルで文字起こしを行う。
+        Flutterから送られてきた34秒（オーバーラップ込み）のM4A(AAC)データをBase64エンコードし、
+        Cloudflare Workers AIのWhisper-large-v3-turboモデルに送信する。
         """
         self.logger.log(f"   [Logic] Loading audio into memory for chunk {chunk_index}")
 
@@ -61,8 +67,8 @@ class TranscriptionService:
         audio = await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(audio_bytes), format="m4a")
         actual_duration = len(audio) / 1000.0
         
-        if not self.client:
-            self.logger.log("   [Logic] ❌ Groq API credentials missing. Skipping transcription.")
+        if not self.account_id or not self.api_key:
+            self.logger.log("   [Logic] ❌ Cloudflare API credentials missing. Skipping transcription.")
             return {
                 "text": "",
                 "segments": [],
@@ -70,31 +76,44 @@ class TranscriptionService:
             }
 
         # ---------------------------------------------------------
-        # ✨ Groq API への送信
+        # ✨ Cloudflare Workers AI への送信（Base64形式）
         # ---------------------------------------------------------
-        self.logger.log(f"   [Logic] Calling Groq Whisper API...")
+        self.logger.log(f"   [Logic] Calling Cloudflare Worker AI API directly...")
         start_time = time.perf_counter()
         
-        # Groq API は (ファイル名, バイナリ) のタプルでファイルデータを受け取る
-        file_payload = (f"chunk_{chunk_index}.m4a", audio_bytes)
-        result = await _call_groq_whisper(self.client, self.model, file_payload, prompt_keywords)
+        # Base64エンコード
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        url = f"https://api.cloudflare.com/client/v4/accounts/{self.account_id}/ai/run/{self.model}"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "audio": audio_b64,
+            "language": "en",
+        }
+        if prompt_keywords:
+            payload["initial_prompt"] = prompt_keywords
+
+        # ⚠️ 例外はキャッチせず伝播させることで、エラー時はちゃんとエラーステータスになってリトライされるようにする
+        result = await _call_cloudflare_whisper(url, headers, payload)
             
         elapsed_time = time.perf_counter() - start_time
-        self.billing.add_time_cost("groq/whisper-large-v3-turbo", actual_duration, note="Audio transcription")
+        self.billing.add_time_cost("cloudflare/whisper-large-v3-turbo", actual_duration, note="Audio transcription")
         self.billing.add_time_cost("cloudrun/self", elapsed_time, note="Whisper API wait time")
 
-        full_text = getattr(result, "text", "").strip()
+        full_text = result.get("text", "").strip()
         segments_data = []
 
         # ---------------------------------------------------------
         # ✨ データの整形
         # ---------------------------------------------------------
-        raw_segments = getattr(result, "segments", []) or []
+        raw_segments = result.get("segments") or []
         for i, seg in enumerate(raw_segments):
-            seg_text = seg.get('text', '') if isinstance(seg, dict) else getattr(seg, 'text', '')
-            start = seg.get('start', 0.0) if isinstance(seg, dict) else getattr(seg, 'start', 0.0)
-            end = seg.get('end', 0.0) if isinstance(seg, dict) else getattr(seg, 'end', 0.0)
-            logprob = seg.get('avg_logprob', 0.0) if isinstance(seg, dict) else getattr(seg, 'avg_logprob', 0.0)
+            seg_text = seg.get('text', '')
+            start = seg.get('start', 0.0)
+            end = seg.get('end', 0.0)
+            logprob = seg.get('avg_logprob', 0.0)
 
             # Confidenceが低すぎる(0.1以下)場合はハルシネーションの可能性が高いので弾く
             confidence = max(0.0, min(1.0, math.exp(logprob)))

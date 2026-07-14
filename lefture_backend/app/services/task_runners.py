@@ -321,6 +321,22 @@ async def trigger_sentence_review_for_batch_if_ready(
 
     updated_chunks = lock_res.data or []
 
+    if updated_chunks and len(updated_chunks) != 4:
+        # 想定外(重複行やレースコンディション等)で4件ちょうどロックできなかった場合。
+        # 何もせず return すると、更新できてしまった分だけ REVIEWING のまま永久に
+        # 取り残され、以降のバッチが「前のバッチが REVIEWED になるまで進めない」
+        # ゲートに引っかかって全体が詰まってしまう。取れてしまった分は必ず
+        # TRANSCRIBED に戻し、次回また正常な状態からリトライできるようにする。
+        logger.log(f"⚠️ Lock mismatch for batch {batch_start}: expected 4 rows, got {len(updated_chunks)}. Reverting to TRANSCRIBED. IDs: {[c.get('id') for c in updated_chunks]}")
+        updated_ids = [c["id"] for c in updated_chunks]
+        await asyncio.to_thread(
+            lambda: supabase.table("lecture_transcripts")
+                .update({"status": "TRANSCRIBED"})
+                .in_("id", updated_ids)
+                .execute()
+        )
+        return False
+
     if len(updated_chunks) == 4:
         logger.log(f"🔒 Lock acquired for batch {batch_start}! Executing Sentence Review...")
 
@@ -360,7 +376,8 @@ async def trigger_sentence_review_for_batch_if_ready(
             # SentenceReviewService を呼び出し
             course_title, keywords_list = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
 
-            llm = UnifiedLLM(billing)
+            review_billing = BillingEngine(task_type="SENTENCE_REVIEW")
+            llm = UnifiedLLM(review_billing)
             reviewer = SentenceReviewService(llm, logger)
             reviewed_chunks = await reviewer.run_from_memory(
                 chunks_to_review=chunks_to_review,
@@ -371,15 +388,38 @@ async def trigger_sentence_review_for_batch_if_ready(
 
             # 返ってきた綺麗なデータを DB に書き込み REVIEWED に更新
             def _write_reviewed_chunks_sync():
+                from app.services.helpers.llm_unified import CostRecord
+                
+                # 今回のレビュー費用を4等分に分配して割り当てる
+                allocated_records = []
+                for r in review_billing.records:
+                    allocated_r = CostRecord(
+                        dimension=r.dimension,
+                        resource=r.resource,
+                        usage={k: v / 4.0 for k, v in r.usage.items()} if r.usage else {},
+                        cost_usd=r.cost_usd / 4.0,
+                        task_type=r.task_type,
+                        note=f"{r.note} (Batch allocated)"
+                    )
+                    allocated_records.append(vars(allocated_r))
+
                 for rc in reviewed_chunks:
+                    # 既存の billing_records を取得して合体させる
+                    curr = supabase.table("lecture_transcripts").select("billing_records")\
+                        .eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).single().execute()
+                    curr_records = (curr.data or {}).get("billing_records") or []
+                    
+                    new_billing_records = curr_records + allocated_records
+
                     supabase.table("lecture_transcripts").update({
                         "status": "REVIEWED",
                         "text_reviewed": rc["text"],
-                        "segments_reviewed": rc["segments"]
+                        "segments_reviewed": rc["segments"],
+                        "billing_records": new_billing_records
                     }).eq("lecture_id", lecture_id).eq("chunk_index", rc["chunk_index"]).execute()
 
             await asyncio.to_thread(_write_reviewed_chunks_sync)
-            logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB!")
+            logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB (costs allocated)!")
 
             # 4. カスケードトリガー: 自分が完了したので、次のバッチが準備完了なら連鎖的にレビューを実行する
             next_batch_start = batch_start + 4
@@ -467,6 +507,7 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
                 "segments_stt": result["segments"],
                 "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0,
                 "storage_path": r2_audio_path,
+                "billing_records": [vars(r) for r in billing.records],
             }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         )
 
@@ -629,6 +670,15 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         # ---------------------------------------------------------
         remote_transcript_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "transcript_assembled", assembled_data)
         
+        # 💰 各チャンクの文字起こし／ progressive review の請求データを Supabase から取得して集計に合流させる
+        logger.log("💰 Merging individual chunk billing records from DB...")
+        from app.services.helpers.llm_unified import CostRecord
+        for c in completed_chunks:
+            records_data = c.get("billing_records") or []
+            for r_data in records_data:
+                record = CostRecord(**r_data)
+                billing.records.append(record)
+
         result_payload = {"transcript_json_path": remote_transcript_path, "billing_records": [vars(r) for r in billing.records]}
         
         await _update_task_status(task_id, "COMPLETED", payload=result_payload)
