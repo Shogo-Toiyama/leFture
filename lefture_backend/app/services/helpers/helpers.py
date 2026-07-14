@@ -1,7 +1,8 @@
 import re
 import json
 import hashlib
-from datetime import datetime
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -252,6 +253,69 @@ def _fetch_live_lecture_order_sync(supabase, course_id: str) -> list[str]:
     return [l["id"] for l in (res.data or [])]
 
 
+def _course_has_running_job_sync(supabase, course_id: str) -> bool:
+    """
+    このCourse配下のいずれかのLectureに、まだ完了していない(RUNNING状態の)
+    processing_jobsが無いかを確認する。TOPIC_MAPPINGはこのJobのDAGタスクの
+    1つとして走るため、個別のタスク種別ではなくJob単位でRUNNINGかどうかを見る
+    方が安全(録音パイプラインに将来タスクが増えても網羅できる)。
+    Topic MapのRecreate(手動/Patrol)は、この間だけmap書き込みが競合し得る
+    ウィンドウを避けるために、開始前にこれをチェックしてブロックする。
+    """
+    lec_res = supabase.table("lectures").select("id")\
+        .eq("course_id", course_id)\
+        .is_("deleted_at", "null")\
+        .execute()
+    lecture_ids = [l["id"] for l in (lec_res.data or [])]
+    if not lecture_ids:
+        return False
+
+    job_res = supabase.table("processing_jobs").select("id")\
+        .in_("lecture_id", lecture_ids)\
+        .eq("status", "RUNNING")\
+        .limit(1)\
+        .execute()
+    return len(job_res.data or []) > 0
+
+
+# Recreate/Patrolが同じCourseに対して二重に走るのを防ぐための、topic_maps.metadata
+# (jsonb, 他に用途の無い列)を使った簡易ロックの有効期限。プロセスクラッシュ等で
+# 解放漏れが起きても、この時間が経てば次の呼び出しが自動的に回収できる。
+RECONSTRUCTION_LOCK_STALE_MINUTES = 10
+
+
+def _try_acquire_reconstruction_lock_sync(supabase, course_id: str) -> str | None:
+    """
+    topic_maps行に対する簡易的な排他ロックをCAS(compare-and-swap)的に取得する。
+    専用のロックテーブルや行ロックが無いため、「ロックが無い、または
+    RECONSTRUCTION_LOCK_STALE_MINUTES以上前の古いロックが残っている」場合だけ
+    更新できる条件付きUPDATEにして、実際に更新できたか(0件 or 1件)で判定する。
+    取得できればロックID(自分だけが知っている値)を返し、取れなければNoneを返す。
+    """
+    lock_id = str(uuid.uuid4())
+    now_iso = datetime.now(timezone.utc).isoformat()
+    stale_before_iso = (datetime.now(timezone.utc) - timedelta(minutes=RECONSTRUCTION_LOCK_STALE_MINUTES)).isoformat()
+
+    res = supabase.table("topic_maps").update({
+        "metadata": {"reconstruction_lock_id": lock_id, "reconstruction_locked_at": now_iso}
+    }).eq("course_id", course_id).or_(
+        f"metadata->>reconstruction_locked_at.is.null,"
+        f"metadata->>reconstruction_locked_at.lt.{stale_before_iso}"
+    ).execute()
+
+    return lock_id if (res.data or []) else None
+
+
+def _release_reconstruction_lock_sync(supabase, course_id: str, lock_id: str) -> None:
+    """
+    自分が取得したロックだけを解放する。stale判定で既に他プロセスに奪われていた
+    場合、その新しいロックを誤って消さないよう lock_id が一致する行だけを対象にする。
+    """
+    supabase.table("topic_maps").update({
+        "metadata": {"reconstruction_lock_id": None, "reconstruction_locked_at": None}
+    }).eq("course_id", course_id).eq("metadata->>reconstruction_lock_id", lock_id).execute()
+
+
 def _annotate_nodes_with_live_lecture_num(nodes: list[dict], lecture_num_by_id: dict[str, int]) -> list[dict]:
     """
     ノード群のコピーに、現時点のLecture順序(lecture_num)を一時的に注記する。
@@ -275,8 +339,8 @@ def _prune_lecture_nodes(graph: dict, source_lecture_id: str, logger=None) -> di
     - どちらかの端点が消えたエッジを削除
     - derived_from_topic_id が消えたノードを指していた ghost_node は削除
       （どのトピックから予測されたか分からなくなったGhostは残さない方針）
-    クラスターは削除しない（空になっても、リネーム/削除が要るかはLLM側の
-    Reconciliationフェーズの判断に委ねる）。
+    - この除去の結果、どのノード/ghost_nodeからも参照されなくなった
+      （空になった）クラスターも削除する。
     """
     import copy
     new_graph = copy.deepcopy(graph)
@@ -300,6 +364,18 @@ def _prune_lecture_nodes(graph: dict, source_lecture_id: str, logger=None) -> di
         g for g in new_graph.get("ghost_nodes", [])
         if g.get("derived_from_topic_id") not in removed_ids
     ]
+
+    remaining_cluster_ids = {n.get("cluster_id") for n in new_graph["nodes"] if n.get("cluster_id")}
+    remaining_cluster_ids |= {g.get("cluster_id") for g in new_graph["ghost_nodes"] if g.get("cluster_id")}
+    emptied_clusters = [
+        c.get("cluster_id") for c in new_graph.get("clusters", [])
+        if c.get("cluster_id") not in remaining_cluster_ids
+    ]
+    if emptied_clusters:
+        new_graph["clusters"] = [
+            c for c in new_graph.get("clusters", []) if c.get("cluster_id") in remaining_cluster_ids
+        ]
+        _log(f"🧹 Removed {len(emptied_clusters)} now-empty cluster(s): {emptied_clusters}")
 
     _log(f"🧹 Pruned {len(removed_ids)} node(s) for lecture {source_lecture_id} (and their edges/derived ghosts).")
     return new_graph
@@ -341,20 +417,55 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
                     break
         elif action == "remove":
             new_graph["clusters"] = [c for c in new_graph.get("clusters", []) if c.get("cluster_id") != cluster_id]
+            # このクラスタに属していたノード/ゴーストノードを放置すると、
+            # (このmutation内のnode_placementsで再配置されない限り)存在しない
+            # クラスタを指したまま残ってしまう -- node_placements側で直した
+            # バグの鏡像。ここで一旦「未分類」に戻しておき、この後のnode_placements
+            # が同じmutation内で再配置すればそちらが優先される(下で上書きされる)。
+            orphaned = 0
+            for n in new_graph.get("nodes", []):
+                if n.get("cluster_id") == cluster_id:
+                    n["cluster_id"] = None
+                    orphaned += 1
+            for g in new_graph.get("ghost_nodes", []):
+                if g.get("cluster_id") == cluster_id:
+                    g["cluster_id"] = None
+            if orphaned:
+                _log(f"⚠️ Cluster '{cluster_id}' removed while {orphaned} node(s) still referenced it: reset to unclustered.")
 
     # 2. ノードの配置 (今日のトピックノードの追加・配置)
     todays_topics_map = {t.get("topic_id"): t for t in todays_topics}
-    
+
+    # cluster_actionsを適用した後の既知クラスタ集合。node_placementsが参照する
+    # cluster_idがここに無い場合(LLMがcluster_actions側のcreateを出し忘れた等)、
+    # ノードだけが宙に浮いたクラスタ参照を持つことになり、フロントの力学
+    # シミュレーションがそのノードを配置できずクラッシュする(cluster_map_view側は
+    # `clusters`に無いcluster_idのノードを一切ケアしない前提で書かれているため)。
+    # edge_actions/ghost_node_actionsと同じ「情報は失わずフォールバックする」方針で、
+    # 参照先クラスタが無ければその場で作ってしまう。
+    known_cluster_ids = {c.get("cluster_id") for c in new_graph.get("clusters", [])}
+
     node_placements = mutations.get("node_placements", [])
     for placement in node_placements:
         topic_id = placement.get("topic_id")
         cluster_id = placement.get("cluster_id")
         if not topic_id:
             continue
-            
+
+        if cluster_id is not None and cluster_id not in known_cluster_ids:
+            _log(
+                f"⚠️ Topic Mapping referenced an unknown cluster_id in node_placements "
+                f"({cluster_id}): auto-creating a fallback cluster so the node isn't orphaned."
+            )
+            new_graph.setdefault("clusters", []).append({
+                "cluster_id": cluster_id,
+                "name": cluster_id,
+            })
+            known_cluster_ids.add(cluster_id)
+
         if "nodes" not in new_graph:
             new_graph["nodes"] = []
-            
+
         existing_node = next((n for n in new_graph["nodes"] if n.get("topic_id") == topic_id), None)
 
         if existing_node:
@@ -437,6 +548,19 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
                     f"derived_from_topic_id ({derived_from_topic_id}): storing as null."
                 )
                 derived_from_topic_id = None
+            if cluster_id is not None and cluster_id not in known_cluster_ids:
+                # node_placementsと同じフォールバック: 参照先クラスタが無ければ
+                # その場で作る(ghost_nodeのcluster_idはこれまで一切検証されて
+                # いなかった)。
+                _log(
+                    f"⚠️ Ghost node '{ghost_id}' referenced an unknown cluster_id "
+                    f"({cluster_id}): auto-creating a fallback cluster so it isn't orphaned."
+                )
+                new_graph.setdefault("clusters", []).append({
+                    "cluster_id": cluster_id,
+                    "name": cluster_id,
+                })
+                known_cluster_ids.add(cluster_id)
             if not any(g.get("ghost_id") == ghost_id for g in new_graph["ghost_nodes"]):
                 new_graph["ghost_nodes"].append({
                     "ghost_id": ghost_id,

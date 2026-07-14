@@ -70,7 +70,7 @@ ${TODAYS_MACRO_TOPICS_JSON}
 ---
 
 ## OUTPUT FORMAT
-Return ONLY a valid, minified JSON object matching the structure below. Do not include markdown formatting (like ```json), explanations, or preamble.
+Return ONLY a valid JSON object matching the structure below. Do not include markdown formatting (like ```json), explanations, or preamble.
 
 ### SCHEMA DEFINITIONS & CONSTRAINTS:
 - cluster_actions: action must be either "create" or "rename".

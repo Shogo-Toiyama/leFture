@@ -4,6 +4,14 @@
 // (see lefture_backend/app/services/prompts/topic_mapping_prompt.txt):
 // a time-ordered DAG of lecture topics, grouped into clusters (chapters),
 // plus "ghost nodes" representing predicted-but-not-yet-covered topics.
+//
+// This JSON is ultimately LLM-authored server-side, so a single malformed
+// entry (missing/wrong-typed required id field) is plausible. Each fromJson
+// below returns null instead of throwing when its own required id is
+// missing, and TopicMapData.fromJson drops just that one entry (logging it)
+// rather than letting one bad node/edge take down parsing of the whole map.
+
+import 'package:flutter/foundation.dart';
 
 enum GhostStatus {
   active,
@@ -20,11 +28,14 @@ class TopicMapCluster {
   final String id;
   final String name;
 
-  factory TopicMapCluster.fromJson(Map<String, dynamic> json) {
-    return TopicMapCluster(
-      id: json['cluster_id'] as String,
-      name: json['name'] as String? ?? json['cluster_id'] as String,
-    );
+  static TopicMapCluster? tryFromJson(Map<String, dynamic> json) {
+    final id = json['cluster_id'];
+    if (id is! String) {
+      debugPrint('⚠️ TopicMapCluster: skipping entry with missing/invalid cluster_id: $json');
+      return null;
+    }
+    final name = json['name'];
+    return TopicMapCluster(id: id, name: name is String ? name : id);
   }
 }
 
@@ -62,11 +73,16 @@ class TopicMapNode {
   /// so it's null until that composition step fills it in.
   final int? lectureNum;
 
-  factory TopicMapNode.fromJson(Map<String, dynamic> json) {
-    final topicId = json['topic_id'] as String;
+  static TopicMapNode? tryFromJson(Map<String, dynamic> json) {
+    final topicId = json['topic_id'];
+    if (topicId is! String) {
+      debugPrint('⚠️ TopicMapNode: skipping entry with missing/invalid topic_id: $json');
+      return null;
+    }
+    final title = json['title'];
     return TopicMapNode(
       id: topicId,
-      title: json['title'] as String? ?? topicId,
+      title: title is String ? title : topicId,
       topicType: json['topic_type'] as String? ?? 'ACADEMIC',
       clusterId: json['cluster_id'] as String?,
       sourceLectureId: json['source_lecture_id'] as String?,
@@ -107,10 +123,16 @@ class TopicMapEdge {
   /// human-readable label on zoom -- see [humanizedRelationType].
   final String relationType;
 
-  factory TopicMapEdge.fromJson(Map<String, dynamic> json) {
+  static TopicMapEdge? tryFromJson(Map<String, dynamic> json) {
+    final sourceId = json['source_id'];
+    final targetId = json['target_id'];
+    if (sourceId is! String || targetId is! String) {
+      debugPrint('⚠️ TopicMapEdge: skipping entry with missing/invalid source_id/target_id: $json');
+      return null;
+    }
     return TopicMapEdge(
-      sourceId: json['source_id'] as String,
-      targetId: json['target_id'] as String,
+      sourceId: sourceId,
+      targetId: targetId,
       relationType: json['relation_type'] as String? ?? 'builds_on',
     );
   }
@@ -133,10 +155,16 @@ class TopicMapGhostNode {
   final GhostStatus status;
   final String? derivedFromTopicId;
 
-  factory TopicMapGhostNode.fromJson(Map<String, dynamic> json) {
+  static TopicMapGhostNode? tryFromJson(Map<String, dynamic> json) {
+    final ghostId = json['ghost_id'];
+    if (ghostId is! String) {
+      debugPrint('⚠️ TopicMapGhostNode: skipping entry with missing/invalid ghost_id: $json');
+      return null;
+    }
+    final name = json['name'];
     return TopicMapGhostNode(
-      id: json['ghost_id'] as String,
-      name: json['name'] as String? ?? json['ghost_id'] as String,
+      id: ghostId,
+      name: name is String ? name : ghostId,
       clusterId: json['cluster_id'] as String?,
       status: GhostStatus.fromJson(json['status'] as String?),
       derivedFromTopicId: json['derived_from_topic_id'] as String?,
@@ -187,16 +215,20 @@ class TopicMapData {
       totalLecturesCovered:
           totalLecturesCovered ?? (json['total_lectures_covered'] as num?)?.toInt() ?? 0,
       clusters: (json['clusters'] as List<dynamic>? ?? [])
-          .map((e) => TopicMapCluster.fromJson(e as Map<String, dynamic>))
+          .map((e) => e is Map<String, dynamic> ? TopicMapCluster.tryFromJson(e) : null)
+          .whereType<TopicMapCluster>()
           .toList(),
       nodes: (json['nodes'] as List<dynamic>? ?? [])
-          .map((e) => TopicMapNode.fromJson(e as Map<String, dynamic>))
+          .map((e) => e is Map<String, dynamic> ? TopicMapNode.tryFromJson(e) : null)
+          .whereType<TopicMapNode>()
           .toList(),
       edges: (json['edges'] as List<dynamic>? ?? [])
-          .map((e) => TopicMapEdge.fromJson(e as Map<String, dynamic>))
+          .map((e) => e is Map<String, dynamic> ? TopicMapEdge.tryFromJson(e) : null)
+          .whereType<TopicMapEdge>()
           .toList(),
       ghostNodes: (json['ghost_nodes'] as List<dynamic>? ?? [])
-          .map((e) => TopicMapGhostNode.fromJson(e as Map<String, dynamic>))
+          .map((e) => e is Map<String, dynamic> ? TopicMapGhostNode.tryFromJson(e) : null)
+          .whereType<TopicMapGhostNode>()
           .toList(),
       isStale: isStale,
     );

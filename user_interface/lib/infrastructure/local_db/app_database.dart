@@ -75,6 +75,16 @@ class LocalLectures extends Table {
   // trueの間は容量制限のLRU剥がし対象から除外する(明示的ダウンロード用)
   BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
 
+  // trueの間、LectureOutboxPushHandlerが「移動元のTopic Mapをstale化(remove)」+
+  // 「移動先(=現在のcourseId)のTopic Mapをstale化(add)」をpush時に送信し、
+  // 両方成功したらfalseに戻す。移動元が「コース未設定(null)」だった場合も
+  // 区別できるよう、courseIdとは別にこのフラグを持つ。
+  // 削除の場合はcourseId自体がdeletedAt付きで残るので、このフラグは使わない
+  // (courseIdとdeletedAtを見てremoveすればよい)。
+  BoolColumn get topicMapMovePending => boolean().withDefault(const Constant(false))();
+  // 移動直前(上書きされる前)のcourseId。移動元が「コース未設定」だった場合はnull。
+  TextColumn get pendingTopicMapStaleCourseId => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id, userId};
 }
@@ -406,7 +416,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -505,6 +515,15 @@ class AppDatabase extends _$AppDatabase {
       if (from < 13) {
         // バージョン13: TopicMapをオフライン優先化するため、LocalTopicMapsに
         // isStale(「Recreate Topic Map」表示の判定用)を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 14) {
+        // バージョン14: Lecture削除/Course間移動時のTopic Map stale化(mark-stale)を
+        // Outbox経由の確実な配送に変更するため、LocalLecturesに
+        // topicMapMovePending/pendingTopicMapStaleCourseIdを追加。
         for (final table in allTables) {
           await m.drop(table);
         }

@@ -121,8 +121,10 @@ class JobRepository {
     }
   }
 
-  /// FAILEDのまま自動リトライを使い切って止まっているタスク1件だけをやり直す。
-  /// ジョブ全体は作り直さないので、既に完了した他のタスクは無駄にならない。
+  /// 指定タスクをやり直す(FAILED/COMPLETEDどちらの状態からでも呼べる)。
+  /// バックエンド側でそのタスクに依存する後続タスクも連鎖的にPENDINGへ戻す
+  /// (カスケードリトライ)。ジョブ全体は作り直さないので、影響範囲外の
+  /// 完了済みタスクは無駄にならない。
   Future<void> retryTask({required String taskId}) async {
     final jwt = _supabase.auth.currentSession?.accessToken;
     if (jwt == null) {

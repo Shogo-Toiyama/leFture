@@ -252,14 +252,56 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     return {"message": "Analysis started successfully", "job_id": job_id}
 
 # ---------------------------------------------------------
-# 個別タスクのリトライ
+# 個別タスクのリトライ (カスケード対応)
 # ---------------------------------------------------------
+
+# R2上に「既にあれば再生成をスキップする」キャッシュを持つtask_typeと、
+# そのキャッシュのprefix組み立て方。カスケードリトライでこれらのtask_typeが
+# 対象に含まれる場合、DBのstatusをPENDINGに戻すだけでは古い成果物が
+# 再利用されてしまうため、明示的にR2上のキャッシュも消す。
+# (announcements/fun_facts/review_cards/lecture_topics/deep_notesへの書き込みは
+#  全てdelete→insertで上書きされるため、ここに載せる必要はない)
+_CACHED_TASK_TYPE_PREFIXES = {
+    "IMAGE_RENDERING": lambda uid, lecture_id: f"{uid}/{lecture_id}/images/",
+    "REVIEW_CARD_GENERATION": lambda uid, lecture_id: f"{uid}/{lecture_id}/pipeline_cache/review_cards_topic_",
+    "DETAIL_CONTENTS_GENERATION": lambda uid, lecture_id: f"{uid}/{lecture_id}/pipeline_cache/detail_contents_topic_",
+}
+
+
+def _compute_cascade_task_types(all_tasks: list, target_task_type: str) -> set:
+    """
+    tasks_blueprint(main.py:200-235)がprocessing_tasks.dependenciesとして
+    保存している依存関係(逆方向)から、target_task_type自身とそれに
+    (直接・間接に)依存している全ての後続task_typeの集合を求める。
+    """
+    forward = {}
+    for t in all_tasks:
+        deps = t.get("dependencies", [])
+        deps = json.loads(deps) if isinstance(deps, str) else deps
+        for d in deps:
+            forward.setdefault(d, []).append(t["task_type"])
+
+    affected = set()
+    queue = [target_task_type]
+    while queue:
+        current = queue.pop()
+        if current in affected:
+            continue
+        affected.add(current)
+        queue.extend(forward.get(current, []))
+    return affected
+
+
 @app.post("/retry-task")
 async def retry_task(payload: RetryTaskRequest, request: Request):
     """
-    FAILEDのまま自動リトライ(Cloud Tasksのmax_attempts)を使い切って止まっている
-    タスク1件だけをPENDINGに戻す。ジョブ全体を作り直さないので、既に完了した他の
-    タスクの成果は無駄にならない。PENDINGへの書き戻しは既存のSupabase Webhook経由で
+    指定タスクを(FAILED/COMPLETEDいずれの状態からでも)PENDINGに戻してやり直す。
+    そのタスクに依存している後続タスクも全てPENDINGに戻す(カスケード)。
+    理由: 例えばIMAGE_RENDERINGの失敗が実は前段のIMAGE_PROMPT_GENERATIONが
+    出したプロンプトの質のせい、ということがあり得るため、上流をやり直したら
+    下流も連動してやり直る必要がある。R2上に再生成スキップ用のキャッシュを
+    持つtask_type(_CACHED_TASK_TYPE_PREFIXES)は、あわせてキャッシュも消す。
+    PENDINGへの書き戻しは既存のSupabase Webhook経由で
     /webhook/orchestrator の is_manually_retried 分岐が自動的に拾って再enqueueする。
     """
     auth_header = request.headers.get("Authorization")
@@ -279,35 +321,64 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
 
     admin_client = get_supabase_client()
 
-    task_res = admin_client.table("processing_tasks").select("id, job_id, status")\
+    task_res = admin_client.table("processing_tasks").select("id, job_id, task_type, status")\
         .eq("id", payload.task_id).single().execute()
     if not task_res.data:
         raise HTTPException(status_code=404, detail="Task not found")
     task = task_res.data
 
     # タスク→ジョブ経由で所有者を検証（他人のタスクを操作できないように）
-    job_res = admin_client.table("processing_jobs").select("id, user_id")\
+    job_res = admin_client.table("processing_jobs").select("id, user_id, lecture_id")\
         .eq("id", task["job_id"]).single().execute()
     if not job_res.data or job_res.data["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to retry this task")
 
-    if task["status"] != "FAILED":
+    if task["status"] not in ("FAILED", "COMPLETED"):
         raise HTTPException(
             status_code=400,
             detail=f"Task is not in a retryable state (current status: {task['status']})",
         )
 
-    admin_client.table("processing_tasks").update({
-        "status": "PENDING",
-        "error_message": None,
-        "updated_at": datetime.now().isoformat(),
-    }).eq("id", payload.task_id).eq("status", "FAILED").execute()
+    all_tasks_res = admin_client.table("processing_tasks")\
+        .select("id, task_type, status, dependencies").eq("job_id", task["job_id"]).execute()
+    all_tasks = all_tasks_res.data or []
 
-    # 詰まっていたジョブも「進行中」に戻す(FAILEDの時だけ・冪等)
+    affected_types = _compute_cascade_task_types(all_tasks, task["task_type"])
+    affected_tasks = [t for t in all_tasks if t["task_type"] in affected_types]
+
+    # 集合の中に実行中のものが混じっていたら、巻き込んで壊さないよう丸ごと拒否する
+    in_flight = [t for t in affected_tasks if t["status"] in ("QUEUED", "RUNNING")]
+    if in_flight:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{len(in_flight)} affected task(s) are currently in progress. Try again shortly.",
+        )
+
+    resettable_ids = [t["id"] for t in affected_tasks if t["status"] != "PENDING"]
+    if resettable_ids:
+        admin_client.table("processing_tasks").update({
+            "status": "PENDING",
+            "error_message": None,
+            "updated_at": datetime.now().isoformat(),
+        }).in_("id", resettable_ids).execute()
+
+    # 再生成スキップ用のR2キャッシュを持つtask_typeが対象に含まれていたら、
+    # あわせてキャッシュも消して確実に再生成させる
+    uid, lecture_id = job_res.data["user_id"], job_res.data["lecture_id"]
+    from app.core.r2_storage import storage_service
+    for task_type, prefix_fn in _CACHED_TASK_TYPE_PREFIXES.items():
+        if task_type in affected_types:
+            await asyncio.to_thread(storage_service.delete_prefix, prefix_fn(uid, lecture_id))
+
+    # 詰まっていた/完了済みだったジョブも「進行中」に戻す(冪等)
     admin_client.table("processing_jobs").update({"status": "RUNNING"}) \
-        .eq("id", task["job_id"]).eq("status", "FAILED").execute()
+        .eq("id", task["job_id"]).in_("status", ["FAILED", "COMPLETED"]).execute()
 
-    return {"message": "Task queued for retry", "task_id": payload.task_id}
+    return {
+        "message": "Task queued for retry",
+        "task_id": payload.task_id,
+        "affected_task_types": sorted(affected_types),
+    }
 
 # ---------------------------------------------------------
 # 司令塔 (orchestrator)
@@ -777,6 +848,14 @@ async def topic_map_reconstruct(payload: TopicMapReconstructRequest):
         result = await run_topic_map_reconstruction_task(payload.course_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Topic map reconstruction failed: {e}")
+
+    if result.get("status") == "blocked":
+        if result.get("reason") == "lecture_processing_in_progress":
+            detail = "このCourseはまだ分析中のLectureがあるため、今はTopic Mapを再構成できません。分析が終わってから再試行してください。"
+        else:
+            detail = "このCourseのTopic Mapは既に再構成が進行中です。しばらくしてから再試行してください。"
+        raise HTTPException(status_code=409, detail=detail)
+
     return result
 
 
@@ -883,17 +962,29 @@ async def _patrol_reconstruct_stale_topic_maps() -> dict:
     )
 
     reconstructed = 0
+    skipped = 0
     failed = 0
     for row in (stale_res.data or []):
         course_id = row["course_id"]
         try:
-            await run_topic_map_reconstruction_task(course_id)
-            reconstructed += 1
+            result = await run_topic_map_reconstruction_task(course_id)
+            if result.get("status") == "blocked":
+                # Lectureが分析中、または(手動Recreateとの競合等で)既に別プロセスが
+                # 再構成中。無理に割り込ませず、次回のPatrol実行に委ねる。
+                skipped += 1
+                print(f"⏭️ Patrol skipped course {course_id}: {result.get('reason')}")
+            else:
+                reconstructed += 1
         except Exception as e:
             failed += 1
             print(f"⚠️ Patrol failed to reconstruct topic map for course {course_id}: {e}")
 
-    return {"reconstructed": reconstructed, "failed": failed, "threshold_minutes": TOPIC_MAP_STALE_TIMEOUT_MINUTES}
+    return {
+        "reconstructed": reconstructed,
+        "skipped": skipped,
+        "failed": failed,
+        "threshold_minutes": TOPIC_MAP_STALE_TIMEOUT_MINUTES,
+    }
 
 
 async def _hard_delete_lecture(admin_client, uid: str, lecture_id: str) -> None:

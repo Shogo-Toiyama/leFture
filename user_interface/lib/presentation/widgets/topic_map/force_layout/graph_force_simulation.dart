@@ -159,16 +159,30 @@ class GraphForceSimulation {
       intraInDegree[e.value] = (intraInDegree[e.value] ?? 0) + 1;
     }
 
+    // clusterOrder comes from data.clusters, but a node's own cluster_id can
+    // reference a cluster that isn't in that list (malformed backend data --
+    // e.g. a reconciliation pass that placed nodes into a cluster it forgot
+    // to also declare). Falling back to `clusterOrder`-only iteration would
+    // silently skip those nodes here while _clusterPairs/edge wiring below
+    // still expects them to have a position, crashing the simulation later.
+    // Appending the orphaned cluster ids as extra wedges keeps every node
+    // grouped and positioned instead of dropping it.
+    final effectiveClusterOrder = [
+      ...clusterOrder,
+      for (final id in byCluster.keys)
+        if (!clusterOrder.contains(id)) id,
+    ];
+
     final center = Offset(bounds.width / 2, bounds.height / 2);
     final homeRadius = min(bounds.width, bounds.height) * 0.22;
-    final clusterCount = clusterOrder.length;
+    final clusterCount = effectiveClusterOrder.length;
     final wedgeWidth = clusterCount > 0 ? (2 * pi / clusterCount) : (2 * pi);
     // Leave a gap between neighboring wedges so a fully-spread layer
     // doesn't sit flush against the next cluster's boundary.
     final wedgeHalfSpread = wedgeWidth / 2 * 0.8;
 
-    for (var ci = 0; ci < clusterOrder.length; ci++) {
-      final ids = byCluster[clusterOrder[ci]];
+    for (var ci = 0; ci < effectiveClusterOrder.length; ci++) {
+      final ids = byCluster[effectiveClusterOrder[ci]];
       if (ids == null || ids.isEmpty) continue;
 
       final wedgeCenterAngle = clusterCount <= 1 ? -pi / 2 : (2 * pi * ci / clusterCount) - pi / 2;
@@ -213,7 +227,7 @@ class GraphForceSimulation {
           final angleOffset = n <= 1 ? 0.0 : wedgeHalfSpread * (2 * (k + 0.5) / n - 1);
           final angle = wedgeCenterAngle + angleOffset;
           final position = center + Offset.fromDirection(angle, radius);
-          nodes[layerIds[k]] = ForceNode(id: layerIds[k], clusterId: clusterOrder[ci], position: position);
+          nodes[layerIds[k]] = ForceNode(id: layerIds[k], clusterId: effectiveClusterOrder[ci], position: position);
         }
       }
     }

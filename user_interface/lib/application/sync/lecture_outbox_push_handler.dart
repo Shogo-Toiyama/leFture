@@ -1,6 +1,8 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
 import 'package:lecture_companion_ui/core/utils/network_constants.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/repositories/topic_map_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
 /// pushの瞬間に[LocalLectures]の最新行を読み直し、Supabaseの`lectures`
@@ -8,7 +10,20 @@ import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dar
 /// (アップロード完了前に削除された等)でもINSERTのNOT NULL制約に
 /// 引っかからないよう、常に必要なカラムを揃えて送る。
 /// `updated_at`はSupabase側の自動更新トリガーに一任するため送らない。
+///
+/// あわせて、削除/Course間移動によるTopic Mapのstale化(mark-stale)も
+/// このpushの一部として送信する。これによりLectureの永続化(lecture行の
+/// upsert)とstale化通知が同じOutboxリトライ(バックオフ・最大10回)に乗り、
+/// 「Lectureは削除されたのにis_staleが立たない」という穴を無くす。
+/// stale化の送信が失敗した場合はこのpush全体を失敗させ、次回リトライで
+/// lecture行のupsert(冪等)ごとやり直す — mark-stale自体もバックエンド側で
+/// 同一lecture_idの重複追加を弾くため、再送は安全。
 class LectureOutboxPushHandler implements OutboxPushHandler {
+  LectureOutboxPushHandler({TopicMapRepositorySupabase? topicMapRepository})
+      : _topicMapRepository = topicMapRepository ?? TopicMapRepositorySupabase();
+
+  final TopicMapRepositorySupabase _topicMapRepository;
+
   @override
   String get entityType => 'lecture';
 
@@ -34,5 +49,45 @@ class LectureOutboxPushHandler implements OutboxPushHandler {
     };
 
     await supabase.from('lectures').upsert(payload).timeout(networkTimeout);
+
+    // 削除: courseIdが残っている(=所属コースがあった)場合のみ、そのTopic Mapを
+    // stale化する。backend側はlecture_idの重複追加を弾くので、リトライで
+    // 複数回呼ばれても安全。
+    if (existing.deletedAt != null && existing.courseId != null) {
+      await _topicMapRepository.markStale(
+        courseId: existing.courseId!,
+        lectureId: entityId,
+        action: 'remove',
+      );
+    }
+
+    // Course間移動: 移動元(pendingTopicMapStaleCourseId)と移動先(現在のcourseId)
+    // それぞれのTopic Mapをstale化してから、フラグを下ろす。
+    if (existing.topicMapMovePending) {
+      final oldCourseId = existing.pendingTopicMapStaleCourseId;
+      final newCourseId = existing.courseId;
+
+      await Future.wait([
+        if (oldCourseId != null)
+          _topicMapRepository.markStale(
+            courseId: oldCourseId,
+            lectureId: entityId,
+            action: 'remove',
+          ),
+        if (newCourseId != null)
+          _topicMapRepository.markStale(
+            courseId: newCourseId,
+            lectureId: entityId,
+            action: 'add',
+          ),
+      ]);
+
+      await (db.update(db.localLectures)..where((t) => t.id.equals(entityId))).write(
+        const LocalLecturesCompanion(
+          topicMapMovePending: Value(false),
+          pendingTopicMapStaleCourseId: Value(null),
+        ),
+      );
+    }
   }
 }

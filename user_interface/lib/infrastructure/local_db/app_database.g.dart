@@ -822,6 +822,31 @@ class $LocalLecturesTable extends LocalLectures
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _topicMapMovePendingMeta =
+      const VerificationMeta('topicMapMovePending');
+  @override
+  late final GeneratedColumn<bool> topicMapMovePending = GeneratedColumn<bool>(
+    'topic_map_move_pending',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("topic_map_move_pending" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _pendingTopicMapStaleCourseIdMeta =
+      const VerificationMeta('pendingTopicMapStaleCourseId');
+  @override
+  late final GeneratedColumn<String> pendingTopicMapStaleCourseId =
+      GeneratedColumn<String>(
+        'pending_topic_map_stale_course_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -842,6 +867,8 @@ class $LocalLecturesTable extends LocalLectures
     syncStatus,
     lastAccessedAt,
     isPinned,
+    topicMapMovePending,
+    pendingTopicMapStaleCourseId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -982,6 +1009,24 @@ class $LocalLecturesTable extends LocalLectures
         isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
       );
     }
+    if (data.containsKey('topic_map_move_pending')) {
+      context.handle(
+        _topicMapMovePendingMeta,
+        topicMapMovePending.isAcceptableOrUnknown(
+          data['topic_map_move_pending']!,
+          _topicMapMovePendingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pending_topic_map_stale_course_id')) {
+      context.handle(
+        _pendingTopicMapStaleCourseIdMeta,
+        pendingTopicMapStaleCourseId.isAcceptableOrUnknown(
+          data['pending_topic_map_stale_course_id']!,
+          _pendingTopicMapStaleCourseIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1063,6 +1108,14 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.bool,
         data['${effectivePrefix}is_pinned'],
       )!,
+      topicMapMovePending: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}topic_map_move_pending'],
+      )!,
+      pendingTopicMapStaleCourseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pending_topic_map_stale_course_id'],
+      ),
     );
   }
 
@@ -1091,6 +1144,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final String syncStatus;
   final DateTime? lastAccessedAt;
   final bool isPinned;
+  final bool topicMapMovePending;
+  final String? pendingTopicMapStaleCourseId;
   const LocalLecture({
     required this.id,
     required this.userId,
@@ -1110,6 +1165,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     required this.syncStatus,
     this.lastAccessedAt,
     required this.isPinned,
+    required this.topicMapMovePending,
+    this.pendingTopicMapStaleCourseId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1156,6 +1213,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       map['last_accessed_at'] = Variable<DateTime>(lastAccessedAt);
     }
     map['is_pinned'] = Variable<bool>(isPinned);
+    map['topic_map_move_pending'] = Variable<bool>(topicMapMovePending);
+    if (!nullToAbsent || pendingTopicMapStaleCourseId != null) {
+      map['pending_topic_map_stale_course_id'] = Variable<String>(
+        pendingTopicMapStaleCourseId,
+      );
+    }
     return map;
   }
 
@@ -1203,6 +1266,11 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ? const Value.absent()
           : Value(lastAccessedAt),
       isPinned: Value(isPinned),
+      topicMapMovePending: Value(topicMapMovePending),
+      pendingTopicMapStaleCourseId:
+          pendingTopicMapStaleCourseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingTopicMapStaleCourseId),
     );
   }
 
@@ -1230,6 +1298,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastAccessedAt: serializer.fromJson<DateTime?>(json['lastAccessedAt']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
+      topicMapMovePending: serializer.fromJson<bool>(
+        json['topicMapMovePending'],
+      ),
+      pendingTopicMapStaleCourseId: serializer.fromJson<String?>(
+        json['pendingTopicMapStaleCourseId'],
+      ),
     );
   }
   @override
@@ -1254,6 +1328,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastAccessedAt': serializer.toJson<DateTime?>(lastAccessedAt),
       'isPinned': serializer.toJson<bool>(isPinned),
+      'topicMapMovePending': serializer.toJson<bool>(topicMapMovePending),
+      'pendingTopicMapStaleCourseId': serializer.toJson<String?>(
+        pendingTopicMapStaleCourseId,
+      ),
     };
   }
 
@@ -1276,6 +1354,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     String? syncStatus,
     Value<DateTime?> lastAccessedAt = const Value.absent(),
     bool? isPinned,
+    bool? topicMapMovePending,
+    Value<String?> pendingTopicMapStaleCourseId = const Value.absent(),
   }) => LocalLecture(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1305,6 +1385,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
         ? lastAccessedAt.value
         : this.lastAccessedAt,
     isPinned: isPinned ?? this.isPinned,
+    topicMapMovePending: topicMapMovePending ?? this.topicMapMovePending,
+    pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId.present
+        ? pendingTopicMapStaleCourseId.value
+        : this.pendingTopicMapStaleCourseId,
   );
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
@@ -1340,6 +1424,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ? data.lastAccessedAt.value
           : this.lastAccessedAt,
       isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      topicMapMovePending: data.topicMapMovePending.present
+          ? data.topicMapMovePending.value
+          : this.topicMapMovePending,
+      pendingTopicMapStaleCourseId: data.pendingTopicMapStaleCourseId.present
+          ? data.pendingTopicMapStaleCourseId.value
+          : this.pendingTopicMapStaleCourseId,
     );
   }
 
@@ -1363,7 +1453,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('metadataJson: $metadataJson, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastAccessedAt: $lastAccessedAt, ')
-          ..write('isPinned: $isPinned')
+          ..write('isPinned: $isPinned, ')
+          ..write('topicMapMovePending: $topicMapMovePending, ')
+          ..write('pendingTopicMapStaleCourseId: $pendingTopicMapStaleCourseId')
           ..write(')'))
         .toString();
   }
@@ -1388,6 +1480,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     syncStatus,
     lastAccessedAt,
     isPinned,
+    topicMapMovePending,
+    pendingTopicMapStaleCourseId,
   );
   @override
   bool operator ==(Object other) =>
@@ -1410,7 +1504,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.metadataJson == this.metadataJson &&
           other.syncStatus == this.syncStatus &&
           other.lastAccessedAt == this.lastAccessedAt &&
-          other.isPinned == this.isPinned);
+          other.isPinned == this.isPinned &&
+          other.topicMapMovePending == this.topicMapMovePending &&
+          other.pendingTopicMapStaleCourseId ==
+              this.pendingTopicMapStaleCourseId);
 }
 
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
@@ -1432,6 +1529,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<String> syncStatus;
   final Value<DateTime?> lastAccessedAt;
   final Value<bool> isPinned;
+  final Value<bool> topicMapMovePending;
+  final Value<String?> pendingTopicMapStaleCourseId;
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
@@ -1452,6 +1551,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.syncStatus = const Value.absent(),
     this.lastAccessedAt = const Value.absent(),
     this.isPinned = const Value.absent(),
+    this.topicMapMovePending = const Value.absent(),
+    this.pendingTopicMapStaleCourseId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalLecturesCompanion.insert({
@@ -1473,6 +1574,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.syncStatus = const Value.absent(),
     this.lastAccessedAt = const Value.absent(),
     this.isPinned = const Value.absent(),
+    this.topicMapMovePending = const Value.absent(),
+    this.pendingTopicMapStaleCourseId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId);
@@ -1495,6 +1598,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<String>? syncStatus,
     Expression<DateTime>? lastAccessedAt,
     Expression<bool>? isPinned,
+    Expression<bool>? topicMapMovePending,
+    Expression<String>? pendingTopicMapStaleCourseId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1516,6 +1621,10 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastAccessedAt != null) 'last_accessed_at': lastAccessedAt,
       if (isPinned != null) 'is_pinned': isPinned,
+      if (topicMapMovePending != null)
+        'topic_map_move_pending': topicMapMovePending,
+      if (pendingTopicMapStaleCourseId != null)
+        'pending_topic_map_stale_course_id': pendingTopicMapStaleCourseId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1539,6 +1648,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<String>? syncStatus,
     Value<DateTime?>? lastAccessedAt,
     Value<bool>? isPinned,
+    Value<bool>? topicMapMovePending,
+    Value<String?>? pendingTopicMapStaleCourseId,
     Value<int>? rowid,
   }) {
     return LocalLecturesCompanion(
@@ -1560,6 +1671,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       syncStatus: syncStatus ?? this.syncStatus,
       lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
       isPinned: isPinned ?? this.isPinned,
+      topicMapMovePending: topicMapMovePending ?? this.topicMapMovePending,
+      pendingTopicMapStaleCourseId:
+          pendingTopicMapStaleCourseId ?? this.pendingTopicMapStaleCourseId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1621,6 +1735,14 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (isPinned.present) {
       map['is_pinned'] = Variable<bool>(isPinned.value);
     }
+    if (topicMapMovePending.present) {
+      map['topic_map_move_pending'] = Variable<bool>(topicMapMovePending.value);
+    }
+    if (pendingTopicMapStaleCourseId.present) {
+      map['pending_topic_map_stale_course_id'] = Variable<String>(
+        pendingTopicMapStaleCourseId.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1648,6 +1770,10 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write('syncStatus: $syncStatus, ')
           ..write('lastAccessedAt: $lastAccessedAt, ')
           ..write('isPinned: $isPinned, ')
+          ..write('topicMapMovePending: $topicMapMovePending, ')
+          ..write(
+            'pendingTopicMapStaleCourseId: $pendingTopicMapStaleCourseId, ',
+          )
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10556,6 +10682,8 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<String> syncStatus,
       Value<DateTime?> lastAccessedAt,
       Value<bool> isPinned,
+      Value<bool> topicMapMovePending,
+      Value<String?> pendingTopicMapStaleCourseId,
       Value<int> rowid,
     });
 typedef $$LocalLecturesTableUpdateCompanionBuilder =
@@ -10578,6 +10706,8 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<String> syncStatus,
       Value<DateTime?> lastAccessedAt,
       Value<bool> isPinned,
+      Value<bool> topicMapMovePending,
+      Value<String?> pendingTopicMapStaleCourseId,
       Value<int> rowid,
     });
 
@@ -10677,6 +10807,16 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<bool> get isPinned => $composableBuilder(
     column: $table.isPinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get topicMapMovePending => $composableBuilder(
+    column: $table.topicMapMovePending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pendingTopicMapStaleCourseId => $composableBuilder(
+    column: $table.pendingTopicMapStaleCourseId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10779,6 +10919,17 @@ class $$LocalLecturesTableOrderingComposer
     column: $table.isPinned,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get topicMapMovePending => $composableBuilder(
+    column: $table.topicMapMovePending,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pendingTopicMapStaleCourseId =>
+      $composableBuilder(
+        column: $table.pendingTopicMapStaleCourseId,
+        builder: (column) => ColumnOrderings(column),
+      );
 }
 
 class $$LocalLecturesTableAnnotationComposer
@@ -10857,6 +11008,17 @@ class $$LocalLecturesTableAnnotationComposer
 
   GeneratedColumn<bool> get isPinned =>
       $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<bool> get topicMapMovePending => $composableBuilder(
+    column: $table.topicMapMovePending,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get pendingTopicMapStaleCourseId =>
+      $composableBuilder(
+        column: $table.pendingTopicMapStaleCourseId,
+        builder: (column) => column,
+      );
 }
 
 class $$LocalLecturesTableTableManager
@@ -10908,6 +11070,9 @@ class $$LocalLecturesTableTableManager
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastAccessedAt = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
+                Value<bool> topicMapMovePending = const Value.absent(),
+                Value<String?> pendingTopicMapStaleCourseId =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
@@ -10928,6 +11093,8 @@ class $$LocalLecturesTableTableManager
                 syncStatus: syncStatus,
                 lastAccessedAt: lastAccessedAt,
                 isPinned: isPinned,
+                topicMapMovePending: topicMapMovePending,
+                pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10950,6 +11117,9 @@ class $$LocalLecturesTableTableManager
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastAccessedAt = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
+                Value<bool> topicMapMovePending = const Value.absent(),
+                Value<String?> pendingTopicMapStaleCourseId =
+                    const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
@@ -10970,6 +11140,8 @@ class $$LocalLecturesTableTableManager
                 syncStatus: syncStatus,
                 lastAccessedAt: lastAccessedAt,
                 isPinned: isPinned,
+                topicMapMovePending: topicMapMovePending,
+                pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

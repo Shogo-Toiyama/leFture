@@ -64,14 +64,25 @@ class LectureRepositoryDrift {
   }
 
   /// タイトルと所属コースを更新し、Outboxに登録する (Transaction)
+  ///
+  /// [previousCourseId]と[courseId]が異なる場合(Course間の移動、または
+  /// 未設定↔設定の切り替え)は、courseIdを上書きする前の値を
+  /// [LocalLecturesCompanion.pendingTopicMapStaleCourseId]に退避しておく。
+  /// これにより[LectureOutboxPushHandler]がpush時に「移動元のTopic Mapを
+  /// stale化(remove)」「移動先のTopic Mapをstale化(add)」を、Outboxの
+  /// リトライ機構込みで確実に送信できる(courseId自体は即座に上書きされるため、
+  /// この退避が無いと移動元の情報がpush時には失われてしまう)。
   Future<void> updateLectureTitleAndCourse({
     required String lectureId,
     required String? title,
     required String? courseId,
+    String? previousCourseId,
     DateTime? lectureDatetime,
   }) async {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
+
+    final isMove = courseId != previousCourseId;
 
     await _db.transaction(() async {
       // 1. ローカルDBを更新
@@ -83,6 +94,9 @@ class LectureRepositoryDrift {
         lectureDatetime: Value(lectureDatetime),
         syncStatus: const Value('needs_sync'),
         updatedAt: Value(DateTime.now()),
+        topicMapMovePending: isMove ? const Value(true) : const Value.absent(),
+        pendingTopicMapStaleCourseId:
+            isMove ? Value(previousCourseId) : const Value.absent(),
       ));
 
       // 2. Outboxに登録(softDeleteLectureと同様、entityIdのみでよい)

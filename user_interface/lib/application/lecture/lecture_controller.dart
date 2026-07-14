@@ -25,7 +25,6 @@ import 'package:lecture_companion_ui/infrastructure/supabase/repositories/fun_fa
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/lecture_topic_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/deep_note_repository_supabase.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/keyword_repository_supabase.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/topic_map_repository_supabase.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 
 part 'lecture_controller.g.dart';
@@ -156,8 +155,11 @@ class LectureController extends _$LectureController {
 
   /// 授業を削除する。関連データ（Announcement/ReviewCard/FunFact/
   /// LectureTopic/DeepNote/Keyword）もまとめて論理削除する。
-  /// [courseId]が分かる場合は、そのCourseのTopic Mapもこの講義のノード除去待ち
-  /// (stale)としてマークする。実際のグラフ修復は行わない — ユーザーの
+  /// 所属Courseがあった場合、そのTopic Mapのstale化(この講義のノード除去待ち)は
+  /// [LectureOutboxPushHandler]がOutbox経由で送る(softDeleteLectureが積んだ
+  /// 'lecture' Outbox行のpush時に、courseId/deletedAtから自動判定される)。
+  /// これによりオフライン中の削除でも、Lecture本体の同期と同じリトライ保証で
+  /// 確実にis_staleが立つ。実際のグラフ修復は行わない — ユーザーの
   /// 「Recreate Topic Map」操作か、Patrolのアイドルタイムアウトが後でまとめて行う
   /// (see topic_map_repository_supabase.dart / task_runners.py の設計議論)。
   Future<void> deleteLecture(String lectureId, {String? courseId}) async {
@@ -187,19 +189,6 @@ class LectureController extends _$LectureController {
         DevLog.add('⚠️ [LectureController] Cascade soft-delete of related data failed: $e\n$st');
       }
 
-      // 2.5 Topic Mapをstaleとしてマーク（LLMは呼ばない軽量な記録だけ、best-effort）
-      if (courseId != null) {
-        try {
-          await ref.read(topicMapRepositoryProvider).markStale(
-                courseId: courseId,
-                lectureId: lectureId,
-                action: 'remove',
-              );
-        } catch (e, st) {
-          DevLog.add('⚠️ [LectureController] Failed to mark topic map stale: $e\n$st');
-        }
-      }
-
       // 3. 即座に同期を試みる (失敗してもOutboxにあるのでOK)
       try {
         await _outbox().pushAll();
@@ -213,8 +202,10 @@ class LectureController extends _$LectureController {
 
   /// 授業のタイトルと所属コースを更新する。[previousCourseId]と[courseId]が
   /// 異なる場合（＝Course間の移動）、旧Courseのマップからはこの講義のノードを
-  /// 除去待ちに、新Courseのマップにはこの講義のトピックを追加待ちにマークする
-  /// (どちらもLLMは呼ばない軽量な記録のみ、best-effort)。
+  /// 除去待ちに、新Courseのマップにはこの講義のトピックを追加待ちにマークする。
+  /// この送信は[LectureOutboxPushHandler]がOutbox経由(バックオフ・自動リトライ付き)
+  /// で行う — repository層が移動元courseIdを`pendingTopicMapStaleCourseId`に
+  /// 退避しているので、オフライン中の移動でも取りこぼれない。
   Future<void> updateLecture({
     required String lectureId,
     required String? title,
@@ -229,30 +220,9 @@ class LectureController extends _$LectureController {
             lectureId: lectureId,
             title: title,
             courseId: courseId,
+            previousCourseId: previousCourseId,
             lectureDatetime: lectureDatetime,
           );
-
-      if (courseId != previousCourseId) {
-        final topicMapRepo = ref.read(topicMapRepositoryProvider);
-        try {
-          await Future.wait([
-            if (previousCourseId != null)
-              topicMapRepo.markStale(
-                courseId: previousCourseId,
-                lectureId: lectureId,
-                action: 'remove',
-              ),
-            if (courseId != null)
-              topicMapRepo.markStale(
-                courseId: courseId,
-                lectureId: lectureId,
-                action: 'add',
-              ),
-          ]);
-        } catch (e, st) {
-          DevLog.add('⚠️ [LectureController] Failed to mark topic map(s) stale after course move: $e\n$st');
-        }
-      }
 
       try {
         await _outbox().pushAll();

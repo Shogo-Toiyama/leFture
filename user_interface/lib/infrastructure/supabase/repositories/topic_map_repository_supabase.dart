@@ -75,6 +75,9 @@ class TopicMapRepositorySupabase {
 
   /// 「Recreate Topic Map」から呼ぶ。pending_removals/pending_additionsを
   /// まとめて消化し、LLMによる修復を同期的に実行する(数秒かかりうる)。
+  /// バックエンドは、このCourseのLectureが分析中(processing_jobsがRUNNING)の
+  /// 場合や、既に別の再構成が進行中の場合は409を返す -- その場合はレスポンス
+  /// bodyの`detail`(ユーザー向けの日本語メッセージ)だけを例外に載せて投げる。
   Future<void> reconstruct({required String courseId}) async {
     final response = await http.post(
       Uri.parse('$_cloudRunBaseUrl/topic-map/reconstruct'),
@@ -86,7 +89,16 @@ class TopicMapRepositorySupabase {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to reconstruct topic map (${response.statusCode}): ${response.body}');
+      String detail = response.body;
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['detail'] is String) {
+          detail = decoded['detail'] as String;
+        }
+      } catch (_) {
+        // bodyがJSONでない場合はそのままdetail=生bodyで投げる。
+      }
+      throw Exception(detail);
     }
   }
 }

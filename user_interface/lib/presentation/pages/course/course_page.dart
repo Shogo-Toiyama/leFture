@@ -859,6 +859,19 @@ class _CourseLectureListView extends ConsumerWidget {
     await ref
         .read(topicMapReconstructControllerProvider(courseId).notifier)
         .recreate();
+
+    final state = ref.read(topicMapReconstructControllerProvider(courseId));
+    if (state.hasError && context.mounted) {
+      await showCustomDialog(
+        context: context,
+        title: 'Could not recreate',
+        message: state.error.toString().replaceFirst('Exception: ', ''),
+        confirmLabel: 'OK',
+        cancelLabel: null,
+        icon: Icons.error_outline,
+        isDestructive: true,
+      );
+    }
   }
 }
 

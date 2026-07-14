@@ -73,3 +73,46 @@ const Map<String, String> processingTaskLabels = {
 
 String processingTaskLabel(String taskType) =>
     processingTaskLabels[taskType] ?? taskType;
+
+/// main.py の tasks_blueprint と同じ依存関係（表示専用のミラー。実行時の正は
+/// バックエンドが processing_tasks.dependencies から都度計算する）
+const Map<String, List<String>> processingTaskDependencies = {
+  'CHECK_AND_ASSEMBLE': [],
+  'CORE_EXTRACTION': ['CHECK_AND_ASSEMBLE'],
+  'ROLE_CLASSIFICATION': ['CORE_EXTRACTION'],
+  'ANNOUNCEMENT_GENERATION': ['ROLE_CLASSIFICATION'],
+  'TOPIC_MAPPING': ['ROLE_CLASSIFICATION'],
+  'REVIEW_CARD_GENERATION': ['TOPIC_MAPPING'],
+  'IMAGE_PROMPT_GENERATION': ['REVIEW_CARD_GENERATION'],
+  'IMAGE_RENDERING': ['IMAGE_PROMPT_GENERATION'],
+  'FUN_FACT_SEARCH': ['CORE_EXTRACTION'],
+  'FUN_FACTS_GENERATION': ['REVIEW_CARD_GENERATION', 'FUN_FACT_SEARCH'],
+  'DETAIL_CONTENTS_GENERATION': ['REVIEW_CARD_GENERATION'],
+  'FINALIZE_JOB': [
+    'ANNOUNCEMENT_GENERATION',
+    'IMAGE_RENDERING',
+    'FUN_FACTS_GENERATION',
+    'DETAIL_CONTENTS_GENERATION',
+  ],
+};
+
+/// 指定したtask_type自身と、それに(直接・間接に)依存している全ての後続task_typeを返す。
+/// カスケードリトライの確認ダイアログで「あわせて再実行される後続ステップ」を
+/// プレビューするための表示専用ヘルパー。
+Set<String> downstreamOf(String taskType) {
+  final forward = <String, List<String>>{};
+  processingTaskDependencies.forEach((type, deps) {
+    for (final dep in deps) {
+      forward.putIfAbsent(dep, () => []).add(type);
+    }
+  });
+
+  final affected = <String>{};
+  final queue = [taskType];
+  while (queue.isNotEmpty) {
+    final current = queue.removeLast();
+    if (!affected.add(current)) continue;
+    queue.addAll(forward[current] ?? const []);
+  }
+  return affected;
+}

@@ -32,6 +32,7 @@ PRICE_MATRIX = {
         "modal/l4": 0.000222,       # per GPU-second
         "cloudrun/self": 0.000030,  # 概算用。実際より少し高めに見積もる
         "cloudflare/whisper-large-v3-turbo": 0.00000833,
+        "groq/whisper-large-v3-turbo": 0.00001111,
     },
     "image": {
         # Cloudflare Workers AI FLUX.1 [schnell]

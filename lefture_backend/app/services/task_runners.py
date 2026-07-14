@@ -11,7 +11,7 @@ from typing import Any
 from app.core.config import BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
-from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes
+from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM
 
 from app.services.logic.transcription import TranscriptionService
@@ -1001,12 +1001,13 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
             "ghost_nodes": []
         }
         is_stale = False
+        reconstruction_in_progress = False
         pending_additions: list[dict] = []
 
         if course_id:
             def _fetch_existing_map_sync():
                 return supabase.table("topic_maps")\
-                    .select("map, is_stale, pending_additions")\
+                    .select("map, is_stale, pending_additions, metadata")\
                     .eq("course_id", course_id)\
                     .execute()
 
@@ -1021,15 +1022,23 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
                     current_graph_state["ghost_nodes"] = db_map.get("ghost_nodes") or []
                 is_stale = bool(row.get("is_stale"))
                 pending_additions = row.get("pending_additions") or []
+                # Recreate Topic Map(run_topic_map_reconstruction_task)が今まさに
+                # このCourseを処理中かどうか。ここでチェックせずmapを直接upsertすると、
+                # 再構成側が読んだ後・書く前のこのタイミングで割り込んで書き込んだ場合、
+                # どちらか一方の結果が後勝ちで丸ごと消えてしまう(lost update)。
+                # is_stale同様、そのままpending_additionsへ退避して次のRecreateに委ねる。
+                reconstruction_in_progress = bool((row.get("metadata") or {}).get("reconstruction_locked_at"))
 
-        if is_stale:
-            # このCourseのTopic Mapは削除/移動待ちで一時的に不整合な状態(is_stale)。
-            # 壊れた地図にそのままLLMで足すとハルシネーションを誘発しやすいため、
-            # ここではLLMを呼ばず、今日のトピックを pending_additions に積んで
-            # 「Recreate Topic Map」(手動 or アイドルタイムアウト)がまとめて
-            # 消化するのを待つ。他のタスク(REVIEW_CARD_GENERATION等)を
+        if is_stale or reconstruction_in_progress:
+            # このCourseのTopic Mapは削除/移動待ちで一時的に不整合な状態(is_stale)か、
+            # ちょうど再構成が進行中(reconstruction_in_progress)。
+            # 壊れた/書き換わっている最中の地図にそのままLLMで足すとハルシネーションや
+            # lost updateを誘発しやすいため、ここではLLMを呼ばず、今日のトピックを
+            # pending_additions に積んで「Recreate Topic Map」(手動 or アイドルタイムアウト)
+            # がまとめて消化するのを待つ。他のタスク(REVIEW_CARD_GENERATION等)を
             # ブロックしないよう、このタスク自体は正常にCOMPLETEDとして扱う。
-            logger.log(f"⏸️ Topic map for course {course_id} is stale. Deferring lecture {lecture_id}'s topics into pending_additions instead of calling the mapping LLM.")
+            reason = "stale" if is_stale else "being reconstructed"
+            logger.log(f"⏸️ Topic map for course {course_id} is {reason}. Deferring lecture {lecture_id}'s topics into pending_additions instead of calling the mapping LLM.")
 
             pending_additions.append({
                 "lecture_id": lecture_id,
@@ -1172,18 +1181,27 @@ async def mark_topic_map_stale(course_id: str, action: str, lecture_id: str, lec
                   (削除、または移動元Courseからの除去)
       - "add":    lecture_idのトピックをこのCourseへの追加待ちにする
                   (移動先Courseへの統合。lecture_topics/lecture_titleが必須)
+
+    このLectureがそもそもそのCourseのTopic Mapに一度も反映されていない場合
+    (録音中/分析中に削除された、CORE_EXTRACTION未完了のうちに移動した、等で
+    トピックが1件も存在しない)は、is_stale化してもPhase A/Bで何も見つからず
+    無意味に「Recreate Topic Map」を要求するだけになる。そのため
+    "remove"は現在のmap.nodesに、"add"はlecture_topicsに何も無ければ
+    is_stale/pending_*を一切変更せずスキップする。
     """
     supabase = get_supabase_client()
     now_iso = datetime.now().isoformat()
 
     def _sync():
-        res = supabase.table("topic_maps").select("id, is_stale, stale_since, pending_removals, pending_additions, user_id")\
+        res = supabase.table("topic_maps").select("id, is_stale, stale_since, pending_removals, pending_additions, user_id, map")\
             .eq("course_id", course_id).execute()
 
         if not res.data:
             if action == "remove":
                 # このCourseにまだTopic Map自体が無いなら、除去すべきノードも無い。
                 return {"status": "skipped", "reason": "no_map_row"}
+            if not lecture_topics:
+                return {"status": "skipped", "reason": "lecture_has_no_topics"}
             # 移動先にまだTopic Mapが無い場合は、is_stale状態で新規行を作っておく。
             # user_idはこの時点では分からない可能性があるため、後続のreconstructionが
             # 分かる範囲で補う（lecturesテーブルから引ける）。
@@ -1207,9 +1225,16 @@ async def mark_topic_map_stale(course_id: str, action: str, lecture_id: str, lec
         stale_since = row.get("stale_since")
 
         if action == "remove":
+            existing_nodes = (row.get("map") or {}).get("nodes", [])
+            if not any(n.get("source_lecture_id") == lecture_id for n in existing_nodes):
+                # このLectureのノードはこのCourseのmapに元々存在しない
+                # (削除待ちのpending_removalsに積んでも消化するものが無い)。
+                return {"status": "skipped", "reason": "lecture_has_no_topics_in_map"}
             if not any(r.get("lecture_id") == lecture_id for r in pending_removals):
                 pending_removals.append({"lecture_id": lecture_id, "reason": "removed"})
         elif action == "add":
+            if not lecture_topics:
+                return {"status": "skipped", "reason": "lecture_has_no_topics"}
             if not any(a.get("lecture_id") == lecture_id for a in pending_additions):
                 pending_additions.append({"lecture_id": lecture_id, "lecture_title": lecture_title, "topics": lecture_topics or []})
 
@@ -1234,102 +1259,162 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
     Phase A（決定的除去、LLM不要: _prune_lecture_nodes）→
     Phase B（LLMによる修復＋pending_additions統合: TopicMapReconciliationService）→ upsert。
     「Recreate Topic Map」のユーザー操作、またはPatrolの1時間アイドルタイムアウトから呼ばれる。
+
+    開始前に2つのガードを掛ける:
+    1. このCourse配下のLectureにRUNNING状態のprocessing_jobsが無いことを確認する。
+       録音直後のTOPIC_MAPPING(DAGタスク)がtopic_maps.mapに直接書き込むため、
+       同時に走らせるとどちらかの書き込みが後勝ちで相手を丸ごと上書きしてしまう
+       (lost update)。ここで弾けば、そのウィンドウ自体を避けられる。
+    2. topic_maps.metadata(jsonb)を使った簡易ロックを取得する。手動の連打や、
+       手動Recreateと自動Patrolが同じCourseに対してほぼ同時に走るケースを防ぐ。
+    どちらかで弾かれた場合は例外を投げず、status="blocked"を返す(呼び出し元の
+    エンドポイント/Patrolがそれぞれ適切に扱う)。
     """
     supabase = get_supabase_client()
 
-    def _fetch_map_row_sync():
-        return supabase.table("topic_maps").select("*").eq("course_id", course_id).execute()
+    if await asyncio.to_thread(_course_has_running_job_sync, supabase, course_id):
+        return {"status": "blocked", "reason": "lecture_processing_in_progress"}
 
-    map_res = await asyncio.to_thread(_fetch_map_row_sync)
-    if not map_res.data:
-        return {"status": "skipped", "reason": "no_map_row"}
-
-    row = map_res.data[0]
-    uid = row.get("user_id") or "unknown_user"
-    current_graph = row.get("map") or {"clusters": [], "nodes": [], "edges": [], "ghost_nodes": []}
-    pending_removals = row.get("pending_removals") or []
-    pending_additions = row.get("pending_additions") or []
-
-    logger = TaskLogger(uid, course_id, "TOPIC_MAP_RECONSTRUCTION")
-    logger.log(f"▶️ Starting TOPIC_MAP_RECONSTRUCTION for course {course_id} ({len(pending_removals)} pending removal(s), {len(pending_additions)} pending addition(s))")
-
-    if not pending_removals and not pending_additions:
-        logger.log("⏭️ Nothing pending; clearing stale flag only.")
-        await asyncio.to_thread(
-            lambda: supabase.table("topic_maps").update({
-                "is_stale": False, "stale_since": None, "updated_at": datetime.now().isoformat()
-            }).eq("course_id", course_id).execute()
-        )
-        return {"status": "no_op"}
+    lock_id = await asyncio.to_thread(_try_acquire_reconstruction_lock_sync, supabase, course_id)
+    if lock_id is None:
+        return {"status": "blocked", "reason": "reconstruction_already_in_progress"}
 
     try:
-        # Phase A: 決定的除去（LLM不要）。除去前に、LLMへの文脈用として
-        # 消えるトピックの情報(タイトル/種別/元クラスタ)を控えておく。
-        pruned_graph = current_graph
-        removed_topics_context = []
-        for removal in pending_removals:
-            target_lecture_id = removal.get("lecture_id")
-            for n in pruned_graph.get("nodes", []):
-                if n.get("source_lecture_id") == target_lecture_id:
-                    removed_topics_context.append({
-                        "title": n.get("title"),
-                        "topic_type": n.get("topic_type"),
-                        "former_cluster_id": n.get("cluster_id"),
-                    })
-            pruned_graph = _prune_lecture_nodes(pruned_graph, target_lecture_id, logger=logger)
+        def _fetch_map_row_sync():
+            return supabase.table("topic_maps").select("*").eq("course_id", course_id).execute()
 
-        flat_pending_topics = []
-        for batch in pending_additions:
-            flat_pending_topics.extend(batch.get("topics", []))
+        map_res = await asyncio.to_thread(_fetch_map_row_sync)
+        if not map_res.data:
+            return {"status": "skipped", "reason": "no_map_row"}
 
-        # 現在のLecture順序を取得し、生存ノード・pending topicsの両方に注記する
-        # (保存はしない揮発的な値。詳細はrun_topic_mapping_task内の同種処理を参照)
-        lecture_ids = await asyncio.to_thread(_fetch_live_lecture_order_sync, supabase, course_id)
-        lecture_num_by_id = {lid: i + 1 for i, lid in enumerate(lecture_ids)}
+        row = map_res.data[0]
+        uid = row.get("user_id") or "unknown_user"
+        current_graph = row.get("map") or {"clusters": [], "nodes": [], "edges": [], "ghost_nodes": []}
+        pending_removals = row.get("pending_removals") or []
+        pending_additions = row.get("pending_additions") or []
 
-        annotated_graph = dict(pruned_graph)
-        annotated_graph["nodes"] = _annotate_nodes_with_live_lecture_num(pruned_graph.get("nodes", []), lecture_num_by_id)
-        annotated_pending_topics = [
-            {**t, "lecture_num": lecture_num_by_id.get(t.get("source_lecture_id"))}
-            for t in flat_pending_topics
-        ]
+        logger = TaskLogger(uid, course_id, "TOPIC_MAP_RECONSTRUCTION")
+        logger.log(f"▶️ Starting TOPIC_MAP_RECONSTRUCTION for course {course_id} ({len(pending_removals)} pending removal(s), {len(pending_additions)} pending addition(s))")
 
-        # Phase B: LLMによる修復＋統合（pending_additionsが空でも、除去だけで
-        # クラスタ再編が必要な場合があるため、除去のみのケースでも呼ぶ）
-        billing = BillingEngine(task_type="TOPIC_MAP_RECONSTRUCTION")
-        llm = UnifiedLLM(billing)
-        reconciler = TopicMapReconciliationService(llm, logger)
-        reconciliation_result = await reconciler.run_from_memory(
-            current_graph=annotated_graph,
-            removed_topics=removed_topics_context,
-            pending_additions=annotated_pending_topics
-        )
+        if not pending_removals and not pending_additions:
+            logger.log("⏭️ Nothing pending; clearing stale flag only.")
+            await asyncio.to_thread(
+                lambda: supabase.table("topic_maps").update({
+                    "is_stale": False, "stale_since": None, "updated_at": datetime.now().isoformat()
+                }).eq("course_id", course_id).execute()
+            )
+            return {"status": "no_op"}
 
-        mutations = reconciliation_result.get("graph_mutations") or {}
-        new_graph = _merge_graph_mutation(pruned_graph, mutations, flat_pending_topics, logger=logger)
+        try:
+            # Phase A: 決定的除去（LLM不要）。除去前に、LLMへの文脈用として
+            # 消えるトピックの情報(タイトル/種別/元クラスタ)を控えておく。
+            pruned_graph = current_graph
+            removed_topics_context = []
+            for removal in pending_removals:
+                target_lecture_id = removal.get("lecture_id")
+                for n in pruned_graph.get("nodes", []):
+                    if n.get("source_lecture_id") == target_lecture_id:
+                        removed_topics_context.append({
+                            "title": n.get("title"),
+                            "topic_type": n.get("topic_type"),
+                            "former_cluster_id": n.get("cluster_id"),
+                        })
+                pruned_graph = _prune_lecture_nodes(pruned_graph, target_lecture_id, logger=logger)
 
-        await asyncio.to_thread(
-            lambda: supabase.table("topic_maps").update({
-                "map": new_graph,
-                "is_stale": False,
-                "stale_since": None,
-                "pending_removals": [],
-                "pending_additions": [],
-                "updated_at": datetime.now().isoformat()
-            }).eq("course_id", course_id).execute()
-        )
+            flat_pending_topics = []
+            for batch in pending_additions:
+                flat_pending_topics.extend(batch.get("topics", []))
 
-        logger.log(billing.report())
-        logger.log(f"✅ TOPIC_MAP_RECONSTRUCTION completed for course {course_id}!")
-        logger.save_to_r2(storage_service)
-        return {"status": "completed", "removed_lectures": len(pending_removals), "integrated_topics": len(flat_pending_topics)}
+            # 現在のLecture順序を取得し、生存ノード・pending topicsの両方に注記する
+            # (保存はしない揮発的な値。詳細はrun_topic_mapping_task内の同種処理を参照)
+            lecture_ids = await asyncio.to_thread(_fetch_live_lecture_order_sync, supabase, course_id)
+            lecture_num_by_id = {lid: i + 1 for i, lid in enumerate(lecture_ids)}
 
-    except Exception as e:
-        import traceback
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        logger.log(f"❌ TOPIC_MAP_RECONSTRUCTION Failed: {error_msg}")
-        logger.save_to_r2(storage_service)
-        raise e
+            billing = BillingEngine(task_type="TOPIC_MAP_RECONSTRUCTION")
+            llm = UnifiedLLM(billing)
+
+            if not pending_removals:
+                # 除去が1件も無ければ、既存構造の修復(孤立エッジの再接続やクラスタ再編)は
+                # 一切不要 -- pending_additionsは単に「is_staleの間に溜まった、まだ
+                # マップに統合されていないLectureの分」でしかない。この場合は巨大な
+                # current_graph全体+除去コンテキスト+全additionsを1回のLLM呼び出しに
+                # 詰め込むReconciliationではなく、普段のTOPIC_MAPPINGタスクと全く同じ
+                # TopicMappingService(topic_mapping_prompt.txt)をLecture 1件ずつ順番に
+                # 呼ぶ。このプロンプトはnode/lecture_numを前提に「今日のトピックが
+                # 必ずしも最新とは限らない」ケース(Backfilling Exception)も元々
+                # 扱える設計なので、統合先が末尾でなくても問題ない。1件ごとに
+                # マージしてから次のLectureへ進めることで、各呼び出しが常に
+                # 「その時点までの最新状態」を見られるようにしている。
+                logger.log(f"➕ No pending removals; integrating {len(pending_additions)} pending addition(s) via the normal incremental TopicMappingService instead of Reconciliation.")
+                mapper = TopicMappingService(llm, logger)
+
+                ordered_batches = sorted(
+                    pending_additions,
+                    key=lambda b: lecture_num_by_id.get(b.get("lecture_id"), float("inf")),
+                )
+
+                new_graph = pruned_graph
+                for batch in ordered_batches:
+                    batch_lecture_id = batch.get("lecture_id")
+                    todays_topics = {
+                        "lecture_title": batch.get("lecture_title"),
+                        "lecture_num": lecture_num_by_id.get(batch_lecture_id, 1),
+                        "topics": batch.get("topics", []),
+                    }
+                    annotated_graph = dict(new_graph)
+                    annotated_graph["nodes"] = _annotate_nodes_with_live_lecture_num(
+                        new_graph.get("nodes", []), lecture_num_by_id
+                    )
+                    mapping_result = await mapper.run_from_memory(
+                        current_graph=annotated_graph,
+                        todays_topics=todays_topics,
+                    )
+                    mutations = mapping_result.get("graph_mutations") or {}
+                    new_graph = _merge_graph_mutation(new_graph, mutations, batch.get("topics", []), logger=logger)
+            else:
+                annotated_graph = dict(pruned_graph)
+                annotated_graph["nodes"] = _annotate_nodes_with_live_lecture_num(pruned_graph.get("nodes", []), lecture_num_by_id)
+                annotated_pending_topics = [
+                    {**t, "lecture_num": lecture_num_by_id.get(t.get("source_lecture_id"))}
+                    for t in flat_pending_topics
+                ]
+
+                # Phase B: LLMによる修復＋統合（除去があるので、除去だけでもクラスタ
+                # 再編が必要になり得るため、pending_additionsが空でも呼ぶ）
+                reconciler = TopicMapReconciliationService(llm, logger)
+                reconciliation_result = await reconciler.run_from_memory(
+                    current_graph=annotated_graph,
+                    removed_topics=removed_topics_context,
+                    pending_additions=annotated_pending_topics
+                )
+
+                mutations = reconciliation_result.get("graph_mutations") or {}
+                new_graph = _merge_graph_mutation(pruned_graph, mutations, flat_pending_topics, logger=logger)
+
+            await asyncio.to_thread(
+                lambda: supabase.table("topic_maps").update({
+                    "map": new_graph,
+                    "is_stale": False,
+                    "stale_since": None,
+                    "pending_removals": [],
+                    "pending_additions": [],
+                    "updated_at": datetime.now().isoformat()
+                }).eq("course_id", course_id).execute()
+            )
+
+            logger.log(billing.report())
+            logger.log(f"✅ TOPIC_MAP_RECONSTRUCTION completed for course {course_id}!")
+            logger.save_to_r2(storage_service)
+            return {"status": "completed", "removed_lectures": len(pending_removals), "integrated_topics": len(flat_pending_topics)}
+
+        except Exception as e:
+            import traceback
+            error_msg = f"{str(e)}\n{traceback.format_exc()}"
+            logger.log(f"❌ TOPIC_MAP_RECONSTRUCTION Failed: {error_msg}")
+            logger.save_to_r2(storage_service)
+            raise e
+    finally:
+        await asyncio.to_thread(_release_reconstruction_lock_sync, supabase, course_id, lock_id)
 
 
 # ---------------------------------------------------------
