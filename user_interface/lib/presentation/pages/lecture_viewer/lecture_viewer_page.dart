@@ -14,6 +14,7 @@ import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
+import 'package:lecture_companion_ui/presentation/widgets/glowing_rainbow_border.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
@@ -749,65 +750,73 @@ class _ViewerFunFactCard extends HookConsumerWidget {
 
     final currentReaction = fact.reaction;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.universe.glassBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (fact.title?.trim().isNotEmpty == true)
+    return GlowingRainbowBorder(
+      borderRadius: 20.0,
+      borderWidth: 1.5,
+      glowRadius: 6.0,
+      animate: true,
+      innerGlow: true,
+      glowOpacity: 0.4,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.universe.glassWhiteLow,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.universe.glassBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (fact.title?.trim().isNotEmpty == true)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(25, 25, 25, 0),
+                child: Text(
+                  fact.title!.trim(),
+                  style: const TextStyle(
+                    color: AppColors.starGold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(25, 12, 25, 16),
               child: Text(
-                fact.title!.trim(),
-                style: const TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                fullText,
+                style: TextStyle(
+                  color: AppColors.universe.textStarlight,
+                  fontSize: 14,
+                  height: 1.5,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Text(
-              fullText,
-              style: TextStyle(
-                color: AppColors.universe.textStarlight,
-                fontSize: 14,
-                height: 1.5,
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: Colors.white10)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _ViewerReactionButton(
+                    factId: fact.id,
+                    lectureId: fact.lectureId!,
+                    reaction: 'like',
+                    currentReaction: currentReaction,
+                  ),
+                  const SizedBox(width: 12),
+                  _ViewerReactionButton(
+                    factId: fact.id,
+                    lectureId: fact.lectureId!,
+                    reaction: 'dislike',
+                    currentReaction: currentReaction,
+                  ),
+                ],
               ),
             ),
-          ),
-          Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.white10)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _ViewerReactionButton(
-                  factId: fact.id,
-                  lectureId: fact.lectureId!,
-                  reaction: 'like',
-                  currentReaction: currentReaction,
-                ),
-                const SizedBox(width: 12),
-                _ViewerReactionButton(
-                  factId: fact.id,
-                  lectureId: fact.lectureId!,
-                  reaction: 'dislike',
-                  currentReaction: currentReaction,
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

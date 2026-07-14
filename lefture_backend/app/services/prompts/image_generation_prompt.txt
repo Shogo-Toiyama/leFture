@@ -20,7 +20,13 @@ Flux is a fast, high-quality model, but it requires direct, highly physical inst
 **[STEP 1: Establish the Visual Filter (Global Art Direction)]**
 To make the cards feel like part of a single, premium educational series without restricting the physical subjects, establish a unified "Visual Filter." 
 - DO NOT use generic AI clichés (e.g., "cyberpunk", "hackers", "glowing neon", "bioluminescent flora", or "floating glowing orbs"). Think like a real human art director crafting an authentic aesthetic.
-- `base_color_palette`: Decide on a cohesive color scheme that will subtly tint or accent every image (e.g., "Warm terracotta and muted teal accents," "Monochromatic high-contrast sepia with vivid crimson highlights").
+- `base_color_palette`: Choose a sophisticated, high-contrast two-color palette (one main color + one accent). Examples of elegant duos to inspire you:
+  * Nordic (Slate gray with burnt orange accents)
+  * Retro (Mustard yellow with deep forest green accents)
+  * Matte Tech (Charcoal with matte electric yellow highlights)
+  * Earthy (Terracotta with dusty indigo accents)
+  * Art Deco (Espresso brown with brushed brass accents)
+  * Editorial (Prussian blue with warm peach accents)
 - `art_style_and_medium`: Define the rendering style (e.g., "Stop-motion claymation miniature," "Vintage 1960s Kodachrome film photograph," "Hyper-realistic tactile 3D render").
 - `atmosphere_and_lighting`: Define the emotional tone and lighting setup (e.g., "Crisp morning studio light with deep shadows," "Soft, dramatic rim lighting in a quiet atmosphere").
 - `flux_style_suffix`: Combine the above into a reusable style string (medium, color palette, lighting). This will be programmatically APPENDED to the end of all scene descriptions later.
@@ -43,9 +49,9 @@ EXAMPLE JSON (Notice how the scene description focuses purely on the physical fr
 {
   "global_art_direction": {
     "art_medium": "Miniature tilt-shift diorama made of felt and wood",
-    "base_color_palette": "Warm earthy tones with splashes of vibrant primary colors",
+    "base_color_palette": "Deep olive green with warm amber accents",
     "lighting_and_mood": "Soft, diffused morning sunlight, creating a cozy and organized atmosphere",
-    "flux_style_suffix": "A miniature tilt-shift diorama made of felt and wood, warm earthy tones with splashes of vibrant primary colors, soft diffused morning sunlight, cozy atmosphere, highly detailed macro photography"
+    "flux_style_suffix": "A miniature tilt-shift diorama made of felt and wood, deep olive green with warm amber accents, soft diffused morning sunlight, cozy atmosphere, highly detailed macro photography"
   },
   "image_prompts": [
     {

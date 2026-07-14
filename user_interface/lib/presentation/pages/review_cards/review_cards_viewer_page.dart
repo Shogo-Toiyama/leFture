@@ -43,6 +43,23 @@ class _ReviewCardItem {
   bool get isCover => card == null;
 }
 
+// Maps the shared transition [overall] progress (0..1) to a layer's own local
+// progress (0..1), staggering [stepIndex] of [totalSteps] so later layers
+// start (and finish) slightly after earlier ones, with some overlap so the
+// motion reads as one continuous cascade rather than separate steps.
+double _staggeredLocal(double overall, int stepIndex, int totalSteps) {
+  if (totalSteps <= 1) return overall;
+  const overlap = 0.5;
+  final windowWidth = (1.0 / totalSteps) * (1 + overlap);
+  final stepGap = (1.0 - windowWidth) / (totalSteps - 1);
+  final begin = stepIndex * stepGap;
+  final end = (begin + windowWidth).clamp(0.0, 1.0);
+  if (end <= begin) return overall >= end ? 1.0 : 0.0;
+  return Curves.easeInOut.transform(
+    ((overall - begin) / (end - begin)).clamp(0.0, 1.0),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Viewer Page
 // ---------------------------------------------------------------------------
@@ -59,28 +76,33 @@ class ReviewCardsViewerPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
-    final cardsAsync  = ref.watch(reviewCardsProvider(lectureId));
+    final cardsAsync = ref.watch(reviewCardsProvider(lectureId));
 
     final groups = useMemoized(() {
       final topics = topicsAsync.asData?.value ?? <LectureTopic>[];
-      final cards  = cardsAsync.asData?.value  ?? <ReviewCard>[];
+      final cards = cardsAsync.asData?.value ?? <ReviewCard>[];
       final map = <int, List<ReviewCard>>{};
       for (final c in cards) {
         map.putIfAbsent(c.topicNumber, () => []).add(c);
       }
-      return topics.map((t) => _ReviewTopicGroup(
-        topicNumber: t.index,
-        title: t.displayTitle,
-        cards: sortReviewCards(map[t.index] ?? []),
-        imagePath: t.imagePath,
-      )).toList();
+      return topics
+          .map(
+            (t) => _ReviewTopicGroup(
+              topicNumber: t.index,
+              title: t.displayTitle,
+              cards: sortReviewCards(map[t.index] ?? []),
+              imagePath: t.imagePath,
+            ),
+          )
+          .toList();
     }, [topicsAsync, cardsAsync]);
 
     if (cardsAsync.isLoading || topicsAsync.isLoading) {
       return Scaffold(
         backgroundColor: AppColors.paper.background,
         body: const Center(
-            child: CircularProgressIndicator(color: AppColors.deepGold)),
+          child: CircularProgressIndicator(color: AppColors.deepGold),
+        ),
       );
     }
 
@@ -147,20 +169,43 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     }
 
     final themeColor = course != null
-        ? CourseStyleHelper.hexToColor(course.color, fallback: AppColors.deepGold)
+        ? CourseStyleHelper.hexToColor(
+            course.color,
+            fallback: AppColors.deepGold,
+          )
         : AppColors.deepGold;
 
     final HSLColor hsl = HSLColor.fromColor(themeColor);
-    final textThemeColor = hsl.lightness > 0.65 ? hsl.withLightness(0.5).toColor() : themeColor;
+    final textThemeColor = hsl.lightness > 0.65
+        ? hsl.withLightness(0.5).toColor()
+        : themeColor;
 
-    final animationController =
-        useAnimationController(duration: const Duration(milliseconds: 350));
-    useAnimation(animationController);
-
-    final currentCardIndex  = useState<int>(initialIndex);
+    final animationController = useAnimationController(
+      duration: const Duration(milliseconds: 350),
+    );
+    final currentCardIndex = useState<int>(initialIndex);
     final previousCardIndex = useState<int>(initialIndex);
-    final isAnimating       = useState<bool>(false);
-    final isGoingForward    = useState<bool>(true);
+    final isAnimating = useState<bool>(false);
+    final isGoingForward = useState<bool>(true);
+
+    // Tracks whether the user currently has text selected inside the card.
+    // A tap that lands on top of an existing selection should just dismiss
+    // it, not also be treated as a page-navigation tap -- otherwise the
+    // navigation GestureDetector and SelectionArea fight over the same tap
+    // (navigating away mid-selection, or landing a selection on the card you
+    // just navigated to).
+    final hasSelection = useState<bool>(false);
+    // Rebuilt (and thus given a fresh GlobalKey) every time the current card
+    // changes. SelectableRegion's internal selection registrar doesn't
+    // survive having its descendant Text/RichText widgets torn down and
+    // remounted across navigations cleanly -- after even one navigation, the
+    // shared SelectableRegionState stops recognizing new selection gestures
+    // entirely, on every card, permanently. Forcing a full remount per card
+    // resets it to a known-good state instead of reusing the tainted one.
+    final selectionAreaKey = useMemoized(
+      () => GlobalKey<SelectionAreaState>(),
+      [currentCardIndex.value],
+    );
 
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -197,8 +242,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           : widgetRef.watch(artifactFileProvider(path)).asData?.value;
     }
 
-    final navigateTo =
-        useCallback((int newIndex, {bool immediate = false}) {
+    final navigateTo = useCallback((int newIndex, {bool immediate = false}) {
       if (isAnimating.value || newIndex == currentCardIndex.value) return;
       if (immediate) {
         currentCardIndex.value = newIndex;
@@ -226,7 +270,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         );
       }
       return _ContentCard(
-          card: item.card!, imageFile: imageFile, themeColor: textThemeColor);
+        card: item.card!,
+        imageFile: imageFile,
+        themeColor: textThemeColor,
+      );
     }
 
     final index = currentCardIndex.value.clamp(0, totalCards - 1);
@@ -252,80 +299,86 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-            // ── Row 1: Close button & Title ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.close, color: AppColors.paper.textInk),
-                    onPressed: () => context.pop(),
-                  ),
-                  Expanded(
-                    child: Text(
-                      topic.title,
-                      style: TextStyle(
-                        color: AppColors.paper.textInk,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              // ── Row 1: Close button & Title ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.close, color: AppColors.paper.textInk),
+                      onPressed: () => context.pop(),
+                    ),
+                    Expanded(
+                      child: Text(
+                        topic.title,
+                        style: TextStyle(
+                          color: AppColors.paper.textInk,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 48), // keeps title centered
-                ],
+                    const SizedBox(width: 48), // keeps title centered
+                  ],
+                ),
               ),
-            ),
-            // ── Row 2: Grid view button & Page counter ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.grid_view, color: AppColors.paper.textInk),
-                    onPressed: () => _showCardsListSheet(
-                      context,
-                      widgetRef,
-                      groups,
-                      groupStartIndex,
-                      imageFiles,
-                      flatItems,
-                      navigateTo,
-                      textThemeColor,
+              // ── Row 2: Grid view button & Page counter ──
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.grid_view,
+                        color: AppColors.paper.textInk,
+                      ),
+                      onPressed: () => _showCardsListSheet(
+                        context,
+                        widgetRef,
+                        groups,
+                        groupStartIndex,
+                        imageFiles,
+                        flatItems,
+                        navigateTo,
+                        textThemeColor,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'View List',
                     ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    tooltip: 'View List',
-                  ),
-                  Text(
-                    '${index + 1} / $totalCards',
-                    style: TextStyle(
-                      color: AppColors.paper.textPencil,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    Text(
+                      '${index + 1} / $totalCards',
+                      style: TextStyle(
+                        color: AppColors.paper.textPencil,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // ── Progress bars (Stories-style) ────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: List.generate(groups.length, (topicIdx) {
-                  final group = groups[topicIdx];
-                  final groupStart = groupStartIndex[topicIdx];
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      child: Row(
-                        children: List.generate(
-                          group.cards.length + 1,
-                          (cardIdx) {
+              // ── Progress bars (Stories-style) ────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: List.generate(groups.length, (topicIdx) {
+                    final group = groups[topicIdx];
+                    final groupStart = groupStartIndex[topicIdx];
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: Row(
+                          children: List.generate(group.cards.length + 1, (
+                            cardIdx,
+                          ) {
                             final absIdx = groupStart + cardIdx;
                             final isFilled = absIdx <= index;
                             final isActive = absIdx == index;
@@ -333,144 +386,266 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                               child: Container(
                                 height: 3,
                                 margin: const EdgeInsets.symmetric(
-                                    horizontal: 1),
+                                  horizontal: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isActive
                                       ? textThemeColor
                                       : isFilled
-                                          ? textThemeColor
-                                              .withValues(alpha: 0.55)
-                                          : Colors.white,
+                                      ? textThemeColor.withValues(alpha: 0.55)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
                             );
-                          },
+                          }),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Card area ────────────────────────────────────────────────
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapUp: (details) {
-                    final cardWidth = screenWidth - 32;
-                    if (details.localPosition.dx < cardWidth * 0.3) {
-                      if (currentCardIndex.value > 0) {
-                        navigateTo(currentCardIndex.value - 1);
-                      }
-                    } else {
-                      if (currentCardIndex.value < totalCards - 1) {
-                        navigateTo(currentCardIndex.value + 1);
-                      }
-                    }
-                  },
-                  onHorizontalDragEnd: (details) {
-                    if (details.primaryVelocity == null) return;
-                    if (details.primaryVelocity! < -300) {
-                      if (currentGroupIndex < groups.length - 1) {
-                        navigateTo(groupStartIndex[currentGroupIndex + 1]);
-                      }
-                    } else if (details.primaryVelocity! > 300) {
-                      if (currentGroupIndex > 0) {
-                        navigateTo(groupStartIndex[currentGroupIndex - 1]);
-                      }
-                    }
-                  },
-                  child: Builder(builder: (context) {
-                    if (isAnimating.value) {
-                      final progress = animationController.value;
-                      if (isGoingForward.value) {
-                        return Stack(children: [
-                          Positioned.fill(
-                            child: Transform.scale(
-                              scale: 0.92 + (0.08 * progress),
-                              child: Opacity(
-                                opacity: 0.5 + (0.5 * progress),
-                                child: buildCard(currentCardIndex.value),
-                              ),
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Transform.translate(
-                              offset:
-                                  Offset(-progress * screenWidth, 0),
-                              child: Transform.rotate(
-                                angle: -progress * 0.2,
-                                alignment: Alignment.bottomCenter,
-                                child: buildCard(
-                                    previousCardIndex.value),
-                              ),
-                            ),
-                          ),
-                        ]);
-                      } else {
-                        return Stack(children: [
-                          Positioned.fill(
-                            child: Transform.scale(
-                              scale: 1.0 - (0.08 * progress),
-                              child: Opacity(
-                                opacity: 1.0 - (0.5 * progress),
-                                child:
-                                    buildCard(previousCardIndex.value),
-                              ),
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Transform.translate(
-                              offset: Offset(
-                                  -(1.0 - progress) * screenWidth, 0),
-                              child: Transform.rotate(
-                                angle: -(1.0 - progress) * 0.2,
-                                alignment: Alignment.bottomCenter,
-                                child:
-                                    buildCard(currentCardIndex.value),
-                              ),
-                            ),
-                          ),
-                        ]);
-                      }
-                    }
-                    return buildCard(currentCardIndex.value);
+                    );
                   }),
                 ),
               ),
-            ),
+              const SizedBox(height: 12),
 
-            // ── Bottom nav hint ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chevron_left,
-                      color: AppColors.paper.textPencil, size: 20),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Tap left / right  •  Swipe to change topic',
-                    style: TextStyle(
-                        color: AppColors.paper.textPencil, fontSize: 12),
+              // ── Card area ────────────────────────────────────────────────
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SelectionArea(
+                    key: selectionAreaKey,
+                    contextMenuBuilder: (context, selectableRegionState) =>
+                        const SizedBox.shrink(),
+                    onSelectionChanged: (content) {
+                      hasSelection.value =
+                          content != null && content.plainText.isNotEmpty;
+                    },
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapUp: (details) {
+                        if (hasSelection.value) {
+                          // A tap while text is selected just dismisses the
+                          // selection; it shouldn't also navigate.
+                          selectionAreaKey.currentState?.selectableRegion
+                              .clearSelection();
+                          return;
+                        }
+                        final cardWidth = screenWidth - 32;
+                        if (details.localPosition.dx < cardWidth * 0.3) {
+                          if (currentCardIndex.value > 0) {
+                            navigateTo(currentCardIndex.value - 1);
+                          }
+                        } else {
+                          if (currentCardIndex.value < totalCards - 1) {
+                            navigateTo(currentCardIndex.value + 1);
+                          }
+                        }
+                      },
+                      onHorizontalDragEnd: (details) {
+                        if (hasSelection.value) return;
+                        if (details.primaryVelocity == null) return;
+                        if (details.primaryVelocity! < -300) {
+                          if (currentGroupIndex < groups.length - 1) {
+                            navigateTo(groupStartIndex[currentGroupIndex + 1]);
+                          }
+                        } else if (details.primaryVelocity! > 300) {
+                          final currentTopicCoverIndex =
+                              groupStartIndex[currentGroupIndex];
+                          if (currentCardIndex.value > currentTopicCoverIndex) {
+                            // Jump to the cover of the current topic if we are on a content card
+                            navigateTo(currentTopicCoverIndex);
+                          } else if (currentGroupIndex > 0) {
+                            // Jump to the cover of the previous topic only if we are already on the current cover
+                            navigateTo(groupStartIndex[currentGroupIndex - 1]);
+                          }
+                        }
+                      },
+                      child: Builder(
+                        builder: (context) {
+                          // Pre-warm the widget cache for both neighbors so the
+                          // Markdown parse / decoration setup for the next card
+                          // has already happened by the time it's actually
+                          // needed, instead of paying that cost synchronously
+                          // at the start of the transition.
+                          if (currentCardIndex.value > 0) {
+                            buildCard(currentCardIndex.value - 1);
+                          }
+                          if (currentCardIndex.value < totalCards - 1) {
+                            buildCard(currentCardIndex.value + 1);
+                          }
+
+                          final currentCard = buildCard(currentCardIndex.value);
+
+                          return AnimatedBuilder(
+                            animation: animationController,
+                            builder: (context, _) {
+                              if (isAnimating.value) {
+                                final progress = animationController.value;
+                                final oldIndex = previousCardIndex.value;
+                                final newIndex = currentCardIndex.value;
+                                // Multi-card swipes (e.g. jumping straight to
+                                // the next/previous topic cover) skip over
+                                // several cards at once. Represent each
+                                // skipped card (max 5, since topics are a
+                                // fixed 5 cards) as its own real, stacked
+                                // layer instead of a single generic
+                                // transition. Layer 0 is always [oldIndex] and
+                                // the last layer is always [newIndex] exactly
+                                // -- middle layers are sampled proportionally
+                                // when the real distance is larger than the
+                                // number of layer slots, so the animation
+                                // never lands anywhere but the true target.
+                                final totalDistance = (newIndex - oldIndex)
+                                    .abs();
+                                final skipCount = totalDistance.clamp(1, 5);
+                                final sign = newIndex >= oldIndex ? 1 : -1;
+                                final layers = <Widget>[
+                                  for (var d = 0; d <= skipCount; d++)
+                                    buildCard(
+                                      (d == skipCount
+                                              ? newIndex
+                                              : oldIndex +
+                                                    sign *
+                                                        ((d * totalDistance) ~/
+                                                            skipCount))
+                                          .clamp(0, totalCards - 1),
+                                    ),
+                                ];
+
+                                if (isGoingForward.value) {
+                                  // Only the final destination layer grows in
+                                  // from underneath; the cards flying past on
+                                  // top of it all stay the same size as each
+                                  // other (only their position/rotation
+                                  // changes) so the stack doesn't look like it
+                                  // shrinks as it goes deeper.
+                                  final finalRestScale = 1.0 - 0.08 * skipCount;
+                                  return Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: Transform.scale(
+                                          scale:
+                                              finalRestScale +
+                                              (1.0 - finalRestScale) * progress,
+                                          child: Opacity(
+                                            opacity: 0.5 + (0.5 * progress),
+                                            child: layers[skipCount],
+                                          ),
+                                        ),
+                                      ),
+                                      for (var d = skipCount - 1; d >= 0; d--)
+                                        Positioned.fill(
+                                          child: Transform.translate(
+                                            offset: Offset(
+                                              -_staggeredLocal(
+                                                    progress,
+                                                    d,
+                                                    skipCount,
+                                                  ) *
+                                                  screenWidth,
+                                              0,
+                                            ),
+                                            child: Transform.rotate(
+                                              angle:
+                                                  -_staggeredLocal(
+                                                    progress,
+                                                    d,
+                                                    skipCount,
+                                                  ) *
+                                                  0.2,
+                                              alignment: Alignment.bottomCenter,
+                                              child: layers[d],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                } else {
+                                  return Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: Transform.scale(
+                                          scale: 1.0 - (0.08 * progress),
+                                          child: Opacity(
+                                            opacity: 1.0 - (0.5 * progress),
+                                            child: layers[0],
+                                          ),
+                                        ),
+                                      ),
+                                      for (var d = 1; d <= skipCount; d++)
+                                        Positioned.fill(
+                                          child: Transform.translate(
+                                            offset: Offset(
+                                              -(1.0 -
+                                                      _staggeredLocal(
+                                                        progress,
+                                                        d - 1,
+                                                        skipCount,
+                                                      )) *
+                                                  screenWidth,
+                                              0,
+                                            ),
+                                            child: Transform.rotate(
+                                              angle:
+                                                  -(1.0 -
+                                                      _staggeredLocal(
+                                                        progress,
+                                                        d - 1,
+                                                        skipCount,
+                                                      )) *
+                                                  0.2,
+                                              alignment: Alignment.bottomCenter,
+                                              child: layers[d],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                }
+                              }
+                              return currentCard;
+                            },
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right,
-                      color: AppColors.paper.textPencil, size: 20),
-                ],
+                ),
               ),
-            ),
-          ],
+
+              // ── Bottom nav hint ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.chevron_left,
+                      color: AppColors.paper.textPencil,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tap left / right  •  Swipe to change topic',
+                      style: TextStyle(
+                        color: AppColors.paper.textPencil,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right,
+                      color: AppColors.paper.textPencil,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showCardsListSheet(
     BuildContext context,
@@ -496,7 +671,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.paper.background,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 children: [
@@ -510,7 +687,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -523,7 +703,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: AppColors.paper.textInk),
+                          icon: Icon(
+                            Icons.close,
+                            color: AppColors.paper.textInk,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -558,7 +741,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                 scrollDirection: Axis.horizontal,
                                 physics: const BouncingScrollPhysics(),
                                 itemCount: group.cards.length + 1,
-                                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 12),
                                 itemBuilder: (context, tileIdx) {
                                   if (tileIdx == 0) {
                                     return GestureDetector(
@@ -568,17 +752,23 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                       },
                                       child: SizedBox(
                                         width: 115,
-                                        child: _CoverCardTile(title: group.title, imageFile: imageFile),
+                                        child: _CoverCardTile(
+                                          title: group.title,
+                                          imageFile: imageFile,
+                                        ),
                                       ),
                                     );
                                   }
                                   final card = group.cards[tileIdx - 1];
-                                  final preview = card.title?.trim().isNotEmpty == true
+                                  final preview =
+                                      card.title?.trim().isNotEmpty == true
                                       ? card.title!.trim()
                                       : plainTextPreview(
                                           card.cardContent.isNotEmpty
-                                              ? (card.cardContent.first.text ?? '')
-                                              : '');
+                                              ? (card.cardContent.first.text ??
+                                                    '')
+                                              : '',
+                                        );
                                   return GestureDetector(
                                     onTap: () {
                                       Navigator.pop(context);
@@ -592,27 +782,44 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                           colors: [
-                                            Color.lerp(AppColors.paper.surface, themeColor, 0.1)!,
+                                            Color.lerp(
+                                              AppColors.paper.surface,
+                                              themeColor,
+                                              0.1,
+                                            )!,
                                             AppColors.paper.surface,
                                           ],
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                            color: Colors.black.withValues(alpha: 0.07)),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.07,
+                                          ),
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.03),
+                                            color: Colors.black.withValues(
+                                              alpha: 0.03,
+                                            ),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),
                                         ],
                                       ),
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          if (card.heroEmoji?.trim().isNotEmpty == true) ...[
-                                            Text(card.heroEmoji!.trim(),
-                                                style: const TextStyle(fontSize: 26)),
+                                          if (card.heroEmoji
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true) ...[
+                                            Text(
+                                              card.heroEmoji!.trim(),
+                                              style: const TextStyle(
+                                                fontSize: 26,
+                                              ),
+                                            ),
                                             const SizedBox(height: 6),
                                           ],
                                           Text(
@@ -697,10 +904,7 @@ class _CoverCard extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               color: Colors.white.withValues(alpha: 0.72),
               child: Text(
                 title,
@@ -739,11 +943,13 @@ class _ContentCard extends StatelessWidget {
       padding: EdgeInsets.all(hasImage ? 20 : 28),
       child: Column(
         children: [
-          Text(
-            card.heroEmoji?.trim().isNotEmpty == true
-                ? card.heroEmoji!.trim()
-                : '💡',
-            style: const TextStyle(fontSize: 56),
+          SelectionContainer.disabled(
+            child: Text(
+              card.heroEmoji?.trim().isNotEmpty == true
+                  ? card.heroEmoji!.trim()
+                  : '💡',
+              style: const TextStyle(fontSize: 56),
+            ),
           ),
           const SizedBox(height: 24),
           if (card.title?.trim().isNotEmpty == true) ...[
@@ -759,10 +965,12 @@ class _ContentCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
           ],
-          ...card.cardContent.map((block) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ReviewCardBlockView(block: block, themeColor: themeColor),
-              )),
+          ...card.cardContent.map(
+            (block) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ReviewCardBlockView(block: block, themeColor: themeColor),
+            ),
+          ),
         ],
       ),
     );
@@ -796,8 +1004,7 @@ class _ContentCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        image:
-            DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover),
+        image: DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -832,8 +1039,7 @@ class _ReviewCardBlockView extends StatelessWidget {
   final ReviewCardBlock block;
   final Color themeColor;
 
-  MarkdownStyleSheet _styleSheet(BuildContext context,
-      {bool italic = false}) {
+  MarkdownStyleSheet _styleSheet(BuildContext context, {bool italic = false}) {
     final baseColor = AppColors.paper.textInk;
     final style = TextStyle(
       color: baseColor,
@@ -849,7 +1055,9 @@ class _ReviewCardBlockView extends StatelessWidget {
       ),
       em: style.copyWith(fontStyle: FontStyle.italic),
       code: style.copyWith(
-          fontFamily: 'monospace', backgroundColor: Colors.transparent),
+        fontFamily: 'monospace',
+        backgroundColor: Colors.transparent,
+      ),
       listBullet: style.copyWith(color: themeColor),
       textAlign: WrapAlignment.center,
     );
@@ -860,25 +1068,28 @@ class _ReviewCardBlockView extends StatelessWidget {
     switch (block.type) {
       case 'quote':
         return Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
             border: Border(left: BorderSide(color: themeColor, width: 3)),
           ),
           child: MarkdownBody(
             data: stripSidCitations(block.text ?? ''),
-            styleSheet: _styleSheet(context, italic: true)
-                .copyWith(textAlign: WrapAlignment.start),
+            styleSheet: _styleSheet(
+              context,
+              italic: true,
+            ).copyWith(textAlign: WrapAlignment.start),
           ),
         );
       case 'list':
         final items = block.items ?? const <String>[];
-        final markdown =
-            items.map((item) => '- ${stripSidCitations(item)}').join('\n');
+        final markdown = items
+            .map((item) => '- ${stripSidCitations(item)}')
+            .join('\n');
         return MarkdownBody(
           data: markdown,
-          styleSheet:
-              _styleSheet(context).copyWith(textAlign: WrapAlignment.start),
+          styleSheet: _styleSheet(
+            context,
+          ).copyWith(textAlign: WrapAlignment.start),
         );
       case 'paragraph':
       default:
@@ -919,8 +1130,7 @@ class _CoverCardTile extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               color: Colors.white.withValues(alpha: 0.75),
               child: Text(
                 title,

@@ -9,6 +9,7 @@ import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/glowing_rainbow_border.dart';
 
 class FunFactsCarousel extends ConsumerStatefulWidget {
   const FunFactsCarousel({super.key});
@@ -160,86 +161,96 @@ class _FunFactCard extends ConsumerWidget {
       onTap: () => fact.lectureId != null
           ? context.go('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${fact.lectureId}')
           : context.push(AppRoutes.coursesRootPath),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppColors.universe.glassWhiteLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.universe.glassBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 一番上の行にFunFactsのタイトルを表示
-            if (fact.title?.trim().isNotEmpty == true)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text(
-                  fact.title!.trim(),
-                  style: TextStyle(
-                    color: AppColors.starGold,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            // 中部: Fact内容
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Center(
-                  child: Text(
-                    mainText,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: GlowingRainbowBorder(
+          borderRadius: 20.0,
+          borderWidth: 1.5,
+          glowRadius: 6.0,
+          animate: true,
+          innerGlow: true,
+          glowOpacity: 0.2,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.universe.glassWhiteLow,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.universe.glassBorder),
             ),
-            // 下部: メタデータ & リアクション
-            Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.white12)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 一番上の行にFunFactsのタイトルを表示
+                if (fact.title?.trim().isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Text(
-                      lectureTitle,
+                      fact.title!.trim(),
                       style: TextStyle(
-                        color: AppColors.universe.textComet,
-                        fontSize: 11,
+                        color: AppColors.starGold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  _ReactionButton(
-                    factId: fact.id,
-                    reaction: 'like',
-                    currentReaction: fact.reaction,
+                // 中部: Fact内容
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Center(
+                      child: Text(
+                        mainText,
+                        style: TextStyle(
+                          color: AppColors.universe.textStarlight,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _ReactionButton(
-                    factId: fact.id,
-                    reaction: 'dislike',
-                    currentReaction: fact.reaction,
+                ),
+                // 下部: メタデータ & リアクション
+                Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.white12)),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          lectureTitle,
+                          style: TextStyle(
+                            color: AppColors.universe.textComet,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      _ReactionButton(
+                        factId: fact.id,
+                        reaction: 'like',
+                        currentReaction: fact.reaction,
+                      ),
+                      const SizedBox(width: 8),
+                      _ReactionButton(
+                        factId: fact.id,
+                        reaction: 'dislike',
+                        currentReaction: fact.reaction,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
