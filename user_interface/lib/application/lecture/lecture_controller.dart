@@ -141,13 +141,13 @@ class LectureController extends _$LectureController {
 
   // --- Lecture Actions (Moved from ViewerController) ---
 
-  /// 分析を開始する
-  Future<void> startAnalysis(String lectureId) async {
+  /// 分析を開始する。[force]はStart Overなど明示的な再実行時のみtrueにする。
+  Future<void> startAnalysis(String lectureId, {bool force = false}) async {
     final link = ref.keepAlive();
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(jobRepositoryProvider).startAnalysis(lectureId: lectureId);
+      await ref.read(jobRepositoryProvider).startAnalysis(lectureId: lectureId, force: force);
     });
 
     link.close();

@@ -159,6 +159,45 @@ def _parse_supabase_timestamp(raw: str) -> "datetime | None":
         return None
 
 
+async def _recover_stuck_reviewing_chunks(supabase, lecture_id: str, all_chunks: list, logger: TaskLogger):
+    """
+    trigger_sentence_review_for_batch_if_ready は4チャンクをアトミックに
+    REVIEWING にロックしてからLLMレビューを行い、成功時はREVIEWED、例外時は
+    TRANSCRIBED に戻す設計になっている。しかしプロセスが例外を投げずに
+    強制終了された場合（デプロイでの旧リビジョン強制終了、OOM、クラッシュ等）は
+    この巻き戻しが実行されず、行が REVIEWING のまま永久に取り残されてしまう。
+    さらに厄介なのは、REVIEWING の行は CHECK_AND_ASSEMBLE の「処理済みチャンク」
+    カウント（TRANSCRIBED/REVIEWEDのみ）に入らないため、それ以降のバッチも
+    「前のバッチがREVIEWEDになるまで待つ」ゲートに引っかかって全体が詰まる。
+    ここで CHUNK_STALE_TIMEOUT_MINUTES 以上 REVIEWING のまま動きが無い行を
+    検出し、TRANSCRIBED に戻す（既に文字起こし自体は完了しているため再enqueueは
+    不要。次のCHECK_AND_ASSEMBLEの「端数のSentence Review」が自然に拾い直す）。
+    """
+    threshold = datetime.now(timezone.utc) - timedelta(minutes=CHUNK_STALE_TIMEOUT_MINUTES)
+
+    stuck_reviewing_ids = []
+    for c in all_chunks:
+        if c.get("status") != "REVIEWING":
+            continue
+        updated_at = _parse_supabase_timestamp(c.get("updated_at") or "")
+        if updated_at and updated_at < threshold:
+            stuck_reviewing_ids.append(c["id"])
+
+    if not stuck_reviewing_ids:
+        return
+
+    # アトミックにリセット（他プロセスが直前にREVIEWEDへ完了させた場合はeq("status","REVIEWING")で弾かれる）
+    reset_res = await asyncio.to_thread(
+        lambda: supabase.table("lecture_transcripts")
+            .update({"status": "TRANSCRIBED", "updated_at": datetime.now().isoformat()})
+            .in_("id", stuck_reviewing_ids)
+            .eq("status", "REVIEWING")
+            .execute()
+    )
+    for c in (reset_res.data or []):
+        logger.log(f"🩹 Recovered stuck REVIEWING chunk {c.get('chunk_index')} (reset to TRANSCRIBED for re-review)")
+
+
 async def _recover_stuck_chunks(supabase, lecture_id: str, all_chunks: list, uid: str, logger: TaskLogger):
     """
     CHECK_AND_ASSEMBLEがチャンクの完了を待っている最中に呼ばれる。
@@ -170,7 +209,11 @@ async def _recover_stuck_chunks(supabase, lecture_id: str, all_chunks: list, uid
     諦めてしまった場合、それ以降は誰もこのチャンクを再試行しないため
     （process_transcribe_chunk側のクレームはCloud Tasksがまだリトライしている間しか
     効かない）、ここが最後の回収役になる。
+    REVIEWING で詰まったチャンクは _recover_stuck_reviewing_chunks が別途回収する
+    （再enqueueすべきは文字起こしではなく再レビューのため、対象を分けている）。
     """
+    await _recover_stuck_reviewing_chunks(supabase, lecture_id, all_chunks, logger)
+
     threshold = datetime.now(timezone.utc) - timedelta(minutes=CHUNK_STALE_TIMEOUT_MINUTES)
 
     stuck_chunks = []

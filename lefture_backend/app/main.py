@@ -94,6 +94,11 @@ class WorkerPayload(BaseModel):
 class StartAnalysisRequest(BaseModel):
     lecture_id: str
     expected_chunks: int
+    # False(既定): アップロード完了後の自動発火用。既にこのlectureに対する
+    # 未完了(!=COMPLETED)Jobがあれば新規作成せず、その既存Job IDを冪等に返す。
+    # True: 「Start Over」ボタンなど、ユーザーが明示的に選んだ再実行専用。
+    # 既存の未完了Jobをすべてキャンセルしてから新しいJobを作り直す(従来通りの挙動)。
+    force: bool = False
 
 class RetryTaskRequest(BaseModel):
     task_id: str
@@ -171,14 +176,30 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             detail=f"Failed to verify lecture course association: {str(e)}"
         )
 
-    # 3.6 同じlecture_idの古いjobがまだ残っていれば、その未完了タスクを無効化する。
+    # 3.6 同じlecture_idの未完了(!=COMPLETED)jobが既にあるか確認する。
+    old_jobs_res = admin_client.table("processing_jobs").select("id")\
+        .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED")\
+        .order("created_at", desc=True).execute()
+    old_jobs = old_jobs_res.data or []
+
+    # force=False(自動発火)で既に未完了jobがある場合は、新規作成せず既存jobを
+    # 冪等に返す。アップロード完了直後の自動発火は、チャンクのアップロード
+    # リトライ(クライアント側は成功をACKできず再送するが、サーバー側は既に
+    # 成功しているケース)によって複数回呼ばれ得るため、ここでガードしないと
+    # 同じlectureに対して二重にjob/taskが作られてしまう(過去に実際に発生した)。
+    # 「Start Over」ボタン等、ユーザーが明示的に再実行を選んだ場合はforce=Trueで
+    # 呼ばれ、以下のキャンセル→新規作成を素通りする。
+    if old_jobs and not payload.force:
+        existing_job_id = old_jobs[0]["id"]
+        print(f"⏭️ Active job already exists for lecture {payload.lecture_id} ({existing_job_id}). Returning existing job (idempotent no-op).")
+        return {"message": "Analysis already in progress", "job_id": existing_job_id}
+
+    # 3.7 古いjobのタスクを無効化する(force=Trueの場合のみここに到達)。
     # R2上のパスは {uid}/{lecture_id}/... のみで組まれておりjob_idを含まないため、
     # 古いjobのタスクが後から（Cloud Tasksの遅延リトライ等で）動き出すと、新しいjobの
     # 書き込みと衝突してデータが壊れる。CANCELLEDは orchestrator/patrol のどちらも
     # 拾わない終端ステータスなので、これだけで再開を防げる。
-    old_jobs_res = admin_client.table("processing_jobs").select("id")\
-        .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED").execute()
-    for old_job in (old_jobs_res.data or []):
+    for old_job in old_jobs:
         admin_client.table("processing_tasks").update({
             "status": "CANCELLED",
             "updated_at": datetime.now().isoformat(),
@@ -905,6 +926,68 @@ async def _patrol_reap_stale_dag_tasks() -> dict:
     return {"recovered_tasks": recovered, "threshold_minutes": STALE_TASK_TIMEOUT_MINUTES}
 
 
+async def _patrol_advance_stalled_dags() -> dict:
+    """
+    タスクがCOMPLETEDになった瞬間、Supabaseの Database Webhook 経由で
+    /webhook/orchestrator が起こされ、依存が満たされた後続タスクをQUEUEDに
+    してenqueueする設計になっている。しかしこのWebhook配信は best-effort
+    であり（Supabase側のリトライ保証は限定的、デプロイ中の一瞬の応答不良等でも
+    容易に失われる）、1回でも配信が失敗すると、それ以降は誰も「次に実行可能な
+    タスクがないか」を再チェックしないため、依存関係がとっくに満たされている
+    のにPENDINGのまま永久に取り残されるタスクが発生し得る。
+    _patrol_reap_stale_dag_tasksはQUEUED/RUNNINGで詰まったタスクしか救えず
+    （このケースはそもそもQUEUEDにすら到達していない）、このケースをカバー
+    できない。ここではジョブ単位で「依存が全て満たされているのにPENDINGの
+    ままのタスク」を直接探し、/webhook/orchestrator と全く同じ判定ロジックで
+    QUEUED化＆enqueueまで行う、Webhook配信ミスに対するバックストップ。
+    """
+    admin_client = get_supabase_client()
+
+    active_jobs_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs")
+            .select("id").in_("status", ["PENDING", "RUNNING"]).execute()
+    )
+    job_ids = [j["id"] for j in (active_jobs_res.data or [])]
+
+    advanced = 0
+    for job_id in job_ids:
+        all_tasks_res = await asyncio.to_thread(
+            lambda job_id=job_id: admin_client.table("processing_tasks")
+                .select("*").eq("job_id", job_id).execute()
+        )
+        all_tasks = all_tasks_res.data or []
+        completed_types = {t["task_type"] for t in all_tasks if t["status"] == "COMPLETED"}
+
+        ready_tasks = []
+        for t in all_tasks:
+            if t["status"] != "PENDING":
+                continue
+            deps = t.get("dependencies") or []
+            deps = json.loads(deps) if isinstance(deps, str) else deps
+            if all(d in completed_types for d in deps):
+                ready_tasks.append(t)
+
+        for task in ready_tasks:
+            # orchestrator_webhookと同じく、QUEUEDへの遷移をeq("status","PENDING")で
+            # アトミックに行い、ちょうど本物のWebhookが同時に処理していた場合の
+            # 二重enqueueを防ぐ。
+            update_res = await asyncio.to_thread(
+                lambda task=task: admin_client.table("processing_tasks")
+                    .update({"status": "QUEUED", "updated_at": datetime.now().isoformat()})
+                    .eq("id", task["id"]).eq("status", "PENDING").execute()
+            )
+            if not update_res.data:
+                continue
+            try:
+                await enqueue_task(EnqueuePayload(job_id=job_id, task_id=task["id"], task_type=task["task_type"]))
+                advanced += 1
+                print(f"🩹 Patrol advanced stalled task {task['task_type']} (job {job_id}) — orchestrator webhook was likely missed.")
+            except Exception as e:
+                print(f"⚠️ Patrol failed to enqueue stalled task {task['task_type']}: {e}")
+
+    return {"advanced_tasks": advanced}
+
+
 async def _patrol_fail_stuck_jobs() -> dict:
     """
     /worker/* の即時判定(_run_worker_task内、X-CloudTasks-TaskRetryCountを見て
@@ -1065,6 +1148,7 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
 
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
+    ("advance_stalled_dags", _patrol_advance_stalled_dags),
     ("fail_stuck_jobs", _patrol_fail_stuck_jobs),
     ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
     ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),

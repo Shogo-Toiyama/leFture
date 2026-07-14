@@ -48,7 +48,7 @@ class ProcessingView extends HookConsumerWidget {
 
       restartState.value = true;
       try {
-        await ref.read(lectureControllerProvider.notifier).startAnalysis(lectureId);
+        await ref.read(lectureControllerProvider.notifier).startAnalysis(lectureId, force: true);
       } finally {
         if (context.mounted) restartState.value = false;
       }

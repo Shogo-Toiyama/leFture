@@ -95,7 +95,11 @@ class JobRepository {
   /// アップロード完了後の自動発火(upload_manager.dart)と同じエンドポイントを叩く。
   /// expected_chunksは、既にアップロード済みのチャンク数(lecture_transcripts)から
   /// 算出する — この呼び出しはNotStartedView（音声アップロード済み）からのみ行われるため。
-  Future<void> startAnalysis({required String lectureId}) async {
+  /// [force] は「Start Over」など、ユーザーが明示的に再実行を選んだ場合のみ
+  /// trueにする。既存の未完了Jobをキャンセルして新しいJobを作り直す。
+  /// false(既定)の場合、既に未完了Jobがあればサーバー側が新規作成せず既存
+  /// Jobを返す(冪等)。
+  Future<void> startAnalysis({required String lectureId, bool force = false}) async {
     final expectedChunks = await _supabase
         .from('lecture_transcripts')
         .count()
@@ -113,7 +117,11 @@ class JobRepository {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $jwt',
       },
-      body: jsonEncode({'lecture_id': lectureId, 'expected_chunks': expectedChunks}),
+      body: jsonEncode({
+        'lecture_id': lectureId,
+        'expected_chunks': expectedChunks,
+        'force': force,
+      }),
     ).timeout(networkTimeout);
 
     if (response.statusCode != 200 && response.statusCode != 202) {
