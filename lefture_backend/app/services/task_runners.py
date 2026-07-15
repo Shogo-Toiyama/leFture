@@ -657,6 +657,31 @@ async def _maybe_wake_check_and_assemble(supabase, lecture_id: str, uid: str, lo
         logger.log(f"⚠️ Failed to wake CHECK_AND_ASSEMBLE: {e}")
 
 
+def _aggregate_billing_records(records: list) -> list:
+    """
+    個々のCostRecordを (task_type, dimension, resource) 単位で合算する。
+    チャンク数分(数百件)の個別記録をそのままJSON化するとresult_payloadが
+    肥大化し、Supabase Database Webhook(pg_net)の固定10秒タイムアウトに
+    引っかかって配信が失われる(実際に起きた不具合)。合計金額の正しさは
+    保ったまま、内訳を「どのタスク種別が・どのリソースに・合計いくら」の
+    粒度まで圧縮する。
+    """
+    from app.services.helpers.llm_unified import CostRecord
+
+    grouped: dict[tuple, CostRecord] = {}
+    for r in records:
+        key = (r.task_type, r.dimension, r.resource)
+        agg = grouped.get(key)
+        if agg is None:
+            agg = CostRecord(dimension=r.dimension, resource=r.resource, usage={}, cost_usd=0.0, task_type=r.task_type, note=None)
+            grouped[key] = agg
+        agg.cost_usd += r.cost_usd
+        for k, v in (r.usage or {}).items():
+            agg.usage[k] = agg.usage.get(k, 0) + v
+
+    return list(grouped.values())
+
+
 # ---------------------------------------------------------
 # 2. Check and Assemble (文字起こしの待ち合わせ＆組み立て)
 # ---------------------------------------------------------
@@ -802,8 +827,21 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
                 record = CostRecord(**r_data)
                 billing.records.append(record)
 
-        result_payload = {"transcript_json_path": remote_transcript_path, "billing_records": [vars(r) for r in billing.records]}
-        
+        # ★ ここでチャンクごとの個別記録(178チャンク×2件前後 = 数百件)をそのまま
+        # result_payloadに書き込んでいたのが原因で、result_payloadが100KB超に
+        # 肥大化していた。processing_tasksのUPDATEに反応するSupabase Database
+        # Webhook(pg_net)は更新後の行全体をペイロードとして送るため、この行だけ
+        # 極端に大きくなり、pg_netの固定10秒タイムアウトに引っかかって配信が
+        # 失われ、CORE_EXTRACTION以降が一切起動しなくなる不具合の直接原因だった
+        # (実測: 161,251 bytes / 794レコード)。
+        # 個別チャンクの生データは lecture_transcripts.billing_records に残るため
+        # 失われない。ここでは(task_type, dimension, resource)単位で合算し、
+        # FINALIZE_JOBが後で読む合計金額の正しさは保ったまま件数だけ大幅に減らす。
+        aggregated_records = _aggregate_billing_records(billing.records)
+
+        result_payload = {"transcript_json_path": remote_transcript_path, "billing_records": [vars(r) for r in aggregated_records]}
+        logger.log(f"💰 Aggregated {len(billing.records)} billing records down to {len(aggregated_records)} for result_payload ({len(json.dumps(result_payload))} bytes).")
+
         await _update_task_status(task_id, "COMPLETED", payload=result_payload)
         logger.log(f"✅ CHECK_AND_ASSEMBLE Completed!")
         logger.save_to_r2(storage_service)

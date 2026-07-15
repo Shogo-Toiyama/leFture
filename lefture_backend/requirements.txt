@@ -4,15 +4,12 @@ python-dotenv
 python-multipart
 supabase
 requests
-groq
 google-genai
 openai
 tiktoken
 google-cloud-tasks
 nltk
 pydub
-onnxruntime
-numpy
 httpx
 boto3
 litellm

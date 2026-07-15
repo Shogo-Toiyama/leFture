@@ -5,7 +5,6 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     git \
-    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # 作業ディレクトリ設定
@@ -18,7 +17,6 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN python -m nltk.downloader punkt punkt_tab
-RUN wget -qO silero_vad.onnx https://github.com/snakers4/silero-vad/raw/master/src/silero_vad/data/silero_vad.onnx
 
 # コードをコピー
 COPY . .
