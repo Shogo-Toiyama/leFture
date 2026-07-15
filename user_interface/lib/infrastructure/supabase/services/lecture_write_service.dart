@@ -30,7 +30,7 @@ class LectureWriteService {
       // 永続化しない）
       'title': (title != null && title.trim().isNotEmpty) ? title.trim() : null,
       // 未入力（または過去の互換性等でnull）の場合は現在時刻にフォールバックする
-      'lecture_datetime': (lectureDateTimeUtc ?? DateTime.now().toUtc()).toIso8601String(),
+      'lecture_datetime': (lectureDateTimeUtc?.toUtc() ?? DateTime.now().toUtc()).toIso8601String(),
     };
 
     await _client.from('lectures').upsert(
