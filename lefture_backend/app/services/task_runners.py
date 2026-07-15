@@ -464,6 +464,15 @@ async def trigger_sentence_review_for_batch_if_ready(
             await asyncio.to_thread(_write_reviewed_chunks_sync)
             logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB (costs allocated)!")
 
+            # ★ 「全チャンクが揃った」を成立させ得るイベントは2種類ある:
+            # (a) 個々のチャンクの文字起こし完了(process_transcribe_chunk側で呼んでいる)
+            # (b) このバッチのレビュー完了(TRANSCRIBED→REVIEWEDへの遷移もカウント対象)
+            # 最後のチャンクが先にTRANSCRIBEDになっても、直前のバッチがまだ
+            # REVIEWING中だとその時点では「揃った」と判定されない。その後(b)で
+            # このバッチがREVIEWEDになって初めて揃うケースがあるため、ここでも
+            # 起こす。
+            await _maybe_wake_check_and_assemble(supabase, lecture_id, uid, logger)
+
             # 4. カスケードトリガー: 自分が完了したので、次のバッチが準備完了なら連鎖的にレビューを実行する
             next_batch_start = batch_start + 4
             logger.log(f"🔗 Cascade triggering Sentence Review check for next batch {next_batch_start}...")
