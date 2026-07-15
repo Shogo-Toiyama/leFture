@@ -691,6 +691,62 @@ def _aggregate_billing_records(records: list) -> list:
     return list(grouped.values())
 
 
+def _log_chunk_state_snapshot(logger: TaskLogger, all_chunks: list, expected_chunks: int):
+    """
+    CHECK_AND_ASSEMBLE周りはPROCESSING/TRANSCRIBING/TRANSCRIBED/REVIEWING/
+    REVIEWED/ERRORという状態遷移が複雑に絡み合い、エラーを吐かずに中途半端な
+    状態のまま止まる不具合が起きやすい箇所。run_check_and_assemble_transcript_task
+    が呼ばれるたびに(イベント駆動のwakeでもpatrolの強制起こしでも)必ずこれを
+    呼び、その時点の全チャンクの状態を詳細にログへ残す。事後にログだけを見て
+    「どのchunk_indexが・どの状態で・どれくらいの時間・止まっていたか」が
+    一目で追えるようにするための計測用。挙動は一切変えない。
+    """
+    from collections import Counter
+    now = datetime.now(timezone.utc)
+
+    status_counts = Counter(c.get("status") for c in all_chunks)
+    logger.log(f"🔬 [ChunkState] {len(all_chunks)} row(s) / expected {expected_chunks}. Status histogram: {dict(status_counts)}")
+
+    # 期待されるchunk_indexの欠番・重複検出(取りこぼし/二重挿入の疑いを即座に見える化)
+    seen_indices: dict[int, list] = {}
+    for c in all_chunks:
+        seen_indices.setdefault(c.get("chunk_index"), []).append(c.get("id"))
+    missing = [i for i in range(expected_chunks) if i not in seen_indices]
+    if missing:
+        logger.log(f"⚠️ [ChunkState] Missing chunk_index row(s) entirely: {missing}")
+    duplicates = {i: ids for i, ids in seen_indices.items() if len(ids) > 1}
+    if duplicates:
+        logger.log(f"⚠️ [ChunkState] Duplicate row(s) for chunk_index: {duplicates}")
+
+    # REVIEWED(=完了)以外の行を、状態と滞留時間つきで個別に列挙
+    not_done = sorted(
+        (c for c in all_chunks if c.get("status") != "REVIEWED"),
+        key=lambda c: c.get("chunk_index") if c.get("chunk_index") is not None else -1,
+    )
+    if not_done:
+        details = []
+        for c in not_done:
+            updated_at = _parse_supabase_timestamp(c.get("updated_at") or "")
+            age_sec = (now - updated_at).total_seconds() if updated_at else None
+            details.append(
+                f"idx={c.get('chunk_index')} status={c.get('status')} "
+                f"age={f'{age_sec:.0f}s' if age_sec is not None else '?'} id={c.get('id')}"
+            )
+        logger.log(f"🔬 [ChunkState] {len(not_done)} chunk(s) not yet REVIEWED:\n  " + "\n  ".join(details))
+
+    # REVIEWEDなのに肝心のデータが欠けている行(書き込みレースによる破損の疑い)。
+    # 無音チャンクは正規のフローでもsegments_reviewed/text_reviewedが空のまま
+    # REVIEWEDになるため、STT自体に中身があった行だけを対象にする。
+    corrupted = [
+        c for c in all_chunks
+        if c.get("status") == "REVIEWED"
+        and (c.get("segments_stt") or c.get("text_stt"))
+        and not c.get("segments_reviewed") and not c.get("text_reviewed")
+    ]
+    if corrupted:
+        logger.log(f"🚨 [ChunkState] REVIEWED but missing segments_reviewed/text_reviewed (possible write race): {[c.get('chunk_index') for c in corrupted]}")
+
+
 # ---------------------------------------------------------
 # 2. Check and Assemble (文字起こしの待ち合わせ＆組み立て)
 # ---------------------------------------------------------
@@ -727,10 +783,13 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         )
 
         all_chunks = reconstruct_chunk_start_times(res.data or [])
-        
+
+        # 🔬 呼ばれるたびに必ず詳細スナップショットを残す(原因調査用、挙動は変えない)
+        _log_chunk_state_snapshot(logger, all_chunks, expected_chunks)
+
         # 処理済みのチャンク（Whisperが終わっているもの）をカウント
         processed_chunks = [c for c in all_chunks if c.get("status") in ["TRANSCRIBED", "REVIEWED"]]
-        
+
         # 待ち合わせロジック
         if len(processed_chunks) < expected_chunks:
             logger.log(f"⏳ Waiting for Whisper transcripts... ({len(processed_chunks)}/{expected_chunks})")
