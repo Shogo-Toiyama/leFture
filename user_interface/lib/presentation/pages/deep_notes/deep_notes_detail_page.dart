@@ -48,9 +48,13 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     // If topics are passed from route state (e.g. from the list page), use them.
     // Otherwise, fetch them directly.
     final hasPassedTopics = topics.isNotEmpty;
-    
-    final topicsAsync = hasPassedTopics ? null : ref.watch(lectureTopicsProvider(lectureId));
-    final notesAsync  = hasPassedTopics ? null : ref.watch(deepNotesProvider(lectureId));
+
+    final topicsAsync = hasPassedTopics
+        ? null
+        : ref.watch(lectureTopicsProvider(lectureId));
+    final notesAsync = hasPassedTopics
+        ? null
+        : ref.watch(deepNotesProvider(lectureId));
 
     // Fetch lecture and parent course to get theme colors
     final lectureAsync = ref.watch(lectureProvider(lectureId));
@@ -69,18 +73,23 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     }
 
     final themeColor = course != null
-        ? CourseStyleHelper.hexToColor(course.color, fallback: AppColors.deepGold)
+        ? CourseStyleHelper.hexToColor(
+            course.color,
+            fallback: AppColors.deepGold,
+          )
         : AppColors.deepGold;
 
     final HSLColor hsl = HSLColor.fromColor(themeColor);
-    final textThemeColor = hsl.lightness > 0.65 ? hsl.withLightness(0.5).toColor() : themeColor;
+    final textThemeColor = hsl.lightness > 0.65
+        ? hsl.withLightness(0.5).toColor()
+        : themeColor;
 
     final resolvedTopics = useMemoized(() {
       if (hasPassedTopics) return topics;
 
       final rawTopics = topicsAsync?.asData?.value ?? <LectureTopic>[];
-      final notes     = notesAsync?.asData?.value  ?? <DeepNote>[];
-      final noteMap   = {for (final n in notes) n.topicNumber: n};
+      final notes = notesAsync?.asData?.value ?? <DeepNote>[];
+      final noteMap = {for (final n in notes) n.topicNumber: n};
 
       return rawTopics.asMap().entries.map((entry) {
         final i = entry.key;
@@ -99,7 +108,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       }).toList();
     }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
 
-    final index = resolvedTopics.isEmpty ? 0 : topicIndex.clamp(0, resolvedTopics.length - 1);
+    final index = resolvedTopics.isEmpty
+        ? 0
+        : topicIndex.clamp(0, resolvedTopics.length - 1);
     final currentIndex = useState<int>(index);
     // 直近の遷移方向: 1=次のノートへ, -1=前のノートへ, 0=遷移直後ではない。
     // 遷移先のノートを開いた瞬間のスクロール位置を決めるために使う。
@@ -123,11 +134,15 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       () => SelectionListenerNotifier(),
       [currentIndex.value],
     );
-    useEffect(() => selectionListenerNotifier.dispose, [selectionListenerNotifier]);
+    useEffect(() => selectionListenerNotifier.dispose, [
+      selectionListenerNotifier,
+    ]);
     // Highlightサブツールバー(line/wave/marker/eraser + 色選択)の開閉状態。
     final highlightToolbarOpen = useState<bool>(false);
     final highlightMode = useState<String?>(null);
-    final highlightColor = useState<Color>(CourseStyleHelper.presetColors.first);
+    final highlightColor = useState<Color>(
+      CourseStyleHelper.presetColors.first,
+    );
     // Noteサブツールバーの開閉状態。Highlightと同時に開かないよう排他制御する。
     final noteToolbarOpen = useState<bool>(false);
     // Noteツールバーを開いた時点の選択範囲をキャッシュしておく。TextFieldに
@@ -171,7 +186,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     }, [resolvedTopics]);
 
     if (resolvedTopics.isEmpty) {
-      final isLoading = (topicsAsync?.isLoading ?? false) || (notesAsync?.isLoading ?? false);
+      final isLoading =
+          (topicsAsync?.isLoading ?? false) || (notesAsync?.isLoading ?? false);
       return Scaffold(
         backgroundColor: AppColors.paper.background,
         body: Container(
@@ -191,7 +207,29 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           child: SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, null, false, () {}, false, () {}, null, null),
+                _buildAppBar(
+                  context,
+                  ref,
+                  'Deep Notes',
+                  currentIndex.value,
+                  0,
+                  () => _showNotesListSheet(
+                    context,
+                    resolvedTopics,
+                    currentIndex,
+                    navigationDirection,
+                    textThemeColor,
+                  ),
+                  hasSelection.value,
+                  textThemeColor,
+                  null,
+                  false,
+                  () {},
+                  false,
+                  () {},
+                  null,
+                  null,
+                ),
                 Expanded(
                   child: Center(
                     child: isLoading
@@ -251,7 +289,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       // 生の値はこの時点では既にnullになっている)。
       final located = cachedNoteLocation.value;
       if (noteId == null || located == null || text.trim().isEmpty) return;
-      await ref.read(deepNoteRepositoryDriftProvider).addAnnotation(
+      await ref
+          .read(deepNoteRepositoryDriftProvider)
+          .addAnnotation(
             noteId: noteId,
             startIdx: located.startIdx,
             endIdx: located.endIdx,
@@ -306,7 +346,13 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                 topic.title,
                 currentIndex.value,
                 totalTopics,
-                () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor),
+                () => _showNotesListSheet(
+                  context,
+                  resolvedTopics,
+                  currentIndex,
+                  navigationDirection,
+                  textThemeColor,
+                ),
                 hasSelection.value,
                 textThemeColor,
                 topic,
@@ -334,7 +380,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   // パターン)。clearSelection()と同じフレーム内でMarkdownBodyの
                   // Keyを変えるとSelectionAreaが再入アサーションを起こすことが
                   // あるため、次フレームまで遅延させる。
-                  selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                  selectionAreaKey.currentState?.selectableRegion
+                      .clearSelection();
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     temporaryHighlight.value = Annotation(
                       id: '-1',
@@ -374,7 +421,12 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     final uid = supabase.auth.currentUser?.id;
                     if (uid != null && lectureId.isNotEmpty) {
                       try {
-                        final sentences = await ref.read(transcriptProvider(uid: uid, lectureId: lectureId).future);
+                        final sentences = await ref.read(
+                          transcriptProvider(
+                            uid: uid,
+                            lectureId: lectureId,
+                          ).future,
+                        );
                         if (!context.mounted) return;
                         if (sentences != null) {
                           final targetSid = citation.sidStrings.first;
@@ -387,17 +439,31 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                           }
                           final flattenedMap = buildFlattenedTextMap(rawText);
                           final rawEnd = flattenedMap.toRaw(located.endIdx);
-                          final citationEndWithMargin = (citation.end + 5) > rawText.length
+                          final citationEndWithMargin =
+                              (citation.end + 5) > rawText.length
                               ? rawText.length
                               : (citation.end + 5);
-                          final textUntilCitation = rawText.substring(rawEnd, citationEndWithMargin);
+                          final textUntilCitation = rawText.substring(
+                            rawEnd,
+                            citationEndWithMargin,
+                          );
 
-                          debugPrint("=== Source Navigation Debug Log (Deep Note) ===");
-                          debugPrint("1. Selected Text: '${selectedText.value}'");
-                          debugPrint("2. Text until citation: '$textUntilCitation'");
+                          debugPrint(
+                            "=== Source Navigation Debug Log (Deep Note) ===",
+                          );
+                          debugPrint(
+                            "1. Selected Text: '${selectedText.value}'",
+                          );
+                          debugPrint(
+                            "2. Text until citation: '$textUntilCitation'",
+                          );
                           debugPrint("3. Resolved SID: '$targetSid'");
-                          debugPrint("4. Transcript Sentence: '${targetSentence?.text}'");
-                          debugPrint("===============================================");
+                          debugPrint(
+                            "4. Transcript Sentence: '${targetSentence?.text}'",
+                          );
+                          debugPrint(
+                            "===============================================",
+                          );
                         }
                       } catch (e) {
                         debugPrint("Failed to output debug log: $e");
@@ -405,7 +471,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     }
 
                     // 選択状態をクリア
-                    selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                    selectionAreaKey.currentState?.selectableRegion
+                        .clearSelection();
 
                     // 一時的ハイライトを設定 (メモリ内アノテーション)
                     // NOTE: この代入はMarkdownBodyのKeyを変え、選択中のSelectableを
@@ -420,7 +487,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         endIdx: result.endIdx,
                         annotationType: 'highlight',
                         annotatedWords: '',
-                        contents: const {'type': 'marker', 'color': '#FFE082'}, // 琥珀色のマーカー
+                        contents: const {
+                          'type': 'marker',
+                          'color': '#FFE082',
+                        }, // 琥珀色のマーカー
                       );
                     });
 
@@ -443,16 +513,16 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
                     // モーダルが閉じられたら一時的ハイライトを消去
                     // (同様の理由でクリア後の再構築も次フレームに遅延させる)
-                    selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                    selectionAreaKey.currentState?.selectableRegion
+                        .clearSelection();
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       temporaryHighlight.value = null;
                     });
-
                   } on SelectionTooBroadException catch (e) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.message)),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(e.message)));
                   }
                 },
                 () async {
@@ -474,45 +544,59 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   fit: StackFit.expand,
                   children: [
                     _NoteDetailContent(
-                  topic: topic,
-                  topicIndex: currentIndex.value,
-                  totalTopics: totalTopics,
-                  arrivalDirection: navigationDirection.value,
-                  textThemeColor: textThemeColor,
-                  selectionAreaKey: selectionAreaKey,
-                  selectionListenerNotifier: selectionListenerNotifier,
-                  onSelectionChanged: (text) {
-                    hasSelection.value = text != null;
-                    if (text != null) {
-                      selectedText.value = text;
-                    } else {
-                      highlightToolbarOpen.value = false;
-                      // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
-                      // ここを通るが、Noteツールバーは選択解除では閉じない
-                      // (保存/再タップで明示的に閉じるまで開いたままにする)。
-                    }
-                  },
-                  onNext: () {
-                    if (currentIndex.value < totalTopics - 1) {
-                      navigationDirection.value = 1;
-                      currentIndex.value = currentIndex.value + 1;
-                    }
-                  },
-                  onPrev: () {
-                    if (currentIndex.value > 0) {
-                      navigationDirection.value = -1;
-                      currentIndex.value = currentIndex.value - 1;
-                    }
-                  },
-                  temporaryHighlight: temporaryHighlight.value,
-                  onAnnotationTap: (a) {
-                    if (a.annotationType == 'notes') {
-                      cancelNote();
-                      activeNoteAnnotation.value = a;
-                      isEditingNote.value = false;
-                      temporaryHighlight.value = a;
-                    }
-                  },
+                      topic: topic,
+                      topicIndex: currentIndex.value,
+                      totalTopics: totalTopics,
+                      arrivalDirection: navigationDirection.value,
+                      textThemeColor: textThemeColor,
+                      selectionAreaKey: selectionAreaKey,
+                      selectionListenerNotifier: selectionListenerNotifier,
+                      onSelectionChanged: (text) {
+                        hasSelection.value = text != null;
+                        if (text != null) {
+                          selectedText.value = text;
+                        } else {
+                          highlightToolbarOpen.value = false;
+                          // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
+                          // ここを通るが、Noteツールバーは選択解除では閉じない
+                          // (保存/再タップで明示的に閉じるまで開いたままにする)。
+                        }
+                      },
+                      onNext: () {
+                        if (currentIndex.value < totalTopics - 1) {
+                          navigationDirection.value = 1;
+                          currentIndex.value = currentIndex.value + 1;
+                        }
+                      },
+                      onPrev: () {
+                        if (currentIndex.value > 0) {
+                          navigationDirection.value = -1;
+                          currentIndex.value = currentIndex.value - 1;
+                        }
+                      },
+                      temporaryHighlight: temporaryHighlight.value,
+                      onAnnotationTap: (a) {
+                        if (a.annotationType == 'notes') {
+                          cancelNote();
+                          activeNoteAnnotation.value = a;
+                          isEditingNote.value = false;
+                          // aをそのままtemporaryHighlightに使うとannotationTypeが
+                          // 'notes'のままなので、既存表示と同じ点線下線が出るだけで
+                          // 黄色ハイライトにはならない。プレビュー用に別タイプの
+                          // ダミー注釈を作る(Source機能と同じパターン)。
+                          temporaryHighlight.value = Annotation(
+                            id: '-1',
+                            startIdx: a.startIdx,
+                            endIdx: a.endIdx,
+                            annotationType: 'highlight',
+                            annotatedWords: '',
+                            contents: const {
+                              'type': 'marker',
+                              'color': '#FFE082',
+                            },
+                          );
+                        }
+                      },
                     ),
                     if (highlightToolbarOpen.value && hasSelection.value)
                       HighlightSubToolbar(
@@ -549,7 +633,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         initialText: () {
                           final a = activeNoteAnnotation.value!;
                           if (a.contents is String) return a.contents as String;
-                          if (a.contents is Map && (a.contents as Map)['text'] is String) {
+                          if (a.contents is Map &&
+                              (a.contents as Map)['text'] is String) {
                             return (a.contents as Map)['text'] as String;
                           }
                           return a.annotatedWords;
@@ -561,23 +646,31 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         onSave: (newText) async {
                           final noteId = topic.noteId;
                           if (noteId != null && newText.trim().isNotEmpty) {
-                            await ref.read(deepNoteRepositoryDriftProvider).updateAnnotation(
+                            await ref
+                                .read(deepNoteRepositoryDriftProvider)
+                                .updateAnnotation(
                                   noteId: noteId,
                                   annotationId: activeNoteAnnotation.value!.id,
                                   contents: newText.trim(),
                                 );
-                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                            ref
+                                .read(lectureControllerProvider.notifier)
+                                .pushOutboxNow();
                           }
                           closeActiveNote();
                         },
                         onDelete: () async {
                           final noteId = topic.noteId;
                           if (noteId != null) {
-                            await ref.read(deepNoteRepositoryDriftProvider).removeAnnotation(
+                            await ref
+                                .read(deepNoteRepositoryDriftProvider)
+                                .removeAnnotation(
                                   noteId: noteId,
                                   annotationId: activeNoteAnnotation.value!.id,
                                 );
-                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                            ref
+                                .read(lectureControllerProvider.notifier)
+                                .pushOutboxNow();
                           }
                           closeActiveNote();
                         },
@@ -665,29 +758,45 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   onLike: topic?.noteId == null
                       ? null
                       : () async {
-                          await ref.read(deepNoteRepositoryDriftProvider).updateReaction(
+                          await ref
+                              .read(deepNoteRepositoryDriftProvider)
+                              .updateReaction(
                                 id: topic!.noteId!,
-                                reaction: topic.reaction == 'like' ? null : 'like',
+                                reaction: topic.reaction == 'like'
+                                    ? null
+                                    : 'like',
                               );
-                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          ref
+                              .read(lectureControllerProvider.notifier)
+                              .pushOutboxNow();
                         },
                   onDislike: topic?.noteId == null
                       ? null
                       : () async {
-                          await ref.read(deepNoteRepositoryDriftProvider).updateReaction(
+                          await ref
+                              .read(deepNoteRepositoryDriftProvider)
+                              .updateReaction(
                                 id: topic!.noteId!,
-                                reaction: topic.reaction == 'dislike' ? null : 'dislike',
+                                reaction: topic.reaction == 'dislike'
+                                    ? null
+                                    : 'dislike',
                               );
-                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          ref
+                              .read(lectureControllerProvider.notifier)
+                              .pushOutboxNow();
                         },
                   onSave: topic?.noteId == null
                       ? null
                       : () async {
-                          await ref.read(deepNoteRepositoryDriftProvider).updateSaved(
+                          await ref
+                              .read(deepNoteRepositoryDriftProvider)
+                              .updateSaved(
                                 id: topic!.noteId!,
                                 saved: !topic.saved,
                               );
-                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          ref
+                              .read(lectureControllerProvider.notifier)
+                              .pushOutboxNow();
                         },
                 ),
               ),
@@ -698,7 +807,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   style: TextStyle(
                     color: AppColors.paper.textPencil,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w100,
                   ),
                 ),
             ],
@@ -729,7 +838,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.paper.background,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 children: [
@@ -743,7 +854,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -756,7 +870,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: AppColors.paper.textInk),
+                          icon: Icon(
+                            Icons.close,
+                            color: AppColors.paper.textInk,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -767,7 +884,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       controller: scrollController,
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
                       itemCount: resolvedTopics.length,
-                      separatorBuilder: (_, index) => const SizedBox(height: 12),
+                      separatorBuilder: (_, index) =>
+                          const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final topic = resolvedTopics[index];
                         final isSelected = index == currentIndex.value;
@@ -798,7 +916,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: textThemeColor.withValues(alpha: 0.12),
+                                    color: textThemeColor.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(
@@ -815,7 +935,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         topic.title,
@@ -909,6 +1030,8 @@ class _NoteDetailContent extends HookWidget {
     final startedAtBottom = useState(false);
     final shouldGoToNext = useState(false);
     final shouldGoToPrev = useState(false);
+    final overscrollTop = useState<double>(0.0);
+    final overscrollBottom = useState<double>(0.0);
 
     // Reset transition lock when topic changes, and jump the scroll position
     // to match the direction of travel: arriving via "next" should land at the
@@ -928,6 +1051,46 @@ class _NoteDetailContent extends HookWidget {
       return null;
     }, [topicIndex]);
 
+    // temporaryHighlightと範囲が重なる本物の注釈は除外する。除外しないと
+    // 同じ範囲に2つの注釈(本物のnote + プレビュー用ダミー)が競合し、
+    // どちらが実際に描画されるかがソート順次第で不定になってしまう
+    // (MarkdownAnnotationBuilderは重なる注釈の後勝ちを保証しないため)。
+    final noteAnnotations = [
+      ...topic.annotations.where(
+        (ann) =>
+            temporaryHighlight == null ||
+            ann.endIdx <= temporaryHighlight!.startIdx ||
+            ann.startIdx >= temporaryHighlight!.endIdx,
+      ),
+      if (temporaryHighlight != null) temporaryHighlight!,
+    ];
+    final annotationsCacheKeyValue = annotationsCacheKey(noteAnnotations);
+    // annotationsCacheKeyValueが変わる(=MarkdownBodyがremountされる)たびに
+    // 新しいbuilderを作り、古いbuilderが生成したTapGestureRecognizerを確実に
+    // disposeする。InlineSpanはGestureRecognizerのライフサイクルを管理しない
+    // ため、ここで破棄しないとremountのたび(highlight/note追加削除、一時
+    // ハイライト表示など頻繁に発生する)にリークする。
+    // インラインコード('`code`')の色。flutter_markdownはブロックタグに
+    // カスタムbuilderが登録されていると、styleSheet.codeの色/背景色を
+    // visitText()に渡さない(MarkdownAnnotationBuilder参照)ため、下のMarkdownBody
+    // 側のstyleSheet.codeと同じ値をbuilder自身にも明示的に渡す必要がある。
+    const codeTextColor = Color(0xFFB48A26);
+    final codeStyle = TextStyle(
+      color: codeTextColor,
+      fontFamily: 'monospace',
+      fontSize: 14,
+      backgroundColor: AppColors.starGold.withValues(alpha: 0.12),
+    );
+    final annotationBuilder = useMemoized(
+      () => MarkdownAnnotationBuilder(
+        annotations: noteAnnotations,
+        onAnnotationTap: onAnnotationTap,
+        codeStyle: codeStyle,
+      ),
+      [annotationsCacheKeyValue, codeStyle],
+    );
+    useEffect(() => annotationBuilder.dispose, [annotationBuilder]);
+
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (isTransitioning.value) return false;
@@ -943,6 +1106,8 @@ class _NoteDetailContent extends HookWidget {
         if (notification is ScrollEndNotification ||
             (notification is ScrollUpdateNotification &&
                 notification.dragDetails == null)) {
+          overscrollTop.value = 0.0;
+          overscrollBottom.value = 0.0;
           if (shouldGoToNext.value) {
             shouldGoToNext.value = false;
             shouldGoToPrev.value = false;
@@ -959,29 +1124,35 @@ class _NoteDetailContent extends HookWidget {
         if (notification is ScrollUpdateNotification) {
           final m = notification.metrics;
           final isDragging = notification.dragDetails != null;
+
+          if (m.pixels < 0) {
+            overscrollTop.value = -m.pixels;
+            overscrollBottom.value = 0.0;
+          } else if (m.pixels > m.maxScrollExtent) {
+            overscrollTop.value = 0.0;
+            overscrollBottom.value = m.pixels - m.maxScrollExtent;
+          } else {
+            overscrollTop.value = 0.0;
+            overscrollBottom.value = 0.0;
+          }
+
           if (isDragging) {
-            if (startedAtBottom.value &&
-                m.pixels >= m.maxScrollExtent + 50 &&
-                topicIndex < totalTopics - 1) {
-              shouldGoToNext.value = true;
-            }
-            if (startedAtTop.value &&
-                m.pixels <= m.minScrollExtent - 50 &&
-                topicIndex > 0) {
-              shouldGoToPrev.value = true;
-            }
-            if (shouldGoToNext.value && m.pixels < m.maxScrollExtent + 10) {
-              shouldGoToNext.value = false;
-            }
-            if (shouldGoToPrev.value && m.pixels > m.minScrollExtent - 10) {
-              shouldGoToPrev.value = false;
-            }
+            shouldGoToNext.value =
+                startedAtBottom.value &&
+                m.pixels >= m.maxScrollExtent + 100 &&
+                topicIndex < totalTopics - 1;
+            shouldGoToPrev.value =
+                startedAtTop.value &&
+                m.pixels <= m.minScrollExtent - 100 &&
+                topicIndex > 0;
           }
         }
 
         if (notification is ScrollEndNotification) {
           startedAtTop.value = false;
           startedAtBottom.value = false;
+          overscrollTop.value = 0.0;
+          overscrollBottom.value = 0.0;
         }
         return false;
       },
@@ -990,7 +1161,9 @@ class _NoteDetailContent extends HookWidget {
         contextMenuBuilder: (context, selectableRegionState) =>
             const SizedBox.shrink(),
         onSelectionChanged: (content) => onSelectionChanged(
-          content != null && content.plainText.isNotEmpty ? content.plainText : null,
+          content != null && content.plainText.isNotEmpty
+              ? content.plainText
+              : null,
         ),
         child: CustomScrollbar(
           controller: scrollController,
@@ -1012,13 +1185,12 @@ class _NoteDetailContent extends HookWidget {
                   Center(
                     child: Column(
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.keyboard_arrow_up,
-                            color: textThemeColor,
-                            size: 28,
-                          ),
-                          onPressed: onPrev,
+                        _buildDragArrow(
+                          context: context,
+                          icon: Icons.keyboard_arrow_up,
+                          overscroll: overscrollTop.value,
+                          textThemeColor: textThemeColor,
+                          onTap: onPrev,
                         ),
                         Text(
                           'Pull or tap to previous note',
@@ -1061,19 +1233,39 @@ class _NoteDetailContent extends HookWidget {
                     child: MarkdownBody(
                       data: stripSidCitations(topic.summary),
                       selectable: false,
-                      styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                        p: TextStyle(
-                          color: AppColors.paper.textPencil,
-                          fontSize: 15,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        strong: TextStyle(
-                          color: AppColors.paper.textPencil,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+                      styleSheet:
+                          MarkdownStyleSheet.fromTheme(
+                            Theme.of(context),
+                          ).copyWith(
+                            p: TextStyle(
+                              color: AppColors.paper.textPencil,
+                              fontSize: 15,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            strong: TextStyle(
+                              color: AppColors.paper.textPencil,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            code: TextStyle(
+                              color: codeTextColor,
+                              fontFamily: 'monospace',
+                              fontSize: 13,
+                              backgroundColor: AppColors.starGold.withValues(
+                                alpha: 0.12,
+                              ),
+                              fontStyle: FontStyle.normal,
+                            ),
+                            codeblockPadding: const EdgeInsets.all(8),
+                            codeblockDecoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.black.withValues(alpha: 0.1),
+                              ),
+                            ),
+                          ),
                     ),
                   ),
                 ],
@@ -1083,69 +1275,53 @@ class _NoteDetailContent extends HookWidget {
                 _maybeWrapWithSelectionListener(
                   selectionListenerNotifier,
                   MarkdownBody(
-                  key: ValueKey(annotationsCacheKey([
-                    ...topic.annotations,
-                    if (temporaryHighlight != null) temporaryHighlight!,
-                  ])),
-                  data: topic.content.isNotEmpty
-                      ? stripSidCitations(topic.content)
-                      : 'Deep notes for this topic are still being generated…',
-                  selectable: false,
-                  builders: topic.content.isNotEmpty
-                      ? annotationMarkdownBuilders(
-                          MarkdownAnnotationBuilder(
-                            annotations: [
-                              ...topic.annotations,
-                              if (temporaryHighlight != null) temporaryHighlight!,
-                            ],
-                            onAnnotationTap: onAnnotationTap,
+                    key: ValueKey(annotationsCacheKeyValue),
+                    data: topic.content.isNotEmpty
+                        ? stripSidCitations(topic.content)
+                        : 'Deep notes for this topic are still being generated…',
+                    selectable: false,
+                    builders: topic.content.isNotEmpty
+                        ? annotationMarkdownBuilders(annotationBuilder)
+                        : const {},
+                    bulletBuilder: annotationBulletBuilder(
+                      TextStyle(color: textThemeColor, fontSize: 16),
+                    ),
+                    styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                        .copyWith(
+                          p: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 16,
+                            height: 1.6,
                           ),
-                        )
-                      : const {},
-                  bulletBuilder: annotationBulletBuilder(
-                    TextStyle(color: textThemeColor, fontSize: 16),
-                  ),
-                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
-                      .copyWith(
-                        p: TextStyle(
-                          color: AppColors.paper.textInk,
-                          fontSize: 16,
-                          height: 1.6,
-                        ),
-                        h1: TextStyle(
-                          color: AppColors.paper.textInk,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        h2: TextStyle(
-                          color: AppColors.paper.textInk,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        h3: TextStyle(
-                          color: AppColors.paper.textInk,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        listBullet: TextStyle(
-                          color: textThemeColor,
-                          fontSize: 16,
-                        ),
-                        code: TextStyle(
-                          color: const Color(0xFF0F766E),
-                          fontFamily: 'monospace',
-                          fontSize: 14,
-                          backgroundColor: Colors.transparent,
-                        ),
-                        codeblockPadding: const EdgeInsets.all(16),
-                        codeblockDecoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.black.withValues(alpha: 0.1),
+                          h1: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          h2: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          h3: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          listBullet: TextStyle(
+                            color: textThemeColor,
+                            fontSize: 16,
+                          ),
+                          code: codeStyle,
+                          codeblockPadding: const EdgeInsets.all(16),
+                          codeblockDecoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.black.withValues(alpha: 0.1),
+                            ),
                           ),
                         ),
-                      ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -1162,13 +1338,12 @@ class _NoteDetailContent extends HookWidget {
                             fontSize: 11,
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.keyboard_arrow_down,
-                            color: textThemeColor,
-                            size: 28,
-                          ),
-                          onPressed: onNext,
+                        _buildDragArrow(
+                          context: context,
+                          icon: Icons.keyboard_arrow_down,
+                          overscroll: overscrollBottom.value,
+                          textThemeColor: textThemeColor,
+                          onTap: onNext,
                         ),
                       ],
                     ),
@@ -1177,6 +1352,42 @@ class _NoteDetailContent extends HookWidget {
                 const SizedBox(height: 32),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDragArrow({
+    required BuildContext context,
+    required IconData icon,
+    required double overscroll,
+    required Color textThemeColor,
+    required VoidCallback onTap,
+  }) {
+    final hasReachedThreshold = overscroll >= 100.0;
+    final double scale = 1.0 + (overscroll.clamp(0.0, 100.0) / 100.0) * 0.5;
+    const double baseIconSize = 24.0;
+    final double currentIconSize = baseIconSize * scale;
+
+    return IconButton(
+      onPressed: onTap,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      icon: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: hasReachedThreshold ? textThemeColor : Colors.transparent,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            color: hasReachedThreshold
+                ? AppColors.paper.background
+                : textThemeColor,
+            size: currentIconSize,
           ),
         ),
       ),

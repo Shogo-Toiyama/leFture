@@ -220,11 +220,15 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       () => SelectionListenerNotifier(),
       [currentCardIndex.value],
     );
-    useEffect(() => selectionListenerNotifier.dispose, [selectionListenerNotifier]);
+    useEffect(() => selectionListenerNotifier.dispose, [
+      selectionListenerNotifier,
+    ]);
     // Highlightサブツールバー(line/wave/marker/eraser + 色選択)の開閉状態。
     final highlightToolbarOpen = useState<bool>(false);
     final highlightMode = useState<String?>(null);
-    final highlightColor = useState<Color>(CourseStyleHelper.presetColors.first);
+    final highlightColor = useState<Color>(
+      CourseStyleHelper.presetColors.first,
+    );
     // Noteサブツールバーの開閉状態。Highlightと同時に開かないよう排他制御する。
     final noteToolbarOpen = useState<bool>(false);
     // Noteツールバーを開いた時点の選択範囲をキャッシュしておく。TextFieldに
@@ -360,16 +364,32 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         // simply withholding the notifier while animating avoids the clash.
         selectionListenerNotifier:
             cardIdx == currentCardIndex.value && !isAnimating.value
-                ? selectionListenerNotifier
-                : null,
-        temporaryHighlight: cardIdx == currentCardIndex.value ? temporaryHighlight.value : null,
-        temporaryHighlightBlockIdx: cardIdx == currentCardIndex.value ? temporaryHighlightBlockIdx.value : null,
+            ? selectionListenerNotifier
+            : null,
+        temporaryHighlight: cardIdx == currentCardIndex.value
+            ? temporaryHighlight.value
+            : null,
+        temporaryHighlightBlockIdx: cardIdx == currentCardIndex.value
+            ? temporaryHighlightBlockIdx.value
+            : null,
         onAnnotationTap: (a) {
           if (a.annotationType == 'notes') {
             cancelNote();
             activeNoteAnnotation.value = a;
             isEditingNote.value = false;
-            temporaryHighlight.value = a;
+            // aをそのままtemporaryHighlightに使うとannotationTypeが'notes'の
+            // ままなので、既存表示と同じ点線下線が出るだけで黄色ハイライトには
+            // ならない。プレビュー用に別タイプのダミー注釈を作る
+            // (Source機能と同じパターン)。
+            temporaryHighlight.value = Annotation(
+              id: '-1',
+              blockIdx: a.blockIdx,
+              startIdx: a.startIdx,
+              endIdx: a.endIdx,
+              annotationType: 'highlight',
+              annotatedWords: '',
+              contents: const {'type': 'marker', 'color': '#FFE082'},
+            );
             temporaryHighlightBlockIdx.value = a.blockIdx;
           }
         },
@@ -398,7 +418,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       if (card == null || located == null) return;
       final repo = widgetRef.read(reviewCardRepositoryDriftProvider);
       if (mode == 'eraser') {
-        final blockText = reviewCardBlockPlainText(card.cardContent[located.blockIdx!]);
+        final blockText = reviewCardBlockPlainText(
+          card.cardContent[located.blockIdx!],
+        );
         await repo.eraseHighlightRange(
           cardId: card.id,
           blockIdx: located.blockIdx,
@@ -429,7 +451,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       // 生の値はこの時点では既にnullになっている)。
       final located = cachedNoteLocation.value;
       if (card == null || located == null || text.trim().isEmpty) return;
-      await widgetRef.read(reviewCardRepositoryDriftProvider).addAnnotation(
+      await widgetRef
+          .read(reviewCardRepositoryDriftProvider)
+          .addAnnotation(
             cardId: card.id,
             blockIdx: located.blockIdx,
             startIdx: located.startIdx,
@@ -445,7 +469,6 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       temporaryHighlight.value = null;
       temporaryHighlightBlockIdx.value = null;
     }
-
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
@@ -529,7 +552,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                               saved: flatItems[index].card?.saved ?? false,
                               isHighlightActive: highlightToolbarOpen.value,
                               onHighlightTap: () {
-                                highlightToolbarOpen.value = !highlightToolbarOpen.value;
+                                highlightToolbarOpen.value =
+                                    !highlightToolbarOpen.value;
                                 if (highlightToolbarOpen.value) cancelNote();
                               },
                               isNoteActive: noteToolbarOpen.value,
@@ -556,7 +580,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                 // あるため、次フレームまで遅延させる。
                                 selectionAreaKey.currentState?.selectableRegion
                                     .clearSelection();
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
                                   temporaryHighlight.value = Annotation(
                                     id: '-1',
                                     blockIdx: located.blockIdx,
@@ -569,7 +595,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                       'color': '#FFE082',
                                     },
                                   );
-                                  temporaryHighlightBlockIdx.value = located.blockIdx;
+                                  temporaryHighlightBlockIdx.value =
+                                      located.blockIdx;
                                 });
                               },
                               onSourceTap: () async {
@@ -578,8 +605,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                 if (card == null || located == null) return;
 
                                 try {
-                                  final block = card.cardContent[located.blockIdx!];
-                                  final rawText = reviewCardBlockRawMarkdownSource(block);
+                                  final block =
+                                      card.cardContent[located.blockIdx!];
+                                  final rawText =
+                                      reviewCardBlockRawMarkdownSource(block);
 
                                   final result = findSourceContextRange(
                                     rawText,
@@ -590,7 +619,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   if (result == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('No source found for the selection.'),
+                                        content: Text(
+                                          'No source found for the selection.',
+                                        ),
                                       ),
                                     );
                                     return;
@@ -602,10 +633,16 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   final uid = supabase.auth.currentUser?.id;
                                   if (uid != null && lectureId.isNotEmpty) {
                                     try {
-                                      final sentences = await widgetRef.read(transcriptProvider(uid: uid, lectureId: lectureId).future);
+                                      final sentences = await widgetRef.read(
+                                        transcriptProvider(
+                                          uid: uid,
+                                          lectureId: lectureId,
+                                        ).future,
+                                      );
                                       if (!context.mounted) return;
                                       if (sentences != null) {
-                                        final targetSid = citation.sidStrings.first;
+                                        final targetSid =
+                                            citation.sidStrings.first;
                                         TranscriptSentence? targetSentence;
                                         for (final s in sentences) {
                                           if (s.sid == targetSid) {
@@ -613,27 +650,52 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                             break;
                                           }
                                         }
-                                        final flattenedMap = buildFlattenedTextMap(rawText);
-                                        final rawEnd = flattenedMap.toRaw(located.endIdx);
-                                        final citationEndWithMargin = (citation.end + 5) > rawText.length
+                                        final flattenedMap =
+                                            buildFlattenedTextMap(rawText);
+                                        final rawEnd = flattenedMap.toRaw(
+                                          located.endIdx,
+                                        );
+                                        final citationEndWithMargin =
+                                            (citation.end + 5) > rawText.length
                                             ? rawText.length
                                             : (citation.end + 5);
-                                        final textUntilCitation = rawText.substring(rawEnd, citationEndWithMargin);
+                                        final textUntilCitation = rawText
+                                            .substring(
+                                              rawEnd,
+                                              citationEndWithMargin,
+                                            );
 
-                                        debugPrint("=== Source Navigation Debug Log (Review Card) ===");
-                                        debugPrint("1. Selected Text: '${selectedText.value}'");
-                                        debugPrint("2. Text until citation: '$textUntilCitation'");
-                                        debugPrint("3. Resolved SID: '$targetSid'");
-                                        debugPrint("4. Transcript Sentence: '${targetSentence?.text}'");
-                                        debugPrint("=================================================");
+                                        debugPrint(
+                                          "=== Source Navigation Debug Log (Review Card) ===",
+                                        );
+                                        debugPrint(
+                                          "1. Selected Text: '${selectedText.value}'",
+                                        );
+                                        debugPrint(
+                                          "2. Text until citation: '$textUntilCitation'",
+                                        );
+                                        debugPrint(
+                                          "3. Resolved SID: '$targetSid'",
+                                        );
+                                        debugPrint(
+                                          "4. Transcript Sentence: '${targetSentence?.text}'",
+                                        );
+                                        debugPrint(
+                                          "=================================================",
+                                        );
                                       }
                                     } catch (e) {
-                                      debugPrint("Failed to output debug log: $e");
+                                      debugPrint(
+                                        "Failed to output debug log: $e",
+                                      );
                                     }
                                   }
 
                                   // 選択状態をクリア
-                                  selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                                  selectionAreaKey
+                                      .currentState
+                                      ?.selectableRegion
+                                      .clearSelection();
 
                                   // 一時的ハイライトを設定 (メモリ内アノテーション)
                                   // NOTE: この代入はMarkdownBodyのKeyを変え、選択中の
@@ -642,7 +704,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   // 切る前にこれを行うと、SelectionAreaがScrollable内で
                                   // '_selectionStartsInScrollable' の再入アサーションを
                                   // 起こすことがあるため、次フレームまで遅延させる。
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
                                     temporaryHighlight.value = Annotation(
                                       id: '-1', // Dummy ID
                                       blockIdx: located.blockIdx,
@@ -650,12 +714,18 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                       endIdx: result.endIdx,
                                       annotationType: 'highlight',
                                       annotatedWords: '',
-                                      contents: const {'type': 'marker', 'color': '#FFE082'}, // 琥珀色のマーカー
+                                      contents: const {
+                                        'type': 'marker',
+                                        'color': '#FFE082',
+                                      }, // 琥珀色のマーカー
                                     );
-                                    temporaryHighlightBlockIdx.value = located.blockIdx;
+                                    temporaryHighlightBlockIdx.value =
+                                        located.blockIdx;
                                   });
 
-                                  final sortedSids = List<int>.from(citation.sids)..sort();
+                                  final sortedSids = List<int>.from(
+                                    citation.sids,
+                                  )..sort();
                                   final startSid = formatSid(sortedSids.first);
                                   final endSid = formatSid(sortedSids.last);
 
@@ -674,12 +744,16 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
                                   // モーダルが閉じられたら一時的ハイライトを消去
                                   // (同様の理由でクリア後の再構築も次フレームに遅延させる)
-                                  selectionAreaKey.currentState?.selectableRegion.clearSelection();
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  selectionAreaKey
+                                      .currentState
+                                      ?.selectableRegion
+                                      .clearSelection();
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
                                     temporaryHighlight.value = null;
                                     temporaryHighlightBlockIdx.value = null;
                                   });
-
                                 } on SelectionTooBroadException catch (e) {
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -690,7 +764,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                               onCopyTap: () async {
                                 final text = selectedText.value;
                                 if (text != null && text.isNotEmpty) {
-                                  await Clipboard.setData(ClipboardData(text: text));
+                                  await Clipboard.setData(
+                                    ClipboardData(text: text),
+                                  );
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -700,34 +776,71 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   );
                                 }
                               },
-                                onLike: flatItems[index].card == null
-                                    ? null
-                                    : () async {
-                                        await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
-                                              id: flatItems[index].card!.id,
-                                              reaction: flatItems[index].card!.reaction == 'like' ? null : 'like',
-                                            );
-                                        widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
-                                      },
-                                onDislike: flatItems[index].card == null
-                                    ? null
-                                    : () async {
-                                        await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
-                                              id: flatItems[index].card!.id,
-                                              reaction: flatItems[index].card!.reaction == 'dislike' ? null : 'dislike',
-                                            );
-                                        widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
-                                      },
-                                onSave: flatItems[index].card == null
-                                    ? null
-                                    : () async {
-                                        await widgetRef.read(reviewCardRepositoryDriftProvider).updateSaved(
-                                              id: flatItems[index].card!.id,
-                                              saved: !flatItems[index].card!.saved,
-                                            );
-                                        widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
-                                      },
-                              ),
+                              onLike: flatItems[index].card == null
+                                  ? null
+                                  : () async {
+                                      await widgetRef
+                                          .read(
+                                            reviewCardRepositoryDriftProvider,
+                                          )
+                                          .updateReaction(
+                                            id: flatItems[index].card!.id,
+                                            reaction:
+                                                flatItems[index]
+                                                        .card!
+                                                        .reaction ==
+                                                    'like'
+                                                ? null
+                                                : 'like',
+                                          );
+                                      widgetRef
+                                          .read(
+                                            lectureControllerProvider.notifier,
+                                          )
+                                          .pushOutboxNow();
+                                    },
+                              onDislike: flatItems[index].card == null
+                                  ? null
+                                  : () async {
+                                      await widgetRef
+                                          .read(
+                                            reviewCardRepositoryDriftProvider,
+                                          )
+                                          .updateReaction(
+                                            id: flatItems[index].card!.id,
+                                            reaction:
+                                                flatItems[index]
+                                                        .card!
+                                                        .reaction ==
+                                                    'dislike'
+                                                ? null
+                                                : 'dislike',
+                                          );
+                                      widgetRef
+                                          .read(
+                                            lectureControllerProvider.notifier,
+                                          )
+                                          .pushOutboxNow();
+                                    },
+                              onSave: flatItems[index].card == null
+                                  ? null
+                                  : () async {
+                                      await widgetRef
+                                          .read(
+                                            reviewCardRepositoryDriftProvider,
+                                          )
+                                          .updateSaved(
+                                            id: flatItems[index].card!.id,
+                                            saved:
+                                                !flatItems[index].card!.saved,
+                                          );
+                                      widgetRef
+                                          .read(
+                                            lectureControllerProvider.notifier,
+                                          )
+                                          .pushOutboxNow();
+                                    },
+                            ),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -793,211 +906,226 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: SelectionArea(
                         key: selectionAreaKey,
-                    contextMenuBuilder: (context, selectableRegionState) =>
-                        const SizedBox.shrink(),
-                    onSelectionChanged: (content) {
-                      hasSelection.value =
-                          content != null && content.plainText.isNotEmpty;
-                      if (hasSelection.value) {
-                        selectedText.value = content!.plainText;
-                      } else {
-                        highlightToolbarOpen.value = false;
-                        // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
-                        // ここを通るが、Noteツールバーは選択解除では閉じない
-                        // (保存/再タップで明示的に閉じるまで開いたままにする)。
-                      }
-                    },
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTapUp: (details) {
-                        if (hasSelection.value) {
-                          // A tap while text is selected just dismisses the
-                          // selection; it shouldn't also navigate.
-                          selectionAreaKey.currentState?.selectableRegion
-                              .clearSelection();
-                          return;
-                        }
-                        final cardWidth = screenWidth - 32;
-                        if (details.localPosition.dx < cardWidth * 0.3) {
-                          if (currentCardIndex.value > 0) {
-                            navigateTo(currentCardIndex.value - 1);
+                        contextMenuBuilder: (context, selectableRegionState) =>
+                            const SizedBox.shrink(),
+                        onSelectionChanged: (content) {
+                          hasSelection.value =
+                              content != null && content.plainText.isNotEmpty;
+                          if (hasSelection.value) {
+                            selectedText.value = content!.plainText;
+                          } else {
+                            highlightToolbarOpen.value = false;
+                            // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
+                            // ここを通るが、Noteツールバーは選択解除では閉じない
+                            // (保存/再タップで明示的に閉じるまで開いたままにする)。
                           }
-                        } else {
-                          if (currentCardIndex.value < totalCards - 1) {
-                            navigateTo(currentCardIndex.value + 1);
-                          }
-                        }
-                      },
-                      onHorizontalDragEnd: (details) {
-                        if (hasSelection.value) return;
-                        if (details.primaryVelocity == null) return;
-                        if (details.primaryVelocity! < -300) {
-                          if (currentGroupIndex < groups.length - 1) {
-                            navigateTo(groupStartIndex[currentGroupIndex + 1]);
-                          }
-                        } else if (details.primaryVelocity! > 300) {
-                          final currentTopicCoverIndex =
-                              groupStartIndex[currentGroupIndex];
-                          if (currentCardIndex.value > currentTopicCoverIndex) {
-                            // Jump to the cover of the current topic if we are on a content card
-                            navigateTo(currentTopicCoverIndex);
-                          } else if (currentGroupIndex > 0) {
-                            // Jump to the cover of the previous topic only if we are already on the current cover
-                            navigateTo(groupStartIndex[currentGroupIndex - 1]);
-                          }
-                        }
-                      },
-                      child: Builder(
-                        builder: (context) {
-                          // Pre-warm the widget cache for both neighbors so the
-                          // Markdown parse / decoration setup for the next card
-                          // has already happened by the time it's actually
-                          // needed, instead of paying that cost synchronously
-                          // at the start of the transition.
-                          if (currentCardIndex.value > 0) {
-                            buildCard(currentCardIndex.value - 1);
-                          }
-                          if (currentCardIndex.value < totalCards - 1) {
-                            buildCard(currentCardIndex.value + 1);
-                          }
-
-                          final currentCard = buildCard(currentCardIndex.value);
-
-                          return AnimatedBuilder(
-                            animation: animationController,
-                            builder: (context, _) {
-                              if (isAnimating.value) {
-                                final progress = animationController.value;
-                                final oldIndex = previousCardIndex.value;
-                                final newIndex = currentCardIndex.value;
-                                // Multi-card swipes (e.g. jumping straight to
-                                // the next/previous topic cover) skip over
-                                // several cards at once. Represent each
-                                // skipped card (max 5, since topics are a
-                                // fixed 5 cards) as its own real, stacked
-                                // layer instead of a single generic
-                                // transition. Layer 0 is always [oldIndex] and
-                                // the last layer is always [newIndex] exactly
-                                // -- middle layers are sampled proportionally
-                                // when the real distance is larger than the
-                                // number of layer slots, so the animation
-                                // never lands anywhere but the true target.
-                                final totalDistance = (newIndex - oldIndex)
-                                    .abs();
-                                final skipCount = totalDistance.clamp(1, 5);
-                                final sign = newIndex >= oldIndex ? 1 : -1;
-                                final layers = <Widget>[
-                                  for (var d = 0; d <= skipCount; d++)
-                                    buildCard(
-                                      (d == skipCount
-                                              ? newIndex
-                                              : oldIndex +
-                                                    sign *
-                                                        ((d * totalDistance) ~/
-                                                            skipCount))
-                                          .clamp(0, totalCards - 1),
-                                    ),
-                                ];
-
-                                if (isGoingForward.value) {
-                                  // Only the final destination layer grows in
-                                  // from underneath; the cards flying past on
-                                  // top of it all stay the same size as each
-                                  // other (only their position/rotation
-                                  // changes) so the stack doesn't look like it
-                                  // shrinks as it goes deeper.
-                                  final finalRestScale = 1.0 - 0.08 * skipCount;
-                                  return Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: Transform.scale(
-                                          scale:
-                                              finalRestScale +
-                                              (1.0 - finalRestScale) * progress,
-                                          child: Opacity(
-                                            opacity: 0.5 + (0.5 * progress),
-                                            child: layers[skipCount],
-                                          ),
-                                        ),
-                                      ),
-                                      for (var d = skipCount - 1; d >= 0; d--)
-                                        Positioned.fill(
-                                          child: Transform.translate(
-                                            offset: Offset(
-                                              -_staggeredLocal(
-                                                    progress,
-                                                    d,
-                                                    skipCount,
-                                                  ) *
-                                                  screenWidth,
-                                              0,
-                                            ),
-                                            child: Transform.rotate(
-                                              angle:
-                                                  -_staggeredLocal(
-                                                    progress,
-                                                    d,
-                                                    skipCount,
-                                                  ) *
-                                                  0.2,
-                                              alignment: Alignment.bottomCenter,
-                                              child: layers[d],
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  );
-                                } else {
-                                  return Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: Transform.scale(
-                                          scale: 1.0 - (0.08 * progress),
-                                          child: Opacity(
-                                            opacity: 1.0 - (0.5 * progress),
-                                            child: layers[0],
-                                          ),
-                                        ),
-                                      ),
-                                      for (var d = 1; d <= skipCount; d++)
-                                        Positioned.fill(
-                                          child: Transform.translate(
-                                            offset: Offset(
-                                              -(1.0 -
-                                                      _staggeredLocal(
-                                                        progress,
-                                                        d - 1,
-                                                        skipCount,
-                                                      )) *
-                                                  screenWidth,
-                                              0,
-                                            ),
-                                            child: Transform.rotate(
-                                              angle:
-                                                  -(1.0 -
-                                                      _staggeredLocal(
-                                                        progress,
-                                                        d - 1,
-                                                        skipCount,
-                                                      )) *
-                                                  0.2,
-                                              alignment: Alignment.bottomCenter,
-                                              child: layers[d],
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  );
-                                }
-                              }
-                              return currentCard;
-                            },
-                          );
                         },
-                      ),
-                    ),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapUp: (details) {
+                            if (hasSelection.value) {
+                              // A tap while text is selected just dismisses the
+                              // selection; it shouldn't also navigate.
+                              selectionAreaKey.currentState?.selectableRegion
+                                  .clearSelection();
+                              return;
+                            }
+                            final cardWidth = screenWidth - 32;
+                            if (details.localPosition.dx < cardWidth * 0.3) {
+                              if (currentCardIndex.value > 0) {
+                                navigateTo(currentCardIndex.value - 1);
+                              }
+                            } else {
+                              if (currentCardIndex.value < totalCards - 1) {
+                                navigateTo(currentCardIndex.value + 1);
+                              }
+                            }
+                          },
+                          onHorizontalDragEnd: (details) {
+                            if (hasSelection.value) return;
+                            if (details.primaryVelocity == null) return;
+                            if (details.primaryVelocity! < -300) {
+                              if (currentGroupIndex < groups.length - 1) {
+                                navigateTo(
+                                  groupStartIndex[currentGroupIndex + 1],
+                                );
+                              }
+                            } else if (details.primaryVelocity! > 300) {
+                              final currentTopicCoverIndex =
+                                  groupStartIndex[currentGroupIndex];
+                              if (currentCardIndex.value >
+                                  currentTopicCoverIndex) {
+                                // Jump to the cover of the current topic if we are on a content card
+                                navigateTo(currentTopicCoverIndex);
+                              } else if (currentGroupIndex > 0) {
+                                // Jump to the cover of the previous topic only if we are already on the current cover
+                                navigateTo(
+                                  groupStartIndex[currentGroupIndex - 1],
+                                );
+                              }
+                            }
+                          },
+                          child: Builder(
+                            builder: (context) {
+                              // Pre-warm the widget cache for both neighbors so the
+                              // Markdown parse / decoration setup for the next card
+                              // has already happened by the time it's actually
+                              // needed, instead of paying that cost synchronously
+                              // at the start of the transition.
+                              if (currentCardIndex.value > 0) {
+                                buildCard(currentCardIndex.value - 1);
+                              }
+                              if (currentCardIndex.value < totalCards - 1) {
+                                buildCard(currentCardIndex.value + 1);
+                              }
+
+                              final currentCard = buildCard(
+                                currentCardIndex.value,
+                              );
+
+                              return AnimatedBuilder(
+                                animation: animationController,
+                                builder: (context, _) {
+                                  if (isAnimating.value) {
+                                    final progress = animationController.value;
+                                    final oldIndex = previousCardIndex.value;
+                                    final newIndex = currentCardIndex.value;
+                                    // Multi-card swipes (e.g. jumping straight to
+                                    // the next/previous topic cover) skip over
+                                    // several cards at once. Represent each
+                                    // skipped card (max 5, since topics are a
+                                    // fixed 5 cards) as its own real, stacked
+                                    // layer instead of a single generic
+                                    // transition. Layer 0 is always [oldIndex] and
+                                    // the last layer is always [newIndex] exactly
+                                    // -- middle layers are sampled proportionally
+                                    // when the real distance is larger than the
+                                    // number of layer slots, so the animation
+                                    // never lands anywhere but the true target.
+                                    final totalDistance = (newIndex - oldIndex)
+                                        .abs();
+                                    final skipCount = totalDistance.clamp(1, 5);
+                                    final sign = newIndex >= oldIndex ? 1 : -1;
+                                    final layers = <Widget>[
+                                      for (var d = 0; d <= skipCount; d++)
+                                        buildCard(
+                                          (d == skipCount
+                                                  ? newIndex
+                                                  : oldIndex +
+                                                        sign *
+                                                            ((d * totalDistance) ~/
+                                                                skipCount))
+                                              .clamp(0, totalCards - 1),
+                                        ),
+                                    ];
+
+                                    if (isGoingForward.value) {
+                                      // Only the final destination layer grows in
+                                      // from underneath; the cards flying past on
+                                      // top of it all stay the same size as each
+                                      // other (only their position/rotation
+                                      // changes) so the stack doesn't look like it
+                                      // shrinks as it goes deeper.
+                                      final finalRestScale =
+                                          1.0 - 0.08 * skipCount;
+                                      return Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: Transform.scale(
+                                              scale:
+                                                  finalRestScale +
+                                                  (1.0 - finalRestScale) *
+                                                      progress,
+                                              child: Opacity(
+                                                opacity: 0.5 + (0.5 * progress),
+                                                child: layers[skipCount],
+                                              ),
+                                            ),
+                                          ),
+                                          for (
+                                            var d = skipCount - 1;
+                                            d >= 0;
+                                            d--
+                                          )
+                                            Positioned.fill(
+                                              child: Transform.translate(
+                                                offset: Offset(
+                                                  -_staggeredLocal(
+                                                        progress,
+                                                        d,
+                                                        skipCount,
+                                                      ) *
+                                                      screenWidth,
+                                                  0,
+                                                ),
+                                                child: Transform.rotate(
+                                                  angle:
+                                                      -_staggeredLocal(
+                                                        progress,
+                                                        d,
+                                                        skipCount,
+                                                      ) *
+                                                      0.2,
+                                                  alignment:
+                                                      Alignment.bottomCenter,
+                                                  child: layers[d],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    } else {
+                                      return Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: Transform.scale(
+                                              scale: 1.0 - (0.08 * progress),
+                                              child: Opacity(
+                                                opacity: 1.0 - (0.5 * progress),
+                                                child: layers[0],
+                                              ),
+                                            ),
+                                          ),
+                                          for (var d = 1; d <= skipCount; d++)
+                                            Positioned.fill(
+                                              child: Transform.translate(
+                                                offset: Offset(
+                                                  -(1.0 -
+                                                          _staggeredLocal(
+                                                            progress,
+                                                            d - 1,
+                                                            skipCount,
+                                                          )) *
+                                                      screenWidth,
+                                                  0,
+                                                ),
+                                                child: Transform.rotate(
+                                                  angle:
+                                                      -(1.0 -
+                                                          _staggeredLocal(
+                                                            progress,
+                                                            d - 1,
+                                                            skipCount,
+                                                          )) *
+                                                      0.2,
+                                                  alignment:
+                                                      Alignment.bottomCenter,
+                                                  child: layers[d],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    }
+                                  }
+                                  return currentCard;
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ),
+                    ),
                     if (highlightToolbarOpen.value && hasSelection.value)
                       HighlightSubToolbar(
                         color: highlightColor.value,
@@ -1033,7 +1161,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         initialText: () {
                           final a = activeNoteAnnotation.value!;
                           if (a.contents is String) return a.contents as String;
-                          if (a.contents is Map && (a.contents as Map)['text'] is String) {
+                          if (a.contents is Map &&
+                              (a.contents as Map)['text'] is String) {
                             return (a.contents as Map)['text'] as String;
                           }
                           return a.annotatedWords;
@@ -1045,23 +1174,31 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         onSave: (newText) async {
                           final card = flatItems[index].card;
                           if (card != null && newText.trim().isNotEmpty) {
-                            await widgetRef.read(reviewCardRepositoryDriftProvider).updateAnnotation(
+                            await widgetRef
+                                .read(reviewCardRepositoryDriftProvider)
+                                .updateAnnotation(
                                   cardId: card.id,
                                   annotationId: activeNoteAnnotation.value!.id,
                                   contents: newText.trim(),
                                 );
-                            widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                            widgetRef
+                                .read(lectureControllerProvider.notifier)
+                                .pushOutboxNow();
                           }
                           closeActiveNote();
                         },
                         onDelete: () async {
                           final card = flatItems[index].card;
                           if (card != null) {
-                            await widgetRef.read(reviewCardRepositoryDriftProvider).removeAnnotation(
+                            await widgetRef
+                                .read(reviewCardRepositoryDriftProvider)
+                                .removeAnnotation(
                                   cardId: card.id,
                                   annotationId: activeNoteAnnotation.value!.id,
                                 );
-                            widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                            widgetRef
+                                .read(lectureControllerProvider.notifier)
+                                .pushOutboxNow();
                           }
                           closeActiveNote();
                         },
@@ -1363,7 +1500,10 @@ class _CoverCard extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 color: Colors.white.withValues(alpha: 0.72),
                 child: Text(
                   title,
@@ -1408,21 +1548,38 @@ class _ContentCard extends StatelessWidget {
     final hasImage = imageFile != null;
 
     final blocks = Column(
-      children: card.cardContent.asMap().entries.map(
-        (entry) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _ReviewCardBlockView(
-            block: entry.value,
-            themeColor: themeColor,
-            annotations: [
-              ...card.annotations.where((a) => a.blockIdx == entry.key),
-              if (temporaryHighlight != null && temporaryHighlightBlockIdx == entry.key)
-                temporaryHighlight!,
-            ],
-            onAnnotationTap: onAnnotationTap,
-          ),
-        ),
-      ).toList(),
+      children: card.cardContent
+          .asMap()
+          .entries
+          .map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ReviewCardBlockView(
+                block: entry.value,
+                themeColor: themeColor,
+                // temporaryHighlightと範囲が重なる本物の注釈は除外する。除外しないと
+                // 同じ範囲に2つの注釈(本物のnote + プレビュー用ダミー)が競合し、
+                // どちらが実際に描画されるかがソート順次第で不定になってしまう
+                // (MarkdownAnnotationBuilderは重なる注釈の後勝ちを保証しないため)。
+                annotations: [
+                  ...card.annotations.where((a) {
+                    if (a.blockIdx != entry.key) return false;
+                    if (temporaryHighlight == null ||
+                        temporaryHighlightBlockIdx != entry.key) {
+                      return true;
+                    }
+                    return a.endIdx <= temporaryHighlight!.startIdx ||
+                        a.startIdx >= temporaryHighlight!.endIdx;
+                  }),
+                  if (temporaryHighlight != null &&
+                      temporaryHighlightBlockIdx == entry.key)
+                    temporaryHighlight!,
+                ],
+                onAnnotationTap: onAnnotationTap,
+              ),
+            ),
+          )
+          .toList(),
     );
 
     final content = SingleChildScrollView(
@@ -1454,7 +1611,10 @@ class _ContentCard extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           if (selectionListenerNotifier != null)
-            SelectionListener(selectionNotifier: selectionListenerNotifier!, child: blocks)
+            SelectionListener(
+              selectionNotifier: selectionListenerNotifier!,
+              child: blocks,
+            )
           else
             blocks,
         ],
@@ -1519,7 +1679,7 @@ class _ContentCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Card block renderer
 // ---------------------------------------------------------------------------
-class _ReviewCardBlockView extends StatelessWidget {
+class _ReviewCardBlockView extends HookWidget {
   const _ReviewCardBlockView({
     required this.block,
     required this.themeColor,
@@ -1548,8 +1708,9 @@ class _ReviewCardBlockView extends StatelessWidget {
       ),
       em: style.copyWith(fontStyle: FontStyle.italic),
       code: style.copyWith(
+        color: const Color(0xFFB48A26),
         fontFamily: 'monospace',
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.starGold.withValues(alpha: 0.12),
       ),
       listBullet: style.copyWith(color: themeColor),
       textAlign: WrapAlignment.center,
@@ -1558,13 +1719,26 @@ class _ReviewCardBlockView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final builders = annotationMarkdownBuilders(
-      MarkdownAnnotationBuilder(
+    final cacheKey = annotationsCacheKey(annotations);
+    // annotationsKeyが変わる(=MarkdownBodyがremountされる)たびに新しいbuilder
+    // を作り、古いbuilderが生成したTapGestureRecognizerを確実にdisposeする。
+    // InlineSpanはGestureRecognizerのライフサイクルを管理しないため、ここで
+    // 破棄しないとremountのたびにリークする。
+    // codeStyleは_styleSheet()のcodeと同じ値にする(flutter_markdownはブロック
+    // タグにカスタムbuilderが登録されているとstyleSheet.codeの色/背景色を
+    // visitText()に渡さないため、builder自身にも明示的に渡す必要がある)。
+    final codeStyle = _styleSheet(context, italic: block.type == 'quote').code;
+    final annotationBuilder = useMemoized(
+      () => MarkdownAnnotationBuilder(
         annotations: annotations,
         onAnnotationTap: onAnnotationTap,
+        codeStyle: codeStyle,
       ),
+      [cacheKey, codeStyle],
     );
-    final annotationsKey = ValueKey(annotationsCacheKey(annotations));
+    useEffect(() => annotationBuilder.dispose, [annotationBuilder]);
+    final builders = annotationMarkdownBuilders(annotationBuilder);
+    final annotationsKey = ValueKey(cacheKey);
     switch (block.type) {
       case 'quote':
         return Container(

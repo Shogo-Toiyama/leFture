@@ -33,7 +33,7 @@ class EmptyHomeContent extends ConsumerWidget {
     final displayName = profile?.username?.trim();
     final greetingName = (displayName != null && displayName.isNotEmpty) ? displayName : 'Explorer';
 
-    final profileComplete = (profile?.profile?.trim().isNotEmpty ?? false);
+    final profileComplete = (profile?.bio?.trim().isNotEmpty ?? false);
     final courses = ref.watch(courseListProvider).asData?.value ?? const [];
     final hasCourse = courses.isNotEmpty;
     final lectures = ref.watch(allLecturesStreamProvider).asData?.value ?? const [];
@@ -251,7 +251,7 @@ class EmptyHomeContent extends ConsumerWidget {
   }
 
   Future<void> _openCreateCourseSheet(BuildContext context, WidgetRef ref) async {
-    final profileComplete = (ref.read(currentUserProfileProvider).asData?.value?.profile
+    final profileComplete = (ref.read(currentUserProfileProvider).asData?.value?.bio
             ?.trim()
             .isNotEmpty ??
         false);

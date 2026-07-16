@@ -37,7 +37,7 @@ class UserProfileRepositorySupabase {
   /// 行自体は作成済みなので、ここでは常にupdate）
   Future<UserProfile> updateProfile({
     String? username,
-    String? profile,
+    String? bio,
     String? interests,
     String? futureGoals,
   }) async {
@@ -47,7 +47,7 @@ class UserProfileRepositorySupabase {
         .from(_table)
         .update({
           if (username != null) 'username': username,
-          if (profile != null) 'profile': profile,
+          if (bio != null) 'bio': bio,
           if (interests != null) 'interests': interests,
           if (futureGoals != null) 'future_goals': futureGoals,
           'updated_at': DateTime.now().toUtc().toIso8601String(),

@@ -17,15 +17,15 @@ class MakeProfileSheet extends HookConsumerWidget {
     final existing = ref.read(currentUserProfileProvider).asData?.value;
 
     final usernameCtl = useTextEditingController(text: existing?.username ?? '');
-    final profileCtl = useTextEditingController(text: existing?.profile ?? '');
+    final bioCtl = useTextEditingController(text: existing?.bio ?? '');
     final interestsCtl = useTextEditingController(text: existing?.interests ?? '');
     final futureGoalsCtl = useTextEditingController(text: existing?.futureGoals ?? '');
     final isSubmitting = useState(false);
     final errorMsg = useState<String?>(null);
 
     Future<void> submit() async {
-      final profile = profileCtl.text.trim();
-      if (profile.isEmpty) {
+      final bio = bioCtl.text.trim();
+      if (bio.isEmpty) {
         errorMsg.value = 'Tell us a little about yourself first';
         return;
       }
@@ -35,7 +35,7 @@ class MakeProfileSheet extends HookConsumerWidget {
         final repo = ref.read(userProfileRepositoryProvider);
         await repo.updateProfile(
           username: usernameCtl.text.trim().isEmpty ? null : usernameCtl.text.trim(),
-          profile: profile,
+          bio: bio,
           interests: interestsCtl.text.trim().isEmpty ? null : interestsCtl.text.trim(),
           futureGoals: futureGoalsCtl.text.trim().isEmpty ? null : futureGoalsCtl.text.trim(),
         );
@@ -102,7 +102,7 @@ class MakeProfileSheet extends HookConsumerWidget {
               const SizedBox(height: 12),
 
               _ProfileTextField(
-                controller: profileCtl,
+                controller: bioCtl,
                 label: 'About you *',
                 hint: 'Who are you, what do you study, how do you like to learn?',
                 icon: Icons.person_outline,

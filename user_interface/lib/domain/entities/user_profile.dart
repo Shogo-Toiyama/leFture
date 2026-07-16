@@ -3,7 +3,7 @@ class UserProfile {
     required this.id,
     this.username,
     this.avatarUrl,
-    this.profile,
+    this.bio,
     this.interests,
     this.futureGoals,
     this.metadata,
@@ -14,7 +14,7 @@ class UserProfile {
   final String id;
   final String? username;
   final String? avatarUrl;
-  final String? profile;
+  final String? bio;
   final String? interests;
   final String? futureGoals;
   final Map<String, dynamic>? metadata;
@@ -26,7 +26,7 @@ class UserProfile {
       id: map['id'] as String,
       username: map['username'] as String?,
       avatarUrl: map['avatar_url'] as String?,
-      profile: map['profile'] as String?,
+      bio: map['bio'] as String?,
       interests: map['interests'] as String?,
       futureGoals: map['future_goals'] as String?,
       metadata: map['metadata'] as Map<String, dynamic>?,
