@@ -1,3 +1,5 @@
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
+
 /// review_cards.card_content (jsonb) の1ブロック分。
 /// 例: {"type": "paragraph", "text": "..."} / {"type": "list", "items": ["...", "..."]}
 class ReviewCardBlock {
@@ -44,6 +46,15 @@ class ReviewCard {
   // "like" / "dislike" / null
   String? get reaction => metadata?['reaction'] as String?;
   bool get saved => metadata?['saved'] == true;
+
+  List<Annotation> get annotations {
+    final raw = metadata?['annotations'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => Annotation.fromMap(Map<String, dynamic>.from(m)))
+        .toList();
+  }
 
   factory ReviewCard.fromMap(Map<String, dynamic> map) {
     final rawContent = map['card_content'];

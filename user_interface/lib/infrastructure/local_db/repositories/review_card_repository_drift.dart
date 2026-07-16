@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 part 'review_card_repository_drift.g.dart';
 
@@ -49,6 +51,130 @@ class ReviewCardRepositoryDrift {
         metadata.remove('saved');
       }
     });
+  }
+
+  /// 新しいannotation(highlight/notes)を追加し、Outboxに登録する。
+  /// 生成したannotationのidを返す。
+  Future<String> addAnnotation({
+    required String cardId,
+    int? blockIdx,
+    required int startIdx,
+    required int endIdx,
+    required String annotationType,
+    required String annotatedWords,
+    required dynamic contents,
+  }) async {
+    final annotationId = const Uuid().v4();
+    await _updateMetadata(cardId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      annotations.add(Annotation(
+        id: annotationId,
+        blockIdx: blockIdx,
+        startIdx: startIdx,
+        endIdx: endIdx,
+        annotationType: annotationType,
+        annotatedWords: annotatedWords,
+        contents: contents,
+      ).toMap());
+      metadata['annotations'] = annotations;
+    });
+    return annotationId;
+  }
+
+  /// annotationIdの指定するannotationを削除し、Outboxに登録する。
+  Future<void> removeAnnotation({required String cardId, required String annotationId}) async {
+    await _updateMetadata(cardId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      annotations.removeWhere((a) => a['id'] == annotationId);
+      metadata['annotations'] = annotations;
+    });
+  }
+
+  /// annotationIdの指定するannotationの内容を更新し、Outboxに登録する。
+  /// 渡さなかったフィールドは既存の値を維持する。
+  Future<void> updateAnnotation({
+    required String cardId,
+    required String annotationId,
+    int? blockIdx,
+    int? startIdx,
+    int? endIdx,
+    String? annotatedWords,
+    dynamic contents,
+  }) async {
+    await _updateMetadata(cardId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      final idx = annotations.indexWhere((a) => a['id'] == annotationId);
+      if (idx == -1) return;
+
+      final existing = Annotation.fromMap(Map<String, dynamic>.from(annotations[idx] as Map));
+      annotations[idx] = Annotation(
+        id: existing.id,
+        blockIdx: blockIdx ?? existing.blockIdx,
+        startIdx: startIdx ?? existing.startIdx,
+        endIdx: endIdx ?? existing.endIdx,
+        annotationType: existing.annotationType,
+        annotatedWords: annotatedWords ?? existing.annotatedWords,
+        contents: contents ?? existing.contents,
+      ).toMap();
+      metadata['annotations'] = annotations;
+    });
+  }
+
+  /// [startIdx, endIdx)の範囲と重なるhighlightタイプのannotationを、その部分だけ
+  /// 型抜きして削除する(重ならない前後の残り部分は新しいannotationとして残す)。
+  /// [blockText]は残り部分のannotatedWordsを再計算するための、その
+  /// block(またはノート全体)の現在のプレーンテキスト。
+  Future<void> eraseHighlightRange({
+    required String cardId,
+    int? blockIdx,
+    required int startIdx,
+    required int endIdx,
+    required String blockText,
+  }) async {
+    await _updateMetadata(cardId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      final result = <dynamic>[];
+      for (final raw in annotations) {
+        final a = Annotation.fromMap(Map<String, dynamic>.from(raw as Map));
+        final overlaps = a.blockIdx == blockIdx &&
+            a.annotationType == 'highlight' &&
+            a.startIdx < endIdx &&
+            a.endIdx > startIdx;
+        if (!overlaps) {
+          result.add(raw);
+          continue;
+        }
+        if (a.startIdx < startIdx) {
+          result.add(Annotation(
+            id: const Uuid().v4(),
+            blockIdx: a.blockIdx,
+            startIdx: a.startIdx,
+            endIdx: startIdx,
+            annotationType: a.annotationType,
+            annotatedWords: blockText.substring(a.startIdx, startIdx),
+            contents: a.contents,
+          ).toMap());
+        }
+        if (a.endIdx > endIdx) {
+          result.add(Annotation(
+            id: const Uuid().v4(),
+            blockIdx: a.blockIdx,
+            startIdx: endIdx,
+            endIdx: a.endIdx,
+            annotationType: a.annotationType,
+            annotatedWords: blockText.substring(endIdx, a.endIdx),
+            contents: a.contents,
+          ).toMap());
+        }
+        // 完全に範囲内なら残り無し(丸ごと消去)。
+      }
+      metadata['annotations'] = result;
+    });
+  }
+
+  List<dynamic> _annotationsListOf(Map<String, dynamic> metadata) {
+    final raw = metadata['annotations'];
+    return raw is List ? List<dynamic>.from(raw) : <dynamic>[];
   }
 
   Future<void> _updateMetadata(

@@ -12,8 +12,10 @@ import 'package:lecture_companion_ui/application/course/course_list_provider.dar
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/core/utils/annotation_text_utils.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/core/utils/text_preview.dart';
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
@@ -21,6 +23,9 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/review
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/card_selection_toolbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/highlight_sub_toolbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/markdown_annotation_builder.dart';
+import 'package:lecture_companion_ui/presentation/widgets/note_sub_toolbar.dart';
 
 // ---------------------------------------------------------------------------
 // Data classes
@@ -198,6 +203,30 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     // (navigating away mid-selection, or landing a selection on the card you
     // just navigated to).
     final hasSelection = useState<bool>(false);
+    // 現在選択されているプレーンテキスト。Highlight/Note確定時に、どのブロックの
+    // どの範囲かを逆引きするために使う(SelectedContent.plainTextをそのまま保持)。
+    final selectedText = useState<String?>(null);
+    // カード本文(ブロック群のみ、タイトル/絵文字は除く)専用のSelectionListener。
+    // SelectableRegionは選択範囲の絶対文字位置(SelectedContentRange)を公開する
+    // publicなAPIを持たないため、範囲を正確に取得するにはこのSelectionListener
+    // 経由で取得する必要がある。カードが変わるたびに作り直す(かつては同時に
+    // 複数の_ContentCardが並行してマウントされる遷移アニメーション中に、同じ
+    // notifierへ二重登録されるのを避けるため、現在表示中のカードにしか渡さない)。
+    final selectionListenerNotifier = useMemoized(
+      () => SelectionListenerNotifier(),
+      [currentCardIndex.value],
+    );
+    useEffect(() => selectionListenerNotifier.dispose, [selectionListenerNotifier]);
+    // Highlightサブツールバー(line/wave/marker/eraser + 色選択)の開閉状態。
+    final highlightToolbarOpen = useState<bool>(false);
+    final highlightMode = useState<String?>(null);
+    final highlightColor = useState<Color>(CourseStyleHelper.presetColors.first);
+    // Noteサブツールバーの開閉状態。Highlightと同時に開かないよう排他制御する。
+    final noteToolbarOpen = useState<bool>(false);
+    // 注: テキスト選択ハンドルはFlutter内部で常にOverlayの一番上に新規追加される
+    // ため(SelectionOverlay.showHandles)、OverlayPortal経由でサブツールバーを
+    // 前面に出す手段は無い(ホストのOverlayEntryスロット固定で、show()呼び出し
+    // 順は無関係)。ハンドルとサブツールバーが重なることは許容する。
     // Rebuilt (and thus given a fresh GlobalKey) every time the current card
     // changes. SelectableRegion's internal selection registrar doesn't
     // survive having its descendant Text/RichText widgets torn down and
@@ -276,12 +305,86 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         card: item.card!,
         imageFile: imageFile,
         themeColor: textThemeColor,
+        // Only the settled (non-animating) current card gets the live
+        // notifier. During a swipe transition this same card is *also*
+        // rendered as one of the animated `layers` in a structurally
+        // different part of the tree (wrapped in Transform/Positioned);
+        // attaching the same SelectionListenerNotifier to both would mean
+        // two SelectionListener widgets fighting over one notifier within
+        // the same frame (the old Element hasn't finished disposing before
+        // the new one tries to register), which throws
+        // '!registered'. Selection during a swipe is meaningless anyway, so
+        // simply withholding the notifier while animating avoids the clash.
+        selectionListenerNotifier:
+            cardIdx == currentCardIndex.value && !isAnimating.value
+                ? selectionListenerNotifier
+                : null,
       );
     }
 
     final index = currentCardIndex.value.clamp(0, totalCards - 1);
     final currentGroupIndex = flatItems[index].groupIndex;
     final topic = groups[currentGroupIndex];
+
+    // 現在選択中の範囲が、現在のカードのどのブロックの何文字目〜何文字目に
+    // あたるかを求める。SelectableRegion.getSelection()はタイトル/絵文字を
+    // 除いた本文(ブロック群)だけを対象にした絶対文字位置を返すので、テキスト
+    // 検索(indexOf)と違って同じ文字列の重複があっても正確に一致する。
+    TextLocation? locateSelection() {
+      final card = flatItems[index].card;
+      if (card == null || !selectionListenerNotifier.registered) return null;
+      final range = selectionListenerNotifier.selection.range;
+      if (range == null) return null;
+      return locateFromReviewCardRange(card, range);
+    }
+
+    Future<void> commitHighlight(String mode) async {
+      final card = flatItems[index].card;
+      final located = locateSelection();
+      if (card == null || located == null) return;
+      final repo = widgetRef.read(reviewCardRepositoryDriftProvider);
+      if (mode == 'eraser') {
+        final blockText = reviewCardBlockPlainText(card.cardContent[located.blockIdx!]);
+        await repo.eraseHighlightRange(
+          cardId: card.id,
+          blockIdx: located.blockIdx,
+          startIdx: located.startIdx,
+          endIdx: located.endIdx,
+          blockText: blockText,
+        );
+      } else {
+        await repo.addAnnotation(
+          cardId: card.id,
+          blockIdx: located.blockIdx,
+          startIdx: located.startIdx,
+          endIdx: located.endIdx,
+          annotationType: 'highlight',
+          annotatedWords: selectedText.value!,
+          contents: {'type': mode, 'color': colorToHex(highlightColor.value)},
+        );
+      }
+      widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+      selectionAreaKey.currentState?.selectableRegion.clearSelection();
+      highlightToolbarOpen.value = false;
+    }
+
+    Future<void> commitNote(String text) async {
+      final card = flatItems[index].card;
+      final located = locateSelection();
+      if (card == null || located == null || text.trim().isEmpty) return;
+      await widgetRef.read(reviewCardRepositoryDriftProvider).addAnnotation(
+            cardId: card.id,
+            blockIdx: located.blockIdx,
+            startIdx: located.startIdx,
+            endIdx: located.endIdx,
+            annotationType: 'notes',
+            annotatedWords: selectedText.value!,
+            contents: text.trim(),
+          );
+      widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+      selectionAreaKey.currentState?.selectableRegion.clearSelection();
+      noteToolbarOpen.value = false;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
@@ -361,6 +464,16 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         accentColor: textThemeColor,
                         reaction: flatItems[index].card?.reaction,
                         saved: flatItems[index].card?.saved ?? false,
+                        isHighlightActive: highlightToolbarOpen.value,
+                        onHighlightTap: () {
+                          highlightToolbarOpen.value = !highlightToolbarOpen.value;
+                          if (highlightToolbarOpen.value) noteToolbarOpen.value = false;
+                        },
+                        isNoteActive: noteToolbarOpen.value,
+                        onNoteTap: () {
+                          noteToolbarOpen.value = !noteToolbarOpen.value;
+                          if (noteToolbarOpen.value) highlightToolbarOpen.value = false;
+                        },
                         onLike: flatItems[index].card == null
                             ? null
                             : () async {
@@ -447,15 +560,24 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
               // ── Card area ────────────────────────────────────────────────
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SelectionArea(
-                    key: selectionAreaKey,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SelectionArea(
+                        key: selectionAreaKey,
                     contextMenuBuilder: (context, selectableRegionState) =>
                         const SizedBox.shrink(),
                     onSelectionChanged: (content) {
                       hasSelection.value =
                           content != null && content.plainText.isNotEmpty;
+                      if (hasSelection.value) {
+                        selectedText.value = content!.plainText;
+                      } else {
+                        highlightToolbarOpen.value = false;
+                        noteToolbarOpen.value = false;
+                      }
                     },
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
@@ -646,7 +768,21 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         },
                       ),
                     ),
-                  ),
+                        ),
+                      ),
+                    if (highlightToolbarOpen.value && hasSelection.value)
+                      HighlightSubToolbar(
+                        color: highlightColor.value,
+                        onColorChanged: (c) => highlightColor.value = c,
+                        activeMode: highlightMode.value,
+                        onModeSelected: (m) {
+                          highlightMode.value = m;
+                          commitHighlight(m);
+                        },
+                      ),
+                    if (noteToolbarOpen.value && hasSelection.value)
+                      NoteSubToolbar(onSave: commitNote),
+                  ],
                 ),
               ),
 
@@ -967,15 +1103,34 @@ class _ContentCard extends StatelessWidget {
     required this.card,
     required this.imageFile,
     required this.themeColor,
+    this.selectionListenerNotifier,
   });
 
   final ReviewCard card;
   final File? imageFile;
   final Color themeColor;
+  // 非nullの時だけブロック本文をSelectionListenerで包み、正確な選択範囲
+  // (SelectedContentRange)を取得できるようにする。遷移アニメーション中に
+  // 複数枚のカードが同時にマウントされても二重登録が起きないよう、実際に
+  // 表示中のカードにしか渡さない(review_cards_viewer_page.dartのbuildCard参照)。
+  final SelectionListenerNotifier? selectionListenerNotifier;
 
   @override
   Widget build(BuildContext context) {
     final hasImage = imageFile != null;
+
+    final blocks = Column(
+      children: card.cardContent.asMap().entries.map(
+        (entry) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _ReviewCardBlockView(
+            block: entry.value,
+            themeColor: themeColor,
+            annotations: card.annotations.where((a) => a.blockIdx == entry.key).toList(),
+          ),
+        ),
+      ).toList(),
+    );
 
     final content = SingleChildScrollView(
       padding: EdgeInsets.all(hasImage ? 20 : 28),
@@ -991,24 +1146,24 @@ class _ContentCard extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           if (card.title?.trim().isNotEmpty == true) ...[
-            Text(
-              card.title!.trim(),
-              style: TextStyle(
-                color: AppColors.paper.textInk,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
+            SelectionContainer.disabled(
+              child: Text(
+                card.title!.trim(),
+                style: TextStyle(
+                  color: AppColors.paper.textInk,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
           ],
-          ...card.cardContent.map(
-            (block) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ReviewCardBlockView(block: block, themeColor: themeColor),
-            ),
-          ),
+          if (selectionListenerNotifier != null)
+            SelectionListener(selectionNotifier: selectionListenerNotifier!, child: blocks)
+          else
+            blocks,
         ],
       ),
     );
@@ -1072,10 +1227,15 @@ class _ContentCard extends StatelessWidget {
 // Card block renderer
 // ---------------------------------------------------------------------------
 class _ReviewCardBlockView extends StatelessWidget {
-  const _ReviewCardBlockView({required this.block, required this.themeColor});
+  const _ReviewCardBlockView({
+    required this.block,
+    required this.themeColor,
+    this.annotations = const [],
+  });
 
   final ReviewCardBlock block;
   final Color themeColor;
+  final List<Annotation> annotations;
 
   MarkdownStyleSheet _styleSheet(BuildContext context, {bool italic = false}) {
     final baseColor = AppColors.paper.textInk;
@@ -1103,6 +1263,10 @@ class _ReviewCardBlockView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final builders = annotationMarkdownBuilders(
+      MarkdownAnnotationBuilder(annotations: annotations),
+    );
+    final annotationsKey = ValueKey(annotationsCacheKey(annotations));
     switch (block.type) {
       case 'quote':
         return Container(
@@ -1111,7 +1275,9 @@ class _ReviewCardBlockView extends StatelessWidget {
             border: Border(left: BorderSide(color: themeColor, width: 3)),
           ),
           child: MarkdownBody(
+            key: annotationsKey,
             data: stripSidCitations(block.text ?? ''),
+            builders: builders,
             styleSheet: _styleSheet(
               context,
               italic: true,
@@ -1124,7 +1290,12 @@ class _ReviewCardBlockView extends StatelessWidget {
             .map((item) => '- ${stripSidCitations(item)}')
             .join('\n');
         return MarkdownBody(
+          key: annotationsKey,
           data: markdown,
+          builders: builders,
+          bulletBuilder: annotationBulletBuilder(
+            _styleSheet(context).listBullet,
+          ),
           styleSheet: _styleSheet(
             context,
           ).copyWith(textAlign: WrapAlignment.start),
@@ -1132,7 +1303,9 @@ class _ReviewCardBlockView extends StatelessWidget {
       case 'paragraph':
       default:
         return MarkdownBody(
+          key: annotationsKey,
           data: stripSidCitations(block.text ?? ''),
+          builders: builders,
           styleSheet: _styleSheet(context),
         );
     }

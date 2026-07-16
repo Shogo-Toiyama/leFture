@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 part 'deep_note_repository_drift.g.dart';
 
@@ -49,6 +51,121 @@ class DeepNoteRepositoryDrift {
         metadata.remove('saved');
       }
     });
+  }
+
+  /// 新しいannotation(highlight/notes)を追加し、Outboxに登録する。
+  /// 生成したannotationのidを返す。DeepNoteはMarkdown文字列1本なのでblockIdxは無い。
+  Future<String> addAnnotation({
+    required String noteId,
+    required int startIdx,
+    required int endIdx,
+    required String annotationType,
+    required String annotatedWords,
+    required dynamic contents,
+  }) async {
+    final annotationId = const Uuid().v4();
+    await _updateMetadata(noteId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      annotations.add(Annotation(
+        id: annotationId,
+        startIdx: startIdx,
+        endIdx: endIdx,
+        annotationType: annotationType,
+        annotatedWords: annotatedWords,
+        contents: contents,
+      ).toMap());
+      metadata['annotations'] = annotations;
+    });
+    return annotationId;
+  }
+
+  /// annotationIdの指定するannotationを削除し、Outboxに登録する。
+  Future<void> removeAnnotation({required String noteId, required String annotationId}) async {
+    await _updateMetadata(noteId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      annotations.removeWhere((a) => a['id'] == annotationId);
+      metadata['annotations'] = annotations;
+    });
+  }
+
+  /// annotationIdの指定するannotationの内容を更新し、Outboxに登録する。
+  /// 渡さなかったフィールドは既存の値を維持する。
+  Future<void> updateAnnotation({
+    required String noteId,
+    required String annotationId,
+    int? startIdx,
+    int? endIdx,
+    String? annotatedWords,
+    dynamic contents,
+  }) async {
+    await _updateMetadata(noteId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      final idx = annotations.indexWhere((a) => a['id'] == annotationId);
+      if (idx == -1) return;
+
+      final existing = Annotation.fromMap(Map<String, dynamic>.from(annotations[idx] as Map));
+      annotations[idx] = Annotation(
+        id: existing.id,
+        startIdx: startIdx ?? existing.startIdx,
+        endIdx: endIdx ?? existing.endIdx,
+        annotationType: existing.annotationType,
+        annotatedWords: annotatedWords ?? existing.annotatedWords,
+        contents: contents ?? existing.contents,
+      ).toMap();
+      metadata['annotations'] = annotations;
+    });
+  }
+
+  /// [startIdx, endIdx)の範囲と重なるhighlightタイプのannotationを、その部分だけ
+  /// 型抜きして削除する(重ならない前後の残り部分は新しいannotationとして残す)。
+  /// [noteText]は残り部分のannotatedWordsを再計算するための、ノート全体の
+  /// 現在のプレーンテキスト。
+  Future<void> eraseHighlightRange({
+    required String noteId,
+    required int startIdx,
+    required int endIdx,
+    required String noteText,
+  }) async {
+    await _updateMetadata(noteId, (metadata) {
+      final annotations = _annotationsListOf(metadata);
+      final result = <dynamic>[];
+      for (final raw in annotations) {
+        final a = Annotation.fromMap(Map<String, dynamic>.from(raw as Map));
+        final overlaps = a.annotationType == 'highlight' &&
+            a.startIdx < endIdx &&
+            a.endIdx > startIdx;
+        if (!overlaps) {
+          result.add(raw);
+          continue;
+        }
+        if (a.startIdx < startIdx) {
+          result.add(Annotation(
+            id: const Uuid().v4(),
+            startIdx: a.startIdx,
+            endIdx: startIdx,
+            annotationType: a.annotationType,
+            annotatedWords: noteText.substring(a.startIdx, startIdx),
+            contents: a.contents,
+          ).toMap());
+        }
+        if (a.endIdx > endIdx) {
+          result.add(Annotation(
+            id: const Uuid().v4(),
+            startIdx: endIdx,
+            endIdx: a.endIdx,
+            annotationType: a.annotationType,
+            annotatedWords: noteText.substring(endIdx, a.endIdx),
+            contents: a.contents,
+          ).toMap());
+        }
+      }
+      metadata['annotations'] = result;
+    });
+  }
+
+  List<dynamic> _annotationsListOf(Map<String, dynamic> metadata) {
+    final raw = metadata['annotations'];
+    return raw is List ? List<dynamic>.from(raw) : <dynamic>[];
   }
 
   Future<void> _updateMetadata(

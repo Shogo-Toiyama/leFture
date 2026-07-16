@@ -12,11 +12,15 @@ import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
+import 'package:lecture_companion_ui/core/utils/annotation_text_utils.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/card_selection_toolbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/highlight_sub_toolbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/markdown_annotation_builder.dart';
+import 'package:lecture_companion_ui/presentation/widgets/note_sub_toolbar.dart';
 import 'deep_notes_list_page.dart';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +89,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           noteId: note?.id,
           reaction: note?.reaction,
           saved: note?.saved ?? false,
+          annotations: note?.annotations ?? const [],
         );
       }).toList();
     }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
@@ -97,11 +102,45 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     // Tracks whether the user currently has text selected inside the note,
     // mirroring the same pattern used by the Review Cards viewer.
     final hasSelection = useState<bool>(false);
+    // 現在選択されているプレーンテキスト。Highlight/Note確定時に、ノート本文の
+    // どの範囲かを逆引きするために使う。
+    final selectedText = useState<String?>(null);
+    // Review Cardsと同様、ノートが切り替わるたびに作り直してSelectableRegionの
+    // 内部状態をリセットする(save後のclearSelection()にも使う)。
+    final selectionAreaKey = useMemoized(
+      () => GlobalKey<SelectionAreaState>(),
+      [currentIndex.value],
+    );
+    // ノート本文(MarkdownBody)専用のSelectionListener。SelectableRegionは
+    // 選択範囲の絶対文字位置(SelectedContentRange)を公開するpublicなAPIを
+    // 持たないため、範囲を正確に取得するにはこれ経由で取得する必要がある。
+    final selectionListenerNotifier = useMemoized(
+      () => SelectionListenerNotifier(),
+      [currentIndex.value],
+    );
+    useEffect(() => selectionListenerNotifier.dispose, [selectionListenerNotifier]);
+    // Highlightサブツールバー(line/wave/marker/eraser + 色選択)の開閉状態。
+    final highlightToolbarOpen = useState<bool>(false);
+    final highlightMode = useState<String?>(null);
+    final highlightColor = useState<Color>(CourseStyleHelper.presetColors.first);
+    // Noteサブツールバーの開閉状態。Highlightと同時に開かないよう排他制御する。
+    final noteToolbarOpen = useState<bool>(false);
+    // 注: テキスト選択ハンドルはFlutter内部で常にOverlayの一番上に新規追加される
+    // ため(SelectionOverlay.showHandles)、OverlayPortal経由でサブツールバーを
+    // 前面に出す手段は無い(ホストのOverlayEntryスロット固定で、show()呼び出し
+    // 順は無関係)。ハンドルとサブツールバーが重なることは許容する。
 
-    // When resolvedTopics loads, update the currentIndex value to initial topicIndex
+    // topicsAsync/notesAsyncはDrift(ローカルDB)のStreamベースのプロバイダなので、
+    // ハイライト保存などのDB書き込みのたびにresolvedTopicsは新しいリスト参照として
+    // 再生成される。この初期化は「まだデータが無くて0件だった状態から、
+    // ルートのtopicIndexが指すページを初めて表示する」ための一度きりの処理であり、
+    // 以降のDB更新のたびにユーザーがNext/Prevでローカルに移動したページ位置を
+    // 巻き戻してしまわないよう、一度同期したら二度と実行しないようにする。
+    final hasSyncedInitialIndex = useRef(false);
     useEffect(() {
-      if (resolvedTopics.isNotEmpty) {
+      if (!hasSyncedInitialIndex.value && resolvedTopics.isNotEmpty) {
         currentIndex.value = topicIndex.clamp(0, resolvedTopics.length - 1);
+        hasSyncedInitialIndex.value = true;
       }
       return null;
     }, [resolvedTopics]);
@@ -127,7 +166,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           child: SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, null),
+                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, null, false, () {}, false, () {}),
                 Expanded(
                   child: Center(
                     child: isLoading
@@ -144,6 +183,58 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     final topic = resolvedTopics[currentIndex.value];
     final totalTopics = resolvedTopics.length;
+
+    // 現在選択中の範囲が、ノート本文の何文字目〜何文字目にあたるかを求める。
+    TextLocation? locateSelection() {
+      if (!selectionListenerNotifier.registered) return null;
+      final range = selectionListenerNotifier.selection.range;
+      if (range == null) return null;
+      return locateFromNoteRange(range);
+    }
+
+    Future<void> commitHighlight(String mode) async {
+      final noteId = topic.noteId;
+      final located = locateSelection();
+      if (noteId == null || located == null) return;
+      final repo = ref.read(deepNoteRepositoryDriftProvider);
+      if (mode == 'eraser') {
+        await repo.eraseHighlightRange(
+          noteId: noteId,
+          startIdx: located.startIdx,
+          endIdx: located.endIdx,
+          noteText: flattenMarkdownText(stripSidCitations(topic.content)),
+        );
+      } else {
+        await repo.addAnnotation(
+          noteId: noteId,
+          startIdx: located.startIdx,
+          endIdx: located.endIdx,
+          annotationType: 'highlight',
+          annotatedWords: selectedText.value!,
+          contents: {'type': mode, 'color': colorToHex(highlightColor.value)},
+        );
+      }
+      ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+      selectionAreaKey.currentState?.selectableRegion.clearSelection();
+      highlightToolbarOpen.value = false;
+    }
+
+    Future<void> commitNote(String text) async {
+      final noteId = topic.noteId;
+      final located = locateSelection();
+      if (noteId == null || located == null || text.trim().isEmpty) return;
+      await ref.read(deepNoteRepositoryDriftProvider).addAnnotation(
+            noteId: noteId,
+            startIdx: located.startIdx,
+            endIdx: located.endIdx,
+            annotationType: 'notes',
+            annotatedWords: selectedText.value!,
+            contents: text.trim(),
+          );
+      ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+      selectionAreaKey.currentState?.selectableRegion.clearSelection();
+      noteToolbarOpen.value = false;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
@@ -164,15 +255,48 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _buildAppBar(context, ref, topic.title, currentIndex.value, totalTopics, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, topic),
+              _buildAppBar(
+                context,
+                ref,
+                topic.title,
+                currentIndex.value,
+                totalTopics,
+                () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor),
+                hasSelection.value,
+                textThemeColor,
+                topic,
+                highlightToolbarOpen.value,
+                () {
+                  highlightToolbarOpen.value = !highlightToolbarOpen.value;
+                  if (highlightToolbarOpen.value) noteToolbarOpen.value = false;
+                },
+                noteToolbarOpen.value,
+                () {
+                  noteToolbarOpen.value = !noteToolbarOpen.value;
+                  if (noteToolbarOpen.value) highlightToolbarOpen.value = false;
+                },
+              ),
               Expanded(
-                child: _NoteDetailContent(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _NoteDetailContent(
                   topic: topic,
                   topicIndex: currentIndex.value,
                   totalTopics: totalTopics,
                   arrivalDirection: navigationDirection.value,
                   textThemeColor: textThemeColor,
-                  onSelectionChanged: (selected) => hasSelection.value = selected,
+                  selectionAreaKey: selectionAreaKey,
+                  selectionListenerNotifier: selectionListenerNotifier,
+                  onSelectionChanged: (text) {
+                    hasSelection.value = text != null;
+                    if (text != null) {
+                      selectedText.value = text;
+                    } else {
+                      highlightToolbarOpen.value = false;
+                      noteToolbarOpen.value = false;
+                    }
+                  },
                   onNext: () {
                     if (currentIndex.value < totalTopics - 1) {
                       navigationDirection.value = 1;
@@ -185,6 +309,20 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       currentIndex.value = currentIndex.value - 1;
                     }
                   },
+                    ),
+                    if (highlightToolbarOpen.value && hasSelection.value)
+                      HighlightSubToolbar(
+                        color: highlightColor.value,
+                        onColorChanged: (c) => highlightColor.value = c,
+                        activeMode: highlightMode.value,
+                        onModeSelected: (m) {
+                          highlightMode.value = m;
+                          commitHighlight(m);
+                        },
+                      ),
+                    if (noteToolbarOpen.value && hasSelection.value)
+                      NoteSubToolbar(onSave: commitNote),
+                  ],
                 ),
               ),
             ],
@@ -204,6 +342,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     bool hasSelection,
     Color accentColor,
     DeepNoteTopic? topic,
+    bool highlightToolbarOpen,
+    VoidCallback onHighlightTap,
+    bool noteToolbarOpen,
+    VoidCallback onNoteTap,
   ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -252,6 +394,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   accentColor: accentColor,
                   reaction: topic?.reaction,
                   saved: topic?.saved ?? false,
+                  isHighlightActive: highlightToolbarOpen,
+                  onHighlightTap: onHighlightTap,
+                  isNoteActive: noteToolbarOpen,
+                  onNoteTap: onNoteTap,
                   onLike: topic?.noteId == null
                       ? null
                       : () async {
@@ -448,6 +594,16 @@ class DeepNotesDetailPage extends HookConsumerWidget {
   }
 }
 
+// SelectableRegionは選択範囲の絶対文字位置(SelectedContentRange)を公開する
+// publicなAPIを持たないため、正確な範囲取得にはSelectionListenerが必要。
+Widget _maybeWrapWithSelectionListener(
+  SelectionListenerNotifier? notifier,
+  Widget child,
+) {
+  if (notifier == null) return child;
+  return SelectionListener(selectionNotifier: notifier, child: child);
+}
+
 // ---------------------------------------------------------------------------
 // Note detail content (scrollable markdown + overscroll navigation)
 // ---------------------------------------------------------------------------
@@ -461,6 +617,8 @@ class _NoteDetailContent extends HookWidget {
     required this.onPrev,
     required this.textThemeColor,
     required this.onSelectionChanged,
+    this.selectionAreaKey,
+    this.selectionListenerNotifier,
   });
 
   final DeepNoteTopic topic;
@@ -470,7 +628,9 @@ class _NoteDetailContent extends HookWidget {
   final VoidCallback onNext;
   final VoidCallback onPrev;
   final Color textThemeColor;
-  final ValueChanged<bool> onSelectionChanged;
+  final ValueChanged<String?> onSelectionChanged;
+  final GlobalKey<SelectionAreaState>? selectionAreaKey;
+  final SelectionListenerNotifier? selectionListenerNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -558,10 +718,12 @@ class _NoteDetailContent extends HookWidget {
         return false;
       },
       child: SelectionArea(
+        key: selectionAreaKey,
         contextMenuBuilder: (context, selectableRegionState) =>
             const SizedBox.shrink(),
-        onSelectionChanged: (content) =>
-            onSelectionChanged(content != null && content.plainText.isNotEmpty),
+        onSelectionChanged: (content) => onSelectionChanged(
+          content != null && content.plainText.isNotEmpty ? content.plainText : null,
+        ),
         child: CustomScrollbar(
           controller: scrollController,
           // 1トピック分のノートは有限かつ短いドキュメントなので、フィード向けの
@@ -637,11 +799,22 @@ class _NoteDetailContent extends HookWidget {
                 const SizedBox(height: 24),
 
                 // ── Markdown content ───────────────────────────────────────
-                MarkdownBody(
+                _maybeWrapWithSelectionListener(
+                  selectionListenerNotifier,
+                  MarkdownBody(
+                  key: ValueKey(annotationsCacheKey(topic.annotations)),
                   data: topic.content.isNotEmpty
                       ? stripSidCitations(topic.content)
                       : 'Deep notes for this topic are still being generated…',
                   selectable: false,
+                  builders: topic.content.isNotEmpty
+                      ? annotationMarkdownBuilders(
+                          MarkdownAnnotationBuilder(annotations: topic.annotations),
+                        )
+                      : const {},
+                  bulletBuilder: annotationBulletBuilder(
+                    TextStyle(color: textThemeColor, fontSize: 16),
+                  ),
                   styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
                       .copyWith(
                         p: TextStyle(
@@ -683,6 +856,7 @@ class _NoteDetailContent extends HookWidget {
                           ),
                         ),
                       ),
+                  ),
                 ),
                 const SizedBox(height: 32),
 

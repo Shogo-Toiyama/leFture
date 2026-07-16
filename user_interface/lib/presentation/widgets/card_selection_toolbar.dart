@@ -4,7 +4,8 @@
 // pages, between the grid-view icon and the page counter. Shows reaction
 // actions (Like / Dislike / Save) by default, and swaps to text-selection
 // actions (Highlight / Note / Copy / Source) while a selection is active.
-// Highlight / Note / Copy / Source are still UI-only placeholders.
+// Highlight and Note open their own draggable sub-toolbars; Copy / Source
+// are still UI-only placeholders.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -21,6 +22,10 @@ class CardSelectionToolbar extends HookWidget {
     this.onLike,
     this.onDislike,
     this.onSave,
+    this.isHighlightActive = false,
+    this.onHighlightTap,
+    this.isNoteActive = false,
+    this.onNoteTap,
   });
 
   final bool hasSelection;
@@ -33,9 +38,13 @@ class CardSelectionToolbar extends HookWidget {
   final VoidCallback? onDislike;
   final VoidCallback? onSave;
 
+  // Highlight/Noteサブツールバーが開いているかどうか(アイコンのアクティブ表示用)
+  final bool isHighlightActive;
+  final VoidCallback? onHighlightTap;
+  final bool isNoteActive;
+  final VoidCallback? onNoteTap;
+
   static const _selectionItems = [
-    _ToolbarItemData(icon: Icons.brush_outlined, label: 'Highlight'),
-    _ToolbarItemData(icon: Icons.edit_note_rounded, label: 'Note'),
     _ToolbarItemData(icon: Icons.copy_rounded, label: 'Copy'),
     _ToolbarItemData(icon: Icons.description_outlined, label: 'Source'),
   ];
@@ -57,6 +66,20 @@ class CardSelectionToolbar extends HookWidget {
 
     final buttons = hasSelection
         ? [
+            _ToolbarButton(
+              icon: Icons.brush_outlined,
+              label: 'Highlight',
+              color: color,
+              isActive: isHighlightActive,
+              onTap: onHighlightTap,
+            ),
+            _ToolbarButton(
+              icon: Icons.edit_note_rounded,
+              label: 'Note',
+              color: color,
+              isActive: isNoteActive,
+              onTap: onNoteTap,
+            ),
             for (final item in _selectionItems)
               _ToolbarButton(icon: item.icon, label: item.label, color: color, onTap: () {}),
           ]

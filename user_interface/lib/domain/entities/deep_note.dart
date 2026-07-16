@@ -1,3 +1,5 @@
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
+
 class DeepNote {
   const DeepNote({
     required this.id,
@@ -20,6 +22,15 @@ class DeepNote {
   // "like" / "dislike" / null
   String? get reaction => metadata?['reaction'] as String?;
   bool get saved => metadata?['saved'] == true;
+
+  List<Annotation> get annotations {
+    final raw = metadata?['annotations'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => Annotation.fromMap(Map<String, dynamic>.from(m)))
+        .toList();
+  }
 
   factory DeepNote.fromMap(Map<String, dynamic> map) {
     return DeepNote(

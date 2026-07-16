@@ -8,6 +8,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
 import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -26,6 +27,7 @@ class DeepNoteTopic {
     this.noteId,
     this.reaction,
     this.saved = false,
+    this.annotations = const [],
   });
 
   final int index;
@@ -37,6 +39,7 @@ class DeepNoteTopic {
   // "like" / "dislike" / null
   final String? reaction;
   final bool saved;
+  final List<Annotation> annotations;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +76,7 @@ class DeepNotesListPage extends HookConsumerWidget {
           noteId: note?.id,
           reaction: note?.reaction,
           saved: note?.saved ?? false,
+          annotations: note?.annotations ?? const [],
         );
       }).toList();
     }, [topicsAsync, notesAsync]);
