@@ -48,9 +48,23 @@ Future<List<TranscriptSentence>?> transcript(
 
 // R2上の任意の成果物ファイル（トピック画像など）をローカルキャッシュ経由で取得するProvider
 // storagePath 例: "{uid}/{lectureId}/images/topic_1.jpg"
+//
+// 取得成功時のみキャッシュを維持(keepAlive)する。失敗時(まだ生成されていない/
+// トークン未リフレッシュ等の一時的なエラー)はキャッシュを維持せずAutoDisposeに
+// 戻すことで、Widgetが再度watchされたタイミング(画面遷移・pull-to-refresh等)で
+// 自然に再取得が走るようにする。失敗結果を永久にキャッシュしてしまうと、
+// 一覧表示直後など最も早いタイミングでリクエストされる項目(例: 各レクチャーの
+// 最初のトピック画像)が一時的なエラーを引いた場合に、実際は少し待てば取得できる
+// ようになっても二度と再取得されなくなる問題があった。
 @riverpod
-Future<File?> artifactFile(Ref ref, String storagePath) {
-  return ref.watch(lectureArtifactRepositoryProvider).getArtifactFile(storagePath);
+Future<File> artifactFile(Ref ref, String storagePath) async {
+  final link = ref.keepAlive();
+  try {
+    return await ref.watch(lectureArtifactRepositoryProvider).getArtifactFile(storagePath);
+  } catch (_) {
+    link.close();
+    rethrow;
+  }
 }
 
 // レクチャーの最初のトピック（index = 1）の image_path を監視するProvider

@@ -641,7 +641,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
   void _onPanelDragUpdate(double deltaY) {
     setState(() {
       _isDraggingPanel = true;
-      _panelExtent = (_panelExtent - deltaY).clamp(_panelMinExtent, _panelMaxExtent);
+      _panelExtent = (_panelExtent - deltaY).clamp(0.0, _panelMaxExtent);
     });
   }
 
@@ -649,18 +649,33 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
   /// fast enough fling overrides that towards the fling's direction).
   void _onPanelDragEnd(double? velocity) {
     const flingThreshold = 300.0;
-    final double target;
-    if (velocity != null && velocity < -flingThreshold) {
+    double target;
+    bool shouldClose = false;
+
+    if (velocity != null && velocity > flingThreshold) {
+      if (_panelExtent > _panelMinExtent * 1.1) {
+        target = _panelMinExtent;
+      } else {
+        target = 0;
+        shouldClose = true;
+      }
+    } else if (velocity != null && velocity < -flingThreshold) {
       target = _panelMaxExtent;
-    } else if (velocity != null && velocity > flingThreshold) {
-      target = _panelMinExtent;
     } else {
-      final midpoint = (_panelMinExtent + _panelMaxExtent) / 2;
-      target = _panelExtent >= midpoint ? _panelMaxExtent : _panelMinExtent;
+      if (_panelExtent < _panelMinExtent * 0.75) {
+        target = 0;
+        shouldClose = true;
+      } else {
+        final midpoint = (_panelMinExtent + _panelMaxExtent) / 2;
+        target = _panelExtent >= midpoint ? _panelMaxExtent : _panelMinExtent;
+      }
     }
     setState(() {
       _isDraggingPanel = false;
       _panelExtent = target;
+      if (shouldClose) {
+        _panelData = null;
+      }
     });
   }
 
@@ -765,6 +780,29 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
             // size instead (the exact bug hit earlier with the back
             // button in topic_map_page.dart).
             Positioned.fill(child: _buildContent(context, viewportSize)),
+            // ── Transparent AppBar (Placed behind the detail panel in Z-order) ──
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                title: const Text(
+                  'Topic Map',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               left: 0,
               right: 0,
@@ -1013,17 +1051,12 @@ class _TopOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
     return Positioned(
-      top: 0,
+      top: topPadding + kToolbarHeight,
       left: 0,
       right: 0,
-      // ClusterMapView is sometimes embedded edge-to-edge (no enclosing
-      // AppBar/Scaffold reserving the status bar/notch inset for it), so
-      // this overlay has to claim that inset itself -- otherwise its title
-      // and lecture chips render partly underneath the system chrome.
-      child: SafeArea(
-        bottom: false,
-        child: Container(
+      child: Container(
           padding: const EdgeInsets.only(top: 14, bottom: 10),
           decoration: BoxDecoration(
             color: TopicMapPalette.surface(brightness).withValues(alpha: 0.92),
@@ -1068,7 +1101,6 @@ class _TopOverlay extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

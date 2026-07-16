@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -98,9 +99,12 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                                   Navigator.of(context).pop(); // シートを閉じてから遷移
                                   context.push('${AppRoutes.coursesRootPath}/c/$courseId');
                                 },
-                          onToggleComplete: (a) => ref
-                              .read(announcementRepositoryDriftProvider)
-                              .toggleComplete(id: a.id, completed: !a.isCompleted),
+                          onToggleComplete: (a) async {
+                            await ref
+                                .read(announcementRepositoryDriftProvider)
+                                .toggleComplete(id: a.id, completed: !a.isCompleted);
+                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          },
                         );
                       },
                     );

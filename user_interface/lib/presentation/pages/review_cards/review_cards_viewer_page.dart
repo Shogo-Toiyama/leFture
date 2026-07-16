@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
@@ -16,8 +17,10 @@ import 'package:lecture_companion_ui/core/utils/text_preview.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/review_card.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/review_card_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/card_selection_toolbar.dart';
 
 // ---------------------------------------------------------------------------
 // Data classes
@@ -325,14 +328,13 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                   ],
                 ),
               ),
-              // ── Row 2: Grid view button & Page counter ──
+              // ── Row 2: Grid view button, toolbar & Page counter ──
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 4,
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
                       icon: Icon(
@@ -353,6 +355,42 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       constraints: const BoxConstraints(),
                       tooltip: 'View List',
                     ),
+                    Expanded(
+                      child: CardSelectionToolbar(
+                        hasSelection: hasSelection.value,
+                        accentColor: textThemeColor,
+                        reaction: flatItems[index].card?.reaction,
+                        saved: flatItems[index].card?.saved ?? false,
+                        onLike: flatItems[index].card == null
+                            ? null
+                            : () async {
+                                await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
+                                      id: flatItems[index].card!.id,
+                                      reaction: flatItems[index].card!.reaction == 'like' ? null : 'like',
+                                    );
+                                widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                              },
+                        onDislike: flatItems[index].card == null
+                            ? null
+                            : () async {
+                                await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
+                                      id: flatItems[index].card!.id,
+                                      reaction: flatItems[index].card!.reaction == 'dislike' ? null : 'dislike',
+                                    );
+                                widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                              },
+                        onSave: flatItems[index].card == null
+                            ? null
+                            : () async {
+                                await widgetRef.read(reviewCardRepositoryDriftProvider).updateSaved(
+                                      id: flatItems[index].card!.id,
+                                      saved: !flatItems[index].card!.saved,
+                                    );
+                                widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       '${index + 1} / $totalCards',
                       style: TextStyle(

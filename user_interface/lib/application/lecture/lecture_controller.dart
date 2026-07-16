@@ -16,6 +16,8 @@ import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/lecture_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/fun_fact_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/announcement_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/review_card_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/deep_note_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/maintenance/local_retention_service.dart';
 import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart'; // jobRepository
@@ -49,6 +51,8 @@ class LectureController extends _$LectureController {
       'lecture': LectureOutboxPushHandler(),
       'fun_fact': FunFactOutboxPushHandler(),
       'announcement': AnnouncementOutboxPushHandler(),
+      'review_card': ReviewCardOutboxPushHandler(),
+      'deep_note': DeepNoteOutboxPushHandler(),
     });
   }
 
@@ -231,5 +235,19 @@ class LectureController extends _$LectureController {
       }
     });
     link.close();
+  }
+
+  /// ローカル書き込み直後にOutboxを即座に送信したい場合に呼ぶ(例: Review Card/
+  /// Deep NoteのLike・Dislike・Saveタップ)。失敗してもOutboxに残っているので、
+  /// 次回のbootstrap時に自動でリトライされる。
+  Future<void> pushOutboxNow() async {
+    final link = ref.keepAlive();
+    try {
+      await _outbox().pushAll();
+    } catch (e) {
+      DevLog.add('⚠️ [LectureController] Background push failed (queued in outbox): $e');
+    } finally {
+      link.close();
+    }
   }
 }

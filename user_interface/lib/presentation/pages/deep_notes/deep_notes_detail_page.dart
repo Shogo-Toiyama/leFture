@@ -5,15 +5,18 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/card_selection_toolbar.dart';
 import 'deep_notes_list_page.dart';
 
 // ---------------------------------------------------------------------------
@@ -79,6 +82,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           title: t.displayTitle,
           summary: t.summary ?? '',
           content: note?.noteContents ?? '',
+          noteId: note?.id,
+          reaction: note?.reaction,
+          saved: note?.saved ?? false,
         );
       }).toList();
     }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
@@ -88,6 +94,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     // 直近の遷移方向: 1=次のノートへ, -1=前のノートへ, 0=遷移直後ではない。
     // 遷移先のノートを開いた瞬間のスクロール位置を決めるために使う。
     final navigationDirection = useState<int>(0);
+    // Tracks whether the user currently has text selected inside the note,
+    // mirroring the same pattern used by the Review Cards viewer.
+    final hasSelection = useState<bool>(false);
 
     // When resolvedTopics loads, update the currentIndex value to initial topicIndex
     useEffect(() {
@@ -118,7 +127,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           child: SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor)),
+                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, null),
                 Expanded(
                   child: Center(
                     child: isLoading
@@ -155,7 +164,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              _buildAppBar(context, ref, topic.title, currentIndex.value, totalTopics, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor)),
+              _buildAppBar(context, ref, topic.title, currentIndex.value, totalTopics, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, topic),
               Expanded(
                 child: _NoteDetailContent(
                   topic: topic,
@@ -163,6 +172,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   totalTopics: totalTopics,
                   arrivalDirection: navigationDirection.value,
                   textThemeColor: textThemeColor,
+                  onSelectionChanged: (selected) => hasSelection.value = selected,
                   onNext: () {
                     if (currentIndex.value < totalTopics - 1) {
                       navigationDirection.value = 1;
@@ -191,6 +201,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     int currentIndex,
     int totalCount,
     VoidCallback onGridTap,
+    bool hasSelection,
+    Color accentColor,
+    DeepNoteTopic? topic,
   ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -221,11 +234,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
             ],
           ),
         ),
-        // Row 2: Grid view button & Page counter
+        // Row 2: Grid view button, toolbar & Page counter
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
                 icon: Icon(Icons.grid_view, color: AppColors.paper.textInk),
@@ -234,6 +246,42 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                 constraints: const BoxConstraints(),
                 tooltip: 'View List',
               ),
+              Expanded(
+                child: CardSelectionToolbar(
+                  hasSelection: hasSelection,
+                  accentColor: accentColor,
+                  reaction: topic?.reaction,
+                  saved: topic?.saved ?? false,
+                  onLike: topic?.noteId == null
+                      ? null
+                      : () async {
+                          await ref.read(deepNoteRepositoryDriftProvider).updateReaction(
+                                id: topic!.noteId!,
+                                reaction: topic.reaction == 'like' ? null : 'like',
+                              );
+                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                        },
+                  onDislike: topic?.noteId == null
+                      ? null
+                      : () async {
+                          await ref.read(deepNoteRepositoryDriftProvider).updateReaction(
+                                id: topic!.noteId!,
+                                reaction: topic.reaction == 'dislike' ? null : 'dislike',
+                              );
+                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                        },
+                  onSave: topic?.noteId == null
+                      ? null
+                      : () async {
+                          await ref.read(deepNoteRepositoryDriftProvider).updateSaved(
+                                id: topic!.noteId!,
+                                saved: !topic.saved,
+                              );
+                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                        },
+                ),
+              ),
+              const SizedBox(width: 8),
               if (totalCount > 0)
                 Text(
                   '${currentIndex + 1} / $totalCount',
@@ -412,6 +460,7 @@ class _NoteDetailContent extends HookWidget {
     required this.onNext,
     required this.onPrev,
     required this.textThemeColor,
+    required this.onSelectionChanged,
   });
 
   final DeepNoteTopic topic;
@@ -421,6 +470,7 @@ class _NoteDetailContent extends HookWidget {
   final VoidCallback onNext;
   final VoidCallback onPrev;
   final Color textThemeColor;
+  final ValueChanged<bool> onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -510,6 +560,8 @@ class _NoteDetailContent extends HookWidget {
       child: SelectionArea(
         contextMenuBuilder: (context, selectableRegionState) =>
             const SizedBox.shrink(),
+        onSelectionChanged: (content) =>
+            onSelectionChanged(content != null && content.plainText.isNotEmpty),
         child: CustomScrollbar(
           controller: scrollController,
           // 1トピック分のノートは有限かつ短いドキュメントなので、フィード向けの

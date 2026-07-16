@@ -23,12 +23,20 @@ class DeepNoteTopic {
     required this.title,
     required this.summary,
     required this.content,
+    this.noteId,
+    this.reaction,
+    this.saved = false,
   });
 
   final int index;
   final String title;
   final String summary;
   final String content;
+  // 対応するDeepNote.id。ノートがまだ生成されていない場合はnull。
+  final String? noteId;
+  // "like" / "dislike" / null
+  final String? reaction;
+  final bool saved;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,6 +70,9 @@ class DeepNotesListPage extends HookConsumerWidget {
           title: t.displayTitle,
           summary: t.summary ?? '',
           content: note?.noteContents ?? '',
+          noteId: note?.id,
+          reaction: note?.reaction,
+          saved: note?.saved ?? false,
         );
       }).toList();
     }, [topicsAsync, notesAsync]);

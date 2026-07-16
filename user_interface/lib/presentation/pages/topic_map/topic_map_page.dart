@@ -3,9 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
-
-
 
 /// Topic Map for a single course, fetched from the `topic_maps` table (the
 /// `map` jsonb column produced by the topic-mapping pipeline -- see
@@ -21,41 +18,27 @@ class TopicMapPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: topicMapAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.starGold),
-              ),
-              error: (error, _) => Center(
-                child: Text(
-                  'Error: $error',
-                  style: const TextStyle(color: AppColors.correctionRed),
-                ),
-              ),
-              data: (data) {
-                if (data == null) {
-                  return Center(
-                    child: Text(
-                      'Topic map is still being generated…',
-                      style: TextStyle(color: AppColors.universe.textComet),
-                    ),
-                  );
-                }
-                return ClusterMapView(data: data, courseId: courseId);
-              },
-            ),
+      body: topicMapAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.starGold),
+        ),
+        error: (error, _) => Center(
+          child: Text(
+            'Error: $error',
+            style: const TextStyle(color: AppColors.correctionRed),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: const SafeArea(
-              child: CustomAppBar(showHomeButton: true),
-            ),
-          ),
-        ],
+        ),
+        data: (data) {
+          if (data == null) {
+            return Center(
+              child: Text(
+                'Topic map is still being generated…',
+                style: TextStyle(color: AppColors.universe.textComet),
+              ),
+            );
+          }
+          return ClusterMapView(data: data, courseId: courseId);
+        },
       ),
     );
   }

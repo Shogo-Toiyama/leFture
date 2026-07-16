@@ -6519,6 +6519,17 @@ class $LocalReviewCardsTable extends LocalReviewCards
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _metadataJsonMeta = const VerificationMeta(
+    'metadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+    'metadata_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -6574,6 +6585,7 @@ class $LocalReviewCardsTable extends LocalReviewCards
     cardType,
     title,
     heroEmoji,
+    metadataJson,
     createdAt,
     updatedAt,
     deletedAt,
@@ -6654,6 +6666,15 @@ class $LocalReviewCardsTable extends LocalReviewCards
         heroEmoji.isAcceptableOrUnknown(data['hero_emoji']!, _heroEmojiMeta),
       );
     }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+        _metadataJsonMeta,
+        metadataJson.isAcceptableOrUnknown(
+          data['metadata_json']!,
+          _metadataJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -6726,6 +6747,10 @@ class $LocalReviewCardsTable extends LocalReviewCards
         DriftSqlType.string,
         data['${effectivePrefix}hero_emoji'],
       ),
+      metadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata_json'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -6760,6 +6785,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
   final String cardType;
   final String? title;
   final String? heroEmoji;
+  final String? metadataJson;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -6773,6 +6799,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     required this.cardType,
     this.title,
     this.heroEmoji,
+    this.metadataJson,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -6792,6 +6819,9 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     }
     if (!nullToAbsent || heroEmoji != null) {
       map['hero_emoji'] = Variable<String>(heroEmoji);
+    }
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -6816,6 +6846,9 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       heroEmoji: heroEmoji == null && nullToAbsent
           ? const Value.absent()
           : Value(heroEmoji),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -6839,6 +6872,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       cardType: serializer.fromJson<String>(json['cardType']),
       title: serializer.fromJson<String?>(json['title']),
       heroEmoji: serializer.fromJson<String?>(json['heroEmoji']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -6857,6 +6891,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       'cardType': serializer.toJson<String>(cardType),
       'title': serializer.toJson<String?>(title),
       'heroEmoji': serializer.toJson<String?>(heroEmoji),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -6873,6 +6908,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     String? cardType,
     Value<String?> title = const Value.absent(),
     Value<String?> heroEmoji = const Value.absent(),
+    Value<String?> metadataJson = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -6886,6 +6922,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     cardType: cardType ?? this.cardType,
     title: title.present ? title.value : this.title,
     heroEmoji: heroEmoji.present ? heroEmoji.value : this.heroEmoji,
+    metadataJson: metadataJson.present ? metadataJson.value : this.metadataJson,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -6905,6 +6942,9 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
       cardType: data.cardType.present ? data.cardType.value : this.cardType,
       title: data.title.present ? data.title.value : this.title,
       heroEmoji: data.heroEmoji.present ? data.heroEmoji.value : this.heroEmoji,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -6925,6 +6965,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
           ..write('cardType: $cardType, ')
           ..write('title: $title, ')
           ..write('heroEmoji: $heroEmoji, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -6943,6 +6984,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
     cardType,
     title,
     heroEmoji,
+    metadataJson,
     createdAt,
     updatedAt,
     deletedAt,
@@ -6960,6 +7002,7 @@ class LocalReviewCard extends DataClass implements Insertable<LocalReviewCard> {
           other.cardType == this.cardType &&
           other.title == this.title &&
           other.heroEmoji == this.heroEmoji &&
+          other.metadataJson == this.metadataJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
@@ -6975,6 +7018,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
   final Value<String> cardType;
   final Value<String?> title;
   final Value<String?> heroEmoji;
+  final Value<String?> metadataJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -6989,6 +7033,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     this.cardType = const Value.absent(),
     this.title = const Value.absent(),
     this.heroEmoji = const Value.absent(),
+    this.metadataJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -7004,6 +7049,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     required String cardType,
     this.title = const Value.absent(),
     this.heroEmoji = const Value.absent(),
+    this.metadataJson = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -7026,6 +7072,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     Expression<String>? cardType,
     Expression<String>? title,
     Expression<String>? heroEmoji,
+    Expression<String>? metadataJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -7041,6 +7088,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
       if (cardType != null) 'card_type': cardType,
       if (title != null) 'title': title,
       if (heroEmoji != null) 'hero_emoji': heroEmoji,
+      if (metadataJson != null) 'metadata_json': metadataJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -7058,6 +7106,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     Value<String>? cardType,
     Value<String?>? title,
     Value<String?>? heroEmoji,
+    Value<String?>? metadataJson,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -7073,6 +7122,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
       cardType: cardType ?? this.cardType,
       title: title ?? this.title,
       heroEmoji: heroEmoji ?? this.heroEmoji,
+      metadataJson: metadataJson ?? this.metadataJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -7108,6 +7158,9 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
     if (heroEmoji.present) {
       map['hero_emoji'] = Variable<String>(heroEmoji.value);
     }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -7137,6 +7190,7 @@ class LocalReviewCardsCompanion extends UpdateCompanion<LocalReviewCard> {
           ..write('cardType: $cardType, ')
           ..write('title: $title, ')
           ..write('heroEmoji: $heroEmoji, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -7204,6 +7258,17 @@ class $LocalDeepNotesTable extends LocalDeepNotes
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _metadataJsonMeta = const VerificationMeta(
+    'metadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+    'metadata_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -7256,6 +7321,7 @@ class $LocalDeepNotesTable extends LocalDeepNotes
     lectureId,
     topicNumber,
     noteContents,
+    metadataJson,
     createdAt,
     updatedAt,
     deletedAt,
@@ -7315,6 +7381,15 @@ class $LocalDeepNotesTable extends LocalDeepNotes
       );
     } else if (isInserting) {
       context.missing(_noteContentsMeta);
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+        _metadataJsonMeta,
+        metadataJson.isAcceptableOrUnknown(
+          data['metadata_json']!,
+          _metadataJsonMeta,
+        ),
+      );
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -7376,6 +7451,10 @@ class $LocalDeepNotesTable extends LocalDeepNotes
         DriftSqlType.string,
         data['${effectivePrefix}note_contents'],
       )!,
+      metadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata_json'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -7407,6 +7486,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
   final String lectureId;
   final int topicNumber;
   final String noteContents;
+  final String? metadataJson;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -7417,6 +7497,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     required this.lectureId,
     required this.topicNumber,
     required this.noteContents,
+    this.metadataJson,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -7430,6 +7511,9 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     map['lecture_id'] = Variable<String>(lectureId);
     map['topic_number'] = Variable<int>(topicNumber);
     map['note_contents'] = Variable<String>(noteContents);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -7446,6 +7530,9 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       lectureId: Value(lectureId),
       topicNumber: Value(topicNumber),
       noteContents: Value(noteContents),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -7466,6 +7553,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       lectureId: serializer.fromJson<String>(json['lectureId']),
       topicNumber: serializer.fromJson<int>(json['topicNumber']),
       noteContents: serializer.fromJson<String>(json['noteContents']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -7481,6 +7569,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       'lectureId': serializer.toJson<String>(lectureId),
       'topicNumber': serializer.toJson<int>(topicNumber),
       'noteContents': serializer.toJson<String>(noteContents),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -7494,6 +7583,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     String? lectureId,
     int? topicNumber,
     String? noteContents,
+    Value<String?> metadataJson = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -7504,6 +7594,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     lectureId: lectureId ?? this.lectureId,
     topicNumber: topicNumber ?? this.topicNumber,
     noteContents: noteContents ?? this.noteContents,
+    metadataJson: metadataJson.present ? metadataJson.value : this.metadataJson,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -7520,6 +7611,9 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
       noteContents: data.noteContents.present
           ? data.noteContents.value
           : this.noteContents,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -7537,6 +7631,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
           ..write('lectureId: $lectureId, ')
           ..write('topicNumber: $topicNumber, ')
           ..write('noteContents: $noteContents, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -7552,6 +7647,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
     lectureId,
     topicNumber,
     noteContents,
+    metadataJson,
     createdAt,
     updatedAt,
     deletedAt,
@@ -7566,6 +7662,7 @@ class LocalDeepNote extends DataClass implements Insertable<LocalDeepNote> {
           other.lectureId == this.lectureId &&
           other.topicNumber == this.topicNumber &&
           other.noteContents == this.noteContents &&
+          other.metadataJson == this.metadataJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
@@ -7578,6 +7675,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
   final Value<String> lectureId;
   final Value<int> topicNumber;
   final Value<String> noteContents;
+  final Value<String?> metadataJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -7589,6 +7687,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     this.lectureId = const Value.absent(),
     this.topicNumber = const Value.absent(),
     this.noteContents = const Value.absent(),
+    this.metadataJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -7601,6 +7700,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     required String lectureId,
     required int topicNumber,
     required String noteContents,
+    this.metadataJson = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -7619,6 +7719,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     Expression<String>? lectureId,
     Expression<int>? topicNumber,
     Expression<String>? noteContents,
+    Expression<String>? metadataJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -7631,6 +7732,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
       if (lectureId != null) 'lecture_id': lectureId,
       if (topicNumber != null) 'topic_number': topicNumber,
       if (noteContents != null) 'note_contents': noteContents,
+      if (metadataJson != null) 'metadata_json': metadataJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -7645,6 +7747,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     Value<String>? lectureId,
     Value<int>? topicNumber,
     Value<String>? noteContents,
+    Value<String?>? metadataJson,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -7657,6 +7760,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
       lectureId: lectureId ?? this.lectureId,
       topicNumber: topicNumber ?? this.topicNumber,
       noteContents: noteContents ?? this.noteContents,
+      metadataJson: metadataJson ?? this.metadataJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -7682,6 +7786,9 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
     }
     if (noteContents.present) {
       map['note_contents'] = Variable<String>(noteContents.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -7709,6 +7816,7 @@ class LocalDeepNotesCompanion extends UpdateCompanion<LocalDeepNote> {
           ..write('lectureId: $lectureId, ')
           ..write('topicNumber: $topicNumber, ')
           ..write('noteContents: $noteContents, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -13411,6 +13519,7 @@ typedef $$LocalReviewCardsTableCreateCompanionBuilder =
       required String cardType,
       Value<String?> title,
       Value<String?> heroEmoji,
+      Value<String?> metadataJson,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> deletedAt,
@@ -13427,6 +13536,7 @@ typedef $$LocalReviewCardsTableUpdateCompanionBuilder =
       Value<String> cardType,
       Value<String?> title,
       Value<String?> heroEmoji,
+      Value<String?> metadataJson,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -13480,6 +13590,11 @@ class $$LocalReviewCardsTableFilterComposer
 
   ColumnFilters<String> get heroEmoji => $composableBuilder(
     column: $table.heroEmoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13553,6 +13668,11 @@ class $$LocalReviewCardsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -13610,6 +13730,11 @@ class $$LocalReviewCardsTableAnnotationComposer
 
   GeneratedColumn<String> get heroEmoji =>
       $composableBuilder(column: $table.heroEmoji, builder: (column) => column);
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13671,6 +13796,7 @@ class $$LocalReviewCardsTableTableManager
                 Value<String> cardType = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<String?> heroEmoji = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -13685,6 +13811,7 @@ class $$LocalReviewCardsTableTableManager
                 cardType: cardType,
                 title: title,
                 heroEmoji: heroEmoji,
+                metadataJson: metadataJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -13701,6 +13828,7 @@ class $$LocalReviewCardsTableTableManager
                 required String cardType,
                 Value<String?> title = const Value.absent(),
                 Value<String?> heroEmoji = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -13715,6 +13843,7 @@ class $$LocalReviewCardsTableTableManager
                 cardType: cardType,
                 title: title,
                 heroEmoji: heroEmoji,
+                metadataJson: metadataJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -13753,6 +13882,7 @@ typedef $$LocalDeepNotesTableCreateCompanionBuilder =
       required String lectureId,
       required int topicNumber,
       required String noteContents,
+      Value<String?> metadataJson,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> deletedAt,
@@ -13766,6 +13896,7 @@ typedef $$LocalDeepNotesTableUpdateCompanionBuilder =
       Value<String> lectureId,
       Value<int> topicNumber,
       Value<String> noteContents,
+      Value<String?> metadataJson,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -13804,6 +13935,11 @@ class $$LocalDeepNotesTableFilterComposer
 
   ColumnFilters<String> get noteContents => $composableBuilder(
     column: $table.noteContents,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13862,6 +13998,11 @@ class $$LocalDeepNotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -13908,6 +14049,11 @@ class $$LocalDeepNotesTableAnnotationComposer
 
   GeneratedColumn<String> get noteContents => $composableBuilder(
     column: $table.noteContents,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
     builder: (column) => column,
   );
 
@@ -13964,6 +14110,7 @@ class $$LocalDeepNotesTableTableManager
                 Value<String> lectureId = const Value.absent(),
                 Value<int> topicNumber = const Value.absent(),
                 Value<String> noteContents = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -13975,6 +14122,7 @@ class $$LocalDeepNotesTableTableManager
                 lectureId: lectureId,
                 topicNumber: topicNumber,
                 noteContents: noteContents,
+                metadataJson: metadataJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -13988,6 +14136,7 @@ class $$LocalDeepNotesTableTableManager
                 required String lectureId,
                 required int topicNumber,
                 required String noteContents,
+                Value<String?> metadataJson = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -13999,6 +14148,7 @@ class $$LocalDeepNotesTableTableManager
                 lectureId: lectureId,
                 topicNumber: topicNumber,
                 noteContents: noteContents,
+                metadataJson: metadataJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

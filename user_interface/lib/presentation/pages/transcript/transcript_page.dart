@@ -11,21 +11,19 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
-
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
 
 // レイアウトに使う定数 (ListViewのpadding、行のpadding、テキストスタイル)。
 // 行の高さの事前計算(_computeRowHeights)と、実際の行描画(itemBuilder)の
 // 両方で同じ値を使い、ズレが出ないようにする。
-const double _kHorizontalPagePadding = 24; // ListView自体の左右padding
-const double _kListVerticalPadding = 16; // ListView自体の上下padding(片側)
-const double _kRowHorizontalPadding = 8; // 各行内のPaddingの左右
-const double _kTimestampGap = 16; // タイムスタンプと本文の間隔
-const double _kRowVerticalPadding = 12; // 各行内のPaddingの上下(片側)
-const _kSentenceTextStyle = TextStyle(fontSize: 14, height: 1.5);
-const _kTimestampTextStyle = TextStyle(
+const double kHorizontalPagePadding = 24; // ListView自体の左右padding
+const double kListVerticalPadding = 16; // ListView自体の上下padding(片側)
+const double kRowHorizontalPadding = 8; // 各行内のPaddingの左右
+const double kTimestampGap = 16; // タイムスタンプと本文の間隔
+const double kRowVerticalPadding = 12; // 各行内のPaddingの上下(片側)
+const kSentenceTextStyle = TextStyle(fontSize: 14, height: 1.5);
+const kTimestampTextStyle = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.bold,
 );
@@ -34,7 +32,7 @@ const _kTimestampTextStyle = TextStyle(
 /// 文字起こし全体は不変(録音済みの文字起こしが後から変わることはない)ので、
 /// 一度だけ計算しておけば、以降はListView.builderのitemExtentBuilderに
 /// そのまま渡して正確な位置・スクロール総量を保ちながら遅延描画できる。
-List<double> _computeRowHeights(
+List<double> computeRowHeights(
   List<dynamic> sentences,
   double screenWidth,
   TextScaler textScaler,
@@ -46,7 +44,7 @@ List<double> _computeRowHeights(
   final timestampPainter = TextPainter(
     text: TextSpan(
       text: TranscriptPage._formatMs(lastMs),
-      style: _kTimestampTextStyle,
+      style: kTimestampTextStyle,
     ),
     textDirection: TextDirection.ltr,
     textScaler: textScaler,
@@ -55,26 +53,33 @@ List<double> _computeRowHeights(
 
   final availableTextWidth =
       screenWidth -
-      _kHorizontalPagePadding * 2 -
-      _kRowHorizontalPadding * 2 -
+      kHorizontalPagePadding * 2 -
+      kRowHorizontalPadding * 2 -
       timestampWidth -
-      _kTimestampGap;
+      kTimestampGap;
 
   return sentences.map((s) {
     final text = stripSidCitations((s as dynamic).text as String);
     final painter = TextPainter(
-      text: TextSpan(text: text, style: _kSentenceTextStyle),
+      text: TextSpan(text: text, style: kSentenceTextStyle),
       textDirection: TextDirection.ltr,
       textScaler: textScaler,
     )..layout(maxWidth: availableTextWidth);
-    return painter.height + _kRowVerticalPadding * 2;
+    return painter.height + kRowVerticalPadding * 2;
   }).toList();
 }
 
 class TranscriptPage extends HookConsumerWidget {
-  const TranscriptPage({super.key, required this.lectureId});
+  const TranscriptPage({
+    super.key,
+    required this.lectureId,
+    this.startSid,
+    this.endSid,
+  });
 
   final String lectureId;
+  final String? startSid;
+  final String? endSid;
 
   static String _formatMs(int ms) {
     final totalSeconds = ms ~/ 1000;
@@ -93,6 +98,11 @@ class TranscriptPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lectureAsync = ref.watch(lectureProvider(lectureId));
 
+    final leadingButton = IconButton(
+      icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
+      onPressed: () => Navigator.of(context).pop(),
+    );
+
     return lectureAsync.when(
       loading: () => Scaffold(
         backgroundColor: AppColors.paper.background,
@@ -102,22 +112,16 @@ class TranscriptPage extends HookConsumerWidget {
       ),
       error: (err, _) => Scaffold(
         backgroundColor: AppColors.paper.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              const CustomAppBar(
-                showHomeButton: true,
-                isLightBg: true,
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    'Error loading lecture: $err',
-                    style: TextStyle(color: AppColors.correctionRed),
-                  ),
-                ),
-              ),
-            ],
+        appBar: AppBar(
+          backgroundColor: AppColors.paper.background,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: leadingButton,
+        ),
+        body: Center(
+          child: Text(
+            'Error loading lecture: $err',
+            style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
       ),
@@ -125,33 +129,47 @@ class TranscriptPage extends HookConsumerWidget {
         if (lecture == null) {
           return Scaffold(
             backgroundColor: AppColors.paper.background,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  const CustomAppBar(
-                    showHomeButton: true,
-                    isLightBg: true,
-                  ),
-                  const Expanded(
-                    child: Center(child: Text('Lecture not found')),
-                  ),
-                ],
-              ),
+            appBar: AppBar(
+              backgroundColor: AppColors.paper.background,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              leading: leadingButton,
             ),
+            body: const Center(child: Text('Lecture not found')),
           );
         }
 
-        return _TranscriptPageContent(lecture: lecture, ref: ref);
+        return _TranscriptPageContent(
+          lecture: lecture,
+          ref: ref,
+          startSid: startSid,
+          endSid: endSid,
+        );
       },
     );
   }
 }
 
 class _TranscriptPageContent extends HookConsumerWidget {
-  const _TranscriptPageContent({required this.lecture, required this.ref});
+  const _TranscriptPageContent({
+    required this.lecture,
+    required this.ref,
+    this.startSid,
+    this.endSid,
+  });
 
   final Lecture lecture;
   final WidgetRef ref;
+  final String? startSid;
+  final String? endSid;
+
+  // SIDを整数に変換するユーティリティ
+  static int? _sidToInt(String? sid) {
+    if (sid == null) return null;
+    final match = RegExp(r'[sS](\d+)').firstMatch(sid);
+    if (match == null) return null;
+    return int.tryParse(match.group(1)!);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
@@ -171,6 +189,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
     // Scroll & Highlight setup
     final scrollController = useScrollController();
     final autoScrollEnabled = useState<bool>(true);
+    final hasScrolledToHighlight = useState<bool>(false);
+    final hasSeekedToHighlight = useState<bool>(false);
 
     final sentences = transcriptAsync.value ?? const [];
     final activeIndex = useMemoized(() {
@@ -186,17 +206,38 @@ class _TranscriptPageContent extends HookConsumerWidget {
       return idx;
     }, [position.value, sentences]);
 
+    // ハイライト対象の範囲計算
+    final startNum = useMemoized(() => _sidToInt(startSid), [startSid]);
+    final endNum = useMemoized(() => _sidToInt(endSid), [endSid]);
+
+    final sentenceNums = useMemoized(() {
+      return sentences.map((s) => _sidToInt(s.sid)).toList();
+    }, [sentences]);
+
+    final highlightedIndices = useMemoized(() {
+      if (startNum == null || endNum == null) return <int>{};
+      final Set<int> result = {};
+      for (var i = 0; i < sentenceNums.length; i++) {
+        final n = sentenceNums[i];
+        if (n != null && n >= startNum && n <= endNum) {
+          result.add(i);
+        }
+      }
+      return result;
+    }, [sentenceNums, startNum, endNum]);
+
+    final firstHighlightIndex = useMemoized(() {
+      if (highlightedIndices.isEmpty) return -1;
+      return highlightedIndices.reduce((a, b) => a < b ? a : b);
+    }, [highlightedIndices]);
+
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final textScaler = MediaQuery.textScalerOf(context);
 
-    // 各行の高さを一度だけ事前計算する。文字起こしは録音済みで内容が
-    // 変わらないので、sentences/画面幅/文字スケールが変わらない限り
-    // 再計算しない(useMemoized)。これをListView.builderのitemExtentBuilderに
-    // 渡すことで、実際に画面に映る行だけを遅延描画しつつ、スクロール総量は
-    // 常に正確(推定に頼らない)に保てる。
+    // 各行の高さを一度だけ事前計算する。
     final rowHeights = useMemoized(
-      () => _computeRowHeights(sentences, screenWidth, textScaler),
+      () => computeRowHeights(sentences, screenWidth, textScaler),
       [sentences, screenWidth, textScaler],
     );
     final rowOffsets = useMemoized(() {
@@ -209,13 +250,11 @@ class _TranscriptPageContent extends HookConsumerWidget {
       return offsets;
     }, [rowHeights]);
 
-    // コンテンツ全体の本当の高さ(全行の合計+ListView自体の上下padding)。
-    // Flutterの見積もり(maxScrollExtent)を待たずに、これをそのまま
-    // CustomScrollbarへ渡すことで、スクロールバーが常に正確・安定する。
+    // コンテンツ全体の高さ
     final totalContentExtent = useMemoized(() {
       if (rowHeights.isEmpty) return 0.0;
       final sum = rowOffsets.last + rowHeights.last;
-      return sum + _kListVerticalPadding * 2;
+      return sum + kListVerticalPadding * 2;
     }, [rowHeights, rowOffsets]);
 
     final syncScrollPosition = useCallback(() {
@@ -236,6 +275,50 @@ class _TranscriptPageContent extends HookConsumerWidget {
         );
       }
     }, [activeIndex, scrollController, screenHeight, rowOffsets]);
+
+    // 初回ロード時に最初のハイライト位置へ自動スクロール
+    useEffect(() {
+      if (hasScrolledToHighlight.value) return null;
+      if (rowOffsets.isEmpty || firstHighlightIndex < 0) return null;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!scrollController.hasClients) return;
+        final targetOffset =
+            rowOffsets[firstHighlightIndex] - (screenHeight * 0.25);
+        final viewportHeight = scrollController.position.viewportDimension;
+        final maxScroll = (totalContentExtent - viewportHeight).clamp(
+          0.0,
+          double.infinity,
+        );
+        final safeOffset = targetOffset.clamp(0.0, maxScroll);
+        
+        autoScrollEnabled.value = false; // 音声再生追従を一時的にオフにする
+
+        scrollController.animateTo(
+          safeOffset,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+        );
+        hasScrolledToHighlight.value = true;
+      });
+
+      return null;
+    }, [rowOffsets, firstHighlightIndex]);
+
+    // 音声ロード完了時に最初のハイライト位置へ自動シーク
+    useEffect(() {
+      if (hasSeekedToHighlight.value) return null;
+      if (!isAudioLoaded.value || firstHighlightIndex < 0 || firstHighlightIndex >= sentences.length) return null;
+
+      final startMs = sentences[firstHighlightIndex].start;
+      final target = Duration(milliseconds: startMs);
+      
+      position.value = target;
+      player.seek(target);
+
+      hasSeekedToHighlight.value = true;
+      return null;
+    }, [isAudioLoaded.value, firstHighlightIndex, sentences]);
 
     useEffect(() {
       if (autoScrollEnabled.value &&
@@ -305,37 +388,48 @@ class _TranscriptPageContent extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.paper.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: AppColors.paper.textInk),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Transcript',
+          style: TextStyle(
+            color: AppColors.paper.textInk,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          if (hasAudioPath)
+            IconButton(
+              icon: Icon(
+                autoScrollEnabled.value
+                    ? Icons.sync
+                    : Icons.sync_disabled,
+                color: autoScrollEnabled.value
+                    ? AppColors.deepGold
+                    : AppColors.paper.textPencil,
+              ),
+              tooltip: autoScrollEnabled.value
+                  ? 'Auto-scroll Enabled'
+                  : 'Auto-scroll Disabled',
+              onPressed: () {
+                autoScrollEnabled.value = !autoScrollEnabled.value;
+                if (autoScrollEnabled.value) {
+                  syncScrollPosition();
+                }
+              },
+            ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // ── Custom AppBar ──────────────────────────────────────────
-            CustomAppBar(
-              showHomeButton: true,
-              title: 'Transcript',
-              isLightBg: true,
-              actions: [
-                if (hasAudioPath)
-                  IconButton(
-                    icon: Icon(
-                      autoScrollEnabled.value
-                          ? Icons.sync
-                          : Icons.sync_disabled,
-                      color: autoScrollEnabled.value
-                          ? AppColors.deepGold
-                          : AppColors.paper.textPencil,
-                    ),
-                    tooltip: autoScrollEnabled.value
-                        ? 'Auto-scroll Enabled'
-                        : 'Auto-scroll Disabled',
-                    onPressed: () {
-                      autoScrollEnabled.value = !autoScrollEnabled.value;
-                      if (autoScrollEnabled.value) {
-                        syncScrollPosition();
-                      }
-                    },
-                  ),
-              ],
-            ),
 
             // ── Transcript Text List ───────────────────────────────────────
             Expanded(
@@ -380,8 +474,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                       child: ListView.builder(
                         controller: scrollController,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: _kHorizontalPagePadding,
-                          vertical: _kListVerticalPadding,
+                          horizontal: kHorizontalPagePadding,
+                          vertical: kListVerticalPadding,
                         ),
                         itemCount: sentences.length,
                         itemExtentBuilder: (index, dimensions) =>
@@ -397,8 +491,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                               : AppColors.paper.textInk;
 
                           final isPlayingActive = idx == activeIndex;
-                          const isWeakHighlighted = false;
-                          final isHighlighted = isPlayingActive || isWeakHighlighted;
+                          final isRangeHighlighted = highlightedIndices.contains(idx);
+                          final isHighlighted = isPlayingActive || isRangeHighlighted;
 
                           BoxDecoration? itemDecoration;
                           if (isHighlighted) {
@@ -414,6 +508,18 @@ class _TranscriptPageContent extends HookConsumerWidget {
                                     alpha: 0.4,
                                   ),
                                   width: 1.2,
+                                ),
+                              );
+                            } else if (isRangeHighlighted) {
+                              itemDecoration = BoxDecoration(
+                                color: bgColor,
+                                border: Border(
+                                  left: BorderSide(
+                                    color: AppColors.deepGold.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                    width: 3,
+                                  ),
                                 ),
                               );
                             } else {
@@ -435,8 +541,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                                   : null,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: _kRowVerticalPadding,
-                                  horizontal: _kRowHorizontalPadding,
+                                  vertical: kRowVerticalPadding,
+                                  horizontal: kRowHorizontalPadding,
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,19 +550,19 @@ class _TranscriptPageContent extends HookConsumerWidget {
                                     // Timestamp label
                                     Text(
                                       TranscriptPage._formatMs(s.start),
-                                      style: _kTimestampTextStyle.copyWith(
+                                      style: kTimestampTextStyle.copyWith(
                                         color: AppColors.deepGold,
                                         decoration: isAudioLoaded.value
                                             ? TextDecoration.underline
                                             : TextDecoration.none,
                                       ),
                                     ),
-                                    const SizedBox(width: _kTimestampGap),
+                                    const SizedBox(width: kTimestampGap),
                                     // Sentence text
                                     Expanded(
                                       child: Text(
                                         stripSidCitations(s.text),
-                                        style: _kSentenceTextStyle.copyWith(
+                                        style: kSentenceTextStyle.copyWith(
                                           color: displayColor,
                                           fontWeight: displayWeight,
                                           fontStyle: isItalic
@@ -477,6 +583,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
                 },
               ),
             ),
+
 
             // ── Audio Player UI (Shown only if audio exists) ────────────────
             if (hasAudioPath) ...[

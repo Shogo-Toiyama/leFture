@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/core/utils/network_constants.dart';
@@ -55,6 +57,9 @@ class DeepNoteSyncService {
           lectureId: Value(json['lecture_id'] as String),
           topicNumber: Value((json['topic_number'] as num?)?.toInt() ?? 0),
           noteContents: Value(json['note_contents'] as String? ?? ''),
+          metadataJson: Value(
+            json['metadata'] != null ? jsonEncode(json['metadata']) : null,
+          ),
           createdAt: Value(DateTime.parse(json['created_at'])),
           updatedAt: Value(updatedAt),
           deletedAt: Value(

@@ -1,0 +1,32 @@
+import 'dart:convert';
+
+import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
+import 'package:lecture_companion_ui/core/utils/network_constants.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+
+/// ReviewCardはサーバー生成コンテンツで、クライアントから新規作成されることは
+/// ない。ユーザーが変更できるのは`metadata`(reaction/saved)だけなので、
+/// upsertではなく`update`のみを行う。
+class ReviewCardOutboxPushHandler implements OutboxPushHandler {
+  @override
+  String get entityType => 'review_card';
+
+  @override
+  Future<void> push(AppDatabase db, String entityId) async {
+    final existing = await (db.select(db.localReviewCards)
+          ..where((t) => t.id.equals(entityId)))
+        .getSingleOrNull();
+    if (existing == null) return;
+
+    final metadata = existing.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing.metadataJson!) as Map)
+        : <String, dynamic>{};
+
+    await supabase
+        .from('review_cards')
+        .update({'metadata': metadata})
+        .eq('id', entityId)
+        .timeout(networkTimeout);
+  }
+}

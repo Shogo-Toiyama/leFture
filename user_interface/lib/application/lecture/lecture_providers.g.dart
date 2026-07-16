@@ -215,8 +215,8 @@ final class TranscriptFamily extends $Family
 final artifactFileProvider = ArtifactFileFamily._();
 
 final class ArtifactFileProvider
-    extends $FunctionalProvider<AsyncValue<File?>, File?, FutureOr<File?>>
-    with $FutureModifier<File?>, $FutureProvider<File?> {
+    extends $FunctionalProvider<AsyncValue<File>, File, FutureOr<File>>
+    with $FutureModifier<File>, $FutureProvider<File> {
   ArtifactFileProvider._({
     required ArtifactFileFamily super.from,
     required String super.argument,
@@ -240,11 +240,11 @@ final class ArtifactFileProvider
 
   @$internal
   @override
-  $FutureProviderElement<File?> $createElement($ProviderPointer pointer) =>
+  $FutureProviderElement<File> $createElement($ProviderPointer pointer) =>
       $FutureProviderElement(pointer);
 
   @override
-  FutureOr<File?> create(Ref ref) {
+  FutureOr<File> create(Ref ref) {
     final argument = this.argument as String;
     return artifactFile(ref, argument);
   }
@@ -260,10 +260,10 @@ final class ArtifactFileProvider
   }
 }
 
-String _$artifactFileHash() => r'b103c348bcf17a3b0afcd1d660c82898f2586e15';
+String _$artifactFileHash() => r'9e9668328a70d6af73e45be98e718d28b8766773';
 
 final class ArtifactFileFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<File?>, String> {
+    with $FunctionalFamilyOverride<FutureOr<File>, String> {
   ArtifactFileFamily._()
     : super(
         retry: null,

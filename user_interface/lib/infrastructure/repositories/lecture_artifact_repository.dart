@@ -19,6 +19,19 @@ import '../local_db/app_database.dart';
 /// `/get-artifact-urls` でJWT認証した上で署名付きGET URLを発行してもらい、
 /// それを使ってダウンロードする。取得したファイルはローカルにキャッシュし、
 /// 2回目以降はネットワークを使わない。
+/// [LectureArtifactRepository.getArtifactFile] が取得に失敗した際に投げる例外。
+/// 未生成(404)・認証未リフレッシュ(401)・ネットワークエラー等、理由を問わず
+/// 「まだ取得できていない」ことを表す。
+class ArtifactFetchException implements Exception {
+  final String message;
+  final String storagePath;
+
+  ArtifactFetchException(this.message, {required this.storagePath});
+
+  @override
+  String toString() => 'ArtifactFetchException($storagePath): $message';
+}
+
 class LectureArtifactRepository {
   final SupabaseClient _supabase;
   final AppDatabase _db;
@@ -32,13 +45,18 @@ class LectureArtifactRepository {
   // ---------------------------------------------------------------------------
 
   /// [storagePath] (例: "{uid}/{lectureId}/images/topic_1.jpg") のファイルを
-  /// キャッシュ優先で取得する。存在しない/取得失敗時はnull。
+  /// キャッシュ優先で取得する。
   ///
   /// 取得できたファイルは容量管理(LocalRetentionService)がLRU判定できるよう
   /// [LocalCacheEntries] にサイズを記録する。すでにキャッシュ済みの場合も、
   /// このテーブル追加より前にダウンロードされたファイルを後から拾えるように
   /// 都度upsertしておく。
-  Future<File?> getArtifactFile(String storagePath) async {
+  ///
+  /// 未取得(トークン未リフレッシュ・生成未完了・ネットワークエラー等)の場合は
+  /// [ArtifactFetchException] を投げる。null成功値としては返さない
+  /// (呼び出し元のProviderが失敗結果をキャッシュに残さず再取得できるように
+  /// するため。詳しくは [artifactFileProvider] を参照)。
+  Future<File> getArtifactFile(String storagePath) async {
     final localFile = await _localCacheFile(storagePath);
     if (localFile.existsSync() && localFile.lengthSync() > 0) {
       await _registerCacheEntry(storagePath, localFile);
@@ -47,8 +65,7 @@ class LectureArtifactRepository {
 
     final token = _supabase.auth.currentSession?.accessToken;
     if (token == null) {
-      debugPrint('Artifact download failed: token is null');
-      return null;
+      throw ArtifactFetchException('token is null', storagePath: storagePath);
     }
 
     try {
@@ -59,16 +76,21 @@ class LectureArtifactRepository {
         },
       ).timeout(networkTimeout);
       if (response.statusCode != 200) {
-        // まだ生成されていない(404)等。キャッシュせずnullを返す。
+        // まだ生成されていない(404)、トークン未リフレッシュ(401)等。
         debugPrint('Artifact GET ${response.statusCode}: $storagePath');
-        return null;
+        throw ArtifactFetchException(
+          'HTTP ${response.statusCode}',
+          storagePath: storagePath,
+        );
       }
       await localFile.writeAsBytes(response.bodyBytes);
       await _registerCacheEntry(storagePath, localFile);
       return localFile;
+    } on ArtifactFetchException {
+      rethrow;
     } catch (e) {
       debugPrint('Artifact download error: $e');
-      return null;
+      throw ArtifactFetchException('$e', storagePath: storagePath);
     }
   }
 
@@ -120,8 +142,12 @@ class LectureArtifactRepository {
       'pipeline_logs/role_classification.json',
       'pipeline_logs/transcript_assembled.json',
     ]) {
-      final file = await getArtifactFile('$uid/$lectureId/$fileName');
-      if (file == null) continue;
+      final File file;
+      try {
+        file = await getArtifactFile('$uid/$lectureId/$fileName');
+      } on ArtifactFetchException {
+        continue;
+      }
 
       try {
         final jsonString = await file.readAsString();

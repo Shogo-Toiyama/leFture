@@ -61,6 +61,9 @@ class ReviewCardSyncService {
           cardType: Value(json['card_type'] as String? ?? ''),
           title: Value(json['title'] as String?),
           heroEmoji: Value(json['hero_emoji'] as String?),
+          metadataJson: Value(
+            json['metadata'] != null ? jsonEncode(json['metadata']) : null,
+          ),
           createdAt: Value(DateTime.parse(json['created_at'])),
           updatedAt: Value(updatedAt),
           deletedAt: Value(

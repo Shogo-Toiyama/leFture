@@ -267,6 +267,9 @@ class LocalReviewCards extends Table {
   TextColumn get cardType => text()();
   TextColumn get title => text().nullable()();
   TextColumn get heroEmoji => text().nullable()();
+  // サーバーの`metadata`(jsonb)。reaction("like"/"dislike")やsaved(bool)を
+  // ここに格納する。ユーザーがローカルで即時更新できる唯一のフィールド群。
+  TextColumn get metadataJson => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -285,6 +288,9 @@ class LocalDeepNotes extends Table {
 
   IntColumn get topicNumber => integer()();
   TextColumn get noteContents => text()(); // Markdown文字列
+  // サーバーの`metadata`(jsonb)。reaction("like"/"dislike")やsaved(bool)を
+  // ここに格納する。ユーザーがローカルで即時更新できる唯一のフィールド群。
+  TextColumn get metadataJson => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -416,7 +422,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -524,6 +530,15 @@ class AppDatabase extends _$AppDatabase {
         // バージョン14: Lecture削除/Course間移動時のTopic Map stale化(mark-stale)を
         // Outbox経由の確実な配送に変更するため、LocalLecturesに
         // topicMapMovePending/pendingTopicMapStaleCourseIdを追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 15) {
+        // バージョン15: ReviewCards/DeepNotesにLike/Dislike/Saveをローカル
+        // ファースト化するため、LocalReviewCards/LocalDeepNotesにmetadataJson
+        // (reaction/savedを格納するjsonb相当)を追加。
         for (final table in allTables) {
           await m.drop(table);
         }

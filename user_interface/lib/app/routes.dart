@@ -29,8 +29,8 @@ class AppRoutes {
   static const deepNotesList   = 'dn/:lectureId';             // dn/:lectureId
   static const deepNotesDetail = 'dnd/:lectureId/:topicIndex';// dnd/:lectureId/:topicIndex
 
-  // Transcript (Nested under /home/courses/c/:courseId)
-  static const transcript = 'transcript/:lectureId';          // transcript/:lectureId
+  // Transcript (Nested under /home/courses/c/:courseId/v/:lectureId)
+  static const transcript = 'transcript';          // transcript
 
   // Topic Map (Nested under /home/courses/c/:courseId)
   static const topicMap = 'topic-map';                        // topic-map

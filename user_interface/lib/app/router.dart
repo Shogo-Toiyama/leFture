@@ -93,6 +93,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final id = state.pathParameters['lectureId'];
                       return LectureViewerPage(lectureId: id!);
                     },
+                    routes: [
+                      // Transcript: /home/notes/c/:courseId/v/:lectureId/transcript
+                      GoRoute(
+                        path: AppRoutes.transcript, // 'transcript'
+                        builder: (context, state) {
+                          final id = state.pathParameters['lectureId']!;
+                          final startSid = state.uri.queryParameters['start_sid'];
+                          final endSid = state.uri.queryParameters['end_sid'];
+                          return TranscriptPage(
+                            lectureId: id,
+                            startSid: startSid,
+                            endSid: endSid,
+                          );
+                        },
+                      ),
+                    ],
                   ),
 
                   // Review Cards: /home/notes/c/:courseId/rc/:lectureId
@@ -145,14 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     },
                   ),
 
-                  // Transcript: /home/notes/c/:courseId/transcript/:lectureId
-                  GoRoute(
-                    path: AppRoutes.transcript, // 'transcript/:lectureId'
-                    builder: (context, state) {
-                      final id = state.pathParameters['lectureId']!;
-                      return TranscriptPage(lectureId: id);
-                    },
-                  ),
+
 
                   // Topic Map: /home/notes/c/:courseId/topic-map
                   GoRoute(

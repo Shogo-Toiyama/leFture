@@ -431,9 +431,8 @@ class _LectureViewerBody extends HookConsumerWidget {
                     const SizedBox(height: 28),
                   ],
 
-                  // Transcript Button (Bottom)
                   GestureDetector(
-                    onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/transcript/${lecture.id}'),
+                    onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript'),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -667,6 +666,7 @@ class _ViewerReactionButton extends ConsumerWidget {
           await ref
               .read(funFactRepositoryDriftProvider)
               .updateReaction(id: factId, reaction: newReaction);
+          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
         } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -741,9 +741,12 @@ class _LectureInfoSheet extends ConsumerWidget {
               (a) => AnnouncementTile(
                 announcement: a,
                 showTimestamp: false,
-                onToggleComplete: (ann) => ref
-                    .read(announcementRepositoryDriftProvider)
-                    .toggleComplete(id: ann.id, completed: !ann.isCompleted),
+                onToggleComplete: (ann) async {
+                  await ref
+                      .read(announcementRepositoryDriftProvider)
+                      .toggleComplete(id: ann.id, completed: !ann.isCompleted);
+                  ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                },
               ),
             )
             .toList();
@@ -778,16 +781,18 @@ class _LectureInfoSheet extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  hasDefinition ? k.definition!.trim() : 'Definition pending…',
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 14,
-                    height: 1.4,
-                    fontStyle: hasDefinition ? FontStyle.normal : FontStyle.italic,
+                if (hasDefinition) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    k.definition!.trim(),
+                    style: TextStyle(
+                      color: AppColors.universe.textComet,
+                      fontSize: 14,
+                      height: 1.4,
+                      fontStyle: FontStyle.normal,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -973,16 +978,18 @@ class _KeywordsView extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                hasDefinition ? k.definition!.trim() : 'Definition pending…',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                  height: 1.4,
-                  fontStyle: hasDefinition ? FontStyle.normal : FontStyle.italic,
+              if (hasDefinition) ...[
+                const SizedBox(height: 6),
+                Text(
+                  k.definition!.trim(),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontStyle: FontStyle.normal,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         );

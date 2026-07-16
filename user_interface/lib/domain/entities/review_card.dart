@@ -26,6 +26,7 @@ class ReviewCard {
     this.cardType,
     this.title,
     this.heroEmoji,
+    this.metadata,
     required this.createdAt,
   });
 
@@ -37,7 +38,12 @@ class ReviewCard {
   final String? cardType;
   final String? title;
   final String? heroEmoji;
+  final Map<String, dynamic>? metadata;
   final DateTime createdAt;
+
+  // "like" / "dislike" / null
+  String? get reaction => metadata?['reaction'] as String?;
+  bool get saved => metadata?['saved'] == true;
 
   factory ReviewCard.fromMap(Map<String, dynamic> map) {
     final rawContent = map['card_content'];
@@ -61,6 +67,7 @@ class ReviewCard {
       cardType: map['card_type'] as String?,
       title: map['title'] as String?,
       heroEmoji: map['hero_emoji'] as String?,
+      metadata: map['metadata'] as Map<String, dynamic>?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }

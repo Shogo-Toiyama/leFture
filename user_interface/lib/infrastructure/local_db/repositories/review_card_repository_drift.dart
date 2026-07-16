@@ -14,7 +14,8 @@ ReviewCardRepositoryDrift reviewCardRepositoryDrift(Ref ref) {
 }
 
 /// ReviewCardはサーバー生成コンテンツで、ユーザーによる書き込みは無い。
-/// Pull(Supabase→ローカルDB)は[ReviewCardSyncService]が担う。
+/// Pull(Supabase→ローカルDB)は[ReviewCardSyncService]が担う。ユーザーが
+/// ローカルで即時更新できるのは`metadata`内のreaction/savedのみ。
 class ReviewCardRepositoryDrift {
   final AppDatabase _db;
 
@@ -25,6 +26,56 @@ class ReviewCardRepositoryDrift {
       ..where((t) => t.lectureId.equals(lectureId) & t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm.asc(t.topicNumber)]);
     return query.watch().map((rows) => rows.map(_toDomain).toList());
+  }
+
+  /// reactionを即時ローカル更新(楽観的UI)し、Outboxに登録する。
+  /// 同じreactionを再度渡すとトグル解除(null)になる。
+  Future<void> updateReaction({required String id, required String? reaction}) async {
+    await _updateMetadata(id, (metadata) {
+      if (reaction != null) {
+        metadata['reaction'] = reaction;
+      } else {
+        metadata.remove('reaction');
+      }
+    });
+  }
+
+  /// savedを即時ローカル更新(楽観的UI)し、Outboxに登録する。
+  Future<void> updateSaved({required String id, required bool saved}) async {
+    await _updateMetadata(id, (metadata) {
+      if (saved) {
+        metadata['saved'] = true;
+      } else {
+        metadata.remove('saved');
+      }
+    });
+  }
+
+  Future<void> _updateMetadata(
+    String id,
+    void Function(Map<String, dynamic> metadata) mutate,
+  ) async {
+    await _db.transaction(() async {
+      final existing = await (_db.select(_db.localReviewCards)
+            ..where((t) => t.id.equals(id)))
+          .getSingleOrNull();
+      if (existing == null) return;
+
+      final metadata = existing.metadataJson != null
+          ? Map<String, dynamic>.from(jsonDecode(existing.metadataJson!) as Map)
+          : <String, dynamic>{};
+      mutate(metadata);
+
+      await (_db.update(_db.localReviewCards)..where((t) => t.id.equals(id))).write(
+        LocalReviewCardsCompanion(metadataJson: Value(jsonEncode(metadata))),
+      );
+
+      await _db.enqueueOutbox(
+        entityType: 'review_card',
+        entityId: id,
+        op: 'update',
+      );
+    });
   }
 
   ReviewCard _toDomain(LocalReviewCard row) {
@@ -38,6 +89,10 @@ class ReviewCardRepositoryDrift {
       }
     }
 
+    final metadata = row.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(row.metadataJson!) as Map)
+        : null;
+
     return ReviewCard(
       id: row.id,
       userId: row.userId,
@@ -47,6 +102,7 @@ class ReviewCardRepositoryDrift {
       cardType: row.cardType,
       title: row.title,
       heroEmoji: row.heroEmoji,
+      metadata: metadata,
       createdAt: row.createdAt,
     );
   }

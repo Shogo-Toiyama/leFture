@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/fun_fact/fun_fact_list_provider.dart';
 import 'package:lecture_companion_ui/core/utils/text_preview.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
@@ -294,6 +295,7 @@ class _ReactionButton extends ConsumerWidget {
           await ref
               .read(funFactRepositoryDriftProvider)
               .updateReaction(id: factId, reaction: newReaction);
+          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
         } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
