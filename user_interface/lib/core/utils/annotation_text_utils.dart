@@ -73,6 +73,114 @@ String reviewCardBlockMarkdownSource(ReviewCardBlock block) {
 String reviewCardBlockPlainText(ReviewCardBlock block) =>
     flattenMarkdownText(reviewCardBlockMarkdownSource(block));
 
+/// Same content as [reviewCardBlockMarkdownSource] but WITHOUT stripping SID
+/// citations -- this is the "raw" text that source-lookup functions
+/// ([findSourceCitation], [findSourceContextRange]) need, since they have to
+/// find the citation markers themselves.
+String reviewCardBlockRawMarkdownSource(ReviewCardBlock block) {
+  switch (block.type) {
+    case 'list':
+      return (block.items ?? const <String>[]).map((item) => '- $item').join('\n');
+    case 'quote':
+    case 'paragraph':
+    default:
+      return block.text ?? '';
+  }
+}
+
+/// Maps between offsets in [rawMarkdownSource] (SID citations + Markdown
+/// syntax intact -- e.g. `card.cardContent[i].text` / `topic.content`) and
+/// offsets in its fully-flattened plain text (SID citations AND Markdown
+/// syntax both stripped -- i.e. `flattenMarkdownText(stripSidCitations(...))`,
+/// the exact text `SelectionArea` measures selections against, and therefore
+/// the same coordinate space as `startIdx`/`endIdx` on [TextLocation]).
+///
+/// [buildStrippedToRawMap]/[buildRawToStrippedMap] in sid_citation.dart only
+/// account for citation removal, NOT Markdown syntax removal -- using them
+/// directly against a selection's `startIdx`/`endIdx` silently misaligns by
+/// however many Markdown syntax characters (`#`, `**`, `- `, ...) precede the
+/// selection, which is what made inserted citation markers land in
+/// implausible spots. This class composes citation-removal mapping with
+/// Markdown-flattening mapping so both steps are accounted for together.
+class FlattenedTextMap {
+  const FlattenedTextMap(this.flattenedText, this._flattenedToRaw, this._rawToFlattened);
+
+  final String flattenedText;
+  final List<int> _flattenedToRaw;
+  final List<int> _rawToFlattened;
+
+  int toRaw(int flattenedIdx) =>
+      _flattenedToRaw[flattenedIdx.clamp(0, _flattenedToRaw.length - 1)];
+
+  int toFlattened(int rawIdx) =>
+      _rawToFlattened[rawIdx.clamp(0, _rawToFlattened.length - 1)];
+}
+
+FlattenedTextMap buildFlattenedTextMap(String rawMarkdownSource) {
+  final citationStripped = stripSidCitations(rawMarkdownSource);
+  final rawToCitationStripped = buildRawToStrippedMap(rawMarkdownSource);
+  final citationStrippedToRaw = buildStrippedToRawMap(rawMarkdownSource);
+
+  // Flatten citationStripped the same way flutter_markdown/MarkdownAnnotationBuilder
+  // do, while recording -- for every char written to the flattened output --
+  // which index in citationStripped it came from.
+  final document = md.Document(extensionSet: md.ExtensionSet.gitHubFlavored, encodeHtml: false);
+  final nodes = document.parseLines(const LineSplitter().convert(citationStripped));
+  final buffer = StringBuffer();
+  final flatToCitationStripped = <int>[];
+  var searchCursor = 0;
+
+  void visit(md.Node node) {
+    if (node is md.Text) {
+      final t = node.text;
+      var idx = citationStripped.indexOf(t, searchCursor);
+      if (idx < 0) idx = searchCursor.clamp(0, citationStripped.length);
+      for (var i = 0; i < t.length; i++) {
+        flatToCitationStripped.add(idx + i);
+      }
+      buffer.write(t);
+      searchCursor = idx + t.length;
+    } else if (node is md.Element) {
+      for (final child in node.children ?? const <md.Node>[]) {
+        visit(child);
+      }
+    }
+  }
+
+  for (final node in nodes) {
+    visit(node);
+  }
+  flatToCitationStripped.add(citationStripped.length);
+
+  final flattenedText = buffer.toString();
+
+  final flattenedToRaw = <int>[
+    for (final csIdx in flatToCitationStripped)
+      citationStrippedToRaw[csIdx.clamp(0, citationStrippedToRaw.length - 1)],
+  ];
+
+  // Invert flatToCitationStripped (monotonic non-decreasing) so we can map a
+  // citationStripped index to the flattened index of the nearest Markdown
+  // text leaf at/after it -- needed for positions that fall inside skipped
+  // Markdown syntax (e.g. inside `**`/`- `), which have no direct flattened
+  // counterpart.
+  final citationStrippedToFlat = List<int>.filled(citationStripped.length + 1, flattenedText.length);
+  var fi = 0;
+  for (var cs = 0; cs <= citationStripped.length; cs++) {
+    while (fi < flatToCitationStripped.length - 1 && flatToCitationStripped[fi] < cs) {
+      fi++;
+    }
+    citationStrippedToFlat[cs] = fi;
+  }
+
+  final rawToFlattened = <int>[
+    for (var r = 0; r <= rawMarkdownSource.length; r++)
+      citationStrippedToFlat[rawToCitationStripped[r].clamp(0, citationStripped.length)],
+  ];
+
+  return FlattenedTextMap(flattenedText, flattenedToRaw, rawToFlattened);
+}
+
 /// Maps a document-relative selection range (from
 /// `SelectableRegionState.getSelection()`) to a specific block + local
 /// offset. [range]'s offsets are counted across every Selectable inside the
@@ -121,4 +229,136 @@ Color? parseHexColor(String? hex) {
   final value = int.tryParse(cleaned, radix: 16);
   if (value == null) return null;
   return Color(0xFF000000 | value);
+}
+
+class SelectionTooBroadException implements Exception {
+  final String message;
+  const SelectionTooBroadException([this.message = 'The selection is too broad.']);
+  
+  @override
+  String toString() => message;
+}
+
+/// 選択された範囲から、元テキスト（引用記号付き）内の対応する引用情報を検索する。
+///
+/// [rawText] 引用記号 `⟦sXXXXXX⟧` を含んだ元の Markdown テキスト。
+/// [startIdx] 表示用プレーンテキスト上での選択開始位置。
+/// [endIdx] 表示用プレーンテキスト上での選択終了位置。
+///
+/// 戻り値:
+/// - 該当する `SidCitation`
+/// - もし引用がなければ `null`
+///
+/// 例外:
+/// - 選択範囲が引用記号を跨いでいる、または選択範囲の中に引用記号が含まれている場合は `SelectionTooBroadException` をスローする。
+SidCitation? findSourceCitation(String rawText, int startIdx, int endIdx) {
+  final citations = parseSidCitations(rawText);
+  if (citations.isEmpty) return null;
+
+  // インデックス変換マップを作成 (引用記号の除去だけでなく、Markdown構文の
+  // フラット化も合わせて考慮したマッピング。startIdx/endIdxはSelectionAreaが
+  // 測定する完全フラット化テキスト上の位置なので、これに揃える必要がある)
+  final map = buildFlattenedTextMap(rawText);
+
+  // 表示上の位置から元の rawText 上の位置に変換
+  final rawStart = map.toRaw(startIdx);
+  final rawEnd = map.toRaw(endIdx);
+
+  // 重なり判定と、直後の引用の探索
+  SidCitation? closestNextCitation;
+
+  for (final c in citations) {
+    // 跨いでいるか、または選択範囲に含まれているか
+    // (c.start < rawEnd && c.end > rawStart) のとき重なっている
+    if (c.start < rawEnd && c.end > rawStart) {
+      throw const SelectionTooBroadException();
+    }
+
+    // 選択範囲より後（c.start >= rawEnd）にあるものを検索
+    if (c.start >= rawEnd) {
+      if (closestNextCitation == null || c.start < closestNextCitation.start) {
+        closestNextCitation = c;
+      }
+    }
+  }
+
+  return closestNextCitation;
+}
+
+class SourceContextResult {
+  const SourceContextResult({
+    required this.citation,
+    required this.startIdx,
+    required this.endIdx,
+  });
+
+  final SidCitation citation;
+  final int startIdx;
+  final int endIdx;
+}
+
+/// 選択された範囲に基づき、対応する引用情報（直後のもの）と一時ハイライトを表示すべきコンテキスト範囲を算出する。
+///
+/// [rawText] 引用記号 `⟦sXXXXXX⟧` を含んだ元の Markdown テキスト。
+/// [startIdx] 表示用プレーンテキスト上での選択開始位置。
+/// [endIdx] 表示用プレーンテキスト上での選択終了位置。
+///
+/// 戻り値:
+/// - 解決結果の `SourceContextResult`
+/// - 引用がなければ `null`
+///
+/// 例外:
+/// - 選択範囲が引用記号を跨いでいる、または選択範囲の中に引用記号が含まれている場合は `SelectionTooBroadException` をスローする。
+SourceContextResult? findSourceContextRange(String rawText, int startIdx, int endIdx) {
+  final citations = parseSidCitations(rawText);
+  if (citations.isEmpty) return null;
+
+  // マッピング関数を作成 (引用記号除去 + Markdown構文フラット化を合わせて考慮)
+  final map = buildFlattenedTextMap(rawText);
+
+  // 表示上の位置から元の rawText 上の位置に変換
+  final rawStart = map.toRaw(startIdx);
+  final rawEnd = map.toRaw(endIdx);
+
+  SidCitation? nextCitation;
+  SidCitation? prevCitation;
+
+  for (final c in citations) {
+    // 重なり判定
+    if (c.start < rawEnd && c.end > rawStart) {
+      throw const SelectionTooBroadException();
+    }
+
+    // 選択範囲より後（c.start >= rawEnd）
+    if (c.start >= rawEnd) {
+      if (nextCitation == null || c.start < nextCitation.start) {
+        nextCitation = c;
+      }
+    }
+
+    // 選択範囲より前（c.end <= rawStart）
+    if (c.end <= rawStart) {
+      if (prevCitation == null || c.end > prevCitation.end) {
+        prevCitation = c;
+      }
+    }
+  }
+
+  if (nextCitation == null) {
+    return null;
+  }
+
+  // 元テキスト上でのハイライトコンテキスト範囲を算出
+  final rawContextStart = prevCitation != null ? prevCitation.end : 0;
+  final rawContextEnd = nextCitation.start;
+
+  // 表示用テキストのインデックスに戻す
+  final contextStartIdx = map.toFlattened(rawContextStart);
+  final contextEndIdx = map.toFlattened(rawContextEnd);
+
+  return SourceContextResult(
+    citation: nextCitation,
+    startIdx: contextStartIdx,
+    endIdx: contextEndIdx,
+  );
 }

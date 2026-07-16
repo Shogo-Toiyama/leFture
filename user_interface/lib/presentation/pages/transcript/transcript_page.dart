@@ -75,11 +75,13 @@ class TranscriptPage extends HookConsumerWidget {
     required this.lectureId,
     this.startSid,
     this.endSid,
+    this.highlightSids,
   });
 
   final String lectureId;
   final String? startSid;
   final String? endSid;
+  final List<String>? highlightSids;
 
   static String _formatMs(int ms) {
     final totalSeconds = ms ~/ 1000;
@@ -144,6 +146,7 @@ class TranscriptPage extends HookConsumerWidget {
           ref: ref,
           startSid: startSid,
           endSid: endSid,
+          highlightSids: highlightSids,
         );
       },
     );
@@ -156,12 +159,14 @@ class _TranscriptPageContent extends HookConsumerWidget {
     required this.ref,
     this.startSid,
     this.endSid,
+    this.highlightSids,
   });
 
   final Lecture lecture;
   final WidgetRef ref;
   final String? startSid;
   final String? endSid;
+  final List<String>? highlightSids;
 
   // SIDを整数に変換するユーティリティ
   static int? _sidToInt(String? sid) {
@@ -207,24 +212,44 @@ class _TranscriptPageContent extends HookConsumerWidget {
     }, [position.value, sentences]);
 
     // ハイライト対象の範囲計算
-    final startNum = useMemoized(() => _sidToInt(startSid), [startSid]);
-    final endNum = useMemoized(() => _sidToInt(endSid), [endSid]);
+    final startNumRaw = useMemoized(() => _sidToInt(startSid), [startSid]);
+    final endNumRaw = useMemoized(() => _sidToInt(endSid), [endSid]);
+
+    final startNum = useMemoized(() {
+      if (startNumRaw == null || endNumRaw == null) return startNumRaw;
+      return startNumRaw < endNumRaw ? startNumRaw : endNumRaw;
+    }, [startNumRaw, endNumRaw]);
+
+    final endNum = useMemoized(() {
+      if (startNumRaw == null || endNumRaw == null) return endNumRaw;
+      return startNumRaw > endNumRaw ? startNumRaw : endNumRaw;
+    }, [startNumRaw, endNumRaw]);
 
     final sentenceNums = useMemoized(() {
       return sentences.map((s) => _sidToInt(s.sid)).toList();
     }, [sentences]);
 
     final highlightedIndices = useMemoized(() {
-      if (startNum == null || endNum == null) return <int>{};
       final Set<int> result = {};
-      for (var i = 0; i < sentenceNums.length; i++) {
-        final n = sentenceNums[i];
-        if (n != null && n >= startNum && n <= endNum) {
-          result.add(i);
+      if (highlightSids != null && highlightSids!.isNotEmpty) {
+        final targetSids = highlightSids!.map((s) => _sidToInt(s)).toSet();
+        for (var i = 0; i < sentenceNums.length; i++) {
+          final n = sentenceNums[i];
+          if (n != null && targetSids.contains(n)) {
+            result.add(i);
+          }
+        }
+      } else {
+        if (startNum == null || endNum == null) return <int>{};
+        for (var i = 0; i < sentenceNums.length; i++) {
+          final n = sentenceNums[i];
+          if (n != null && n >= startNum && n <= endNum) {
+            result.add(i);
+          }
         }
       }
       return result;
-    }, [sentenceNums, startNum, endNum]);
+    }, [sentenceNums, startNum, endNum, highlightSids]);
 
     final firstHighlightIndex = useMemoized(() {
       if (highlightedIndices.isEmpty) return -1;

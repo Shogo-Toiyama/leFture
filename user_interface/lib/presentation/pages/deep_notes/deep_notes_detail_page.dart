@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +22,10 @@ import 'package:lecture_companion_ui/presentation/widgets/card_selection_toolbar
 import 'package:lecture_companion_ui/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lecture_companion_ui/presentation/widgets/note_sub_toolbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_transcript_modal.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
+import 'package:lecture_companion_ui/domain/entities/annotation.dart';
 import 'deep_notes_list_page.dart';
 
 // ---------------------------------------------------------------------------
@@ -125,6 +130,26 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     final highlightColor = useState<Color>(CourseStyleHelper.presetColors.first);
     // Noteサブツールバーの開閉状態。Highlightと同時に開かないよう排他制御する。
     final noteToolbarOpen = useState<bool>(false);
+    // Noteツールバーを開いた時点の選択範囲をキャッシュしておく。TextFieldに
+    // フォーカスが移るとSelectableRegionの選択は自動解除されてしまうため、
+    // 保存時に生の選択範囲を読み直すと取得できない。
+    final cachedNoteLocation = useState<TextLocation?>(null);
+    final temporaryHighlight = useState<Annotation?>(null);
+    final activeNoteAnnotation = useState<Annotation?>(null);
+    final isEditingNote = useState<bool>(false);
+    // ノートを切り替えたら、開いたままのサブツールバーとキャッシュ済み選択範囲を
+    // 破棄する。NoteSubToolbarはノート切り替え後も選択解除だけでは閉じなく
+    // なったため、切り替え自体をトリガーに明示的に閉じる必要がある(放置すると
+    // 別ノート宛のcachedNoteLocationで保存してしまう)。
+    useEffect(() {
+      highlightToolbarOpen.value = false;
+      noteToolbarOpen.value = false;
+      cachedNoteLocation.value = null;
+      temporaryHighlight.value = null;
+      activeNoteAnnotation.value = null;
+      isEditingNote.value = false;
+      return null;
+    }, [currentIndex.value]);
     // 注: テキスト選択ハンドルはFlutter内部で常にOverlayの一番上に新規追加される
     // ため(SelectionOverlay.showHandles)、OverlayPortal経由でサブツールバーを
     // 前面に出す手段は無い(ホストのOverlayEntryスロット固定で、show()呼び出し
@@ -166,7 +191,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           child: SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, null, false, () {}, false, () {}),
+                _buildAppBar(context, ref, 'Deep Notes', currentIndex.value, 0, () => _showNotesListSheet(context, resolvedTopics, currentIndex, navigationDirection, textThemeColor), hasSelection.value, textThemeColor, null, false, () {}, false, () {}, null, null),
                 Expanded(
                   child: Center(
                     child: isLoading
@@ -221,7 +246,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     Future<void> commitNote(String text) async {
       final noteId = topic.noteId;
-      final located = locateSelection();
+      // TextFieldにフォーカスが移った時点で選択は解除済みのため、Noteツールバーを
+      // 開いた時点でキャッシュしておいた選択範囲を使う(locateSelection()の
+      // 生の値はこの時点では既にnullになっている)。
+      final located = cachedNoteLocation.value;
       if (noteId == null || located == null || text.trim().isEmpty) return;
       await ref.read(deepNoteRepositoryDriftProvider).addAnnotation(
             noteId: noteId,
@@ -234,6 +262,23 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       ref.read(lectureControllerProvider.notifier).pushOutboxNow();
       selectionAreaKey.currentState?.selectableRegion.clearSelection();
       noteToolbarOpen.value = false;
+      cachedNoteLocation.value = null;
+      temporaryHighlight.value = null;
+    }
+
+    // ノート編集をキャンセルする(保存せずに閉じる)。外側タップ時に呼ばれる。
+    void cancelNote() {
+      if (!noteToolbarOpen.value) return;
+      noteToolbarOpen.value = false;
+      cachedNoteLocation.value = null;
+      temporaryHighlight.value = null;
+      selectionAreaKey.currentState?.selectableRegion.clearSelection();
+    }
+
+    void closeActiveNote() {
+      activeNoteAnnotation.value = null;
+      isEditingNote.value = false;
+      temporaryHighlight.value = null;
     }
 
     return Scaffold(
@@ -268,12 +313,160 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                 highlightToolbarOpen.value,
                 () {
                   highlightToolbarOpen.value = !highlightToolbarOpen.value;
-                  if (highlightToolbarOpen.value) noteToolbarOpen.value = false;
+                  if (highlightToolbarOpen.value) cancelNote();
                 },
                 noteToolbarOpen.value,
                 () {
-                  noteToolbarOpen.value = !noteToolbarOpen.value;
-                  if (noteToolbarOpen.value) highlightToolbarOpen.value = false;
+                  if (noteToolbarOpen.value) {
+                    // 既に開いている場合の再タップはキャンセル扱い(保存しない)。
+                    cancelNote();
+                    return;
+                  }
+                  // 開く瞬間の選択範囲をキャッシュする。TextFieldにフォーカスが
+                  // 移った後は選択が解除されており、この時点でしか読み取れない。
+                  final located = locateSelection();
+                  if (located == null) return;
+                  cachedNoteLocation.value = located;
+                  highlightToolbarOpen.value = false;
+                  noteToolbarOpen.value = true;
+
+                  // 選択をダミーでハイライトしたまま維持する(Source機能と同じ
+                  // パターン)。clearSelection()と同じフレーム内でMarkdownBodyの
+                  // Keyを変えるとSelectionAreaが再入アサーションを起こすことが
+                  // あるため、次フレームまで遅延させる。
+                  selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    temporaryHighlight.value = Annotation(
+                      id: '-1',
+                      startIdx: located.startIdx,
+                      endIdx: located.endIdx,
+                      annotationType: 'highlight',
+                      annotatedWords: '',
+                      contents: const {'type': 'marker', 'color': '#FFE082'},
+                    );
+                  });
+                },
+                () async {
+                  final located = locateSelection();
+                  if (located == null) return;
+
+                  try {
+                    final rawText = topic.content;
+
+                    final result = findSourceContextRange(
+                      rawText,
+                      located.startIdx,
+                      located.endIdx,
+                    );
+
+                    if (result == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No source found for the selection.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final citation = result.citation;
+
+                    // Debug Log
+                    final uid = supabase.auth.currentUser?.id;
+                    if (uid != null && lectureId.isNotEmpty) {
+                      try {
+                        final sentences = await ref.read(transcriptProvider(uid: uid, lectureId: lectureId).future);
+                        if (!context.mounted) return;
+                        if (sentences != null) {
+                          final targetSid = citation.sidStrings.first;
+                          TranscriptSentence? targetSentence;
+                          for (final s in sentences) {
+                            if (s.sid == targetSid) {
+                              targetSentence = s;
+                              break;
+                            }
+                          }
+                          final flattenedMap = buildFlattenedTextMap(rawText);
+                          final rawEnd = flattenedMap.toRaw(located.endIdx);
+                          final citationEndWithMargin = (citation.end + 5) > rawText.length
+                              ? rawText.length
+                              : (citation.end + 5);
+                          final textUntilCitation = rawText.substring(rawEnd, citationEndWithMargin);
+
+                          debugPrint("=== Source Navigation Debug Log (Deep Note) ===");
+                          debugPrint("1. Selected Text: '${selectedText.value}'");
+                          debugPrint("2. Text until citation: '$textUntilCitation'");
+                          debugPrint("3. Resolved SID: '$targetSid'");
+                          debugPrint("4. Transcript Sentence: '${targetSentence?.text}'");
+                          debugPrint("===============================================");
+                        }
+                      } catch (e) {
+                        debugPrint("Failed to output debug log: $e");
+                      }
+                    }
+
+                    // 選択状態をクリア
+                    selectionAreaKey.currentState?.selectableRegion.clearSelection();
+
+                    // 一時的ハイライトを設定 (メモリ内アノテーション)
+                    // NOTE: この代入はMarkdownBodyのKeyを変え、選択中のSelectableを
+                    // 即座に破棄・再生成させる。clearSelection()が同一フレーム内で
+                    // ScrollableのSelection状態をリセットし切る前にこれを行うと、
+                    // SelectionAreaがScrollable内で '_selectionStartsInScrollable'
+                    // の再入アサーションを起こすことがあるため、次フレームまで遅延させる。
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      temporaryHighlight.value = Annotation(
+                        id: '-1', // Dummy ID
+                        startIdx: result.startIdx,
+                        endIdx: result.endIdx,
+                        annotationType: 'highlight',
+                        annotatedWords: '',
+                        contents: const {'type': 'marker', 'color': '#FFE082'}, // 琥珀色のマーカー
+                      );
+                    });
+
+                    final sortedSids = List<int>.from(citation.sids)..sort();
+                    final startSid = formatSid(sortedSids.first);
+                    final endSid = formatSid(sortedSids.last);
+
+                    final courseIdVal = course?.id;
+                    if (!context.mounted) return;
+                    if (lectureId.isNotEmpty) {
+                      await showAnnouncementTranscriptModal(
+                        context,
+                        lectureId: lectureId,
+                        startSid: startSid,
+                        endSid: endSid,
+                        highlightSids: citation.sidStrings,
+                        courseId: courseIdVal,
+                      );
+                    }
+
+                    // モーダルが閉じられたら一時的ハイライトを消去
+                    // (同様の理由でクリア後の再構築も次フレームに遅延させる)
+                    selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      temporaryHighlight.value = null;
+                    });
+
+                  } on SelectionTooBroadException catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.message)),
+                    );
+                  }
+                },
+                () async {
+                  final text = selectedText.value;
+                  if (text != null && text.isNotEmpty) {
+                    await Clipboard.setData(ClipboardData(text: text));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 },
               ),
               Expanded(
@@ -294,7 +487,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       selectedText.value = text;
                     } else {
                       highlightToolbarOpen.value = false;
-                      noteToolbarOpen.value = false;
+                      // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
+                      // ここを通るが、Noteツールバーは選択解除では閉じない
+                      // (保存/再タップで明示的に閉じるまで開いたままにする)。
                     }
                   },
                   onNext: () {
@@ -309,6 +504,15 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       currentIndex.value = currentIndex.value - 1;
                     }
                   },
+                  temporaryHighlight: temporaryHighlight.value,
+                  onAnnotationTap: (a) {
+                    if (a.annotationType == 'notes') {
+                      cancelNote();
+                      activeNoteAnnotation.value = a;
+                      isEditingNote.value = false;
+                      temporaryHighlight.value = a;
+                    }
+                  },
                     ),
                     if (highlightToolbarOpen.value && hasSelection.value)
                       HighlightSubToolbar(
@@ -320,8 +524,64 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                           commitHighlight(m);
                         },
                       ),
-                    if (noteToolbarOpen.value && hasSelection.value)
+                    if (noteToolbarOpen.value)
+                      // Noteツールバーの外側をタップしたら保存せずキャンセルする。
+                      // NoteSubToolbar自体はこのcatcherより後(=Stack上で手前)に
+                      // 置かれているので、ツールバー自身へのタップはこちらまで
+                      // 落ちてこない。
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: cancelNote,
+                        ),
+                      ),
+                    if (noteToolbarOpen.value)
                       NoteSubToolbar(onSave: commitNote),
+                    if (activeNoteAnnotation.value != null)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: closeActiveNote,
+                        ),
+                      ),
+                    if (activeNoteAnnotation.value != null)
+                      NoteSubToolbar(
+                        initialText: () {
+                          final a = activeNoteAnnotation.value!;
+                          if (a.contents is String) return a.contents as String;
+                          if (a.contents is Map && (a.contents as Map)['text'] is String) {
+                            return (a.contents as Map)['text'] as String;
+                          }
+                          return a.annotatedWords;
+                        }(),
+                        isEditing: isEditingNote.value,
+                        onEditModeToggle: () {
+                          isEditingNote.value = true;
+                        },
+                        onSave: (newText) async {
+                          final noteId = topic.noteId;
+                          if (noteId != null && newText.trim().isNotEmpty) {
+                            await ref.read(deepNoteRepositoryDriftProvider).updateAnnotation(
+                                  noteId: noteId,
+                                  annotationId: activeNoteAnnotation.value!.id,
+                                  contents: newText.trim(),
+                                );
+                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          }
+                          closeActiveNote();
+                        },
+                        onDelete: () async {
+                          final noteId = topic.noteId;
+                          if (noteId != null) {
+                            await ref.read(deepNoteRepositoryDriftProvider).removeAnnotation(
+                                  noteId: noteId,
+                                  annotationId: activeNoteAnnotation.value!.id,
+                                );
+                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          }
+                          closeActiveNote();
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -346,6 +606,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     VoidCallback onHighlightTap,
     bool noteToolbarOpen,
     VoidCallback onNoteTap,
+    VoidCallback? onSourceTap,
+    VoidCallback? onCopyTap,
   ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -398,6 +660,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   onHighlightTap: onHighlightTap,
                   isNoteActive: noteToolbarOpen,
                   onNoteTap: onNoteTap,
+                  onSourceTap: onSourceTap,
+                  onCopyTap: onCopyTap,
                   onLike: topic?.noteId == null
                       ? null
                       : () async {
@@ -619,6 +883,8 @@ class _NoteDetailContent extends HookWidget {
     required this.onSelectionChanged,
     this.selectionAreaKey,
     this.selectionListenerNotifier,
+    this.temporaryHighlight,
+    this.onAnnotationTap,
   });
 
   final DeepNoteTopic topic;
@@ -631,6 +897,8 @@ class _NoteDetailContent extends HookWidget {
   final ValueChanged<String?> onSelectionChanged;
   final GlobalKey<SelectionAreaState>? selectionAreaKey;
   final SelectionListenerNotifier? selectionListenerNotifier;
+  final Annotation? temporaryHighlight;
+  final ValueChanged<Annotation>? onAnnotationTap;
 
   @override
   Widget build(BuildContext context) {
@@ -765,34 +1033,47 @@ class _NoteDetailContent extends HookWidget {
                   ),
 
                 // ── Title ──────────────────────────────────────────────────
-                Text(
-                  topic.title,
-                  style: TextStyle(
-                    color: AppColors.paper.textInk,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: textThemeColor.withValues(alpha: 0.35),
-                        blurRadius: 10,
-                      ),
-                      Shadow(
-                        color: textThemeColor.withValues(alpha: 0.15),
-                        blurRadius: 22,
-                      ),
-                    ],
+                SelectionContainer.disabled(
+                  child: Text(
+                    topic.title,
+                    style: TextStyle(
+                      color: AppColors.paper.textInk,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: textThemeColor.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                        ),
+                        Shadow(
+                          color: textThemeColor.withValues(alpha: 0.15),
+                          blurRadius: 22,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
                 // ── Summary ────────────────────────────────────────────────
                 if (topic.summary.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    topic.summary,
-                    style: TextStyle(
-                      color: AppColors.paper.textPencil,
-                      fontSize: 15,
-                      fontStyle: FontStyle.italic,
+                  SelectionContainer.disabled(
+                    child: MarkdownBody(
+                      data: stripSidCitations(topic.summary),
+                      selectable: false,
+                      styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                        p: TextStyle(
+                          color: AppColors.paper.textPencil,
+                          fontSize: 15,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        strong: TextStyle(
+                          color: AppColors.paper.textPencil,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -802,14 +1083,23 @@ class _NoteDetailContent extends HookWidget {
                 _maybeWrapWithSelectionListener(
                   selectionListenerNotifier,
                   MarkdownBody(
-                  key: ValueKey(annotationsCacheKey(topic.annotations)),
+                  key: ValueKey(annotationsCacheKey([
+                    ...topic.annotations,
+                    if (temporaryHighlight != null) temporaryHighlight!,
+                  ])),
                   data: topic.content.isNotEmpty
                       ? stripSidCitations(topic.content)
                       : 'Deep notes for this topic are still being generated…',
                   selectable: false,
                   builders: topic.content.isNotEmpty
                       ? annotationMarkdownBuilders(
-                          MarkdownAnnotationBuilder(annotations: topic.annotations),
+                          MarkdownAnnotationBuilder(
+                            annotations: [
+                              ...topic.annotations,
+                              if (temporaryHighlight != null) temporaryHighlight!,
+                            ],
+                            onAnnotationTap: onAnnotationTap,
+                          ),
                         )
                       : const {},
                   bulletBuilder: annotationBulletBuilder(

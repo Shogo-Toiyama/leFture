@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,9 @@ import 'package:lecture_companion_ui/presentation/widgets/card_selection_toolbar
 import 'package:lecture_companion_ui/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lecture_companion_ui/presentation/widgets/note_sub_toolbar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/announcement_transcript_modal.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
 
 // ---------------------------------------------------------------------------
 // Data classes
@@ -223,6 +227,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     final highlightColor = useState<Color>(CourseStyleHelper.presetColors.first);
     // Noteサブツールバーの開閉状態。Highlightと同時に開かないよう排他制御する。
     final noteToolbarOpen = useState<bool>(false);
+    // Noteツールバーを開いた時点の選択範囲をキャッシュしておく。TextFieldに
+    // フォーカスが移るとSelectableRegionの選択は自動解除されてしまうため、
+    // 保存時に生の選択範囲を読み直すと取得できない。
+    final cachedNoteLocation = useState<TextLocation?>(null);
     // 注: テキスト選択ハンドルはFlutter内部で常にOverlayの一番上に新規追加される
     // ため(SelectionOverlay.showHandles)、OverlayPortal経由でサブツールバーを
     // 前面に出す手段は無い(ホストのOverlayEntryスロット固定で、show()呼び出し
@@ -238,6 +246,24 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       () => GlobalKey<SelectionAreaState>(),
       [currentCardIndex.value],
     );
+    final temporaryHighlight = useState<Annotation?>(null);
+    final temporaryHighlightBlockIdx = useState<int?>(null);
+    final activeNoteAnnotation = useState<Annotation?>(null);
+    final isEditingNote = useState<bool>(false);
+    // カードを切り替えたら、開いたままのサブツールバーとキャッシュ済み選択範囲を
+    // 破棄する。NoteSubToolbarはカード切り替え後も選択解除だけでは閉じなく
+    // なったため、切り替え自体をトリガーに明示的に閉じる必要がある(放置すると
+    // 別カード宛のcachedNoteLocationで保存してしまう)。
+    useEffect(() {
+      highlightToolbarOpen.value = false;
+      noteToolbarOpen.value = false;
+      cachedNoteLocation.value = null;
+      temporaryHighlight.value = null;
+      temporaryHighlightBlockIdx.value = null;
+      activeNoteAnnotation.value = null;
+      isEditingNote.value = false;
+      return null;
+    }, [currentCardIndex.value]);
 
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -291,6 +317,23 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       });
     }, [currentCardIndex.value, isAnimating.value]);
 
+    // ノート編集をキャンセルする(保存せずに閉じる)。外側タップ時に呼ばれる。
+    void cancelNote() {
+      if (!noteToolbarOpen.value) return;
+      noteToolbarOpen.value = false;
+      cachedNoteLocation.value = null;
+      temporaryHighlight.value = null;
+      temporaryHighlightBlockIdx.value = null;
+      selectionAreaKey.currentState?.selectableRegion.clearSelection();
+    }
+
+    void closeActiveNote() {
+      activeNoteAnnotation.value = null;
+      isEditingNote.value = false;
+      temporaryHighlight.value = null;
+      temporaryHighlightBlockIdx.value = null;
+    }
+
     Widget buildCard(int cardIdx) {
       final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
       final imageFile = imageFiles[item.groupIndex];
@@ -319,6 +362,17 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
             cardIdx == currentCardIndex.value && !isAnimating.value
                 ? selectionListenerNotifier
                 : null,
+        temporaryHighlight: cardIdx == currentCardIndex.value ? temporaryHighlight.value : null,
+        temporaryHighlightBlockIdx: cardIdx == currentCardIndex.value ? temporaryHighlightBlockIdx.value : null,
+        onAnnotationTap: (a) {
+          if (a.annotationType == 'notes') {
+            cancelNote();
+            activeNoteAnnotation.value = a;
+            isEditingNote.value = false;
+            temporaryHighlight.value = a;
+            temporaryHighlightBlockIdx.value = a.blockIdx;
+          }
+        },
       );
     }
 
@@ -370,7 +424,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
     Future<void> commitNote(String text) async {
       final card = flatItems[index].card;
-      final located = locateSelection();
+      // TextFieldにフォーカスが移った時点で選択は解除済みのため、Noteツールバーを
+      // 開いた時点でキャッシュしておいた選択範囲を使う(locateSelection()の
+      // 生の値はこの時点では既にnullになっている)。
+      final located = cachedNoteLocation.value;
       if (card == null || located == null || text.trim().isEmpty) return;
       await widgetRef.read(reviewCardRepositoryDriftProvider).addAnnotation(
             cardId: card.id,
@@ -384,7 +441,11 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
       selectionAreaKey.currentState?.selectableRegion.clearSelection();
       noteToolbarOpen.value = false;
+      cachedNoteLocation.value = null;
+      temporaryHighlight.value = null;
+      temporaryHighlightBlockIdx.value = null;
     }
+
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
@@ -459,49 +520,214 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       tooltip: 'View List',
                     ),
                     Expanded(
-                      child: CardSelectionToolbar(
-                        hasSelection: hasSelection.value,
-                        accentColor: textThemeColor,
-                        reaction: flatItems[index].card?.reaction,
-                        saved: flatItems[index].card?.saved ?? false,
-                        isHighlightActive: highlightToolbarOpen.value,
-                        onHighlightTap: () {
-                          highlightToolbarOpen.value = !highlightToolbarOpen.value;
-                          if (highlightToolbarOpen.value) noteToolbarOpen.value = false;
-                        },
-                        isNoteActive: noteToolbarOpen.value,
-                        onNoteTap: () {
-                          noteToolbarOpen.value = !noteToolbarOpen.value;
-                          if (noteToolbarOpen.value) highlightToolbarOpen.value = false;
-                        },
-                        onLike: flatItems[index].card == null
-                            ? null
-                            : () async {
-                                await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
-                                      id: flatItems[index].card!.id,
-                                      reaction: flatItems[index].card!.reaction == 'like' ? null : 'like',
-                                    );
-                                widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                      child: flatItems[index].isCover
+                          ? const SizedBox.shrink()
+                          : CardSelectionToolbar(
+                              hasSelection: hasSelection.value,
+                              accentColor: textThemeColor,
+                              reaction: flatItems[index].card?.reaction,
+                              saved: flatItems[index].card?.saved ?? false,
+                              isHighlightActive: highlightToolbarOpen.value,
+                              onHighlightTap: () {
+                                highlightToolbarOpen.value = !highlightToolbarOpen.value;
+                                if (highlightToolbarOpen.value) cancelNote();
                               },
-                        onDislike: flatItems[index].card == null
-                            ? null
-                            : () async {
-                                await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
-                                      id: flatItems[index].card!.id,
-                                      reaction: flatItems[index].card!.reaction == 'dislike' ? null : 'dislike',
-                                    );
-                                widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                              isNoteActive: noteToolbarOpen.value,
+                              onNoteTap: () {
+                                if (noteToolbarOpen.value) {
+                                  // 既に開いている場合の再タップはキャンセル扱い
+                                  // (保存しない)。
+                                  cancelNote();
+                                  return;
+                                }
+                                // 開く瞬間の選択範囲をキャッシュする。TextFieldに
+                                // フォーカスが移った後は選択が解除されており、
+                                // この時点でしか読み取れない。
+                                final located = locateSelection();
+                                if (located == null) return;
+                                cachedNoteLocation.value = located;
+                                highlightToolbarOpen.value = false;
+                                noteToolbarOpen.value = true;
+
+                                // 選択をダミーでハイライトしたまま維持する
+                                // (Source機能と同じパターン)。clearSelection()と
+                                // 同じフレーム内でMarkdownBodyのKeyを変えると
+                                // SelectionAreaが再入アサーションを起こすことが
+                                // あるため、次フレームまで遅延させる。
+                                selectionAreaKey.currentState?.selectableRegion
+                                    .clearSelection();
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  temporaryHighlight.value = Annotation(
+                                    id: '-1',
+                                    blockIdx: located.blockIdx,
+                                    startIdx: located.startIdx,
+                                    endIdx: located.endIdx,
+                                    annotationType: 'highlight',
+                                    annotatedWords: '',
+                                    contents: const {
+                                      'type': 'marker',
+                                      'color': '#FFE082',
+                                    },
+                                  );
+                                  temporaryHighlightBlockIdx.value = located.blockIdx;
+                                });
                               },
-                        onSave: flatItems[index].card == null
-                            ? null
-                            : () async {
-                                await widgetRef.read(reviewCardRepositoryDriftProvider).updateSaved(
-                                      id: flatItems[index].card!.id,
-                                      saved: !flatItems[index].card!.saved,
+                              onSourceTap: () async {
+                                final card = flatItems[index].card;
+                                final located = locateSelection();
+                                if (card == null || located == null) return;
+
+                                try {
+                                  final block = card.cardContent[located.blockIdx!];
+                                  final rawText = reviewCardBlockRawMarkdownSource(block);
+
+                                  final result = findSourceContextRange(
+                                    rawText,
+                                    located.startIdx,
+                                    located.endIdx,
+                                  );
+
+                                  if (result == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('No source found for the selection.'),
+                                      ),
                                     );
-                                widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                                    return;
+                                  }
+
+                                  final citation = result.citation;
+
+                                  // Debug Log
+                                  final uid = supabase.auth.currentUser?.id;
+                                  if (uid != null && lectureId.isNotEmpty) {
+                                    try {
+                                      final sentences = await widgetRef.read(transcriptProvider(uid: uid, lectureId: lectureId).future);
+                                      if (!context.mounted) return;
+                                      if (sentences != null) {
+                                        final targetSid = citation.sidStrings.first;
+                                        TranscriptSentence? targetSentence;
+                                        for (final s in sentences) {
+                                          if (s.sid == targetSid) {
+                                            targetSentence = s;
+                                            break;
+                                          }
+                                        }
+                                        final flattenedMap = buildFlattenedTextMap(rawText);
+                                        final rawEnd = flattenedMap.toRaw(located.endIdx);
+                                        final citationEndWithMargin = (citation.end + 5) > rawText.length
+                                            ? rawText.length
+                                            : (citation.end + 5);
+                                        final textUntilCitation = rawText.substring(rawEnd, citationEndWithMargin);
+
+                                        debugPrint("=== Source Navigation Debug Log (Review Card) ===");
+                                        debugPrint("1. Selected Text: '${selectedText.value}'");
+                                        debugPrint("2. Text until citation: '$textUntilCitation'");
+                                        debugPrint("3. Resolved SID: '$targetSid'");
+                                        debugPrint("4. Transcript Sentence: '${targetSentence?.text}'");
+                                        debugPrint("=================================================");
+                                      }
+                                    } catch (e) {
+                                      debugPrint("Failed to output debug log: $e");
+                                    }
+                                  }
+
+                                  // 選択状態をクリア
+                                  selectionAreaKey.currentState?.selectableRegion.clearSelection();
+
+                                  // 一時的ハイライトを設定 (メモリ内アノテーション)
+                                  // NOTE: この代入はMarkdownBodyのKeyを変え、選択中の
+                                  // Selectableを即座に破棄・再生成させる。clearSelection()
+                                  // が同一フレーム内でScrollableのSelection状態をリセットし
+                                  // 切る前にこれを行うと、SelectionAreaがScrollable内で
+                                  // '_selectionStartsInScrollable' の再入アサーションを
+                                  // 起こすことがあるため、次フレームまで遅延させる。
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    temporaryHighlight.value = Annotation(
+                                      id: '-1', // Dummy ID
+                                      blockIdx: located.blockIdx,
+                                      startIdx: result.startIdx,
+                                      endIdx: result.endIdx,
+                                      annotationType: 'highlight',
+                                      annotatedWords: '',
+                                      contents: const {'type': 'marker', 'color': '#FFE082'}, // 琥珀色のマーカー
+                                    );
+                                    temporaryHighlightBlockIdx.value = located.blockIdx;
+                                  });
+
+                                  final sortedSids = List<int>.from(citation.sids)..sort();
+                                  final startSid = formatSid(sortedSids.first);
+                                  final endSid = formatSid(sortedSids.last);
+
+                                  final courseIdVal = course?.id;
+                                  if (!context.mounted) return;
+                                  if (lectureId.isNotEmpty) {
+                                    await showAnnouncementTranscriptModal(
+                                      context,
+                                      lectureId: lectureId,
+                                      startSid: startSid,
+                                      endSid: endSid,
+                                      highlightSids: citation.sidStrings,
+                                      courseId: courseIdVal,
+                                    );
+                                  }
+
+                                  // モーダルが閉じられたら一時的ハイライトを消去
+                                  // (同様の理由でクリア後の再構築も次フレームに遅延させる)
+                                  selectionAreaKey.currentState?.selectableRegion.clearSelection();
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    temporaryHighlight.value = null;
+                                    temporaryHighlightBlockIdx.value = null;
+                                  });
+
+                                } on SelectionTooBroadException catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(e.message)),
+                                  );
+                                }
                               },
-                      ),
+                              onCopyTap: () async {
+                                final text = selectedText.value;
+                                if (text != null && text.isNotEmpty) {
+                                  await Clipboard.setData(ClipboardData(text: text));
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Copied to clipboard'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                                onLike: flatItems[index].card == null
+                                    ? null
+                                    : () async {
+                                        await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
+                                              id: flatItems[index].card!.id,
+                                              reaction: flatItems[index].card!.reaction == 'like' ? null : 'like',
+                                            );
+                                        widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                                      },
+                                onDislike: flatItems[index].card == null
+                                    ? null
+                                    : () async {
+                                        await widgetRef.read(reviewCardRepositoryDriftProvider).updateReaction(
+                                              id: flatItems[index].card!.id,
+                                              reaction: flatItems[index].card!.reaction == 'dislike' ? null : 'dislike',
+                                            );
+                                        widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                                      },
+                                onSave: flatItems[index].card == null
+                                    ? null
+                                    : () async {
+                                        await widgetRef.read(reviewCardRepositoryDriftProvider).updateSaved(
+                                              id: flatItems[index].card!.id,
+                                              saved: !flatItems[index].card!.saved,
+                                            );
+                                        widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                                      },
+                              ),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -576,7 +802,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         selectedText.value = content!.plainText;
                       } else {
                         highlightToolbarOpen.value = false;
-                        noteToolbarOpen.value = false;
+                        // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
+                        // ここを通るが、Noteツールバーは選択解除では閉じない
+                        // (保存/再タップで明示的に閉じるまで開いたままにする)。
                       }
                     },
                     child: GestureDetector(
@@ -780,8 +1008,64 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                           commitHighlight(m);
                         },
                       ),
-                    if (noteToolbarOpen.value && hasSelection.value)
+                    if (noteToolbarOpen.value)
+                      // Noteツールバーの外側をタップしたら保存せずキャンセルする。
+                      // NoteSubToolbar自体はこのcatcherより後(=Stack上で手前)に
+                      // 置かれているので、ツールバー自身へのタップはこちらまで
+                      // 落ちてこない。
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: cancelNote,
+                        ),
+                      ),
+                    if (noteToolbarOpen.value)
                       NoteSubToolbar(onSave: commitNote),
+                    if (activeNoteAnnotation.value != null)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: closeActiveNote,
+                        ),
+                      ),
+                    if (activeNoteAnnotation.value != null)
+                      NoteSubToolbar(
+                        initialText: () {
+                          final a = activeNoteAnnotation.value!;
+                          if (a.contents is String) return a.contents as String;
+                          if (a.contents is Map && (a.contents as Map)['text'] is String) {
+                            return (a.contents as Map)['text'] as String;
+                          }
+                          return a.annotatedWords;
+                        }(),
+                        isEditing: isEditingNote.value,
+                        onEditModeToggle: () {
+                          isEditingNote.value = true;
+                        },
+                        onSave: (newText) async {
+                          final card = flatItems[index].card;
+                          if (card != null && newText.trim().isNotEmpty) {
+                            await widgetRef.read(reviewCardRepositoryDriftProvider).updateAnnotation(
+                                  cardId: card.id,
+                                  annotationId: activeNoteAnnotation.value!.id,
+                                  contents: newText.trim(),
+                                );
+                            widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          }
+                          closeActiveNote();
+                        },
+                        onDelete: () async {
+                          final card = flatItems[index].card;
+                          if (card != null) {
+                            await widgetRef.read(reviewCardRepositoryDriftProvider).removeAnnotation(
+                                  cardId: card.id,
+                                  annotationId: activeNoteAnnotation.value!.id,
+                                );
+                            widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          }
+                          closeActiveNote();
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -1057,39 +1341,41 @@ class _CoverCard extends StatelessWidget {
       ],
     );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (imageFile != null)
-            Image.file(imageFile!, fit: BoxFit.cover)
-          else
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+    return SelectionContainer.disabled(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imageFile != null)
+              Image.file(imageFile!, fit: BoxFit.cover)
+            else
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+                  ),
+                ),
+              ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                color: Colors.white.withValues(alpha: 0.72),
+                child: Text(
+                  title,
+                  style: titleStyle,
+                  textAlign: TextAlign.center,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              color: Colors.white.withValues(alpha: 0.72),
-              child: Text(
-                title,
-                style: titleStyle,
-                textAlign: TextAlign.center,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1104,16 +1390,18 @@ class _ContentCard extends StatelessWidget {
     required this.imageFile,
     required this.themeColor,
     this.selectionListenerNotifier,
+    this.temporaryHighlight,
+    this.temporaryHighlightBlockIdx,
+    this.onAnnotationTap,
   });
 
   final ReviewCard card;
   final File? imageFile;
   final Color themeColor;
-  // 非nullの時だけブロック本文をSelectionListenerで包み、正確な選択範囲
-  // (SelectedContentRange)を取得できるようにする。遷移アニメーション中に
-  // 複数枚のカードが同時にマウントされても二重登録が起きないよう、実際に
-  // 表示中のカードにしか渡さない(review_cards_viewer_page.dartのbuildCard参照)。
   final SelectionListenerNotifier? selectionListenerNotifier;
+  final Annotation? temporaryHighlight;
+  final int? temporaryHighlightBlockIdx;
+  final ValueChanged<Annotation>? onAnnotationTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1126,7 +1414,12 @@ class _ContentCard extends StatelessWidget {
           child: _ReviewCardBlockView(
             block: entry.value,
             themeColor: themeColor,
-            annotations: card.annotations.where((a) => a.blockIdx == entry.key).toList(),
+            annotations: [
+              ...card.annotations.where((a) => a.blockIdx == entry.key),
+              if (temporaryHighlight != null && temporaryHighlightBlockIdx == entry.key)
+                temporaryHighlight!,
+            ],
+            onAnnotationTap: onAnnotationTap,
           ),
         ),
       ).toList(),
@@ -1231,11 +1524,13 @@ class _ReviewCardBlockView extends StatelessWidget {
     required this.block,
     required this.themeColor,
     this.annotations = const [],
+    this.onAnnotationTap,
   });
 
   final ReviewCardBlock block;
   final Color themeColor;
   final List<Annotation> annotations;
+  final ValueChanged<Annotation>? onAnnotationTap;
 
   MarkdownStyleSheet _styleSheet(BuildContext context, {bool italic = false}) {
     final baseColor = AppColors.paper.textInk;
@@ -1264,7 +1559,10 @@ class _ReviewCardBlockView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final builders = annotationMarkdownBuilders(
-      MarkdownAnnotationBuilder(annotations: annotations),
+      MarkdownAnnotationBuilder(
+        annotations: annotations,
+        onAnnotationTap: onAnnotationTap,
+      ),
     );
     final annotationsKey = ValueKey(annotationsCacheKey(annotations));
     switch (block.type) {
@@ -1320,47 +1618,49 @@ class _CoverCardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (imageFile != null)
-            Image.file(imageFile!, fit: BoxFit.cover)
-          else
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+    return SelectionContainer.disabled(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imageFile != null)
+              Image.file(imageFile!, fit: BoxFit.cover)
+            else
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+                  ),
+                ),
+              ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                color: Colors.white.withValues(alpha: 0.75),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(color: Colors.white, blurRadius: 2),
+                      Shadow(color: Colors.white, blurRadius: 4),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              color: Colors.white.withValues(alpha: 0.75),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(color: Colors.white, blurRadius: 2),
-                    Shadow(color: Colors.white, blurRadius: 4),
-                  ],
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -21,6 +21,7 @@
 // concatenating every visited text leaf in document order.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 
@@ -101,10 +102,13 @@ String annotationsCacheKey(List<Annotation> annotations) {
 }
 
 class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
-  MarkdownAnnotationBuilder({required List<Annotation> annotations})
-      : _annotations = [...annotations]..sort((a, b) => a.startIdx.compareTo(b.startIdx));
+  MarkdownAnnotationBuilder({
+    required List<Annotation> annotations,
+    this.onAnnotationTap,
+  }) : _annotations = [...annotations]..sort((a, b) => a.startIdx.compareTo(b.startIdx));
 
   final List<Annotation> _annotations;
+  final ValueChanged<Annotation>? onAnnotationTap;
   int _offset = 0;
   final List<TextStyle> _inlineStyleStack = [];
 
@@ -160,6 +164,9 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
       spans.add(TextSpan(
         text: content.substring(overlapStart - leafStart, overlapEnd - leafStart),
         style: _decoratedStyle(effectiveStyle, a),
+        recognizer: onAnnotationTap != null
+            ? (TapGestureRecognizer()..onTap = () => onAnnotationTap?.call(a))
+            : null,
       ));
       cursor = overlapEnd;
     }
@@ -178,9 +185,9 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
     if (a.annotationType == 'notes') {
       return style.copyWith(
         decoration: TextDecoration.underline,
-        decorationStyle: TextDecorationStyle.dotted,
-        decorationColor: Colors.black45,
-        decorationThickness: 1.5,
+        decorationStyle: TextDecorationStyle.dashed,
+        decorationColor: const Color(0xFFC5A059),
+        decorationThickness: 3.0,
       );
     }
 

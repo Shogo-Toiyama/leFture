@@ -187,3 +187,91 @@ String stripSidCitations(String text) {
 
   return buffer.toString();
 }
+
+/// 表示用テキスト（引用記号が削られた後）のインデックスから、
+/// 元テキスト（引用記号付き）でのインデックスへの変換を行うためのマッピングを作成する。
+List<int> buildStrippedToRawMap(String rawText) {
+  final citations = parseSidCitations(rawText);
+  if (citations.isEmpty) {
+    return List.generate(rawText.length + 1, (i) => i);
+  }
+
+  final strippedToRaw = <int>[];
+  var cursor = 0;
+
+  for (final c in citations) {
+    var chunk = rawText.substring(cursor, c.start);
+    // 引用直前の余分なスペースを削る
+    final trimmedChunk = chunk.replaceFirst(RegExp(r'[ \t]+$'), '');
+    final trimmedLen = trimmedChunk.length;
+
+    for (var i = 0; i < trimmedLen; i++) {
+      strippedToRaw.add(cursor + i);
+    }
+    cursor = c.end;
+  }
+
+  final remaining = rawText.substring(cursor);
+  for (var i = 0; i < remaining.length; i++) {
+    strippedToRaw.add(cursor + i);
+  }
+  
+  // 終端文字位置の対応も含めるため、最後に rawText.length を追加
+  strippedToRaw.add(rawText.length);
+
+  return strippedToRaw;
+}
+
+/// 元テキスト（引用記号付き）のインデックスから、
+/// 表示用テキスト（引用記号が削られた後）のインデックスへの変換を行うためのマッピングを作成する。
+List<int> buildRawToStrippedMap(String rawText) {
+  final citations = parseSidCitations(rawText);
+  final rawToStripped = List<int>.filled(rawText.length + 1, 0);
+  if (citations.isEmpty) {
+    for (var i = 0; i <= rawText.length; i++) {
+      rawToStripped[i] = i;
+    }
+    return rawToStripped;
+  }
+
+  var currentStrippedLen = 0;
+  var cursor = 0;
+
+  for (final c in citations) {
+    var chunk = rawText.substring(cursor, c.start);
+    // 引用直前の余分なスペースを削る
+    final trimmedChunk = chunk.replaceFirst(RegExp(r'[ \t]+$'), '');
+    final trimmedLen = trimmedChunk.length;
+    final originalChunkLen = chunk.length;
+
+    // chunkの削られなかった部分
+    for (var i = 0; i < trimmedLen; i++) {
+      rawToStripped[cursor + i] = currentStrippedLen + i;
+    }
+    
+    // chunkの削られたスペース部分
+    final strippedPosAfterChunk = currentStrippedLen + trimmedLen;
+    for (var i = trimmedLen; i < originalChunkLen; i++) {
+      rawToStripped[cursor + i] = strippedPosAfterChunk;
+    }
+
+    // 引用部分 c.start 〜 c.end
+    for (var i = c.start; i < c.end; i++) {
+      rawToStripped[i] = strippedPosAfterChunk;
+    }
+
+    currentStrippedLen += trimmedLen;
+    cursor = c.end;
+  }
+
+  // 残りの部分
+  final remaining = rawText.substring(cursor);
+  for (var i = 0; i < remaining.length; i++) {
+    rawToStripped[cursor + i] = currentStrippedLen + i;
+  }
+  
+  // 終端文字
+  rawToStripped[rawText.length] = currentStrippedLen + remaining.length;
+
+  return rawToStripped;
+}

@@ -101,10 +101,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                           final id = state.pathParameters['lectureId']!;
                           final startSid = state.uri.queryParameters['start_sid'];
                           final endSid = state.uri.queryParameters['end_sid'];
+                          final highlightSidsStr = state.uri.queryParameters['highlight_sids'];
+                          final highlightSids = highlightSidsStr?.split(',');
                           return TranscriptPage(
                             lectureId: id,
                             startSid: startSid,
                             endSid: endSid,
+                            highlightSids: highlightSids,
                           );
                         },
                       ),

@@ -32,14 +32,15 @@ int? _sidToInt(String? sid) {
 /// [startSid] - ハイライト開始SID (例: "s000042")
 /// [endSid]   - ハイライト終了SID (例: "s000060")
 /// [courseId]  - "Go to this lecture" ボタン用のコースID
-void showAnnouncementTranscriptModal(
+Future<void> showAnnouncementTranscriptModal(
   BuildContext context, {
   required String lectureId,
   required String? startSid,
   required String? endSid,
+  List<String>? highlightSids,
   required String? courseId,
 }) {
-  showModalBottomSheet(
+  return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -49,6 +50,7 @@ void showAnnouncementTranscriptModal(
         lectureId: lectureId,
         startSid: startSid,
         endSid: endSid,
+        highlightSids: highlightSids,
         courseId: courseId,
       );
     },
@@ -60,12 +62,14 @@ class _AnnouncementTranscriptModal extends HookConsumerWidget {
     required this.lectureId,
     required this.startSid,
     required this.endSid,
+    this.highlightSids,
     required this.courseId,
   });
 
   final String lectureId;
   final String? startSid;
   final String? endSid;
+  final List<String>? highlightSids;
   final String? courseId;
 
   static String _formatMs(int ms) {
@@ -92,8 +96,15 @@ class _AnnouncementTranscriptModal extends HookConsumerWidget {
     final sentences = transcriptAsync.value ?? const <TranscriptSentence>[];
 
     // ハイライト対象のSIDインデックス範囲を計算
-    final startNum = _sidToInt(startSid);
-    final endNum = _sidToInt(endSid);
+    final startNumRaw = _sidToInt(startSid);
+    final endNumRaw = _sidToInt(endSid);
+
+    final startNum = startNumRaw != null && endNumRaw != null
+        ? (startNumRaw < endNumRaw ? startNumRaw : endNumRaw)
+        : startNumRaw;
+    final endNum = startNumRaw != null && endNumRaw != null
+        ? (startNumRaw > endNumRaw ? startNumRaw : endNumRaw)
+        : endNumRaw;
 
     // 各センテンスのSID番号を事前計算
     final sentenceNums = useMemoized(() {
@@ -102,16 +113,26 @@ class _AnnouncementTranscriptModal extends HookConsumerWidget {
 
     // ハイライト対象のインデックスセット
     final highlightedIndices = useMemoized(() {
-      if (startNum == null || endNum == null) return <int>{};
       final Set<int> result = {};
-      for (var i = 0; i < sentenceNums.length; i++) {
-        final n = sentenceNums[i];
-        if (n != null && n >= startNum && n <= endNum) {
-          result.add(i);
+      if (highlightSids != null && highlightSids!.isNotEmpty) {
+        final targetSids = highlightSids!.map((s) => _sidToInt(s)).toSet();
+        for (var i = 0; i < sentenceNums.length; i++) {
+          final n = sentenceNums[i];
+          if (n != null && targetSids.contains(n)) {
+            result.add(i);
+          }
+        }
+      } else {
+        if (startNum == null || endNum == null) return <int>{};
+        for (var i = 0; i < sentenceNums.length; i++) {
+          final n = sentenceNums[i];
+          if (n != null && n >= startNum && n <= endNum) {
+            result.add(i);
+          }
         }
       }
       return result;
-    }, [sentenceNums, startNum, endNum]);
+    }, [sentenceNums, startNum, endNum, highlightSids]);
 
     // 最初のハイライト行インデックス
     final firstHighlightIndex = useMemoized(() {
@@ -240,6 +261,8 @@ class _AnnouncementTranscriptModal extends HookConsumerWidget {
                           final queryParams = <String, String>{
                             if (startSid != null) 'start_sid': startSid!,
                             if (endSid != null) 'end_sid': endSid!,
+                            if (highlightSids != null && highlightSids!.isNotEmpty)
+                              'highlight_sids': highlightSids!.join(','),
                           };
                           final uri = Uri(
                             path: '${AppRoutes.coursesRootPath}/c/$resolvedCourseId/v/$lectureId/transcript',

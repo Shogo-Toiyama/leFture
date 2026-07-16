@@ -26,6 +26,8 @@ class CardSelectionToolbar extends HookWidget {
     this.onHighlightTap,
     this.isNoteActive = false,
     this.onNoteTap,
+    this.onSourceTap,
+    this.onCopyTap,
   });
 
   final bool hasSelection;
@@ -43,11 +45,8 @@ class CardSelectionToolbar extends HookWidget {
   final VoidCallback? onHighlightTap;
   final bool isNoteActive;
   final VoidCallback? onNoteTap;
-
-  static const _selectionItems = [
-    _ToolbarItemData(icon: Icons.copy_rounded, label: 'Copy'),
-    _ToolbarItemData(icon: Icons.description_outlined, label: 'Source'),
-  ];
+  final VoidCallback? onSourceTap;
+  final VoidCallback? onCopyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +79,18 @@ class CardSelectionToolbar extends HookWidget {
               isActive: isNoteActive,
               onTap: onNoteTap,
             ),
-            for (final item in _selectionItems)
-              _ToolbarButton(icon: item.icon, label: item.label, color: color, onTap: () {}),
+            _ToolbarButton(
+              icon: Icons.copy_rounded,
+              label: 'Copy',
+              color: color,
+              onTap: onCopyTap,
+            ),
+            _ToolbarButton(
+              icon: Icons.description_outlined,
+              label: 'Source',
+              color: color,
+              onTap: onSourceTap,
+            ),
           ]
         : [
             _ToolbarButton(
@@ -168,13 +177,6 @@ class CardSelectionToolbar extends HookWidget {
       ),
     );
   }
-}
-
-class _ToolbarItemData {
-  const _ToolbarItemData({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
 }
 
 class _ToolbarButton extends StatelessWidget {
