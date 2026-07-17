@@ -15,7 +15,7 @@ ${TRANSCRIPT_INPUT}
 4. INFO: General logistics, syllabus details, or course rules.
 
 ### EXTRACTION RULES (GENERAL)
-- Extract actionable items only. Ignore casual chitchat and events that occur only during the lecture itself (e.g., in-class breaks). The goal is to extract items relevant to review or future action after the lecture.
+- **CRITICAL:** Extract actionable items only. Ignore casual chitchat and events that occur only during the lecture itself (e.g., in-class breaks). The goal is to extract items relevant to review or future action after the lecture.
 - title: Keep it concise (max 5 words).
 - description: Write a clear, standalone sentence explaining the item. Resolve pronouns (e.g., "This" -> "Memory Allocation").
 - start_sid / end_sid: The exact `<sid>` values spanning the announcement. They must keep the original format, such as "s000105".

@@ -1,9 +1,93 @@
 import re
 from collections import defaultdict
-from nltk.tokenize import sent_tokenize
+from difflib import SequenceMatcher
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 from app.services.helpers.helpers import _load_prompt, TaskLogger
 from app.services.helpers.llm_unified import UnifiedLLM, Message, LLMOptions
+
+
+def _estimate_word_timestamps(text: str, start: float, end: float) -> list:
+    """元のWhisperセグメントテキストの各単語に、区間内で等間隔と仮定した推定タイムスタンプを振る。
+
+    セグメント内は無音(Pause)が少ない連続発話という前提のもとでの近似。
+    ここで得た (word, start, end) は以後書き換えられない不変の基準点として扱う。
+    """
+    words = word_tokenize(text)
+    n = len(words)
+    if n == 0:
+        return []
+    duration = max(end - start, 0.0)
+    per_word = duration / n
+    return [(w, start + i * per_word, start + (i + 1) * per_word) for i, w in enumerate(words)]
+
+
+def _align_clean_tokens_to_time(orig_words: list, clean_tokens: list) -> list:
+    """元の単語(タイムスタンプ付き)と整形後の単語列を単語単位でアラインメントし、
+    整形後の各単語に対応する時刻区間を推定する。
+
+    一致区間(equal)は元の推定タイムスタンプをそのまま採用する「アンカー」として扱い、
+    置換/挿入(replace/insert)区間だけ、前後のアンカー時刻の間でトークン数按分する。
+    これにより、誤差は書き換えられた局所区間内に閉じ込められ、セグメント全体には波及しない。
+    """
+    orig_tokens = [w for w, _, _ in orig_words]
+    sm = SequenceMatcher(None, orig_tokens, clean_tokens, autojunk=False)
+
+    clean_times = [None] * len(clean_tokens)
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            for k in range(i2 - i1):
+                clean_times[j1 + k] = (orig_words[i1 + k][1], orig_words[i1 + k][2])
+        elif tag in ("replace", "insert"):
+            if j2 == j1:
+                continue
+            before = orig_words[i1 - 1][2] if i1 > 0 else (orig_words[0][1] if orig_words else 0.0)
+            after = orig_words[i2][1] if i2 < len(orig_words) else (orig_words[-1][2] if orig_words else before)
+            if after < before:
+                after = before
+            span = after - before
+            count = j2 - j1
+            per_token = span / count if count > 0 else 0.0
+            for k in range(count):
+                clean_times[j1 + k] = (before + k * per_token, before + (k + 1) * per_token)
+        # "delete" は整形後に対応する単語がないので何もしない
+
+    # 稀に一致区間が全く見つからない(全置換)場合、None が残る。前後の値で穴埋めする。
+    for idx in range(len(clean_times)):
+        if clean_times[idx] is None:
+            prev_end = clean_times[idx - 1][1] if idx > 0 and clean_times[idx - 1] else (
+                orig_words[0][1] if orig_words else 0.0
+            )
+            clean_times[idx] = (prev_end, prev_end)
+
+    return clean_times
+
+
+def _sentence_time_ranges(clean_text: str, clean_tokens: list, clean_times: list) -> list:
+    """整形後テキストを文分割し、各文が消費するトークン範囲から開始/終了時刻を求める。"""
+    sentences = [s.strip() for s in sent_tokenize(clean_text) if s.strip()]
+    results = []
+    idx = 0
+    prev_end = clean_times[0][0] if clean_times else 0.0
+    for s in sentences:
+        s_token_count = len(word_tokenize(s))
+        if s_token_count == 0:
+            continue
+        window = clean_times[idx: idx + s_token_count]
+        idx += s_token_count
+        if window:
+            s_start = window[0][0]
+            s_end = window[-1][1]
+        else:
+            s_start = s_end = prev_end
+        if s_start < prev_end:
+            s_start = prev_end
+        if s_end < s_start:
+            s_end = s_start
+        results.append((s, s_start, s_end))
+        prev_end = s_end
+    return results
+
 
 class SentenceReviewService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -167,60 +251,55 @@ class SentenceReviewService:
             self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch.")
             return make_chunks_absolute(chunks_to_review)
 
-        merged_segments = []
-        last_non_empty_seg = None
+        # 元セグメントのタイムスタンプは書き換えず、まず単語単位の推定時刻を振っておく。
+        # これがバッチをまたいでも変化しない「不変の基準点」になる。
+        orig_words_by_sid = {
+            sid: _estimate_word_timestamps(seg["text"], seg["start"], seg["end"])
+            for sid, seg in orig_map.items()
+        }
+
+        # 空タグ(マージ/削除)は直前の非空タグのグループに吸収する。
+        # このとき、元単語の推定タイムスタンプ列も丸ごと連結して保持する(区間を潰さない)。
+        groups = []
+        current_group = None
+        leading_empty_words = []  # 最初の非空タグより前に来た空タグの取りこぼし防止
 
         for sid in orig_map.keys():
             text = parsed_dict.get(sid, "")
             orig_seg = orig_map[sid]
 
             if text:
-                new_seg = {
+                current_group = {
                     "text": text,
-                    "start": orig_seg["start"],
-                    "end": orig_seg["end"],
+                    "orig_words": leading_empty_words + list(orig_words_by_sid[sid]),
                     "chunk_index": orig_seg["chunk_index"],
-                    "confidence": orig_seg["confidence"]
+                    "confidence": orig_seg["confidence"],
                 }
-                
-                if not merged_segments and orig_seg["start"] > orig_map[list(orig_map.keys())[0]]["start"]:
-                    new_seg["start"] = orig_map[list(orig_map.keys())[0]]["start"]
-
-                merged_segments.append(new_seg)
-                last_non_empty_seg = new_seg
+                leading_empty_words = []
+                groups.append(current_group)
             else:
-                if last_non_empty_seg is not None:
-                    last_non_empty_seg["end"] = max(last_non_empty_seg["end"], orig_seg["end"])
+                if current_group is not None:
+                    current_group["orig_words"].extend(orig_words_by_sid[sid])
+                else:
+                    leading_empty_words.extend(orig_words_by_sid[sid])
 
-        # NLTK分割
+        # 単語アラインメントで整形後テキストに時刻を復元し、文単位に分割する。
         final_segments = []
-        for seg in merged_segments:
-            sentences = sent_tokenize(seg["text"])
-            sentences = [s.strip() for s in sentences if s.strip()]
-
-            if not sentences:
+        for group in groups:
+            clean_tokens = word_tokenize(group["text"])
+            if not clean_tokens or not group["orig_words"]:
                 continue
 
-            if len(sentences) == 1:
-                seg["chunk_index"] = get_assigned_chunk_index(seg["start"], seg["chunk_index"])
-                final_segments.append(seg)
-            else:
-                total_chars = sum(len(s) for s in sentences)
-                total_duration = seg["end"] - seg["start"]
-                
-                curr_start = seg["start"]
-                for s in sentences:
-                    ratio = len(s) / total_chars if total_chars > 0 else 0
-                    dur = total_duration * ratio
-                    
-                    final_segments.append({
-                        "text": s,
-                        "start": round(curr_start, 3),
-                        "end": round(curr_start + dur, 3),
-                        "chunk_index": get_assigned_chunk_index(curr_start, seg["chunk_index"]),
-                        "confidence": seg["confidence"]
-                    })
-                    curr_start += dur
+            clean_times = _align_clean_tokens_to_time(group["orig_words"], clean_tokens)
+
+            for sentence_text, s_start, s_end in _sentence_time_ranges(group["text"], clean_tokens, clean_times):
+                final_segments.append({
+                    "text": sentence_text,
+                    "start": round(s_start, 3),
+                    "end": round(s_end, 3),
+                    "chunk_index": get_assigned_chunk_index(s_start, group["chunk_index"]),
+                    "confidence": group["confidence"],
+                })
 
         updated_chunks_dict = defaultdict(lambda: {"segments": [], "text": ""})
         counters = defaultdict(int)

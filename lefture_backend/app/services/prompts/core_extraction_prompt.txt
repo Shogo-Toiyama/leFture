@@ -14,7 +14,7 @@ The format is strict: `<sid>: <text>`
 
 1. TOPICS & KEYWORDS (`topics`):
 - Partition the transcript into 4 to 6 broad, student-friendly learning chapters.
-- For EACH topic, extract 3 to 6 core academic concepts (`keywords`).
+- For each ACADEMIC topic, extract 3 to 6 core academic concepts (`keywords`).
 
 **Structuring & Boundaries Rule:**
 - Group related concepts by larger learning arcs (e.g., problem → solution, principle → implementation, theory → real-world system).
@@ -49,11 +49,12 @@ The format is strict: `<sid>: <text>`
 4. FUN FACT IDEA (`fun_fact_idea`):
 - Review the <STUDENT_PROFILE> and find ONE specific concept from the topics that can be creatively connected to the student's interests.
 - Goal: Generate an *idea* (not the full final text) that will make the student say, "Wow, this lecture connects to what I want to do!"
+- **Zero Academic Re-Lecturing:** Do NOT pitch an idea that simply re-explains the theory. Your idea must focus entirely on a novel, personalized, real-world application or story that they would never hear in class.
 - `start_sid` & `end_sid`: Identify the exact segment where this concept is taught.
 - `concept_focus`: The specific term/concept from the lecture.
-- `exciting_angle`: 1-2 sentences explaining *how* to connect this concept to the student's interests.
+- `exciting_angle`: 1-2 sentences detailing the core of the "AHA!" moment. Do NOT waste space re-explaining the academic concept itself. Instead, focus strictly on *why* this specific information will blow the student's mind and *how* it directly empowers their future career goals or deeply aligns with their personal interests.
 - **【Web Search Strategy】** You must decide if a live web search is needed to make this Fun Fact mind-blowing.
-  - Set `needs_web_search: true` ONLY IF your idea requires: real-world corporate case studies (e.g., Airbnb's psychology tactics, Tesla's supply chain), concrete metrics/data, recent industry trends (e.g., latest CRISPR trials, AI models), or specific historical post-mortems.
+  - Set `needs_web_search: true` ONLY IF your idea requires: real-world corporate case studies (e.g., Airbnb's psychology tactics, Tesla's supply chain), concrete metrics/data, recent industry trends (e.g., latest CRISPR trials, AI models), or specific historical post-mortems. To avoid wasteful searches, do not hesitate to set this to `false` if live data isn't strictly required.
   - Set `needs_web_search: false` if your idea relies purely on everyday analogies (e.g., "the cell is like a factory"), pure math/logic proofs, or universally known history.
   - `search_queries`: If true, generate 2-3 highly targeted queries. Do NOT use generic terms. Use specific natural language or append powerful modifiers like "case study", "engineering blog", or "real-world application" to find deep, professional-level articles.
   - `search_reasoning`: Briefly explain why this external context is necessary to maximize the "AHA!" moment for the student.

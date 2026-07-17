@@ -27,7 +27,7 @@ To make the cards feel like part of a single, premium educational series without
   * Earthy (Terracotta with dusty indigo accents)
   * Art Deco (Espresso brown with brushed brass accents)
   * Editorial (Prussian blue with warm peach accents)
-- `art_style_and_medium`: Define the rendering style (e.g., "Stop-motion claymation miniature," "Vintage 1960s Kodachrome film photograph," "Hyper-realistic tactile 3D render").
+- `art_style_and_medium`: Define the rendering style (e.g., "Stop-motion claymation miniature," "Vintage 1960s Kodachrome film photograph," "Hyper-realistic 8k shot on Hasselblad, golden hour rim lighting," "Abstract cubism in the style of Picasso," "Soft, delicate watercolor painting with textured paper visible," "3D animated feature film style reminiscent of modern Disney," "Origami paper art style").
 - `atmosphere_and_lighting`: Define the emotional tone and lighting setup (e.g., "Crisp morning studio light with deep shadows," "Soft, dramatic rim lighting in a quiet atmosphere").
 - `flux_style_suffix`: Combine the above into a reusable style string (medium, color palette, lighting). This will be programmatically APPENDED to the end of all scene descriptions later.
 
@@ -40,6 +40,7 @@ For each topic, you must establish the central physical subject of the scene bas
 - Construct the scene description focusing ONLY on the physical subjects and environment. (Do NOT include the flux_style_suffix here).
 - Follow this structure: [Camera Composition] -> [Visual Anchor / Main Subject] -> [Action/State] -> [Environment/Background].
 - Each description must be entirely self-contained.
+- While a simple composition with a clear main subject is preferred, providing detailed descriptions of the background (and middleground, if necessary) depending on the style will result in a much more visually balanced and appealing image.
 
 OUTPUT FORMAT (JSON ONLY)
 Return ONLY a valid JSON object matching the schema below. Do not include markdown formatting (like ```json). All output text MUST be in English.
