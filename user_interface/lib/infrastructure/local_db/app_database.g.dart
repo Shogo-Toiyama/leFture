@@ -10419,6 +10419,575 @@ class LocalCacheEntriesCompanion extends UpdateCompanion<LocalCacheEntry> {
   }
 }
 
+class $LocalUserProfilesTable extends LocalUserProfiles
+    with TableInfo<$LocalUserProfilesTable, LocalUserProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalUserProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _usernameMeta = const VerificationMeta(
+    'username',
+  );
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+    'username',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avatarUrlMeta = const VerificationMeta(
+    'avatarUrl',
+  );
+  @override
+  late final GeneratedColumn<String> avatarUrl = GeneratedColumn<String>(
+    'avatar_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bioMeta = const VerificationMeta('bio');
+  @override
+  late final GeneratedColumn<String> bio = GeneratedColumn<String>(
+    'bio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _interestsMeta = const VerificationMeta(
+    'interests',
+  );
+  @override
+  late final GeneratedColumn<String> interests = GeneratedColumn<String>(
+    'interests',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _futureGoalsMeta = const VerificationMeta(
+    'futureGoals',
+  );
+  @override
+  late final GeneratedColumn<String> futureGoals = GeneratedColumn<String>(
+    'future_goals',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metadataJsonMeta = const VerificationMeta(
+    'metadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+    'metadata_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    username,
+    avatarUrl,
+    bio,
+    interests,
+    futureGoals,
+    metadataJson,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_user_profiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalUserProfile> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('username')) {
+      context.handle(
+        _usernameMeta,
+        username.isAcceptableOrUnknown(data['username']!, _usernameMeta),
+      );
+    }
+    if (data.containsKey('avatar_url')) {
+      context.handle(
+        _avatarUrlMeta,
+        avatarUrl.isAcceptableOrUnknown(data['avatar_url']!, _avatarUrlMeta),
+      );
+    }
+    if (data.containsKey('bio')) {
+      context.handle(
+        _bioMeta,
+        bio.isAcceptableOrUnknown(data['bio']!, _bioMeta),
+      );
+    }
+    if (data.containsKey('interests')) {
+      context.handle(
+        _interestsMeta,
+        interests.isAcceptableOrUnknown(data['interests']!, _interestsMeta),
+      );
+    }
+    if (data.containsKey('future_goals')) {
+      context.handle(
+        _futureGoalsMeta,
+        futureGoals.isAcceptableOrUnknown(
+          data['future_goals']!,
+          _futureGoalsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+        _metadataJsonMeta,
+        metadataJson.isAcceptableOrUnknown(
+          data['metadata_json']!,
+          _metadataJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalUserProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalUserProfile(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      username: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}username'],
+      ),
+      avatarUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avatar_url'],
+      ),
+      bio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bio'],
+      ),
+      interests: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}interests'],
+      ),
+      futureGoals: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}future_goals'],
+      ),
+      metadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata_json'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalUserProfilesTable createAlias(String alias) {
+    return $LocalUserProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalUserProfile extends DataClass
+    implements Insertable<LocalUserProfile> {
+  final String id;
+  final String? username;
+  final String? avatarUrl;
+  final String? bio;
+  final String? interests;
+  final String? futureGoals;
+  final String? metadataJson;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const LocalUserProfile({
+    required this.id,
+    this.username,
+    this.avatarUrl,
+    this.bio,
+    this.interests,
+    this.futureGoals,
+    this.metadataJson,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || username != null) {
+      map['username'] = Variable<String>(username);
+    }
+    if (!nullToAbsent || avatarUrl != null) {
+      map['avatar_url'] = Variable<String>(avatarUrl);
+    }
+    if (!nullToAbsent || bio != null) {
+      map['bio'] = Variable<String>(bio);
+    }
+    if (!nullToAbsent || interests != null) {
+      map['interests'] = Variable<String>(interests);
+    }
+    if (!nullToAbsent || futureGoals != null) {
+      map['future_goals'] = Variable<String>(futureGoals);
+    }
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  LocalUserProfilesCompanion toCompanion(bool nullToAbsent) {
+    return LocalUserProfilesCompanion(
+      id: Value(id),
+      username: username == null && nullToAbsent
+          ? const Value.absent()
+          : Value(username),
+      avatarUrl: avatarUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avatarUrl),
+      bio: bio == null && nullToAbsent ? const Value.absent() : Value(bio),
+      interests: interests == null && nullToAbsent
+          ? const Value.absent()
+          : Value(interests),
+      futureGoals: futureGoals == null && nullToAbsent
+          ? const Value.absent()
+          : Value(futureGoals),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalUserProfile.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalUserProfile(
+      id: serializer.fromJson<String>(json['id']),
+      username: serializer.fromJson<String?>(json['username']),
+      avatarUrl: serializer.fromJson<String?>(json['avatarUrl']),
+      bio: serializer.fromJson<String?>(json['bio']),
+      interests: serializer.fromJson<String?>(json['interests']),
+      futureGoals: serializer.fromJson<String?>(json['futureGoals']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'username': serializer.toJson<String?>(username),
+      'avatarUrl': serializer.toJson<String?>(avatarUrl),
+      'bio': serializer.toJson<String?>(bio),
+      'interests': serializer.toJson<String?>(interests),
+      'futureGoals': serializer.toJson<String?>(futureGoals),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  LocalUserProfile copyWith({
+    String? id,
+    Value<String?> username = const Value.absent(),
+    Value<String?> avatarUrl = const Value.absent(),
+    Value<String?> bio = const Value.absent(),
+    Value<String?> interests = const Value.absent(),
+    Value<String?> futureGoals = const Value.absent(),
+    Value<String?> metadataJson = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => LocalUserProfile(
+    id: id ?? this.id,
+    username: username.present ? username.value : this.username,
+    avatarUrl: avatarUrl.present ? avatarUrl.value : this.avatarUrl,
+    bio: bio.present ? bio.value : this.bio,
+    interests: interests.present ? interests.value : this.interests,
+    futureGoals: futureGoals.present ? futureGoals.value : this.futureGoals,
+    metadataJson: metadataJson.present ? metadataJson.value : this.metadataJson,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LocalUserProfile copyWithCompanion(LocalUserProfilesCompanion data) {
+    return LocalUserProfile(
+      id: data.id.present ? data.id.value : this.id,
+      username: data.username.present ? data.username.value : this.username,
+      avatarUrl: data.avatarUrl.present ? data.avatarUrl.value : this.avatarUrl,
+      bio: data.bio.present ? data.bio.value : this.bio,
+      interests: data.interests.present ? data.interests.value : this.interests,
+      futureGoals: data.futureGoals.present
+          ? data.futureGoals.value
+          : this.futureGoals,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalUserProfile(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('avatarUrl: $avatarUrl, ')
+          ..write('bio: $bio, ')
+          ..write('interests: $interests, ')
+          ..write('futureGoals: $futureGoals, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    username,
+    avatarUrl,
+    bio,
+    interests,
+    futureGoals,
+    metadataJson,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalUserProfile &&
+          other.id == this.id &&
+          other.username == this.username &&
+          other.avatarUrl == this.avatarUrl &&
+          other.bio == this.bio &&
+          other.interests == this.interests &&
+          other.futureGoals == this.futureGoals &&
+          other.metadataJson == this.metadataJson &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalUserProfilesCompanion extends UpdateCompanion<LocalUserProfile> {
+  final Value<String> id;
+  final Value<String?> username;
+  final Value<String?> avatarUrl;
+  final Value<String?> bio;
+  final Value<String?> interests;
+  final Value<String?> futureGoals;
+  final Value<String?> metadataJson;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const LocalUserProfilesCompanion({
+    this.id = const Value.absent(),
+    this.username = const Value.absent(),
+    this.avatarUrl = const Value.absent(),
+    this.bio = const Value.absent(),
+    this.interests = const Value.absent(),
+    this.futureGoals = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalUserProfilesCompanion.insert({
+    required String id,
+    this.username = const Value.absent(),
+    this.avatarUrl = const Value.absent(),
+    this.bio = const Value.absent(),
+    this.interests = const Value.absent(),
+    this.futureGoals = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<LocalUserProfile> custom({
+    Expression<String>? id,
+    Expression<String>? username,
+    Expression<String>? avatarUrl,
+    Expression<String>? bio,
+    Expression<String>? interests,
+    Expression<String>? futureGoals,
+    Expression<String>? metadataJson,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (username != null) 'username': username,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (bio != null) 'bio': bio,
+      if (interests != null) 'interests': interests,
+      if (futureGoals != null) 'future_goals': futureGoals,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalUserProfilesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? username,
+    Value<String?>? avatarUrl,
+    Value<String?>? bio,
+    Value<String?>? interests,
+    Value<String?>? futureGoals,
+    Value<String?>? metadataJson,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalUserProfilesCompanion(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bio: bio ?? this.bio,
+      interests: interests ?? this.interests,
+      futureGoals: futureGoals ?? this.futureGoals,
+      metadataJson: metadataJson ?? this.metadataJson,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (avatarUrl.present) {
+      map['avatar_url'] = Variable<String>(avatarUrl.value);
+    }
+    if (bio.present) {
+      map['bio'] = Variable<String>(bio.value);
+    }
+    if (interests.present) {
+      map['interests'] = Variable<String>(interests.value);
+    }
+    if (futureGoals.present) {
+      map['future_goals'] = Variable<String>(futureGoals.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalUserProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('avatarUrl: $avatarUrl, ')
+          ..write('bio: $bio, ')
+          ..write('interests: $interests, ')
+          ..write('futureGoals: $futureGoals, ')
+          ..write('metadataJson: $metadataJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10448,6 +11017,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $LocalCacheEntriesTable localCacheEntries =
       $LocalCacheEntriesTable(this);
+  late final $LocalUserProfilesTable localUserProfiles =
+      $LocalUserProfilesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10468,6 +11039,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localTopicMaps,
     localSyncCursors,
     localCacheEntries,
+    localUserProfiles,
   ];
 }
 
@@ -15517,6 +16089,299 @@ typedef $$LocalCacheEntriesTableProcessedTableManager =
       LocalCacheEntry,
       PrefetchHooks Function()
     >;
+typedef $$LocalUserProfilesTableCreateCompanionBuilder =
+    LocalUserProfilesCompanion Function({
+      required String id,
+      Value<String?> username,
+      Value<String?> avatarUrl,
+      Value<String?> bio,
+      Value<String?> interests,
+      Value<String?> futureGoals,
+      Value<String?> metadataJson,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalUserProfilesTableUpdateCompanionBuilder =
+    LocalUserProfilesCompanion Function({
+      Value<String> id,
+      Value<String?> username,
+      Value<String?> avatarUrl,
+      Value<String?> bio,
+      Value<String?> interests,
+      Value<String?> futureGoals,
+      Value<String?> metadataJson,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalUserProfilesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalUserProfilesTable> {
+  $$LocalUserProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avatarUrl => $composableBuilder(
+    column: $table.avatarUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bio => $composableBuilder(
+    column: $table.bio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get interests => $composableBuilder(
+    column: $table.interests,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get futureGoals => $composableBuilder(
+    column: $table.futureGoals,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalUserProfilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalUserProfilesTable> {
+  $$LocalUserProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avatarUrl => $composableBuilder(
+    column: $table.avatarUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bio => $composableBuilder(
+    column: $table.bio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get interests => $composableBuilder(
+    column: $table.interests,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get futureGoals => $composableBuilder(
+    column: $table.futureGoals,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalUserProfilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalUserProfilesTable> {
+  $$LocalUserProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<String> get avatarUrl =>
+      $composableBuilder(column: $table.avatarUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get bio =>
+      $composableBuilder(column: $table.bio, builder: (column) => column);
+
+  GeneratedColumn<String> get interests =>
+      $composableBuilder(column: $table.interests, builder: (column) => column);
+
+  GeneratedColumn<String> get futureGoals => $composableBuilder(
+    column: $table.futureGoals,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalUserProfilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalUserProfilesTable,
+          LocalUserProfile,
+          $$LocalUserProfilesTableFilterComposer,
+          $$LocalUserProfilesTableOrderingComposer,
+          $$LocalUserProfilesTableAnnotationComposer,
+          $$LocalUserProfilesTableCreateCompanionBuilder,
+          $$LocalUserProfilesTableUpdateCompanionBuilder,
+          (
+            LocalUserProfile,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalUserProfilesTable,
+              LocalUserProfile
+            >,
+          ),
+          LocalUserProfile,
+          PrefetchHooks Function()
+        > {
+  $$LocalUserProfilesTableTableManager(
+    _$AppDatabase db,
+    $LocalUserProfilesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalUserProfilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalUserProfilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalUserProfilesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> username = const Value.absent(),
+                Value<String?> avatarUrl = const Value.absent(),
+                Value<String?> bio = const Value.absent(),
+                Value<String?> interests = const Value.absent(),
+                Value<String?> futureGoals = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalUserProfilesCompanion(
+                id: id,
+                username: username,
+                avatarUrl: avatarUrl,
+                bio: bio,
+                interests: interests,
+                futureGoals: futureGoals,
+                metadataJson: metadataJson,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> username = const Value.absent(),
+                Value<String?> avatarUrl = const Value.absent(),
+                Value<String?> bio = const Value.absent(),
+                Value<String?> interests = const Value.absent(),
+                Value<String?> futureGoals = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalUserProfilesCompanion.insert(
+                id: id,
+                username: username,
+                avatarUrl: avatarUrl,
+                bio: bio,
+                interests: interests,
+                futureGoals: futureGoals,
+                metadataJson: metadataJson,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalUserProfilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalUserProfilesTable,
+      LocalUserProfile,
+      $$LocalUserProfilesTableFilterComposer,
+      $$LocalUserProfilesTableOrderingComposer,
+      $$LocalUserProfilesTableAnnotationComposer,
+      $$LocalUserProfilesTableCreateCompanionBuilder,
+      $$LocalUserProfilesTableUpdateCompanionBuilder,
+      (
+        LocalUserProfile,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalUserProfilesTable,
+          LocalUserProfile
+        >,
+      ),
+      LocalUserProfile,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15551,4 +16416,6 @@ class $AppDatabaseManager {
       $$LocalSyncCursorsTableTableManager(_db, _db.localSyncCursors);
   $$LocalCacheEntriesTableTableManager get localCacheEntries =>
       $$LocalCacheEntriesTableTableManager(_db, _db.localCacheEntries);
+  $$LocalUserProfilesTableTableManager get localUserProfiles =>
+      $$LocalUserProfilesTableTableManager(_db, _db.localUserProfiles);
 }

@@ -399,6 +399,21 @@ class LocalSyncCursors extends Table {
   Set<Column> get primaryKey => {userId, entityType};
 }
 
+class LocalUserProfiles extends Table {
+  TextColumn get id => text()(); // user_id
+  TextColumn get username => text().nullable()();
+  TextColumn get avatarUrl => text().nullable()();
+  TextColumn get bio => text().nullable()();
+  TextColumn get interests => text().nullable()();
+  TextColumn get futureGoals => text().nullable()();
+  TextColumn get metadataJson => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     LocalOutbox,
@@ -416,13 +431,14 @@ class LocalSyncCursors extends Table {
     LocalTopicMaps,
     LocalSyncCursors,
     LocalCacheEntries,
+    LocalUserProfiles,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -544,8 +560,31 @@ class AppDatabase extends _$AppDatabase {
         }
         await m.createAll();
       }
+      if (from < 16) {
+        // バージョン16: LocalUserProfiles を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
     },
   );
+
+  // --- User Profiles ---
+
+  Stream<LocalUserProfile?> watchUserProfile(String id) {
+    return (select(localUserProfiles)..where((t) => t.id.equals(id)))
+        .watchSingleOrNull();
+  }
+
+  Future<LocalUserProfile?> getUserProfile(String id) {
+    return (select(localUserProfiles)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertUserProfile(LocalUserProfilesCompanion companion) async {
+    await into(localUserProfiles).insertOnConflictUpdate(companion);
+  }
 
   // --- Lectures ---
 
@@ -849,6 +888,65 @@ class AppDatabase extends _$AppDatabase {
             ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
           .go();
     });
+  }
+
+  // --- Activity Records & Trash Helper Methods ---
+
+  Stream<List<LocalReviewCard>> watchAllReviewCards(String userId) {
+    return (select(localReviewCards)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
+        .watch();
+  }
+
+  Stream<List<LocalDeepNote>> watchAllDeepNotes(String userId) {
+    return (select(localDeepNotes)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
+        .watch();
+  }
+
+  Stream<List<LocalFunFact>> watchAllFunFacts(String userId) {
+    return (select(localFunFacts)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
+        .watch();
+  }
+
+  Stream<List<LocalAnnouncement>> watchAllAnnouncements(String userId) {
+    return (select(localAnnouncements)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
+        .watch();
+  }
+
+  Stream<List<LocalLecture>> watchTrashLectures(String userId) {
+    return (select(localLectures)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull())
+          ..orderBy([(t) => OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc)]))
+        .watch();
+  }
+
+  Stream<List<LocalAnnouncement>> watchTrashAnnouncements(String userId) {
+    return (select(localAnnouncements)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull())
+          ..orderBy([(t) => OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc)]))
+        .watch();
+  }
+
+  Future<void> hardDeleteTrashLectures(String userId) async {
+    await transaction(() async {
+      // Find all lecture IDs in trash to cascade delete assets/caches
+      final trashLectures = await (select(localLectures)
+            ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull()))
+          .get();
+
+      for (final lecture in trashLectures) {
+        await hardDeleteLectureCascade(lecture.id);
+      }
+    });
+  }
+
+  Future<void> hardDeleteTrashAnnouncements(String userId) async {
+    await (delete(localAnnouncements)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull()))
+        .go();
   }
 }
 

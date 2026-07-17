@@ -57,4 +57,4 @@ final class UserProfileRepositoryProvider
 }
 
 String _$userProfileRepositoryHash() =>
-    r'1307c4a51273fa1553b6f5b4471c92c76f24580f';
+    r'07e0bc1ffaabd638d03907eb051e4c3f2f50ac16';

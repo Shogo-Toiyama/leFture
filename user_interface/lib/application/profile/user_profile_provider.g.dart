@@ -20,9 +20,9 @@ final class CurrentUserProfileProvider
         $FunctionalProvider<
           AsyncValue<UserProfile?>,
           UserProfile?,
-          FutureOr<UserProfile?>
+          Stream<UserProfile?>
         >
-    with $FutureModifier<UserProfile?>, $FutureProvider<UserProfile?> {
+    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
   /// ログイン中ユーザーの user_profiles レコード
   CurrentUserProfileProvider._()
     : super(
@@ -40,15 +40,15 @@ final class CurrentUserProfileProvider
 
   @$internal
   @override
-  $FutureProviderElement<UserProfile?> $createElement(
+  $StreamProviderElement<UserProfile?> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<UserProfile?> create(Ref ref) {
+  Stream<UserProfile?> create(Ref ref) {
     return currentUserProfile(ref);
   }
 }
 
 String _$currentUserProfileHash() =>
-    r'84017e952c078df1b3c5aca01795021521f26629';
+    r'62397841b12ded0a34d368dc007faa25c4a2ae1c';
