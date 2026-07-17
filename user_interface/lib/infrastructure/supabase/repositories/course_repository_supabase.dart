@@ -195,4 +195,29 @@ class CourseRepositorySupabase {
         .update({'deleted_at': now})
         .eq('id', courseId);
   }
+
+  /// ゴミ箱（Trash）用: ソフトデリートされたコース一覧
+  Future<List<Course>> listDeletedCourses() async {
+    final uid = _requireUid();
+
+    final rows = await supabase
+        .from(_table)
+        .select(_selectWithAttributes)
+        .eq('user_id', uid)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', ascending: false);
+
+    return rows.map((e) => Course.fromMap(e)).toList();
+  }
+
+  /// ゴミ箱を空にする用: ソフトデリートされたコースを物理削除する
+  Future<void> emptyTrashCourses() async {
+    final uid = _requireUid();
+
+    await supabase
+        .from(_table)
+        .delete()
+        .eq('user_id', uid)
+        .not('deleted_at', 'is', null);
+  }
 }

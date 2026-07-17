@@ -11,6 +11,8 @@ import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dar
 // Pages
 import 'package:lecture_companion_ui/presentation/pages/sign_in/sign_in_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/forgot_password/forgot_password_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/reset_password/reset_password_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/home/home_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
@@ -25,6 +27,8 @@ import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_li
 import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_detail_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/transcript/transcript_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/topic_map/topic_map_page.dart';
+import 'package:lecture_companion_ui/application/profile/activity_records_provider.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/activity_records_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -43,7 +47,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Auth関連のパスかどうか
       final isAuthRoute = path == AppRoutes.welcome ||
           path == AppRoutes.signIn ||
-          path == AppRoutes.signUp;
+          path == AppRoutes.signUp ||
+          path == AppRoutes.forgotPassword ||
+          path == AppRoutes.resetPassword;
 
       // 1. 未ログインならサインインへ強制移動
       if (session == null && !isAuthRoute) return AppRoutes.signIn;
@@ -62,6 +68,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.welcome, builder: (context, state) => const WelcomePage()),
       GoRoute(path: AppRoutes.signIn, builder: (context, state) => const SignInPage()),
       GoRoute(path: AppRoutes.signUp, builder: (context, state) => const SignUpPage()),
+      GoRoute(path: AppRoutes.forgotPassword, builder: (context, state) => const ForgotPasswordPage()),
+      GoRoute(path: AppRoutes.resetPassword, builder: (context, state) => const ResetPasswordPage()),
 
       // =================================================================
       // Main Routes (Single Stack)
@@ -189,6 +197,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.activityDetails,
+        builder: (context, state) {
+          final typeStr = state.pathParameters['type'] ?? 'saved';
+          final type = ActivityType.values.firstWhere(
+            (e) => e.name == typeStr,
+            orElse: () => ActivityType.saved,
+          );
+          return ActivityRecordsPage(type: type);
+        },
       ),
       GoRoute(
         path: AppRoutes.learningGalaxy,

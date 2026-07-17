@@ -3,6 +3,8 @@ class AppRoutes {
   static const welcome = '/welcome';
   static const signIn = '/sign_in';
   static const signUp = '/sign_up';
+  static const forgotPassword = '/forgot_password';
+  static const resetPassword = '/reset_password';
 
   // Main
   static const home = '/home'; // Dashboard (宇宙のコックピット)
@@ -14,6 +16,7 @@ class AppRoutes {
   static const learningGalaxy = '/learning_galaxy';
   static const aiChat = '/ai_chat';
   static const profile = '/profile';
+  static const activityDetails = '/profile/activity/:type';
   static const study = '/study';
 
   // Courses (Nested relative paths for GoRouter configuration)
