@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
+import 'package:lecture_companion_ui/domain/entities/user_profile.dart';
+import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -19,6 +22,9 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(currentUserProfileProvider);
+    final profile = profileAsync.asData?.value;
+
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
       body: CustomScrollView(
@@ -39,7 +45,14 @@ class ProfilePage extends ConsumerWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined, color: Color(0xFFF2F2F2)),
-                onPressed: () {},
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const MakeProfileSheet(),
+                  );
+                },
                 tooltip: 'Edit Profile',
               ),
             ],
@@ -53,7 +66,7 @@ class ProfilePage extends ConsumerWidget {
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 // SECTION 1 — PROFILE
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                _ProfileSection(),
+                _ProfileSection(profile: profile),
 
                 const SizedBox(height: 32),
 
@@ -63,8 +76,7 @@ class ProfilePage extends ConsumerWidget {
                 _SectionHeader(
                   icon: Icons.auto_stories_rounded,
                   label: 'Activity',
-                  // 💡 代替候補: 'Library' / 'Archive' / 'History' / 'Collection'
-                  color: const Color(0xFF7C83FD),
+                  color: AppColors.starGold,
                 ),
                 const SizedBox(height: 8),
                 _ActivitySection(),
@@ -135,8 +147,22 @@ class _SectionHeader extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ProfileSection extends StatelessWidget {
+  const _ProfileSection({required this.profile});
+  final UserProfile? profile;
+
   @override
   Widget build(BuildContext context) {
+    final displayName = profile?.username ?? 'Explorer';
+    final initials = displayName.trim().isEmpty
+        ? 'EX'
+        : displayName
+            .trim()
+            .split(' ')
+            .where((e) => e.isNotEmpty)
+            .map((e) => e[0].toUpperCase())
+            .take(2)
+            .join('');
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -160,10 +186,10 @@ class _ProfileSection extends StatelessWidget {
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'ST',
-                        style: TextStyle(
+                        initials,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 24,
@@ -191,25 +217,17 @@ class _ProfileSection extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 16),
-              // Name + email
+              // Name
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Shogo Toiyama',
-                      style: TextStyle(
+                    Text(
+                      displayName,
+                      style: const TextStyle(
                         color: Color(0xFFF2F2F2),
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'shogo@example.com',
-                      style: TextStyle(
-                        color: AppColors.universe.textComet,
-                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -225,87 +243,124 @@ class _ProfileSection extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ── Bio ───────────────────────────────────────────────
-          Text(
-            'Bio',
-            style: TextStyle(
-              color: AppColors.universe.textComet,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
+          // ── About You ─────────────────────────────────────────
+          Row(
+            children: [
+              const Icon(
+                Icons.person_outline_rounded,
+                size: 15,
+                color: AppColors.starGold,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'ABOUT YOU',
+                style: TextStyle(
+                  color: AppColors.starGold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Computer Science student passionate about AI and machine learning. I love building things that make learning more intuitive and fun.',
-            style: TextStyle(
-              color: Color(0xFFF2F2F2),
-              fontSize: 14,
-              height: 1.6,
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: const Color(0x1AFFFFFF),
+              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
+            ),
+            child: Text(
+              profile?.bio ?? 'No description set yet.',
+              style: const TextStyle(
+                color: Color(0xFFF2F2F2),
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
           ),
 
           const SizedBox(height: 20),
 
           // ── Interests ─────────────────────────────────────────
-          Text(
-            'Interests',
-            style: TextStyle(
-              color: AppColors.universe.textComet,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: const [
-              _InterestChip(label: '🤖 Machine Learning'),
-              _InterestChip(label: '🌌 Astrophysics'),
-              _InterestChip(label: '🎵 Music Theory'),
-              _InterestChip(label: '📚 Linguistics'),
-              _InterestChip(label: '🧩 Algorithm Design'),
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome_outlined,
+                size: 15,
+                color: AppColors.starGold,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'INTERESTS',
+                style: TextStyle(
+                  color: AppColors.starGold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
+              ),
             ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Future Dream ──────────────────────────────────────
-          Text(
-            'Future Dream',
-            style: TextStyle(
-              color: AppColors.universe.textComet,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
           ),
           const SizedBox(height: 8),
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               color: const Color(0x1AFFFFFF),
-              border: Border.all(color: const Color(0x26FFB300), width: 1),
+              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('✨', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Build an AI system that personalizes education for every learner on the planet.',
-                    style: TextStyle(
-                      color: Color(0xFFF2F2F2),
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
+            child: Text(
+              profile?.interests ?? 'No interests set yet.',
+              style: const TextStyle(
+                color: Color(0xFFF2F2F2),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Future Dreams ─────────────────────────────────────
+          Row(
+            children: [
+              const Icon(
+                Icons.flag_outlined,
+                size: 15,
+                color: AppColors.starGold,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'FUTURE DREAMS',
+                style: TextStyle(
+                  color: AppColors.starGold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: const Color(0x1AFFFFFF),
+              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
+            ),
+            child: Text(
+              profile?.futureGoals ?? 'No future dream set yet.',
+              style: const TextStyle(
+                color: Color(0xFFF2F2F2),
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
           ),
         ],
@@ -401,32 +456,6 @@ class _CreditBar extends StatelessWidget {
   }
 }
 
-// Interest Chip
-class _InterestChip extends StatelessWidget {
-  const _InterestChip({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: const Color(0x1AFFFFFF),
-        border: Border.all(color: const Color(0x33FFFFFF), width: 1),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFFF2F2F2),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION 2: Activity (Records)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -439,42 +468,47 @@ class _ActivitySection extends StatelessWidget {
         children: [
           _ActivityTile(
             icon: Icons.bookmark_rounded,
-            iconColor: const Color(0xFF7C83FD),
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFF4CAF50),
             title: 'Saved',
             subtitle: 'Review Cards · Deep Notes',
-            onTap: () {},
+            onTap: () => context.push('/profile/activity/saved'),
           ),
           _Divider(),
           _ActivityTile(
             icon: Icons.favorite_rounded,
-            iconColor: const Color(0xFFFF6B8A),
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFFE53935),
             title: 'Likes',
             subtitle: 'Review Cards · Deep Notes · Fun Facts',
-            onTap: () {},
+            onTap: () => context.push('/profile/activity/likes'),
           ),
           _Divider(),
           _ActivityTile(
             icon: Icons.thumb_down_rounded,
-            iconColor: AppColors.universe.textComet,
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFF2196F3),
             title: 'Dislikes',
             subtitle: 'Review Cards · Deep Notes · Fun Facts',
-            onTap: () {},
+            onTap: () => context.push('/profile/activity/dislikes'),
           ),
           _Divider(),
           _ActivityTile(
             icon: Icons.campaign_rounded,
-            iconColor: AppColors.alertAmber,
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFF9C27B0),
             title: 'Announcements',
             subtitle: 'Including completed ones',
-            onTap: () {},
+            onTap: () => context.push('/profile/activity/announcements'),
           ),
           _Divider(),
           _ActivityTile(
             icon: Icons.delete_outline_rounded,
             iconColor: AppColors.correctionRed,
+            iconBgColor: AppColors.correctionRed,
             title: 'Trash',
             subtitle: 'Deleted courses & lectures',
-            onTap: () {},
+            onTap: () => context.push('/profile/activity/trash'),
             showChevron: true,
             isLast: true,
           ),
@@ -491,12 +525,14 @@ class _ActivityTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconBgColor,
     this.showChevron = true,
     this.isLast = false,
   });
 
   final IconData icon;
   final Color iconColor;
+  final Color? iconBgColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -505,6 +541,7 @@ class _ActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = iconBgColor ?? iconColor;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -522,7 +559,7 @@ class _ActivityTile extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
+                  color: bgColor.withValues(alpha: 0.20),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: iconColor, size: 18),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -23,6 +24,19 @@ class MakeProfileSheet extends HookConsumerWidget {
     final isSubmitting = useState(false);
     final errorMsg = useState<String?>(null);
 
+    // テキスト入力に応じてアバター内のイニシャルを動的に更新するためのフック
+    useListenable(usernameCtl);
+
+    final currentUsername = usernameCtl.text.trim();
+    final avatarInitials = currentUsername.isEmpty
+        ? 'EX'
+        : currentUsername
+            .split(' ')
+            .where((e) => e.isNotEmpty)
+            .map((e) => e[0].toUpperCase())
+            .take(2)
+            .join('');
+
     Future<void> submit() async {
       final bio = bioCtl.text.trim();
       if (bio.isEmpty) {
@@ -39,6 +53,9 @@ class MakeProfileSheet extends HookConsumerWidget {
           interests: interestsCtl.text.trim().isEmpty ? null : interestsCtl.text.trim(),
           futureGoals: futureGoalsCtl.text.trim().isEmpty ? null : futureGoalsCtl.text.trim(),
         );
+
+        // Outboxに書き込まれた変更を即座に送信開始
+        ref.read(lectureControllerProvider.notifier).pushOutboxNow();
 
         ref.invalidate(currentUserProfileProvider);
 
@@ -93,6 +110,63 @@ class MakeProfileSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
 
+              // ── Avatar Edit Placeholder ────────────────────────
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF7C83FD), Color(0xFFFFB300)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          avatarInitials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 26,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.starGold,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_outlined,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Center(
+                child: Text(
+                  'Change Avatar (Coming Soon)',
+                  style: TextStyle(
+                    color: Colors.white30,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               _ProfileTextField(
                 controller: usernameCtl,
                 label: 'Username',
@@ -103,7 +177,7 @@ class MakeProfileSheet extends HookConsumerWidget {
 
               _ProfileTextField(
                 controller: bioCtl,
-                label: 'About you *',
+                label: 'About You *',
                 hint: 'Who are you, what do you study, how do you like to learn?',
                 icon: Icons.person_outline,
                 maxLines: 4,
@@ -121,7 +195,7 @@ class MakeProfileSheet extends HookConsumerWidget {
 
               _ProfileTextField(
                 controller: futureGoalsCtl,
-                label: 'Future goals',
+                label: 'Future Dreams',
                 hint: 'What are you working toward?',
                 icon: Icons.flag_outlined,
                 maxLines: 2,

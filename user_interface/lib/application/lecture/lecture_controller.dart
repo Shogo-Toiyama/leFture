@@ -18,6 +18,8 @@ import 'package:lecture_companion_ui/application/sync/fun_fact_outbox_push_handl
 import 'package:lecture_companion_ui/application/sync/announcement_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/review_card_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/deep_note_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/user_profile_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/user_profile_sync_service.dart';
 import 'package:lecture_companion_ui/application/maintenance/local_retention_service.dart';
 import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart'; // jobRepository
@@ -53,6 +55,7 @@ class LectureController extends _$LectureController {
       'announcement': AnnouncementOutboxPushHandler(),
       'review_card': ReviewCardOutboxPushHandler(),
       'deep_note': DeepNoteOutboxPushHandler(),
+      'user_profile': UserProfileOutboxPushHandler(),
     });
   }
 
@@ -97,6 +100,7 @@ class LectureController extends _$LectureController {
           'review_card': () => ReviewCardSyncService(db).pull(forceFullPull: forceFullPull),
           'deep_note': () => DeepNoteSyncService(db).pull(forceFullPull: forceFullPull),
           'topic_map': () => TopicMapSyncService(db).pull(forceFullPull: forceFullPull),
+          'user_profile': () => UserProfileSyncService(db).pull(),
         };
 
         for (final entry in pulls.entries) {

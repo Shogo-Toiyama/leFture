@@ -9,81 +9,6 @@ part of 'lecture_state_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(audioStatus)
-final audioStatusProvider = AudioStatusFamily._();
-
-final class AudioStatusProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<AudioStatus>,
-          AudioStatus,
-          FutureOr<AudioStatus>
-        >
-    with $FutureModifier<AudioStatus>, $FutureProvider<AudioStatus> {
-  AudioStatusProvider._({
-    required AudioStatusFamily super.from,
-    required String super.argument,
-  }) : super(
-         retry: null,
-         name: r'audioStatusProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$audioStatusHash();
-
-  @override
-  String toString() {
-    return r'audioStatusProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<AudioStatus> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<AudioStatus> create(Ref ref) {
-    final argument = this.argument as String;
-    return audioStatus(ref, argument);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is AudioStatusProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$audioStatusHash() => r'8966b45292f2ceb44f78e2289eb297ac8b1ffbeb';
-
-final class AudioStatusFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<AudioStatus>, String> {
-  AudioStatusFamily._()
-    : super(
-        retry: null,
-        name: r'audioStatusProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  AudioStatusProvider call(String lectureId) =>
-      AudioStatusProvider._(argument: lectureId, from: this);
-
-  @override
-  String toString() => r'audioStatusProvider';
-}
-
 @ProviderFor(lectureState)
 final lectureStateProvider = LectureStateFamily._();
 
@@ -139,7 +64,7 @@ final class LectureStateProvider
   }
 }
 
-String _$lectureStateHash() => r'c3878cbfff0529a18fabd76b52f0ca605865a4d6';
+String _$lectureStateHash() => r'6642d712f1ec9981afda0be9baeb4e1eb2ca2c9a';
 
 final class LectureStateFamily extends $Family
     with $FunctionalFamilyOverride<Stream<LectureUIState>, String> {

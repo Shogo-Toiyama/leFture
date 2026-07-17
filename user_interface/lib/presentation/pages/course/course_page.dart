@@ -850,7 +850,7 @@ class _CourseLectureListView extends ConsumerWidget {
     final confirm = await showCustomDialog(
       context: context,
       title: 'Recreate Topic Map?',
-      message: 'Do you want to recreate the topic map? This repairs it after recent lecture changes and may take a few seconds.',
+      message: 'Do you want to recreate the topic map? This repairs it after recent lecture changes and may take a few minutes.',
       confirmLabel: 'Recreate',
       icon: Icons.refresh,
     );
@@ -864,7 +864,7 @@ class _CourseLectureListView extends ConsumerWidget {
     if (state.hasError && context.mounted) {
       await showCustomDialog(
         context: context,
-        title: 'Could not recreate',
+        title: 'Could not recreate topic map',
         message: state.error.toString().replaceFirst('Exception: ', ''),
         confirmLabel: 'OK',
         cancelLabel: null,

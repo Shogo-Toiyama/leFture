@@ -113,7 +113,7 @@ class LectureTile extends ConsumerWidget {
                   final confirm = await showCustomDialog(
                     context: context,
                     title: 'Delete Lecture?',
-                    message: 'Are you sure you want to delete "$titleText"? This action will remove the lecture and all its generated notes/flashcards permanently.',
+                    message: 'Are you sure you want to delete "$titleText"? This action will remove the lecture and all its generated contents.',
                     confirmLabel: 'Delete',
                     icon: Icons.delete_outline,
                     isDestructive: true,
