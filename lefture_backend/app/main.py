@@ -3,6 +3,7 @@ import json
 import time
 import asyncio
 from typing import Optional
+from urllib.parse import urlencode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
@@ -1465,12 +1466,12 @@ async def supabase_email_hook(request: Request):
     redirect_to   = email_data.redirect_to or email_data.site_url or ""
 
     def _verify_link(token_hash: str, verify_type: str) -> str:
-        return (
-            f"{SUPABASE_URL}/auth/v1/verify"
-            f"?token_hash={token_hash}"
-            f"&type={verify_type}"
-            f"&redirect_to={redirect_to}"
-        )
+        query = urlencode({
+            "token_hash": token_hash,
+            "type": verify_type,
+            "redirect_to": redirect_to,
+        })
+        return f"{SUPABASE_URL}/auth/v1/verify?{query}"
 
     try:
         if action_type == "signup":
