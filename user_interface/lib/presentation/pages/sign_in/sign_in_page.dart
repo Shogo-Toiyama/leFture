@@ -40,10 +40,12 @@ class SignInPage extends HookConsumerWidget {
       );
     }
 
-    void comingSoon(String provider) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$provider sign-in coming soon')),
-      );
+    void signInWithGoogle() {
+      ref.read(authControllerProvider.notifier).signInWithGoogle();
+    }
+
+    void signInWithApple() {
+      ref.read(authControllerProvider.notifier).signInWithApple();
     }
 
     InputDecoration inputDecoration(String label, IconData icon, {Widget? suffixIcon}) {
@@ -212,12 +214,12 @@ class SignInPage extends HookConsumerWidget {
                       const SizedBox(height: 20),
                       SocialSignInButton(
                         provider: SocialProvider.google,
-                        onPressed: () => comingSoon('Google'),
+                        onPressed: signInWithGoogle,
                       ),
                       const SizedBox(height: 12),
                       SocialSignInButton(
                         provider: SocialProvider.apple,
-                        onPressed: () => comingSoon('Apple'),
+                        onPressed: signInWithApple,
                       ),
                     ],
                   ),

@@ -114,6 +114,51 @@ class AuthController extends _$AuthController {
     });
   }
 
+  /// Google でサインイン
+  Future<void> signInWithGoogle() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.lefture.app://login-callback/',
+      );
+    });
+  }
+
+  /// Apple でサインイン
+  Future<void> signInWithApple() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await supabase.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: 'com.lefture.app://login-callback/',
+      );
+    });
+  }
+
+  /// 現在のプロバイダーを取得（Email, Google, Apple など）
+  String? getCurrentProvider() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return null;
+
+    // identities の最初のプロバイダーを使用
+    final provider = user.identities?.firstOrNull?.provider;
+    return provider;
+  }
+
+  /// プロバイダーを新しいものにリンク（切り替え）
+  /// 古いプロバイダーは自動的にアンリンク
+  Future<void> switchProvider(OAuthProvider newProvider) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception('No active user.');
+
+      // 新しいプロバイダーでリンク
+      await supabase.auth.linkIdentity(newProvider);
+    });
+  }
+
   /// パスワードまたはメールアドレスによる再認証を経てアカウントを削除
   Future<void> deleteAccount({String? password}) async {
     state = const AsyncLoading();

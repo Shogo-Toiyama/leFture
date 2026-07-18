@@ -11,6 +11,7 @@ import 'package:lecture_companion_ui/application/profile/user_profile_provider.d
 import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_email_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_password_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_auth_provider_sheet.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -657,20 +658,34 @@ class _SettingsSection extends ConsumerWidget {
                           builder: (context) => const ChangePasswordSheet(),
                         );
                       },
+                    ),
+                    _Divider(),
+                    _SettingsTile(
+                      icon: Icons.security_rounded,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Login Method',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeAuthProviderSheet(),
+                        );
+                      },
                       isLast: true,
                     ),
                   ]
                 : [
                     _SettingsTile(
-                      icon: Icons.link_rounded,
+                      icon: Icons.security_rounded,
                       iconColor: const Color(0xFF7C83FD),
-                      title: 'Link Login Method',
+                      title: 'Change Login Method',
                       onTap: () {
-                        // Mock action for now
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Linking login methods is not available yet.'),
-                          ),
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeAuthProviderSheet(),
                         );
                       },
                       isLast: true,
