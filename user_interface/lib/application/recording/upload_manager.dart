@@ -156,52 +156,35 @@ class UploadManager {
           }
           final expectedChunks = lecture.expectedChunks;
           
-          // A. もし「未送信がゼロ」かつ「録音が終了している」なら、全部送り切った証拠！！
-          if (remainingJobs.isEmpty && expectedChunks != null) {
+          // リアルタイム時の自動発火判定
+          if (lecture.isRealtime == true && remainingJobs.isEmpty && expectedChunks != null) {
+            if (lecture.autoStartAnalysis == false) {
+              DevLog.add('⏸️ 自動分析がOFFのため、自動発火はスキップします（手動でStart Analysisが必要）。');
+              continue;
+            }
             // コースが未選択の場合は自動分析を開始しない
-            // （録音ページの警告文「Course未選択なら自動分析は始まらない」を実際に成立させるため）
             if (lecture.courseId == null) {
               DevLog.add('⏸️ コース未選択のため、自動分析はスキップします（手動でStart Analysisが必要）。');
               continue;
             }
 
             DevLog.add('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
+            await _triggerStartAnalysis(lectureId: lecture.id, expectedChunks: expectedChunks);
+          }
 
-            try {
-              // 1. Supabaseから現在のユーザーのJWTトークンを取得
-              final session = supabase.auth.currentSession;
-              final jwt = session?.accessToken;
-
-              if (jwt == null) {
-                throw Exception('ログインしていません。分析を開始できません。');
-              }
-
-              // 2. Cloud RunのURL (_postToCloudRunで使っているのと同じドメイン)
-              final url = Uri.parse('https://lefture-511705914929.us-west1.run.app/start-analysis');
-
-              // 3. 直接Cloud RunへHTTP POSTリクエスト！
-              final response = await http.post(
-                url,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer $jwt', // 👈 ここでトークンを渡す！
-                },
-                body: jsonEncode({
-                  'lecture_id': lecture.id,
-                  'expected_chunks': expectedChunks,
-                }),
-              );
-
-              if (response.statusCode == 200 || response.statusCode == 202) {
-                DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
-              } else {
-                throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
-              }
-            } catch (invokeError) {
-              DevLog.add('❌ start_analysis の呼び出しでエラー: $invokeError');
-              // ※ ここでエラーが起きても、データはStorageに安全に保管されているので、
-              // 画面上から「再分析」ボタンなどでリトライできる作りにすれば完璧です！
+          // プレレコーデッド時の自動発火判定
+          if (lecture.isRealtime == false && job.kind == 'master_audio_upload') {
+            if (lecture.autoStartAnalysis == false) {
+              DevLog.add('⏸️ 自動分析がOFFのため、自動発火はスキップします（手動でStart Analysisが必要）。');
+              continue;
             }
+            if (lecture.courseId == null) {
+              DevLog.add('⏸️ コース未選択のため、自動分析はスキップします（手動でStart Analysisが必要）。');
+              continue;
+            }
+
+            DevLog.add('🎉 マスター音声の送信完了！分析開始の号砲を鳴らします！');
+            await _triggerStartAnalysis(lectureId: lecture.id, expectedChunks: 0);
           }
         } catch (e) {
           // 失敗...
@@ -437,5 +420,41 @@ class UploadManager {
     }
 
     DevLog.add('🚀 [UploadManager] Master Audio $lectureId をR2へ直接送信完了！');
+  }
+
+  Future<void> _triggerStartAnalysis({
+    required String lectureId,
+    required int expectedChunks,
+  }) async {
+    try {
+      final session = supabase.auth.currentSession;
+      final jwt = session?.accessToken;
+
+      if (jwt == null) {
+        throw Exception('ログインしていません。分析を開始できません。');
+      }
+
+      final url = Uri.parse('https://lefture-511705914929.us-west1.run.app/start-analysis');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $jwt',
+        },
+        body: jsonEncode({
+          'lecture_id': lectureId,
+          'expected_chunks': expectedChunks,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 202) {
+        DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
+      } else {
+        throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
+      }
+    } catch (invokeError) {
+      DevLog.add('❌ start_analysis の呼び出しでエラー: $invokeError');
+    }
   }
 }

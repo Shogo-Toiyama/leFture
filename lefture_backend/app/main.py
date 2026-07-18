@@ -2,6 +2,7 @@ import os
 import json
 import time
 import asyncio
+from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
@@ -10,6 +11,7 @@ from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
 from google.api_core.exceptions import AlreadyExists
+from standardwebhooks.webhooks import Webhook, WebhookVerificationError
 
 # Cloud Tasksのタスク名は決定的にするが、task_id/chunk単体だけをキーにすると
 # CHECK_AND_ASSEMBLEの「チャンクが揃うまでPENDINGに戻って自己リトライする」といった
@@ -22,10 +24,17 @@ def _dedup_bucket() -> int:
     return int(time.time() // TASK_DEDUP_WINDOW_SECONDS)
 
 from app.core.supabase import get_supabase_client
+from app.services.email_service import (
+    send_verification_email,
+    send_password_reset_email,
+    send_email_change_email,
+    send_important_notification,
+)
 from app.services.task_runners import (
     receive_transcribe_chunk,
     process_transcribe_chunk,
     run_check_and_assemble_transcript_task,
+    run_transcribe_master_task,
     run_role_classification_task,
     run_core_extraction_task,
     run_announcement_generation_task,
@@ -74,6 +83,7 @@ LECTURE_HARD_DELETE_RETENTION_DAYS = int(os.getenv("LECTURE_HARD_DELETE_RETENTIO
 PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "50")) # Patrol1回あたりでハードデリートする講義数の上限(タイムアウト防止。溢れた分は次回実行で処理される)
 CLOUD_TASKS_MAX_ATTEMPTS = int(os.getenv("CLOUD_TASKS_MAX_ATTEMPTS", "5")) # lefture-processing-queueのRetry Config(Max Attempts)と必ず一致させる。GCP側で変更したらここも変更すること
 STALE_FAILED_JOB_TIMEOUT_MINUTES = int(os.getenv("STALE_FAILED_JOB_TIMEOUT_MINUTES", "15")) # 即時判定(X-CloudTasks-TaskRetryCount)の取りこぼし対策。FAILEDのまま動きがないタスクを見て親ジョブをFAILED化するまでの分数
+SEND_EMAIL_HOOK_SECRET = os.getenv("SEND_EMAIL_HOOK_SECRET", "") # Supabase Auth「Send Email Hook」の署名検証シークレット(Standard Webhooks形式)
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -94,7 +104,7 @@ class WorkerPayload(BaseModel):
 
 class StartAnalysisRequest(BaseModel):
     lecture_id: str
-    expected_chunks: int
+    expected_chunks: int = 0
     # False(既定): アップロード完了後の自動発火用。既にこのlectureに対する
     # 未完了(!=COMPLETED)Jobがあれば新規作成せず、その既存Job IDを冪等に返す。
     # True: 「Start Over」ボタンなど、ユーザーが明示的に選んだ再実行専用。
@@ -214,11 +224,26 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             ).execute()
         )
 
+    # 3.8 リアルタイムかプレレコーデッドかを判定
+    is_realtime = payload.expected_chunks > 0
+    if not is_realtime:
+        # DBにすでにトランスクリプトがある場合はリアルタイムとして扱う
+        count_res = await asyncio.to_thread(
+            lambda: admin_client.table("lecture_transcripts")
+                .select("id", count="exact")
+                .eq("lecture_id", payload.lecture_id)
+                .execute()
+        )
+        if (count_res.count or 0) > 0:
+            is_realtime = True
+
+    first_task = "CHECK_AND_ASSEMBLE" if is_realtime else "TRANSCRIBE_MASTER"
+
     # 4. 親ジョブを作成 (processing_jobs)
     job_data = {
       "lecture_id": payload.lecture_id,
       "user_id": user_id,
-      "expected_chunks": payload.expected_chunks,
+      "expected_chunks": payload.expected_chunks if is_realtime else 0,
       "status": "PENDING"
     }
     job_res = await asyncio.to_thread(
@@ -229,10 +254,10 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     # 5. タスクの設計図（DAG）を定義
     tasks_blueprint = [
         # Phase 1: 基礎データの準備
-        {"task_type": "CHECK_AND_ASSEMBLE", "dependencies": []},
+        {"task_type": first_task, "dependencies": []},
         
         # Phase 2: 全体俯瞰とトピック分割
-        {"task_type": "CORE_EXTRACTION", "dependencies": ["CHECK_AND_ASSEMBLE"]},
+        {"task_type": "CORE_EXTRACTION", "dependencies": [first_task]},
         
         # Phase 3: 細かな役割分類
         {"task_type": "ROLE_CLASSIFICATION", "dependencies": ["CORE_EXTRACTION"]},
@@ -652,6 +677,7 @@ async def worker_complete_master_audio_upload(payload: MasterAudioUploadComplete
 # ---------------------------------------------------------
 TASK_ROUTES = {
     "CHECK_AND_ASSEMBLE": "/worker/check-and-assemble",
+    "TRANSCRIBE_MASTER": "/worker/transcribe-master",
     "ROLE_CLASSIFICATION": "/worker/role-classification",
     "CORE_EXTRACTION": "/worker/core-extraction",
     "ANNOUNCEMENT_GENERATION": "/worker/announcement-generation",
@@ -814,6 +840,10 @@ async def _run_worker_task(request: Request, payload: WorkerPayload, task_fn) ->
 @app.post("/worker/check-and-assemble")
 async def worker_check_and_assemble(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_check_and_assemble_transcript_task)
+
+@app.post("/worker/transcribe-master")
+async def worker_transcribe_master(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_transcribe_master_task)
 
 @app.post("/worker/role-classification")
 async def worker_role_classification(payload: WorkerPayload, request: Request):
@@ -1190,6 +1220,55 @@ async def _hard_delete_lecture(admin_client, uid: str, lecture_id: str) -> None:
     )
 
 
+async def _hard_delete_user_data(admin_client, uid: str) -> None:
+    """
+    アカウント削除時に、そのユーザーが所有するデータを全て完全に削除する。
+    auth.usersの削除がDB側のON DELETE CASCADEに依存する保証がないため
+    (_hard_delete_lectureと同じ方針)、明示的に子→親の順で削除する。
+    最後にR2上の {uid}/ 配下を丸ごと削除し、講義単位の削除で取りこぼした
+    ファイル(プロフィール画像・サポート添付など)も含めて掃除する。
+
+    注意: support_tickets(問い合わせ履歴)は意図的に削除対象から除外している。
+    サポート対応・不正利用調査のための記録として、ユーザー本人の削除とは
+    切り離して保持する方針。削除すべきという判断であれば、ここに
+    admin_client.table("support_tickets").delete().eq("user_id", uid).execute()
+    を追加する。
+    """
+    # 1. ユーザーが所有する講義を全て列挙し、講義単位で完全削除
+    #    (子テーブル: fun_facts/review_cards/deep_notes/keywords/lecture_topics/
+    #     announcements/lecture_transcripts/processing_jobs/processing_tasks と
+    #     R2上の音声・生成物を _hard_delete_lecture 内で削除済み)
+    lectures_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures").select("id").eq("user_id", uid).execute()
+    )
+    for row in (lectures_res.data or []):
+        await _hard_delete_lecture(admin_client, uid, row["id"])
+
+    # 2. 講義に紐づかないユーザー単位のお知らせ(lecture_idがNULLのもの)を削除
+    await asyncio.to_thread(
+        lambda: admin_client.table("announcements").delete().eq("user_id", uid).execute()
+    )
+
+    # 3. コース単位のトピックマップを削除(コース本体より先に削除する)
+    await asyncio.to_thread(
+        lambda: admin_client.table("topic_maps").delete().eq("user_id", uid).execute()
+    )
+
+    # 4. コースを削除
+    await asyncio.to_thread(
+        lambda: admin_client.table("courses").delete().eq("user_id", uid).execute()
+    )
+
+    # 5. プロフィールを削除
+    await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles").delete().eq("id", uid).execute()
+    )
+
+    # 6. R2上の {uid}/ 配下を丸ごと削除(講義単位の削除で取りこぼしたファイルの安全網)
+    from app.core.r2_storage import storage_service
+    await asyncio.to_thread(storage_service.delete_prefix, f"{uid}/")
+
+
 async def _patrol_hard_delete_expired_lectures() -> dict:
     """
     deleted_atからLECTURE_HARD_DELETE_RETENTION_DAYS(既定30日)を過ぎた講義を、
@@ -1250,3 +1329,418 @@ async def patrol():
             results[name] = {"error": str(e)}
             print(f"⚠️ Patrol check '{name}' failed: {e}")
     return results
+
+
+# ---------------------------------------------------------
+# 📧 メール送信エンドポイント
+# ---------------------------------------------------------
+
+class SendVerificationEmailRequest(BaseModel):
+    to: str
+    verification_link: str
+
+
+class SendPasswordResetEmailRequest(BaseModel):
+    to: str
+    reset_link: str
+
+
+class SendNotificationEmailRequest(BaseModel):
+    to: str
+    subject: str
+    html: str
+
+
+@app.post("/email/send-verification")
+async def email_send_verification(payload: SendVerificationEmailRequest):
+    """ユーザー登録確認メールを送信する"""
+    try:
+        result = await send_verification_email(payload.to, payload.verification_link)
+        return {"success": True, **result}
+    except Exception as e:
+        print(f"❌ Failed to send verification email: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+@app.post("/email/send-password-reset")
+async def email_send_password_reset(payload: SendPasswordResetEmailRequest):
+    """パスワードリセットメールを送信する"""
+    try:
+        result = await send_password_reset_email(payload.to, payload.reset_link)
+        return {"success": True, **result}
+    except Exception as e:
+        print(f"❌ Failed to send password reset email: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+@app.post("/email/send-notification")
+async def email_send_notification(payload: SendNotificationEmailRequest):
+    """汎用通知メールを送信する"""
+    try:
+        result = await send_important_notification(payload.to, payload.subject, payload.html)
+        return {"success": True, **result}
+    except Exception as e:
+        print(f"❌ Failed to send notification email: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+# ---------------------------------------------------------
+# 🔗 Supabase Auth — Custom Send Email Hook
+# ---------------------------------------------------------
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+
+
+class _SupabaseHookEmailData(BaseModel):
+    token: str = ""
+    token_hash: str = ""
+    token_new: str = ""
+    token_hash_new: str = ""
+    redirect_to: str = ""
+    email_action_type: str
+    site_url: str = ""
+
+
+class _SupabaseHookUser(BaseModel):
+    id: str
+    email: str
+    new_email: Optional[str] = None
+    user_metadata: dict = {}
+
+
+class SupabaseEmailHookRequest(BaseModel):
+    user: _SupabaseHookUser
+    email_data: _SupabaseHookEmailData
+
+
+def _verify_supabase_hook_signature(raw_body: bytes, headers: dict) -> None:
+    """
+    Supabase Auth Hook の Standard Webhooks 署名を検証する。
+    SEND_EMAIL_HOOK_SECRET 未設定時は(既存のWEBHOOK_SECRETと同様)検証をスキップするが、
+    本番では必ず設定すること。値は Supabase Dashboard > Authentication > Hooks の
+    Send Email Hook に表示される "v1,whsec_..." 形式のシークレットをそのまま使う。
+    """
+    if not SEND_EMAIL_HOOK_SECRET:
+        print("⚠️  SEND_EMAIL_HOOK_SECRET is not set - skipping signature verification (INSECURE)")
+        return
+
+    secret = SEND_EMAIL_HOOK_SECRET
+    if secret.startswith("v1,"):
+        secret = secret[len("v1,"):]
+
+    try:
+        Webhook(secret).verify(raw_body, headers)
+    except WebhookVerificationError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid webhook signature: {e}")
+
+
+@app.post("/auth/send-email")
+async def supabase_email_hook(request: Request):
+    """
+    Supabase Auth の「Send Email Hook」を受信して、
+    アクションタイプに応じた確認メールを Resend 経由で送信する。
+
+    対応する email_action_type:
+      - signup       : ユーザー登録確認
+      - recovery     : パスワードリセット
+      - email_change : メールアドレス変更確認
+          Secure Email Change が有効な場合、現在のメールと新しいメールの
+          両方に確認リンクを送る必要がある。Supabase側のフィールド名は
+          後方互換のため入れ替わっている点に注意:
+            現在のメール(user.email)     宛て → token_hash_new
+            新しいメール(user.new_email) 宛て → token_hash
+    """
+    raw_body = await request.body()
+    _verify_supabase_hook_signature(raw_body, dict(request.headers))
+
+    try:
+        payload = SupabaseEmailHookRequest.model_validate_json(raw_body)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid payload: {e}")
+
+    user_email    = payload.user.email
+    display_name  = payload.user.user_metadata.get("display_name", "")
+    email_data    = payload.email_data
+    action_type   = email_data.email_action_type
+    redirect_to   = email_data.redirect_to or email_data.site_url or ""
+
+    def _verify_link(token_hash: str, verify_type: str) -> str:
+        return (
+            f"{SUPABASE_URL}/auth/v1/verify"
+            f"?token_hash={token_hash}"
+            f"&type={verify_type}"
+            f"&redirect_to={redirect_to}"
+        )
+
+    try:
+        if action_type == "signup":
+            link = _verify_link(email_data.token_hash, "signup")
+            await send_verification_email(user_email, link, display_name)
+            print(f"✅ Sent {action_type} email to {user_email}")
+
+        elif action_type == "recovery":
+            link = _verify_link(email_data.token_hash, "recovery")
+            await send_password_reset_email(user_email, link, display_name)
+            print(f"✅ Sent {action_type} email to {user_email}")
+
+        elif action_type == "email_change":
+            new_email = payload.user.new_email
+            recipients_notified = []
+
+            if email_data.token_hash_new:
+                current_link = _verify_link(email_data.token_hash_new, "email_change")
+                await send_email_change_email(user_email, current_link, new_email or "")
+                recipients_notified.append(user_email)
+
+            if new_email and email_data.token_hash:
+                new_link = _verify_link(email_data.token_hash, "email_change")
+                await send_email_change_email(new_email, new_link, new_email)
+                recipients_notified.append(new_email)
+
+            if not recipients_notified:
+                raise HTTPException(
+                    status_code=400,
+                    detail="email_change hook payload is missing new_email/token_hash/token_hash_new",
+                )
+
+            print(f"✅ Sent {action_type} email to {recipients_notified}")
+
+        else:
+            print(f"⚠️  Unknown email_action_type: {action_type}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported email_action_type: {action_type}",
+            )
+
+        return {"success": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Failed to send {action_type} email to {user_email}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send {action_type} email: {str(e)}",
+        )
+
+
+# ---------------------------------------------------------
+# 💬 お問い合わせ（Support Tickets）エンドポイント
+# ---------------------------------------------------------
+
+class SupportUploadUrlRequest(BaseModel):
+    file_name: str
+    content_type: str = "application/octet-stream"
+
+
+class SupportSubmitRequest(BaseModel):
+    category: str
+    message: str
+    attachment_urls: list[str] = []
+    device_info: dict = {}
+
+
+@app.post("/support/request-upload-url")
+async def support_request_upload_url(
+    payload: SupportUploadUrlRequest,
+    request: Request,
+):
+    """お問い合わせ添付ファイル用の署名付きアップロードURLを発行する"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = auth_header.replace("Bearer ", "").strip()
+
+    try:
+        user_client = create_client(
+            SUPABASE_URL, 
+            SUPABASE_PUBLISHABLE_KEY, 
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    from app.services.task_runners import storage_service
+    upload_url, storage_path = await asyncio.to_thread(
+        storage_service.generate_presigned_support_url,
+        uid=uid,
+        file_name=payload.file_name,
+        content_type=payload.content_type,
+    )
+    return {"upload_url": upload_url, "storage_path": storage_path}
+
+
+@app.post("/support/submit")
+async def support_submit(
+    payload: SupportSubmitRequest,
+    request: Request,
+):
+    """お問い合わせ内容を受け取り、Supabase DBに保存、自動返信＆管理者へのメール通知を行う"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = auth_header.replace("Bearer ", "").strip()
+
+    try:
+        user_client = create_client(
+            SUPABASE_URL, 
+            SUPABASE_PUBLISHABLE_KEY, 
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+        user_email = user_res.user.email
+        display_name = (user_res.user.user_metadata or {}).get("display_name", "")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    # 1. ランダムなお問い合わせコード生成 (LFT-XXXXXX)
+    import random
+    import string
+    random_str = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    ticket_code = f"LFT-{random_str}"
+
+    # 2. Supabase DB (support_tickets テーブル) へのインサート
+    admin_client = get_supabase_client()
+    try:
+        ticket_data = {
+            "ticket_code": ticket_code,
+            "user_id": uid,
+            "user_email": user_email,
+            "category": payload.category,
+            "message": payload.message,
+            "attachment_urls": payload.attachment_urls,
+            "device_info": payload.device_info,
+            "status": "open",
+        }
+        await asyncio.to_thread(
+            lambda: admin_client.table("support_tickets").insert(ticket_data).execute()
+        )
+    except Exception as e:
+        print(f"❌ Failed to insert support ticket in Supabase: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save support ticket to database")
+
+    # 3. ユーザーへ自動確認メールを送信 (From: support@lefture.com)
+    try:
+        user_html = f"""
+        <h2>お問い合わせを受け付けました</h2>
+        <p>{display_name or 'ユーザー'} 様</p>
+        <p>leFture サポートにお問い合わせいただき、ありがとうございます。</p>
+        <p>以下の内容でお問い合わせを受け付けました。</p>
+        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
+        <p><strong>お問い合わせ番号:</strong> {ticket_code}</p>
+        <p><strong>カテゴリ:</strong> {payload.category}</p>
+        <p><strong>お問い合わせ内容:</strong><br/>{payload.message.replace(chr(10), '<br/>')}</p>
+        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
+        <p>内容を確認の上、担当者より返信いたしますので、今しばらくお待ちください。</p>
+        <p style="color:#8888AA; font-size:12px;">※このメールは送信専用アドレスから送信されています。</p>
+        """
+        from app.services.email_service import send_email
+        await send_email(
+            to=user_email,
+            subject=f"leFture サポート - 受付完了 [{ticket_code}]",
+            html=user_html,
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send auto-reply email to user: {e}")
+
+    # 4. 管理者へ通知メールを送信 (To: hello@lefture.com または lefture.app@gmail.com)
+    # Reply-To にユーザーのメールアドレスを指定
+    try:
+        attachments_section = ""
+        if payload.attachment_urls:
+            # attachment_urls には R2 の非公開オブジェクトキー(storage_path)が入っているため、
+            # そのままではメールから開けない。閲覧用の署名付きGET URLに変換して埋め込む。
+            # (署名付きURLの有効期限は最大7日 = 604800秒。それを過ぎるとリンク切れになる点に注意)
+            from app.core.r2_storage import storage_service
+            import html as html_escape_lib
+            attachments_section = "<p><strong>添付ファイル一覧:</strong></p><ul>"
+            for storage_path in payload.attachment_urls:
+                file_label = html_escape_lib.escape(storage_path.split("/")[-1])
+                try:
+                    view_url = await asyncio.to_thread(
+                        storage_service.generate_presigned_get_url, storage_path
+                    )
+                    attachments_section += f'<li><a href="{view_url}">{file_label}</a>(リンクは7日間有効)</li>'
+                except Exception as e:
+                    print(f"⚠️ Failed to generate presigned URL for attachment {storage_path}: {e}")
+                    attachments_section += f"<li>{file_label} (リンク生成に失敗しました。管理画面/Supabaseから直接確認してください: {html_escape_lib.escape(storage_path)})</li>"
+            attachments_section += "</ul>"
+
+        admin_html = f"""
+        <h2>新しいお問い合わせを受信しました</h2>
+        <p><strong>お問い合わせ番号:</strong> {ticket_code}</p>
+        <p><strong>ユーザーのメールアドレス:</strong> {user_email}</p>
+        <p><strong>ユーザーID:</strong> {uid}</p>
+        <p><strong>カテゴリ:</strong> {payload.category}</p>
+        <p><strong>お問い合わせ内容:</strong><br/>{payload.message.replace(chr(10), '<br/>')}</p>
+        {attachments_section}
+        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
+        <p><strong>デバイス情報:</strong></p>
+        <pre>{json.dumps(payload.device_info, indent=2, ensure_ascii=False)}</pre>
+        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
+        <p>※このメールにそのまま返信すると、お問い合わせの送信元（{user_email}）に直接返信が届きます。</p>
+        """
+        
+        await send_email(
+            to="lefture.app@gmail.com",
+            subject=f"【要対応】お問い合わせ [{ticket_code}] (カテゴリ: {payload.category})",
+            html=admin_html,
+            reply_to=user_email,
+        )
+    except Exception as e:
+        print(f"❌ Failed to send notification email to admin: {e}")
+
+    return {"success": True, "ticket_code": ticket_code}
+
+
+@app.post("/auth/delete-account")
+async def auth_delete_account(request: Request):
+    """ユーザーのアカウントを削除する。auth.usersから削除するため、Admin APIを呼び出す。"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = auth_header.replace("Bearer ", "").strip()
+
+    try:
+        user_client = create_client(
+            SUPABASE_URL, 
+            SUPABASE_PUBLISHABLE_KEY, 
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    admin_client = get_supabase_client()
+
+    # 1. ユーザーが所有するDBレコード・R2上のファイルを先に完全削除する。
+    #    auth.usersの削除を最後に回すことで、ここで失敗してもユーザーは
+    #    まだ有効なアカウントとしてアプリから再度削除を試行できる
+    #    (各削除処理はeq()で絞り込んだ削除のため、再実行しても安全)。
+    try:
+        await _hard_delete_user_data(admin_client, uid)
+    except Exception as e:
+        print(f"❌ Failed to hard-delete user data for {uid}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete account data from server")
+
+    # 2. 最後にAdmin APIでauth.usersから削除
+    try:
+        await asyncio.to_thread(
+            lambda: admin_client.auth.admin.delete_user(uid)
+        )
+    except Exception as e:
+        print(f"❌ Failed to delete user {uid} using admin client: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete account from server")
+
+    print(f"👤 Deleted user account: {uid}")
+    return {"success": True}

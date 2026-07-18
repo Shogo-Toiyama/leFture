@@ -812,6 +812,15 @@ class _CourseLectureListView extends ConsumerWidget {
         ),
       ),
     ),
+    floatingActionButton: FloatingActionButton.extended(
+      backgroundColor: AppColors.starGold,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.add),
+      label: const Text('New Lecture'),
+      onPressed: () {
+        context.push('${AppRoutes.recording}?courseId=$courseId');
+      },
+    ),
   );
 }
 

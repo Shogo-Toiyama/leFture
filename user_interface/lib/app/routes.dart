@@ -5,6 +5,8 @@ class AppRoutes {
   static const signUp = '/sign_up';
   static const forgotPassword = '/forgot_password';
   static const resetPassword = '/reset_password';
+  static const privacyPolicy = '/privacy_policy';
+  static const termsOfService = '/terms_of_service';
 
   // Main
   static const home = '/home'; // Dashboard (宇宙のコックピット)
@@ -16,6 +18,7 @@ class AppRoutes {
   static const learningGalaxy = '/learning_galaxy';
   static const aiChat = '/ai_chat';
   static const profile = '/profile';
+  static const contact = '/contact';
   static const activityDetails = '/profile/activity/:type';
   static const study = '/study';
 

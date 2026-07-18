@@ -1,4 +1,4 @@
-package com.shogo.lefture
+package com.lefture.app
 
 import io.flutter.embedding.android.FlutterActivity
 

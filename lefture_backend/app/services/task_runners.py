@@ -12,9 +12,9 @@ from app.core.config import BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
 from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
-from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM
+from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
 
-from app.services.logic.transcription import TranscriptionService
+from app.services.logic.transcription import TranscriptionService, ModalTranscriptionService
 from app.services.logic.assemble_transcript import AssembleTranscriptService
 from app.services.logic.sentence_review import SentenceReviewService
 from app.services.logic.core_extraction import CoreExtractionService
@@ -675,8 +675,6 @@ def _aggregate_billing_records(records: list) -> list:
     保ったまま、内訳を「どのタスク種別が・どのリソースに・合計いくら」の
     粒度まで圧縮する。
     """
-    from app.services.helpers.llm_unified import CostRecord
-
     grouped: dict[tuple, CostRecord] = {}
     for r in records:
         key = (r.task_type, r.dimension, r.resource)
@@ -888,7 +886,6 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         
         # 💰 各チャンクの文字起こし／ progressive review の請求データを Supabase から取得して集計に合流させる
         logger.log("💰 Merging individual chunk billing records from DB...")
-        from app.services.helpers.llm_unified import CostRecord
         for c in completed_chunks:
             records_data = c.get("billing_records") or []
             for r_data in records_data:
@@ -927,22 +924,156 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             shutil.rmtree(work_dir)
 
 # ---------------------------------------------------------
+# Phase 1-B: TRANSCRIBE_MASTER
+# ---------------------------------------------------------
+async def run_transcribe_master_task(job_id: str, task_id: str):
+    job_ctx = await _get_job_context(job_id)
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
+    expected_chunks = job_ctx.get("expected_chunks", 0)
+    is_realtime = expected_chunks > 0
+
+    logger = TaskLogger(uid, lecture_id, "TRANSCRIBE_MASTER")
+    logger.log(f"▶️ Starting TRANSCRIBE_MASTER (Task: {task_id}, Mode: {'Realtime' if is_realtime else 'PreRecorded'})")
+    billing = BillingEngine(task_type="TRANSCRIBE_MASTER")
+
+    if not await _claim_task(task_id):
+        logger.log(f"⏭️ Task {task_id} is not in QUEUED state. Skipping duplicate execution.")
+        return
+
+    work_dir = BASE_WORK_DIR / task_id
+    work_dir.mkdir(parents=True, exist_ok=True)
+    supabase = get_supabase_client()
+
+    try:
+        # 1. 講義情報を取得して audio_path を確認
+        lec_res = await asyncio.to_thread(
+            lambda: supabase.table("lectures")
+                .select("audio_path, whisper_context")
+                .eq("id", lecture_id)
+                .single()
+                .execute()
+        )
+        lec_data = lec_res.data or {}
+        audio_path = lec_data.get("audio_path")
+        whisper_context = lec_data.get("whisper_context", "")
+
+        # Fail-fast: audio_path が無い場合は R2 ダウンロード前に検査
+        if not audio_path:
+            raise ValueError(f"Lecture {lecture_id} is missing audio_path. Cannot transcribe.")
+
+        logger.log(f"🎤 [Master] Downloading master audio from R2: {audio_path}")
+
+        # 2. R2からマスター音声バイナリを取得
+        audio_bytes = await asyncio.to_thread(storage_service.download_binary, audio_path)
+
+        # 3. Realtime/PreRecorded に応じて適切な Whisper API を選択
+        if is_realtime:
+            # Realtime（チャンク）モード: Cloudflare Whisper を使用
+            logger.log(f"   Using Cloudflare Whisper for Realtime mode")
+            transcriber = TranscriptionService(logger, billing)
+        else:
+            # PreRecorded（マスター）モード: Modal Faster Whisper を使用
+            logger.log(f"   Using Modal Faster Whisper for PreRecorded mode")
+            transcriber = ModalTranscriptionService(logger, billing)
+
+        result = await transcriber.run_in_memory(
+            audio_bytes=audio_bytes,
+            chunk_index=0,
+            prompt_keywords=whisper_context,
+        )
+        
+        raw_segments = result.get("segments") or []
+
+        # 4. AssembleTranscriptServiceを使用してアセンブリ（重複コード削減）
+        # プレレコ用の単一チャンク構造を作成
+        single_chunk = {
+            "id": f"chunk_0_{task_id}",
+            "lecture_id": lecture_id,
+            "chunk_index": 0,
+            "status": "REVIEWED",
+            "text_stt": result.get("text", ""),
+            "text_reviewed": result.get("text", ""),
+            "segments_stt": raw_segments,
+            "segments_reviewed": raw_segments,
+            "confidence": raw_segments[0].get("confidence", 0.99) if raw_segments else 0.99,
+            "audio_duration": result.get("audio_duration", 0.0),
+            "start_time": 0.0,
+        }
+        assembler = AssembleTranscriptService(logger)
+        assembled_data = assembler.run([single_chunk])
+            
+        logger.log(f"🎉 Transcription completed! Generated {len(assembled_data)} sentences. Saving to R2...")
+        
+        # 5. R2に保存
+        remote_transcript_path = await asyncio.to_thread(
+            storage_service.save_json_log, 
+            uid, 
+            lecture_id, 
+            "transcript_assembled", 
+            assembled_data
+        )
+        
+        # 6. lecture_transcripts に 1レコード登録 (フォールバック用)
+        logger.log("📝 Registering chunk 0 into lecture_transcripts DB...")
+        await asyncio.to_thread(
+            lambda: supabase.table("lecture_transcripts").upsert({
+                "lecture_id": lecture_id,
+                "chunk_index": 0,
+                "audio_duration": result.get("audio_duration", 0.0),
+                "status": "REVIEWED",
+                "text_stt": result.get("text", ""),
+                "text_reviewed": result.get("text", ""),
+                "segments_stt": raw_segments,
+                "segments_reviewed": raw_segments,
+                "confidence": raw_segments[0].get("confidence", 0.99) if raw_segments else 0.99,
+                "storage_path": audio_path,
+                "start_time": 0.0,
+                "billing_records": [vars(r) for r in billing.records],
+            }, onConflict="lecture_id,chunk_index").execute()
+        )
+        
+        # 7. 請求データの合算と保存
+        aggregated_records = _aggregate_billing_records(billing.records)
+        result_payload = {
+            "transcript_json_path": remote_transcript_path, 
+            "billing_records": [vars(r) for r in aggregated_records]
+        }
+        
+        await _update_task_status(task_id, "COMPLETED", payload=result_payload)
+        logger.log(f"✅ TRANSCRIBE_MASTER Completed!")
+        logger.save_to_r2(storage_service)
+        
+    except Exception as e:
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        logger.log(f"❌ TRANSCRIBE_MASTER Failed: {error_msg}")
+        await _update_task_status(task_id, "FAILED", error_msg=error_msg)
+        logger.save_to_r2(storage_service)
+        raise e
+        
+    finally:
+        if work_dir.exists():
+            shutil.rmtree(work_dir)
+
+# ---------------------------------------------------------
 # Phase 2: CORE_EXTRACTION
 # ---------------------------------------------------------
 async def run_core_extraction_task(job_id: str, task_id: str):
     job_ctx = await _get_job_context(job_id)
     uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
+    expected_chunks = job_ctx.get("expected_chunks", 0)
     logger = TaskLogger(uid, lecture_id, "CORE_EXTRACTION")
     logger.log(f"▶️ Starting CORE_EXTRACTION (Task: {task_id})")
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
         return
-    
+
     # 💡 このタスク専用のお財布（コスト計算機）を用意
     billing = BillingEngine(task_type="CORE_EXTRACTION")
-    
+
     try:
-        prev_payload = await _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE")
+        # リアルタイム(expected_chunks > 0)ではCHECK_AND_ASSEMBLE、プレレコ(expected_chunks == 0)ではTRANSCRIBE_MASTERから取得
+        first_task_type = "CHECK_AND_ASSEMBLE" if expected_chunks > 0 else "TRANSCRIBE_MASTER"
+        prev_payload = await _get_dependency_payload(job_id, first_task_type)
         transcript_data = await _download_from_r2_to_memory(prev_payload["transcript_json_path"])
 
         # 学生プロフィールの取得
@@ -1013,20 +1144,22 @@ async def run_core_extraction_task(job_id: str, task_id: str):
 async def run_role_classification_task(job_id: str, task_id: str):
     job_ctx = await _get_job_context(job_id)
     uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
+    expected_chunks = job_ctx.get("expected_chunks", 0)
     logger = TaskLogger(uid, lecture_id, "ROLE_CLASSIFICATION")
 
     logger.log(f"▶️ Starting ROLE_CLASSIFICATION (Task: {task_id})")
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
         return
-    
+
     # 💡 このタスク専用のお財布を用意
     billing = BillingEngine(task_type="ROLE_CLASSIFICATION")
-    
+
     try:
         # 1. 必要な前工程のデータをR2からメモリにダウンロード
-        # (CHECK_AND_ASSEMBLE から transcript_data を取得)
-        transcript_payload = await _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE")
+        # リアルタイム(expected_chunks > 0)ではCHECK_AND_ASSEMBLE、プレレコ(expected_chunks == 0)ではTRANSCRIBE_MASTERから取得
+        first_task_type = "CHECK_AND_ASSEMBLE" if expected_chunks > 0 else "TRANSCRIBE_MASTER"
+        transcript_payload = await _get_dependency_payload(job_id, first_task_type)
         transcript_data = await _download_from_r2_to_memory(transcript_payload["transcript_json_path"])
         
         # (CORE_EXTRACTION から topics を取得するために core_data を取得)
@@ -1070,29 +1203,33 @@ async def run_role_classification_task(job_id: str, task_id: str):
 async def run_announcement_generation_task(job_id: str, task_id: str):
     job_ctx = await _get_job_context(job_id)
     uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
+    expected_chunks = job_ctx.get("expected_chunks", 0)
     logger = TaskLogger(uid, lecture_id, "ANNOUNCEMENT_GENERATION")
 
     logger.log(f"▶️ Starting ANNOUNCEMENT_GENERATION (Task: {task_id})")
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
         return
-    
+
     billing = BillingEngine(task_type="ANNOUNCEMENT_GENERATION")
-    
+
     # 💡 1. Safety Net 用の正規表現コンパイル
     # \b で単語の境界を指定し、s? などで複数形にも対応させています
     critical_keywords_pattern = re.compile(
-        r'\b(office hours?|exams?|midterms?|finals?|assignments?|homeworks?|quiz|quizzes|due|deadlines?|projects?|syllabus|grading|grades?|prerequisites?|plagiarism)\b', 
+        r'\b(office hours?|exams?|midterms?|finals?|assignments?|homeworks?|quiz|quizzes|due|deadlines?|projects?|syllabus|grading|grades?|prerequisites?|plagiarism)\b',
         re.IGNORECASE
     )
-    
-    try:        
+
+    try:
+        # リアルタイム(expected_chunks > 0)ではCHECK_AND_ASSEMBLE、プレレコ(expected_chunks == 0)ではTRANSCRIBE_MASTERから取得
+        first_task_type = "CHECK_AND_ASSEMBLE" if expected_chunks > 0 else "TRANSCRIBE_MASTER"
+
         # 1. 必要な全データをメモリに読み込む
         # ※ (await _get_dependency_payload(...))["key"] のように必ず括弧で先にawaitを
         # 完了させる。await X(...)["key"] と書くと、Pythonの演算子優先順位により
         # 「X(...)["key"]（coroutineオブジェクトの添字アクセス）」が先に評価されて
         # TypeErrorになる。
-        transcript_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "CHECK_AND_ASSEMBLE"))["transcript_json_path"])
+        transcript_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, first_task_type))["transcript_json_path"])
         core_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "CORE_EXTRACTION"))["core_extraction_path"])
         classified_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION"))["role_classification_path"])
 

@@ -87,9 +87,9 @@ class RoleClassificationService:
 
             elapsed_time = time.perf_counter() - start_time
             
-            # 💰 コスト記録 (Modalの純粋なGPU時間 ＋ CloudRunの待機時間)
-            gpu_time = result.get('processing_time_seconds', 0.0)
-            self.billing.add_time_cost("modal/t4", gpu_time, note="DeBERTa GPU processing")
+            # 💰 コスト記録 (Modalの純粋なGPU時間 ＋ スケールダウン待機時間2秒)
+            gpu_time = result.get('processing_time_seconds', 0.0) + 2.0
+            self.billing.add_time_cost("modal/t4", gpu_time, note="DeBERTa GPU processing (incl. scaledown)")
             self.billing.add_time_cost("cloudrun/self", elapsed_time, note="Role Classification Wait")
 
             # 帰ってきたデータを sid をキーにした辞書に変換しておく（爆速で検索するため）

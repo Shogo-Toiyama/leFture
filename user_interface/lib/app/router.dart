@@ -13,12 +13,14 @@ import 'package:lecture_companion_ui/presentation/pages/sign_in/sign_in_page.dar
 import 'package:lecture_companion_ui/presentation/pages/sign_up/sign_up_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/forgot_password/forgot_password_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/reset_password/reset_password_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/legal/legal_document_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/home/home_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/learning_galaxy/learning_galaxy_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/contact/contact_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/course_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/review_cards/review_cards_dashboard_page.dart';
@@ -44,18 +46,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       final session = supabase.auth.currentSession;
       final path = state.uri.path;
 
-      // Auth関連のパスかどうか
+      // Auth関連のパスかどうか（ログイン済みならホームへ飛ばす対象）
       final isAuthRoute = path == AppRoutes.welcome ||
           path == AppRoutes.signIn ||
           path == AppRoutes.signUp ||
           path == AppRoutes.forgotPassword ||
           path == AppRoutes.resetPassword;
 
+      // ログイン状態に関わらず見られるページ（例: サインアップ画面やプロフィール画面からのリンク）
+      final isPublicRoute = isAuthRoute ||
+          path == AppRoutes.privacyPolicy ||
+          path == AppRoutes.termsOfService;
+
       // 1. 未ログインならサインインへ強制移動
-      if (session == null && !isAuthRoute) return AppRoutes.signIn;
+      if (session == null && !isPublicRoute) return AppRoutes.signIn;
       
-      // 2. ログイン済みなのにAuth画面に来たらホームへ飛ばす
-      if (session != null && isAuthRoute) return AppRoutes.home;
+      // 2. ログイン済みなのにAuth画面に来たらホームへ飛ばす（ただしパスワード再設定画面は除く）
+      if (session != null && isAuthRoute && path != AppRoutes.resetPassword) {
+        return AppRoutes.home;
+      }
 
       // ★ 保存ロジックも削除しました。シンプル！
       return null;
@@ -70,6 +79,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.signUp, builder: (context, state) => const SignUpPage()),
       GoRoute(path: AppRoutes.forgotPassword, builder: (context, state) => const ForgotPasswordPage()),
       GoRoute(path: AppRoutes.resetPassword, builder: (context, state) => const ResetPasswordPage()),
+      GoRoute(
+        path: AppRoutes.privacyPolicy,
+        builder: (context, state) => const LegalDocumentPage(
+          slug: 'privacy_policy',
+          fallbackTitle: 'Privacy Policy',
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.termsOfService,
+        builder: (context, state) => const LegalDocumentPage(
+          slug: 'terms_of_service',
+          fallbackTitle: 'Terms of Service',
+        ),
+      ),
 
       // =================================================================
       // Main Routes (Single Stack)
@@ -199,6 +222,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ProfilePage(),
       ),
       GoRoute(
+        path: AppRoutes.contact,
+        builder: (context, state) => const ContactPage(),
+      ),
+      GoRoute(
         path: AppRoutes.activityDetails,
         builder: (context, state) {
           final typeStr = state.pathParameters['type'] ?? 'saved';
@@ -235,10 +262,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           // ★ クエリパラメータを受け取る例
           // /recording?tab=note で呼ばれたら、Noteタブを開くように渡す
           final initialTab = state.uri.queryParameters['tab'];
+          final initialCourseId = state.uri.queryParameters['courseId'];
           
           return MaterialPage(
             fullscreenDialog: true, // これで下から出てくるモーダルになります
-            child: RecordingPage(initialTab: initialTab),
+            child: RecordingPage(
+              initialTab: initialTab,
+              initialCourseId: initialCourseId,
+            ),
           );
         },
       ),

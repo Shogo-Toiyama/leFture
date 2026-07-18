@@ -85,6 +85,14 @@ class LocalLectures extends Table {
   // 移動直前(上書きされる前)のcourseId。移動元が「コース未設定」だった場合はnull。
   TextColumn get pendingTopicMapStaleCourseId => text().nullable()();
 
+  // 自動分析を開始するかどうかの設定フラグ
+  BoolColumn get autoStartAnalysis =>
+      boolean().withDefault(const Constant(true))();
+
+  // リアルタイム文字起こしを行うかどうかの設定フラグ
+  BoolColumn get isRealtime =>
+      boolean().withDefault(const Constant(true))();
+
   @override
   Set<Column> get primaryKey => {id, userId};
 }
@@ -438,7 +446,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -562,6 +570,20 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 16) {
         // バージョン16: LocalUserProfiles を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 17) {
+        // バージョン17: LocalLectures に autoStartAnalysis を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 18) {
+        // バージョン18: LocalLectures に isRealtime を追加。
         for (final table in allTables) {
           await m.drop(table);
         }

@@ -194,6 +194,8 @@ class RecordingController extends _$RecordingController {
         userId: user.id,
         presetCourseId: state.courseId,
         presetTitle: state.title.isNotEmpty ? state.title : null,
+        autoStartAnalysis: state.autoStartAnalysis,
+        isRealtime: state.realtimeTranscribe,
       );
       DevLog.add('[StartSession] 5/8 draft lecture created: $lectureId');
 
@@ -213,6 +215,13 @@ class RecordingController extends _$RecordingController {
 
       _chunker = AudioChunker(
         onChunkReady: (Uint8List chunkData, double startTimeSec) async {
+          // Realtime Transcribe が Off の場合、チャンク送信をスキップ
+          if (!state.realtimeTranscribe) {
+            DevLog.add('[Chunker] Realtime Transcribe is OFF, skipping chunk upload for Chunk ${_currentChunkIndex}');
+            _currentChunkIndex++;
+            return;
+          }
+
           // ★ awaitを挟む前に同期的に採番する: onChunkReadyはAudioChunkerから
           // awaitされずに呼ばれるため、チャンクが立て続けに来ると(15倍速テスト等)
           // 前のチャンクのFFmpegエンコード待ち中に次のチャンクのこのコールバックが
@@ -269,6 +278,24 @@ class RecordingController extends _$RecordingController {
     });
   }
 
+  void setAutoStartAnalysis(bool value) async {
+    state = state.copyWith(autoStartAnalysis: value);
+    final lecture = state.lecture;
+    if (lecture != null) {
+      await _repo.updateLectureAutoStartAnalysis(
+        userId: lecture.userId,
+        lectureId: lecture.id,
+        autoStartAnalysis: value,
+      );
+    }
+  }
+
+  void setRealtimeTranscribe(bool value) {
+    if (state.phase == RecordingPhase.idle) {
+      state = state.copyWith(realtimeTranscribe: value);
+    }
+  }
+
   Future<void> setTitle(String newTitle) async {
     state = state.copyWith(title: newTitle);
     final lecture = state.lecture;
@@ -312,21 +339,26 @@ class RecordingController extends _$RecordingController {
       // 1. マスター生PCMデータをAAC (M4A) に圧縮エンコード
       final masterM4aPath = await _recorder.encodeMasterRawToM4a(lecture.id);
 
-      // 2. 最後のチャンクをフラッシュして登録
-      final finalFlushed = _chunker?.flush();
-      if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
-        DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
-        
-        final path = await _recorder.savePcmAsM4a(finalFlushed.data, lecture.id);
-        
-        await _repo.attachAudioAndEnqueueUpload(
-          userId: lecture.userId,
-          lectureId: lecture.id,
-          localPath: path,
-          sequenceIndex: _currentChunkIndex, 
-          startTime: finalFlushed.startTimeSec,
-        );
-        _currentChunkIndex++;
+      // 2. 最後のチャンクをフラッシュして登録（Realtime Transcribe が On の場合のみ）
+      if (state.realtimeTranscribe) {
+        final finalFlushed = _chunker?.flush();
+        if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
+          DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
+
+          final path = await _recorder.savePcmAsM4a(finalFlushed.data, lecture.id);
+
+          await _repo.attachAudioAndEnqueueUpload(
+            userId: lecture.userId,
+            lectureId: lecture.id,
+            localPath: path,
+            sequenceIndex: _currentChunkIndex,
+            startTime: finalFlushed.startTimeSec,
+          );
+          _currentChunkIndex++;
+        }
+      } else {
+        DevLog.add('[Upload] Realtime Transcribe is OFF, skipping final chunk upload');
+        _chunker?.flush(); // メモリ解放のためflushは呼ぶが結果は使わない
       }
 
       // 3. マスターオーディオのアップロードジョブを登録
@@ -357,13 +389,77 @@ class RecordingController extends _$RecordingController {
     await _recorder.stop();
     _timer?.cancel();
     _dbSubscription?.cancel();
-    
+
     if (state.currentLectureId != null) {
       await _recorder.cleanUpMasterAudioFiles(state.currentLectureId!);
       await _repo.deleteLectureAndAssets(state.currentLectureId!);
     }
-    
+
     state = RecordingState.idle();
+  }
+
+  Future<void> uploadAudioFile(String localFilePath) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      state = state.copyWith(
+        phase: RecordingPhase.error,
+        errorMessage: 'You must be signed in to upload.',
+      );
+      return;
+    }
+
+    if (state.courseId == null) {
+      state = state.copyWith(
+        phase: RecordingPhase.error,
+        errorMessage: 'Please select a course before uploading.',
+      );
+      return;
+    }
+
+    state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
+
+    try {
+      DevLog.add('[UploadAudioFile] 1/4 creating draft lecture...');
+      final lectureId = await _repo.createDraftLecture(
+        userId: user.id,
+        presetCourseId: state.courseId,
+        presetTitle: state.title.isNotEmpty ? state.title : null,
+        autoStartAnalysis: state.autoStartAnalysis,
+        isRealtime: false, // 外部ファイルは常にプレレコ
+      );
+      DevLog.add('[UploadAudioFile] 2/4 draft lecture created: $lectureId');
+
+      // コースが選択されていればWhisperコンテキストをフェッチして保存
+      final courseId = state.courseId;
+      if (courseId != null) {
+        final context = await _buildWhisperContext(uid: user.id, courseId: courseId);
+        if (context.isNotEmpty) {
+          await _repo.saveWhisperContext(lectureId: lectureId, whisperContext: context);
+        }
+      }
+
+      DevLog.add('[UploadAudioFile] 3/4 enqueueing master audio upload...');
+      await _repo.enqueueMasterAudioUpload(
+        userId: user.id,
+        lectureId: lectureId,
+        localPath: localFilePath,
+      );
+
+      DevLog.add('[UploadAudioFile] 4/4 finishing lecture recording...');
+      await _repo.finishLectureRecording(
+        lectureId: lectureId,
+        expectedChunks: 0, // プレレコなので expectedChunks=0
+      );
+
+      state = state.copyWith(phase: RecordingPhase.queued);
+      _uploadMgr.tryProcessQueue();
+
+    } catch (e) {
+      state = state.copyWith(
+        phase: RecordingPhase.error,
+        errorMessage: 'Upload failed: $e'
+      );
+    }
   }
 
   Future<void> openSettingsIfNeeded() async {

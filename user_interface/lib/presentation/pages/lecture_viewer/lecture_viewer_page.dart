@@ -21,6 +21,8 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fa
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
@@ -296,15 +298,37 @@ class _LectureViewerBody extends HookConsumerWidget {
                   LectureHeroCollage(lectureId: lecture.id),
                   const SizedBox(height: 20),
 
-                  // Title
-                  Text(
-                    displayTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
+                  // Title + Edit Button Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          displayTitle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white70,
+                          size: 24,
+                        ),
+                        onPressed: () async {
+                          await showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => LectureEditSheet(lecture: lecture),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
@@ -322,45 +346,45 @@ class _LectureViewerBody extends HookConsumerWidget {
                   const SizedBox(height: 24),
 
                   // Start Review Session Button (horizontal capsule button)
-                  GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Starting Review Session...')),
-                      );
-                    },
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.starGold, Color(0xFFFFD700)],
-                        ),
-                        borderRadius: BorderRadius.circular(26),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.starGold.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Start Review Session',
-                            style: TextStyle(
-                              color: AppColors.universe.voidBackground,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     ScaffoldMessenger.of(context).showSnackBar(
+                  //       const SnackBar(content: Text('Starting Review Session...')),
+                  //     );
+                  //   },
+                  //   child: Container(
+                  //     height: 52,
+                  //     decoration: BoxDecoration(
+                  //       gradient: const LinearGradient(
+                  //         colors: [AppColors.starGold, Color(0xFFFFD700)],
+                  //       ),
+                  //       borderRadius: BorderRadius.circular(26),
+                  //       boxShadow: [
+                  //         BoxShadow(
+                  //           color: AppColors.starGold.withValues(alpha: 0.3),
+                  //           blurRadius: 12,
+                  //           offset: const Offset(0, 4),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisAlignment: MainAxisAlignment.center,
+                  //       children: [
+                  //         Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
+                  //         const SizedBox(width: 8),
+                  //         Text(
+                  //           'Start Review Session',
+                  //           style: TextStyle(
+                  //             color: AppColors.universe.voidBackground,
+                  //             fontSize: 16,
+                  //             fontWeight: FontWeight.bold,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 24),
 
                   // Horizontal Info Chips Row
                   SingleChildScrollView(
@@ -739,12 +763,27 @@ class _LectureInfoSheet extends ConsumerWidget {
         return currentAnnouncements
             .map(
               (a) => AnnouncementTile(
+                key: ValueKey(a.id),
                 announcement: a,
                 showTimestamp: false,
                 onToggleComplete: (ann) async {
                   await ref
                       .read(announcementRepositoryDriftProvider)
                       .toggleComplete(id: ann.id, completed: !ann.isCompleted);
+                  ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                },
+                onEdit: () async {
+                  await showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => AnnouncementEditSheet(announcement: a),
+                  );
+                },
+                onDelete: (Announcement ann) async {
+                  await ref
+                      .read(announcementRepositoryDriftProvider)
+                      .softDeleteAnnouncement(id: ann.id);
                   ref.read(lectureControllerProvider.notifier).pushOutboxNow();
                 },
               ),

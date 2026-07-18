@@ -51,5 +51,18 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need microphone access to record your lectures.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.lefture</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>lefture</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -29,6 +29,8 @@ class RecordingRepositoryDrift {
     String? presetCourseId,
     String? presetTitle,
     DateTime? lectureDateTime,
+    bool autoStartAnalysis = true,
+    bool isRealtime = true,
   }) async {
     final lectureId = presetLectureId ?? const Uuid().v4();
     final now = DateTime.now().toUtc();
@@ -44,6 +46,8 @@ class RecordingRepositoryDrift {
             updatedAt: Value(now),
             lectureDatetime: Value(dt),
             sortOrder: const Value(0),
+            autoStartAnalysis: Value(autoStartAnalysis),
+            isRealtime: Value(isRealtime),
           ),
         );
 
@@ -76,6 +80,36 @@ class RecordingRepositoryDrift {
           ..where((t) => t.userId.equals(userId)))
         .write(LocalLecturesCompanion(
       courseId: Value(courseId),
+      updatedAt: Value(now),
+    ));
+  }
+
+  Future<void> updateLectureAutoStartAnalysis({
+    required String userId,
+    required String lectureId,
+    required bool autoStartAnalysis,
+  }) async {
+    final now = DateTime.now().toUtc();
+    await (db.update(db.localLectures)
+          ..where((t) => t.id.equals(lectureId))
+          ..where((t) => t.userId.equals(userId)))
+        .write(LocalLecturesCompanion(
+      autoStartAnalysis: Value(autoStartAnalysis),
+      updatedAt: Value(now),
+    ));
+  }
+
+  Future<void> updateLectureIsRealtime({
+    required String userId,
+    required String lectureId,
+    required bool isRealtime,
+  }) async {
+    final now = DateTime.now().toUtc();
+    await (db.update(db.localLectures)
+          ..where((t) => t.id.equals(lectureId))
+          ..where((t) => t.userId.equals(userId)))
+        .write(LocalLecturesCompanion(
+      isRealtime: Value(isRealtime),
       updatedAt: Value(now),
     ));
   }

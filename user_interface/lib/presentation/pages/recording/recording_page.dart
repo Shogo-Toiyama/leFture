@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
@@ -16,10 +17,11 @@ import '../dev_tools/test_mode_flag.dart';
 import 'widgets/course_picker_sheet.dart';
 
 class RecordingPage extends HookConsumerWidget {
-  const RecordingPage({super.key, this.initialTab});
+  const RecordingPage({super.key, this.initialTab, this.initialCourseId});
   
   // URLパラメータなどでタブ指定を受け取れるように拡張
   final String? initialTab;
+  final String? initialCourseId;
 
   String _format(int sec) {
     final h = (sec ~/ 3600).toString();
@@ -35,8 +37,7 @@ class RecordingPage extends HookConsumerWidget {
     final memoCtl = useTextEditingController();
     useListenable(memoCtl);
     final showMoreSettings = useState(false);
-    final autoStartAnalysis = useState(true);
-    final realtimeTranscribe = useState(false);
+    final selectedAudioFilePath = useState<String?>(null);
     
     // 初期タブの設定 (noteなら1番目)
     useEffect(() {
@@ -45,6 +46,16 @@ class RecordingPage extends HookConsumerWidget {
       }
       return null;
     }, []);
+
+    // コースIDの初期設定
+    useEffect(() {
+      if (initialCourseId != null) {
+        Future.microtask(() {
+          ref.read(recordingControllerProvider.notifier).setCourseId(initialCourseId);
+        });
+      }
+      return null;
+    }, [initialCourseId]);
 
     final state = ref.watch(recordingControllerProvider);
     final controller = ref.read(recordingControllerProvider.notifier);
@@ -116,7 +127,7 @@ class RecordingPage extends HookConsumerWidget {
       required String title,
       required String subtitle,
       required bool value,
-      required ValueChanged<bool> onChanged,
+      required ValueChanged<bool>? onChanged,
     }) {
       return Container(
         decoration: BoxDecoration(
@@ -365,6 +376,101 @@ class RecordingPage extends HookConsumerWidget {
                           // Status Text
                           _StatusArea(state: state, controller: controller),
 
+                          // Select Audio File (アイドル時のみ表示)
+                          if (state.phase == RecordingPhase.idle)
+                            ...[
+                              const SizedBox(height: 24),
+                              Text(
+                                'OR',
+                                style: TextStyle(
+                                  color: AppColors.universe.textComet,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: selectedAudioFilePath.value != null
+                                        ? AppColors.starGold
+                                        : AppColors.universe.textComet.withValues(alpha: 0.3),
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () async {
+                                      // ファイル選択（Course 選択の有無に関係なく）
+                                      final result = await FilePicker.pickFiles(
+                                        type: FileType.audio,
+                                        allowMultiple: false,
+                                      );
+
+                                      if (result != null && result.files.isNotEmpty) {
+                                        final filePath = result.files.first.path;
+                                        if (filePath != null && context.mounted) {
+                                          selectedAudioFilePath.value = filePath;
+                                        }
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                        horizontal: 12,
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                selectedAudioFilePath.value != null
+                                                    ? Icons.check_circle
+                                                    : Icons.upload_file,
+                                                color: selectedAudioFilePath.value != null
+                                                    ? AppColors.starGold
+                                                    : AppColors.universe.textComet,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                selectedAudioFilePath.value != null
+                                                    ? 'File selected'
+                                                    : 'Select audio file',
+                                                style: TextStyle(
+                                                  color: selectedAudioFilePath.value != null
+                                                      ? AppColors.starGold
+                                                      : AppColors.universe.textComet,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (selectedAudioFilePath.value != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 8),
+                                              child: Text(
+                                                selectedAudioFilePath.value!.split('/').last,
+                                                style: TextStyle(
+                                                  color: AppColors.universe.textComet,
+                                                  fontSize: 12,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+
                           // Discard Button
                           if (state.phase == RecordingPhase.recording || 
                               state.phase == RecordingPhase.paused ||
@@ -409,31 +515,48 @@ class RecordingPage extends HookConsumerWidget {
                           const SizedBox(height: 24),
 
                           // More Settings アコーディオン
-                          InkWell(
-                            onTap: () => showMoreSettings.value = !showMoreSettings.value,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    showMoreSettings.value
-                                        ? Icons.expand_less
-                                        : Icons.expand_more,
-                                    color: AppColors.universe.textComet,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'More Settings',
-                                    style: TextStyle(
-                                      color: AppColors.universe.textComet,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
+                          Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.universe.glassWhiteLow,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.universe.glassBorder),
+                            ),
+                            child: InkWell(
+                              onTap: () => showMoreSettings.value = !showMoreSettings.value,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.settings_outlined,
+                                          color: AppColors.universe.textComet,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          'More Settings',
+                                          style: TextStyle(
+                                            color: AppColors.universe.textComet,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                    Icon(
+                                      showMoreSettings.value
+                                          ? Icons.expand_less
+                                          : Icons.expand_more,
+                                      color: AppColors.universe.textComet,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -457,16 +580,18 @@ class RecordingPage extends HookConsumerWidget {
                                   icon: Icons.play_circle_outline,
                                   title: 'Auto-start analysis',
                                   subtitle: 'Automatically start processing tasks after upload completes.',
-                                  value: autoStartAnalysis.value,
-                                  onChanged: (val) => autoStartAnalysis.value = val,
+                                  value: state.autoStartAnalysis,
+                                  onChanged: (val) => controller.setAutoStartAnalysis(val),
                                 ),
                                 const SizedBox(height: 12),
                                 buildToggleRow(
                                   icon: Icons.chat_bubble_outline,
                                   title: 'Realtime transcribe',
                                   subtitle: 'Transcribe audio stream in realtime as you record.',
-                                  value: realtimeTranscribe.value,
-                                  onChanged: (val) => realtimeTranscribe.value = val,
+                                  value: state.realtimeTranscribe,
+                                  onChanged: state.phase == RecordingPhase.idle
+                                      ? (val) => controller.setRealtimeTranscribe(val)
+                                      : null,
                                 ),
                               ],
                             ),
@@ -486,7 +611,31 @@ class RecordingPage extends HookConsumerWidget {
                       color: AppColors.universe.voidBackground.withValues(alpha:0.8),
                     ),
                     child: ElevatedButton(
-                      onPressed: state.canUpload && !isBusy ? () => controller.upload() : null,
+                      onPressed: !isBusy && (state.canUpload || selectedAudioFilePath.value != null)
+                          ? () async {
+                              if (selectedAudioFilePath.value != null) {
+                                // ファイル選択がある場合
+                                if (state.courseId == null) {
+                                  // Course が未選択なら警告
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Please select a course before uploading'),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                await controller.uploadAudioFile(selectedAudioFilePath.value!);
+                                selectedAudioFilePath.value = null; // 完了後にリセット
+                              } else {
+                                // 通常の録音アップロード
+                                if (state.canUpload) {
+                                  await controller.upload();
+                                }
+                              }
+                            }
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.starGold,
                         foregroundColor: Colors.white,

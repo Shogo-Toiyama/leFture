@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
+import 'package:lecture_companion_ui/domain/entities/announcement.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 
@@ -76,16 +78,34 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                       itemCount: announcements.length,
                       separatorBuilder: (context, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) => AnnouncementTile(
-                        announcement: announcements[index],
-                        showTimestamp: true,
-                        onToggleComplete: (a) async {
-                          await ref
-                              .read(announcementRepositoryDriftProvider)
-                              .toggleComplete(id: a.id, completed: !a.isCompleted);
-                          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
-                        },
-                      ),
+                      itemBuilder: (context, index) {
+                        final announcement = announcements[index];
+                        return AnnouncementTile(
+                          key: ValueKey(announcement.id),
+                          announcement: announcement,
+                          showTimestamp: true,
+                          onToggleComplete: (a) async {
+                            await ref
+                                .read(announcementRepositoryDriftProvider)
+                                .toggleComplete(id: a.id, completed: !a.isCompleted);
+                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          },
+                          onEdit: () async {
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => AnnouncementEditSheet(announcement: announcement),
+                            );
+                          },
+                          onDelete: (Announcement a) async {
+                            await ref
+                                .read(announcementRepositoryDriftProvider)
+                                .softDeleteAnnouncement(id: a.id);
+                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          },
+                        );
+                      },
                     );
                   },
                 ),

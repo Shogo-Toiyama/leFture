@@ -1,12 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/user_profile.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_email_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_password_sheet.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -42,20 +46,6 @@ class ProfilePage extends ConsumerWidget {
                 fontSize: 20,
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Color(0xFFF2F2F2)),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const MakeProfileSheet(),
-                  );
-                },
-                tooltip: 'Edit Profile',
-              ),
-            ],
           ),
 
           // ── Body ─────────────────────────────────────────────────
@@ -219,16 +209,36 @@ class _ProfileSection extends StatelessWidget {
               const SizedBox(width: 16),
               // Name
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      displayName,
-                      style: const TextStyle(
-                        color: Color(0xFFF2F2F2),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: const TextStyle(
+                          color: Color(0xFFF2F2F2),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        color: Color(0xFFF2F2F2),
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const MakeProfileSheet(),
+                        );
+                      },
+                      tooltip: 'Edit Profile',
                     ),
                   ],
                 ),
@@ -605,33 +615,67 @@ class _ActivityTile extends StatelessWidget {
 // SECTION 3: Settings
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SettingsSection extends StatelessWidget {
+class _SettingsSection extends ConsumerWidget {
   const _SettingsSection({required this.onSignOut});
   final VoidCallback onSignOut;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final isEmailUser = user?.appMetadata['provider'] == 'email';
+
     return Column(
       children: [
         // Account
         _GlassCard(
           child: Column(
-            children: [
-              _SettingsTile(
-                icon: Icons.email_outlined,
-                iconColor: const Color(0xFF7C83FD),
-                title: 'Change Email',
-                onTap: () {},
-              ),
-              _Divider(),
-              _SettingsTile(
-                icon: Icons.lock_outline_rounded,
-                iconColor: const Color(0xFF7C83FD),
-                title: 'Change Password',
-                onTap: () {},
-                isLast: true,
-              ),
-            ],
+            children: isEmailUser
+                ? [
+                    _SettingsTile(
+                      icon: Icons.email_outlined,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Email',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeEmailSheet(),
+                        );
+                      },
+                    ),
+                    _Divider(),
+                    _SettingsTile(
+                      icon: Icons.lock_outline_rounded,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Password',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangePasswordSheet(),
+                        );
+                      },
+                      isLast: true,
+                    ),
+                  ]
+                : [
+                    _SettingsTile(
+                      icon: Icons.link_rounded,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Link Login Method',
+                      onTap: () {
+                        // Mock action for now
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Linking login methods is not available yet.'),
+                          ),
+                        );
+                      },
+                      isLast: true,
+                    ),
+                  ],
           ),
         ),
 
@@ -645,21 +689,21 @@ class _SettingsSection extends StatelessWidget {
                 icon: Icons.privacy_tip_outlined,
                 iconColor: AppColors.universe.textComet,
                 title: 'Privacy Policy',
-                onTap: () {},
+                onTap: () => context.push(AppRoutes.privacyPolicy),
               ),
               _Divider(),
               _SettingsTile(
                 icon: Icons.gavel_rounded,
                 iconColor: AppColors.universe.textComet,
                 title: 'Terms of Service',
-                onTap: () {},
+                onTap: () => context.push(AppRoutes.termsOfService),
               ),
               _Divider(),
               _SettingsTile(
                 icon: Icons.mail_outline_rounded,
                 iconColor: AppColors.universe.textComet,
                 title: 'Contact Us',
-                onTap: () {},
+                onTap: () => context.push(AppRoutes.contact),
                 isLast: true,
               ),
             ],
@@ -685,7 +729,14 @@ class _SettingsSection extends StatelessWidget {
                 iconColor: AppColors.correctionRed,
                 title: 'Delete Account',
                 titleColor: AppColors.correctionRed,
-                onTap: () {},
+                tileColor: AppColors.correctionRed.withValues(alpha: 0.2),
+                onTap: () {
+                  showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const _DeleteAccountDialog(),
+                  );
+                },
                 isLast: true,
               ),
             ],
@@ -707,6 +758,7 @@ class _SettingsTile extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.titleColor,
+    this.tileColor,
     this.isLast = false,
   });
 
@@ -714,13 +766,14 @@ class _SettingsTile extends StatelessWidget {
   final Color iconColor;
   final String title;
   final Color? titleColor;
+  final Color? tileColor;
   final VoidCallback onTap;
   final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: tileColor ?? Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.vertical(
@@ -859,6 +912,197 @@ class _Divider extends StatelessWidget {
       color: Color(0x1AFFFFFF),
       indent: 66,
       endIndent: 0,
+    );
+  }
+}
+
+class _DeleteAccountDialog extends HookConsumerWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final passwordController = useTextEditingController();
+    final emailController = useTextEditingController();
+    final obscurePassword = useState(true);
+    final isSubmitting = useState(false);
+    final errorMessage = useState<String?>(null);
+
+    final currentUser = supabase.auth.currentUser;
+    final userEmail = currentUser?.email ?? '';
+    final provider = currentUser?.appMetadata['provider'] ?? 'email';
+    final isEmailUser = provider == 'email';
+
+    // Verify if submission is allowed
+    final isInputValid = isEmailUser
+        ? passwordController.text.isNotEmpty
+        : userEmail.isNotEmpty && emailController.text.trim() == userEmail;
+
+    // Rebuild dialog when inputs change
+    useListenable(passwordController);
+    useListenable(emailController);
+
+    Future<void> handleDelete() async {
+      isSubmitting.value = true;
+      errorMessage.value = null;
+
+      try {
+        if (isEmailUser) {
+          await ref.read(authControllerProvider.notifier).deleteAccount(
+                password: passwordController.text,
+              );
+        } else {
+          await ref.read(authControllerProvider.notifier).deleteAccount();
+        }
+        if (context.mounted) {
+          isSubmitting.value = false;
+          Navigator.of(context).pop(); // Close dialog
+        }
+      } catch (e) {
+        if (context.mounted) {
+          isSubmitting.value = false;
+          errorMessage.value = e.toString().replaceAll('Exception: ', '');
+        }
+      }
+    }
+
+    return AlertDialog(
+      backgroundColor: const Color(0xFF13131C),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppColors.universe.glassBorder),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed),
+          SizedBox(width: 10),
+          Text(
+            'Delete Account?',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Are you absolutely sure you want to delete your account? All your recorded lectures, transcripts, and personal profile data will be permanently deleted. This action cannot be undone.',
+              style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            if (errorMessage.value != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.correctionRed.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  errorMessage.value!,
+                  style: const TextStyle(color: AppColors.correctionRed, fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (isEmailUser) ...[
+              Text(
+                'Enter your password to confirm:',
+                style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: passwordController,
+                style: const TextStyle(color: Colors.white, fontSize: 15),
+                obscureText: obscurePassword.value,
+                cursorColor: AppColors.starGold,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: TextStyle(color: AppColors.universe.textComet),
+                  filled: true,
+                  fillColor: AppColors.universe.glassWhiteLow,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: AppColors.starGold, width: 1.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      color: AppColors.universe.textComet,
+                    ),
+                    onPressed: () => obscurePassword.value = !obscurePassword.value,
+                  ),
+                ),
+              ),
+            ] else ...[
+              Text(
+                'Type your email to confirm ($userEmail):',
+                style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: emailController,
+                style: const TextStyle(color: Colors.white, fontSize: 15),
+                cursorColor: AppColors.starGold,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email Address',
+                  labelStyle: TextStyle(color: AppColors.universe.textComet),
+                  filled: true,
+                  fillColor: AppColors.universe.glassWhiteLow,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: AppColors.starGold, width: 1.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: isSubmitting.value ? null : () => Navigator.of(context).pop(),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: AppColors.universe.textComet, fontWeight: FontWeight.bold),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: (isInputValid && !isSubmitting.value) ? handleDelete : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.correctionRed,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            disabledBackgroundColor: AppColors.correctionRed.withValues(alpha: 0.3),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: isSubmitting.value
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+              : const Text('Permanently Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
     );
   }
 }

@@ -6,7 +6,9 @@ import 'package:lecture_companion_ui/application/announcement/announcement_provi
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lecture_companion_ui/domain/entities/announcement.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 
@@ -91,6 +93,7 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                             ? null
                             : courseIdByLectureId[announcement.lectureId];
                         return AnnouncementTile(
+                          key: ValueKey(announcement.id),
                           announcement: announcement,
                           courseName: courseId == null ? null : courseTitleById[courseId],
                           onTap: courseId == null
@@ -103,6 +106,20 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                             await ref
                                 .read(announcementRepositoryDriftProvider)
                                 .toggleComplete(id: a.id, completed: !a.isCompleted);
+                            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                          },
+                          onEdit: () async {
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => AnnouncementEditSheet(announcement: announcement),
+                            );
+                          },
+                          onDelete: (Announcement a) async {
+                            await ref
+                                .read(announcementRepositoryDriftProvider)
+                                .softDeleteAnnouncement(id: a.id);
                             ref.read(lectureControllerProvider.notifier).pushOutboxNow();
                           },
                         );

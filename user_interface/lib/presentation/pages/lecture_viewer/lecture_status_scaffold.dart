@@ -10,7 +10,6 @@ import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
 import 'views/processing_view.dart';
 import 'views/not_started_view.dart';
@@ -24,14 +23,6 @@ class LectureStatusScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
-    final controllerState = ref.watch(lectureControllerProvider);
-    final isActionLoading = controllerState.isLoading;
-
-    final displayTitle = lecture.title?.trim().isNotEmpty == true
-        ? lecture.title!
-        : (lecture.titleGenerated?.trim().isNotEmpty == true
-            ? lecture.titleGenerated!
-            : 'Untitled Lecture');
 
     final coursesAsync = ref.watch(courseListProvider);
     final courses = coursesAsync.asData?.value;
@@ -106,31 +97,6 @@ class LectureStatusScaffold extends ConsumerWidget {
                   message: 'Please wait for the upload to complete.',
                 );
 
-              case LectureUIState.noAudio:
-                return StatusView(
-                  icon: Icons.no_photography_outlined,
-                  title: 'No Audio Found',
-                  isError: true,
-                  isLoading: isActionLoading, // 削除中もクルクル
-                  buttonIcon: Icons.delete,
-                  buttonLabel: 'Delete Lecture',
-                  onButtonPressed: () async {
-                    final ok = await showCustomDialog(
-                      context: context,
-                      title: 'Delete folder',
-                      message: 'Are you sure you want to delete "$displayTitle"?',
-                      confirmLabel: 'Delete',
-                      icon: Icons.delete_outline,
-                      isDestructive: true,
-                    );
-                    if (ok == true) {
-                      await ref
-                          .read(lectureControllerProvider.notifier)
-                          .deleteLecture(lecture.id, courseId: lecture.courseId);
-                      if (context.mounted) context.pop();
-                    }
-                  },
-                );
             }
           },
         ),

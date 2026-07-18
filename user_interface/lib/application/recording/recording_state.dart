@@ -22,6 +22,8 @@ class RecordingState {
     this.errorMessage,
     this.draftTitle,
     this.draftCourseId,
+    this.autoStartAnalysis = true,
+    this.realtimeTranscribe = false,
   });
 
   final RecordingPhase phase;
@@ -31,6 +33,8 @@ class RecordingState {
   final String? errorMessage;
   final String? draftTitle;
   final String? draftCourseId;
+  final bool autoStartAnalysis;
+  final bool realtimeTranscribe;
 
   // LocalLecture.courseId は build_runner 実行後に使用可能になる
   String get title => lecture?.title ?? draftTitle ?? '';
@@ -51,6 +55,8 @@ class RecordingState {
     return const RecordingState(
       phase: RecordingPhase.idle,
       elapsedSeconds: 0,
+      autoStartAnalysis: true,
+      realtimeTranscribe: false,
     );
   }
 
@@ -64,6 +70,8 @@ class RecordingState {
     String? title,
     String? courseId,
     bool forceClearCourseId = false,
+    bool? autoStartAnalysis,
+    bool? realtimeTranscribe,
   }) {
     return RecordingState(
       phase: phase ?? this.phase,
@@ -73,6 +81,8 @@ class RecordingState {
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       draftTitle: title ?? draftTitle,
       draftCourseId: forceClearCourseId ? null : (courseId ?? draftCourseId),
+      autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
+      realtimeTranscribe: realtimeTranscribe ?? this.realtimeTranscribe,
     );
   }
 }

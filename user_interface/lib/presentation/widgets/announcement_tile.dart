@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
@@ -7,8 +8,10 @@ import 'package:lecture_companion_ui/domain/entities/datetime_parameters_formatt
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_transcript_modal.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/tile_actions_sheet.dart';
 
-class AnnouncementTile extends ConsumerWidget {
+class AnnouncementTile extends HookConsumerWidget {
   const AnnouncementTile({
     super.key,
     required this.announcement,
@@ -16,6 +19,8 @@ class AnnouncementTile extends ConsumerWidget {
     this.onTap,
     this.showTimestamp = true,
     this.onToggleComplete,
+    this.onEdit,
+    this.onDelete,
   });
 
   final Announcement announcement;
@@ -27,6 +32,10 @@ class AnnouncementTile extends ConsumerWidget {
 
   /// スライドジェスチャーで完了/未完了を切り替えるコールバック。
   final Future<void> Function(Announcement)? onToggleComplete;
+
+  /// 長押しメニューから編集・削除を行うコールバック。
+  final VoidCallback? onEdit;
+  final Future<void> Function(Announcement)? onDelete;
 
   static final _dateFmt = DateFormat('MMM d, yyyy · h:mm a');
 
@@ -40,18 +49,97 @@ class AnnouncementTile extends ConsumerWidget {
     final lecture = lectureAsync.asData?.value;
     final courseId = lecture?.courseId;
 
-    final tileContent = Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isCompleted
-              ? AppColors.universe.glassBorder.withValues(alpha: 0.4)
-              : AppColors.universe.glassBorder,
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // 長押しなどの完了時にスライドするアニメーション用のフック
+    final animationController = useAnimationController(
+      duration: const Duration(milliseconds: 350),
+    );
+
+    final slideOffset = useAnimation(
+      Tween<double>(begin: 0.0, end: -screenWidth).animate(
+        CurvedAnimation(
+          parent: animationController,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
         ),
       ),
-      child: Stack(
+    );
+
+    final prevCompletedRef = useRef<bool>(isCompleted);
+    final prevCompleted = prevCompletedRef.value;
+    prevCompletedRef.value = isCompleted;
+
+    final hasSwiped = useRef<bool>(false);
+
+    useEffect(() {
+      if (isCompleted && prevCompleted == false) {
+        if (hasSwiped.value) {
+          hasSwiped.value = false;
+        } else {
+          Future.microtask(() async {
+            if (!context.mounted || animationController.isAnimating) return;
+            await animationController.forward();
+            if (context.mounted) {
+              await animationController.reverse();
+            }
+          });
+        }
+      }
+      return null;
+    }, [isCompleted]);
+
+    final tileContent = Stack(
+      children: [
+        if (slideOffset != 0.0)
+          Positioned.fill(
+            child: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              decoration: BoxDecoration(
+                color: Colors.green.shade700,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Done',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Transform.translate(
+          offset: Offset(slideOffset, 0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.universe.voidBackground, // 透過防止用のソリッド背景色
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.universe.glassWhiteLow,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isCompleted
+                      ? AppColors.universe.glassBorder.withValues(alpha: 0.4)
+                      : AppColors.universe.glassBorder,
+                ),
+              ),
+              child: Stack(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,9 +287,50 @@ class AnnouncementTile extends ConsumerWidget {
             ),
         ],
       ),
+    ),
+  ),
+),
+      ],
     );
 
     Widget tile = tileContent;
+
+    // 長押しでアクションシートを表示（onEdit または onDelete が設定されている場合のみ）
+    if (onEdit != null || onDelete != null) {
+      final titleText = announcement.title?.trim().isNotEmpty == true
+          ? announcement.title!.trim()
+          : 'Announcement';
+      tile = GestureDetector(
+        onLongPress: () => showTileActionsSheet(
+          context: context,
+          title: titleText,
+          onToggleComplete: onToggleComplete != null
+              ? () => onToggleComplete!(announcement)
+              : null,
+          toggleCompleteLabel: isCompleted ? 'Mark as Todo' : 'Mark as Done',
+          toggleCompleteIcon: isCompleted
+              ? Icons.undo
+              : Icons.check_circle_outline,
+          onEdit: () {
+            if (onEdit != null) onEdit!();
+          },
+          onDelete: () async {
+            final confirm = await showCustomDialog(
+              context: context,
+              title: 'Delete Announcement?',
+              message: 'Are you sure you want to delete "$titleText"?',
+              confirmLabel: 'Delete',
+              icon: Icons.delete_outline,
+              isDestructive: true,
+            );
+            if (confirm == true && onDelete != null) {
+              await onDelete!(announcement);
+            }
+          },
+        ),
+        child: tile,
+      );
+    }
 
     // 未完了かつ onTap があるときのみタップ遷移を有効化
     if (onTap != null && !isCompleted) {
@@ -214,10 +343,11 @@ class AnnouncementTile extends ConsumerWidget {
     // スワイプDone/Undo機能
     if (onToggleComplete != null) {
       tile = Dismissible(
-        key: ValueKey('announcement_${announcement.id}_$isCompleted'),
+        key: ValueKey('announcement_${announcement.id}'),
         direction: DismissDirection.endToStart,
         // confirmDismiss で false を返すことで物理的には消さず、コールバックのみ実行
         confirmDismiss: (_) async {
+          hasSwiped.value = true;
           await onToggleComplete!(announcement);
           return false;
         },
@@ -225,7 +355,7 @@ class AnnouncementTile extends ConsumerWidget {
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            color: isCompleted
+            color: prevCompleted
                 ? Colors.blueGrey.shade700
                 : Colors.green.shade700,
             borderRadius: BorderRadius.circular(14),
@@ -234,13 +364,13 @@ class AnnouncementTile extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                isCompleted ? Icons.undo : Icons.check,
+                prevCompleted ? Icons.undo : Icons.check,
                 color: Colors.white,
                 size: 24,
               ),
               const SizedBox(height: 4),
               Text(
-                isCompleted ? 'Undo' : 'Done',
+                prevCompleted ? 'Undo' : 'Done',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,

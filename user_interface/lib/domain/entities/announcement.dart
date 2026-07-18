@@ -29,6 +29,7 @@ class Announcement {
     this.relatedTopicTitle,
     this.datetimeParameters,
     this.completedAt,
+    this.deletedAt,
     this.metadata,
     required this.createdAt,
     required this.updatedAt,
@@ -46,6 +47,7 @@ class Announcement {
   final String? relatedTopicTitle;
   final Map<String, dynamic>? datetimeParameters;
   final DateTime? completedAt;
+  final DateTime? deletedAt;
   final Map<String, dynamic>? metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -64,6 +66,7 @@ class Announcement {
       relatedTopicTitle: map['related_topic_title'] as String?,
       datetimeParameters: map['datetime_parameters'] as Map<String, dynamic>?,
       completedAt: map['completed_at'] == null ? null : DateTime.parse(map['completed_at'] as String),
+      deletedAt: map['deleted_at'] == null ? null : DateTime.parse(map['deleted_at'] as String),
       metadata: map['metadata'] as Map<String, dynamic>?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse((map['updated_at'] ?? map['created_at']) as String),
@@ -71,23 +74,29 @@ class Announcement {
   }
 
   bool get isCompleted => completedAt != null;
+  bool get isDeleted => deletedAt != null;
 
   Announcement copyWith({
     DateTime? Function()? completedAt,
+    DateTime? Function()? deletedAt,
+    String? title,
+    String? description,
+    AnnouncementType? type,
   }) {
     return Announcement(
       id: id,
       userId: userId,
       lectureId: lectureId,
-      type: type,
-      title: title,
-      description: description,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      description: description ?? this.description,
       location: location,
       startSid: startSid,
       endSid: endSid,
       relatedTopicTitle: relatedTopicTitle,
       datetimeParameters: datetimeParameters,
       completedAt: completedAt != null ? completedAt() : this.completedAt,
+      deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
       metadata: metadata,
       createdAt: createdAt,
       updatedAt: updatedAt,

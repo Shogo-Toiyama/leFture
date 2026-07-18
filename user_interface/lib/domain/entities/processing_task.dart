@@ -41,7 +41,9 @@ class ProcessingTask {
 }
 
 /// main.py の tasks_blueprint と同じ並び順（表示・進捗計算の基準に使う）
+/// TRANSCRIBE_MASTER と CHECK_AND_ASSEMBLE は互いに排他的（どちらか一方が最初のタスク）
 const List<String> processingTaskOrder = [
+  'TRANSCRIBE_MASTER',
   'CHECK_AND_ASSEMBLE',
   'CORE_EXTRACTION',
   'ROLE_CLASSIFICATION',
@@ -57,17 +59,18 @@ const List<String> processingTaskOrder = [
 ];
 
 const Map<String, String> processingTaskLabels = {
-  'CHECK_AND_ASSEMBLE': 'Preparing audio',
+  'TRANSCRIBE_MASTER': 'Transcribing audio',
+  'CHECK_AND_ASSEMBLE': 'Preparing transcript',
   'CORE_EXTRACTION': 'Extracting key topics',
   'ROLE_CLASSIFICATION': 'Classifying speaker roles',
   'ANNOUNCEMENT_GENERATION': 'Finding announcements',
   'TOPIC_MAPPING': 'Mapping topics',
   'REVIEW_CARD_GENERATION': 'Generating review cards',
   'IMAGE_PROMPT_GENERATION': 'Designing topic art',
-  'IMAGE_RENDERING': 'Rendering topic images',
+  'IMAGE_RENDERING': 'Rendering topic arts',
   'FUN_FACT_SEARCH': 'Searching fun facts',
   'FUN_FACTS_GENERATION': 'Writing fun facts',
-  'DETAIL_CONTENTS_GENERATION': 'Writing detailed notes',
+  'DETAIL_CONTENTS_GENERATION': 'Writing deep notes',
   'FINALIZE_JOB': 'Finalizing',
 };
 
@@ -76,9 +79,11 @@ String processingTaskLabel(String taskType) =>
 
 /// main.py の tasks_blueprint と同じ依存関係（表示専用のミラー。実行時の正は
 /// バックエンドが processing_tasks.dependencies から都度計算する）
+/// TRANSCRIBE_MASTER と CHECK_AND_ASSEMBLE は互いに排他的（どちらか一方が最初のタスク）
 const Map<String, List<String>> processingTaskDependencies = {
+  'TRANSCRIBE_MASTER': [],
   'CHECK_AND_ASSEMBLE': [],
-  'CORE_EXTRACTION': ['CHECK_AND_ASSEMBLE'],
+  'CORE_EXTRACTION': ['CHECK_AND_ASSEMBLE', 'TRANSCRIBE_MASTER'],
   'ROLE_CLASSIFICATION': ['CORE_EXTRACTION'],
   'ANNOUNCEMENT_GENERATION': ['ROLE_CLASSIFICATION'],
   'TOPIC_MAPPING': ['ROLE_CLASSIFICATION'],

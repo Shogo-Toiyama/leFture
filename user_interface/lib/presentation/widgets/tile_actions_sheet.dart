@@ -6,6 +6,11 @@ Future<void> showTileActionsSheet({
   required String title,
   required VoidCallback onEdit,
   required VoidCallback onDelete,
+  /// 完了/未完了のトグル用コールバック（省略可）。
+  VoidCallback? onToggleComplete,
+  /// トグルボタンに表示するラベル（例: 'Mark as Done' / 'Mark as Todo'）。
+  String toggleCompleteLabel = 'Mark as Done',
+  IconData toggleCompleteIcon = Icons.check_circle_outline,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -45,6 +50,20 @@ Future<void> showTileActionsSheet({
               ),
             ),
             const SizedBox(height: 16),
+            if (onToggleComplete != null) ...[
+              ListTile(
+                leading: Icon(toggleCompleteIcon, color: Colors.green.shade400),
+                title: Text(
+                  toggleCompleteLabel,
+                  style: TextStyle(color: Colors.green.shade400, fontSize: 14),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onToggleComplete();
+                },
+              ),
+              Divider(color: AppColors.universe.glassBorder, height: 1),
+            ],
             ListTile(
               leading: const Icon(Icons.edit_outlined, color: Colors.white),
               title: const Text('Edit', style: TextStyle(color: Colors.white, fontSize: 14)),

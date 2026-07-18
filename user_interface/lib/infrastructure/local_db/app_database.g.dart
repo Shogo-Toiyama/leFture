@@ -847,6 +847,36 @@ class $LocalLecturesTable extends LocalLectures
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _autoStartAnalysisMeta = const VerificationMeta(
+    'autoStartAnalysis',
+  );
+  @override
+  late final GeneratedColumn<bool> autoStartAnalysis = GeneratedColumn<bool>(
+    'auto_start_analysis',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("auto_start_analysis" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _isRealtimeMeta = const VerificationMeta(
+    'isRealtime',
+  );
+  @override
+  late final GeneratedColumn<bool> isRealtime = GeneratedColumn<bool>(
+    'is_realtime',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_realtime" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -869,6 +899,8 @@ class $LocalLecturesTable extends LocalLectures
     isPinned,
     topicMapMovePending,
     pendingTopicMapStaleCourseId,
+    autoStartAnalysis,
+    isRealtime,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1027,6 +1059,21 @@ class $LocalLecturesTable extends LocalLectures
         ),
       );
     }
+    if (data.containsKey('auto_start_analysis')) {
+      context.handle(
+        _autoStartAnalysisMeta,
+        autoStartAnalysis.isAcceptableOrUnknown(
+          data['auto_start_analysis']!,
+          _autoStartAnalysisMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_realtime')) {
+      context.handle(
+        _isRealtimeMeta,
+        isRealtime.isAcceptableOrUnknown(data['is_realtime']!, _isRealtimeMeta),
+      );
+    }
     return context;
   }
 
@@ -1116,6 +1163,14 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}pending_topic_map_stale_course_id'],
       ),
+      autoStartAnalysis: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}auto_start_analysis'],
+      )!,
+      isRealtime: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_realtime'],
+      )!,
     );
   }
 
@@ -1146,6 +1201,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final bool isPinned;
   final bool topicMapMovePending;
   final String? pendingTopicMapStaleCourseId;
+  final bool autoStartAnalysis;
+  final bool isRealtime;
   const LocalLecture({
     required this.id,
     required this.userId,
@@ -1167,6 +1224,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     required this.isPinned,
     required this.topicMapMovePending,
     this.pendingTopicMapStaleCourseId,
+    required this.autoStartAnalysis,
+    required this.isRealtime,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1219,6 +1278,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
         pendingTopicMapStaleCourseId,
       );
     }
+    map['auto_start_analysis'] = Variable<bool>(autoStartAnalysis);
+    map['is_realtime'] = Variable<bool>(isRealtime);
     return map;
   }
 
@@ -1271,6 +1332,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           pendingTopicMapStaleCourseId == null && nullToAbsent
           ? const Value.absent()
           : Value(pendingTopicMapStaleCourseId),
+      autoStartAnalysis: Value(autoStartAnalysis),
+      isRealtime: Value(isRealtime),
     );
   }
 
@@ -1304,6 +1367,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       pendingTopicMapStaleCourseId: serializer.fromJson<String?>(
         json['pendingTopicMapStaleCourseId'],
       ),
+      autoStartAnalysis: serializer.fromJson<bool>(json['autoStartAnalysis']),
+      isRealtime: serializer.fromJson<bool>(json['isRealtime']),
     );
   }
   @override
@@ -1332,6 +1397,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'pendingTopicMapStaleCourseId': serializer.toJson<String?>(
         pendingTopicMapStaleCourseId,
       ),
+      'autoStartAnalysis': serializer.toJson<bool>(autoStartAnalysis),
+      'isRealtime': serializer.toJson<bool>(isRealtime),
     };
   }
 
@@ -1356,6 +1423,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     bool? isPinned,
     bool? topicMapMovePending,
     Value<String?> pendingTopicMapStaleCourseId = const Value.absent(),
+    bool? autoStartAnalysis,
+    bool? isRealtime,
   }) => LocalLecture(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1389,6 +1458,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId.present
         ? pendingTopicMapStaleCourseId.value
         : this.pendingTopicMapStaleCourseId,
+    autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
+    isRealtime: isRealtime ?? this.isRealtime,
   );
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
@@ -1430,6 +1501,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       pendingTopicMapStaleCourseId: data.pendingTopicMapStaleCourseId.present
           ? data.pendingTopicMapStaleCourseId.value
           : this.pendingTopicMapStaleCourseId,
+      autoStartAnalysis: data.autoStartAnalysis.present
+          ? data.autoStartAnalysis.value
+          : this.autoStartAnalysis,
+      isRealtime: data.isRealtime.present
+          ? data.isRealtime.value
+          : this.isRealtime,
     );
   }
 
@@ -1455,13 +1532,17 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('lastAccessedAt: $lastAccessedAt, ')
           ..write('isPinned: $isPinned, ')
           ..write('topicMapMovePending: $topicMapMovePending, ')
-          ..write('pendingTopicMapStaleCourseId: $pendingTopicMapStaleCourseId')
+          ..write(
+            'pendingTopicMapStaleCourseId: $pendingTopicMapStaleCourseId, ',
+          )
+          ..write('autoStartAnalysis: $autoStartAnalysis, ')
+          ..write('isRealtime: $isRealtime')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     userId,
     courseId,
@@ -1482,7 +1563,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     isPinned,
     topicMapMovePending,
     pendingTopicMapStaleCourseId,
-  );
+    autoStartAnalysis,
+    isRealtime,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1507,7 +1590,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.isPinned == this.isPinned &&
           other.topicMapMovePending == this.topicMapMovePending &&
           other.pendingTopicMapStaleCourseId ==
-              this.pendingTopicMapStaleCourseId);
+              this.pendingTopicMapStaleCourseId &&
+          other.autoStartAnalysis == this.autoStartAnalysis &&
+          other.isRealtime == this.isRealtime);
 }
 
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
@@ -1531,6 +1616,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<bool> isPinned;
   final Value<bool> topicMapMovePending;
   final Value<String?> pendingTopicMapStaleCourseId;
+  final Value<bool> autoStartAnalysis;
+  final Value<bool> isRealtime;
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
@@ -1553,6 +1640,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.isPinned = const Value.absent(),
     this.topicMapMovePending = const Value.absent(),
     this.pendingTopicMapStaleCourseId = const Value.absent(),
+    this.autoStartAnalysis = const Value.absent(),
+    this.isRealtime = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalLecturesCompanion.insert({
@@ -1576,6 +1665,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.isPinned = const Value.absent(),
     this.topicMapMovePending = const Value.absent(),
     this.pendingTopicMapStaleCourseId = const Value.absent(),
+    this.autoStartAnalysis = const Value.absent(),
+    this.isRealtime = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId);
@@ -1600,6 +1691,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<bool>? isPinned,
     Expression<bool>? topicMapMovePending,
     Expression<String>? pendingTopicMapStaleCourseId,
+    Expression<bool>? autoStartAnalysis,
+    Expression<bool>? isRealtime,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1625,6 +1718,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
         'topic_map_move_pending': topicMapMovePending,
       if (pendingTopicMapStaleCourseId != null)
         'pending_topic_map_stale_course_id': pendingTopicMapStaleCourseId,
+      if (autoStartAnalysis != null) 'auto_start_analysis': autoStartAnalysis,
+      if (isRealtime != null) 'is_realtime': isRealtime,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1650,6 +1745,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<bool>? isPinned,
     Value<bool>? topicMapMovePending,
     Value<String?>? pendingTopicMapStaleCourseId,
+    Value<bool>? autoStartAnalysis,
+    Value<bool>? isRealtime,
     Value<int>? rowid,
   }) {
     return LocalLecturesCompanion(
@@ -1674,6 +1771,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       topicMapMovePending: topicMapMovePending ?? this.topicMapMovePending,
       pendingTopicMapStaleCourseId:
           pendingTopicMapStaleCourseId ?? this.pendingTopicMapStaleCourseId,
+      autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
+      isRealtime: isRealtime ?? this.isRealtime,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1743,6 +1842,12 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
         pendingTopicMapStaleCourseId.value,
       );
     }
+    if (autoStartAnalysis.present) {
+      map['auto_start_analysis'] = Variable<bool>(autoStartAnalysis.value);
+    }
+    if (isRealtime.present) {
+      map['is_realtime'] = Variable<bool>(isRealtime.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1774,6 +1879,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write(
             'pendingTopicMapStaleCourseId: $pendingTopicMapStaleCourseId, ',
           )
+          ..write('autoStartAnalysis: $autoStartAnalysis, ')
+          ..write('isRealtime: $isRealtime, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11364,6 +11471,8 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<bool> isPinned,
       Value<bool> topicMapMovePending,
       Value<String?> pendingTopicMapStaleCourseId,
+      Value<bool> autoStartAnalysis,
+      Value<bool> isRealtime,
       Value<int> rowid,
     });
 typedef $$LocalLecturesTableUpdateCompanionBuilder =
@@ -11388,6 +11497,8 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<bool> isPinned,
       Value<bool> topicMapMovePending,
       Value<String?> pendingTopicMapStaleCourseId,
+      Value<bool> autoStartAnalysis,
+      Value<bool> isRealtime,
       Value<int> rowid,
     });
 
@@ -11497,6 +11608,16 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<String> get pendingTopicMapStaleCourseId => $composableBuilder(
     column: $table.pendingTopicMapStaleCourseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get autoStartAnalysis => $composableBuilder(
+    column: $table.autoStartAnalysis,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isRealtime => $composableBuilder(
+    column: $table.isRealtime,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11610,6 +11731,16 @@ class $$LocalLecturesTableOrderingComposer
         column: $table.pendingTopicMapStaleCourseId,
         builder: (column) => ColumnOrderings(column),
       );
+
+  ColumnOrderings<bool> get autoStartAnalysis => $composableBuilder(
+    column: $table.autoStartAnalysis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isRealtime => $composableBuilder(
+    column: $table.isRealtime,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalLecturesTableAnnotationComposer
@@ -11699,6 +11830,16 @@ class $$LocalLecturesTableAnnotationComposer
         column: $table.pendingTopicMapStaleCourseId,
         builder: (column) => column,
       );
+
+  GeneratedColumn<bool> get autoStartAnalysis => $composableBuilder(
+    column: $table.autoStartAnalysis,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isRealtime => $composableBuilder(
+    column: $table.isRealtime,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalLecturesTableTableManager
@@ -11753,6 +11894,8 @@ class $$LocalLecturesTableTableManager
                 Value<bool> topicMapMovePending = const Value.absent(),
                 Value<String?> pendingTopicMapStaleCourseId =
                     const Value.absent(),
+                Value<bool> autoStartAnalysis = const Value.absent(),
+                Value<bool> isRealtime = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
@@ -11775,6 +11918,8 @@ class $$LocalLecturesTableTableManager
                 isPinned: isPinned,
                 topicMapMovePending: topicMapMovePending,
                 pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId,
+                autoStartAnalysis: autoStartAnalysis,
+                isRealtime: isRealtime,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11800,6 +11945,8 @@ class $$LocalLecturesTableTableManager
                 Value<bool> topicMapMovePending = const Value.absent(),
                 Value<String?> pendingTopicMapStaleCourseId =
                     const Value.absent(),
+                Value<bool> autoStartAnalysis = const Value.absent(),
+                Value<bool> isRealtime = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
@@ -11822,6 +11969,8 @@ class $$LocalLecturesTableTableManager
                 isPinned: isPinned,
                 topicMapMovePending: topicMapMovePending,
                 pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId,
+                autoStartAnalysis: autoStartAnalysis,
+                isRealtime: isRealtime,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

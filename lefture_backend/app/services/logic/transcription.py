@@ -153,3 +153,104 @@ class TranscriptionService:
             "segments": segments_data,
             "audio_duration": actual_duration
         }
+
+
+class ModalTranscriptionService:
+    """ローカル Modal 上の Faster Whisper を使用するトランスクリプション（プレレコ用）"""
+
+    def __init__(self, logger: TaskLogger, billing: BillingEngine):
+        self.logger = logger
+        self.billing = billing
+        self.modal_api_url = os.getenv("MODAL_API_URL")
+
+        if not self.modal_api_url:
+            self.logger.log("⚠️ MODAL_API_URL is not set in environment variables.")
+
+    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
+        """
+        ローカル Modal 上の Faster Whisper にマスターオーディオを送信する。
+        Cloudflare 形式のレスポンスに統一して返す。
+        """
+        self.logger.log(f"   [Logic] Loading audio into memory for Modal transcription")
+
+        # バイナリから音声を展開（長さを取得するためだけに読み込む）
+        audio = await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(audio_bytes), format="m4a")
+        actual_duration = len(audio) / 1000.0
+
+        if not self.modal_api_url:
+            self.logger.log("   [Logic] ❌ Modal API URL not configured. Skipping transcription.")
+            return {
+                "text": "",
+                "segments": [],
+                "audio_duration": actual_duration
+            }
+
+        self.logger.log(f"   [Logic] Calling Modal Faster Whisper API...")
+        start_time = time.perf_counter()
+
+        try:
+            # Modal API にマルチパート形式でファイルを送信
+            response = await asyncio.to_thread(
+                lambda: requests.post(
+                    self.modal_api_url,
+                    files={"file": ("audio.m4a", audio_bytes, "audio/mpeg")},
+                    timeout=300  # 大容量ファイル対応
+                )
+            )
+
+            if response.status_code != 200:
+                raise Exception(f"Modal API HTTP {response.status_code}: {response.text}")
+
+            result = response.json()
+            elapsed_time = time.perf_counter() - start_time
+
+            # 💰 Modal 使用時のコスト計上 (Modalの純粋なGPU時間 ＋ スケールダウン待機時間2秒)
+            gpu_time = result.get('processing_time_seconds', 0.0) + 2.0
+            self.billing.add_time_cost("modal/t4", gpu_time, note="Whisper GPU processing (incl. scaledown)")
+            self.billing.add_time_cost("cloudrun/self", elapsed_time, note="Modal API wait time")
+
+            # ---------------------------------------------------------
+            # ✨ Modal (Faster Whisper) のレスポンスを Cloudflare 形式に統一
+            # ---------------------------------------------------------
+            # Modal は既に Cloudflare 形式で segments を返す
+            # ただし、confidence の値をそのまま使用し、chunk_index を追加する
+            raw_segments = result.get("segments") or []
+            segments_data = []
+
+            for seg in raw_segments:
+                seg_text = seg.get('text', '')
+                start = seg.get('start', 0.0)
+                end = seg.get('end', 0.0)
+                confidence = seg.get('confidence', 0.99)
+
+                # Cloudflare と同じく、confidence が低すぎるセグメントは除外
+                if confidence < 0.1:
+                    continue
+
+                # Modal が返す sid をそのまま使用、chunk_index を追加
+                sid = seg.get('sid', '')
+                segments_data.append({
+                    "sid": sid,
+                    "text": seg_text.strip(),
+                    "confidence": round(confidence, 4),
+                    "start": round(start, 3),
+                    "end": round(end, 3),
+                    "chunk_index": chunk_index
+                })
+
+            # segments から全体のテキストを組み立てる
+            full_text = " ".join([seg.get('text', '') for seg in segments_data]).strip()
+
+            # 音声が短すぎてセグメントが分かれなかった場合の安全策
+            if not segments_data:
+                self.logger.log(f"   [Logic] 🔇 No speech detected by Modal Whisper.")
+
+            return {
+                "text": full_text,
+                "segments": segments_data,
+                "audio_duration": actual_duration
+            }
+
+        except Exception as e:
+            self.logger.log(f"   [Logic] ❌ Modal API error: {e}")
+            raise

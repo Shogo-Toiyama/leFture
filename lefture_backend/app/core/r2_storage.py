@@ -112,6 +112,19 @@ class R2StorageService:
         )
         return url, path
 
+    def generate_presigned_get_url(self, storage_path: str, expires_in: int = 604800) -> str:
+        """
+        R2上の非公開オブジェクトを閲覧するための署名付きGET URLを発行する。
+        expires_inのデフォルトは604800秒(7日)。AWS SigV4署名の仕様上、
+        presigned URLの有効期限は最大7日までしか設定できない点に注意
+        (7日を超える長期リンクが必要な場合は、都度発行し直す設計にする)。
+        """
+        return self.s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": self.bucket_name, "Key": storage_path},
+            ExpiresIn=expires_in,
+        )
+
     def delete_prefix(self, prefix: str) -> int:
         """
         指定prefix配下の全オブジェクトを削除する。削除件数を返す。
@@ -170,6 +183,29 @@ class R2StorageService:
             ContentType="application/json"
         )
         return storage_path
+
+    def generate_presigned_support_url(
+        self,
+        uid: str,
+        file_name: str,
+        content_type: str = "application/octet-stream",
+        expires_in: int = 3600,
+    ) -> Tuple[str, str]:
+        """お問い合わせ添付ファイルを R2 へアップロードするための署名付きURLを発行"""
+        import uuid
+        unique_file_name = f"{uuid.uuid4()}_{file_name}"
+        path = f"{uid}/support/{unique_file_name}"
+        url = self.s3.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": self.bucket_name,
+                "Key": path,
+                "ContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+        return url, path
 
 # シングルトンとしてインスタンス化
 storage_service = R2StorageService()
