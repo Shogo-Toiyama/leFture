@@ -19,7 +19,6 @@ import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dar
 
 import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
-import 'widgets/bottom_control_bar.dart';
 import 'widgets/combined_header.dart';
 import 'widgets/empty_home_content.dart';
 
@@ -119,7 +118,6 @@ class HomePage extends HookConsumerWidget {
 
     // 各セクションの正確な高さを計算（スライド退避用）
     final double topAreaHeight = statusBarHeight + 56.0 + 68.0; // AppBar + AnnouncementBar
-    final double bottomAreaHeight = 72.0 + navigationBarHeight + 16.0; // BottomControlBar (目安)
 
     // スクロール量に応じて銀河がぼける (スクロールした瞬間にリニアに開始)
     final double blurSigma = ((scrollOffset.value / galaxyHeight).clamp(0.0, 1.0) * 12.0);
@@ -299,9 +297,9 @@ class HomePage extends HookConsumerWidget {
                     ),
                     // 最近の講義リスト
                     const RecentLecturesList(),
-                    // 下部余白（BottomControlBarを避けるための十分な高さ）
+                    // 下部余白（FABを避けるための高さ）
                     const SliverToBoxAdapter(
-                      child: SizedBox(height: 160),
+                      child: SizedBox(height: 100),
                     ),
                   ],
                 ),
@@ -334,18 +332,57 @@ class HomePage extends HookConsumerWidget {
             ),
 
             // =============================================
-            // 5. 固定フッター (BottomControlBar, 遷移時は下に退避)
+            // 5. 固定フッター (Floating Recording Button, 遷移時は下に退避)
             // =============================================
             AnimatedPositioned(
               duration: const Duration(milliseconds: 600),
               curve: Curves.easeInOutCubic,
-              bottom: isTransitioning.value ? -bottomAreaHeight : 0.0,
+              bottom: isTransitioning.value ? -80.0 : (16.0 + navigationBarHeight),
               left: 0,
               right: 0,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 400),
                 opacity: isTransitioning.value ? 0.0 : 1.0,
-                child: const BottomControlBar(),
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => context.push(AppRoutes.recording),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.starGold.withValues(alpha: 0.4),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Record Lecture',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

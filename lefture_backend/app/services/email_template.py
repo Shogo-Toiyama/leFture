@@ -137,7 +137,7 @@ def email_fallback_link(url: str) -> str:
       font-family:{FONT_STACK};
       line-height:1.5;
     ">
-      ボタンが機能しない場合は、以下のリンクをブラウザにコピーして開いてください：
+      If the button doesn't work, copy and paste the link below into your browser:
     </p>
     <p style="
       margin:0 0 16px 0;
@@ -167,7 +167,7 @@ def email_footer() -> str:
             color:{COLOR_TEXT_MUTED};
             font-family:{FONT_STACK};
           ">
-            このメールに心当たりがない場合は、無視していただいて問題ありません。
+            If you did not request this email, you can safely ignore it.
           </p>
           <p style="
             margin:0;
@@ -190,7 +190,7 @@ def email_wrapper(body_html: str) -> str:
     body_html にはコンポーネントを組み合わせた HTML を渡す。
     """
     return f"""<!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -238,17 +238,17 @@ def email_wrapper(body_html: str) -> str:
 
 def build_signup_email(display_name: str, verification_link: str) -> str:
     """ユーザー登録確認メール"""
-    greeting = f"{display_name} さん、" if display_name else ""
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else "Hi,<br/><br/>"
     body = (
         email_header()
-        + email_heading("leFture へようこそ！")
+        + email_heading("Welcome to leFture!")
         + email_text(
-            f"{greeting}アカウントの登録ありがとうございます。"
-            "以下のボタンをクリックして、メールアドレスを確認してください。"
+            f"{greeting}Thank you for signing up for leFture. "
+            "Please click the button below to verify your email address."
         )
-        + email_button("メールアドレスを確認する", verification_link)
+        + email_button("Verify Email Address", verification_link)
         + email_divider()
-        + email_text("このリンクは <strong>24時間</strong> 有効です。", muted=True)
+        + email_text("This link is valid for <strong>24 hours</strong>.", muted=True)
         + email_fallback_link(verification_link)
         + email_footer()
     )
@@ -257,19 +257,19 @@ def build_signup_email(display_name: str, verification_link: str) -> str:
 
 def build_password_reset_email(display_name: str, reset_link: str) -> str:
     """パスワードリセットメール"""
-    greeting = f"{display_name} さん、" if display_name else ""
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else "Hi,<br/><br/>"
     body = (
         email_header()
-        + email_heading("パスワードをリセット")
+        + email_heading("Reset Your Password")
         + email_text(
-            f"{greeting}パスワードのリセットがリクエストされました。"
-            "以下のボタンをクリックして、新しいパスワードを設定してください。"
+            f"{greeting}A request has been made to reset your password. "
+            "Please click the button below to set a new password."
         )
-        + email_button("パスワードをリセットする", reset_link)
+        + email_button("Reset Password", reset_link)
         + email_divider()
         + email_text(
-            "このリンクは <strong>1時間</strong> 有効です。"
-            "このメールに心当たりがない場合は、安全のためリンクを無視してください。",
+            "This link is valid for <strong>1 hour</strong>. "
+            "If you did not request a password reset, you can safely ignore this email.",
             muted=True,
         )
         + email_fallback_link(reset_link)
@@ -281,23 +281,23 @@ def build_password_reset_email(display_name: str, reset_link: str) -> str:
 def build_email_change_email(new_email: str, confirmation_link: str) -> str:
     """メールアドレス変更確認メール"""
     new_email_note = (
-        f"変更後のアドレス: <strong style='color:{COLOR_TEXT_MAIN};'>{new_email}</strong><br/>"
+        f"New Email Address: <strong style='color:{COLOR_TEXT_MAIN};'>{new_email}</strong><br/>"
         if new_email
         else ""
     )
     body = (
         email_header()
-        + email_heading("メールアドレスの変更を確認")
+        + email_heading("Confirm Email Change")
         + email_text(
-            "leFture アカウントのメールアドレス変更がリクエストされました。"
-            "以下のボタンをクリックして変更を確定してください。"
+            "A change of email address has been requested for your leFture account. "
+            "Please click the button below to confirm this change."
         )
         + email_text(new_email_note, muted=True)
-        + email_button("メールアドレスの変更を確認する", confirmation_link)
+        + email_button("Confirm Email Change", confirmation_link)
         + email_divider()
         + email_text(
-            "このリンクは <strong>24時間</strong> 有効です。"
-            "このリクエストに心当たりがない場合は、リンクを無視してください。",
+            "This link is valid for <strong>24 hours</strong>. "
+            "If you did not make this request, please ignore this email.",
             muted=True,
         )
         + email_fallback_link(confirmation_link)

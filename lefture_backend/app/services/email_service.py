@@ -50,7 +50,7 @@ async def send_verification_email(
 ) -> dict:
     """ユーザー登録確認メール"""
     html = build_signup_email(display_name, verification_link)
-    return await send_email(to, "leFture - メールアドレスの確認", html)
+    return await send_email(to, "leFture - Verify Email Address", html)
 
 
 async def send_password_reset_email(
@@ -60,7 +60,7 @@ async def send_password_reset_email(
 ) -> dict:
     """パスワードリセットメール"""
     html = build_password_reset_email(display_name, reset_link)
-    return await send_email(to, "leFture - パスワードをリセット", html)
+    return await send_email(to, "leFture - Reset Your Password", html)
 
 
 async def send_email_change_email(
@@ -70,7 +70,7 @@ async def send_email_change_email(
 ) -> dict:
     """メールアドレス変更確認メール"""
     html = build_email_change_email(new_email, confirmation_link)
-    return await send_email(to, "leFture - メールアドレスの変更確認", html)
+    return await send_email(to, "leFture - Confirm Email Address Change", html)
 
 
 async def send_important_notification(
