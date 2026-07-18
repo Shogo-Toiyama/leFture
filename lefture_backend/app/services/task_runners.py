@@ -1031,7 +1031,7 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
                 "storage_path": audio_path,
                 "start_time": 0.0,
                 "billing_records": [vars(r) for r in billing.records],
-            }, onConflict="lecture_id,chunk_index").execute()
+            }, on_conflict="lecture_id,chunk_index").execute()
         )
         
         # 7. 請求データの合算と保存

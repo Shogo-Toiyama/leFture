@@ -161,10 +161,10 @@ class ModalTranscriptionService:
     def __init__(self, logger: TaskLogger, billing: BillingEngine):
         self.logger = logger
         self.billing = billing
-        self.modal_api_url = os.getenv("MODAL_API_URL")
+        self.modal_api_url = os.getenv("MODAL_WHISPER_URL")
 
         if not self.modal_api_url:
-            self.logger.log("⚠️ MODAL_API_URL is not set in environment variables.")
+            self.logger.log("⚠️ MODAL_WHISPER_URL is not set in environment variables.")
 
     async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
         """
@@ -178,12 +178,8 @@ class ModalTranscriptionService:
         actual_duration = len(audio) / 1000.0
 
         if not self.modal_api_url:
-            self.logger.log("   [Logic] ❌ Modal API URL not configured. Skipping transcription.")
-            return {
-                "text": "",
-                "segments": [],
-                "audio_duration": actual_duration
-            }
+            self.logger.log("   [Logic] ❌ MODAL_WHISPER_URL not configured.")
+            raise ValueError("MODAL_WHISPER_URL environment variable is not set!")
 
         self.logger.log(f"   [Logic] Calling Modal Faster Whisper API...")
         start_time = time.perf_counter()
