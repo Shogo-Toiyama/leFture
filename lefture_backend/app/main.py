@@ -1466,8 +1466,10 @@ async def supabase_email_hook(request: Request):
     redirect_to   = email_data.redirect_to or email_data.site_url or ""
 
     def _verify_link(token_hash: str, verify_type: str) -> str:
+        # GET /auth/v1/verify は "token_hash" ではなく "token" というキー名でしか
+        # 読み取らない(GoTrue側の既存仕様。値はハッシュ化済みトークンでよい)。
         query = urlencode({
-            "token_hash": token_hash,
+            "token": token_hash,
             "type": verify_type,
             "redirect_to": redirect_to,
         })

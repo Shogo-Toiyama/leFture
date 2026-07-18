@@ -946,16 +946,18 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
 
     try:
         # 1. 講義情報を取得して audio_path を確認
+        # 注: whisper_context は Supabase の lectures テーブルに永続化されていないため取得しない。
+        #     プリレコ（マスター音声）はコンテキスト不要のため空文字で処理する。
         lec_res = await asyncio.to_thread(
             lambda: supabase.table("lectures")
-                .select("audio_path, whisper_context")
+                .select("audio_path")
                 .eq("id", lecture_id)
                 .single()
                 .execute()
         )
         lec_data = lec_res.data or {}
         audio_path = lec_data.get("audio_path")
-        whisper_context = lec_data.get("whisper_context", "")
+        whisper_context = ""
 
         # Fail-fast: audio_path が無い場合は R2 ダウンロード前に検査
         if not audio_path:
