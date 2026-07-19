@@ -21,7 +21,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
     final statusMessage = useState<String?>(null);
 
     // シートが開いた瞬間にバックグラウンドでウォームアップ開始。
-    final warmupFuture = useMemoized(() => BackendWarmup.start());
+    final warmupFuture = useMemoized(() => BackendWarmup.waitUntilReady());
 
     final currentUser = supabase.auth.currentUser;
     final userEmail = currentUser?.email ?? '';
@@ -41,10 +41,17 @@ class ChangePasswordSheet extends HookConsumerWidget {
         );
 
         // Supabase の Send Email Hook はバックエンドの応答を5秒以内にしか
-        // 待たない。開いた時点から進行中のウォームアップ完了を待つことで、
-        // Cloud Runのコールドスタートによるタイムアウトを避ける。
+        // 待たない。開いた時点から進行中のウォームアップの完了(起動確認)を
+        // 待ってから本番リクエストを送ることで、Cloud Runのコールドスタートに
+        // よるタイムアウトを避ける。起動確認できなかった場合は、どうせ
+        // 失敗するだけの本番リクエストを送らずここで止める。
         statusMessage.value = 'Waking up email service...';
-        await warmupFuture;
+        final isServerReady = await warmupFuture;
+        if (!isServerReady) {
+          errorMessage.value =
+              'The email service is taking longer than usual to start. Please try again in a moment.';
+          return;
+        }
         statusMessage.value = 'Sending reset link...';
 
         // 2. Send password reset link to the verified email

@@ -11,7 +11,9 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentUser = ref.watch(currentUserProvider);
+    // currentProvider は supabase.auth.currentUser を直接読むだけなので、
+    // ユーザー情報が変わった際にこのシートが再構築されるよう購読しておく。
+    ref.watch(currentUserProvider);
     final currentProvider = ref.read(authControllerProvider.notifier).getCurrentProvider();
     final isSubmitting = useState(false);
     final errorMessage = useState<String?>(null);

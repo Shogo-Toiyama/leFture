@@ -233,7 +233,7 @@ class ContactPage extends HookConsumerWidget {
 
                         // Category Dropdown
                         DropdownButtonFormField<String>(
-                          value: selectedCategory.value,
+                          initialValue: selectedCategory.value,
                           dropdownColor: const Color(0xFF13131C),
                           style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 15),
                           decoration: inputDecoration('Category'),

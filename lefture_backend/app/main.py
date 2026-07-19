@@ -1500,15 +1500,22 @@ async def supabase_email_hook(request: Request):
             new_email = payload.user.new_email
             recipients_notified = []
 
+            # GoTrueはSend Email Hookの応答を5秒しか待たない。直列にawaitすると
+            # 2通分の送信時間が単純合計されタイムアウトのリスクが増えるため、
+            # 並行して送信する。
+            send_tasks = []
             if email_data.token_hash_new:
                 current_link = _verify_link(email_data.token_hash_new, "email_change")
-                await send_email_change_email(user_email, current_link, new_email or "")
+                send_tasks.append(send_email_change_email(user_email, current_link, new_email or ""))
                 recipients_notified.append(user_email)
 
             if new_email and email_data.token_hash:
                 new_link = _verify_link(email_data.token_hash, "email_change")
-                await send_email_change_email(new_email, new_link, new_email)
+                send_tasks.append(send_email_change_email(new_email, new_link, new_email))
                 recipients_notified.append(new_email)
+
+            if send_tasks:
+                await asyncio.gather(*send_tasks)
 
             if not recipients_notified:
                 raise HTTPException(

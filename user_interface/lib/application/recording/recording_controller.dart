@@ -217,7 +217,7 @@ class RecordingController extends _$RecordingController {
         onChunkReady: (Uint8List chunkData, double startTimeSec) async {
           // Realtime Transcribe が Off の場合、チャンク送信をスキップ
           if (!state.realtimeTranscribe) {
-            DevLog.add('[Chunker] Realtime Transcribe is OFF, skipping chunk upload for Chunk ${_currentChunkIndex}');
+            DevLog.add('[Chunker] Realtime Transcribe is OFF, skipping chunk upload for Chunk $_currentChunkIndex');
             _currentChunkIndex++;
             return;
           }

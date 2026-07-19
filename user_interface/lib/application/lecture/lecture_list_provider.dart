@@ -21,7 +21,10 @@ LectureRepositoryDrift lectureRepository(Ref ref) {
 Stream<List<Lecture>> lectureListStream(Ref ref, String? courseId) {
   final user = ref.watch(currentUserProvider);
   final uid = user?.id;
-  if (uid == null) return const Stream.empty();
+  // Stream.empty() は二度とイベントを発行しないため、AsyncLoadingのまま
+  // 永久に止まってしまう(currentUserProviderが後で非nullになっても復帰しない)。
+  // 空リストを1回だけ発行する形にして、必ずAsyncDataへ解決させる。
+  if (uid == null) return Stream.value(const <Lecture>[]);
 
   final repo = ref.watch(lectureRepositoryProvider);
   return repo.watchLectures(userId: uid, courseId: courseId);
@@ -32,7 +35,7 @@ Stream<List<Lecture>> lectureListStream(Ref ref, String? courseId) {
 Stream<List<Lecture>> allLecturesStream(Ref ref) {
   final user = ref.watch(currentUserProvider);
   final uid = user?.id;
-  if (uid == null) return const Stream.empty();
+  if (uid == null) return Stream.value(const <Lecture>[]);
 
   final repo = ref.watch(lectureRepositoryProvider);
   return repo.watchAllLectures(userId: uid);
