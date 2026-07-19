@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/pending_auth_action.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class ChangeEmailSheet extends HookConsumerWidget {
@@ -14,13 +16,18 @@ class ChangeEmailSheet extends HookConsumerWidget {
     final isSubmitting = useState(false);
     final isSuccess = useState(false);
     final errorMessage = useState<String?>(null);
+    final statusMessage = useState<String?>(null);
+
+    // シートが開いた瞬間にバックグラウンドでウォームアップ開始。
+    // ユーザーが入力している間にコールドスタートの待ち時間を先に消化しておく。
+    final warmupFuture = useMemoized(() => BackendWarmup.start());
 
     final currentUser = ref.watch(currentUserProvider);
     final currentEmail = currentUser?.email ?? '';
 
     Future<void> submit() async {
       if (!formKey.currentState!.validate()) return;
-      
+
       final newEmail = emailController.text.trim();
       if (newEmail == currentEmail) {
         errorMessage.value = 'New email must be different from current email';
@@ -31,15 +38,36 @@ class ChangeEmailSheet extends HookConsumerWidget {
       errorMessage.value = null;
 
       try {
-        await ref.read(authControllerProvider.notifier).updateEmail(newEmail);
-        
-        // Supabase returns the updated user model, but it requires email verification.
-        // If we reach here without error, the update request was sent successfully.
-        isSuccess.value = true;
+        // Supabase の Send Email Hook はバックエンドの応答を5秒以内にしか
+        // 待たない。開いた時点から進行中のウォームアップ完了を待つことで、
+        // Cloud Runのコールドスタートによるタイムアウトを避ける。
+        statusMessage.value = 'Waking up email service...';
+        await warmupFuture;
+        statusMessage.value = 'Sending verification email...';
+
+        // deep linkコールバックだけでは「メールアドレス変更」由来だと判別できない
+        // ケースに備え、リクエスト直前に待機中の操作を記録しておく。
+        await setPendingAuthAction(PendingAuthActionKind.emailChange);
+
+        // updateEmail は AsyncValue.guard で例外を握りつぶすため throw されない。
+        // 戻り値の AsyncValue を見て成否を判定しないと、レート制限や
+        // 「メールアドレス重複(422)」等で失敗しても成功扱いになってしまう。
+        final result =
+            await ref.read(authControllerProvider.notifier).updateEmail(newEmail);
+        if (result.hasError) {
+          errorMessage.value = result.error
+              .toString()
+              .replaceAll('Exception: ', '')
+              .replaceAll('AuthException: ', '')
+              .replaceAll('AuthApiException: ', '');
+        } else {
+          isSuccess.value = true;
+        }
       } catch (e) {
         errorMessage.value = e.toString().replaceAll('Exception: ', '');
       } finally {
         isSubmitting.value = false;
+        statusMessage.value = null;
       }
     }
 
@@ -209,8 +237,22 @@ class ChangeEmailSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 28),
                       isSubmitting.value
-                          ? const Center(
-                              child: CircularProgressIndicator(color: AppColors.starGold),
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  const CircularProgressIndicator(color: AppColors.starGold),
+                                  if (statusMessage.value != null) ...[
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      statusMessage.value!,
+                                      style: TextStyle(
+                                        color: AppColors.universe.textComet,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             )
                           : ElevatedButton(
                               onPressed: submit,

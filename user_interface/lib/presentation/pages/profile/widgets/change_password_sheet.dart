@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -12,11 +13,15 @@ class ChangePasswordSheet extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final passwordController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
-    
+
     final obscurePassword = useState(true);
     final isSubmitting = useState(false);
     final isSuccess = useState(false);
     final errorMessage = useState<String?>(null);
+    final statusMessage = useState<String?>(null);
+
+    // シートが開いた瞬間にバックグラウンドでウォームアップ開始。
+    final warmupFuture = useMemoized(() => BackendWarmup.start());
 
     final currentUser = supabase.auth.currentUser;
     final userEmail = currentUser?.email ?? '';
@@ -29,21 +34,40 @@ class ChangePasswordSheet extends HookConsumerWidget {
 
       try {
         // 1. Verify current password by signing in in the background
+        // (直接呼び出しなので失敗時は例外を投げる → catch で捕捉される)
         await supabase.auth.signInWithPassword(
           email: userEmail,
           password: passwordController.text,
         );
 
+        // Supabase の Send Email Hook はバックエンドの応答を5秒以内にしか
+        // 待たない。開いた時点から進行中のウォームアップ完了を待つことで、
+        // Cloud Runのコールドスタートによるタイムアウトを避ける。
+        statusMessage.value = 'Waking up email service...';
+        await warmupFuture;
+        statusMessage.value = 'Sending reset link...';
+
         // 2. Send password reset link to the verified email
-        await ref
+        // sendPasswordReset は AsyncValue.guard で例外を握りつぶすため、
+        // 戻り値の AsyncValue を見て成否を判定する(レート制限等で失敗しても
+        // 成功扱いにならないように)。
+        final result = await ref
             .read(authControllerProvider.notifier)
             .sendPasswordReset(userEmail);
-        
-        isSuccess.value = true;
+        if (result.hasError) {
+          errorMessage.value = result.error
+              .toString()
+              .replaceAll('Exception: ', '')
+              .replaceAll('AuthException: ', '')
+              .replaceAll('AuthApiException: ', '');
+        } else {
+          isSuccess.value = true;
+        }
       } catch (e) {
         errorMessage.value = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
       } finally {
         isSubmitting.value = false;
+        statusMessage.value = null;
       }
     }
 
@@ -218,8 +242,22 @@ class ChangePasswordSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 28),
                       isSubmitting.value
-                          ? const Center(
-                              child: CircularProgressIndicator(color: AppColors.starGold),
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  const CircularProgressIndicator(color: AppColors.starGold),
+                                  if (statusMessage.value != null) ...[
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      statusMessage.value!,
+                                      style: TextStyle(
+                                        color: AppColors.universe.textComet,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             )
                           : ElevatedButton(
                               onPressed: submit,

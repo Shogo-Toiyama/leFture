@@ -960,24 +960,27 @@ class _DeleteAccountDialog extends HookConsumerWidget {
       isSubmitting.value = true;
       errorMessage.value = null;
 
-      try {
-        if (isEmailUser) {
-          await ref.read(authControllerProvider.notifier).deleteAccount(
+      // deleteAccount は AsyncValue.guard で例外を握りつぶすため throw されない。
+      // 戻り値の AsyncValue を見て成否を判定する。
+      final result = isEmailUser
+          ? await ref.read(authControllerProvider.notifier).deleteAccount(
                 password: passwordController.text,
-              );
-        } else {
-          await ref.read(authControllerProvider.notifier).deleteAccount();
-        }
-        if (context.mounted) {
-          isSubmitting.value = false;
-          Navigator.of(context).pop(); // Close dialog
-        }
-      } catch (e) {
-        if (context.mounted) {
-          isSubmitting.value = false;
-          errorMessage.value = e.toString().replaceAll('Exception: ', '');
-        }
+              )
+          : await ref.read(authControllerProvider.notifier).deleteAccount();
+
+      if (!context.mounted) return;
+      isSubmitting.value = false;
+
+      if (result.hasError) {
+        errorMessage.value =
+            result.error.toString().replaceAll('Exception: ', '');
+        return;
       }
+
+      // 削除完了時点でセッションは既に破棄されているため、ダイアログを閉じる
+      // のではなく、セッション外の完了画面へ直接遷移する。
+      Navigator.of(context).pop(); // Close dialog
+      context.go(AppRoutes.accountDeleted);
     }
 
     return AlertDialog(

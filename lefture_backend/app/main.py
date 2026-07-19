@@ -58,6 +58,16 @@ from app.services.task_runners import (
 # ---------------------------------------------------------
 app = FastAPI(title="leFture Backend Worker", version="2.0.0")
 
+
+@app.get("/health")
+async def health_check():
+    """
+    Cloud Runのコールドスタートをクライアント側から事前に吸収するためのウォームアップ用
+    エンドポイント。DB/外部APIアクセスは一切行わず、プロセスが起動していれば即座に返す。
+    """
+    return {"status": "ok"}
+
+
 # 同期I/O（Supabase/boto3/requests/Cloud Tasksクライアント）をasyncio.to_threadで
 # 逃がすためのスレッドプールを明示サイジング。デフォルト(min(32, cpu+4))だと
 # 100人同時利用のような高負荷時にスレッド待ちで詰まるため。

@@ -88,7 +88,10 @@ class AuthController extends _$AuthController {
 
   /// パスワードリセットメール送信
   /// Supabase Auth が Send Email Hook を通じてリセットメールを送信する。
-  Future<void> sendPasswordReset(String email) async {
+  /// 成否を呼び出し元が判定できるよう、結果の [AsyncValue] を返す。
+  /// AsyncValue.guard は例外を握りつぶして state に格納するだけで再throwしないため、
+  /// 戻り値を見ないと「失敗したのに成功扱い」になる点に注意。
+  Future<AsyncValue<void>> sendPasswordReset(String email) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
       await supabase.auth.resetPasswordForEmail(
@@ -97,8 +100,8 @@ class AuthController extends _$AuthController {
         redirectTo: 'lefture://reset-password',
       );
     });
-    if (!ref.mounted) return;
-    state = result;
+    if (ref.mounted) state = result;
+    return result;
   }
 
   /// 新しいパスワードに更新
@@ -115,7 +118,8 @@ class AuthController extends _$AuthController {
   }
 
   /// メールアドレスの更新要求
-  Future<void> updateEmail(String newEmail) async {
+  /// 成否を呼び出し元が判定できるよう、結果の [AsyncValue] を返す。
+  Future<AsyncValue<void>> updateEmail(String newEmail) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
       await supabase.auth.updateUser(
@@ -123,8 +127,8 @@ class AuthController extends _$AuthController {
         emailRedirectTo: 'com.lefture.app://login-callback/',
       );
     });
-    if (!ref.mounted) return;
-    state = result;
+    if (ref.mounted) state = result;
+    return result;
   }
 
   /// Google でサインイン
@@ -165,7 +169,8 @@ class AuthController extends _$AuthController {
 
   /// プロバイダーを新しいものにリンク（切り替え）
   /// 古いプロバイダーは自動的にアンリンク
-  Future<void> switchProvider(OAuthProvider newProvider) async {
+  /// 成否を呼び出し元が判定できるよう、結果の [AsyncValue] を返す。
+  Future<AsyncValue<void>> switchProvider(OAuthProvider newProvider) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
       final user = supabase.auth.currentUser;
@@ -174,12 +179,13 @@ class AuthController extends _$AuthController {
       // 新しいプロバイダーでリンク
       await supabase.auth.linkIdentity(newProvider);
     });
-    if (!ref.mounted) return;
-    state = result;
+    if (ref.mounted) state = result;
+    return result;
   }
 
   /// パスワードまたはメールアドレスによる再認証を経てアカウントを削除
-  Future<void> deleteAccount({String? password}) async {
+  /// 成否を呼び出し元が判定できるよう、結果の [AsyncValue] を返す。
+  Future<AsyncValue<void>> deleteAccount({String? password}) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
       final currentUser = supabase.auth.currentUser;
@@ -212,7 +218,7 @@ class AuthController extends _$AuthController {
       // 3. ローカルサインアウト
       await supabase.auth.signOut();
     });
-    if (!ref.mounted) return;
-    state = result;
+    if (ref.mounted) state = result;
+    return result;
   }
 }

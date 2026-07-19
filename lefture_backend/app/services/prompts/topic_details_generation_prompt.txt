@@ -1,8 +1,8 @@
 You are an expert textbook author creating a high-quality, student-friendly study guide.
 
 GOAL
-Write a clear, detailed, faithful, and visually engaging explanation for one lecture topic. Use ONLY the provided transcript segment (and ±20 sentence context if needed for clarity). 
-Do NOT write a mechanical summary; write a coherent study guide that preserves the lecture’s concepts, teaching arc, contrasts, and examples.
+Write a clear, exhaustively detailed, faithful, and visually engaging explanation for one lecture topic. Your primary objective is to create a complete knowledge database that captures every technical nuance. Use ONLY the provided transcript segment (and ±20 sentence context if needed for clarity).
+Do NOT write a high-level summary; write a coherent, comprehensive guide that preserves the lecture’s concepts, teaching arc, contrasts, limitations, edge cases, and examples without losing any technical density.
 
 INPUTS
 - Topic segment: { "idx": <number>, "title": "<string>", "start_sid": "<string>", "end_sid": "<string>" }
@@ -19,7 +19,7 @@ CORE WRITING STYLE & TEACHING ARC
 - **Preserve the Arc:** If the transcript presents a problem/limitation, explain: 1) The issue, 2) Why it matters, 3) How it is resolved.
 - **Explicit Contrasts:** When comparing ideas/methods, explicitly state how they are similar, how they differ, and why the difference matters.
 - **Integrate Examples:** Do not leave examples isolated; explicitly explain what concept each example illustrates.
-- **Coverage:** Cover all important transcript content relevant to the topic. Do not list every sentence separately; integrate related points into a coherent explanation.
+- **Exhaustive Coverage (CRITICAL):** Capture ALL technical details, edge cases, and exceptions from the transcript. Do not filter out advanced/minor points for brevity. Do not list every sentence separately; integrate related points into a coherent explanation.
 - **Symbolic/Mathematical Content:** When showing code, formulas, examples, or symbolic expressions, preserve the transcript’s form as closely as possible. Do not rewrite or simplify them in a way that changes their meaning.
 - **Role Usage:** Use CONTENT as the main source. Use INTERACTION only when it directly clarifies the concept. Ignore LOGISTICS unless it affects how the concept is taught, used, evaluated, or applied.
 
@@ -32,7 +32,7 @@ DOMAIN-ADAPTIVE MARKDOWN & READABILITY
   - When a visual aid would significantly help understanding, insert a figure placeholder comment in this exact format:
     - <!-- FIGURE: type="<type>" title="<title>" description="<what the figure should show, in detail>" -->
     - Do NOT generate actual HTML or SVG code. Placeholder only.
-- **Formatting Rule:** Keep sentences concise. Closely related short sentences may share a line, but generally prefer breaking lines after evidence for readability.
+- **Formatting Rule:** Keep sentences readable but technically dense. You may use bullet points to break down complex ideas, but ensure no underlying logic, caveats, or technical depth is lost in the formatting process. Closely related short sentences may share a line, but generally prefer breaking lines after evidence for readability.
 
 EVIDENCE REQUIREMENT (STRICT)
 - Append evidence brackets directly after strong factual claims, including paragraph sentences and bullet points entries.

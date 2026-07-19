@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/auth_result_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/password_strength_meter.dart';
 
 /// メール内のリセットリンクをクリックした後にユーザーが着地するページ。
@@ -22,6 +23,20 @@ class ResetPasswordPage extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isSubmitting = useState(false);
     final resetComplete = useState(false);
+
+    // リンク自体が無効/期限切れの場合、router.dartがクエリパラメータで
+    // エラーを渡してくる。この場合はフォームを出さず、専用の結果画面を表示する。
+    final linkError = GoRouterState.of(context).uri.queryParameters['error'];
+    if (linkError != null) {
+      return AuthResultView(
+        success: false,
+        icon: Icons.error_outline_rounded,
+        title: 'Link invalid or expired',
+        message: linkError,
+        buttonLabel: 'Request a New Link',
+        onButtonPressed: () => context.go(AppRoutes.forgotPassword),
+      );
+    }
 
     // エラー・成功時のハンドリング
     ref.listen<AsyncValue<void>>(authControllerProvider, (_, next) {
@@ -77,19 +92,27 @@ class ResetPasswordPage extends HookConsumerWidget {
       );
     }
 
+    if (resetComplete.value) {
+      return AuthResultView(
+        success: true,
+        icon: Icons.check_rounded,
+        title: 'Password updated',
+        message: 'Your password has been updated successfully. You\'re all set!',
+        buttonLabel: 'Go to Dashboard',
+        onButtonPressed: () => context.go(AppRoutes.home),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: !resetComplete.value,
-        leading: resetComplete.value
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.pop(),
-              ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -116,24 +139,21 @@ class ResetPasswordPage extends HookConsumerWidget {
                     height: 64,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: resetComplete.value
-                            ? [AppColors.growthGreen, AppColors.growthGreen.withValues(alpha: 0.7)]
-                            : const [AppColors.starGold, AppColors.deepGold],
+                      gradient: const LinearGradient(
+                        colors: [AppColors.starGold, AppColors.deepGold],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: (resetComplete.value ? AppColors.growthGreen : AppColors.starGold)
-                              .withValues(alpha: 0.35),
+                          color: AppColors.starGold.withValues(alpha: 0.35),
                           blurRadius: 22,
                           spreadRadius: 2,
                         ),
                       ],
                     ),
-                    child: Icon(
-                      resetComplete.value ? Icons.check_rounded : Icons.key_rounded,
+                    child: const Icon(
+                      Icons.key_rounded,
                       color: Colors.white,
                       size: 32,
                     ),
@@ -141,7 +161,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  resetComplete.value ? 'Password updated' : 'Set a new password',
+                  'Set a new password',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -150,9 +170,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  resetComplete.value
-                      ? 'Your password has been updated successfully. You\'re all set!'
-                      : 'Your new password must be different from previously used passwords',
+                  'Your new password must be different from previously used passwords',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.universe.textComet,
@@ -166,24 +184,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: AppColors.universe.glassBorder),
                   ),
-                  child: resetComplete.value
-                      ? ElevatedButton(
-                          onPressed: () => context.go(AppRoutes.home),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.starGold,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            minimumSize: const Size(double.infinity, 52),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: const Text(
-                            'Go to Dashboard',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                        )
-                      : Form(
+                  child: Form(
                           key: formKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,

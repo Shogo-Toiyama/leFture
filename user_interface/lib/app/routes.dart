@@ -8,6 +8,10 @@ class AppRoutes {
   static const privacyPolicy = '/privacy_policy';
   static const termsOfService = '/terms_of_service';
 
+  // Auth action results (email change / login method change / account deletion)
+  static const authResult = '/auth_result'; // ログイン状態を保ったまま見せる結果画面
+  static const accountDeleted = '/account_deleted'; // セッション外(未ログイン)で見せる結果画面
+
   // Main
   static const home = '/home'; // Dashboard (宇宙のコックピット)
   
