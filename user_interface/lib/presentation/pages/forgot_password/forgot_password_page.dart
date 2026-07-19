@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class ForgotPasswordPage extends HookConsumerWidget {
@@ -16,12 +17,17 @@ class ForgotPasswordPage extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isSending = useState(false);
     final emailSent = useState(false);
+    final statusMessage = useState<String?>(null);
+
+    // 画面が開いた瞬間にバックグラウンドでウォームアップ開始。
+    final warmupFuture = useMemoized(() => BackendWarmup.waitUntilReady());
 
     // エラー発生時にスナックバーで表示
     ref.listen<AsyncValue<void>>(authControllerProvider, (_, next) {
       next.whenOrNull(
         error: (error, _) {
           isSending.value = false;
+          statusMessage.value = null;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(error.toString()),
@@ -35,13 +41,37 @@ class ForgotPasswordPage extends HookConsumerWidget {
     Future<void> sendResetLink() async {
       if (!formKey.currentState!.validate()) return;
       isSending.value = true;
-      await ref
-          .read(authControllerProvider.notifier)
-          .sendPasswordReset(emailController.text.trim());
-      // エラー時は ref.listen が処理するため、ここでは成功扱いにする
-      if (context.mounted) {
-        isSending.value = false;
-        emailSent.value = true;
+
+      try {
+        statusMessage.value = 'Waking up email service...';
+        final isServerReady = await warmupFuture;
+        if (!isServerReady) {
+          isSending.value = false;
+          statusMessage.value = null;
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'The email service is taking longer than usual to start. Please try again in a moment.',
+                ),
+                backgroundColor: AppColors.correctionRed,
+              ),
+            );
+          }
+          return;
+        }
+        statusMessage.value = 'Sending reset link...';
+
+        await ref
+            .read(authControllerProvider.notifier)
+            .sendPasswordReset(emailController.text.trim());
+        // エラー時は ref.listen が処理するため、ここでは成功扱いにする
+        if (context.mounted) {
+          isSending.value = false;
+          emailSent.value = true;
+        }
+      } finally {
+        statusMessage.value = null;
       }
     }
 
@@ -204,9 +234,25 @@ class ForgotPasswordPage extends HookConsumerWidget {
                               ),
                               const SizedBox(height: 20),
                               isSending.value
-                                  ? const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 12),
-                                      child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      child: Center(
+                                        child: Column(
+                                          children: [
+                                            const CircularProgressIndicator(color: AppColors.starGold),
+                                            if (statusMessage.value != null) ...[
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                statusMessage.value!,
+                                                style: TextStyle(
+                                                  color: AppColors.universe.textComet,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
                                     )
                                   : ElevatedButton(
                                       onPressed: sendResetLink,

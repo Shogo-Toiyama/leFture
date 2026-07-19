@@ -1648,29 +1648,29 @@ async def support_submit(
 
     # 3. ユーザーへ自動確認メールを送信 (From: support@lefture.com)
     try:
-        user_html = f"""
-        <h2>お問い合わせを受け付けました</h2>
-        <p>{display_name or 'ユーザー'} 様</p>
-        <p>leFture サポートにお問い合わせいただき、ありがとうございます。</p>
-        <p>以下の内容でお問い合わせを受け付けました。</p>
-        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
-        <p><strong>お問い合わせ番号:</strong> {ticket_code}</p>
-        <p><strong>カテゴリ:</strong> {payload.category}</p>
-        <p><strong>お問い合わせ内容:</strong><br/>{payload.message.replace(chr(10), '<br/>')}</p>
-        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
-        <p>内容を確認の上、担当者より返信いたしますので、今しばらくお待ちください。</p>
-        <p style="color:#8888AA; font-size:12px;">※このメールは送信専用アドレスから送信されています。</p>
-        """
         from app.services.email_service import send_email
+        from app.services.email_template import (
+            build_support_user_ack_email,
+            build_support_admin_notification_email,
+        )
+
+        user_html = build_support_user_ack_email(
+            display_name=display_name,
+            ticket_code=ticket_code,
+            category=payload.category,
+            message=payload.message,
+        )
         await send_email(
             to=user_email,
-            subject=f"leFture サポート - 受付完了 [{ticket_code}]",
+            subject=f"leFture Support - Inquiry Received [{ticket_code}]",
             html=user_html,
+            from_address="support@lefture.com",
+            from_name="leFture Support",
         )
     except Exception as e:
         print(f"⚠️ Failed to send auto-reply email to user: {e}")
 
-    # 4. 管理者へ通知メールを送信 (To: hello@lefture.com または lefture.app@gmail.com)
+    # 4. 管理者へ通知メールを送信 (To: lefture.app@gmail.com)
     # Reply-To にユーザーのメールアドレスを指定
     try:
         attachments_section = ""
@@ -1680,39 +1680,38 @@ async def support_submit(
             # (署名付きURLの有効期限は最大7日 = 604800秒。それを過ぎるとリンク切れになる点に注意)
             from app.core.r2_storage import storage_service
             import html as html_escape_lib
-            attachments_section = "<p><strong>添付ファイル一覧:</strong></p><ul>"
+            attachments_section = "<p><strong>Attachments:</strong></p><ul>"
             for storage_path in payload.attachment_urls:
                 file_label = html_escape_lib.escape(storage_path.split("/")[-1])
                 try:
                     view_url = await asyncio.to_thread(
                         storage_service.generate_presigned_get_url, storage_path
                     )
-                    attachments_section += f'<li><a href="{view_url}">{file_label}</a>(リンクは7日間有効)</li>'
+                    attachments_section += f'<li><a href="{view_url}">{file_label}</a> (Link valid for 7 days)</li>'
                 except Exception as e:
                     print(f"⚠️ Failed to generate presigned URL for attachment {storage_path}: {e}")
-                    attachments_section += f"<li>{file_label} (リンク生成に失敗しました。管理画面/Supabaseから直接確認してください: {html_escape_lib.escape(storage_path)})</li>"
+                    attachments_section += f"<li>{file_label} (Presigned link failed. Check Supabase storage_path: {html_escape_lib.escape(storage_path)})</li>"
             attachments_section += "</ul>"
 
-        admin_html = f"""
-        <h2>新しいお問い合わせを受信しました</h2>
-        <p><strong>お問い合わせ番号:</strong> {ticket_code}</p>
-        <p><strong>ユーザーのメールアドレス:</strong> {user_email}</p>
-        <p><strong>ユーザーID:</strong> {uid}</p>
-        <p><strong>カテゴリ:</strong> {payload.category}</p>
-        <p><strong>お問い合わせ内容:</strong><br/>{payload.message.replace(chr(10), '<br/>')}</p>
-        {attachments_section}
-        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
-        <p><strong>デバイス情報:</strong></p>
-        <pre>{json.dumps(payload.device_info, indent=2, ensure_ascii=False)}</pre>
-        <hr style="border:none; border-top:1px solid #2A2A3A; margin:20px 0;"/>
-        <p>※このメールにそのまま返信すると、お問い合わせの送信元（{user_email}）に直接返信が届きます。</p>
-        """
+        device_info_str = json.dumps(payload.device_info, indent=2, ensure_ascii=False) if payload.device_info else ""
+
+        admin_html = build_support_admin_notification_email(
+            ticket_code=ticket_code,
+            user_email=user_email,
+            user_id=uid,
+            category=payload.category,
+            message=payload.message,
+            attachments_section_html=attachments_section,
+            device_info_json=device_info_str,
+        )
         
         await send_email(
             to="lefture.app@gmail.com",
-            subject=f"【要対応】お問い合わせ [{ticket_code}] (カテゴリ: {payload.category})",
+            subject=f"[Action Required] New Support Ticket [{ticket_code}] ({payload.category})",
             html=admin_html,
             reply_to=user_email,
+            from_address="support@lefture.com",
+            from_name="leFture Support Desk",
         )
     except Exception as e:
         print(f"❌ Failed to send notification email to admin: {e}")

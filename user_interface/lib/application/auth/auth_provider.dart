@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:http/http.dart' as http;
 
+import '../../core/utils/dev_log.dart';
 import '../../infrastructure/supabase/supabase_client.dart';
 
 part 'auth_provider.g.dart';
@@ -20,7 +21,13 @@ Stream<AuthState> authState(Ref ref) {
 User? currentUser(Ref ref) {
   final authState = ref.watch(authStateProvider);
   // authStateProvider は StreamProvider<AuthState> になるので AsyncValue<AuthState>
-  return authState.asData?.value.session?.user;
+  final streamUser = authState.asData?.value.session?.user;
+  // onAuthStateChange がまだ初回イベントを発行していない、あるいは
+  // (パスワードリカバリー等の)特定のイベントで期待通りに再発火しなかった
+  // 場合でも、SDKが同期的に保持している最新のセッションにフォールバックする。
+  // これが無いと、ストリームの取りこぼし1つで currentUser が古いnullの
+  // ままキャッシュされ続け、依存する画面が壊れた表示のまま固まる。
+  return streamUser ?? supabase.auth.currentUser;
 }
 
 /// ✅ ログイン済みかどうか
@@ -168,7 +175,11 @@ class AuthController extends _$AuthController {
   }
 
   /// プロバイダーを新しいものにリンク（切り替え）
-  /// 古いプロバイダーは自動的にアンリンク
+  /// linkIdentity は外部ブラウザでの認証を要求するため、ここで完了するのは
+  /// 「ブラウザを開く」ところまで。実際にリンクが成功したかはOAuthの
+  /// コールバック(router.dart)で分かる。古いプロバイダーのアンリンクも
+  /// そちら(コールバック成功時)で行う — この時点ではまだ新しいidentityが
+  /// 存在しないため、ここでアンリンクすることはできない。
   /// 成否を呼び出し元が判定できるよう、結果の [AsyncValue] を返す。
   Future<AsyncValue<void>> switchProvider(OAuthProvider newProvider) async {
     state = const AsyncLoading();
@@ -176,8 +187,20 @@ class AuthController extends _$AuthController {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('No active user.');
 
+      DevLog.add('[LinkFlow] linkIdentity(${newProvider.name}) '
+          'current identities=${user.identities?.map((i) => i.provider).toList()}');
       // 新しいプロバイダーでリンク
-      await supabase.auth.linkIdentity(newProvider);
+      // 端末に既にサインイン済みのGoogleアカウントがあると、確認画面をスキップ
+      // して自動的にそのアカウントへ進んでしまう。prompt=select_accountは
+      // Google固有のパラメータで、常にアカウント選択画面を強制表示させる
+      // (別アカウントをリンクしたいケースがあるため、明示的な選択を必須にする)。
+      await supabase.auth.linkIdentity(
+        newProvider,
+        redirectTo: 'com.lefture.app://login-callback/',
+        queryParams: newProvider == OAuthProvider.google
+            ? {'prompt': 'select_account'}
+            : null,
+      );
     });
     if (ref.mounted) state = result;
     return result;
@@ -209,7 +232,7 @@ class AuthController extends _$AuthController {
         headers: {
           'Authorization': 'Bearer $jwt',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
         throw Exception('Failed to delete account: ${response.body}');

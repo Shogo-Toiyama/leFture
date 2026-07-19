@@ -12,6 +12,8 @@ import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profil
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_email_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_password_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_auth_provider_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_account_sheet.dart';
+import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -623,7 +625,14 @@ class _SettingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final isEmailUser = user?.appMetadata['provider'] == 'email';
+    // appMetadata['provider'] はGoTrue側で識別情報(identity)が追加/変更される
+    // たびに再計算される「先頭のprovider」でしかなく、複数のidentityを持つ
+    // ユーザーでは email 以外の値に化けることがある(順序保証が無いため)。
+    // 「emailでのログインが実際に使えるか」はidentity一覧に email が
+    // 含まれているかで判定する方が安定する。
+    final isEmailUser =
+        user?.identities?.any((identity) => identity.provider == 'email') ??
+            false;
 
     return Column(
       children: [
@@ -676,6 +685,20 @@ class _SettingsSection extends ConsumerWidget {
                     ),
                   ]
                 : [
+                    _SettingsTile(
+                      icon: Icons.manage_accounts_outlined,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Account',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeAccountSheet(),
+                        );
+                      },
+                    ),
+                    _Divider(),
                     _SettingsTile(
                       icon: Icons.security_rounded,
                       iconColor: const Color(0xFF7C83FD),
@@ -941,11 +964,18 @@ class _DeleteAccountDialog extends HookConsumerWidget {
     final obscurePassword = useState(true);
     final isSubmitting = useState(false);
     final errorMessage = useState<String?>(null);
+    final statusMessage = useState<String?>(null);
+
+    // ダイアログが開いた瞬間にバックグラウンドでウォームアップ開始。
+    final warmupFuture = useMemoized(() => BackendWarmup.waitUntilReady());
 
     final currentUser = supabase.auth.currentUser;
     final userEmail = currentUser?.email ?? '';
-    final provider = currentUser?.appMetadata['provider'] ?? 'email';
-    final isEmailUser = provider == 'email';
+    // appMetadata['provider'] は複数identityを持つユーザーでは不安定なため、
+    // identity一覧に email が含まれるかで判定する(_SettingsSectionと同じ理由)。
+    final isEmailUser = currentUser?.identities
+            ?.any((identity) => identity.provider == 'email') ??
+        false;
 
     // Verify if submission is allowed
     final isInputValid = isEmailUser
@@ -960,27 +990,44 @@ class _DeleteAccountDialog extends HookConsumerWidget {
       isSubmitting.value = true;
       errorMessage.value = null;
 
-      // deleteAccount は AsyncValue.guard で例外を握りつぶすため throw されない。
-      // 戻り値の AsyncValue を見て成否を判定する。
-      final result = isEmailUser
-          ? await ref.read(authControllerProvider.notifier).deleteAccount(
-                password: passwordController.text,
-              )
-          : await ref.read(authControllerProvider.notifier).deleteAccount();
+      try {
+        statusMessage.value = 'Waking up backend service...';
+        final isServerReady = await warmupFuture;
+        if (!isServerReady) {
+          if (context.mounted) {
+            isSubmitting.value = false;
+            statusMessage.value = null;
+            errorMessage.value =
+                'The backend service is taking longer than usual to start. Please try again in a moment.';
+          }
+          return;
+        }
+        statusMessage.value = 'Deleting account...';
 
-      if (!context.mounted) return;
-      isSubmitting.value = false;
+        // deleteAccount は AsyncValue.guard で例外を握りつぶすため throw されない。
+        // 戻り値の AsyncValue を見て成否を判定する。
+        final result = isEmailUser
+            ? await ref.read(authControllerProvider.notifier).deleteAccount(
+                  password: passwordController.text,
+                )
+            : await ref.read(authControllerProvider.notifier).deleteAccount();
 
-      if (result.hasError) {
-        errorMessage.value =
-            result.error.toString().replaceAll('Exception: ', '');
-        return;
+        if (!context.mounted) return;
+        isSubmitting.value = false;
+
+        if (result.hasError) {
+          errorMessage.value =
+              result.error.toString().replaceAll('Exception: ', '');
+          return;
+        }
+
+        // 削除完了時点でセッションは既に破棄されているため、ダイアログを閉じる
+        // のではなく、セッション外の完了画面へ直接遷移する。
+        Navigator.of(context).pop(); // Close dialog
+        context.go(AppRoutes.accountDeleted);
+      } finally {
+        statusMessage.value = null;
       }
-
-      // 削除完了時点でセッションは既に破棄されているため、ダイアログを閉じる
-      // のではなく、セッション外の完了画面へ直接遷移する。
-      Navigator.of(context).pop(); // Close dialog
-      context.go(AppRoutes.accountDeleted);
     }
 
     return AlertDialog(
@@ -1020,6 +1067,17 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                 child: Text(
                   errorMessage.value!,
                   style: const TextStyle(color: AppColors.correctionRed, fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (statusMessage.value != null) ...[
+              Text(
+                statusMessage.value!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 12,
                 ),
               ),
               const SizedBox(height: 16),

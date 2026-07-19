@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 
+import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -20,6 +21,9 @@ class ContactPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     
+    // 画面が開いた瞬間にバックグラウンドでウォームアップ開始。
+    final warmupFuture = useMemoized(() => BackendWarmup.waitUntilReady());
+
     // Form fields
     final selectedCategory = useState<String>('bug');
     final messageController = useTextEditingController();
@@ -32,6 +36,7 @@ class ContactPage extends HookConsumerWidget {
     final submissionSuccess = useState(false);
     final ticketCode = useState<String?>(null);
     final errorMessage = useState<String?>(null);
+    final statusMessage = useState<String?>(null);
 
     // Pick file
     Future<void> pickAttachment() async {
@@ -63,13 +68,24 @@ class ContactPage extends HookConsumerWidget {
       }
 
       try {
+        statusMessage.value = 'Connecting to support service...';
+        final isServerReady = await warmupFuture;
+        if (!isServerReady) {
+          errorMessage.value =
+              'The support service is taking longer than usual to start. Please try again in a moment, or email us directly at support@lefture.com.';
+          return;
+        }
+        statusMessage.value = 'Sending inquiry...';
+
         String? attachmentR2Path;
 
         // 1. If attachment is selected, upload to R2
         if (selectedFile.value != null) {
           final file = selectedFile.value!;
           
-          // Request presigned URL from backend (with 10s timeout)
+          statusMessage.value = 'Preparing file upload...';
+
+          // Request presigned URL from backend (with 30s timeout)
           final presignedRes = await http.post(
             Uri.parse('$_baseUrl/support/request-upload-url'),
             headers: {
@@ -80,7 +96,7 @@ class ContactPage extends HookConsumerWidget {
               'file_name': file.name,
               'content_type': _guessContentType(file.name),
             }),
-          ).timeout(const Duration(seconds: 10));
+          ).timeout(const Duration(seconds: 30));
 
           if (presignedRes.statusCode != 200) {
             throw Exception('Failed to request upload URL: ${presignedRes.body}');
@@ -90,7 +106,9 @@ class ContactPage extends HookConsumerWidget {
           final uploadUrl = presignedData['upload_url'] as String;
           attachmentR2Path = presignedData['storage_path'] as String;
 
-          // PUT file bytes to R2 (with 10s timeout)
+          statusMessage.value = 'Uploading attachment...';
+
+          // PUT file bytes to R2 (with 30s timeout)
           final fileBytes = file.bytes ?? await File(file.path!).readAsBytes();
           final putRes = await http.put(
             Uri.parse(uploadUrl),
@@ -98,12 +116,14 @@ class ContactPage extends HookConsumerWidget {
               'Content-Type': _guessContentType(file.name),
             },
             body: fileBytes,
-          ).timeout(const Duration(seconds: 10));
+          ).timeout(const Duration(seconds: 30));
 
           if (putRes.statusCode != 200) {
             throw Exception('Failed to upload file to R2: ${putRes.body}');
           }
         }
+
+        statusMessage.value = 'Submitting support ticket...';
 
         // Gather device info
         final deviceInfo = {
@@ -113,7 +133,7 @@ class ContactPage extends HookConsumerWidget {
           'locale': Platform.localeName,
         };
 
-        // 2. Submit ticket metadata to backend (with 10s timeout)
+        // 2. Submit ticket metadata to backend (with 30s timeout)
         final submitRes = await http.post(
           Uri.parse('$_baseUrl/support/submit'),
           headers: {
@@ -126,7 +146,7 @@ class ContactPage extends HookConsumerWidget {
             'attachment_urls': attachmentR2Path != null ? [attachmentR2Path] : [],
             'device_info': deviceInfo,
           }),
-        ).timeout(const Duration(seconds: 10));
+        ).timeout(const Duration(seconds: 30));
 
         if (submitRes.statusCode != 200) {
           throw Exception('Failed to submit support ticket: ${submitRes.body}');
@@ -143,6 +163,7 @@ class ContactPage extends HookConsumerWidget {
         }
       } finally {
         isSubmitting.value = false;
+        statusMessage.value = null;
       }
     }
 
@@ -323,8 +344,22 @@ class ContactPage extends HookConsumerWidget {
 
                         // Submit Button
                         isSubmitting.value
-                            ? const Center(
-                                child: CircularProgressIndicator(color: AppColors.starGold),
+                            ? Center(
+                                child: Column(
+                                  children: [
+                                    const CircularProgressIndicator(color: AppColors.starGold),
+                                    if (statusMessage.value != null) ...[
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        statusMessage.value!,
+                                        style: TextStyle(
+                                          color: AppColors.universe.textComet,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               )
                             : ElevatedButton(
                                 onPressed: submitForm,

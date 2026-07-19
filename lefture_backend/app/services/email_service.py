@@ -12,6 +12,7 @@ from app.services.email_template import (
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 RESEND_FROM_ADDRESS = os.getenv("RESEND_FROM_ADDRESS", "hello@lefture.com")
+RESEND_FROM_NAME = os.getenv("RESEND_FROM_NAME", "leFture")
 
 resend.api_key = RESEND_API_KEY
 
@@ -21,6 +22,8 @@ async def send_email(
     subject: str,
     html: str,
     reply_to: Optional[str] = None,
+    from_address: Optional[str] = None,
+    from_name: Optional[str] = None,
 ) -> dict:
     """
     Resend を使ってメールを送信する。
@@ -29,8 +32,11 @@ async def send_email(
     if not RESEND_API_KEY:
         raise RuntimeError("RESEND_API_KEY is not set")
 
+    sender_addr = from_address or RESEND_FROM_ADDRESS
+    sender_name = from_name or RESEND_FROM_NAME
+
     params: resend.Emails.SendParams = {
-        "from": RESEND_FROM_ADDRESS,
+        "from": f"{sender_name} <{sender_addr}>",
         "to": to,
         "subject": subject,
         "html": html,

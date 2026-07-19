@@ -304,3 +304,114 @@ def build_email_change_email(new_email: str, confirmation_link: str) -> str:
         + email_footer()
     )
     return email_wrapper(body)
+
+
+def build_support_user_ack_email(
+    display_name: str,
+    ticket_code: str,
+    category: str,
+    message: str,
+) -> str:
+    """お問い合わせ自動受信確認メール（ユーザー向け）"""
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else "Hi,<br/><br/>"
+    formatted_message = message.replace("\n", "<br/>")
+    
+    ticket_info = f"""
+    <div style="
+      background:{COLOR_CARD_BORDER};
+      border-radius:12px;
+      padding:20px;
+      margin:20px 0;
+      color:{COLOR_TEXT_MAIN};
+      font-family:{FONT_STACK};
+      font-size:{FONT_SIZE_BODY};
+      line-height:1.6;
+    ">
+      <p style="margin:0 0 8px 0;"><strong>Ticket Code:</strong> <span style="color:{COLOR_PRIMARY}; font-weight:700;">{ticket_code}</span></p>
+      <p style="margin:0 0 8px 0;"><strong>Category:</strong> {category}</p>
+      <p style="margin:0 0 4px 0;"><strong>Message Details:</strong></p>
+      <p style="margin:0; color:{COLOR_TEXT_MUTED}; word-break:break-word;">{formatted_message}</p>
+    </div>
+    """
+    
+    body = (
+        email_header("leFture Support")
+        + email_heading("Inquiry Received")
+        + email_text(
+            f"{greeting}Thank you for contacting leFture Support. "
+            "We have received your report and our team is currently reviewing your message."
+        )
+        + ticket_info
+        + email_divider()
+        + email_text(
+            "Our support team will get back to you as soon as possible via this email address. "
+            "Please keep your ticket code for reference.",
+            muted=True,
+        )
+        + email_footer()
+    )
+    return email_wrapper(body)
+
+
+def build_support_admin_notification_email(
+    ticket_code: str,
+    user_email: str,
+    user_id: str,
+    category: str,
+    message: str,
+    attachments_section_html: str = "",
+    device_info_json: str = "",
+) -> str:
+    """お問い合わせ受信通知メール（管理者・チーム向け）"""
+    formatted_message = message.replace("\n", "<br/>")
+    
+    device_info_block = ""
+    if device_info_json:
+        device_info_block = f"""
+        <p style="margin:16px 0 4px 0;"><strong>Device Info:</strong></p>
+        <pre style="
+          background:#0D0D14;
+          border:1px solid {COLOR_CARD_BORDER};
+          border-radius:8px;
+          padding:12px;
+          color:{COLOR_TEXT_MUTED};
+          font-size:12px;
+          overflow-x:auto;
+        ">{device_info_json}</pre>
+        """
+
+    admin_info = f"""
+    <div style="
+      background:{COLOR_CARD_BORDER};
+      border-radius:12px;
+      padding:20px;
+      margin:20px 0;
+      color:{COLOR_TEXT_MAIN};
+      font-family:{FONT_STACK};
+      font-size:{FONT_SIZE_BODY};
+      line-height:1.6;
+    ">
+      <p style="margin:0 0 8px 0;"><strong>Ticket Code:</strong> <span style="color:{COLOR_PRIMARY}; font-weight:700;">{ticket_code}</span></p>
+      <p style="margin:0 0 8px 0;"><strong>User Email:</strong> {user_email}</p>
+      <p style="margin:0 0 8px 0;"><strong>User ID:</strong> {user_id}</p>
+      <p style="margin:0 0 8px 0;"><strong>Category:</strong> {category}</p>
+      <p style="margin:0 0 4px 0;"><strong>Message:</strong></p>
+      <p style="margin:0 0 12px 0; color:{COLOR_TEXT_MUTED}; word-break:break-word;">{formatted_message}</p>
+      {attachments_section_html}
+      {device_info_block}
+    </div>
+    """
+
+    body = (
+        email_header("leFture Support Desk")
+        + email_heading("[Action Required] New Support Inquiry")
+        + email_text("A new support ticket has been submitted by a user:")
+        + admin_info
+        + email_divider()
+        + email_text(
+            f"Replying directly to this email will respond to the user's email address (<strong>{user_email}</strong>).",
+            muted=True,
+        )
+        + email_footer()
+    )
+    return email_wrapper(body)

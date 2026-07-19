@@ -75,6 +75,30 @@ class AuthResultPage extends StatelessWidget {
           onButtonPressed: () => context.go(AppRoutes.home),
         );
 
+      case 'account_switched':
+        return AuthResultView(
+          success: true,
+          icon: Icons.manage_accounts_rounded,
+          title: 'Account updated',
+          message: (detail != null && detail!.isNotEmpty)
+              ? 'You are now signed in with a different $detail account.'
+              : 'You are now signed in with a different account.',
+          buttonLabel: 'Go to Dashboard',
+          onButtonPressed: () => context.go(AppRoutes.home),
+        );
+
+      case 'account_switch_error':
+        return AuthResultView(
+          success: false,
+          icon: Icons.error_outline_rounded,
+          title: 'Could not switch account',
+          message: (detail != null && detail!.isNotEmpty)
+              ? detail!
+              : 'Something went wrong while switching accounts. Please try again.',
+          buttonLabel: 'Back to Dashboard',
+          onButtonPressed: () => context.go(AppRoutes.home),
+        );
+
       case 'account_deleted':
         return AuthResultView(
           success: true,

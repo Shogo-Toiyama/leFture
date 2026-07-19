@@ -33,19 +33,23 @@ class RecordingPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // タブコントローラー (Voice / Memo、isTestModeの時だけTestタブが加わる)
-    final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
-    final memoCtl = useTextEditingController();
-    useListenable(memoCtl);
+    // MVPのため、Noteタブ無効化に伴い長さを-1 (元: isTestMode ? 3 : 2)
+    final tabController = useTabController(initialLength: isTestMode ? 2 : 1);
+    // MVPのためコメントアウト
+    // final memoCtl = useTextEditingController();
+    // useListenable(memoCtl);
     final showMoreSettings = useState(false);
     final selectedAudioFilePath = useState<String?>(null);
     
-    // 初期タブの設定 (noteなら1番目)
+    // 初期タブの設定 (noteなら1番目) - MVPのためコメントアウト
+    /*
     useEffect(() {
       if (initialTab == 'note') {
         tabController.animateTo(1);
       }
       return null;
     }, []);
+    */
 
     // コースIDの初期設定
     useEffect(() {
@@ -199,7 +203,7 @@ class RecordingPage extends HookConsumerWidget {
           dividerColor: AppColors.universe.glassBorder,
           tabs: const [
             Tab(icon: Icon(Icons.mic)),
-            Tab(icon: Icon(Icons.edit_note)),
+            // Tab(icon: Icon(Icons.edit_note)), // MVPのためコメントアウト
             if (isTestMode) Tab(icon: Icon(Icons.bug_report)),
           ],
         ),
@@ -651,8 +655,9 @@ class RecordingPage extends HookConsumerWidget {
               ),
 
               // ==========================================
-              // Tab 2: Memo (Manual Entry)
+              // Tab 2: Memo (Manual Entry) - MVPのためコメントアウト
               // ==========================================
+              /*
               Column(
                 children: [
                   Expanded(
@@ -747,6 +752,7 @@ class RecordingPage extends HookConsumerWidget {
                   ),
                 ],
               ),
+              */
 
               // ==========================================
               // Tab 3: Test (Tier 1 simulate-recording harness, isTestMode only)

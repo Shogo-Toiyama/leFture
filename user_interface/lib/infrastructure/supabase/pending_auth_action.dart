@@ -10,7 +10,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 読み取りと同時に必ず削除する(読みっぱなしで残さない)。さらに、
 /// 何らかの理由で消費されないまま放置された場合に備えて有効期限を設け、
 /// 期限切れのマーカーは無かったものとして扱う。
-enum PendingAuthActionKind { emailChange, providerLink }
+enum PendingAuthActionKind {
+  emailChange,
+  providerLink, // 別プロバイダーへの切り替え(例: Google -> Apple)
+  accountSwitch, // 同一プロバイダー内での別アカウントへの切り替え(例: Google -> 別のGoogleアカウント)
+}
 
 class PendingAuthAction {
   const PendingAuthAction(this.kind, this.detail);
