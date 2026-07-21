@@ -159,6 +159,9 @@ class MasterAudioUploadUrlRequest(BaseModel):
 class MasterAudioUploadCompleteRequest(BaseModel):
     lecture_id: str
 
+class AsrModelDownloadUrlRequest(BaseModel):
+    model_id: str
+
 
 # ---------------------------------------------------------
 # 分析開始 (start_analysis)
@@ -690,6 +693,71 @@ async def worker_complete_master_audio_upload(payload: MasterAudioUploadComplete
     )
 
     return {"status": "success", "message": f"Master audio path recorded: {storage_path}"}
+
+
+# ---------------------------------------------------------
+# 🎙️ オンデバイスASR(sherpa_onnx)のモデル配布
+# ---------------------------------------------------------
+def _authenticate_request(request: Request) -> str:
+    """AuthorizationヘッダのJWTを検証し、user_idを返す。R2上のASRモデル自体は
+    ユーザーに紐付かない共有アセットだが、他エンドポイントと同様ログイン済み
+    ユーザーからの呼び出しであることだけは確認しておく。"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        user_client = create_client(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        return user_res.user.id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+
+@app.post("/asr-models/manifest")
+async def get_asr_models_manifest(request: Request):
+    """録音言語ごとのオンデバイスASRモデル一覧(engineCompatVersion/modelVersion
+    込みのマニフェスト)を返す。R2の asr_models/manifest.json をそのまま返すだけ。"""
+    _authenticate_request(request)
+
+    from app.core.r2_storage import storage_service
+    try:
+        raw = await asyncio.to_thread(storage_service.download_binary, "asr_models/manifest.json")
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Manifest not found: {str(e)}")
+    return json.loads(raw)
+
+
+@app.post("/asr-models/download-url")
+async def get_asr_model_download_url(payload: AsrModelDownloadUrlRequest, request: Request):
+    """指定model_idのtar.gzを取得するための署名付きGET URLをその場で発行する。
+    署名URLには最大7日の有効期限があるため、マニフェストに埋め込まず毎回発行する。"""
+    _authenticate_request(request)
+
+    from app.core.r2_storage import storage_service
+    try:
+        raw = await asyncio.to_thread(storage_service.download_binary, "asr_models/manifest.json")
+        manifest = json.loads(raw)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Manifest not found: {str(e)}")
+
+    valid_model_ids = {lang["modelId"] for lang in manifest.get("languages", {}).values()}
+    if payload.model_id not in valid_model_ids:
+        raise HTTPException(status_code=404, detail=f"Unknown model_id: {payload.model_id}")
+
+    url = await asyncio.to_thread(
+        storage_service.generate_presigned_get_url,
+        f"asr_models/{payload.model_id}.tar.gz",
+    )
+    return {"url": url, "expires_in": 604800}
 
 
 # ---------------------------------------------------------
@@ -1250,6 +1318,29 @@ async def _hard_delete_lecture(admin_client, uid: str, lecture_id: str) -> None:
     )
 
 
+async def _hard_delete_course(admin_client, uid: str, course_id: str) -> None:
+    """
+    コース1件を、配下の講義(_hard_delete_lectureで完全削除)・トピックマップ・
+    コース本体とともに完全に削除する。講義側と同じ方針で、Supabase側の
+    ON DELETE CASCADEに依存せず明示的に子→親の順で削除する。
+    1件でも講義の削除に失敗したら例外を上げ、部分的に消えた状態を「成功」として
+    隠さない(呼び出し元でユーザーにエラーを見せる)。
+    """
+    lectures_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures").select("id").eq("user_id", uid).eq("course_id", course_id).execute()
+    )
+    for row in (lectures_res.data or []):
+        await _hard_delete_lecture(admin_client, uid, row["id"])
+
+    await asyncio.to_thread(
+        lambda: admin_client.table("topic_maps").delete().eq("course_id", course_id).execute()
+    )
+
+    await asyncio.to_thread(
+        lambda: admin_client.table("courses").delete().eq("id", course_id).eq("user_id", uid).execute()
+    )
+
+
 async def _hard_delete_user_data(admin_client, uid: str) -> None:
     """
     アカウント削除時に、そのユーザーが所有するデータを全て完全に削除する。
@@ -1297,6 +1388,133 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
     # 6. R2上の {uid}/ 配下を丸ごと削除(講義単位の削除で取りこぼしたファイルの安全網)
     from app.core.r2_storage import storage_service
     await asyncio.to_thread(storage_service.delete_prefix, f"{uid}/")
+
+
+@app.post("/lectures/{lecture_id}/hard-delete")
+async def hard_delete_lecture_endpoint(lecture_id: str, request: Request):
+    """
+    ゴミ箱(Trash)に入っている講義1件を完全削除する。
+    Supabase側のカスケード設定に依存せず、_hard_delete_lecture が
+    子テーブル・R2ファイルまで含めて明示的に削除する。
+    """
+    uid = _authenticate_request(request)
+    admin_client = get_supabase_client()
+
+    lec_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .select("id, user_id, deleted_at")
+            .eq("id", lecture_id)
+            .maybe_single()
+            .execute()
+    )
+    lecture = lec_res.data if lec_res else None
+    if not lecture or lecture["user_id"] != uid:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+    if lecture["deleted_at"] is None:
+        raise HTTPException(status_code=409, detail="Lecture is not in trash")
+
+    try:
+        await _hard_delete_lecture(admin_client, uid, lecture_id)
+    except Exception as e:
+        print(f"❌ Failed to hard-delete lecture {lecture_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete lecture")
+
+    return {"success": True}
+
+
+@app.post("/courses/{course_id}/hard-delete")
+async def hard_delete_course_endpoint(course_id: str, request: Request):
+    """ゴミ箱に入っているコース1件を、配下の講義ごと完全削除する。"""
+    uid = _authenticate_request(request)
+    admin_client = get_supabase_client()
+
+    course_res = await asyncio.to_thread(
+        lambda: admin_client.table("courses")
+            .select("id, user_id, deleted_at")
+            .eq("id", course_id)
+            .maybe_single()
+            .execute()
+    )
+    course = course_res.data if course_res else None
+    if not course or course["user_id"] != uid:
+        raise HTTPException(status_code=404, detail="Course not found")
+    if course["deleted_at"] is None:
+        raise HTTPException(status_code=409, detail="Course is not in trash")
+
+    try:
+        await _hard_delete_course(admin_client, uid, course_id)
+    except Exception as e:
+        print(f"❌ Failed to hard-delete course {course_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete course")
+
+    return {"success": True}
+
+
+@app.post("/trash/empty")
+async def empty_trash_endpoint(request: Request):
+    """
+    呼び出したユーザーのゴミ箱を一括で完全削除する。
+    Patrol(_patrol_hard_delete_expired_lectures)と同じく、1件ごとに
+    try/exceptしてカウントし、1件の失敗が他のアイテムの削除を止めないようにする。
+    失敗したidは呼び出し元(Flutter)がローカルのTrashに残せるよう返す。
+    """
+    uid = _authenticate_request(request)
+    admin_client = get_supabase_client()
+
+    # 1. ゴミ箱内のコースを先に処理する(配下の講義も_hard_delete_course内で一緒に消える)
+    courses_res = await asyncio.to_thread(
+        lambda: admin_client.table("courses")
+            .select("id")
+            .eq("user_id", uid)
+            .not_.is_("deleted_at", "null")
+            .execute()
+    )
+    courses_deleted = 0
+    courses_failed: list[str] = []
+    for row in (courses_res.data or []):
+        course_id = row["id"]
+        try:
+            await _hard_delete_course(admin_client, uid, course_id)
+            courses_deleted += 1
+        except Exception as e:
+            courses_failed.append(course_id)
+            print(f"⚠️ Failed to hard-delete course {course_id} while emptying trash: {e}")
+
+    # 2. 残っている(コースに紐づかない/コース削除で消えなかった)講義を処理する
+    lectures_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .select("id")
+            .eq("user_id", uid)
+            .not_.is_("deleted_at", "null")
+            .execute()
+    )
+    lectures_deleted = 0
+    lectures_failed: list[str] = []
+    for row in (lectures_res.data or []):
+        lecture_id = row["id"]
+        try:
+            await _hard_delete_lecture(admin_client, uid, lecture_id)
+            lectures_deleted += 1
+        except Exception as e:
+            lectures_failed.append(lecture_id)
+            print(f"⚠️ Failed to hard-delete lecture {lecture_id} while emptying trash: {e}")
+
+    # 3. 講義に紐づかない単体のお知らせ(子テーブルを持たない単純delete)
+    await asyncio.to_thread(
+        lambda: admin_client.table("announcements")
+            .delete()
+            .eq("user_id", uid)
+            .is_("lecture_id", "null")
+            .not_.is_("deleted_at", "null")
+            .execute()
+    )
+
+    return {
+        "courses_deleted": courses_deleted,
+        "courses_failed": courses_failed,
+        "lectures_deleted": lectures_deleted,
+        "lectures_failed": lectures_failed,
+    }
 
 
 async def _patrol_hard_delete_expired_lectures() -> dict:
