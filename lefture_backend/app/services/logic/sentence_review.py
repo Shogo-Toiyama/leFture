@@ -89,6 +89,39 @@ def _sentence_time_ranges(clean_text: str, clean_tokens: list, clean_times: list
     return results
 
 
+def _stt_fallback_chunks(chunks: list) -> list:
+    """LLMレビューが信頼できない場合に、生Whisperデータをそのまま採用したチャンク群を作る。"""
+    absolute_chunks = []
+    for chunk in chunks:
+        segs = chunk.get("segments_reviewed")
+        is_absolute = True
+        if segs is None:
+            segs = chunk.get("segments_stt") or []
+            is_absolute = False
+
+        c_start = chunk.get("start_time", 0.0)
+        new_chunk = chunk.copy()
+        new_segs = []
+        for seg in segs:
+            new_seg = seg.copy()
+            if not is_absolute:
+                new_seg["start"] = seg["start"] + c_start
+                new_seg["end"] = seg["end"] + c_start
+            new_segs.append(new_seg)
+        new_chunk["segments"] = new_segs
+        if not new_chunk.get("text"):
+            new_chunk["text"] = chunk.get("text_reviewed") or chunk.get("text_stt") or ""
+        absolute_chunks.append(new_chunk)
+    return absolute_chunks
+
+
+def _is_reviewed_result_suspiciously_empty(original_chunk: dict, result_chunk: dict) -> bool:
+    """STTには中身があったのに、レビュー結果が空になっている（LLMの誤判定が疑われる）かを判定する。"""
+    had_content = bool(original_chunk.get("text_stt")) or bool(original_chunk.get("segments_stt"))
+    is_empty_result = not (result_chunk or {}).get("text") and not (result_chunk or {}).get("segments")
+    return had_content and is_empty_result
+
+
 class SentenceReviewService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
@@ -96,33 +129,43 @@ class SentenceReviewService:
         # LiteLLM 経由で呼び出すモデル
         self.model_alias = "gemini/gemini-2.5-flash-lite"
 
-    async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
+    async def run_with_retry(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
+        """
+        通常のレビューを1回実行し、STTには中身があったのにレビュー結果が空になっている
+        チャンク（LLMが重複/幻聴と誤判定して丸ごと空タグにしたと疑われるケース）があれば、
+        バッチ全体をtemperatureを上げて1回だけリトライする。リトライ後もまだ空のチャンクだけ、
+        個別に生Whisperデータへフォールバックする（リトライで直った他のチャンクの結果は破棄しない）。
+        """
+        attempt = await self.run_from_memory(chunks_to_review, previous_chunk, course_title, keywords_list, temperature=0.4)
+
+        orig_by_index = {c["chunk_index"]: c for c in chunks_to_review}
+        result_by_index = {rc["chunk_index"]: rc for rc in attempt}
+
+        suspicious = [
+            idx for idx, orig in orig_by_index.items()
+            if _is_reviewed_result_suspiciously_empty(orig, result_by_index.get(idx))
+        ]
+
+        if suspicious:
+            self.logger.log(f"⚠️ [Sentence Review] Chunk(s) {suspicious} came back empty despite non-empty STT. Retrying batch with higher temperature...")
+            attempt = await self.run_from_memory(chunks_to_review, previous_chunk, course_title, keywords_list, temperature=0.7)
+            result_by_index = {rc["chunk_index"]: rc for rc in attempt}
+
+            still_suspicious = [
+                idx for idx in suspicious
+                if _is_reviewed_result_suspiciously_empty(orig_by_index[idx], result_by_index.get(idx))
+            ]
+            if still_suspicious:
+                self.logger.log(f"⚠️ [Sentence Review] Chunk(s) {still_suspicious} still empty after retry. Falling back to raw STT for these chunks only.")
+                for idx in still_suspicious:
+                    result_by_index[idx] = _stt_fallback_chunks([orig_by_index[idx]])[0]
+
+            attempt = sorted(result_by_index.values(), key=lambda c: c["chunk_index"])
+
+        return attempt
+
+    async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "", temperature: float = 0.4) -> list:
         self.logger.log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
-
-        # 💡 Helper to convert relative timestamps in chunks to absolute if they are not already absolute
-        def make_chunks_absolute(chunks: list) -> list:
-            absolute_chunks = []
-            for chunk in chunks:
-                segs = chunk.get("segments_reviewed")
-                is_absolute = True
-                if segs is None:
-                    segs = chunk.get("segments_stt") or []
-                    is_absolute = False
-
-                c_start = chunk.get("start_time", 0.0)
-                new_chunk = chunk.copy()
-                new_segs = []
-                for seg in segs:
-                    new_seg = seg.copy()
-                    if not is_absolute:
-                        new_seg["start"] = seg["start"] + c_start
-                        new_seg["end"] = seg["end"] + c_start
-                    new_segs.append(new_seg)
-                new_chunk["segments"] = new_segs
-                if not new_chunk.get("text"):
-                    new_chunk["text"] = chunk.get("text_reviewed") or chunk.get("text_stt") or ""
-                absolute_chunks.append(new_chunk)
-            return absolute_chunks
 
         orig_map = {}
         target_xml = ""
@@ -224,8 +267,8 @@ class SentenceReviewService:
         self.logger.log(f"   [LLM] Calling LiteLLM API ({self.model_alias})...")
         
         messages = [Message(role="user", content=prompt)]
-        options = LLMOptions(temperature=0.4, max_completion_tokens=4000, reasoning_effort="low")
-        
+        options = LLMOptions(temperature=temperature, max_completion_tokens=4000, reasoning_effort="low")
+
         # 💡 UnifiedLLM を使って非同期実行！
         try:
             res = await self.llm.generate(model=self.model_alias, messages=messages, options=options)
@@ -233,7 +276,7 @@ class SentenceReviewService:
         except Exception as e:
             self.logger.log(f"⚠️ [Sentence Review] LLM call failed: {e}")
             self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch due to API error.")
-            return make_chunks_absolute(chunks_to_review)
+            return _stt_fallback_chunks(chunks_to_review)
 
         # パース処理 (元のロジックのまま)
         matches = re.findall(r'<s(\d{6})>(.*?)</s\1>', llm_output, re.DOTALL)
@@ -249,7 +292,7 @@ class SentenceReviewService:
             self.logger.log(f"⚠️ [Sentence Review] PARSING FAILURE! Success rate: {success_rate:.1%} ({parsed_count}/{total_orig}). Output may be truncated.")
             self.logger.log(f"   [LLM Output Snippet]: {snippet}")
             self.logger.log(f"   [Fallback] Reverting to original Whisper transcripts for this batch.")
-            return make_chunks_absolute(chunks_to_review)
+            return _stt_fallback_chunks(chunks_to_review)
 
         # 元セグメントのタイムスタンプは書き換えず、まず単語単位の推定時刻を振っておく。
         # これがバッチをまたいでも変化しない「不変の基準点」になる。

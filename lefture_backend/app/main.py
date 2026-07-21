@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import uuid
 import asyncio
 from typing import Optional
 from urllib.parse import urlencode
@@ -14,11 +15,18 @@ from google.cloud import tasks_v2
 from google.api_core.exceptions import AlreadyExists
 from standardwebhooks.webhooks import Webhook, WebhookVerificationError
 
-# Cloud Tasksのタスク名は決定的にするが、task_id/chunk単体だけをキーにすると
-# CHECK_AND_ASSEMBLEの「チャンクが揃うまでPENDINGに戻って自己リトライする」といった
-# 正当な再試行までCloud Tasksの名前重複チェックでブロックされてしまう
-# （同名タスクは完了後 約1時間 再利用できないため）。
-# そのため短い時間バケットをキーに含め、「ごく短時間の重複投入だけ」を弾く。
+# チャンクenqueue専用の時間バケット。receive_transcribe_chunkにはenqueue前の
+# アトミックなDBステータス遷移ガードが無い(クライアントの再送がそのまま二重
+# enqueueになり得る)ため、ここだけはCloud Tasks側の名前重複チェックで
+# 「ごく短時間の重複投入」を弾く必要がある。
+# ★ DAGタスク(enqueue_task)側では使わない: あちらは呼び出し前に必ず
+# `.eq("status", "PENDING"/"WAITING")` のアトミック更新で1回勝った呼び出しだけが
+# enqueue_taskへ進む設計のため、この粗い時間バケットをタスク名に混ぜると、
+# CHECK_AND_ASSEMBLEが待機→即座に再起床するような正当な後続呼び出しまで同じ
+# バケットに落ちてCloud Tasks側でAlreadyExists扱いになり、実際には一度も
+# 実行されないままQUEUEDで固まる不具合を起こした(該当タスクは既に完了して
+# キューから消えているにもかかわらず、同名タスクは完了後 約1時間 再利用できない
+# というCloud Tasksの制約に引っかかる)。
 TASK_DEDUP_WINDOW_SECONDS = 30
 
 def _dedup_bucket() -> int:
@@ -94,6 +102,7 @@ LECTURE_HARD_DELETE_RETENTION_DAYS = int(os.getenv("LECTURE_HARD_DELETE_RETENTIO
 PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "50")) # Patrol1回あたりでハードデリートする講義数の上限(タイムアウト防止。溢れた分は次回実行で処理される)
 CLOUD_TASKS_MAX_ATTEMPTS = int(os.getenv("CLOUD_TASKS_MAX_ATTEMPTS", "5")) # lefture-processing-queueのRetry Config(Max Attempts)と必ず一致させる。GCP側で変更したらここも変更すること
 STALE_FAILED_JOB_TIMEOUT_MINUTES = int(os.getenv("STALE_FAILED_JOB_TIMEOUT_MINUTES", "15")) # 即時判定(X-CloudTasks-TaskRetryCount)の取りこぼし対策。FAILEDのまま動きがないタスクを見て親ジョブをFAILED化するまでの分数
+PATROL_TIME_WINDOW_TOLERANCE_MINUTES = int(os.getenv("PATROL_TIME_WINDOW_TOLERANCE_MINUTES", "2")) # Cloud Schedulerは10分おきに叩くが、DB周回を伴う本チェックは0分・30分付近のみ実行(それ以外はウォームアップのみ)。配信遅延の許容幅
 SEND_EMAIL_HOOK_SECRET = os.getenv("SEND_EMAIL_HOOK_SECRET", "") # Supabase Auth「Send Email Hook」の署名検証シークレット(Standard Webhooks形式)
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
@@ -734,10 +743,14 @@ async def enqueue_task(payload: EnqueuePayload):
     }
 
     # 3. Cloud Tasksのジョブ構成
-    # name を task_id から決定的に組み立てることで、同じタスクが誤って
-    # 二重にenqueueされても(オーケストレーターの競合等)Cloud Tasks側で弾かれる。
+    # name は呼び出しごとに一意にする。二重enqueue防止は呼び出し元(orchestrator_webhook /
+    # _maybe_wake_check_and_assemble / 各patrol関数)がenqueue_task呼び出し前に必ず行う
+    # アトミックなDBステータス遷移(`.eq("status", "PENDING"/"WAITING")`)で担保済みのため、
+    # ここでさらに時間バケットで名前を固定すると、CHECK_AND_ASSEMBLEのように短時間で
+    # 「待機→再起床」を繰り返すタスクの正当な再enqueueまでCloud Tasks側の名前重複
+    # チェック(AlreadyExists、しかも完了後 約1時間 再利用不可)でブロックしてしまう。
     task = {
-        "name": client.task_path(PROJECT_ID, REGION, QUEUE_NAME, f"task-{payload.task_id}-{_dedup_bucket()}"),
+        "name": client.task_path(PROJECT_ID, REGION, QUEUE_NAME, f"task-{payload.task_id}-{uuid.uuid4().hex[:12]}"),
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}{route_path}",  # 割り出された専用の裏口を叩く！
@@ -970,6 +983,12 @@ async def topic_map_reconstruct(payload: TopicMapReconstructRequest):
 # それぞれ独立してtry/exceptする。
 # （音声チャンク自体の詰まりは task_runners._recover_stuck_chunks が
 #   CHECK_AND_ASSEMBLEの待ち合わせリトライの中で回収するため、ここでは対象にしない）
+#
+# Cloud Schedulerの呼び出し間隔自体は10分(コールドスタート防止のウォームアップ目的)。
+# DB周回を伴うPATROL_CHECKS本体は0分・30分付近(PATROL_TIME_WINDOW_TOLERANCE_MINUTES)
+# でのみ実行し、それ以外の呼び出しは起こすだけで何もしない。将来「1日1回でよいタスク」等
+# 頻度の異なるタスクを増やす場合も、新しいCloud Schedulerジョブを作らず、この関数内で
+# 現在時刻を見て分岐を増やす形にする(Cloud Schedulerの無料枠が3ジョブまでのため)。
 
 async def _patrol_reap_stale_dag_tasks() -> dict:
     """
@@ -1331,7 +1350,15 @@ PATROL_CHECKS = [
 
 @app.post("/maintenance/patrol")
 async def patrol():
-    """Cloud Schedulerから定期的に呼ばれる、汎用メンテナンスのディスパッチャー。"""
+    """
+    Cloud Schedulerから10分おきに呼ばれる、汎用メンテナンスのディスパッチャー。
+    DB周回を伴う本チェック(PATROL_CHECKS)は0分・30分付近でのみ実行し、
+    それ以外はコールドスタート防止のウォームアップとして起こすだけで即座に返す。
+    """
+    now = datetime.now(timezone.utc)
+    if now.minute % 30 >= PATROL_TIME_WINDOW_TOLERANCE_MINUTES:
+        return {"status": "warm"}
+
     results = {}
     for name, check_fn in PATROL_CHECKS:
         try:

@@ -422,7 +422,7 @@ async def trigger_sentence_review_for_batch_if_ready(
             review_billing = BillingEngine(task_type="SENTENCE_REVIEW")
             llm = UnifiedLLM(review_billing)
             reviewer = SentenceReviewService(llm, logger)
-            reviewed_chunks = await reviewer.run_from_memory(
+            reviewed_chunks = await reviewer.run_with_retry(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
                 course_title=course_title,
@@ -836,7 +836,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             
             llm = UnifiedLLM(billing)
             reviewer = SentenceReviewService(llm, logger)
-            reviewed_leftovers = await reviewer.run_from_memory(
+            reviewed_leftovers = await reviewer.run_with_retry(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
                 course_title=course_title,
@@ -1005,34 +1005,38 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         assembled_data = assembler.run([single_chunk])
             
         logger.log(f"🎉 Transcription completed! Generated {len(assembled_data)} sentences. Saving to R2...")
-        
+
         # 5. R2に保存
         remote_transcript_path = await asyncio.to_thread(
-            storage_service.save_json_log, 
-            uid, 
-            lecture_id, 
-            "transcript_assembled", 
+            storage_service.save_json_log,
+            uid,
+            lecture_id,
+            "transcript_assembled",
             assembled_data
         )
-        
-        # 6. lecture_transcripts に 1レコード登録 (フォールバック用)
-        logger.log("📝 Registering chunk 0 into lecture_transcripts DB...")
-        await asyncio.to_thread(
-            lambda: supabase.table("lecture_transcripts").upsert({
-                "lecture_id": lecture_id,
-                "chunk_index": 0,
-                "audio_duration": result.get("audio_duration", 0.0),
-                "status": "REVIEWED",
-                "text_stt": result.get("text", ""),
-                "text_reviewed": result.get("text", ""),
-                "segments_stt": raw_segments,
-                "segments_reviewed": raw_segments,
-                "confidence": raw_segments[0].get("confidence", 0.99) if raw_segments else 0.99,
-                "storage_path": audio_path,
-                "start_time": 0.0,
-                "billing_records": [vars(r) for r in billing.records],
-            }, on_conflict="lecture_id,chunk_index").execute()
-        )
+
+        # 6. lecture_transcripts に登録（Realtime モードのみ）
+        # Pre-recorded モード（expected_chunks=0）では R2 に保存済みなので DB 登録は不要
+        if is_realtime:
+            logger.log("📝 Registering chunk 0 into lecture_transcripts DB...")
+            await asyncio.to_thread(
+                lambda: supabase.table("lecture_transcripts").upsert({
+                    "lecture_id": lecture_id,
+                    "chunk_index": 0,
+                    "audio_duration": result.get("audio_duration", 0.0),
+                    "status": "REVIEWED",
+                    "text_stt": result.get("text", ""),
+                    "text_reviewed": result.get("text", ""),
+                    "segments_stt": raw_segments,
+                    "segments_reviewed": raw_segments,
+                    "confidence": raw_segments[0].get("confidence", 0.99) if raw_segments else 0.99,
+                    "storage_path": audio_path,
+                    "start_time": 0.0,
+                    "billing_records": [vars(r) for r in billing.records],
+                }, on_conflict="lecture_id,chunk_index").execute()
+            )
+        else:
+            logger.log("⏭️ Skipping lecture_transcripts registration (Pre-recorded mode, already in R2)")
         
         # 7. 請求データの合算と保存
         aggregated_records = _aggregate_billing_records(billing.records)

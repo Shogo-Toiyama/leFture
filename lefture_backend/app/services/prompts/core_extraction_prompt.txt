@@ -20,12 +20,12 @@ The format is strict: `<sid>: <text>`
 - Group related concepts by larger learning arcs (e.g., problem → solution, principle → implementation, theory → real-world system).
 - Do not split every technical term into its own topic. Place boundaries at major conceptual shifts, not minor term changes.
 - If the professor returns to an earlier concept for a sustained section, create or continue a chapter that reflects that resumed concept.
-- Non-Overlapping Rule (CRITICAL): The sequence of topics must be strictly chronological and non-overlapping. The start_sid of a topic must begin after the end_sid of the previous topic (e.g., Topic 1 ends at s000140 and Topic 2 starts at s000141 or later).
+- Non-Overlapping & Continuity Rule (CRITICAL): The sequence of topics must be strictly chronological, non-overlapping, and continuous. The start_sid of a topic must begin after the end_sid of the previous topic, and the gap between them MUST NOT exceed 10 sentences (e.g., if Topic 1 ends at s000140, Topic 2 must start between s000141 and s000151). Never skip or ignore large segments of the transcript.
 
 **Content Filtering & Logistics Rule:**
 - Ignore pure filler, jokes, and brief administrative remarks.
 - ONLY create a "LOGISTICS" segment if there is a massive, continuous block discussing the syllabus or grading.
-- Do not leave large gaps. Meaningful transitional content, examples, and definitions MUST be absorbed into the nearest appropriate ACADEMIC topic.
+- Do not leave large gaps (Strictly limit gaps to 10 sentences or less). Meaningful transitional content, examples, and definitions MUST be absorbed into the nearest appropriate ACADEMIC topic. Never skip large chunks of sentences.
 
 **Balance Rule:**
 - Keep topics reasonably balanced in learning weight and transcript length.
