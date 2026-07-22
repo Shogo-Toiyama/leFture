@@ -57,8 +57,6 @@ class MakeProfileSheet extends HookConsumerWidget {
         // Outboxに書き込まれた変更を即座に送信開始
         ref.read(lectureControllerProvider.notifier).pushOutboxNow();
 
-        ref.invalidate(currentUserProfileProvider);
-
         if (context.mounted) {
           Navigator.of(context).pop();
         }

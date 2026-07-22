@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:lecture_companion_ui/core/services/audio_record/audio_chunker.dart';
+import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
+import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/audio_record/audio_recorder_service.dart';
 import '../../infrastructure/local_db/repositories/recording_repository_drift.dart';
+import 'recording_language_controller.dart';
 import 'recording_state.dart';
 import 'upload_manager.dart';
 
@@ -93,6 +98,7 @@ class RecordingController extends _$RecordingController {
   RecordingRepositoryDrift get _repo => ref.read(recordingRepositoryDriftProvider);
   AudioRecorderService get _recorder => ref.read(audioRecorderServiceProvider);
   UploadManager get _uploadMgr => ref.read(uploadManagerProvider);
+  LectureMomentRepositoryDrift get _momentRepo => ref.read(lectureMomentRepositoryDriftProvider);
 
   @override
   RecordingState build() {
@@ -100,7 +106,13 @@ class RecordingController extends _$RecordingController {
       _dbSubscription?.cancel();
       _timer?.cancel();
     });
-    return RecordingState.idle();
+
+    // Preferences から保存済みの設定を読み込む
+    final prefs = RecordingPreferences();
+    return RecordingState.idle().copyWith(
+      realtimeTranscribe: prefs.getRealtimeTranscribe(),
+      autoStartAnalysis: prefs.getAutoStartAnalysis(),
+    );
   }
 
   void _startWatchingLecture(String lectureId) {
@@ -158,6 +170,17 @@ class RecordingController extends _$RecordingController {
       state = state.copyWith(phase: RecordingPhase.recording);
       return;
     }
+  }
+
+  /// RecordingPageに入った瞬間に呼ぶ早期リクエスト。「授業が始まってしまった!」
+  /// という時に録音開始がもたつかないよう、実際に録音ボタンを押すより前に
+  /// 済ませておく。結果を待たず、UI状態(RecordingPhaseなど)にも反映しない
+  /// ——実際の可否判定・エラー表示は_startRecordingSession側の既存フローに任せる。
+  /// 既にpermanentlyDeniedの場合は再プロンプトしても意味が無いのでスキップする。
+  Future<void> requestMicPermissionEarly() async {
+    final status = await Permission.microphone.status;
+    if (status.isGranted || status.isPermanentlyDenied) return;
+    await Permission.microphone.request();
   }
 
   Future<void> _startRecordingSession() async {
@@ -244,8 +267,17 @@ class RecordingController extends _$RecordingController {
         },
         onMasterDataReady: (Uint8List masterData) async {
           await _recorder.appendMasterRawData(masterData, lectureId);
+          // マスター音声への追記と並行して、オンデバイスASRエンジンにも同じ
+          // 生PCMを流し込む(Realtime Transcribe OFF、またはモデル未準備の
+          // 場合はLiveAsrController側が何もしないので安全)。
+          ref.read(liveAsrControllerProvider.notifier).acceptPcm16(masterData);
         },
       );
+
+      if (state.realtimeTranscribe) {
+        final recordingLanguage = ref.read(recordingLanguageControllerProvider);
+        ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
+      }
 
       DevLog.add('[StartSession] 6/8 calling _recorder.startStream()...');
       final audioStream = await _recorder.startStream();
@@ -278,8 +310,11 @@ class RecordingController extends _$RecordingController {
     });
   }
 
-  void setAutoStartAnalysis(bool value) async {
+  Future<void> setAutoStartAnalysis(bool value) async {
     state = state.copyWith(autoStartAnalysis: value);
+    // Preferences に保存
+    await RecordingPreferences().setAutoStartAnalysis(value);
+
     final lecture = state.lecture;
     if (lecture != null) {
       await _repo.updateLectureAutoStartAnalysis(
@@ -290,10 +325,40 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  void setRealtimeTranscribe(bool value) {
+  Future<void> setRealtimeTranscribe(bool value) async {
     if (state.phase == RecordingPhase.idle) {
       state = state.copyWith(realtimeTranscribe: value);
+      // Preferences に保存
+      await RecordingPreferences().setRealtimeTranscribe(value);
     }
+  }
+
+  Future<void> addReaction(String momentType) async {
+    final lectureId = state.currentLectureId;
+    if (lectureId == null) return;
+    await _momentRepo.addMoment(
+      lectureId: lectureId,
+      momentType: momentType,
+      timestampSec: state.elapsedSeconds,
+    );
+    ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+  }
+
+  Future<void> addNote(String text) async {
+    final lectureId = state.currentLectureId;
+    if (lectureId == null) return;
+    await _momentRepo.addMoment(
+      lectureId: lectureId,
+      momentType: 'note',
+      noteText: text,
+      timestampSec: state.elapsedSeconds,
+    );
+    ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+  }
+
+  Future<void> deleteMoment(String id) async {
+    await _momentRepo.deleteMoment(id);
+    ref.read(lectureControllerProvider.notifier).pushOutboxNow();
   }
 
   Future<void> setTitle(String newTitle) async {
@@ -334,6 +399,7 @@ class RecordingController extends _$RecordingController {
     try {
       await _audioStreamSub?.cancel();
       await _recorder.stop();
+      await ref.read(liveAsrControllerProvider.notifier).stop();
       _timer?.cancel();
 
       // 1. マスター生PCMデータをAAC (M4A) に圧縮エンコード
@@ -387,6 +453,7 @@ class RecordingController extends _$RecordingController {
   Future<void> cancelAndDiscard() async {
     await _audioStreamSub?.cancel();
     await _recorder.stop();
+    await ref.read(liveAsrControllerProvider.notifier).stop();
     _timer?.cancel();
     _dbSubscription?.cancel();
 

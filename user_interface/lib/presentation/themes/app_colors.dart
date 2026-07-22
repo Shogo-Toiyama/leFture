@@ -25,6 +25,10 @@ class AppColors {
   /// 注意喚起や、まだ完了していないタスクに。
   static const alertAmber = Color(0xFFFFA000);
 
+  /// 【コズミックブルー】
+  /// 疑問、難解な箇所、探求を表す青。
+  static const cosmicBlue = Color(0xFF42A5F5);
+
   /// 【添削の赤】
   /// エラーや削除、先生の赤ペンのような色。
   static const correctionRed = Color(0xFFE53935);

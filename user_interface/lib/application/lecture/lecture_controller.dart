@@ -14,6 +14,7 @@ import 'package:lecture_companion_ui/application/sync/deep_note_sync_service.dar
 import 'package:lecture_companion_ui/application/sync/topic_map_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
 import 'package:lecture_companion_ui/application/sync/lecture_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/lecture_moment_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/fun_fact_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/announcement_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/review_card_outbox_push_handler.dart';
@@ -51,6 +52,7 @@ class LectureController extends _$LectureController {
     final db = ref.read(appDatabaseProvider);
     return OutboxSyncService(db, {
       'lecture': LectureOutboxPushHandler(),
+      'lecture_moment': LectureMomentOutboxPushHandler(),
       'fun_fact': FunFactOutboxPushHandler(),
       'announcement': AnnouncementOutboxPushHandler(),
       'review_card': ReviewCardOutboxPushHandler(),

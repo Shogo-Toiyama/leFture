@@ -113,4 +113,56 @@ class UserProfileRepositorySupabase {
 
     return updatedProfile;
   }
+
+  static const _onboardingCompletedMetadataKey = 'onboarding_completed_at';
+
+  /// 初回オンボーディング(プロフィール設定・Recording Language・Realtime
+  /// Recording ON/OFF)を完了済みかどうか。ローカルにプロフィール行が
+  /// 無い、またはmetadataにフラグが無い場合は未完了として扱う。
+  Future<bool> hasCompletedOnboarding() async {
+    final uid = _requireUid();
+    final existing = await _db.getUserProfile(uid);
+    if (existing?.metadataJson == null) return false;
+    final metadata = Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map);
+    return metadata[_onboardingCompletedMetadataKey] != null;
+  }
+
+  /// オンボーディング完了をmetadataにマージして記録し、サーバーにも同期する。
+  Future<void> markOnboardingCompleted() async {
+    final uid = _requireUid();
+
+    // ローカルキャッシュがまだ空/古い状態(スキーママイグレーション直後や、
+    // このデバイスでまだ一度もプロフィールを取得していない場合)でここから
+    // 直接Outboxにpushしてしまうと、UserProfileOutboxPushHandlerはローカル行の
+    // 値をそのままサーバーへ丸ごと`.update()`するため、まだ埋まっていない
+    // username/bio/interests/futureGoals/avatarUrlをNULLでサーバー上書きして
+    // しまう恐れがある。そのため、必ず先にサーバーの最新値でローカルを
+    // 埋めてから、metadataだけをマージする。
+    try {
+      await getCurrentProfile();
+    } catch (_) {
+      // オフライン等で取得できない場合も、既存のローカルキャッシュのみで進める
+      // (updateProfileの既存動作と同じフォールバック)。
+    }
+
+    final existing = await _db.getUserProfile(uid);
+    final metadata = existing?.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
+        : <String, dynamic>{};
+    metadata[_onboardingCompletedMetadataKey] = DateTime.now().toUtc().toIso8601String();
+
+    // metadataJson以外のフィールドはあえてCompanionに含めない(Value()でラップ
+    // しない)。insertOnConflictUpdateは指定したカラムしか更新しないため、
+    // これにより既存のusername/bio/interests/futureGoals/avatarUrlを
+    // 誤って上書き・NULL化することがない。
+    await _db.upsertUserProfile(
+      LocalUserProfilesCompanion(
+        id: Value(uid),
+        metadataJson: Value(jsonEncode(metadata)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.enqueueOutbox(entityType: 'user_profile', entityId: uid, op: 'update');
+  }
 }

@@ -74,7 +74,7 @@ final class LatestAnnouncementForCourseProvider
 }
 
 String _$latestAnnouncementForCourseHash() =>
-    r'26e48612b633de618911cf51f5da335745571baa';
+    r'109e483323e61803768656ba17760cc005ab6593';
 
 /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
 /// ローカルDB経由でオフライン優先。
@@ -100,17 +100,15 @@ final class LatestAnnouncementForCourseFamily extends $Family
   String toString() => r'latestAnnouncementForCourseProvider';
 }
 
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
-/// そのまま反映される。
+/// コースに属する全レクチャーを横断した、未完了、または直近5分以内に完了したアナウンスメント一覧。
+/// ローカルDB経由でオフライン優先。30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
 
 @ProviderFor(activeAnnouncementsForCourse)
 final activeAnnouncementsForCourseProvider =
     ActiveAnnouncementsForCourseFamily._();
 
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
-/// そのまま反映される。
+/// コースに属する全レクチャーを横断した、未完了、または直近5分以内に完了したアナウンスメント一覧。
+/// ローカルDB経由でオフライン優先。30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
 
 final class ActiveAnnouncementsForCourseProvider
     extends
@@ -122,9 +120,8 @@ final class ActiveAnnouncementsForCourseProvider
     with
         $FutureModifier<List<Announcement>>,
         $StreamProvider<List<Announcement>> {
-  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-  /// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
-  /// そのまま反映される。
+  /// コースに属する全レクチャーを横断した、未完了、または直近5分以内に完了したアナウンスメント一覧。
+  /// ローカルDB経由でオフライン優先。30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
   ActiveAnnouncementsForCourseProvider._({
     required ActiveAnnouncementsForCourseFamily super.from,
     required String super.argument,
@@ -171,11 +168,10 @@ final class ActiveAnnouncementsForCourseProvider
 }
 
 String _$activeAnnouncementsForCourseHash() =>
-    r'555b08f2f6d589d291e61ce3e4640fdd466e1d99';
+    r'2d97f1db5f0a12ea924aeff16b20e4aec4de8a89';
 
-/// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-/// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
-/// そのまま反映される。
+/// コースに属する全レクチャーを横断した、未完了、または直近5分以内に完了したアナウンスメント一覧。
+/// ローカルDB経由でオフライン優先。30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
 
 final class ActiveAnnouncementsForCourseFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<Announcement>>, String> {
@@ -188,9 +184,8 @@ final class ActiveAnnouncementsForCourseFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// コースに属する全レクチャーを横断した、未完了のアナウンスメント一覧。
-  /// ローカルDB経由でオフライン優先。Streamなので、完了/未完了のトグルが
-  /// そのまま反映される。
+  /// コースに属する全レクチャーを横断した、未完了、または直近5分以内に完了したアナウンスメント一覧。
+  /// ローカルDB経由でオフライン優先。30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
 
   ActiveAnnouncementsForCourseProvider call(String courseId) =>
       ActiveAnnouncementsForCourseProvider._(argument: courseId, from: this);

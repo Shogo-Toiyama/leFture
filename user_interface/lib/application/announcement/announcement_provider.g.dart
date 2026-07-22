@@ -51,18 +51,16 @@ final class LatestAnnouncementProvider
 }
 
 String _$latestAnnouncementHash() =>
-    r'7449ea611cde331e4b8f70db8d638e17a7714c54';
+    r'bc0bfee6f5c921de7db85912c361bfdfb0237cdf';
 
-/// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
-/// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
-/// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
+/// 未完了、または直近5分以内に完了したアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+/// 30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
 
 @ProviderFor(activeAnnouncements)
 final activeAnnouncementsProvider = ActiveAnnouncementsProvider._();
 
-/// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
-/// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
-/// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
+/// 未完了、または直近5分以内に完了したアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+/// 30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
 
 final class ActiveAnnouncementsProvider
     extends
@@ -74,9 +72,8 @@ final class ActiveAnnouncementsProvider
     with
         $FutureModifier<List<Announcement>>,
         $StreamProvider<List<Announcement>> {
-  /// 未完了のアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
-  /// Streamなので、完了/未完了のトグル(Drift経由の即時ローカル更新)がそのまま
-  /// 反映される — 以前のような楽観的UI用の手動state書き換えは不要。
+  /// 未完了、または直近5分以内に完了したアナウンスメント全件（新しい順）。ローカルDB経由でオフライン優先。
+  /// 30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
   ActiveAnnouncementsProvider._()
     : super(
         from: null,
@@ -104,4 +101,4 @@ final class ActiveAnnouncementsProvider
 }
 
 String _$activeAnnouncementsHash() =>
-    r'36bf20006850676efdb424e8d2587809fb71d5f7';
+    r'f11edfe148a0819df299e5b5b7c220f75786ac3f';

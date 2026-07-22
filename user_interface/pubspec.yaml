@@ -52,6 +52,9 @@ dependencies:
   markdown: ^7.3.0
   vector_math: ^2.1.4
   file_picker: ^11.0.2
+  sherpa_onnx: ^1.13.4
+  archive: ^4.0.9
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

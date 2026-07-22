@@ -5,6 +5,8 @@ import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/pending_auth_action.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/social_sign_in_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChangeAuthProviderSheet extends HookConsumerWidget {
@@ -91,18 +93,9 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
             if (errorMessage.value != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.correctionRed.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    errorMessage.value!,
-                    style: const TextStyle(color: AppColors.correctionRed, fontSize: 13),
-                  ),
+                child: AppErrorBox(
+                  actionName: 'changing authentication provider',
+                  rawError: errorMessage.value,
                 ),
               ),
 
@@ -144,7 +137,10 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
                           ),
                           child: Row(
                             children: [
-                              Icon(icon, color: AppColors.starGold),
+                              if (provider == OAuthProvider.google)
+                                const GoogleLogoIcon(size: 22)
+                              else
+                                Icon(icon, color: Colors.white, size: 22),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(

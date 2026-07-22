@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/social_sign_in_button.dart';
 
 class SignInPage extends HookConsumerWidget {
@@ -16,6 +17,7 @@ class SignInPage extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final obscurePassword = useState(true);
+    final inlineError = useState<dynamic>(null);
 
     final authState = ref.watch(authControllerProvider);
 
@@ -23,20 +25,35 @@ class SignInPage extends HookConsumerWidget {
       next.whenOrNull(
         data: (_) => context.go(AppRoutes.home),
         error: (error, stackTrace) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error.toString()),
-              backgroundColor: AppColors.correctionRed,
-            ),
+          AppErrorDialog.showSmartNamed(
+            context,
+            actionName: 'signing in',
+            rawError: error,
+            onFriendlyError: (err) {
+              inlineError.value = err;
+            },
           );
         },
       );
     });
 
     void signIn() {
+      inlineError.value = null;
+      final email = emailController.text.trim();
+      final password = passwordController.text;
+
+      if (email.isEmpty) {
+        inlineError.value = 'Please enter your email address.';
+        return;
+      }
+      if (password.isEmpty) {
+        inlineError.value = 'Please enter your password.';
+        return;
+      }
+
       ref.read(authControllerProvider.notifier).signIn(
-        emailController.text.trim(),
-        passwordController.text,
+        email,
+        password,
       );
     }
 
@@ -142,6 +159,13 @@ class SignInPage extends HookConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (inlineError.value != null) ...[
+                        AppErrorBox(
+                          actionName: 'signing in',
+                          rawError: inlineError.value,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       TextField(
                         controller: emailController,
                         style: TextStyle(color: AppColors.universe.textStarlight),

@@ -6,6 +6,8 @@ import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
+import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/presentation/widgets/user_avatar.dart';
 import 'recording_timer_chip.dart';
 
 class CustomAppBar extends ConsumerWidget {
@@ -275,42 +277,38 @@ class CustomAppBar extends ConsumerWidget {
                     ...actions!,
                     const SizedBox(width: 8),
                   ],
-                  GestureDetector(
-                    onTap: () => context.push(AppRoutes.profile),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // クレジット残量ゲージ
-                        SizedBox(
-                          width: 32,
-                          height: 32,
-                          child: CircularProgressIndicator(
-                            value: 0.7, // Fake: 残り70%
-                            strokeWidth: 3,
-                            backgroundColor: isLightBg 
-                                ? AppColors.paper.textInk.withValues(alpha: 0.1)
-                                : AppColors.universe.glassWhiteLow,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isLightBg ? AppColors.deepGold : AppColors.starGold,
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final profile = ref.watch(currentUserProfileProvider).asData?.value;
+                      return GestureDetector(
+                        onTap: () => context.push(AppRoutes.account),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // クレジット残量ゲージ
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                value: 0.7, // Fake: 残り70%
+                                strokeWidth: 2.5,
+                                backgroundColor: isLightBg 
+                                    ? AppColors.paper.textInk.withValues(alpha: 0.1)
+                                    : AppColors.universe.glassWhiteLow,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isLightBg ? AppColors.deepGold : AppColors.starGold,
+                                ),
+                              ),
                             ),
-                          ),
+                            // User Avatar
+                            UserAvatar(
+                              profile: profile,
+                              size: 25,
+                            ),
+                          ],
                         ),
-                        // アイコン本体
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isLightBg ? AppColors.paper.textInk.withValues(alpha: 0.1) : Colors.white,
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            color: isLightBg ? AppColors.paper.textInk : Colors.grey,
-                            size: 20,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ],
               )

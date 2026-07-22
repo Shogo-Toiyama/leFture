@@ -19,11 +19,13 @@ import 'package:lecture_companion_ui/presentation/pages/forgot_password/forgot_p
 import 'package:lecture_companion_ui/presentation/pages/reset_password/reset_password_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/legal/legal_document_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/welcome/welcome_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/onboarding/onboarding_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/home/home_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/learning_galaxy/learning_galaxy_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
-import 'package:lecture_companion_ui/presentation/pages/profile/profile_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/my_account_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/user_profile_detail_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/contact/contact_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/course_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
@@ -34,6 +36,7 @@ import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_de
 import 'package:lecture_companion_ui/presentation/pages/transcript/transcript_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/topic_map/topic_map_page.dart';
 import 'package:lecture_companion_ui/application/profile/activity_records_provider.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/activity_records_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -207,6 +210,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.home;
       }
 
+      // 3. ログイン済みでオンボーディング未完了なら、オンボーディング画面以外への
+      //    遷移をすべて差し戻す(オンボーディング自体・公開ルートは素通しする)。
+      if (session != null && !isPublicRoute && path != AppRoutes.onboarding) {
+        final completed =
+            await ref.read(userProfileRepositoryProvider).hasCompletedOnboarding();
+        if (!completed) return AppRoutes.onboarding;
+      }
+
       // ★ 保存ロジックも削除しました。シンプル！
       return null;
     },
@@ -220,11 +231,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('ページが見つかりませんでした'),
+            const Text(
+              'Page Not Found',
+              style: TextStyle(
+                color: Color(0xFFF2F2F2),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 16),
-            TextButton(
+            ElevatedButton(
               onPressed: () => context.go(AppRoutes.home),
-              child: const Text('ホームに戻る'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB300), // AppColors.starGold hex
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Back to Home'),
             ),
           ],
         ),
@@ -280,6 +302,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           slug: 'terms_of_service',
           fallbackTitle: 'Terms of Service',
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingPage(),
       ),
 
       // =================================================================
@@ -413,8 +439,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AiChatPage(),
       ),
       GoRoute(
+        path: AppRoutes.account,
+        builder: (context, state) => const MyAccountPage(),
+      ),
+      GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const ProfilePage(),
+        builder: (context, state) => const UserProfileDetailPage(),
       ),
       GoRoute(
         path: AppRoutes.contact,

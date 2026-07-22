@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
 class ContactPage extends HookConsumerWidget {
   const ContactPage({super.key});
@@ -237,17 +238,9 @@ class ContactPage extends HookConsumerWidget {
                         const SizedBox(height: 28),
                         
                         if (errorMessage.value != null) ...[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.correctionRed.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.3)),
-                            ),
-                            child: Text(
-                              errorMessage.value!,
-                              style: const TextStyle(color: AppColors.correctionRed),
-                            ),
+                          AppErrorBox(
+                            actionName: 'submitting your inquiry',
+                            rawError: errorMessage.value,
                           ),
                           const SizedBox(height: 20),
                         ],

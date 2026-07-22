@@ -12,6 +12,18 @@ const _googleLogoSvg = '''
 </svg>
 ''';
 
+/// Embedded multi-color Google "G" logo widget.
+class GoogleLogoIcon extends StatelessWidget {
+  const GoogleLogoIcon({super.key, this.size = 20});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.string(_googleLogoSvg, width: size, height: size);
+  }
+}
+
 enum SocialProvider { google, apple }
 
 /// Outlined, glassmorphic button for third-party sign-in options.
@@ -36,7 +48,7 @@ class SocialSignInButton extends StatelessWidget {
     };
 
     final Widget icon = switch (provider) {
-      SocialProvider.google => SvgPicture.string(_googleLogoSvg, width: 20, height: 20),
+      SocialProvider.google => const GoogleLogoIcon(size: 20),
       SocialProvider.apple => const Icon(Icons.apple, size: 22, color: Colors.white),
     };
 

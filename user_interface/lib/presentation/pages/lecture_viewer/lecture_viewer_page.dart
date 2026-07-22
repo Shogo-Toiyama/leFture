@@ -2074,8 +2074,12 @@ class _TranscriptView extends StatelessWidget {
 
   static String _formatMs(int ms) {
     final totalSeconds = ms ~/ 1000;
-    final minutes = totalSeconds ~/ 60;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
     final seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 

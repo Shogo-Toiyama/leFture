@@ -7,18 +7,25 @@ import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/user_profile.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
-import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_email_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_password_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_auth_provider_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/change_account_sheet.dart';
+import 'package:lecture_companion_ui/application/profile/display_language_controller.dart';
+import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
+import 'package:lecture_companion_ui/domain/entities/app_language.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/widgets/language_selection_sheet.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/user_avatar.dart';
 
-class ProfilePage extends ConsumerWidget {
-  const ProfilePage({super.key});
+class MyAccountPage extends ConsumerWidget {
+  const MyAccountPage({super.key});
 
   Future<void> _signOut(BuildContext context) async {
     await supabase.auth.signOut();
@@ -42,7 +49,7 @@ class ProfilePage extends ConsumerWidget {
             floating: true,
             backgroundColor: AppColors.universe.voidBackground,
             title: const Text(
-              'Profile',
+              'My Account',
               style: TextStyle(
                 color: Color(0xFFF2F2F2),
                 fontWeight: FontWeight.w600,
@@ -56,10 +63,21 @@ class ProfilePage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header (Avatar + Name & Credit Card)
+                _HeaderSection(profile: profile),
+
+                const SizedBox(height: 32),
+
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 // SECTION 1 — PROFILE
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                _ProfileSection(profile: profile),
+                _SectionHeader(
+                  icon: Icons.person_rounded,
+                  label: 'Profile',
+                  color: AppColors.starGold,
+                ),
+                const SizedBox(height: 8),
+                _ProfileTilesSection(profile: profile),
 
                 const SizedBox(height: 32),
 
@@ -136,245 +154,204 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1: Profile
+// HEADER: User Avatar & Credit Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({required this.profile});
+class _HeaderSection extends HookConsumerWidget {
+  const _HeaderSection({required this.profile});
+  final UserProfile? profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isEditing = useState(false);
+    final displayName = profile?.username ?? 'Explorer';
+    final controller = useTextEditingController(text: displayName);
+    final isSubmitting = useState(false);
+
+    useEffect(() {
+      if (!isEditing.value) {
+        controller.text = displayName;
+      }
+      return null;
+    }, [displayName, isEditing.value]);
+
+    Future<void> saveUsername() async {
+      final newName = controller.text.trim();
+      if (newName.isEmpty || newName == displayName) {
+        isEditing.value = false;
+        controller.text = displayName;
+        return;
+      }
+
+      isSubmitting.value = true;
+      try {
+        final repo = ref.read(userProfileRepositoryProvider);
+        await repo.updateProfile(username: newName);
+        ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+        isEditing.value = false;
+      } catch (e) {
+        if (context.mounted) {
+          AppErrorDialog.showSmart(context, e, actionName: 'updating display name');
+        }
+      } finally {
+        isSubmitting.value = false;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              // ── Avatar + Name Row ──────────────────────────────────
+              Row(
+                children: [
+                  // Avatar
+                  UserAvatar(profile: profile, size: 72),
+                  const SizedBox(width: 16),
+                  // Name (Inline Editing)
+                  Expanded(
+                    child: isEditing.value
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: controller,
+                                  autofocus: true,
+                                  style: const TextStyle(
+                                    color: Color(0xFFF2F2F2),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(alpha: 0.08),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppColors.starGold),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppColors.starGold, width: 1.5),
+                                    ),
+                                  ),
+                                  onSubmitted: (_) => saveUsername(),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              if (isSubmitting.value)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.starGold),
+                                )
+                              else ...[
+                                IconButton(
+                                  icon: const Icon(Icons.check_rounded, color: AppColors.growthGreen, size: 22),
+                                  onPressed: saveUsername,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: 'Save',
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                                  onPressed: () {
+                                    isEditing.value = false;
+                                    controller.text = displayName;
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: 'Cancel',
+                                ),
+                              ],
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  style: const TextStyle(
+                                    color: Color(0xFFF2F2F2),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit_outlined,
+                                  color: Color(0xFFF2F2F2),
+                                  size: 22,
+                                ),
+                                onPressed: () {
+                                  isEditing.value = true;
+                                },
+                                tooltip: 'Edit Name',
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ── Credit Card ────────────────────────────────────────
+        _CreditCard(percent: 0.70),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 1: Profile (Preview Tiles)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ProfileTilesSection extends StatelessWidget {
+  const _ProfileTilesSection({required this.profile});
   final UserProfile? profile;
 
   @override
   Widget build(BuildContext context) {
-    final displayName = profile?.username ?? 'Explorer';
-    final initials = displayName.trim().isEmpty
-        ? 'EX'
-        : displayName
-            .trim()
-            .split(' ')
-            .where((e) => e.isNotEmpty)
-            .map((e) => e[0].toUpperCase())
-            .take(2)
-            .join('');
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return _GlassCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-          // ── Avatar + Name Row ──────────────────────────────────
-          Row(
-            children: [
-              // Avatar
-              Stack(
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF7C83FD), Color(0xFFFFB300)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        initials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Online badge
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.growthGreen,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.universe.voidBackground,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              // Name
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: const TextStyle(
-                          color: Color(0xFFF2F2F2),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.edit_outlined,
-                        color: Color(0xFFF2F2F2),
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const MakeProfileSheet(),
-                        );
-                      },
-                      tooltip: 'Edit Profile',
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _ProfilePreviewTile(
+            icon: Icons.person_outline_rounded,
+            label: 'ABOUT YOU',
+            content: profile?.bio,
+            placeholder: 'No description set yet.',
+            onTap: () => context.push(AppRoutes.profile),
           ),
-
-          const SizedBox(height: 20),
-
-          // ── Credit Bar ────────────────────────────────────────
-          _CreditBar(percent: 0.70),
-
-          const SizedBox(height: 20),
-
-          // ── About You ─────────────────────────────────────────
-          Row(
-            children: [
-              const Icon(
-                Icons.person_outline_rounded,
-                size: 15,
-                color: AppColors.starGold,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'ABOUT YOU',
-                style: TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ],
+          _Divider(),
+          _ProfilePreviewTile(
+            icon: Icons.auto_awesome_outlined,
+            label: 'INTERESTS',
+            content: profile?.interests,
+            placeholder: 'No interests set yet.',
+            onTap: () => context.push(AppRoutes.profile),
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0x1AFFFFFF),
-              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
-            ),
-            child: Text(
-              profile?.bio ?? 'No description set yet.',
-              style: const TextStyle(
-                color: Color(0xFFF2F2F2),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Interests ─────────────────────────────────────────
-          Row(
-            children: [
-              const Icon(
-                Icons.auto_awesome_outlined,
-                size: 15,
-                color: AppColors.starGold,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'INTERESTS',
-                style: TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0x1AFFFFFF),
-              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
-            ),
-            child: Text(
-              profile?.interests ?? 'No interests set yet.',
-              style: const TextStyle(
-                color: Color(0xFFF2F2F2),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Future Dreams ─────────────────────────────────────
-          Row(
-            children: [
-              const Icon(
-                Icons.flag_outlined,
-                size: 15,
-                color: AppColors.starGold,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'FUTURE DREAMS',
-                style: TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0x1AFFFFFF),
-              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
-            ),
-            child: Text(
-              profile?.futureGoals ?? 'No future dream set yet.',
-              style: const TextStyle(
-                color: Color(0xFFF2F2F2),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ),
+          _Divider(),
+          _ProfilePreviewTile(
+            icon: Icons.flag_outlined,
+            label: 'FUTURE DREAMS',
+            content: profile?.futureGoals,
+            placeholder: 'No future dream set yet.',
+            onTap: () => context.push(AppRoutes.profile),
           ),
         ],
       ),
@@ -382,45 +359,188 @@ class _ProfileSection extends StatelessWidget {
   }
 }
 
-// Credit Bar Widget
-class _CreditBar extends StatelessWidget {
-  const _CreditBar({required this.percent});
+class _ProfilePreviewTile extends StatelessWidget {
+  const _ProfilePreviewTile({
+    required this.icon,
+    required this.label,
+    this.content,
+    required this.placeholder,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? content;
+  final String placeholder;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasContent = content != null && content!.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.white10,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          icon,
+                          size: 15,
+                          color: AppColors.starGold,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            color: AppColors.starGold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      hasContent ? content! : placeholder,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: hasContent
+                            ? const Color(0xFFF2F2F2)
+                            : AppColors.universe.textComet,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.universe.textComet,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Credit Card Widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CreditCard extends StatelessWidget {
+  const _CreditCard({required this.percent});
   final double percent;
 
   @override
   Widget build(BuildContext context) {
     final pct = (percent * 100).round();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return _GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Credits',
-              style: TextStyle(
-                color: AppColors.universe.textComet,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.8,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.starGold.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bolt_rounded,
+                        color: AppColors.starGold,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Credits',
+                      style: TextStyle(
+                        color: Color(0xFFF2F2F2),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$pct',
+                        style: const TextStyle(
+                          color: AppColors.starGold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      TextSpan(
+                        text: ' / 100',
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            RichText(
-              text: TextSpan(
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: Stack(
                 children: [
-                  TextSpan(
-                    text: '$pct',
-                    style: const TextStyle(
-                      color: AppColors.starGold,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                  // Track
+                  Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0x1AFFFFFF),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
-                  TextSpan(
-                    text: ' / 100',
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 12,
+                  // Fill
+                  FractionallySizedBox(
+                    widthFactor: percent,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                        ),
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.starGold.withValues(alpha: 0.5),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -428,43 +548,7 @@ class _CreditBar extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(100),
-          child: Stack(
-            children: [
-              // Track
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0x1AFFFFFF),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-              // Fill
-              FractionallySizedBox(
-                widthFactor: percent,
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
-                    ),
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.starGold.withValues(alpha: 0.5),
-                        blurRadius: 6,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -485,7 +569,7 @@ class _ActivitySection extends StatelessWidget {
             iconBgColor: const Color(0xFF4CAF50),
             title: 'Saved',
             subtitle: 'Review Cards · Deep Notes',
-            onTap: () => context.push('/profile/activity/saved'),
+            onTap: () => context.push('/account/activity/saved'),
           ),
           _Divider(),
           _ActivityTile(
@@ -494,7 +578,7 @@ class _ActivitySection extends StatelessWidget {
             iconBgColor: const Color(0xFFE53935),
             title: 'Likes',
             subtitle: 'Review Cards · Deep Notes · Fun Facts',
-            onTap: () => context.push('/profile/activity/likes'),
+            onTap: () => context.push('/account/activity/likes'),
           ),
           _Divider(),
           _ActivityTile(
@@ -503,7 +587,7 @@ class _ActivitySection extends StatelessWidget {
             iconBgColor: const Color(0xFF2196F3),
             title: 'Dislikes',
             subtitle: 'Review Cards · Deep Notes · Fun Facts',
-            onTap: () => context.push('/profile/activity/dislikes'),
+            onTap: () => context.push('/account/activity/dislikes'),
           ),
           _Divider(),
           _ActivityTile(
@@ -512,7 +596,7 @@ class _ActivitySection extends StatelessWidget {
             iconBgColor: const Color(0xFF9C27B0),
             title: 'Announcements',
             subtitle: 'Including completed ones',
-            onTap: () => context.push('/profile/activity/announcements'),
+            onTap: () => context.push('/account/activity/announcements'),
           ),
           _Divider(),
           _ActivityTile(
@@ -521,7 +605,7 @@ class _ActivitySection extends StatelessWidget {
             iconBgColor: AppColors.correctionRed,
             title: 'Trash',
             subtitle: 'Deleted courses & lectures',
-            onTap: () => context.push('/profile/activity/trash'),
+            onTap: () => context.push('/account/activity/trash'),
             showChevron: true,
             isLast: true,
           ),
@@ -719,6 +803,58 @@ class _SettingsSection extends ConsumerWidget {
 
         const SizedBox(height: 12),
 
+        // Preferences
+        _GlassCard(
+          child: Builder(
+            builder: (context) {
+              final recordingCode = ref.watch(recordingLanguageControllerProvider);
+              final displayCode = ref.watch(displayLanguageControllerProvider);
+              final recordingLang = recordingLanguageFromCode(recordingCode);
+              final displayLang = displayLanguageFromCode(displayCode);
+              return Column(
+                children: [
+                  _SettingsTile(
+                    icon: Icons.record_voice_over_outlined,
+                    iconColor: AppColors.universe.textComet,
+                    title: 'Recording Language',
+                    subtitle: recordingLang.nativeName,
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const LanguageSelectionSheet(
+                          mode: LanguageSheetMode.recording,
+                        ),
+                      );
+                    },
+                  ),
+                  _Divider(),
+                  _SettingsTile(
+                    icon: Icons.language_rounded,
+                    iconColor: AppColors.universe.textComet,
+                    title: 'Display Language',
+                    subtitle: displayLang.nativeName,
+                    isLast: true,
+                    onTap: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const LanguageSelectionSheet(
+                          mode: LanguageSheetMode.display,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
         // Legal & Support
         _GlassCard(
           child: Column(
@@ -797,12 +933,14 @@ class _SettingsTile extends StatelessWidget {
     required this.onTap,
     this.titleColor,
     this.tileColor,
+    this.subtitle,
     this.isLast = false,
   });
 
   final IconData icon;
   final Color iconColor;
   final String title;
+  final String? subtitle;
   final Color? titleColor;
   final Color? tileColor;
   final VoidCallback onTap;
@@ -833,14 +971,36 @@ class _SettingsTile extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: titleColor ?? const Color(0xFFF2F2F2),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                child: subtitle != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: titleColor ?? const Color(0xFFF2F2F2),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle!,
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        title,
+                        style: TextStyle(
+                          color: titleColor ?? const Color(0xFFF2F2F2),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ),
               Icon(
                 Icons.chevron_right_rounded,
@@ -1057,17 +1217,9 @@ class _DeleteAccountDialog extends HookConsumerWidget {
             ),
             const SizedBox(height: 20),
             if (errorMessage.value != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.correctionRed.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  errorMessage.value!,
-                  style: const TextStyle(color: AppColors.correctionRed, fontSize: 13),
-                ),
+              AppErrorBox(
+                actionName: 'deleting your account',
+                rawError: errorMessage.value,
               ),
               const SizedBox(height: 16),
             ],
@@ -1176,7 +1328,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                   height: 20,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
-              : const Text('Permanently Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+              : const Text('Delete Account'),
         ),
       ],
     );

@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/auth_result_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/password_strength_meter.dart';
 
@@ -23,6 +24,7 @@ class ResetPasswordPage extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isSubmitting = useState(false);
     final resetComplete = useState(false);
+    final inlineError = useState<dynamic>(null);
 
     // リンク自体が無効/期限切れの場合、router.dartがクエリパラメータで
     // エラーを渡してくる。この場合はフォームを出さず、専用の結果画面を表示する。
@@ -38,16 +40,18 @@ class ResetPasswordPage extends HookConsumerWidget {
       );
     }
 
-    // エラー・成功時のハンドリング
+    // エラー発生時にダイアログで表示
     ref.listen<AsyncValue<void>>(authControllerProvider, (_, next) {
       next.whenOrNull(
         error: (error, _) {
           isSubmitting.value = false;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error.toString()),
-              backgroundColor: AppColors.correctionRed,
-            ),
+          AppErrorDialog.showSmartNamed(
+            context,
+            actionName: 'updating your password',
+            rawError: error,
+            onFriendlyError: (err) {
+              inlineError.value = err;
+            },
           );
         },
       );
@@ -56,6 +60,7 @@ class ResetPasswordPage extends HookConsumerWidget {
     Future<void> submit() async {
       if (!formKey.currentState!.validate()) return;
       isSubmitting.value = true;
+      inlineError.value = null;
       await ref
           .read(authControllerProvider.notifier)
           .updatePassword(passwordController.text);
@@ -189,6 +194,13 @@ class ResetPasswordPage extends HookConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              if (inlineError.value != null) ...[
+                                AppErrorBox(
+                                  actionName: 'updating your password',
+                                  rawError: inlineError.value,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                               TextFormField(
                                 controller: passwordController,
                                 style: TextStyle(color: AppColors.universe.textStarlight),

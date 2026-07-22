@@ -5,6 +5,7 @@ import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
 class ChangePasswordSheet extends HookConsumerWidget {
   const ChangePasswordSheet({super.key});
@@ -205,18 +206,9 @@ class ChangePasswordSheet extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 if (errorMessage.value != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.correctionRed.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      errorMessage.value!,
-                      style: const TextStyle(color: AppColors.correctionRed, fontSize: 13),
-                    ),
+                  AppErrorBox(
+                    actionName: 'updating your password',
+                    rawError: errorMessage.value,
                   ),
                   const SizedBox(height: 16),
                 ],

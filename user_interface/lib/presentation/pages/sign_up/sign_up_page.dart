@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/password_strength_meter.dart';
 import 'package:lecture_companion_ui/presentation/widgets/social_sign_in_button.dart';
 
@@ -24,6 +25,7 @@ class SignUpPage extends HookConsumerWidget {
     final obscurePassword = useState(true);
     final obscureConfirmPassword = useState(true);
     final formKey = useMemoized(() => GlobalKey<FormState>());
+    final inlineError = useState<dynamic>(null);
 
     final authState = ref.watch(authControllerProvider);
 
@@ -36,20 +38,23 @@ class SignUpPage extends HookConsumerWidget {
               backgroundColor: AppColors.starGold,
             ),
           );
-          context.go(AppRoutes.home);
+          context.go(AppRoutes.onboarding);
         },
         error: (error, stackTrace) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error.toString()),
-              backgroundColor: AppColors.correctionRed,
-            ),
+          AppErrorDialog.showSmartNamed(
+            context,
+            actionName: 'creating your account',
+            rawError: error,
+            onFriendlyError: (err) {
+              inlineError.value = err;
+            },
           );
         },
       );
     });
 
     void signUp() {
+      inlineError.value = null;
       if (formKey.currentState!.validate() && agreedToTerms.value) {
         ref.read(authControllerProvider.notifier).signUp(
           username: usernameController.text.trim(),
@@ -57,12 +62,7 @@ class SignUpPage extends HookConsumerWidget {
           password: passwordController.text,
         );
       } else if (!agreedToTerms.value) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please agree to the Terms and Conditions'),
-            backgroundColor: AppColors.alertAmber,
-          ),
-        );
+        inlineError.value = 'Please agree to the Terms and Conditions';
       }
     }
 
@@ -179,6 +179,13 @@ class SignUpPage extends HookConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (inlineError.value != null) ...[
+                          AppErrorBox(
+                            actionName: 'creating your account',
+                            rawError: inlineError.value,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         // ユーザーネーム
                         TextFormField(
                           controller: usernameController,

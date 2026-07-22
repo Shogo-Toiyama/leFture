@@ -90,7 +90,7 @@ final class CurrentUserProvider extends $FunctionalProvider<User?, User?, User?>
   }
 }
 
-String _$currentUserHash() => r'c7726f367cbf3d6e16bada2342b5d87c048bb49e';
+String _$currentUserHash() => r'c0429162e0e7921c0133662fa79ff542e1c18e9d';
 
 /// ✅ ログイン済みかどうか
 
@@ -165,7 +165,7 @@ final class AuthControllerProvider
   AuthController create() => AuthController();
 }
 
-String _$authControllerHash() => r'1f5eccc1757ae5e0d8d2dd051a2cdf91659d68e5';
+String _$authControllerHash() => r'cd435e82820e3b3c4cd52f8dfd006e22931db28f';
 
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 

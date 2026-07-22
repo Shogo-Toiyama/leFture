@@ -22,8 +22,11 @@ String plainTextPreview(String source) {
   // 引用記号
   text = text.replaceAll(RegExp(r'^>\s+', multiLine: true), '');
 
-  // 連続する空白・改行をまとめる
-  text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  // 連続する空行を1つの改行にまとめ、かつ行前後のスペースをトリミングする。
+  text = text.split('\n').map((line) => line.trim()).join('\n');
+  text = text.replaceAll(RegExp(r'\n{2,}'), '\n');
+  // 横並びの連続する空白（スペース、タブ等）のみ半角スペース1個にまとめる
+  text = text.replaceAll(RegExp(r'[ \t]+'), ' ');
 
-  return text;
+  return text.trim();
 }

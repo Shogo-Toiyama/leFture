@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
 class ForgotPasswordPage extends HookConsumerWidget {
   const ForgotPasswordPage({super.key});
@@ -18,21 +19,24 @@ class ForgotPasswordPage extends HookConsumerWidget {
     final isSending = useState(false);
     final emailSent = useState(false);
     final statusMessage = useState<String?>(null);
+    final inlineError = useState<dynamic>(null);
 
     // 画面が開いた瞬間にバックグラウンドでウォームアップ開始。
     final warmupFuture = useMemoized(() => BackendWarmup.waitUntilReady());
 
-    // エラー発生時にスナックバーで表示
+    // エラー発生時にダイアログで表示
     ref.listen<AsyncValue<void>>(authControllerProvider, (_, next) {
       next.whenOrNull(
         error: (error, _) {
           isSending.value = false;
           statusMessage.value = null;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error.toString()),
-              backgroundColor: AppColors.correctionRed,
-            ),
+          AppErrorDialog.showSmartNamed(
+            context,
+            actionName: 'sending password reset link',
+            rawError: error,
+            onFriendlyError: (err) {
+              inlineError.value = err;
+            },
           );
         },
       );
@@ -41,6 +45,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
     Future<void> sendResetLink() async {
       if (!formKey.currentState!.validate()) return;
       isSending.value = true;
+      inlineError.value = null;
 
       try {
         statusMessage.value = 'Waking up email service...';
@@ -49,13 +54,13 @@ class ForgotPasswordPage extends HookConsumerWidget {
           isSending.value = false;
           statusMessage.value = null;
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'The email service is taking longer than usual to start. Please try again in a moment.',
-                ),
-                backgroundColor: AppColors.correctionRed,
-              ),
+            AppErrorDialog.showSmartNamed(
+              context,
+              actionName: 'sending password reset link',
+              rawError: 'The email service is taking longer than usual to start.',
+              onFriendlyError: (err) {
+                inlineError.value = err;
+              },
             );
           }
           return;
@@ -194,6 +199,13 @@ class ForgotPasswordPage extends HookConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              if (inlineError.value != null) ...[
+                                AppErrorBox(
+                                  actionName: 'sending password reset link',
+                                  rawError: inlineError.value,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                               TextFormField(
                                 controller: emailController,
                                 style: TextStyle(color: AppColors.universe.textStarlight),

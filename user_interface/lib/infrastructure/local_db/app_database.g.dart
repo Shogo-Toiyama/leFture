@@ -5830,6 +5830,1208 @@ class LocalAnnouncementsCompanion extends UpdateCompanion<LocalAnnouncement> {
   }
 }
 
+class $LocalLectureMomentsTable extends LocalLectureMoments
+    with TableInfo<$LocalLectureMomentsTable, LocalLectureMoment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalLectureMomentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lectureIdMeta = const VerificationMeta(
+    'lectureId',
+  );
+  @override
+  late final GeneratedColumn<String> lectureId = GeneratedColumn<String>(
+    'lecture_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _momentTypeMeta = const VerificationMeta(
+    'momentType',
+  );
+  @override
+  late final GeneratedColumn<String> momentType = GeneratedColumn<String>(
+    'moment_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteTextMeta = const VerificationMeta(
+    'noteText',
+  );
+  @override
+  late final GeneratedColumn<String> noteText = GeneratedColumn<String>(
+    'note_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timestampSecMeta = const VerificationMeta(
+    'timestampSec',
+  );
+  @override
+  late final GeneratedColumn<int> timestampSec = GeneratedColumn<int>(
+    'timestamp_sec',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+    'last_synced_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    lectureId,
+    momentType,
+    noteText,
+    timestampSec,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    lastSyncedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_lecture_moments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalLectureMoment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('lecture_id')) {
+      context.handle(
+        _lectureIdMeta,
+        lectureId.isAcceptableOrUnknown(data['lecture_id']!, _lectureIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lectureIdMeta);
+    }
+    if (data.containsKey('moment_type')) {
+      context.handle(
+        _momentTypeMeta,
+        momentType.isAcceptableOrUnknown(data['moment_type']!, _momentTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_momentTypeMeta);
+    }
+    if (data.containsKey('note_text')) {
+      context.handle(
+        _noteTextMeta,
+        noteText.isAcceptableOrUnknown(data['note_text']!, _noteTextMeta),
+      );
+    }
+    if (data.containsKey('timestamp_sec')) {
+      context.handle(
+        _timestampSecMeta,
+        timestampSec.isAcceptableOrUnknown(
+          data['timestamp_sec']!,
+          _timestampSecMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampSecMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id, userId};
+  @override
+  LocalLectureMoment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalLectureMoment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      lectureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lecture_id'],
+      )!,
+      momentType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}moment_type'],
+      )!,
+      noteText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_text'],
+      ),
+      timestampSec: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}timestamp_sec'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_synced_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalLectureMomentsTable createAlias(String alias) {
+    return $LocalLectureMomentsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalLectureMoment extends DataClass
+    implements Insertable<LocalLectureMoment> {
+  final String id;
+  final String userId;
+  final String lectureId;
+  final String momentType;
+  final String? noteText;
+  final int timestampSec;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final DateTime lastSyncedAt;
+  const LocalLectureMoment({
+    required this.id,
+    required this.userId,
+    required this.lectureId,
+    required this.momentType,
+    this.noteText,
+    required this.timestampSec,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.lastSyncedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['lecture_id'] = Variable<String>(lectureId);
+    map['moment_type'] = Variable<String>(momentType);
+    if (!nullToAbsent || noteText != null) {
+      map['note_text'] = Variable<String>(noteText);
+    }
+    map['timestamp_sec'] = Variable<int>(timestampSec);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    return map;
+  }
+
+  LocalLectureMomentsCompanion toCompanion(bool nullToAbsent) {
+    return LocalLectureMomentsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      lectureId: Value(lectureId),
+      momentType: Value(momentType),
+      noteText: noteText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(noteText),
+      timestampSec: Value(timestampSec),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      lastSyncedAt: Value(lastSyncedAt),
+    );
+  }
+
+  factory LocalLectureMoment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalLectureMoment(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      lectureId: serializer.fromJson<String>(json['lectureId']),
+      momentType: serializer.fromJson<String>(json['momentType']),
+      noteText: serializer.fromJson<String?>(json['noteText']),
+      timestampSec: serializer.fromJson<int>(json['timestampSec']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      lastSyncedAt: serializer.fromJson<DateTime>(json['lastSyncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'lectureId': serializer.toJson<String>(lectureId),
+      'momentType': serializer.toJson<String>(momentType),
+      'noteText': serializer.toJson<String?>(noteText),
+      'timestampSec': serializer.toJson<int>(timestampSec),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'lastSyncedAt': serializer.toJson<DateTime>(lastSyncedAt),
+    };
+  }
+
+  LocalLectureMoment copyWith({
+    String? id,
+    String? userId,
+    String? lectureId,
+    String? momentType,
+    Value<String?> noteText = const Value.absent(),
+    int? timestampSec,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    DateTime? lastSyncedAt,
+  }) => LocalLectureMoment(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    lectureId: lectureId ?? this.lectureId,
+    momentType: momentType ?? this.momentType,
+    noteText: noteText.present ? noteText.value : this.noteText,
+    timestampSec: timestampSec ?? this.timestampSec,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+  );
+  LocalLectureMoment copyWithCompanion(LocalLectureMomentsCompanion data) {
+    return LocalLectureMoment(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      lectureId: data.lectureId.present ? data.lectureId.value : this.lectureId,
+      momentType: data.momentType.present
+          ? data.momentType.value
+          : this.momentType,
+      noteText: data.noteText.present ? data.noteText.value : this.noteText,
+      timestampSec: data.timestampSec.present
+          ? data.timestampSec.value
+          : this.timestampSec,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalLectureMoment(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lectureId: $lectureId, ')
+          ..write('momentType: $momentType, ')
+          ..write('noteText: $noteText, ')
+          ..write('timestampSec: $timestampSec, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    lectureId,
+    momentType,
+    noteText,
+    timestampSec,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    lastSyncedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalLectureMoment &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.lectureId == this.lectureId &&
+          other.momentType == this.momentType &&
+          other.noteText == this.noteText &&
+          other.timestampSec == this.timestampSec &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.lastSyncedAt == this.lastSyncedAt);
+}
+
+class LocalLectureMomentsCompanion extends UpdateCompanion<LocalLectureMoment> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> lectureId;
+  final Value<String> momentType;
+  final Value<String?> noteText;
+  final Value<int> timestampSec;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<DateTime> lastSyncedAt;
+  final Value<int> rowid;
+  const LocalLectureMomentsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.lectureId = const Value.absent(),
+    this.momentType = const Value.absent(),
+    this.noteText = const Value.absent(),
+    this.timestampSec = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalLectureMomentsCompanion.insert({
+    required String id,
+    required String userId,
+    required String lectureId,
+    required String momentType,
+    this.noteText = const Value.absent(),
+    required int timestampSec,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       lectureId = Value(lectureId),
+       momentType = Value(momentType),
+       timestampSec = Value(timestampSec);
+  static Insertable<LocalLectureMoment> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? lectureId,
+    Expression<String>? momentType,
+    Expression<String>? noteText,
+    Expression<int>? timestampSec,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<DateTime>? lastSyncedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (lectureId != null) 'lecture_id': lectureId,
+      if (momentType != null) 'moment_type': momentType,
+      if (noteText != null) 'note_text': noteText,
+      if (timestampSec != null) 'timestamp_sec': timestampSec,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalLectureMomentsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? lectureId,
+    Value<String>? momentType,
+    Value<String?>? noteText,
+    Value<int>? timestampSec,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<DateTime>? lastSyncedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalLectureMomentsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      lectureId: lectureId ?? this.lectureId,
+      momentType: momentType ?? this.momentType,
+      noteText: noteText ?? this.noteText,
+      timestampSec: timestampSec ?? this.timestampSec,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (lectureId.present) {
+      map['lecture_id'] = Variable<String>(lectureId.value);
+    }
+    if (momentType.present) {
+      map['moment_type'] = Variable<String>(momentType.value);
+    }
+    if (noteText.present) {
+      map['note_text'] = Variable<String>(noteText.value);
+    }
+    if (timestampSec.present) {
+      map['timestamp_sec'] = Variable<int>(timestampSec.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalLectureMomentsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lectureId: $lectureId, ')
+          ..write('momentType: $momentType, ')
+          ..write('noteText: $noteText, ')
+          ..write('timestampSec: $timestampSec, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalAsrModelsTable extends LocalAsrModels
+    with TableInfo<$LocalAsrModelsTable, LocalAsrModel> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalAsrModelsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupKeyMeta = const VerificationMeta(
+    'groupKey',
+  );
+  @override
+  late final GeneratedColumn<String> groupKey = GeneratedColumn<String>(
+    'group_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  @override
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _engineCompatVersionMeta =
+      const VerificationMeta('engineCompatVersion');
+  @override
+  late final GeneratedColumn<int> engineCompatVersion = GeneratedColumn<int>(
+    'engine_compat_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelVersionMeta = const VerificationMeta(
+    'modelVersion',
+  );
+  @override
+  late final GeneratedColumn<int> modelVersion = GeneratedColumn<int>(
+    'model_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _downloadedAtMeta = const VerificationMeta(
+    'downloadedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> downloadedAt = GeneratedColumn<DateTime>(
+    'downloaded_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastUsedAtMeta = const VerificationMeta(
+    'lastUsedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUsedAt = GeneratedColumn<DateTime>(
+    'last_used_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    groupKey,
+    modelId,
+    engineCompatVersion,
+    modelVersion,
+    localPath,
+    sizeBytes,
+    status,
+    downloadedAt,
+    lastUsedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_asr_models';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalAsrModel> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_key')) {
+      context.handle(
+        _groupKeyMeta,
+        groupKey.isAcceptableOrUnknown(data['group_key']!, _groupKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupKeyMeta);
+    }
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modelIdMeta);
+    }
+    if (data.containsKey('engine_compat_version')) {
+      context.handle(
+        _engineCompatVersionMeta,
+        engineCompatVersion.isAcceptableOrUnknown(
+          data['engine_compat_version']!,
+          _engineCompatVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_engineCompatVersionMeta);
+    }
+    if (data.containsKey('model_version')) {
+      context.handle(
+        _modelVersionMeta,
+        modelVersion.isAcceptableOrUnknown(
+          data['model_version']!,
+          _modelVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_modelVersionMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localPathMeta);
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeBytesMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('downloaded_at')) {
+      context.handle(
+        _downloadedAtMeta,
+        downloadedAt.isAcceptableOrUnknown(
+          data['downloaded_at']!,
+          _downloadedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_used_at')) {
+      context.handle(
+        _lastUsedAtMeta,
+        lastUsedAt.isAcceptableOrUnknown(
+          data['last_used_at']!,
+          _lastUsedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupKey};
+  @override
+  LocalAsrModel map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalAsrModel(
+      groupKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_key'],
+      )!,
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      )!,
+      engineCompatVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}engine_compat_version'],
+      )!,
+      modelVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}model_version'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      downloadedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}downloaded_at'],
+      ),
+      lastUsedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_used_at'],
+      ),
+    );
+  }
+
+  @override
+  $LocalAsrModelsTable createAlias(String alias) {
+    return $LocalAsrModelsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalAsrModel extends DataClass implements Insertable<LocalAsrModel> {
+  final String groupKey;
+  final String modelId;
+  final int engineCompatVersion;
+  final int modelVersion;
+  final String localPath;
+  final int sizeBytes;
+  final String status;
+  final DateTime? downloadedAt;
+  final DateTime? lastUsedAt;
+  const LocalAsrModel({
+    required this.groupKey,
+    required this.modelId,
+    required this.engineCompatVersion,
+    required this.modelVersion,
+    required this.localPath,
+    required this.sizeBytes,
+    required this.status,
+    this.downloadedAt,
+    this.lastUsedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_key'] = Variable<String>(groupKey);
+    map['model_id'] = Variable<String>(modelId);
+    map['engine_compat_version'] = Variable<int>(engineCompatVersion);
+    map['model_version'] = Variable<int>(modelVersion);
+    map['local_path'] = Variable<String>(localPath);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || downloadedAt != null) {
+      map['downloaded_at'] = Variable<DateTime>(downloadedAt);
+    }
+    if (!nullToAbsent || lastUsedAt != null) {
+      map['last_used_at'] = Variable<DateTime>(lastUsedAt);
+    }
+    return map;
+  }
+
+  LocalAsrModelsCompanion toCompanion(bool nullToAbsent) {
+    return LocalAsrModelsCompanion(
+      groupKey: Value(groupKey),
+      modelId: Value(modelId),
+      engineCompatVersion: Value(engineCompatVersion),
+      modelVersion: Value(modelVersion),
+      localPath: Value(localPath),
+      sizeBytes: Value(sizeBytes),
+      status: Value(status),
+      downloadedAt: downloadedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(downloadedAt),
+      lastUsedAt: lastUsedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastUsedAt),
+    );
+  }
+
+  factory LocalAsrModel.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalAsrModel(
+      groupKey: serializer.fromJson<String>(json['groupKey']),
+      modelId: serializer.fromJson<String>(json['modelId']),
+      engineCompatVersion: serializer.fromJson<int>(
+        json['engineCompatVersion'],
+      ),
+      modelVersion: serializer.fromJson<int>(json['modelVersion']),
+      localPath: serializer.fromJson<String>(json['localPath']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      status: serializer.fromJson<String>(json['status']),
+      downloadedAt: serializer.fromJson<DateTime?>(json['downloadedAt']),
+      lastUsedAt: serializer.fromJson<DateTime?>(json['lastUsedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupKey': serializer.toJson<String>(groupKey),
+      'modelId': serializer.toJson<String>(modelId),
+      'engineCompatVersion': serializer.toJson<int>(engineCompatVersion),
+      'modelVersion': serializer.toJson<int>(modelVersion),
+      'localPath': serializer.toJson<String>(localPath),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'status': serializer.toJson<String>(status),
+      'downloadedAt': serializer.toJson<DateTime?>(downloadedAt),
+      'lastUsedAt': serializer.toJson<DateTime?>(lastUsedAt),
+    };
+  }
+
+  LocalAsrModel copyWith({
+    String? groupKey,
+    String? modelId,
+    int? engineCompatVersion,
+    int? modelVersion,
+    String? localPath,
+    int? sizeBytes,
+    String? status,
+    Value<DateTime?> downloadedAt = const Value.absent(),
+    Value<DateTime?> lastUsedAt = const Value.absent(),
+  }) => LocalAsrModel(
+    groupKey: groupKey ?? this.groupKey,
+    modelId: modelId ?? this.modelId,
+    engineCompatVersion: engineCompatVersion ?? this.engineCompatVersion,
+    modelVersion: modelVersion ?? this.modelVersion,
+    localPath: localPath ?? this.localPath,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    status: status ?? this.status,
+    downloadedAt: downloadedAt.present ? downloadedAt.value : this.downloadedAt,
+    lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
+  );
+  LocalAsrModel copyWithCompanion(LocalAsrModelsCompanion data) {
+    return LocalAsrModel(
+      groupKey: data.groupKey.present ? data.groupKey.value : this.groupKey,
+      modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      engineCompatVersion: data.engineCompatVersion.present
+          ? data.engineCompatVersion.value
+          : this.engineCompatVersion,
+      modelVersion: data.modelVersion.present
+          ? data.modelVersion.value
+          : this.modelVersion,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      status: data.status.present ? data.status.value : this.status,
+      downloadedAt: data.downloadedAt.present
+          ? data.downloadedAt.value
+          : this.downloadedAt,
+      lastUsedAt: data.lastUsedAt.present
+          ? data.lastUsedAt.value
+          : this.lastUsedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalAsrModel(')
+          ..write('groupKey: $groupKey, ')
+          ..write('modelId: $modelId, ')
+          ..write('engineCompatVersion: $engineCompatVersion, ')
+          ..write('modelVersion: $modelVersion, ')
+          ..write('localPath: $localPath, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('status: $status, ')
+          ..write('downloadedAt: $downloadedAt, ')
+          ..write('lastUsedAt: $lastUsedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    groupKey,
+    modelId,
+    engineCompatVersion,
+    modelVersion,
+    localPath,
+    sizeBytes,
+    status,
+    downloadedAt,
+    lastUsedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalAsrModel &&
+          other.groupKey == this.groupKey &&
+          other.modelId == this.modelId &&
+          other.engineCompatVersion == this.engineCompatVersion &&
+          other.modelVersion == this.modelVersion &&
+          other.localPath == this.localPath &&
+          other.sizeBytes == this.sizeBytes &&
+          other.status == this.status &&
+          other.downloadedAt == this.downloadedAt &&
+          other.lastUsedAt == this.lastUsedAt);
+}
+
+class LocalAsrModelsCompanion extends UpdateCompanion<LocalAsrModel> {
+  final Value<String> groupKey;
+  final Value<String> modelId;
+  final Value<int> engineCompatVersion;
+  final Value<int> modelVersion;
+  final Value<String> localPath;
+  final Value<int> sizeBytes;
+  final Value<String> status;
+  final Value<DateTime?> downloadedAt;
+  final Value<DateTime?> lastUsedAt;
+  final Value<int> rowid;
+  const LocalAsrModelsCompanion({
+    this.groupKey = const Value.absent(),
+    this.modelId = const Value.absent(),
+    this.engineCompatVersion = const Value.absent(),
+    this.modelVersion = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.status = const Value.absent(),
+    this.downloadedAt = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalAsrModelsCompanion.insert({
+    required String groupKey,
+    required String modelId,
+    required int engineCompatVersion,
+    required int modelVersion,
+    required String localPath,
+    required int sizeBytes,
+    required String status,
+    this.downloadedAt = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : groupKey = Value(groupKey),
+       modelId = Value(modelId),
+       engineCompatVersion = Value(engineCompatVersion),
+       modelVersion = Value(modelVersion),
+       localPath = Value(localPath),
+       sizeBytes = Value(sizeBytes),
+       status = Value(status);
+  static Insertable<LocalAsrModel> custom({
+    Expression<String>? groupKey,
+    Expression<String>? modelId,
+    Expression<int>? engineCompatVersion,
+    Expression<int>? modelVersion,
+    Expression<String>? localPath,
+    Expression<int>? sizeBytes,
+    Expression<String>? status,
+    Expression<DateTime>? downloadedAt,
+    Expression<DateTime>? lastUsedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupKey != null) 'group_key': groupKey,
+      if (modelId != null) 'model_id': modelId,
+      if (engineCompatVersion != null)
+        'engine_compat_version': engineCompatVersion,
+      if (modelVersion != null) 'model_version': modelVersion,
+      if (localPath != null) 'local_path': localPath,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (status != null) 'status': status,
+      if (downloadedAt != null) 'downloaded_at': downloadedAt,
+      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalAsrModelsCompanion copyWith({
+    Value<String>? groupKey,
+    Value<String>? modelId,
+    Value<int>? engineCompatVersion,
+    Value<int>? modelVersion,
+    Value<String>? localPath,
+    Value<int>? sizeBytes,
+    Value<String>? status,
+    Value<DateTime?>? downloadedAt,
+    Value<DateTime?>? lastUsedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalAsrModelsCompanion(
+      groupKey: groupKey ?? this.groupKey,
+      modelId: modelId ?? this.modelId,
+      engineCompatVersion: engineCompatVersion ?? this.engineCompatVersion,
+      modelVersion: modelVersion ?? this.modelVersion,
+      localPath: localPath ?? this.localPath,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      status: status ?? this.status,
+      downloadedAt: downloadedAt ?? this.downloadedAt,
+      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupKey.present) {
+      map['group_key'] = Variable<String>(groupKey.value);
+    }
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (engineCompatVersion.present) {
+      map['engine_compat_version'] = Variable<int>(engineCompatVersion.value);
+    }
+    if (modelVersion.present) {
+      map['model_version'] = Variable<int>(modelVersion.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (downloadedAt.present) {
+      map['downloaded_at'] = Variable<DateTime>(downloadedAt.value);
+    }
+    if (lastUsedAt.present) {
+      map['last_used_at'] = Variable<DateTime>(lastUsedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalAsrModelsCompanion(')
+          ..write('groupKey: $groupKey, ')
+          ..write('modelId: $modelId, ')
+          ..write('engineCompatVersion: $engineCompatVersion, ')
+          ..write('modelVersion: $modelVersion, ')
+          ..write('localPath: $localPath, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('status: $status, ')
+          ..write('downloadedAt: $downloadedAt, ')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LocalFunFactsTable extends LocalFunFacts
     with TableInfo<$LocalFunFactsTable, LocalFunFact> {
   @override
@@ -11110,6 +12312,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $LocalCourseAttributesTable(this);
   late final $LocalAnnouncementsTable localAnnouncements =
       $LocalAnnouncementsTable(this);
+  late final $LocalLectureMomentsTable localLectureMoments =
+      $LocalLectureMomentsTable(this);
+  late final $LocalAsrModelsTable localAsrModels = $LocalAsrModelsTable(this);
   late final $LocalFunFactsTable localFunFacts = $LocalFunFactsTable(this);
   late final $LocalReviewCardsTable localReviewCards = $LocalReviewCardsTable(
     this,
@@ -11138,6 +12343,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localCourses,
     localCourseAttributes,
     localAnnouncements,
+    localLectureMoments,
+    localAsrModels,
     localFunFacts,
     localReviewCards,
     localDeepNotes,
@@ -13893,6 +15100,609 @@ typedef $$LocalAnnouncementsTableProcessedTableManager =
       LocalAnnouncement,
       PrefetchHooks Function()
     >;
+typedef $$LocalLectureMomentsTableCreateCompanionBuilder =
+    LocalLectureMomentsCompanion Function({
+      required String id,
+      required String userId,
+      required String lectureId,
+      required String momentType,
+      Value<String?> noteText,
+      required int timestampSec,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<DateTime> lastSyncedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalLectureMomentsTableUpdateCompanionBuilder =
+    LocalLectureMomentsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> lectureId,
+      Value<String> momentType,
+      Value<String?> noteText,
+      Value<int> timestampSec,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<DateTime> lastSyncedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalLectureMomentsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalLectureMomentsTable> {
+  $$LocalLectureMomentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lectureId => $composableBuilder(
+    column: $table.lectureId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get momentType => $composableBuilder(
+    column: $table.momentType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteText => $composableBuilder(
+    column: $table.noteText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timestampSec => $composableBuilder(
+    column: $table.timestampSec,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalLectureMomentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalLectureMomentsTable> {
+  $$LocalLectureMomentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lectureId => $composableBuilder(
+    column: $table.lectureId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get momentType => $composableBuilder(
+    column: $table.momentType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteText => $composableBuilder(
+    column: $table.noteText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get timestampSec => $composableBuilder(
+    column: $table.timestampSec,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalLectureMomentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalLectureMomentsTable> {
+  $$LocalLectureMomentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get lectureId =>
+      $composableBuilder(column: $table.lectureId, builder: (column) => column);
+
+  GeneratedColumn<String> get momentType => $composableBuilder(
+    column: $table.momentType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get noteText =>
+      $composableBuilder(column: $table.noteText, builder: (column) => column);
+
+  GeneratedColumn<int> get timestampSec => $composableBuilder(
+    column: $table.timestampSec,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$LocalLectureMomentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalLectureMomentsTable,
+          LocalLectureMoment,
+          $$LocalLectureMomentsTableFilterComposer,
+          $$LocalLectureMomentsTableOrderingComposer,
+          $$LocalLectureMomentsTableAnnotationComposer,
+          $$LocalLectureMomentsTableCreateCompanionBuilder,
+          $$LocalLectureMomentsTableUpdateCompanionBuilder,
+          (
+            LocalLectureMoment,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalLectureMomentsTable,
+              LocalLectureMoment
+            >,
+          ),
+          LocalLectureMoment,
+          PrefetchHooks Function()
+        > {
+  $$LocalLectureMomentsTableTableManager(
+    _$AppDatabase db,
+    $LocalLectureMomentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalLectureMomentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalLectureMomentsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$LocalLectureMomentsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> lectureId = const Value.absent(),
+                Value<String> momentType = const Value.absent(),
+                Value<String?> noteText = const Value.absent(),
+                Value<int> timestampSec = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime> lastSyncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalLectureMomentsCompanion(
+                id: id,
+                userId: userId,
+                lectureId: lectureId,
+                momentType: momentType,
+                noteText: noteText,
+                timestampSec: timestampSec,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                lastSyncedAt: lastSyncedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String lectureId,
+                required String momentType,
+                Value<String?> noteText = const Value.absent(),
+                required int timestampSec,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<DateTime> lastSyncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalLectureMomentsCompanion.insert(
+                id: id,
+                userId: userId,
+                lectureId: lectureId,
+                momentType: momentType,
+                noteText: noteText,
+                timestampSec: timestampSec,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                lastSyncedAt: lastSyncedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalLectureMomentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalLectureMomentsTable,
+      LocalLectureMoment,
+      $$LocalLectureMomentsTableFilterComposer,
+      $$LocalLectureMomentsTableOrderingComposer,
+      $$LocalLectureMomentsTableAnnotationComposer,
+      $$LocalLectureMomentsTableCreateCompanionBuilder,
+      $$LocalLectureMomentsTableUpdateCompanionBuilder,
+      (
+        LocalLectureMoment,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalLectureMomentsTable,
+          LocalLectureMoment
+        >,
+      ),
+      LocalLectureMoment,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalAsrModelsTableCreateCompanionBuilder =
+    LocalAsrModelsCompanion Function({
+      required String groupKey,
+      required String modelId,
+      required int engineCompatVersion,
+      required int modelVersion,
+      required String localPath,
+      required int sizeBytes,
+      required String status,
+      Value<DateTime?> downloadedAt,
+      Value<DateTime?> lastUsedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalAsrModelsTableUpdateCompanionBuilder =
+    LocalAsrModelsCompanion Function({
+      Value<String> groupKey,
+      Value<String> modelId,
+      Value<int> engineCompatVersion,
+      Value<int> modelVersion,
+      Value<String> localPath,
+      Value<int> sizeBytes,
+      Value<String> status,
+      Value<DateTime?> downloadedAt,
+      Value<DateTime?> lastUsedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalAsrModelsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalAsrModelsTable> {
+  $$LocalAsrModelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get groupKey => $composableBuilder(
+    column: $table.groupKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get engineCompatVersion => $composableBuilder(
+    column: $table.engineCompatVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get modelVersion => $composableBuilder(
+    column: $table.modelVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalAsrModelsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalAsrModelsTable> {
+  $$LocalAsrModelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get groupKey => $composableBuilder(
+    column: $table.groupKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get engineCompatVersion => $composableBuilder(
+    column: $table.engineCompatVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get modelVersion => $composableBuilder(
+    column: $table.modelVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalAsrModelsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalAsrModelsTable> {
+  $$LocalAsrModelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get groupKey =>
+      $composableBuilder(column: $table.groupKey, builder: (column) => column);
+
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<int> get engineCompatVersion => $composableBuilder(
+    column: $table.engineCompatVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get modelVersion => $composableBuilder(
+    column: $table.modelVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$LocalAsrModelsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalAsrModelsTable,
+          LocalAsrModel,
+          $$LocalAsrModelsTableFilterComposer,
+          $$LocalAsrModelsTableOrderingComposer,
+          $$LocalAsrModelsTableAnnotationComposer,
+          $$LocalAsrModelsTableCreateCompanionBuilder,
+          $$LocalAsrModelsTableUpdateCompanionBuilder,
+          (
+            LocalAsrModel,
+            BaseReferences<_$AppDatabase, $LocalAsrModelsTable, LocalAsrModel>,
+          ),
+          LocalAsrModel,
+          PrefetchHooks Function()
+        > {
+  $$LocalAsrModelsTableTableManager(
+    _$AppDatabase db,
+    $LocalAsrModelsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalAsrModelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalAsrModelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalAsrModelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> groupKey = const Value.absent(),
+                Value<String> modelId = const Value.absent(),
+                Value<int> engineCompatVersion = const Value.absent(),
+                Value<int> modelVersion = const Value.absent(),
+                Value<String> localPath = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> downloadedAt = const Value.absent(),
+                Value<DateTime?> lastUsedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalAsrModelsCompanion(
+                groupKey: groupKey,
+                modelId: modelId,
+                engineCompatVersion: engineCompatVersion,
+                modelVersion: modelVersion,
+                localPath: localPath,
+                sizeBytes: sizeBytes,
+                status: status,
+                downloadedAt: downloadedAt,
+                lastUsedAt: lastUsedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String groupKey,
+                required String modelId,
+                required int engineCompatVersion,
+                required int modelVersion,
+                required String localPath,
+                required int sizeBytes,
+                required String status,
+                Value<DateTime?> downloadedAt = const Value.absent(),
+                Value<DateTime?> lastUsedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalAsrModelsCompanion.insert(
+                groupKey: groupKey,
+                modelId: modelId,
+                engineCompatVersion: engineCompatVersion,
+                modelVersion: modelVersion,
+                localPath: localPath,
+                sizeBytes: sizeBytes,
+                status: status,
+                downloadedAt: downloadedAt,
+                lastUsedAt: lastUsedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalAsrModelsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalAsrModelsTable,
+      LocalAsrModel,
+      $$LocalAsrModelsTableFilterComposer,
+      $$LocalAsrModelsTableOrderingComposer,
+      $$LocalAsrModelsTableAnnotationComposer,
+      $$LocalAsrModelsTableCreateCompanionBuilder,
+      $$LocalAsrModelsTableUpdateCompanionBuilder,
+      (
+        LocalAsrModel,
+        BaseReferences<_$AppDatabase, $LocalAsrModelsTable, LocalAsrModel>,
+      ),
+      LocalAsrModel,
+      PrefetchHooks Function()
+    >;
 typedef $$LocalFunFactsTableCreateCompanionBuilder =
     LocalFunFactsCompanion Function({
       required String id,
@@ -16549,6 +18359,10 @@ class $AppDatabaseManager {
       $$LocalCourseAttributesTableTableManager(_db, _db.localCourseAttributes);
   $$LocalAnnouncementsTableTableManager get localAnnouncements =>
       $$LocalAnnouncementsTableTableManager(_db, _db.localAnnouncements);
+  $$LocalLectureMomentsTableTableManager get localLectureMoments =>
+      $$LocalLectureMomentsTableTableManager(_db, _db.localLectureMoments);
+  $$LocalAsrModelsTableTableManager get localAsrModels =>
+      $$LocalAsrModelsTableTableManager(_db, _db.localAsrModels);
   $$LocalFunFactsTableTableManager get localFunFacts =>
       $$LocalFunFactsTableTableManager(_db, _db.localFunFacts);
   $$LocalReviewCardsTableTableManager get localReviewCards =>

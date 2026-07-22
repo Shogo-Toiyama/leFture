@@ -12,6 +12,10 @@ class AppRoutes {
   static const authResult = '/auth_result'; // ログイン状態を保ったまま見せる結果画面
   static const accountDeleted = '/account_deleted'; // セッション外(未ログイン)で見せる結果画面
 
+  // Onboarding (初回サインアップ直後、プロフィール・Recording Language・
+  // Realtime Recording設定を必須で行わせる画面)
+  static const onboarding = '/onboarding';
+
   // Main
   static const home = '/home'; // Dashboard (宇宙のコックピット)
   
@@ -21,9 +25,10 @@ class AppRoutes {
   // Features
   static const learningGalaxy = '/learning_galaxy';
   static const aiChat = '/ai_chat';
+  static const account = '/account';
   static const profile = '/profile';
   static const contact = '/contact';
-  static const activityDetails = '/profile/activity/:type';
+  static const activityDetails = '/account/activity/:type';
   static const study = '/study';
 
   // Courses (Nested relative paths for GoRouter configuration)

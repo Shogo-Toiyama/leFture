@@ -281,8 +281,13 @@ class _SimulationRunnerState extends ConsumerState<_SimulationRunner> {
     super.initState();
     // 録音ボタンを押したのと同じ呼び出しで開始する（コース選択があれば先に反映しておく）
     Future.microtask(() async {
-      await ref.read(recordingControllerProvider.notifier).setCourseId(widget.selectedCourseId);
-      await ref.read(recordingControllerProvider.notifier).toggleStartStopResume();
+      final controller = ref.read(recordingControllerProvider.notifier);
+      final currentState = ref.read(recordingControllerProvider);
+
+      await controller.setCourseId(widget.selectedCourseId);
+      // Recording Page での realtimeTranscribe 設定を保持
+      controller.setRealtimeTranscribe(currentState.realtimeTranscribe);
+      await controller.toggleStartStopResume();
     });
 
     // fixture音声を流し終えたら、Uploadボタンを押したのと同じ呼び出しを自動で行う

@@ -21,6 +21,7 @@ import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_e
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
 import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
@@ -237,9 +238,7 @@ class _TermSection extends ConsumerWidget {
                       .bootstrapLectures(forceFullPull: true);
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to delete course: $e')),
-                    );
+                    AppErrorDialog.showSmart(context, e, actionName: 'deleting course');
                   }
                 }
               },

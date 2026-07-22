@@ -210,14 +210,61 @@ class CourseRepositorySupabase {
     return rows.map((e) => Course.fromMap(e)).toList();
   }
 
-  /// ゴミ箱を空にする用: ソフトデリートされたコースを物理削除する
-  Future<void> emptyTrashCourses() async {
+  /// ゴミ箱（Trash）用: ソフトデリートされたコースを復元する
+  Future<void> restoreCourse(String courseId) async {
     final uid = _requireUid();
 
+    // 1. コース自体の復元
     await supabase
         .from(_table)
-        .delete()
+        .update({'deleted_at': null})
+        .eq('id', courseId)
+        .eq('user_id', uid);
+
+    // 2. このコースの配下でカスケードソフトデリートされていた講義を取得
+    final lectures = await supabase
+        .from('lectures')
+        .select('id, metadata')
         .eq('user_id', uid)
-        .not('deleted_at', 'is', null);
+        .eq('course_id', courseId);
+
+    final restoredLectureIds = <String>[];
+
+    for (final row in lectures) {
+      final metadata = (row['metadata'] as Map<String, dynamic>?) ?? {};
+      if (metadata['deleted_via_course_cascade'] == true) {
+        final lectureId = row['id'] as String;
+        restoredLectureIds.add(lectureId);
+
+        final newMetadata = Map<String, dynamic>.from(metadata)
+          ..remove('deleted_via_course_cascade');
+
+        await supabase
+            .from('lectures')
+            .update({
+              'deleted_at': null,
+              'metadata': newMetadata,
+            })
+            .eq('id', lectureId);
+      }
+    }
+
+    // 3. カスケードソフトデリートされていたサブデータも復元
+    if (restoredLectureIds.isNotEmpty) {
+      for (final table in const [
+        'announcements',
+        'review_cards',
+        'fun_facts',
+        'lecture_topics',
+        'deep_notes',
+        'keywords',
+      ]) {
+        await supabase
+            .from(table)
+            .update({'deleted_at': null})
+            .inFilter('lecture_id', restoredLectureIds);
+      }
+    }
   }
+
 }

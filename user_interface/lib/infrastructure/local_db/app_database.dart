@@ -231,6 +231,59 @@ class LocalAnnouncements extends Table {
   Set<Column> get primaryKey => {id, userId};
 }
 
+/// 録音中のワンタップリアクション(fun/difficult/revisit)と短文メモ。
+/// 1タップ = 1つのタイムスタンプ付きイベントで、LocalFunFacts.reactionの
+/// ような「1行に対するトグル」とは性質が違うため、クライアント発の新規行を
+/// 都度作るLocalLectures/LocalAnnouncements寄りのパターンにしている。
+class LocalLectureMoments extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get lectureId => text()();
+
+  // fun / difficult / revisit / note
+  TextColumn get momentType => text()();
+  TextColumn get noteText => text().nullable()();
+  // 録音開始からの経過秒(RecordingState.elapsedSecondsと同じ単位)。
+  // Supabase側がint2で作成されているため、ここも小数を持たない整数秒とする。
+  IntColumn get timestampSec => integer()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  DateTimeColumn get lastSyncedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+/// オンデバイスASR(sherpa_onnx)の言語モデルのローカルキャッシュ管理。
+/// PKはgroupKey(通常はmodelIdそのもの。VAD/Whisperは疑似コード) —
+/// 同一modelIdを共有する言語(例: ja/ko/yueのsense_voice)は自動的に1行に
+/// 統合される(詳細はAsrModelManager.resolveAssetGroupKey参照)。
+/// engineCompatVersion/modelVersionをマニフェストと突き合わせてバージョン
+/// 整合性を判定する。LRU容量管理(LocalCacheEntries)とは別枠で、
+/// VAD以外(Whisperは含む)のgroupKeyについて最大2件までの独自の容量上限を
+/// AsrModelManagerが管理する(lastUsedAt基準)。
+class LocalAsrModels extends Table {
+  TextColumn get groupKey => text()(); // modelIdそのもの、または_vad/_whisper
+  TextColumn get modelId => text()();
+  IntColumn get engineCompatVersion => integer()();
+  IntColumn get modelVersion => integer()();
+  TextColumn get localPath => text()();
+  IntColumn get sizeBytes => integer()();
+  // downloading / ready / failed / paused
+  TextColumn get status => text()();
+  DateTimeColumn get downloadedAt => dateTime().nullable()();
+  // 実際にASRエンジンが起動成功した最終時刻(LRU退避の判定用)。
+  // ダウンロード完了時点では更新しない。
+  DateTimeColumn get lastUsedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {groupKey};
+}
+
 // ===== 読み取り専用キャッシュ(サーバー生成コンテンツ)、一部ローカル編集可 =====
 
 class LocalFunFacts extends Table {
@@ -431,6 +484,8 @@ class LocalUserProfiles extends Table {
     LocalCourses,
     LocalCourseAttributes,
     LocalAnnouncements,
+    LocalLectureMoments,
+    LocalAsrModels,
     LocalFunFacts,
     LocalReviewCards,
     LocalDeepNotes,
@@ -446,7 +501,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -588,6 +643,43 @@ class AppDatabase extends _$AppDatabase {
           await m.drop(table);
         }
         await m.createAll();
+      }
+      if (from < 19) {
+        // バージョン19: 録音中のリアクション/メモ用に LocalLectureMoments を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 20) {
+        // バージョン20: オンデバイスASR(sherpa_onnx)のモデルキャッシュ管理用に
+        // LocalAsrModels を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
+      if (from < 21) {
+        // バージョン21: LocalAsrModelsのキーをlanguageCode(生の言語コード)から
+        // groupKey(modelIdそのもの、共有アセットは_vad/_whisper疑似コード)に
+        // 変更し、ja/ko/yueのような同一モデルの重複ダウンロード/状態管理を
+        // 1本化。あわせてlastUsedAt(LRU退避用の最終使用時刻)を追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+        // 旧キー(言語コード名)で展開されていたasr_models/配下のディレクトリは
+        // 二度と参照されなくなるため、ベストエフォートで丸ごと削除しておく。
+        try {
+          final supportDir = await getApplicationSupportDirectory();
+          final asrModelsDir = Directory(p.join(supportDir.path, 'asr_models'));
+          if (await asrModelsDir.exists()) {
+            await asrModelsDir.delete(recursive: true);
+          }
+        } catch (_) {
+          // 削除に失敗しても致命的ではない(次回ensureModelReadyが再ダウンロード
+          // する際にキー名が変わっているので単に無駄なディスク容量が残るだけ)。
+        }
       }
     },
   );
@@ -796,6 +888,16 @@ class AppDatabase extends _$AppDatabase {
         .write(LocalLecturesCompanion(isPinned: Value(pinned)));
   }
 
+  // --- ASR model usage (LRU退避判定用) ---
+
+  /// 指定groupKeyのASRモデルで実際にエンジンが起動成功したタイミングで呼ぶ。
+  /// 行が存在しない(退避等で既に削除済み)場合は何もしない。
+  Future<void> touchAsrModelUsed(String groupKey) async {
+    await (update(localAsrModels)..where((t) => t.groupKey.equals(groupKey))).write(
+      LocalAsrModelsCompanion(lastUsedAt: Value(DateTime.now().toUtc())),
+    );
+  }
+
   Future<List<String>> getPinnedLectureIds(String userId) async {
     final rows = await (select(localLectures)
           ..where((t) => t.userId.equals(userId) & t.isPinned.equals(true)))
@@ -837,6 +939,7 @@ class AppDatabase extends _$AppDatabase {
       await (delete(localLectureAssets)..where((t) => t.lectureId.equals(lectureId))).go();
       await (delete(localUploadJobs)..where((t) => t.lectureId.equals(lectureId))).go();
       await (delete(localCacheEntries)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(localLectureMoments)..where((t) => t.lectureId.equals(lectureId))).go();
       await (delete(localFunFacts)..where((t) => t.lectureId.equals(lectureId))).go();
       await (delete(localReviewCards)..where((t) => t.lectureId.equals(lectureId))).go();
       await (delete(localDeepNotes)..where((t) => t.lectureId.equals(lectureId))).go();
@@ -965,10 +1068,30 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<void> hardDeleteCourseCascade(String courseId) async {
+    await transaction(() async {
+      // 配下の講義IDを取得してカスケード削除
+      final lectures = await (select(localLectures)
+            ..where((t) => t.courseId.equals(courseId)))
+          .get();
+      for (final lecture in lectures) {
+        await hardDeleteLectureCascade(lecture.id);
+      }
+      // コース本体を削除
+      await (delete(localCourses)..where((t) => t.id.equals(courseId))).go();
+    });
+  }
+
   Future<void> hardDeleteTrashAnnouncements(String userId) async {
     await (delete(localAnnouncements)
           ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull()))
         .go();
+  }
+
+  Stream<List<LocalLectureTopic>> watchAllLectureTopics(String userId) {
+    return (select(localLectureTopics)
+          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
+        .watch();
   }
 }
 

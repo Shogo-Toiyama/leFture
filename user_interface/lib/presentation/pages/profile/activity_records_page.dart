@@ -1,22 +1,25 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/application/profile/activity_records_provider.dart';
+import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/announcement.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/review_card_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
+import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_list_page.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
 class ActivityRecordsPage extends HookConsumerWidget {
   const ActivityRecordsPage({super.key, required this.type});
@@ -42,6 +45,68 @@ class ActivityRecordsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recordsAsync = ref.watch(activityRecordsProvider(type));
     final selectedFilter = useState('all');
+
+    // Records the user has toggled off the current filter (unliked/undisliked/unsaved) since
+    // opening this page, keyed by record id. Kept visible with an "undo" affordance until the
+    // user either undoes the action or the fresh data catches up (e.g. they re-liked it).
+    final pendingOverrides = useState<Map<String, ActivityRecord>>(const {});
+    final removedRecordIds = useState<Set<String>>(const {});
+
+    // Converged means the live data now matches whatever the user would get by hitting "undo",
+    // so the pending override is no longer needed.
+    bool hasConverged(ActivityRecord anchor, ActivityRecord? live) {
+      if (live == null) return false;
+      if (type == ActivityType.announcements) {
+        final anchorCompleted = (anchor.rawData as LocalAnnouncement).completedAt != null;
+        final liveCompleted = (live.rawData as LocalAnnouncement).completedAt != null;
+        return anchorCompleted == liveCompleted;
+      }
+      // Likes/Dislikes/Saved: presence in the fresh (type-filtered) list means it matches again.
+      return true;
+    }
+
+    useEffect(() {
+      final fresh = recordsAsync.asData?.value;
+      if (fresh == null) return null;
+
+      // Clear removedRecordIds if fresh list no longer contains them
+      if (removedRecordIds.value.isNotEmpty) {
+        final freshIds = fresh.map((r) => r.id).toSet();
+        final remaining = removedRecordIds.value.intersection(freshIds);
+        if (remaining.length != removedRecordIds.value.length) {
+          removedRecordIds.value = remaining;
+        }
+      }
+
+      if (pendingOverrides.value.isEmpty) return null;
+      final freshById = {for (final r in fresh) r.id: r};
+      final converged = pendingOverrides.value.entries
+          .where((e) => hasConverged(e.value, freshById[e.key]))
+          .map((e) => e.key)
+          .toSet();
+      if (converged.isNotEmpty) {
+        pendingOverrides.value = Map.of(pendingOverrides.value)
+          ..removeWhere((id, _) => converged.contains(id));
+      }
+      return null;
+    }, [recordsAsync.asData?.value]);
+
+    List<ActivityRecord> mergeWithPending(List<ActivityRecord> fresh) {
+      final freshIds = fresh.map((r) => r.id).toSet();
+      final overlay = pendingOverrides.value.values.where((r) => !freshIds.contains(r.id));
+      final merged = [...fresh, ...overlay]
+          .where((r) => !removedRecordIds.value.contains(r.id))
+          .toList();
+      merged.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return merged;
+    }
+
+    // For the Active/Completed sub-filter: while a completion toggle is pending, keep evaluating
+    // the filter against the pre-toggle snapshot so the item doesn't jump to the other tab.
+    LocalAnnouncement announcementFilterSource(ActivityRecord r) {
+      final anchor = pendingOverrides.value[r.id];
+      return (anchor ?? r).rawData as LocalAnnouncement;
+    }
 
     // Choose filters dynamically depending on the page type
     final List<Map<String, String>> filters;
@@ -142,7 +207,8 @@ class ActivityRecordsPage extends HookConsumerWidget {
 
                   // Total Counter
                   recordsAsync.when(
-                    data: (records) {
+                    data: (freshRecords) {
+                      final records = mergeWithPending(freshRecords);
                       final count = records.where((r) {
                         if (selectedFilter.value == 'all') return true;
                         if (type == ActivityType.saved || type == ActivityType.likes || type == ActivityType.dislikes) {
@@ -151,7 +217,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                           if (selectedFilter.value == 'funFact') return r.type == ActivityRecordType.funFact;
                         }
                         if (type == ActivityType.announcements) {
-                          final ann = r.rawData as LocalAnnouncement;
+                          final ann = announcementFilterSource(r);
                           if (selectedFilter.value == 'active') return ann.completedAt == null;
                           if (selectedFilter.value == 'completed') return ann.completedAt != null;
                         }
@@ -218,7 +284,8 @@ class ActivityRecordsPage extends HookConsumerWidget {
 
           // ── Records List ─────────────────────────────────────────
           recordsAsync.when(
-            data: (records) {
+            data: (freshRecords) {
+              final records = mergeWithPending(freshRecords);
               final filtered = records.where((r) {
                 if (selectedFilter.value == 'all') return true;
                 if (type == ActivityType.saved || type == ActivityType.likes || type == ActivityType.dislikes) {
@@ -227,7 +294,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   if (selectedFilter.value == 'funFact') return r.type == ActivityRecordType.funFact;
                 }
                 if (type == ActivityType.announcements) {
-                  final ann = r.rawData as LocalAnnouncement;
+                  final ann = announcementFilterSource(r);
                   if (selectedFilter.value == 'active') return ann.completedAt == null;
                   if (selectedFilter.value == 'completed') return ann.completedAt != null;
                 }
@@ -258,7 +325,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                       final record = filtered[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildRecordCard(context, ref, record),
+                        child: _buildRecordCard(context, ref, record, pendingOverrides, removedRecordIds),
                       );
                     },
                     childCount: filtered.length,
@@ -286,7 +353,13 @@ class ActivityRecordsPage extends HookConsumerWidget {
     );
   }
 
-  Widget _buildRecordCard(BuildContext context, WidgetRef ref, ActivityRecord record) {
+  Widget _buildRecordCard(
+    BuildContext context,
+    WidgetRef ref,
+    ActivityRecord record,
+    ValueNotifier<Map<String, ActivityRecord>> pendingOverrides,
+    ValueNotifier<Set<String>> removedRecordIds,
+  ) {
     if (record.type == ActivityRecordType.announcement && type != ActivityType.trash) {
       final ann = record.rawData as LocalAnnouncement;
       final domainAnn = Announcement(
@@ -315,6 +388,15 @@ class ActivityRecordsPage extends HookConsumerWidget {
         key: ValueKey(domainAnn.id),
         announcement: domainAnn,
         onToggleComplete: (a) async {
+          final isPending = pendingOverrides.value.containsKey(record.id);
+          final next = Map<String, ActivityRecord>.of(pendingOverrides.value);
+          if (isPending) {
+            next.remove(record.id);
+          } else {
+            next[record.id] = record;
+          }
+          pendingOverrides.value = next;
+
           await ref.read(announcementRepositoryDriftProvider).toggleComplete(id: a.id, completed: !a.isCompleted);
           ref.read(lectureControllerProvider.notifier).pushOutboxNow();
         },
@@ -336,141 +418,48 @@ class ActivityRecordsPage extends HookConsumerWidget {
     }
 
     if (type == ActivityType.trash) {
-      return _buildTrashCard(context, ref, record);
+      return _buildTrashCard(context, ref, record, removedRecordIds);
     }
 
-    return _buildContentCard(context, ref, record);
-  }
+    final isPending = pendingOverrides.value.containsKey(record.id);
 
-  Widget _buildContentCard(BuildContext context, WidgetRef ref, ActivityRecord record) {
-    final IconData icon;
-    final String typeLabel;
+    return _ActivityContentCard(
+      key: ValueKey(record.id),
+      record: record,
+      activityType: type,
+      isPending: isPending,
+      onToggleAction: () {
+        final next = Map<String, ActivityRecord>.of(pendingOverrides.value);
+        if (isPending) {
+          next.remove(record.id);
+        } else {
+          next[record.id] = record;
+        }
+        pendingOverrides.value = next;
 
-    switch (record.type) {
-      case ActivityRecordType.reviewCard:
-        icon = Icons.bookmark_rounded;
-        typeLabel = 'Review Card';
-        break;
-      case ActivityRecordType.deepNote:
-        icon = Icons.article_rounded;
-        typeLabel = 'Deep Note';
-        break;
-      case ActivityRecordType.funFact:
-        icon = Icons.lightbulb_rounded;
-        typeLabel = 'Fun Fact';
-        break;
-      default:
-        icon = Icons.star_rounded;
-        typeLabel = 'Content';
-    }
-
-    // Toggle Saved Status Action
-    final isSaved = _isSavedRecord(record);
-    final String? reaction = _getReactionRecord(record);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.universe.glassBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Badge Row
-          Row(
-            children: [
-              Icon(icon, color: AppColors.starGold, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                typeLabel.toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                DateFormat('MMM d, h:mm a').format(record.dateTime),
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Title
-          Text(
-            record.title,
-            style: const TextStyle(
-              color: Color(0xFFF2F2F2),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Content body snippet
-          Text(
-            record.content,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-
-          const SizedBox(height: 14),
-          const Divider(color: Colors.white12, height: 1),
-          const SizedBox(height: 8),
-
-          // Action Toolbar Row
-          Row(
-            children: [
-              // Like Button
-              IconButton(
-                icon: Icon(
-                  reaction == 'like' ? Icons.thumb_up_rounded : Icons.thumb_up_alt_outlined,
-                  color: reaction == 'like' ? Colors.blueAccent : Colors.white38,
-                  size: 20,
-                ),
-                onPressed: () => _updateReaction(ref, record, reaction == 'like' ? null : 'like'),
-              ),
-              // Dislike Button
-              IconButton(
-                icon: Icon(
-                  reaction == 'dislike' ? Icons.thumb_down_rounded : Icons.thumb_down_alt_outlined,
-                  color: reaction == 'dislike' ? Colors.redAccent : Colors.white38,
-                  size: 20,
-                ),
-                onPressed: () => _updateReaction(ref, record, reaction == 'dislike' ? null : 'dislike'),
-              ),
-              const Spacer(),
-              // Save Toggle Button (only for reviewCard & deepNote)
-              if (record.type == ActivityRecordType.reviewCard || record.type == ActivityRecordType.deepNote)
-                IconButton(
-                  icon: Icon(
-                    isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                    color: isSaved ? AppColors.starGold : Colors.white38,
-                    size: 20,
-                  ),
-                  onPressed: () => _toggleSave(ref, record, !isSaved),
-                ),
-            ],
-          ),
-        ],
-      ),
+        switch (type) {
+          case ActivityType.likes:
+            _updateReaction(ref, record, isPending ? 'like' : null);
+            break;
+          case ActivityType.dislikes:
+            _updateReaction(ref, record, isPending ? 'dislike' : null);
+            break;
+          case ActivityType.saved:
+            _toggleSave(ref, record, isPending);
+            break;
+          default:
+            break;
+        }
+      },
     );
   }
 
-  Widget _buildTrashCard(BuildContext context, WidgetRef ref, ActivityRecord record) {
+  Widget _buildTrashCard(
+    BuildContext context,
+    WidgetRef ref,
+    ActivityRecord record,
+    ValueNotifier<Set<String>> removedRecordIds,
+  ) {
     final IconData icon;
     final String typeLabel;
 
@@ -540,52 +529,35 @@ class ActivityRecordsPage extends HookConsumerWidget {
             ),
           ),
 
-          // Restore Button
-          IconButton(
-            icon: const Icon(Icons.settings_backup_restore_rounded, color: AppColors.starGold),
-            tooltip: 'Restore $typeLabel',
-            onPressed: () => _restoreTrashItem(context, ref, record),
+          // Compact Action Buttons
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _restoreTrashItem(context, ref, record, removedRecordIds),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+              child: Icon(
+                Icons.settings_backup_restore_rounded,
+                color: AppColors.starGold,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _confirmDeleteSingleTrashItem(context, ref, record, removedRecordIds),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+              child: Icon(
+                Icons.delete_forever_rounded,
+                color: AppColors.correctionRed,
+                size: 20,
+              ),
+            ),
           ),
         ],
       ),
     );
-  }
-
-  bool _isSavedRecord(ActivityRecord record) {
-    if (record.type == ActivityRecordType.reviewCard) {
-      final card = record.rawData as LocalReviewCard;
-      final metadata = card.metadataJson != null
-          ? Map<String, dynamic>.from(jsonDecode(card.metadataJson!) as Map)
-          : null;
-      return metadata?['saved'] == true;
-    } else if (record.type == ActivityRecordType.deepNote) {
-      final note = record.rawData as LocalDeepNote;
-      final metadata = note.metadataJson != null
-          ? Map<String, dynamic>.from(jsonDecode(note.metadataJson!) as Map)
-          : null;
-      return metadata?['saved'] == true;
-    }
-    return false;
-  }
-
-  String? _getReactionRecord(ActivityRecord record) {
-    if (record.type == ActivityRecordType.reviewCard) {
-      final card = record.rawData as LocalReviewCard;
-      final metadata = card.metadataJson != null
-          ? Map<String, dynamic>.from(jsonDecode(card.metadataJson!) as Map)
-          : null;
-      return metadata?['reaction'] as String?;
-    } else if (record.type == ActivityRecordType.deepNote) {
-      final note = record.rawData as LocalDeepNote;
-      final metadata = note.metadataJson != null
-          ? Map<String, dynamic>.from(jsonDecode(note.metadataJson!) as Map)
-          : null;
-      return metadata?['reaction'] as String?;
-    } else if (record.type == ActivityRecordType.funFact) {
-      final fact = record.rawData as LocalFunFact;
-      return fact.reaction;
-    }
-    return null;
   }
 
   Future<void> _updateReaction(WidgetRef ref, ActivityRecord record, String? newReaction) async {
@@ -608,41 +580,11 @@ class ActivityRecordsPage extends HookConsumerWidget {
     ref.read(lectureControllerProvider.notifier).pushOutboxNow();
   }
 
-  Future<void> _restoreTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record) async {
+  Future<void> _restoreTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record, ValueNotifier<Set<String>> removedRecordIds) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
-      final db = ref.read(appDatabaseProvider);
-
-      if (record.type == ActivityRecordType.course) {
-        // Restore course in Supabase
-        await supabase.from('courses').update({'deleted_at': null}).eq('id', record.id);
-        // Force refresh deleted courses list
-        ref.invalidate(deletedCoursesFutureProvider);
-      } else if (record.type == ActivityRecordType.lecture) {
-        // Restore local lecture
-        await (db.update(db.localLectures)..where((t) => t.id.equals(record.id))).write(
-          LocalLecturesCompanion(
-            deletedAt: const Value(null),
-            syncStatus: const Value('needs_sync'),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
-        // Queue outbox sync
-        await db.enqueueOutbox(entityType: 'lecture', entityId: record.id, op: 'update');
-        ref.read(lectureControllerProvider.notifier).pushOutboxNow();
-      } else if (record.type == ActivityRecordType.announcement) {
-        // Restore local announcement
-        await (db.update(db.localAnnouncements)..where((t) => t.id.equals(record.id))).write(
-          LocalAnnouncementsCompanion(
-            deletedAt: const Value(null),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
-        // Queue outbox sync
-        await db.enqueueOutbox(entityType: 'announcement', entityId: record.id, op: 'update');
-        ref.read(lectureControllerProvider.notifier).pushOutboxNow();
-      }
-
+      await TrashController.restoreItem(ref, record);
+      removedRecordIds.value = {...removedRecordIds.value, record.id};
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Item restored successfully.'),
@@ -650,13 +592,56 @@ class ActivityRecordsPage extends HookConsumerWidget {
         ),
       );
     } catch (e) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Failed to restore item: $e'),
-          backgroundColor: AppColors.correctionRed,
-        ),
-      );
+      if (context.mounted) {
+        AppErrorDialog.showSmart(context, e, actionName: 'restoring trash item');
+      }
     }
+  }
+
+  void _confirmDeleteSingleTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record, ValueNotifier<Set<String>> removedRecordIds) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.universe.voidBackground,
+          title: Text(
+            'Delete ${record.title}?',
+            style: const TextStyle(color: Color(0xFFF2F2F2)),
+          ),
+          content: const Text(
+            'This item will be permanently deleted from both the local database and the cloud. This action cannot be undone.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                try {
+                  await TrashController.deleteSingleItem(ref, record);
+                  removedRecordIds.value = {...removedRecordIds.value, record.id};
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Item permanently deleted.'),
+                      backgroundColor: AppColors.growthGreen,
+                    ),
+                  );
+                } catch (e) {
+                  if (context.mounted) {
+                    AppErrorDialog.showSmart(context, e, actionName: 'deleting trash item');
+                  }
+                }
+              },
+              child: const Text('Delete', style: TextStyle(color: AppColors.correctionRed)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _confirmEmptyTrash(BuildContext context, WidgetRef ref) {
@@ -683,20 +668,23 @@ class ActivityRecordsPage extends HookConsumerWidget {
                 Navigator.of(context).pop();
                 final scaffold = ScaffoldMessenger.of(context);
                 try {
-                  await TrashController.emptyTrash(ref);
+                  final result = await TrashController.emptyTrash(ref);
+                  final failedCount = result.coursesFailed.length + result.lecturesFailed.length;
                   scaffold.showSnackBar(
-                    const SnackBar(
-                      content: Text('Trash emptied successfully.'),
-                      backgroundColor: AppColors.growthGreen,
+                    SnackBar(
+                      content: Text(
+                        result.hasFailures
+                            ? '${result.coursesDeleted + result.lecturesDeleted} item(s) deleted, '
+                                '$failedCount failed and remain in trash for retry.'
+                            : 'Trash emptied successfully.',
+                      ),
+                      backgroundColor: result.hasFailures ? AppColors.correctionRed : AppColors.growthGreen,
                     ),
                   );
                 } catch (e) {
-                  scaffold.showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to empty trash: $e'),
-                      backgroundColor: AppColors.correctionRed,
-                    ),
-                  );
+                  if (context.mounted) {
+                    AppErrorDialog.showSmart(context, e, actionName: 'emptying trash');
+                  }
                 }
               },
               child: const Text('Empty Trash', style: TextStyle(color: AppColors.correctionRed)),
@@ -704,6 +692,246 @@ class ActivityRecordsPage extends HookConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _ActivityContentCard extends ConsumerWidget {
+  const _ActivityContentCard({
+    super.key,
+    required this.record,
+    required this.activityType,
+    required this.isPending,
+    required this.onToggleAction,
+  });
+
+  final ActivityRecord record;
+  final ActivityType activityType;
+
+  /// True once the user has toggled this record off the current filter
+  /// (unliked/undisliked/unsaved) but it's still shown with an undo affordance.
+  final bool isPending;
+  final VoidCallback onToggleAction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final IconData icon;
+    final String typeLabel;
+    final Color badgeColor;
+
+    switch (record.type) {
+      case ActivityRecordType.reviewCard:
+        icon = Icons.bookmark_rounded;
+        typeLabel = 'Review Card';
+        badgeColor = AppColors.starGold;
+        break;
+      case ActivityRecordType.deepNote:
+        icon = Icons.article_rounded;
+        typeLabel = 'Deep Note';
+        badgeColor = AppColors.starGold;
+        break;
+      case ActivityRecordType.funFact:
+        icon = Icons.lightbulb_rounded;
+        typeLabel = 'Fun Fact';
+        badgeColor = AppColors.starGold;
+        break;
+      default:
+        icon = Icons.star_rounded;
+        typeLabel = 'Content';
+        badgeColor = AppColors.starGold;
+    }
+
+    final undoLabel = switch (activityType) {
+      ActivityType.saved => 'Unsaved • Tap to undo',
+      ActivityType.likes || ActivityType.dislikes => 'Unreacted • Tap to undo',
+      _ => null,
+    };
+
+    VoidCallback? onTapCard;
+    if (record.courseId != null && record.lectureId != null) {
+      if (record.type == ActivityRecordType.reviewCard) {
+        final card = record.rawData as LocalReviewCard;
+        final allCards = ref.watch(reviewCardsProvider(record.lectureId!)).asData?.value ?? <ReviewCard>[];
+        final allTopics = ref.watch(lectureTopicsProvider(record.lectureId!)).asData?.value ?? <LectureTopic>[];
+        
+        var targetIndex = 0;
+        var currentFlatIdx = 0;
+        for (final topic in allTopics) {
+          final groupCards = sortReviewCards(allCards.where((c) => c.topicNumber == topic.index).toList());
+          currentFlatIdx++; // Cover card
+          for (final c in groupCards) {
+            if (c.id == card.id) {
+              targetIndex = currentFlatIdx;
+              break;
+            }
+            currentFlatIdx++;
+          }
+          if (targetIndex > 0) break;
+        }
+
+        onTapCard = () {
+          context.push('/home/courses/c/${record.courseId}/rcv/${record.lectureId}?index=$targetIndex');
+        };
+      } else if (record.type == ActivityRecordType.deepNote) {
+        final note = record.rawData as LocalDeepNote;
+        final allTopics = ref.watch(lectureTopicsProvider(record.lectureId!)).asData?.value ?? <LectureTopic>[];
+        var targetArrayIndex = allTopics.indexWhere((t) => t.index == note.topicNumber);
+        if (targetArrayIndex < 0) {
+          targetArrayIndex = note.topicNumber > 0 ? note.topicNumber - 1 : 0;
+        }
+
+        onTapCard = () {
+          context.push('/home/courses/c/${record.courseId}/dnd/${record.lectureId}/$targetArrayIndex', extra: <DeepNoteTopic>[]);
+        };
+      }
+    }
+
+    Widget actionIcon(IconData iconData, Color color) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onToggleAction,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          child: Icon(iconData, color: color, size: 20),
+        ),
+      );
+    }
+
+    Widget? actionButton;
+    switch (activityType) {
+      case ActivityType.likes:
+        actionButton = actionIcon(
+          isPending ? Icons.favorite_border_rounded : Icons.favorite_rounded,
+          isPending ? Colors.white38 : const Color(0xFFE53935),
+        );
+        break;
+      case ActivityType.dislikes:
+        actionButton = actionIcon(
+          isPending ? Icons.thumb_down_alt_outlined : Icons.thumb_down_rounded,
+          isPending ? Colors.white38 : const Color(0xFF2196F3),
+        );
+        break;
+      case ActivityType.saved:
+        if (record.type == ActivityRecordType.reviewCard || record.type == ActivityRecordType.deepNote) {
+          actionButton = actionIcon(
+            isPending ? Icons.bookmark_border_rounded : Icons.bookmark_rounded,
+            isPending ? Colors.white38 : const Color(0xFF4CAF50),
+          );
+        }
+        break;
+      default:
+        break;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isPending
+            ? Colors.white.withValues(alpha: 0.02)
+            : AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isPending
+              ? Colors.white12
+              : AppColors.universe.glassBorder,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTapCard,
+          borderRadius: BorderRadius.circular(14),
+          splashColor: Colors.white10,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Badge Row
+                Row(
+                  children: [
+                    Icon(icon, color: badgeColor, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      typeLabel.toUpperCase(),
+                      style: TextStyle(
+                        color: badgeColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      DateFormat('MMM d, h:mm a').format(record.dateTime),
+                      style: TextStyle(
+                        color: AppColors.universe.textComet,
+                        fontSize: 11,
+                      ),
+                    ),
+                    if (onTapCard != null) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.universe.textComet,
+                        size: 18,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Title
+                Text(
+                  record.title,
+                  style: TextStyle(
+                    color: isPending
+                        ? Colors.white54
+                        : const Color(0xFFF2F2F2),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Content body snippet
+                Text(
+                  record.content,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isPending
+                        ? Colors.white38
+                        : Colors.white70,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                const Divider(color: Colors.white12, height: 1),
+                const SizedBox(height: 8),
+
+                // Action Toolbar Row
+                Row(
+                  children: [
+                    if (isPending && undoLabel != null)
+                      Text(
+                        undoLabel,
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    const Spacer(),
+                    if (actionButton != null) actionButton,
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

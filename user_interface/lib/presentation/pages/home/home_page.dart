@@ -6,12 +6,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
+import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/application/fun_fact/fun_fact_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
+import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
 import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
@@ -62,6 +65,18 @@ class HomePage extends HookConsumerWidget {
     // 頻度は LectureController 側の interval（デフォルト15分）でレート制限される。
     useEffect(() {
       ref.read(lectureControllerProvider.notifier).bootstrapIfNeeded();
+      return null;
+    }, const []);
+
+    // Realtime Recordingが有効な場合、Homeに来るたびに現在のRecording Language
+    // のオンデバイスASRモデルが揃っているか確認し、無ければ黙ってダウンロードを
+    // 開始する(失敗してもダイアログは出さない。未準備の状態は言語ピッカーの
+    // アイコンで分かるようにする)。
+    useEffect(() {
+      if (RecordingPreferences().getRealtimeTranscribe()) {
+        final lang = ref.read(recordingLanguageControllerProvider);
+        ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+      }
       return null;
     }, const []);
 

@@ -10,6 +10,19 @@ import 'dart:async';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart'; // 色追加
+// AIチャットはApple審査対応のため一時的に非表示。再有効化時にコメントアウトを外す。
+// import 'package:lecture_companion_ui/presentation/widgets/ai_chat_sheet.dart';
+import 'package:lecture_companion_ui/application/recording/lecture_moments_provider.dart';
+import 'package:lecture_companion_ui/application/recording/live_transcript_provider.dart';
+import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
+import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
+import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
+import 'package:lecture_companion_ui/domain/entities/app_language.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
+import 'package:lecture_companion_ui/domain/entities/live_transcript_sentence.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/widgets/language_selection_sheet.dart';
+import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
 import '../dev_tools/simulate_recording_tab.dart';
@@ -32,9 +45,8 @@ class RecordingPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // タブコントローラー (Voice / Memo、isTestModeの時だけTestタブが加わる)
-    // MVPのため、Noteタブ無効化に伴い長さを-1 (元: isTestMode ? 3 : 2)
-    final tabController = useTabController(initialLength: isTestMode ? 2 : 1);
+    // タブコントローラー (Voice / Live、isTestModeの時だけTestタブが加わる)
+    final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
     // MVPのためコメントアウト
     // final memoCtl = useTextEditingController();
     // useListenable(memoCtl);
@@ -61,8 +73,24 @@ class RecordingPage extends HookConsumerWidget {
       return null;
     }, [initialCourseId]);
 
+    // マイク許可とASRモデルの準備を、録音ボタンを押す前に前倒しで行う
+    // (授業が始まってしまってからもたつかないように、ページに入った瞬間に済ませる)。
+    useEffect(() {
+      Future.microtask(() {
+        ref.read(recordingControllerProvider.notifier).requestMicPermissionEarly();
+        final lang = ref.read(recordingLanguageControllerProvider);
+        ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+      });
+      return null;
+    }, []);
+
     final state = ref.watch(recordingControllerProvider);
     final controller = ref.read(recordingControllerProvider.notifier);
+
+    final recordingLanguage = ref.watch(recordingLanguageControllerProvider);
+    ref.watch(asrModelManagerProvider);
+    final asrModelState =
+        ref.read(asrModelManagerProvider.notifier).statusForLanguage(recordingLanguage);
 
     final coursesAsync = ref.watch(courseListProvider);
     final courses = coursesAsync.asData?.value ?? const [];
@@ -182,7 +210,6 @@ class RecordingPage extends HookConsumerWidget {
     }
 
     final isBusy = state.isBusy;
-    final isRecording = state.isRecording;
     final isDonePhase = state.phase == RecordingPhase.queued;
 
     return Scaffold(
@@ -203,7 +230,7 @@ class RecordingPage extends HookConsumerWidget {
           dividerColor: AppColors.universe.glassBorder,
           tabs: const [
             Tab(icon: Icon(Icons.mic)),
-            // Tab(icon: Icon(Icons.edit_note)), // MVPのためコメントアウト
+            Tab(icon: Icon(Icons.forum_outlined)),
             if (isTestMode) Tab(icon: Icon(Icons.bug_report)),
           ],
         ),
@@ -229,11 +256,30 @@ class RecordingPage extends HookConsumerWidget {
                               color: AppColors.universe.glassWhiteLow,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: AppColors.universe.glassBorder),
+                              boxShadow: selectedCourse != null
+                                  ? [
+                                      BoxShadow(
+                                        color: courseColor.withValues(alpha: 0.16),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: ListTile(
-                              leading: Icon(
-                                selectedCourse != null ? iconData : Icons.folder_outlined,
-                                color: selectedCourse != null ? displayIconColor : AppColors.universe.textComet,
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: (selectedCourse != null ? displayIconColor : AppColors.universe.textComet)
+                                      .withValues(alpha: 0.15),
+                                ),
+                                child: Icon(
+                                  selectedCourse != null ? iconData : Icons.folder_outlined,
+                                  color: selectedCourse != null ? displayIconColor : AppColors.universe.textComet,
+                                  size: 20,
+                                ),
                               ),
                               title: Text('Course', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
                               subtitle: LayoutBuilder(
@@ -331,50 +377,24 @@ class RecordingPage extends HookConsumerWidget {
                           // 3. Timer
                           Text(
                             _format(state.elapsedSeconds),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 64,
                               fontWeight: FontWeight.w200,
-                              fontFeatures: [FontFeature.tabularFigures()],
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                              shadows: [
+                                Shadow(
+                                  color: (state.isRecording ? AppColors.correctionRed : AppColors.starGold)
+                                      .withValues(alpha: state.isRecording ? 0.45 : 0.22),
+                                  blurRadius: 24,
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 40),
 
                           // 4. Big Mic Button (Center)
-                          GestureDetector(
-                            onTap: (isBusy || (state.phase != RecordingPhase.idle && state.phase != RecordingPhase.recording && state.phase != RecordingPhase.paused))
-                                ? null
-                                : () => controller.toggleStartStopResume(),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: 140,
-                              height: 140,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isRecording
-                                    ? AppColors.correctionRed.withValues(alpha: 0.2) 
-                                    : AppColors.starGold.withValues(alpha: 0.1), 
-                                border: Border.all(
-                                  color: isRecording ? AppColors.correctionRed : AppColors.starGold,
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  if (isRecording)
-                                    BoxShadow(
-                                      color: AppColors.correctionRed.withValues(alpha:0.5),
-                                      blurRadius: 30,
-                                      spreadRadius: 5,
-                                    ),
-                                ],
-                              ),
-                              child: Icon(
-                                isRecording ? Icons.stop_rounded : 
-                                (state.phase == RecordingPhase.paused ? Icons.fiber_manual_record : Icons.mic),
-                                size: 64,
-                                color: isRecording ? AppColors.correctionRed : AppColors.starGold,
-                              ),
-                            ),
-                          ),
+                          _MicButton(state: state, controller: controller, isBusy: isBusy),
                           const SizedBox(height: 16),
 
                           // Status Text
@@ -384,16 +404,28 @@ class RecordingPage extends HookConsumerWidget {
                           if (state.phase == RecordingPhase.idle)
                             ...[
                               const SizedBox(height: 24),
-                              Text(
-                                'OR',
-                                style: TextStyle(
-                                  color: AppColors.universe.textComet,
-                                  fontSize: 14,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(child: Divider(color: AppColors.universe.glassBorder)),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      'OR',
+                                      style: TextStyle(
+                                        color: AppColors.universe.textComet,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(child: Divider(color: AppColors.universe.glassBorder)),
+                                ],
                               ),
                               const SizedBox(height: 16),
                               Container(
                                 decoration: BoxDecoration(
+                                  color: AppColors.universe.glassWhiteLow,
                                   border: Border.all(
                                     color: selectedAudioFilePath.value != null
                                         ? AppColors.starGold
@@ -594,8 +626,61 @@ class RecordingPage extends HookConsumerWidget {
                                   subtitle: 'Transcribe audio stream in realtime as you record.',
                                   value: state.realtimeTranscribe,
                                   onChanged: state.phase == RecordingPhase.idle
-                                      ? (val) => controller.setRealtimeTranscribe(val)
+                                      ? (val) async {
+                                          if (val && asrModelState.status != AsrModelStatus.ready) {
+                                            final confirmed = await showCustomDialog(
+                                              context: context,
+                                              title: 'Speech model required',
+                                              message:
+                                                  'Realtime transcription needs this language\'s on-device speech model. Download it now?',
+                                              icon: Icons.download_rounded,
+                                              confirmLabel: 'Download',
+                                              cancelLabel: 'Cancel',
+                                            );
+                                            if (confirmed != true) return;
+                                            controller.setRealtimeTranscribe(true);
+                                            await ref
+                                                .read(asrModelManagerProvider.notifier)
+                                                .ensureModelReady(recordingLanguage);
+                                            final result = ref
+                                                .read(asrModelManagerProvider.notifier)
+                                                .statusForLanguage(recordingLanguage);
+                                            if (result.status == AsrModelStatus.failed && context.mounted) {
+                                              AppErrorDialog.show(
+                                                context,
+                                                actionName: 'downloading the speech model',
+                                                rawError: result.errorMessage ?? 'Unknown error',
+                                              );
+                                            }
+                                            return;
+                                          }
+                                          controller.setRealtimeTranscribe(val);
+                                        }
                                       : null,
+                                ),
+                                const SizedBox(height: 12),
+                                _RecordingLanguageRow(
+                                  languageLabel: recordingLanguageFromCode(recordingLanguage).englishName,
+                                  modelState: asrModelState,
+                                  onDownloadTap: () => ref
+                                      .read(asrModelManagerProvider.notifier)
+                                      .ensureModelReady(recordingLanguage),
+                                  onPauseTap: () => ref
+                                      .read(asrModelManagerProvider.notifier)
+                                      .pauseDownload(recordingLanguage),
+                                  onResumeTap: () => ref
+                                      .read(asrModelManagerProvider.notifier)
+                                      .resumeDownload(recordingLanguage),
+                                  onTap: isBusy
+                                      ? null
+                                      : () => showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            backgroundColor: Colors.transparent,
+                                            builder: (_) => const LanguageSelectionSheet(
+                                              mode: LanguageSheetMode.recording,
+                                            ),
+                                          ),
                                 ),
                               ],
                             ),
@@ -655,7 +740,12 @@ class RecordingPage extends HookConsumerWidget {
               ),
 
               // ==========================================
-              // Tab 2: Memo (Manual Entry) - MVPのためコメントアウト
+              // Tab 2: Live (Realtime transcript + reactions/notes)
+              // ==========================================
+              _LiveTab(state: state, controller: controller),
+
+              // ==========================================
+              // (旧) Memo (Manual Entry) - MVPのためコメントアウト、参考として残置
               // ==========================================
               /*
               Column(
@@ -827,13 +917,913 @@ class _StatusArea extends StatelessWidget {
     }
 
     if (state.phase == RecordingPhase.paused) {
-      return Text('Paused', style: TextStyle(color: AppColors.alertAmber, fontWeight: FontWeight.bold));
+      return const _StatusPill(icon: Icons.pause_circle_filled, color: AppColors.alertAmber, label: 'Paused');
     }
 
     if (state.phase == RecordingPhase.recording) {
-      return const Text('Recording...', style: TextStyle(color: AppColors.correctionRed, fontWeight: FontWeight.bold));
+      return const _StatusPill(icon: Icons.fiber_manual_record, color: AppColors.correctionRed, label: 'Recording...');
     }
 
     return Text('Ready to record', style: TextStyle(color: AppColors.universe.textComet));
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.icon, required this.color, required this.label});
+
+  final IconData icon;
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
+/// 「Recording Language」設定行。タップするとLanguageSelectionSheetが開き、
+/// オンデバイスASRモデルのダウンロード状況(ダウンロード中/準備完了/失敗)と
+/// 併せて言語を選べる。
+class _RecordingLanguageRow extends StatelessWidget {
+  const _RecordingLanguageRow({
+    required this.languageLabel,
+    required this.modelState,
+    required this.onTap,
+    this.onDownloadTap,
+    this.onPauseTap,
+    this.onResumeTap,
+  });
+
+  final String languageLabel;
+  final AsrLanguageModelState modelState;
+  final VoidCallback? onTap;
+  // failed/unknown状態でタップするとダウンロード/リトライ。
+  final VoidCallback? onDownloadTap;
+  final VoidCallback? onPauseTap;
+  final VoidCallback? onResumeTap;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget statusIndicator;
+    switch (modelState.status) {
+      case AsrModelStatus.checking:
+        statusIndicator = SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.universe.textComet),
+        );
+      case AsrModelStatus.downloading:
+        final progress = modelState.progress;
+        statusIndicator = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: progress,
+                    color: AppColors.starGold,
+                  ),
+                  if (progress != null)
+                    Text(
+                      '${(progress * 100).round()}',
+                      style: TextStyle(fontSize: 7, color: AppColors.universe.textComet),
+                    ),
+                ],
+              ),
+            ),
+            if (onPauseTap != null) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onPauseTap,
+                child: Icon(Icons.pause_circle_outline, color: AppColors.universe.textComet, size: 20),
+              ),
+            ],
+          ],
+        );
+      case AsrModelStatus.paused:
+        statusIndicator = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onResumeTap,
+          child: Icon(Icons.play_circle_outline, color: AppColors.starGold, size: 22),
+        );
+      case AsrModelStatus.ready:
+        statusIndicator = const Icon(Icons.check_circle, color: AppColors.growthGreen, size: 18);
+      case AsrModelStatus.failed:
+        statusIndicator = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onDownloadTap,
+          child: const Icon(Icons.download_rounded, color: AppColors.correctionRed, size: 20),
+        );
+      case AsrModelStatus.unknown:
+        statusIndicator = onDownloadTap == null
+            ? const SizedBox.shrink()
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onDownloadTap,
+                child: Icon(Icons.download_rounded, color: AppColors.universe.textComet, size: 20),
+              );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        enabled: onTap != null,
+        leading: Icon(Icons.translate, color: AppColors.universe.textComet),
+        title: Text(
+          'Recording language',
+          style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          modelState.status == AsrModelStatus.failed && modelState.errorMessage != null
+              ? '⚠️ ${modelState.errorMessage}'
+              : 'On-device speech model used for live captions.',
+          maxLines: 3,
+          style: TextStyle(
+            color: modelState.status == AsrModelStatus.failed
+                ? AppColors.correctionRed
+                : AppColors.universe.textComet,
+            fontSize: 11,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(languageLabel, style: TextStyle(color: AppColors.universe.textComet, fontSize: 13)),
+            const SizedBox(width: 8),
+            statusIndicator,
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, color: AppColors.universe.textComet, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================
+// Live Tab (見た目確認用のハリボテ。永続化・実データ取得は一切無し)
+// =============================================================
+
+// リアクション3ボタン用。メモ("note")は自由入力でボタンは無いため、
+// 文字列リテラル("note")として直接扱う(_momentDisplay/RecordingController参照)。
+enum _MomentType { fun, difficult, revisit }
+
+String _formatMmSs(int sec) {
+  final m = (sec ~/ 60).toString().padLeft(2, '0');
+  final s = (sec % 60).toString().padLeft(2, '0');
+  return '$m:$s';
+}
+
+/// リアクション/メモ種別ごとのアイコン・色・ラベル(ボタンとタイムラインで共有)。
+/// `moment_type`はSupabase/ローカルDBどちらもenumやCHECK制約の無いプレーンな
+/// text列(将来種類が増える前提)なので、DB由来の値は生Stringで受け取り、
+/// 未知の値でも例外を投げず汎用表示にフォールバックする。
+(IconData, Color, String) _momentDisplay(String momentType) {
+  switch (momentType) {
+    case 'fun':
+      return (Icons.star_rounded, AppColors.starGold, 'Fun moment');
+    case 'difficult':
+      return (Icons.help_rounded, AppColors.cosmicBlue, 'Difficult');
+    case 'revisit':
+      return (Icons.bookmark_rounded, AppColors.growthGreen, 'Revisit later');
+    case 'note':
+      return (Icons.edit_note_rounded, AppColors.universe.textComet, 'Note');
+    default:
+      return (Icons.emoji_objects_rounded, AppColors.universe.textComet, momentType);
+  }
+}
+
+class _LiveTab extends HookConsumerWidget {
+  const _LiveTab({required this.state, required this.controller});
+
+  final RecordingState state;
+  final RecordingController controller;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final noteCtl = useTextEditingController();
+    final lectureId = state.currentLectureId;
+    // 録音中/一時停止中のみ操作可能。タブ自体はそれ以外のフェーズでも表示する。
+    final canInteract =
+        state.phase == RecordingPhase.recording || state.phase == RecordingPhase.paused;
+
+    final moments = lectureId != null
+        ? (ref.watch(lectureMomentsProvider(lectureId)).value ?? const <LectureMoment>[])
+        : const <LectureMoment>[];
+
+    void addMoment(_MomentType type) {
+      controller.addReaction(type.name);
+    }
+
+    void submitNote() {
+      final text = noteCtl.text.trim();
+      if (text.isEmpty) return;
+      controller.addNote(text);
+      noteCtl.clear();
+    }
+
+    void deleteMoment(String id) {
+      controller.deleteMoment(id);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final listCount = moments.length;
+        final timelineHeight = listCount == 0
+            ? 20.0
+            : (listCount < 4
+                ? listCount * 44.0 + (listCount - 1) * 8.0
+                : 3.5 * 44.0 + 3 * 8.0);
+
+        if (state.realtimeTranscribe) {
+          // 下部要素（Padding + Timeline + ReactionRow + NoteInputRow + Gaps）の高さ合計
+          final bottomFixedArea = 40.0 + timelineHeight + 12.0 + 64.0 + 12.0 + 48.0 + 12.0;
+          final availableTranscriptHeight = constraints.maxHeight - bottomFixedArea;
+          const minTranscriptHeight = 160.0;
+          final transcriptHeight = availableTranscriptHeight < minTranscriptHeight
+              ? minTranscriptHeight
+              : availableTranscriptHeight;
+
+          final isOverflowing = availableTranscriptHeight < minTranscriptHeight;
+
+          return SingleChildScrollView(
+            physics: isOverflowing
+                ? const BouncingScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: transcriptHeight,
+                  child: _LiveTranscriptPanel(
+                    phase: state.phase,
+                    lectureId: lectureId,
+                    canInteract: canInteract,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _MomentsTimeline(
+                  moments: moments,
+                  isExpanded: false,
+                  canInteract: canInteract,
+                  onDelete: deleteMoment,
+                ),
+                const SizedBox(height: 12),
+                _ReactionRow(onTap: addMoment, canInteract: canInteract),
+                const SizedBox(height: 12),
+                _NoteInputRow(controller: noteCtl, onSubmit: submitNote, enabled: canInteract),
+              ],
+            ),
+          );
+        } else {
+          // Realtime OFF の場合
+          final fixedAreaOff = 40.0 + 52.0 + 12.0 + 64.0 + 12.0 + 48.0 + 12.0;
+          final availableTimelineHeight = constraints.maxHeight - fixedAreaOff;
+          const minTimelineHeight = 180.0;
+          final timelineHeightOff = availableTimelineHeight < minTimelineHeight
+              ? minTimelineHeight
+              : availableTimelineHeight;
+
+          final isOverflowing = availableTimelineHeight < minTimelineHeight;
+
+          return SingleChildScrollView(
+            physics: isOverflowing
+                ? const BouncingScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                const _RealtimeOffHint(),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: timelineHeightOff,
+                  child: _MomentsTimeline(
+                    moments: moments,
+                    isExpanded: true,
+                    canInteract: canInteract,
+                    onDelete: deleteMoment,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ReactionRow(onTap: addMoment, canInteract: canInteract),
+                const SizedBox(height: 12),
+                _NoteInputRow(controller: noteCtl, onSubmit: submitNote, enabled: canInteract),
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+/// 録音状態バッジ。録音中は🔴Recording...、一時停止中は🟡Paused、それ以外は非表示。
+class _RecordingStatusBadge extends StatelessWidget {
+  const _RecordingStatusBadge({required this.phase});
+
+  final RecordingPhase phase;
+
+  @override
+  Widget build(BuildContext context) {
+    IconData icon;
+    Color color;
+    String label;
+    switch (phase) {
+      case RecordingPhase.recording:
+        icon = Icons.fiber_manual_record;
+        color = AppColors.correctionRed;
+        label = 'Recording...';
+      case RecordingPhase.paused:
+        icon = Icons.pause_circle_filled;
+        color = AppColors.alertAmber;
+        label = 'Paused';
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+class _LiveTranscriptPanel extends HookConsumerWidget {
+  const _LiveTranscriptPanel({
+    required this.phase,
+    required this.lectureId,
+    required this.canInteract,
+  });
+
+  final RecordingPhase phase;
+  final String? lectureId;
+  final bool canInteract;
+
+  static const double _bottomThresholdPx = 24;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = useScrollController();
+    final isFollowing = useState(true);
+
+    final lectureId = this.lectureId;
+    final sentences = lectureId != null
+        ? (ref.watch(liveTranscriptProvider(lectureId)).value ?? const <LiveTranscriptSentence>[])
+        : const <LiveTranscriptSentence>[];
+
+    // サーバー版(lecture_transcripts)とオンデバイス版(LiveAsrController)を
+    // 時刻順に素朴に連結するだけ(watermarkによる賢いマージはまだ次フェーズ)。
+    final onDeviceSegments = ref.watch(liveAsrControllerProvider);
+    final combined = <(double, String)>[
+      for (final s in sentences) (s.startSec, s.text),
+      for (final s in onDeviceSegments) (s.timestampSec, s.text),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+
+    void scrollToBottom() {
+      if (!scrollController.hasClients) return;
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+
+    // 新しい文が届いた時、追従中(isFollowing)なら自動で最下部までスクロールする。
+    useEffect(() {
+      if (!isFollowing.value || combined.isEmpty) return null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => scrollToBottom());
+      return null;
+    }, [combined.length]);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                Icon(Icons.podcasts_rounded, size: 16, color: AppColors.starGold),
+                const SizedBox(width: 8),
+                Text(
+                  'LIVE TRANSCRIPT',
+                  style: TextStyle(
+                    color: AppColors.starGold,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const Spacer(),
+                _RecordingStatusBadge(phase: phase),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: AppColors.universe.glassBorder),
+          Expanded(
+            child: Stack(
+              children: [
+                combined.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Waiting for audio...',
+                          style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
+                        ),
+                      )
+                    : NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          if (notification is ScrollUpdateNotification &&
+                              notification.dragDetails != null) {
+                            // ユーザー自身の指によるドラッグ(プログラム的スクロールは除外)
+                            isFollowing.value = false;
+                          } else if (notification is ScrollEndNotification) {
+                            final metrics = notification.metrics;
+                            if (metrics.pixels >= metrics.maxScrollExtent - _bottomThresholdPx) {
+                              isFollowing.value = true;
+                            }
+                          }
+                          return false;
+                        },
+                        child: ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: combined.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 14),
+                          itemBuilder: (context, i) {
+                            final (sec, text) = combined[i];
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _formatMmSs(sec.round()),
+                                  style: TextStyle(
+                                    color: AppColors.universe.textComet,
+                                    fontSize: 11,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    text,
+                                    style: TextStyle(
+                                      color: AppColors.universe.textStarlight,
+                                      fontSize: 14,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                if (!isFollowing.value && combined.isNotEmpty)
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Material(
+                      color: AppColors.starGold,
+                      shape: const CircleBorder(),
+                      elevation: 4,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () {
+                          scrollToBottom();
+                          isFollowing.value = true;
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.arrow_downward_rounded, size: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // AIチャットはApple審査対応のため一時的に非表示(Coming Soon的な
+          // 未完成機能を見せないため)。再度有効化する際はこのブロックと
+          // 冒頭の ai_chat_sheet.dart のimportのコメントアウトを外すこと。
+          /*
+          Divider(height: 1, color: AppColors.universe.glassBorder),
+          Opacity(
+            opacity: canInteract ? 1.0 : 0.4,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Material(
+                      color: AppColors.universe.voidBackground.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: canInteract ? () => showAiChatSheet(context) : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.universe.glassBorder),
+                          ),
+                          child: Text(
+                            'Ask AI about this lecture...',
+                            style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: AppColors.starGold,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: canInteract ? () => showAiChatSheet(context) : null,
+                      child: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          */
+        ],
+      ),
+    );
+  }
+}
+
+class _RealtimeOffHint extends StatelessWidget {
+  const _RealtimeOffHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 18, color: AppColors.universe.textComet),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.',
+              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12, height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReactionRow extends StatelessWidget {
+  const _ReactionRow({required this.onTap, required this.canInteract});
+
+  final void Function(_MomentType type) onTap;
+  final bool canInteract;
+
+  static const _options = <_MomentType>[
+    _MomentType.fun,
+    _MomentType.difficult,
+    _MomentType.revisit,
+  ];
+
+  static const _captions = <_MomentType, String>{
+    _MomentType.fun: 'Fun',
+    _MomentType.difficult: 'Difficult',
+    _MomentType.revisit: 'Revisit',
+  };
+
+  Widget _button(_MomentType type) {
+    final (icon, color, _) = _momentDisplay(type.name);
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Opacity(
+          opacity: canInteract ? 1.0 : 0.4,
+          child: Material(
+            color: AppColors.universe.glassWhiteLow,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: canInteract ? () => onTap(type) : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.universe.glassBorder),
+                ),
+                child: Column(
+                  children: [
+                    Icon(icon, size: 22, color: color),
+                    const SizedBox(height: 4),
+                    Text(_captions[type]!, style: TextStyle(color: AppColors.universe.textComet, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [for (final type in _options) _button(type)]);
+  }
+}
+
+class _NoteInputRow extends StatelessWidget {
+  const _NoteInputRow({required this.controller, required this.onSubmit, required this.enabled});
+
+  final TextEditingController controller;
+  final VoidCallback onSubmit;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enabled: enabled,
+            style: TextStyle(color: AppColors.universe.textStarlight),
+            decoration: InputDecoration(
+              hintText: 'Jot a quick note...',
+              hintStyle: TextStyle(color: AppColors.universe.textComet),
+              filled: true,
+              fillColor: AppColors.universe.glassWhiteLow,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: AppColors.starGold),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onSubmitted: (_) => onSubmit(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: enabled ? onSubmit : null,
+          icon: const Icon(Icons.send_rounded),
+          color: AppColors.starGold,
+        ),
+      ],
+    );
+  }
+}
+
+class _MomentsTimeline extends StatelessWidget {
+  const _MomentsTimeline({
+    required this.moments,
+    required this.canInteract,
+    required this.onDelete,
+    this.isExpanded = false,
+  });
+
+  final List<LectureMoment> moments;
+  final bool canInteract;
+  final void Function(String id) onDelete;
+  final bool isExpanded;
+
+  static const double _tileHeight = 44;
+  static const double _tileGap = 8;
+  static const double _maxVisibleTiles = 3.5;
+
+  @override
+  Widget build(BuildContext context) {
+    if (moments.isEmpty) {
+      final hintWidget = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Text(
+          'Tap a reaction or add a note below — it\'ll show up here.',
+          style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+        ),
+      );
+      if (isExpanded) {
+        return Center(child: hintWidget);
+      }
+      return hintWidget;
+    }
+
+    final reversed = moments.reversed.toList();
+    final listView = ListView.separated(
+      physics: const ClampingScrollPhysics(),
+      itemCount: reversed.length,
+      separatorBuilder: (_, _) => const SizedBox(height: _tileGap),
+      itemBuilder: (context, i) {
+        final moment = reversed[i];
+        final (icon, color, label) = _momentDisplay(moment.momentType);
+        return Container(
+          height: _tileHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.universe.glassWhiteLow,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.universe.glassBorder),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 10),
+              Text(
+                _formatMmSs(moment.timestampSec),
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 11,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  moment.noteText ?? label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13),
+                ),
+              ),
+              SizedBox(
+                width: 26,
+                height: 26,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 14,
+                  color: AppColors.universe.textComet,
+                  onPressed: canInteract ? () => onDelete(moment.id) : null,
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (isExpanded) {
+      return listView;
+    }
+
+    final count = reversed.length;
+    final double height;
+    if (count < 4) {
+      height = count * _tileHeight + (count - 1) * _tileGap;
+    } else {
+      height = _maxVisibleTiles * _tileHeight + 3 * _tileGap;
+    }
+
+    return SizedBox(
+      height: height,
+      child: listView,
+    );
+  }
+}
+
+// =============================================================
+// Mic Button (録音中は脈動するリング、常時ほんのりグロー)
+// =============================================================
+
+class _MicButton extends HookWidget {
+  const _MicButton({required this.state, required this.controller, required this.isBusy});
+
+  final RecordingState state;
+  final RecordingController controller;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    final isRecording = state.isRecording;
+    final pulse = useAnimationController(duration: const Duration(milliseconds: 1600));
+
+    useEffect(() {
+      if (isRecording) {
+        pulse.repeat();
+      } else {
+        pulse.stop();
+        pulse.value = 0;
+      }
+      return null;
+    }, [isRecording]);
+
+    final canTap = !isBusy &&
+        (state.phase == RecordingPhase.idle ||
+            state.phase == RecordingPhase.recording ||
+            state.phase == RecordingPhase.paused);
+
+    final accentColor = isRecording ? AppColors.correctionRed : AppColors.starGold;
+
+    return GestureDetector(
+      onTap: canTap ? () => controller.toggleStartStopResume() : null,
+      child: SizedBox(
+        width: 200,
+        height: 200,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            if (isRecording)
+              AnimatedBuilder(
+                animation: pulse,
+                builder: (context, _) {
+                  final t = pulse.value;
+                  return Container(
+                    width: 140 + t * 60,
+                    height: 140 + t * 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.correctionRed.withValues(alpha: (1 - t) * 0.5),
+                        width: 2,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    accentColor.withValues(alpha: 0.22),
+                    accentColor.withValues(alpha: 0.05),
+                  ],
+                ),
+                border: Border.all(color: accentColor, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: isRecording ? 0.45 : 0.25),
+                    blurRadius: isRecording ? 30 : 18,
+                    spreadRadius: isRecording ? 4 : 1,
+                  ),
+                ],
+              ),
+              child: Icon(
+                isRecording
+                    ? Icons.stop_rounded
+                    : (state.phase == RecordingPhase.paused ? Icons.fiber_manual_record : Icons.mic),
+                size: 64,
+                color: accentColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
