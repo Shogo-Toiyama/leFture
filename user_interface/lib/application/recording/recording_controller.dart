@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dar
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
 import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
+import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -463,7 +464,18 @@ class RecordingController extends _$RecordingController {
 
     if (state.currentLectureId != null) {
       await _recorder.cleanUpMasterAudioFiles(state.currentLectureId!);
-      await _repo.deleteLectureAndAssets(state.currentLectureId!);
+
+      // ローカルのジョブ/アセットは消してこれ以上チャンクが送られないようにする
+      // (Lecture本体はここでは消さない — 下のsoftDeleteLectureが読み出す必要があるため)。
+      await _repo.deleteLectureJobsAndAssets(state.currentLectureId!);
+
+      // Discard時点で、バックグラウンドのチャンクアップロード(UploadManager)が
+      // 既にSupabaseへ`lectures`行を作ってしまっている可能性がある(レース)。
+      // ハード削除ではなく、通常のTrash機能と同じ論理削除(deleted_at)を使う
+      // ことで、Outbox経由でその行にも`deleted_at`が届くようにする。
+      // 30日後には既存のリテンション処理(ローカル: LocalRetentionService /
+      // サーバー: /maintenance/patrol)が自動的に完全削除する。
+      await ref.read(lectureRepositoryProvider).softDeleteLecture(lectureId: state.currentLectureId!);
     }
 
     state = RecordingState.idle();

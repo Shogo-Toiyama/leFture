@@ -2,6 +2,7 @@ import 'package:path/path.dart' as p;
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
 import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/asr_model_repository.dart';
 
 import 'asr_engine.dart';
@@ -33,7 +34,11 @@ class AsrEngineFactory {
   // SenseVoiceは軽いのでやや長めに、maxSpeechDurationを安全側に倒す。
   static const _whisperMaxSpeechDuration = 8.0;
   static const _senseVoiceMaxSpeechDuration = 16.0;
-  static const _minSilenceDuration = 0.5;
+  // StreamingZipformerEngine側のrule2MinTrailingSilence(0.6s)と揃える。
+  // Silero VADにはrule1相当(発話ゼロでも無音だけで確定する)の閾値が無く、
+  // 実際に発話を検知した後の無音でセグメントを切る側のみ対応するため、
+  // rule2側の値だけをそのまま流用している。
+  static const _minSilenceDuration = 0.6;
   static const _minSpeechDuration = 0.25;
 
   /// 必要なモデルがまだローカルに揃っていない場合はnullを返す
@@ -41,11 +46,25 @@ class AsrEngineFactory {
   Future<AsrEngineHandle?> createEngine(String languageCode) async {
     final manifest = await _repository.fetchManifest();
     final info = manifest.languages[languageCode];
+    DevLog.add(
+      '🎙️ [AsrEngineFactory] createEngine("$languageCode") — manifest entry: '
+      '${info == null ? "NONE (not in languages map)" : 'engine="${info.engine}", modelId="${info.modelId}", modelVersion=${info.modelVersion}'}',
+    );
 
     if (info != null && info.engine == 'streaming_zipformer') {
       final groupKey = resolveAssetGroupKey(manifest, languageCode);
       final modelDir = await _modelManager.localPathFor(groupKey);
-      if (modelDir == null) return null;
+      if (modelDir == null) {
+        DevLog.add(
+          '🎙️ [AsrEngineFactory] Tier1 streaming_zipformer matched for "$languageCode" '
+          'but model not downloaded yet (groupKey="$groupKey") → no engine this session',
+        );
+        return null;
+      }
+      DevLog.add(
+        '🎙️ [AsrEngineFactory] → Tier1 StreamingZipformerEngine selected '
+        '(groupKey="$groupKey", modelDir="$modelDir")',
+      );
       return AsrEngineHandle(
         engine: StreamingZipformerEngine(modelDir: modelDir),
         groupKey: groupKey,
@@ -55,13 +74,26 @@ class AsrEngineFactory {
     // localPathForは展開先ディレクトリを返す(VADはtar.gzに単一ファイルだけ
     // 入れて配布する想定)ので、実ファイル名まで結合する。
     final vadDir = await _modelManager.localPathFor(kVadPseudoLanguageCode);
-    if (vadDir == null) return null;
+    if (vadDir == null) {
+      DevLog.add('🎙️ [AsrEngineFactory] shared VAD model not downloaded yet → no engine this session');
+      return null;
+    }
     final vadPath = p.join(vadDir, 'silero_vad.onnx');
 
     if (info != null && info.engine == 'sense_voice') {
       final groupKey = resolveAssetGroupKey(manifest, languageCode);
       final modelDir = await _modelManager.localPathFor(groupKey);
-      if (modelDir == null) return null;
+      if (modelDir == null) {
+        DevLog.add(
+          '🎙️ [AsrEngineFactory] Tier2 sense_voice matched for "$languageCode" '
+          'but model not downloaded yet (groupKey="$groupKey") → no engine this session',
+        );
+        return null;
+      }
+      DevLog.add(
+        '🎙️ [AsrEngineFactory] → Tier2 VadOfflineEngine/SenseVoice selected '
+        '(groupKey="$groupKey", modelDir="$modelDir")',
+      );
       return AsrEngineHandle(
         engine: VadOfflineEngine(
           recognizerConfig: sherpa_onnx.OfflineRecognizerConfig(
@@ -85,7 +117,14 @@ class AsrEngineFactory {
 
     // languagesマップに無い言語(スペイン語/フランス語/ドイツ語等) → 共有Whisper。
     final whisperDir = await _modelManager.localPathFor(kWhisperPseudoLanguageCode);
-    if (whisperDir == null) return null;
+    if (whisperDir == null) {
+      DevLog.add('🎙️ [AsrEngineFactory] shared Whisper model not downloaded yet → no engine this session');
+      return null;
+    }
+    DevLog.add(
+      '🎙️ [AsrEngineFactory] → Tier3 VadOfflineEngine/Whisper FALLBACK selected '
+      'for "$languageCode" (whisperDir="$whisperDir") — this is NOT true streaming',
+    );
     return AsrEngineHandle(
       engine: VadOfflineEngine(
         recognizerConfig: sherpa_onnx.OfflineRecognizerConfig(

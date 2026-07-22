@@ -191,10 +191,15 @@ class RecordingRepositoryDrift {
         .watch();
   }
 
-  /// Discard時にローカルの下書きと紐づくデータを完全に消す
-  Future<void> deleteLectureAndAssets(String lectureId) async {
+  /// Discard時に、アップロードジョブと紐づくアセット行(ローカルのみの付随データ)
+  /// を消す。Lecture本体はここでは消さない — Discard時点で既にバックグラウンドの
+  /// チャンクアップロードがSupabaseへ`lectures`行を作ってしまっている可能性があり
+  /// (レース)、その場合は`LectureRepositoryDrift.softDeleteLecture`で論理削除
+  /// してOutbox経由で`deleted_at`をpushする必要があるため、そちらが読み出せる
+  /// ようローカルの`localLectures`行はあえて残す(30日後に自動退避される)。
+  Future<void> deleteLectureJobsAndAssets(String lectureId) async {
     await db.transaction(() async {
-      // 1. Jobがあれば消す
+      // 1. Jobがあれば消す(これ以上チャンクがアップロードされないようにする)
       await (db.delete(db.localUploadJobs)
             ..where((t) => t.lectureId.equals(lectureId)))
           .go();
@@ -202,11 +207,6 @@ class RecordingRepositoryDrift {
       // 2. Assetがあれば消す
       await (db.delete(db.localLectureAssets)
             ..where((t) => t.lectureId.equals(lectureId)))
-          .go();
-
-      // 3. Lecture本体を消す
-      await (db.delete(db.localLectures)
-            ..where((t) => t.id.equals(lectureId)))
           .go();
     });
   }

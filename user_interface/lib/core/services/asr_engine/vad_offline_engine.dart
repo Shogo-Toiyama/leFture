@@ -1,23 +1,31 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:developer' as dev;
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
+import 'package:lecture_companion_ui/core/utils/dev_log.dart';
+
 import 'asr_engine.dart';
 import 'asr_live_segment.dart';
-import 'pcm_utils.dart';
+import 'vad_offline_isolate_messages.dart';
+import 'vad_offline_isolate_worker.dart';
 
-/// Tier2(SenseVoice)/Tier3(Whisper)共通の実装。どちらも非ストリーミング
-/// (一発勝負)の認識モデルなので、Silero VADで発話区切りを検知し、区切られた
-/// セグメントだけをオフライン認識にかける。
+/// Tier2(SenseVoice)/Tier3(Whisper)向けの[AsrEngine]実装。
 ///
-/// 講義中は無音が長く続かない("マシンガントーク")ことがあるため、
-/// [maxSpeechDuration]を安全側(短め)にしてセグメントが際限なく伸びるのを防ぐ。
-/// さらに、認識が音声に追いつかず未処理セグメントが溜まった場合は
-/// [maxPendingSegments]を超えた古いものから間引き、遅延が拡大し続けるのを防ぐ
-/// (「リアルタイムなのに処理が追いつかなくなる」ことが最も避けたい事態のため)。
+/// `sherpa_onnx`のVAD/OfflineRecognizerのdecode呼び出しは同期・ブロッキングな
+/// FFI呼び出しで、これをメインisolate(=UIスレッド)上で呼ぶと、画面操作
+/// (録音停止ボタンが押せない等)やTimer表示が丸ごと固まる不具合が実機で
+/// 確認された。そのため実際の認識処理は全てバックグラウンドisolate
+/// ([vadOfflineIsolateEntry])の中で行い、このクラスはPCMバイト列の送信と
+/// 認識結果[AsrLiveSegment]の受信だけを担う薄いプロキシになっている。
+///
+/// デコードは「VADが発話の区切りを検知した時」または
+/// 「[confirmIntervalDuration]秒経っても区切りが来ない時」の2つのタイミングで
+/// 1回だけ行う(プレビュー用の頻繁な再デコードは行わない)。以前はプレビューを
+/// 0.4秒おきに再デコードしていたが、実機のCPUが録音のリアルタイム速度に
+/// 追いつけず、録音を止めても文字起こしがずっと終わらないほど遅延が
+/// 蓄積する問題が出たため、この最も軽い方式に切り替えた。
 class VadOfflineEngine implements AsrEngine {
   VadOfflineEngine({
     required this.recognizerConfig,
@@ -25,7 +33,7 @@ class VadOfflineEngine implements AsrEngine {
     required this.maxSpeechDuration,
     this.minSilenceDuration = 0.5,
     this.minSpeechDuration = 0.25,
-    this.maxPendingSegments = 2,
+    this.confirmIntervalDuration = 10.0,
   });
 
   /// SenseVoice/Whisperどちらの設定を積むかは呼び出し側(AsrEngineFactory)が決める。
@@ -34,91 +42,91 @@ class VadOfflineEngine implements AsrEngine {
   final double maxSpeechDuration;
   final double minSilenceDuration;
   final double minSpeechDuration;
-  final int maxPendingSegments;
 
-  static const _sampleRate = 16000;
+  /// VADの区切りが来ない場合でも、最低これだけの間隔で強制的に1回デコードする。
+  final double confirmIntervalDuration;
 
-  sherpa_onnx.OfflineRecognizer? _recognizer;
-  sherpa_onnx.VoiceActivityDetector? _vad;
+  Isolate? _isolate;
+  ReceivePort? _mainReceivePort;
+  StreamSubscription? _portSub;
+  SendPort? _workerSendPort;
+  Completer<void>? _readyCompleter;
+  Completer<void>? _disposedCompleter;
   final _controller = StreamController<AsrLiveSegment>.broadcast();
-  final Queue<({Float32List samples, double timestampSec})> _pending = Queue();
-  bool _isProcessing = false;
 
   @override
   Stream<AsrLiveSegment> get segments => _controller.stream;
 
   @override
   Future<void> start() async {
-    sherpa_onnx.initBindings();
+    DevLog.add(
+      '🎙️ [VadOfflineEngine] start() — spawning background isolate '
+      '(vadModelPath="$vadModelPath" maxSpeechDuration=${maxSpeechDuration}s '
+      'confirmIntervalDuration=${confirmIntervalDuration}s)',
+    );
 
-    _recognizer = sherpa_onnx.OfflineRecognizer(recognizerConfig);
-    _vad = sherpa_onnx.VoiceActivityDetector(
-      config: sherpa_onnx.VadModelConfig(
-        sileroVad: sherpa_onnx.SileroVadModelConfig(
-          model: vadModelPath,
+    final mainReceivePort = ReceivePort();
+    _mainReceivePort = mainReceivePort;
+    _readyCompleter = Completer<void>();
+
+    _portSub = mainReceivePort.listen(_handleWorkerMessage);
+    _isolate = await Isolate.spawn(vadOfflineIsolateEntry, mainReceivePort.sendPort);
+    await _readyCompleter!.future;
+    DevLog.add('🎙️ [VadOfflineEngine] background isolate ready');
+  }
+
+  void _handleWorkerMessage(dynamic message) {
+    if (message is SendPort) {
+      _workerSendPort = message;
+      message.send(
+        VadOfflineIsolateConfig(
+          recognizerConfig: recognizerConfig,
+          vadModelPath: vadModelPath,
+          maxSpeechDuration: maxSpeechDuration,
           minSilenceDuration: minSilenceDuration,
           minSpeechDuration: minSpeechDuration,
-          maxSpeechDuration: maxSpeechDuration,
+          confirmIntervalDuration: confirmIntervalDuration,
         ),
-        sampleRate: _sampleRate,
-      ),
-      // 30秒分のリングバッファ。maxSpeechDurationより十分大きくしておく。
-      bufferSizeInSeconds: 30,
-    );
+      );
+    } else if (message is VadOfflineIsolateReady) {
+      _readyCompleter?.complete();
+    } else if (message is AsrLiveSegment) {
+      if (!_controller.isClosed) _controller.add(message);
+    } else if (message is VadOfflineIsolateDisposed) {
+      _disposedCompleter?.complete();
+    }
   }
 
   @override
   void acceptPcm16(Uint8List bytes) {
-    final vad = _vad;
-    if (vad == null) return;
-
-    final samples = convertPcm16ToFloat32(bytes);
-    vad.acceptWaveform(samples);
-
-    while (!vad.isEmpty()) {
-      final segment = vad.front();
-      vad.pop();
-      // segment.startはVAD開始(=録音開始)からのサンプルオフセットなので、
-      // そのまま経過秒に変換できる。
-      _enqueue(segment.samples, segment.start / _sampleRate);
-    }
-  }
-
-  void _enqueue(Float32List samples, double timestampSec) {
-    _pending.add((samples: samples, timestampSec: timestampSec));
-    while (_pending.length > maxPendingSegments) {
-      _pending.removeFirst();
-      dev.log('⚠️ [VadOfflineEngine] Dropping stale segment — falling behind live audio');
-    }
-    unawaited(_processQueueIfIdle());
-  }
-
-  Future<void> _processQueueIfIdle() async {
-    if (_isProcessing) return;
-    _isProcessing = true;
-    try {
-      final recognizer = _recognizer;
-      if (recognizer == null) return;
-      while (_pending.isNotEmpty) {
-        final item = _pending.removeFirst();
-        final stream = recognizer.createStream();
-        stream.acceptWaveform(samples: item.samples, sampleRate: _sampleRate);
-        recognizer.decode(stream);
-        final text = recognizer.getResult(stream).text.trim();
-        stream.free();
-        if (text.isNotEmpty) {
-          _controller.add(AsrLiveSegment(text: text, timestampSec: item.timestampSec));
-        }
-      }
-    } finally {
-      _isProcessing = false;
-    }
+    // ワーカーisolateへ送るだけ(処理自体はワーカー側で行われる)。
+    // `SendPort.send`は即座にメッセージをキューイングするだけの非ブロッキング
+    // 呼び出しなので、ここでUIスレッドが待たされることは無い。
+    _workerSendPort?.send(bytes);
   }
 
   @override
   Future<void> dispose() async {
-    _vad?.free();
-    _recognizer?.free();
+    DevLog.add('🎙️ [VadOfflineEngine] dispose() requested');
+
+    final workerPort = _workerSendPort;
+    if (workerPort != null) {
+      _disposedCompleter = Completer<void>();
+      workerPort.send(const VadOfflineIsolateDisposeRequest());
+      try {
+        // ワーカー側のVAD/Recognizerの解放を待ってから終了する。何らかの理由で
+        // 応答が来なくても無限に待たないよう、安全弁としてタイムアウトを設ける。
+        await _disposedCompleter!.future.timeout(const Duration(seconds: 3));
+      } catch (e) {
+        DevLog.add('⚠️ [VadOfflineEngine] worker did not confirm dispose in time: $e');
+      }
+    }
+
+    await _portSub?.cancel();
+    _mainReceivePort?.close();
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
     await _controller.close();
+    DevLog.add('🎙️ [VadOfflineEngine] dispose() complete');
   }
 }

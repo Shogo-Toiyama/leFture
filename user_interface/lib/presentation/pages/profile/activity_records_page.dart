@@ -601,7 +601,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
   void _confirmDeleteSingleTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record, ValueNotifier<Set<String>> removedRecordIds) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.universe.voidBackground,
           title: Text(
@@ -614,12 +614,16 @@ class ActivityRecordsPage extends HookConsumerWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
+                // ダイアログを閉じた直後にunmountされる dialogContext ではなく、
+                // await後もこのページが表示され続ける限り有効な外側の context を
+                // 使う(そうしないと、非同期処理の完了時にcontext.mountedが常に
+                // falseになり、エラーダイアログが一切表示されなくなるバグになる)。
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                 try {
                   await TrashController.deleteSingleItem(ref, record);
@@ -647,7 +651,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
   void _confirmEmptyTrash(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.universe.voidBackground,
           title: const Text(
@@ -660,12 +664,15 @@ class ActivityRecordsPage extends HookConsumerWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
+                // dialogContextはダイアログを閉じた直後にunmountされるため、
+                // await後も有効な外側のページcontextを使う(_confirmDeleteSingleTrashItem
+                // と同じ理由)。
                 final scaffold = ScaffoldMessenger.of(context);
                 try {
                   final result = await TrashController.emptyTrash(ref);

@@ -1,49 +1,92 @@
 // lib/presentation/pages/transcript/transcript_page.dart
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
 
-
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lecture_companion_ui/application/recording/lecture_moments_provider.dart';
+import 'package:lecture_companion_ui/core/utils/moment_display_utils.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lecture_companion_ui/core/utils/topic_color_utils.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
+import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/audio_player_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
 
-// レイアウトに使う定数 (ListViewのpadding、行のpadding、テキストスタイル)。
-// 行の高さの事前計算(_computeRowHeights)と、実際の行描画(itemBuilder)の
-// 両方で同じ値を使い、ズレが出ないようにする。
+// レイアウトに使う定数
 const double kHorizontalPagePadding = 24; // ListView自体の左右padding
 const double kListVerticalPadding = 16; // ListView自体の上下padding(片側)
 const double kRowHorizontalPadding = 8; // 各行内のPaddingの左右
 const double kTimestampGap = 16; // タイムスタンプと本文の間隔
 const double kRowVerticalPadding = 12; // 各行内のPaddingの上下(片側)
+const double kTopicHeaderTileHeight = 44.0; // 独立トピックヘッダータイルの固定高さ
+const double kMomentBadgeTileHeight = 38.0; // リアクションモーメントタイルの固定高さ
+
 const kSentenceTextStyle = TextStyle(fontSize: 14, height: 1.5);
 const kTimestampTextStyle = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.bold,
 );
 
-/// 各文章行の高さを実際にWidgetを組み立てずに事前計算する。
-/// 文字起こし全体は不変(録音済みの文字起こしが後から変わることはない)ので、
-/// 一度だけ計算しておけば、以降はListView.builderのitemExtentBuilderに
-/// そのまま渡して正確な位置・スクロール総量を保ちながら遅延描画できる。
-List<double> computeRowHeights(
-  List<dynamic> sentences,
+// SIDを整数に変換するユーティリティ
+int? _sidToInt(String? sid) {
+  if (sid == null) return null;
+  final match = RegExp(r'[sS](\d+)').firstMatch(sid);
+  if (match == null) return null;
+  return int.tryParse(match.group(1)!);
+}
+
+// ── 表示アイテム用統一モデル ─────────────────────────────────────
+abstract class TranscriptDisplayItem {
+  const TranscriptDisplayItem();
+}
+
+class TopicHeaderDisplayItem extends TranscriptDisplayItem {
+  const TopicHeaderDisplayItem({
+    required this.topic,
+    required this.color,
+    required this.bgColor,
+  });
+  final LectureTopic topic;
+  final Color color;
+  final Color bgColor;
+}
+
+class SentenceDisplayItem extends TranscriptDisplayItem {
+  const SentenceDisplayItem({
+    required this.sentence,
+    required this.sentenceIndex,
+  });
+  final dynamic sentence;
+  final int sentenceIndex;
+}
+
+class MomentDisplayItem extends TranscriptDisplayItem {
+  const MomentDisplayItem({
+    required this.moment,
+  });
+  final LectureMoment moment;
+}
+
+/// トランスクリプリストの全表示アイテム（ヘッダータイル＋文章タイル＋モーメントタイル）の高さを事前計算
+List<double> computeDisplayItemHeights(
+  List<TranscriptDisplayItem> displayItems,
   double screenWidth,
   TextScaler textScaler,
+  String maxTimestampText,
 ) {
-  if (sentences.isEmpty) return const [];
+  if (displayItems.isEmpty) return const [];
 
-  // タイムスタンプ列の幅は、最後(最大)の時刻表記を基準に安全側で確保する。
-  final lastMs = (sentences.last as dynamic).start as int;
   final timestampPainter = TextPainter(
     text: TextSpan(
-      text: TranscriptPage._formatMs(lastMs),
+      text: maxTimestampText,
       style: kTimestampTextStyle,
     ),
     textDirection: TextDirection.ltr,
@@ -58,15 +101,45 @@ List<double> computeRowHeights(
       timestampWidth -
       kTimestampGap;
 
-  return sentences.map((s) {
-    final text = stripSidCitations((s as dynamic).text as String);
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: kSentenceTextStyle),
-      textDirection: TextDirection.ltr,
-      textScaler: textScaler,
-    )..layout(maxWidth: availableTextWidth);
-    return painter.height + kRowVerticalPadding * 2;
-  }).toList();
+  final List<double> heights = [];
+  for (final item in displayItems) {
+    if (item is TopicHeaderDisplayItem) {
+      heights.add(kTopicHeaderTileHeight);
+    } else if (item is SentenceDisplayItem) {
+      final text = stripSidCitations((item.sentence as dynamic).text as String);
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: kSentenceTextStyle),
+        textDirection: TextDirection.ltr,
+        textScaler: textScaler,
+      )..layout(maxWidth: availableTextWidth);
+
+      final double rowHeight = painter.height + kRowVerticalPadding * 2 + 2.0;
+      heights.add(rowHeight);
+    } else if (item is MomentDisplayItem) {
+      final m = item.moment;
+      final isNoteWithText =
+          m.momentType == 'note' &&
+          m.noteText != null &&
+          m.noteText!.trim().isNotEmpty;
+
+      if (isNoteWithText) {
+        final notePainter = TextPainter(
+          text: TextSpan(
+            text: m.noteText,
+            style: const TextStyle(fontSize: 13, height: 1.4),
+          ),
+          textDirection: TextDirection.ltr,
+          textScaler: textScaler,
+        )..layout(maxWidth: screenWidth - kHorizontalPagePadding * 2 - 50);
+
+        final double noteHeight = notePainter.height + 28.0;
+        heights.add(noteHeight);
+      } else {
+        heights.add(kMomentBadgeTileHeight);
+      }
+    }
+  }
+  return heights;
 }
 
 class TranscriptPage extends HookConsumerWidget {
@@ -85,14 +158,12 @@ class TranscriptPage extends HookConsumerWidget {
 
   static String _formatMs(int ms) {
     final totalSeconds = ms ~/ 1000;
-    final minutes = totalSeconds ~/ 60;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
     final seconds = totalSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  static String _formatDuration(Duration d) {
-    final minutes = d.inMinutes;
-    final seconds = d.inSeconds % 60;
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
@@ -168,19 +239,19 @@ class _TranscriptPageContent extends HookConsumerWidget {
   final String? endSid;
   final List<String>? highlightSids;
 
-  // SIDを整数に変換するユーティリティ
-  static int? _sidToInt(String? sid) {
-    if (sid == null) return null;
-    final match = RegExp(r'[sS](\d+)').firstMatch(sid);
-    if (match == null) return null;
-    return int.tryParse(match.group(1)!);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
     final transcriptAsync = ref.watch(
       transcriptProvider(uid: lecture.userId, lectureId: lecture.id),
     );
+
+    // Topic Data Provider
+    final topicsAsync = ref.watch(lectureTopicsProvider(lecture.id));
+    final topics = topicsAsync.value ?? const <LectureTopic>[];
+
+    // Moments Data Provider
+    final momentsAsync = ref.watch(lectureMomentsProvider(lecture.id));
+    final moments = momentsAsync.value ?? const <LectureMoment>[];
 
     // Audio Player setup
     final player = useMemoized(() => AudioPlayer());
@@ -191,14 +262,111 @@ class _TranscriptPageContent extends HookConsumerWidget {
     final isAudioLoaded = useState<bool>(false);
     final audioFileVal = useState<File?>(null);
 
-    // Scroll & Highlight setup
+    // Scroll & Auto-scroll setup (5s Idle Resume)
     final scrollController = useScrollController();
-    final autoScrollEnabled = useState<bool>(true);
+    final isAutoModeEnabled = useState<bool>(true);
+    final isUserInteracting = useState<bool>(false);
+    final idleTimer = useRef<Timer?>(null);
     final hasScrolledToHighlight = useState<bool>(false);
     final hasSeekedToHighlight = useState<bool>(false);
 
+    useEffect(() {
+      return () {
+        idleTimer.value?.cancel();
+      };
+    }, []);
+
     final sentences = transcriptAsync.value ?? const [];
-    final activeIndex = useMemoized(() {
+
+    // ── 表示アイテム配列 (独立タイル) の作成 ─────────────────────────
+    final displayItems = useMemoized(() {
+      final List<TranscriptDisplayItem> items = [];
+      if (sentences.isEmpty && moments.isEmpty) return items;
+
+      final Map<int, LectureTopic> startSentenceIndexToTopic = {};
+      for (int tIdx = 0; tIdx < topics.length; tIdx++) {
+        final topic = topics[tIdx];
+        final startNum = _sidToInt(topic.startSid);
+        if (startNum == null) continue;
+
+        for (int sIdx = 0; sIdx < sentences.length; sIdx++) {
+          final n = _sidToInt(sentences[sIdx].sid);
+          if (n != null && n >= startNum) {
+            startSentenceIndexToTopic[sIdx] = topic;
+            break;
+          }
+        }
+      }
+
+      final Map<int, List<LectureMoment>> sentenceIndexToMoments = {};
+      for (final m in moments) {
+        final mMs = m.timestampSec * 1000;
+        int targetSentenceIdx = 0;
+        for (int sIdx = 0; sIdx < sentences.length; sIdx++) {
+          if (sentences[sIdx].start <= mMs) {
+            targetSentenceIdx = sIdx;
+          } else {
+            break;
+          }
+        }
+        sentenceIndexToMoments.putIfAbsent(targetSentenceIdx, () => []).add(m);
+      }
+
+      for (int sIdx = 0; sIdx < sentences.length; sIdx++) {
+        if (startSentenceIndexToTopic.containsKey(sIdx)) {
+          final topic = startSentenceIndexToTopic[sIdx]!;
+          final topicIndexInList = topics.indexOf(topic);
+          final safeIdx = topicIndexInList >= 0 ? topicIndexInList : 0;
+          final topicColor = TopicColorUtils.getTopicColor(
+            safeIdx,
+            topics.length,
+          );
+          final topicBgColor = TopicColorUtils.getTopicBackgroundColor(
+            safeIdx,
+            topics.length,
+            alpha: 0.12,
+          );
+
+          items.add(TopicHeaderDisplayItem(
+            topic: topic,
+            color: topicColor,
+            bgColor: topicBgColor,
+          ));
+        }
+
+        items.add(SentenceDisplayItem(
+          sentence: sentences[sIdx],
+          sentenceIndex: sIdx,
+        ));
+
+        if (sentenceIndexToMoments.containsKey(sIdx)) {
+          for (final m in sentenceIndexToMoments[sIdx]!) {
+            items.add(MomentDisplayItem(moment: m));
+          }
+        }
+      }
+
+      return items;
+    }, [sentences, topics, moments]);
+
+    // トピック開始時間のミリ秒リスト
+    final topicStartMsList = useMemoized(() {
+      final List<int> msList = [];
+      for (final topic in topics) {
+        final startNum = _sidToInt(topic.startSid);
+        if (startNum == null) continue;
+        for (final s in sentences) {
+          final n = _sidToInt(s.sid);
+          if (n != null && n >= startNum) {
+            msList.add(s.start);
+            break;
+          }
+        }
+      }
+      return msList;
+    }, [topics, sentences]);
+
+    final activeSentenceIndex = useMemoized(() {
       final ms = position.value.inMilliseconds;
       int idx = -1;
       for (int i = 0; i < sentences.length; i++) {
@@ -211,7 +379,66 @@ class _TranscriptPageContent extends HookConsumerWidget {
       return idx;
     }, [position.value, sentences]);
 
-    // ハイライト対象の範囲計算
+    final activeDisplayIndex = useMemoized(() {
+      if (activeSentenceIndex < 0) return -1;
+      for (int i = 0; i < displayItems.length; i++) {
+        final item = displayItems[i];
+        if (item is SentenceDisplayItem &&
+            item.sentenceIndex == activeSentenceIndex) {
+          return i;
+        }
+      }
+      return -1;
+    }, [displayItems, activeSentenceIndex]);
+
+    final currentTopic = useMemoized(() {
+      if (topics.isEmpty) return null;
+      final ms = position.value.inMilliseconds;
+
+      for (int i = 0; i < topics.length; i++) {
+        final topic = topics[i];
+        final startNum = _sidToInt(topic.startSid);
+        final endNum = _sidToInt(topic.endSid);
+
+        if (startNum == null) continue;
+
+        int topicStartMs = -1;
+        int topicEndMs = -1;
+
+        for (final s in sentences) {
+          final n = _sidToInt(s.sid);
+          if (n != null) {
+            if (n == startNum) topicStartMs = s.start;
+            if (endNum != null && n == endNum) topicEndMs = s.start + 5000;
+          }
+        }
+
+        if (topicStartMs < 0) continue;
+
+        if (topicEndMs < 0) {
+          if (i + 1 < topics.length) {
+            final nextStartNum = _sidToInt(topics[i + 1].startSid);
+            for (final s in sentences) {
+              final n = _sidToInt(s.sid);
+              if (n != null && nextStartNum != null && n >= nextStartNum) {
+                topicEndMs = s.start - 1;
+                break;
+              }
+            }
+          }
+          if (topicEndMs < 0) {
+            topicEndMs = double.maxFinite.toInt();
+          }
+        }
+
+        if (ms >= topicStartMs && ms <= topicEndMs) {
+          return topic;
+        }
+      }
+
+      return null;
+    }, [position.value, topics, sentences]);
+
     final startNumRaw = useMemoized(() => _sidToInt(startSid), [startSid]);
     final endNumRaw = useMemoized(() => _sidToInt(endSid), [endSid]);
 
@@ -251,20 +478,42 @@ class _TranscriptPageContent extends HookConsumerWidget {
       return result;
     }, [sentenceNums, startNum, endNum, highlightSids]);
 
-    final firstHighlightIndex = useMemoized(() {
+    final firstHighlightSentenceIndex = useMemoized(() {
       if (highlightedIndices.isEmpty) return -1;
       return highlightedIndices.reduce((a, b) => a < b ? a : b);
     }, [highlightedIndices]);
+
+    final firstHighlightDisplayIndex = useMemoized(() {
+      if (firstHighlightSentenceIndex < 0) return -1;
+      for (int i = 0; i < displayItems.length; i++) {
+        final item = displayItems[i];
+        if (item is SentenceDisplayItem &&
+            item.sentenceIndex == firstHighlightSentenceIndex) {
+          return i;
+        }
+      }
+      return -1;
+    }, [displayItems, firstHighlightSentenceIndex]);
 
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final textScaler = MediaQuery.textScalerOf(context);
 
-    // 各行の高さを一度だけ事前計算する。
+    final maxTimestampText = useMemoized(() {
+      if (sentences.isEmpty) return '00:00';
+      return TranscriptPage._formatMs(sentences.last.start);
+    }, [sentences]);
+
     final rowHeights = useMemoized(
-      () => computeRowHeights(sentences, screenWidth, textScaler),
-      [sentences, screenWidth, textScaler],
+      () => computeDisplayItemHeights(
+        displayItems,
+        screenWidth,
+        textScaler,
+        maxTimestampText,
+      ),
+      [displayItems, screenWidth, textScaler, maxTimestampText],
     );
+
     final rowOffsets = useMemoized(() {
       final offsets = List<double>.filled(rowHeights.length, 0);
       var cumulative = 0.0;
@@ -275,7 +524,6 @@ class _TranscriptPageContent extends HookConsumerWidget {
       return offsets;
     }, [rowHeights]);
 
-    // コンテンツ全体の高さ
     final totalContentExtent = useMemoized(() {
       if (rowHeights.isEmpty) return 0.0;
       final sum = rowOffsets.last + rowHeights.last;
@@ -284,9 +532,10 @@ class _TranscriptPageContent extends HookConsumerWidget {
 
     final syncScrollPosition = useCallback(() {
       if (scrollController.hasClients &&
-          activeIndex >= 0 &&
-          activeIndex < rowOffsets.length) {
-        final targetOffset = rowOffsets[activeIndex] - (screenHeight / 3);
+          activeDisplayIndex >= 0 &&
+          activeDisplayIndex < rowOffsets.length) {
+        final targetOffset =
+            rowOffsets[activeDisplayIndex] - (screenHeight / 3);
         final viewportHeight = scrollController.position.viewportDimension;
         final maxScroll = (totalContentExtent - viewportHeight).clamp(
           0.0,
@@ -299,25 +548,25 @@ class _TranscriptPageContent extends HookConsumerWidget {
           curve: Curves.easeInOut,
         );
       }
-    }, [activeIndex, scrollController, screenHeight, rowOffsets]);
+    }, [activeDisplayIndex, scrollController, screenHeight, rowOffsets, totalContentExtent]);
 
-    // 初回ロード時に最初のハイライト位置へ自動スクロール
     useEffect(() {
       if (hasScrolledToHighlight.value) return null;
-      if (rowOffsets.isEmpty || firstHighlightIndex < 0) return null;
+      if (rowOffsets.isEmpty || firstHighlightDisplayIndex < 0) return null;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!scrollController.hasClients) return;
         final targetOffset =
-            rowOffsets[firstHighlightIndex] - (screenHeight * 0.25);
+            rowOffsets[firstHighlightDisplayIndex] - (screenHeight * 0.25);
         final viewportHeight = scrollController.position.viewportDimension;
         final maxScroll = (totalContentExtent - viewportHeight).clamp(
           0.0,
           double.infinity,
         );
         final safeOffset = targetOffset.clamp(0.0, maxScroll);
-        
-        autoScrollEnabled.value = false; // 音声再生追従を一時的にオフにする
+
+        idleTimer.value?.cancel();
+        isUserInteracting.value = true;
 
         scrollController.animateTo(
           safeOffset,
@@ -325,43 +574,53 @@ class _TranscriptPageContent extends HookConsumerWidget {
           curve: Curves.easeOut,
         );
         hasScrolledToHighlight.value = true;
+
+        idleTimer.value = Timer(const Duration(seconds: 5), () {
+          isUserInteracting.value = false;
+          if (isAutoModeEnabled.value) {
+            syncScrollPosition();
+          }
+        });
       });
 
       return null;
-    }, [rowOffsets, firstHighlightIndex]);
+    }, [rowOffsets, firstHighlightDisplayIndex, totalContentExtent, screenHeight, syncScrollPosition]);
 
-    // 音声ロード完了時に最初のハイライト位置へ自動シーク
     useEffect(() {
       if (hasSeekedToHighlight.value) return null;
-      if (!isAudioLoaded.value || firstHighlightIndex < 0 || firstHighlightIndex >= sentences.length) return null;
+      if (!isAudioLoaded.value ||
+          firstHighlightSentenceIndex < 0 ||
+          firstHighlightSentenceIndex >= sentences.length) {
+        return null;
+      }
 
-      final startMs = sentences[firstHighlightIndex].start;
+      final startMs = sentences[firstHighlightSentenceIndex].start;
       final target = Duration(milliseconds: startMs);
-      
+
       position.value = target;
       player.seek(target);
 
       hasSeekedToHighlight.value = true;
       return null;
-    }, [isAudioLoaded.value, firstHighlightIndex, sentences]);
+    }, [isAudioLoaded.value, firstHighlightSentenceIndex, sentences, player]);
 
+    // Autoモード ON ＆ アイドル状態の時のみ自動追従スクロールを実行
     useEffect(() {
-      if (autoScrollEnabled.value &&
-          activeIndex >= 0 &&
+      if (isAutoModeEnabled.value &&
+          !isUserInteracting.value &&
+          activeDisplayIndex >= 0 &&
           scrollController.hasClients) {
         syncScrollPosition();
       }
       return null;
-    }, [activeIndex, autoScrollEnabled.value]);
+    }, [activeDisplayIndex, isAutoModeEnabled.value, isUserInteracting.value, syncScrollPosition]);
 
-    // Watch R2 cached file if audioPath exists
     final hasAudioPath =
         lecture.audioPath != null && lecture.audioPath!.isNotEmpty;
     final r2FileAsync = hasAudioPath
         ? ref.watch(artifactFileProvider(lecture.audioPath!))
         : const AsyncValue<File?>.data(null);
 
-    // Initialize player when R2 file is downloaded
     useEffect(() {
       if (r2FileAsync.hasValue && r2FileAsync.value != null) {
         final file = r2FileAsync.value!;
@@ -376,9 +635,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
             });
       }
       return null;
-    }, [r2FileAsync.value]);
+    }, [r2FileAsync.value, player]);
 
-    // Handle audioplayer state listeners
     useEffect(() {
       final dSub = player.onDurationChanged.listen((d) => duration.value = d);
       final pSub = player.onPositionChanged.listen((p) => position.value = p);
@@ -398,7 +656,6 @@ class _TranscriptPageContent extends HookConsumerWidget {
       };
     }, [player]);
 
-    // Fast seek callback when user taps a timestamp
     final seekToMs = useCallback((int ms) async {
       if (!isAudioLoaded.value) return;
       final target = Duration(milliseconds: ms);
@@ -407,7 +664,190 @@ class _TranscriptPageContent extends HookConsumerWidget {
       if (playerState.value != PlayerState.playing) {
         await player.resume();
       }
+      idleTimer.value?.cancel();
+      isUserInteracting.value = false;
     }, [player, isAudioLoaded.value, playerState.value]);
+
+    final jumpToTopic = useCallback((LectureTopic topic) {
+      final startNum = _sidToInt(topic.startSid);
+      if (startNum == null) return;
+
+      int matchedSentenceIdx = -1;
+      for (int i = 0; i < sentences.length; i++) {
+        final n = _sidToInt(sentences[i].sid);
+        if (n != null && n >= startNum) {
+          matchedSentenceIdx = i;
+          break;
+        }
+      }
+
+      if (matchedSentenceIdx >= 0) {
+        if (isAudioLoaded.value) {
+          seekToMs(sentences[matchedSentenceIdx].start);
+        }
+
+        int targetDisplayIdx = -1;
+        for (int i = 0; i < displayItems.length; i++) {
+          final item = displayItems[i];
+          if (item is TopicHeaderDisplayItem && item.topic.id == topic.id) {
+            targetDisplayIdx = i;
+            break;
+          }
+        }
+
+        if (targetDisplayIdx < 0) {
+          for (int i = 0; i < displayItems.length; i++) {
+            final item = displayItems[i];
+            if (item is SentenceDisplayItem &&
+                item.sentenceIndex == matchedSentenceIdx) {
+              targetDisplayIdx = i;
+              break;
+            }
+          }
+        }
+
+        if (scrollController.hasClients &&
+            targetDisplayIdx >= 0 &&
+            targetDisplayIdx < rowOffsets.length) {
+          final targetOffset =
+              rowOffsets[targetDisplayIdx] - (screenHeight * 0.25);
+          final viewportHeight =
+              scrollController.position.viewportDimension;
+          final maxScroll = (totalContentExtent - viewportHeight).clamp(
+            0.0,
+            double.infinity,
+          );
+          final safeOffset = targetOffset.clamp(0.0, maxScroll);
+          
+          idleTimer.value?.cancel();
+          isUserInteracting.value = false;
+
+          scrollController.animateTo(
+            safeOffset,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    }, [sentences, displayItems, isAudioLoaded.value, seekToMs, scrollController, rowOffsets, screenHeight, totalContentExtent]);
+
+    final handlePreviousTopic = useCallback(() {
+      if (topics.isEmpty) return;
+      final currentMs = position.value.inMilliseconds;
+
+      if (topicStartMsList.isEmpty) return;
+
+      int currentTopicIdx = -1;
+      for (int i = 0; i < topicStartMsList.length; i++) {
+        if (currentMs >= topicStartMsList[i]) {
+          currentTopicIdx = i;
+        } else {
+          break;
+        }
+      }
+
+      if (currentTopicIdx < 0) {
+        jumpToTopic(topics.first);
+        return;
+      }
+
+      final topicStartMs = topicStartMsList[currentTopicIdx];
+      final elapsedSinceTopicStart = currentMs - topicStartMs;
+
+      if (elapsedSinceTopicStart >= 3000) {
+        jumpToTopic(topics[currentTopicIdx]);
+      } else {
+        if (currentTopicIdx > 0) {
+          jumpToTopic(topics[currentTopicIdx - 1]);
+        } else {
+          jumpToTopic(topics.first);
+        }
+      }
+    }, [topics, topicStartMsList, position.value, jumpToTopic]);
+
+    final handleNextTopic = useCallback(() {
+      if (topics.isEmpty) return;
+      final currentMs = position.value.inMilliseconds;
+
+      int nextTopicIdx = -1;
+      for (int i = 0; i < topicStartMsList.length; i++) {
+        if (topicStartMsList[i] > currentMs + 500) {
+          nextTopicIdx = i;
+          break;
+        }
+      }
+
+      if (nextTopicIdx >= 0 && nextTopicIdx < topics.length) {
+        jumpToTopic(topics[nextTopicIdx]);
+      }
+    }, [topics, topicStartMsList, position.value, jumpToTopic]);
+
+    final topicProgresses = useMemoized(() {
+      final totalMs = duration.value.inMilliseconds;
+      if (totalMs <= 0 || topicStartMsList.isEmpty) return <double>[];
+      return topicStartMsList.map((ms) => ms / totalMs).toList();
+    }, [duration.value, topicStartMsList]);
+
+    final topicRanges = useMemoized(() {
+      final totalMs = duration.value.inMilliseconds;
+      if (totalMs <= 0 || topics.isEmpty) return <TopicProgressRange>[];
+
+      final List<TopicProgressRange> ranges = [];
+      for (int i = 0; i < topics.length; i++) {
+        final topic = topics[i];
+        final startNum = _sidToInt(topic.startSid);
+        final endNum = _sidToInt(topic.endSid);
+
+        if (startNum == null) continue;
+
+        int topicStartMs = -1;
+        int topicEndMs = -1;
+
+        for (final s in sentences) {
+          final n = _sidToInt(s.sid);
+          if (n != null) {
+            if (n == startNum) topicStartMs = s.start;
+            if (endNum != null && n == endNum) topicEndMs = s.start + 5000;
+          }
+        }
+
+        if (topicStartMs < 0) continue;
+
+        if (topicEndMs < 0) {
+          if (i + 1 < topics.length) {
+            final nextStartNum = _sidToInt(topics[i + 1].startSid);
+            for (final s in sentences) {
+              final n = _sidToInt(s.sid);
+              if (n != null && nextStartNum != null && n >= nextStartNum) {
+                topicEndMs = s.start - 1;
+                break;
+              }
+            }
+          }
+          if (topicEndMs < 0) {
+            topicEndMs = totalMs;
+          }
+        }
+
+        final double startRatio = (topicStartMs / totalMs).clamp(0.0, 1.0);
+        final double endRatio = (topicEndMs / totalMs).clamp(0.0, 1.0);
+
+        if (endRatio > startRatio) {
+          ranges.add(TopicProgressRange(
+            startRatio: startRatio,
+            endRatio: endRatio,
+          ));
+        }
+      }
+      return ranges;
+    }, [duration.value, topics, sentences]);
+
+    final topicColors = useMemoized(() {
+      return List.generate(
+        topics.length,
+        (i) => TopicColorUtils.getTopicColor(i, topics.length),
+      );
+    }, [topics]);
 
     final isPlaying = playerState.value == PlayerState.playing;
 
@@ -433,20 +873,24 @@ class _TranscriptPageContent extends HookConsumerWidget {
           if (hasAudioPath)
             IconButton(
               icon: Icon(
-                autoScrollEnabled.value
+                isAutoModeEnabled.value
                     ? Icons.sync
                     : Icons.sync_disabled,
-                color: autoScrollEnabled.value
+                color: isAutoModeEnabled.value
                     ? AppColors.deepGold
                     : AppColors.paper.textPencil,
               ),
-              tooltip: autoScrollEnabled.value
-                  ? 'Auto-scroll Enabled'
-                  : 'Auto-scroll Disabled',
+              tooltip: isAutoModeEnabled.value
+                  ? 'Auto-scroll Mode (5s Resume)'
+                  : 'Auto-scroll Disabled (OFF)',
               onPressed: () {
-                autoScrollEnabled.value = !autoScrollEnabled.value;
-                if (autoScrollEnabled.value) {
+                isAutoModeEnabled.value = !isAutoModeEnabled.value;
+                if (isAutoModeEnabled.value) {
+                  idleTimer.value?.cancel();
+                  isUserInteracting.value = false;
                   syncScrollPosition();
+                } else {
+                  idleTimer.value?.cancel();
                 }
               },
             ),
@@ -455,7 +899,6 @@ class _TranscriptPageContent extends HookConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-
             // ── Transcript Text List ───────────────────────────────────────
             Expanded(
               child: transcriptAsync.when(
@@ -468,8 +911,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                     style: TextStyle(color: AppColors.paper.textPencil),
                   ),
                 ),
-                data: (sentences) {
-                  if (sentences == null || sentences.isEmpty) {
+                data: (sentencesData) {
+                  if (sentencesData == null || sentencesData.isEmpty) {
                     return Center(
                       child: Text(
                         'Transcript is being generated…',
@@ -481,20 +924,33 @@ class _TranscriptPageContent extends HookConsumerWidget {
                     );
                   }
 
-                  return NotificationListener<UserScrollNotification>(
+                  return NotificationListener<ScrollNotification>(
                     onNotification: (notification) {
-                      if (notification.direction != ScrollDirection.idle) {
-                        autoScrollEnabled.value = false;
+                      if (!isAutoModeEnabled.value) return false;
+
+                      if (notification is ScrollStartNotification &&
+                          notification.dragDetails != null) {
+                        idleTimer.value?.cancel();
+                        isUserInteracting.value = true;
+                      } else if (notification is ScrollUpdateNotification &&
+                          notification.dragDetails != null) {
+                        idleTimer.value?.cancel();
+                        isUserInteracting.value = true;
+                      } else if (notification is ScrollEndNotification) {
+                        if (isUserInteracting.value) {
+                          idleTimer.value?.cancel();
+                          idleTimer.value = Timer(const Duration(seconds: 5), () {
+                            isUserInteracting.value = false;
+                            if (isAutoModeEnabled.value) {
+                              syncScrollPosition();
+                            }
+                          });
+                        }
                       }
                       return false;
                     },
                     child: CustomScrollbar(
                       controller: scrollController,
-                      // 各行の高さはrowHeightsで事前計算済み(内容は不変なので
-                      // 一度だけ計算)。itemExtentBuilderにそれを渡すことで、
-                      // 画面に映る行だけを遅延描画(パフォーマンス確保)する。
-                      // totalExtentも同じ事前計算から渡し、Flutter側の
-                      // maxScrollExtentの見積もりを一切使わないようにする。
                       totalExtent: totalContentExtent,
                       child: ListView.builder(
                         controller: scrollController,
@@ -502,22 +958,170 @@ class _TranscriptPageContent extends HookConsumerWidget {
                           horizontal: kHorizontalPagePadding,
                           vertical: kListVerticalPadding,
                         ),
-                        itemCount: sentences.length,
+                        itemCount: displayItems.length,
                         itemExtentBuilder: (index, dimensions) =>
                             rowHeights[index],
                         itemBuilder: (context, idx) {
-                          final s = sentences[idx];
+                          final item = displayItems[idx];
+
+                          // ── A. 独立トピックヘッダータイルの描画 ───────────────
+                          if (item is TopicHeaderDisplayItem) {
+                            return Container(
+                              margin: const EdgeInsets.only(
+                                top: 10,
+                                bottom: 4,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: item.bgColor,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: item.color.withValues(alpha: 0.35),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 3.5,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: item.color,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Topic ${item.topic.index}',
+                                    style: TextStyle(
+                                      color: item.color,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item.topic.displayTitle,
+                                      style: TextStyle(
+                                        color: AppColors.paper.textInk,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          // ── B. インラインモーメントタイルの描画 ──────────────
+                          if (item is MomentDisplayItem) {
+                            final m = item.moment;
+                            final (icon, color, label) =
+                                MomentDisplayUtils.getMomentDisplay(
+                              m.momentType,
+                            );
+                            final isNoteWithText =
+                                m.momentType == 'note' &&
+                                m.noteText != null &&
+                                m.noteText!.trim().isNotEmpty;
+
+                            if (isNoteWithText) {
+                              return Container(
+                                margin: const EdgeInsets.only(
+                                  top: 6,
+                                  bottom: 4,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: color.withValues(alpha: 0.35),
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(icon, size: 18, color: color),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        m.noteText!,
+                                        style: TextStyle(
+                                          color: AppColors.paper.textInk,
+                                          fontSize: 13,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              return Align(
+                                alignment: Alignment.centerLeft,
+                                child: Container(
+                                  margin: const EdgeInsets.only(
+                                    top: 6,
+                                    bottom: 4,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(icon, size: 15, color: color),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        label,
+                                        style: TextStyle(
+                                          color: color,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+
+                          // ── C. 文章タイルの描画 ─────────────────────────────
+                          final sentenceItem = item as SentenceDisplayItem;
+                          final s = sentenceItem.sentence;
+                          final sIdx = sentenceItem.sentenceIndex;
+
                           final roleUpper = s.role.toUpperCase();
-                          final isItalic =
-                              roleUpper == 'INTERACTION' ||
-                              roleUpper == 'OFF_TOPIC';
+                          final isItalic = roleUpper == 'OFF_TOPIC';
                           final displayColor = isItalic
                               ? AppColors.paper.textPencil
                               : AppColors.paper.textInk;
 
-                          final isPlayingActive = idx == activeIndex;
-                          final isRangeHighlighted = highlightedIndices.contains(idx);
-                          final isHighlighted = isPlayingActive || isRangeHighlighted;
+                          final isPlayingActive = sIdx == activeSentenceIndex;
+                          final isRangeHighlighted =
+                              highlightedIndices.contains(sIdx);
+                          final isHighlighted =
+                              isPlayingActive || isRangeHighlighted;
 
                           BoxDecoration? itemDecoration;
                           if (isHighlighted) {
@@ -548,7 +1152,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                                 ),
                               );
                             } else {
-                              itemDecoration = BoxDecoration(color: bgColor);
+                              itemDecoration =
+                                  BoxDecoration(color: bgColor);
                             }
                           }
 
@@ -609,332 +1214,70 @@ class _TranscriptPageContent extends HookConsumerWidget {
               ),
             ),
 
-
             // ── Audio Player UI (Shown only if audio exists) ────────────────
-            if (hasAudioPath) ...[
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                decoration: BoxDecoration(
-                  color: AppColors.paper.surface,
-                  border: Border(
-                    top: BorderSide(color: AppColors.paper.line, width: 1.5),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: r2FileAsync.when(
-                  loading: () => Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: AppColors.deepGold,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Downloading audio from storage…',
-                            style: TextStyle(
-                              color: AppColors.paper.textPencil,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  error: (err, _) => Center(
-                    child: Text(
-                      'Failed to load audio: $err',
-                      style: TextStyle(color: AppColors.paper.textPencil),
-                    ),
-                  ),
-                  data: (file) {
-                    if (file == null || !isAudioLoaded.value) {
-                      return Center(
-                        child: Text(
-                          'Preparing audio player…',
-                          style: TextStyle(
-                            color: AppColors.paper.textPencil,
-                            fontSize: 13,
-                          ),
-                        ),
-                      );
-                    }
-
-                    final currentPos = position.value;
-                    final totalDur = duration.value;
-
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Progress Slider & Timing Info
-                        Row(
-                          children: [
-                            Text(
-                              TranscriptPage._formatDuration(currentPos),
-                              style: TextStyle(
-                                color: AppColors.paper.textPencil,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0,
-                                ),
-                                child: _CustomAudioProgressBar(
-                                  position: currentPos,
-                                  duration: totalDur,
-                                  onSeek: (value) async {
-                                    position.value = value;
-                                    await player.seek(value);
-                                  },
-                                ),
-                              ),
-                            ),
-                            Text(
-                              TranscriptPage._formatDuration(totalDur),
-                              style: TextStyle(
-                                color: AppColors.paper.textPencil,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Player Controls
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Playback Speed Button (1.0x -> 1.25x -> 1.5x -> 2.0x)
-                            TextButton(
-                              onPressed: () async {
-                                double nextSpeed = 1.0;
-                                if (playbackSpeed.value == 1.0) {
-                                  nextSpeed = 1.25;
-                                } else if (playbackSpeed.value == 1.25) {
-                                  nextSpeed = 1.5;
-                                } else if (playbackSpeed.value == 1.5) {
-                                  nextSpeed = 2.0;
-                                } else {
-                                  nextSpeed = 1.0;
-                                }
-                                playbackSpeed.value = nextSpeed;
-                                await player.setPlaybackRate(nextSpeed);
-                              },
-                              child: Text(
-                                '${playbackSpeed.value}x',
-                                style: const TextStyle(
-                                  color: AppColors.deepGold,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-
-                            // Rewind 10s
-                            IconButton(
-                              icon: const Icon(
-                                Icons.replay_10_outlined,
-                                color: AppColors.deepGold,
-                                size: 28,
-                              ),
-                              onPressed: () async {
-                                final target =
-                                    currentPos - const Duration(seconds: 10);
-                                final actualTarget = target < Duration.zero
-                                    ? Duration.zero
-                                    : target;
-                                position.value = actualTarget;
-                                await player.seek(actualTarget);
-                              },
-                            ),
-
-                            // Play / Pause Circle Button
-                            GestureDetector(
-                              onTap: () async {
-                                if (isPlaying) {
-                                  await player.pause();
-                                } else {
-                                  await player.resume();
-                                }
-                              },
-                              child: Container(
-                                width: 56,
-                                height: 56,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.deepGold,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isPlaying ? Icons.pause : Icons.play_arrow,
-                                  color: Colors.white,
-                                  size: 36,
-                                ),
-                              ),
-                            ),
-
-                            // Forward 10s
-                            IconButton(
-                              icon: const Icon(
-                                Icons.forward_10_outlined,
-                                color: AppColors.deepGold,
-                                size: 28,
-                              ),
-                              onPressed: () async {
-                                final target =
-                                    currentPos + const Duration(seconds: 10);
-                                final actualTarget = target > totalDur
-                                    ? totalDur
-                                    : target;
-                                position.value = actualTarget;
-                                await player.seek(actualTarget);
-                              },
-                            ),
-
-                            // Spacer to balance layout
-                            const SizedBox(width: 48),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
-                ),
+            if (hasAudioPath)
+              AudioPlayerBar(
+                position: position.value,
+                duration: duration.value,
+                isPlaying: isPlaying,
+                playbackSpeed: playbackSpeed.value,
+                isAudioLoaded: isAudioLoaded.value,
+                isLoading: r2FileAsync.isLoading,
+                errorMessage: r2FileAsync.hasError
+                    ? r2FileAsync.error.toString()
+                    : null,
+                topics: topics,
+                currentTopic: currentTopic,
+                moments: moments,
+                topicProgresses: topicProgresses,
+                topicRanges: topicRanges,
+                topicColors: topicColors,
+                onPreviousTopic: handlePreviousTopic,
+                onNextTopic: handleNextTopic,
+                onTopicSelected: jumpToTopic,
+                onPlayPause: () async {
+                  if (isPlaying) {
+                    await player.pause();
+                  } else {
+                    await player.resume();
+                  }
+                },
+                onSeek: (value) async {
+                  position.value = value;
+                  await player.seek(value);
+                },
+                onRewind10: () async {
+                  final target = position.value - const Duration(seconds: 10);
+                  final actualTarget =
+                      target < Duration.zero ? Duration.zero : target;
+                  position.value = actualTarget;
+                  await player.seek(actualTarget);
+                },
+                onForward10: () async {
+                  final target = position.value + const Duration(seconds: 10);
+                  final actualTarget =
+                      target > duration.value ? duration.value : target;
+                  position.value = actualTarget;
+                  await player.seek(actualTarget);
+                },
+                onChangeSpeed: () async {
+                  double nextSpeed = 1.0;
+                  if (playbackSpeed.value == 1.0) {
+                    nextSpeed = 1.25;
+                  } else if (playbackSpeed.value == 1.25) {
+                    nextSpeed = 1.5;
+                  } else if (playbackSpeed.value == 1.5) {
+                    nextSpeed = 2.0;
+                  } else {
+                    nextSpeed = 1.0;
+                  }
+                  playbackSpeed.value = nextSpeed;
+                  await player.setPlaybackRate(nextSpeed);
+                },
               ),
-            ],
           ],
         ),
       ),
     );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 自作のカスタムシークバーコンポーネント (YouTubeライクなセグメントや微調整の土台)
-// ---------------------------------------------------------------------------
-class _CustomAudioProgressBar extends StatelessWidget {
-  const _CustomAudioProgressBar({
-    required this.position,
-    required this.duration,
-    required this.onSeek,
-  });
-
-  final Duration position;
-  final Duration duration;
-  final ValueChanged<Duration> onSeek;
-
-  @override
-  Widget build(BuildContext context) {
-    final double percent = duration.inMilliseconds > 0
-        ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
-        : 0.0;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double width = constraints.maxWidth;
-
-        void seekToPosition(double localX) {
-          final double ratio = (localX / width).clamp(0.0, 1.0);
-          final int targetMs = (ratio * duration.inMilliseconds).round();
-          onSeek(Duration(milliseconds: targetMs));
-        }
-
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (details) {
-            seekToPosition(details.localPosition.dx);
-          },
-          onHorizontalDragUpdate: (details) {
-            seekToPosition(details.localPosition.dx);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: SizedBox(
-              height: 12,
-              width: double.infinity,
-              child: CustomPaint(
-                painter: _ProgressBarPainter(
-                  percent: percent,
-                  activeColor: AppColors.deepGold,
-                  inactiveColor: AppColors.paper.line,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ProgressBarPainter extends CustomPainter {
-  _ProgressBarPainter({
-    required this.percent,
-    required this.activeColor,
-    required this.inactiveColor,
-  });
-
-  final double percent;
-  final Color activeColor;
-  final Color inactiveColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const double trackHeight = 4.0;
-    final double centerY = size.height / 2;
-
-    // トラック全体の描画
-    final Paint trackPaint = Paint()
-      ..color = inactiveColor
-      ..strokeWidth = trackHeight
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(trackHeight / 2, centerY),
-      Offset(size.width - trackHeight / 2, centerY),
-      trackPaint,
-    );
-
-    // 再生中トラックの描画
-    final double activeWidth =
-        (size.width - trackHeight) * percent + trackHeight / 2;
-    if (activeWidth > trackHeight / 2) {
-      final Paint activePaint = Paint()
-        ..color = activeColor
-        ..strokeWidth = trackHeight
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(
-        Offset(trackHeight / 2, centerY),
-        Offset(activeWidth, centerY),
-        activePaint,
-      );
-    }
-
-    // つまみ (Thumb) の描画
-    const double thumbRadius = 6.0;
-    final double thumbX =
-        (size.width - thumbRadius * 2) * percent + thumbRadius;
-    final Paint thumbPaint = Paint()
-      ..color = activeColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(thumbX, centerY), thumbRadius, thumbPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _ProgressBarPainter oldDelegate) {
-    return oldDelegate.percent != percent ||
-        oldDelegate.activeColor != activeColor ||
-        oldDelegate.inactiveColor != inactiveColor;
   }
 }

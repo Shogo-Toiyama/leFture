@@ -24,17 +24,26 @@ Stream<TopicMapData?> topicMapForCourse(Ref ref, String courseId) async* {
   final stream = repo.watchTopicMapForCourse(courseId);
 
   await for (final raw in stream) {
+    if (!ref.mounted) return;
     if (raw == null) {
       yield null;
       continue;
     }
 
-    final courses = await ref.watch(courseListProvider.future);
+    // ref.watch(...).future だと courseList/lectureListStream が後から再emit
+    // するたびにこのprovider自体が丸ごと再構築されてしまう(lectureListStreamは
+    // lectures書き込みのたびに再emitするため、Outbox同期と競合してdispose後の
+    // Ref使用でクラッシュする)。ここでは購読ではなくスナップショット取得で
+    // 十分なので ref.read にする -- 最新化は raw(topic_map本体)の再emit時に
+    // このブロックごと再実行されることで担保される。
+    final courses = await ref.read(courseListProvider.future);
+    if (!ref.mounted) return;
     final course = courses.cast<Course?>().firstWhere(
           (c) => c?.id == courseId,
           orElse: () => null,
         );
-    final lectures = await ref.watch(lectureListStreamProvider(courseId).future);
+    final lectures = await ref.read(lectureListStreamProvider(courseId).future);
+    if (!ref.mounted) return;
 
     // ノードの「Lecture N」表示は保存されていない(topic_maps.mapには焼き込まない
     // ---削除・移動があるたびに腐るため)。バックエンドがLLM呼び出し直前に

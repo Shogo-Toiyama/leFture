@@ -1296,10 +1296,11 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
 
     // サーバー版(lecture_transcripts)とオンデバイス版(LiveAsrController)を
     // 時刻順に素朴に連結するだけ(watermarkによる賢いマージはまだ次フェーズ)。
+    // サーバー版は常に確定済みなのでisFinal:true固定。
     final onDeviceSegments = ref.watch(liveAsrControllerProvider);
-    final combined = <(double, String)>[
-      for (final s in sentences) (s.startSec, s.text),
-      for (final s in onDeviceSegments) (s.timestampSec, s.text),
+    final combined = <(double, String, bool)>[
+      for (final s in sentences) (s.startSec, s.text, true),
+      for (final s in onDeviceSegments) (s.timestampSec, s.text, s.isFinal),
     ]..sort((a, b) => a.$1.compareTo(b.$1));
 
     void scrollToBottom() {
@@ -1378,7 +1379,7 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
                           itemCount: combined.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 14),
                           itemBuilder: (context, i) {
-                            final (sec, text) = combined[i];
+                            final (sec, text, isFinal) = combined[i];
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1394,8 +1395,13 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
                                 Expanded(
                                   child: Text(
                                     text,
+                                    // 未確定(まだendpoint検知前)の行は、確定行と
+                                    // 見た目で区別できるよう斜体+やや薄い色にする。
                                     style: TextStyle(
-                                      color: AppColors.universe.textStarlight,
+                                      color: isFinal
+                                          ? AppColors.universe.textStarlight
+                                          : AppColors.universe.textStarlight.withValues(alpha: 0.6),
+                                      fontStyle: isFinal ? FontStyle.normal : FontStyle.italic,
                                       fontSize: 14,
                                       height: 1.4,
                                     ),

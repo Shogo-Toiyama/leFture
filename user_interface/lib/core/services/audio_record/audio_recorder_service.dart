@@ -11,9 +11,18 @@ import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
   bool _disposed = false;
-  
+
   // 初期化済みかどうかのフラグ
   bool _isBackgroundInitialized = false;
+
+  // マスター生PCMファイル用の永続IOSink。マイクからのデータは高頻度で届くため、
+  // 呼ばれるたびに`File.writeAsBytes(mode: append, flush: true)`で開閉すると、
+  // 前回の書き込み(especially fsync)が終わる前に次の呼び出しが重なり、
+  // 誰にもawaitされない例外としてチャンクが静かに欠落する(録音が「早送り」に
+  // なっていく不具合の原因だった)。IOSinkは内部で書き込みをキューイング・
+  // 直列化するため、これを1つだけ開いて使い続けることで欠落を防ぐ。
+  IOSink? _masterSink;
+  String? _masterSinkLectureId;
 
   Future<void> _initBackgroundService() async {
     if (_isBackgroundInitialized) return;
@@ -106,11 +115,15 @@ class AudioRecorderService {
 
     final recording = await _recorder.isRecording();
     final paused = await _recorder.isPaused();
-    
+
     // ★録音停止したら、バックグラウンド実行もオフにする（通知を消す）
     if (Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
       await FlutterBackground.disableBackgroundExecution();
     }
+
+    // マスター音声への書き込みも確実に終わらせる(encodeMasterRawToM4aが
+    // rawファイルを読む前に、バッファ済みの内容を全てディスクへ反映させる)。
+    await _closeMasterSink();
 
     if (!recording && !paused) return null;
     return _recorder.stop();
@@ -119,13 +132,26 @@ class AudioRecorderService {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    
+
     // 念のためdispose時にもオフに
     if (Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
       await FlutterBackground.disableBackgroundExecution();
     }
-    
+
+    await _closeMasterSink();
     await _recorder.dispose();
+  }
+
+  /// 開いているマスター音声用IOSinkがあれば、バッファを書き出してから閉じる。
+  /// すでに閉じている(null)場合は何もしない — 複数箇所(stop/dispose/
+  /// encodeMasterRawToM4a/cleanUpMasterAudioFiles)から安全に呼べる。
+  Future<void> _closeMasterSink() async {
+    final sink = _masterSink;
+    if (sink == null) return;
+    _masterSink = null;
+    _masterSinkLectureId = null;
+    await sink.flush();
+    await sink.close();
   }
 
   /// チャンクの生PCMデータをFFmpegでAAC(M4A)にエンコードしてローカルに保存する
@@ -177,16 +203,32 @@ class AudioRecorderService {
     return '${dir.path}/lectures/$lectureId/master_audio.m4a';
   }
 
-  /// 録音中の生PCMデータをローカルファイルに追記する
+  /// 録音中の生PCMデータをローカルファイルに追記する。
+  /// マイクからのコールバック頻度で呼ばれ続けるため、呼び出しごとにファイルを
+  /// 開閉するのではなく、同じlectureIdの間は1つの`IOSink`を使い続けて直列に
+  /// 書き込む(呼び出しが重なってもIOSink内部のキューが順序と欠落無しを保証する)。
   Future<void> appendMasterRawData(Uint8List pcmData, String lectureId) async {
-    final String rawPath = await _getMasterRawPath(lectureId);
-    final File file = File(rawPath);
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(pcmData, mode: FileMode.append, flush: true);
+    if (_masterSink == null || _masterSinkLectureId != lectureId) {
+      // 別のlectureId用のsinkが開いたままだった場合に備えて、念のため閉じる。
+      await _closeMasterSink();
+
+      final String rawPath = await _getMasterRawPath(lectureId);
+      final File file = File(rawPath);
+      await file.parent.create(recursive: true);
+      _masterSink = file.openWrite(mode: FileMode.append);
+      _masterSinkLectureId = lectureId;
+    }
+
+    _masterSink!.add(pcmData);
   }
 
   /// ローカルに貯めたPCM生データをFFmpegでM4A(AAC)にエンコードする
   Future<String> encodeMasterRawToM4a(String lectureId) async {
+    // 通常はstop()側で既に閉じられているはずだが、rawファイルを読む前に
+    // バッファ済みの内容が確実にディスクへ反映されていることを保証するため、
+    // 念のためここでも閉じる(既に閉じていれば何もしない)。
+    await _closeMasterSink();
+
     final String rawPath = await _getMasterRawPath(lectureId);
     final String m4aPath = await _getMasterM4aPath(lectureId);
 
@@ -226,6 +268,10 @@ class AudioRecorderService {
 
   /// 一時ファイル (raw, m4a) をクリーンアップする
   Future<void> cleanUpMasterAudioFiles(String lectureId) async {
+    // 開いたままのIOSinkがファイルハンドルを握っていると削除に失敗しうるため、
+    // 削除前に必ず閉じる。
+    await _closeMasterSink();
+
     try {
       final String rawPath = await _getMasterRawPath(lectureId);
       final rawFile = File(rawPath);

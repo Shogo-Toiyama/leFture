@@ -35,6 +35,24 @@ class LectureOutboxPushHandler implements OutboxPushHandler {
     // ローカルにもう存在しない(何らかの理由で消えた) -> 送るものが無い
     if (existing == null) return;
 
+    // 論理削除のpushの場合のみ、送信直前にSupabase側の実在を確認する。
+    // 録音中にDiscardされた講義など、一度もSupabaseに登録されないまま
+    // 削除されるケースでは、わざわざdeleted_at付きの新規行を作る必要が
+    // 無い(そもそも登録されていないなら、既に削除済みと同じ状態)。
+    // 既に登録済みの講義については、これまで通りdeleted_atを確実に送る。
+    if (existing.deletedAt != null) {
+      final remote = await supabase
+          .from('lectures')
+          .select('id')
+          .eq('id', entityId)
+          .maybeSingle()
+          .timeout(networkTimeout);
+      if (remote == null) {
+        // Supabase側に登録が無い = 送るものが無い(既に削除済みと同義)。
+        return;
+      }
+    }
+
     final payload = {
       'id': existing.id,
       'user_id': existing.userId,
