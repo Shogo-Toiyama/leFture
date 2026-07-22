@@ -5,11 +5,13 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
 import 'package:lecture_companion_ui/domain/entities/asr_model_manifest.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
@@ -72,7 +74,20 @@ class AsrModelManager extends _$AsrModelManager {
   static const _maxResidentGroups = 2;
 
   @override
-  Map<String, AsrLanguageModelState> build() => {};
+  Map<String, AsrLanguageModelState> build() {
+    final observer = _AsrLifecycleObserver(
+      onBackgrounded: _handleAppBackgrounded,
+      onForegrounded: _handleAppForegrounded,
+    );
+    WidgetsBinding.instance.addObserver(observer);
+    ref.onDispose(() => WidgetsBinding.instance.removeObserver(observer));
+
+    // アプリがバックグラウンドで(resumedイベントを受け取れないまま)killされた
+    // 場合に備え、起動直後にも一度だけ自動一時停止の残骸を確認して再開する。
+    _handleAppForegrounded();
+
+    return {};
+  }
 
   AsrModelRepository get _repo => AsrModelRepository(Supabase.instance.client);
   AppDatabase get _db => ref.read(appDatabaseProvider);
@@ -92,6 +107,10 @@ class AsrModelManager extends _$AsrModelManager {
   // ensureModelReadyが永久にブロックされてしまうため、状態表示とは
   // 独立してここで管理する。
   final Set<String> _manifestFetchesInFlight = {};
+
+  // _ensureAssetの多重実行防止用(groupKey単位)。自動再開とユーザー操作が
+  // 同時に同じグループを触ろうとするのを防ぐ。
+  final Set<String> _ensureAssetInFlight = {};
 
   AsrLanguageModelState statusFor(String key) => state[key] ?? AsrLanguageModelState.initial;
 
@@ -184,7 +203,11 @@ class AsrModelManager extends _$AsrModelManager {
   /// 1アセット(言語モデル/VAD/Whisper共通)のダウンロード〜展開〜DB反映。
   /// [key]は`LocalAsrModels.groupKey`に書き込むキー(通常はmodelIdそのもの、
   /// または`kVadPseudoLanguageCode`/`kWhisperPseudoLanguageCode`)。
+  /// 同じgroupKeyに対する多重実行(例: バックグラウンド復帰時の自動再開と
+  /// ユーザーの手動再開ボタンが同時に走る)を防ぐため、groupKey単位で
+  /// 排他制御する。
   Future<void> _ensureAsset(String key, int engineCompatVersion, AsrModelInfo info) async {
+    if (!_ensureAssetInFlight.add(key)) return; // 既に同じgroupKeyで進行中
     try {
       final existing =
           await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();
@@ -280,6 +303,8 @@ class AsrModelManager extends _$AsrModelManager {
       dev.log('🚨 [AsrModelManager] _ensureAsset failed for "$key" (modelId=${info.modelId})', error: e, stackTrace: st);
       // 失敗しても既存のreadyな行(古いモデル)はそのまま残す。
       _update(key, AsrLanguageModelState(status: AsrModelStatus.failed, errorMessage: e.toString()));
+    } finally {
+      _ensureAssetInFlight.remove(key);
     }
   }
 
@@ -303,6 +328,75 @@ class AsrModelManager extends _$AsrModelManager {
   /// [ensureModelReady]と同じ(部分ファイルが残っていれば自動的に続きから
   /// 再開される)。呼び出し側にとって意図が分かりやすいよう別名で公開する。
   Future<void> resumeDownload(String languageCode) => ensureModelReady(languageCode);
+
+  /// アプリがバックグラウンドへ移行(またはkillされる直前)したタイミングで、
+  /// 現在アクティブなダウンロードをすべて明示的に一時停止する。OSにソケットを
+  /// 強制切断される前にこちらから止めることで、部分ファイルを正常な状態で
+  /// 保持できる。ユーザーが手動でpauseした分は既に[_activeDownloads]から
+  /// 取り除かれているので、ここでは触れない(＝自動再開の対象にもならない)。
+  Future<void> _handleAppBackgrounded() async {
+    final groupKeys = _activeDownloads.keys.toList();
+    if (groupKeys.isEmpty) return;
+
+    for (final groupKey in groupKeys) {
+      final handle = _activeDownloads.remove(groupKey);
+      if (handle == null) continue;
+      _update(
+        groupKey,
+        AsrLanguageModelState(status: AsrModelStatus.paused, progress: statusFor(groupKey).progress),
+      );
+      await handle.cancel();
+      dev.log('⏸️ [AsrModelManager] auto-paused "$groupKey" due to app backgrounding');
+    }
+
+    final existing = RecordingPreferences().getAutoPausedAsrGroupKeys();
+    final merged = {...existing, ...groupKeys}.toList();
+    await RecordingPreferences().setAutoPausedAsrGroupKeys(merged);
+  }
+
+  /// アプリがフォアグラウンドに戻った(または起動直後の)タイミングで、
+  /// 前回自動一時停止されたまま残っているダウンロードがあれば自動的に
+  /// 再開する。ユーザーが手動でpauseしたものは対象に含まれない
+  /// ([_handleAppBackgrounded]がそれらを記録していないため)。
+  Future<void> _handleAppForegrounded() async {
+    final autoPaused = RecordingPreferences().getAutoPausedAsrGroupKeys();
+    if (autoPaused.isEmpty) return;
+    await RecordingPreferences().setAutoPausedAsrGroupKeys([]);
+
+    for (final groupKey in autoPaused) {
+      try {
+        dev.log('▶️ [AsrModelManager] auto-resuming "$groupKey" after returning to foreground');
+        await _ensureAssetForGroupKey(groupKey);
+      } catch (e, st) {
+        dev.log('🚨 [AsrModelManager] auto-resume failed for "$groupKey"', error: e, stackTrace: st);
+      }
+    }
+  }
+
+  /// languageCodeを介さず、groupKeyから直接manifest上のAsrModelInfoを
+  /// 逆引きして[_ensureAsset]を呼ぶ。バックグラウンド復帰時の自動再開は、
+  /// どの言語から辿り着いたかを覚えていないgroupKey単位でしか行えないため。
+  Future<void> _ensureAssetForGroupKey(String groupKey) async {
+    final manifest = _cachedManifest ?? await _repo.fetchManifest();
+    _cachedManifest = manifest;
+
+    if (groupKey == kVadPseudoLanguageCode) {
+      final info = manifest.vad;
+      if (info != null) await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
+      return;
+    }
+    if (groupKey == kWhisperPseudoLanguageCode) {
+      final info = manifest.whisper;
+      if (info != null) await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
+      return;
+    }
+    for (final info in manifest.languages.values) {
+      if (info.modelId == groupKey) {
+        await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
+        return;
+      }
+    }
+  }
 
   /// [protectedGroupKey]をこれからダウンロードする前提で、VAD以外のreadyな
   /// グループが[_maxResidentGroups]を超えていれば、最も長く使われていない
@@ -342,5 +436,30 @@ class AsrModelManager extends _$AsrModelManager {
         await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();
     if (row == null || row.status != 'ready') return null;
     return row.localPath;
+  }
+}
+
+/// アプリのフォアグラウンド/バックグラウンド遷移をAsrModelManagerへ橋渡しする
+/// だけの小さなobserver。didChangeAppLifecycleStateのpaused/detachedを
+/// 「バックグラウンド化」、resumedを「フォアグラウンド復帰」として扱う
+/// (inactiveは通知バナー等の一時的な中断でも発火するため無視する)。
+class _AsrLifecycleObserver extends WidgetsBindingObserver {
+  _AsrLifecycleObserver({required this.onBackgrounded, required this.onForegrounded});
+
+  final Future<void> Function() onBackgrounded;
+  final Future<void> Function() onForegrounded;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        onBackgrounded();
+      case AppLifecycleState.resumed:
+        onForegrounded();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 }

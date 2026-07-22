@@ -17,11 +17,12 @@ import 'package:lecture_companion_ui/application/recording/live_transcript_provi
 import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
 import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
 import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
+import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
 import 'package:lecture_companion_ui/domain/entities/app_language.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
 import 'package:lecture_companion_ui/domain/entities/live_transcript_sentence.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/language_selection_sheet.dart';
-import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
+import 'package:lecture_companion_ui/presentation/widgets/asr_model_dialog_helpers.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
@@ -73,13 +74,17 @@ class RecordingPage extends HookConsumerWidget {
       return null;
     }, [initialCourseId]);
 
-    // マイク許可とASRモデルの準備を、録音ボタンを押す前に前倒しで行う
+    // マイク許可を、録音ボタンを押す前に前倒しでリクエストしておく
     // (授業が始まってしまってからもたつかないように、ページに入った瞬間に済ませる)。
+    // ASRモデルの準備は、Realtime Recordingが有効な場合のみ行う
+    // (無効なら無駄なダウンロードを避ける)。
     useEffect(() {
       Future.microtask(() {
         ref.read(recordingControllerProvider.notifier).requestMicPermissionEarly();
-        final lang = ref.read(recordingLanguageControllerProvider);
-        ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+        if (RecordingPreferences().getRealtimeTranscribe()) {
+          final lang = ref.read(recordingLanguageControllerProvider);
+          ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+        }
       });
       return null;
     }, []);
@@ -639,18 +644,8 @@ class RecordingPage extends HookConsumerWidget {
                                             );
                                             if (confirmed != true) return;
                                             controller.setRealtimeTranscribe(true);
-                                            await ref
-                                                .read(asrModelManagerProvider.notifier)
-                                                .ensureModelReady(recordingLanguage);
-                                            final result = ref
-                                                .read(asrModelManagerProvider.notifier)
-                                                .statusForLanguage(recordingLanguage);
-                                            if (result.status == AsrModelStatus.failed && context.mounted) {
-                                              AppErrorDialog.show(
-                                                context,
-                                                actionName: 'downloading the speech model',
-                                                rawError: result.errorMessage ?? 'Unknown error',
-                                              );
+                                            if (context.mounted) {
+                                              await ensureAsrModelWithErrorDialog(context, ref, recordingLanguage);
                                             }
                                             return;
                                           }
@@ -662,15 +657,13 @@ class RecordingPage extends HookConsumerWidget {
                                 _RecordingLanguageRow(
                                   languageLabel: recordingLanguageFromCode(recordingLanguage).englishName,
                                   modelState: asrModelState,
-                                  onDownloadTap: () => ref
-                                      .read(asrModelManagerProvider.notifier)
-                                      .ensureModelReady(recordingLanguage),
+                                  onDownloadTap: () =>
+                                      ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
                                   onPauseTap: () => ref
                                       .read(asrModelManagerProvider.notifier)
                                       .pauseDownload(recordingLanguage),
-                                  onResumeTap: () => ref
-                                      .read(asrModelManagerProvider.notifier)
-                                      .resumeDownload(recordingLanguage),
+                                  onResumeTap: () =>
+                                      resumeAsrModelWithErrorDialog(context, ref, recordingLanguage),
                                   onTap: isBusy
                                       ? null
                                       : () => showModalBottomSheet(
@@ -1060,8 +1053,8 @@ class _RecordingLanguageRow extends StatelessWidget {
           style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14, fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          modelState.status == AsrModelStatus.failed && modelState.errorMessage != null
-              ? '⚠️ ${modelState.errorMessage}'
+          modelState.status == AsrModelStatus.failed
+              ? '⚠️ $friendlyAsrModelErrorMessage'
               : 'On-device speech model used for live captions.',
           maxLines: 3,
           style: TextStyle(

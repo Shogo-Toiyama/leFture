@@ -720,89 +720,6 @@ class _SettingsSection extends ConsumerWidget {
 
     return Column(
       children: [
-        // Account
-        _GlassCard(
-          child: Column(
-            children: isEmailUser
-                ? [
-                    _SettingsTile(
-                      icon: Icons.email_outlined,
-                      iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Email',
-                      onTap: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const ChangeEmailSheet(),
-                        );
-                      },
-                    ),
-                    _Divider(),
-                    _SettingsTile(
-                      icon: Icons.lock_outline_rounded,
-                      iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Password',
-                      onTap: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const ChangePasswordSheet(),
-                        );
-                      },
-                    ),
-                    _Divider(),
-                    _SettingsTile(
-                      icon: Icons.security_rounded,
-                      iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Login Method',
-                      onTap: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const ChangeAuthProviderSheet(),
-                        );
-                      },
-                      isLast: true,
-                    ),
-                  ]
-                : [
-                    _SettingsTile(
-                      icon: Icons.manage_accounts_outlined,
-                      iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Account',
-                      onTap: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const ChangeAccountSheet(),
-                        );
-                      },
-                    ),
-                    _Divider(),
-                    _SettingsTile(
-                      icon: Icons.security_rounded,
-                      iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Login Method',
-                      onTap: () {
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const ChangeAuthProviderSheet(),
-                        );
-                      },
-                      isLast: true,
-                    ),
-                  ],
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
         // Preferences
         _GlassCard(
           child: Builder(
@@ -881,6 +798,89 @@ class _SettingsSection extends ConsumerWidget {
                 isLast: true,
               ),
             ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Account
+        _GlassCard(
+          child: Column(
+            children: isEmailUser
+                ? [
+                    _SettingsTile(
+                      icon: Icons.email_outlined,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Email',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeEmailSheet(),
+                        );
+                      },
+                    ),
+                    _Divider(),
+                    _SettingsTile(
+                      icon: Icons.lock_outline_rounded,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Password',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangePasswordSheet(),
+                        );
+                      },
+                    ),
+                    _Divider(),
+                    _SettingsTile(
+                      icon: Icons.security_rounded,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Login Method',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeAuthProviderSheet(),
+                        );
+                      },
+                      isLast: true,
+                    ),
+                  ]
+                : [
+                    _SettingsTile(
+                      icon: Icons.manage_accounts_outlined,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Account',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeAccountSheet(),
+                        );
+                      },
+                    ),
+                    _Divider(),
+                    _SettingsTile(
+                      icon: Icons.security_rounded,
+                      iconColor: const Color(0xFF7C83FD),
+                      title: 'Change Login Method',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const ChangeAuthProviderSheet(),
+                        );
+                      },
+                      isLast: true,
+                    ),
+                  ],
           ),
         ),
 

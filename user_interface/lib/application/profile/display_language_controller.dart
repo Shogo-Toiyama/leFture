@@ -9,10 +9,10 @@ part 'display_language_controller.g.dart';
 @Riverpod(keepAlive: true)
 class DisplayLanguageController extends _$DisplayLanguageController {
   @override
-  String build() => RecordingPreferences().getUiLanguage();
+  String build() => RecordingPreferences().getDisplayLanguage();
 
   Future<void> setLanguage(String code) async {
-    await RecordingPreferences().setUiLanguage(code);
+    await RecordingPreferences().setDisplayLanguage(code);
     state = code;
   }
 }

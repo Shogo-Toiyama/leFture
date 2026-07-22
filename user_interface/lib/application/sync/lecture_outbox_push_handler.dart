@@ -46,6 +46,8 @@ class LectureOutboxPushHandler implements OutboxPushHandler {
       'sort_order': existing.sortOrder ?? 0,
       'created_at': existing.createdAt.toUtc().toIso8601String(),
       'deleted_at': existing.deletedAt?.toUtc().toIso8601String(),
+      'recording_language': existing.recordingLanguage,
+      'display_language': existing.displayLanguage,
     };
 
     await supabase.from('lectures').upsert(payload).timeout(networkTimeout);

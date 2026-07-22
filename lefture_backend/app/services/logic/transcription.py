@@ -54,7 +54,7 @@ class TranscriptionService:
         if not self.account_id or not self.api_key:
             self.logger.log("⚠️ CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_KEY is not set in environment variables.")
 
-    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
+    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "", language: str | None = None) -> dict:
         """
         [究極のシンプルパイプライン]
         Flutterから送られてきた34秒（オーバーラップ込み）のM4A(AAC)データをBase64エンコードし、
@@ -90,8 +90,10 @@ class TranscriptionService:
         }
         payload = {
             "audio": audio_b64,
-            "language": "en",
         }
+        # 未指定ならキー自体を送らず、Whisperの自動言語判定に任せる
+        if language:
+            payload["language"] = language
         if prompt_keywords:
             payload["initial_prompt"] = prompt_keywords
 
@@ -166,7 +168,7 @@ class ModalTranscriptionService:
         if not self.modal_api_url:
             self.logger.log("⚠️ MODAL_WHISPER_URL is not set in environment variables.")
 
-    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
+    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "", language: str | None = None) -> dict:
         """
         ローカル Modal 上の Faster Whisper にマスターオーディオを送信する。
         Cloudflare 形式のレスポンスに統一して返す。
@@ -186,10 +188,13 @@ class ModalTranscriptionService:
 
         try:
             # Modal API にマルチパート形式でファイルを送信
+            # language未指定ならdataフィールド自体を送らず、Modal側のデフォルト(自動言語判定)に任せる
+            form_data = {"language": language} if language else None
             response = await asyncio.to_thread(
                 lambda: requests.post(
                     self.modal_api_url,
                     files={"file": ("audio.m4a", audio_bytes, "audio/mpeg")},
+                    data=form_data,
                     timeout=300  # 大容量ファイル対応
                 )
             )

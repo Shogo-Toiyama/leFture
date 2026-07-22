@@ -95,7 +95,7 @@ final class AsrModelManagerProvider
   }
 }
 
-String _$asrModelManagerHash() => r'c3d770cce46987858e8c1ac223b462d11cf25336';
+String _$asrModelManagerHash() => r'153da0b864e49f66a4904dbc8fadde20c9223a0a';
 
 /// 録音言語ごとのオンデバイスASRモデルのダウンロード/バージョン整合性を管理する。
 /// RecordingPageに入った瞬間と、録音言語の設定を変更した瞬間の2箇所から

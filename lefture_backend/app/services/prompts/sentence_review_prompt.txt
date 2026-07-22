@@ -4,6 +4,7 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
 [CONTEXT]
 - Lecture Subject: {course_title}
 - Relevant Keywords/Topics: {keywords_list}
+- Transcript Language: {recording_language} — this lecture was spoken and must be transcribed entirely in this language.
 - The input text is transcribed by an AI and contains errors, especially phonetically plausible substitutions (e.g., "natural election" instead of "natural selection").
 - The input text is transcribed directly from overlapping audio chunks. Therefore, you may frequently see the exact same spoken phrase repeated across adjacent tags.
 - The ASR model tends to hallucinate specific phrases during silent or noisy background periods.
@@ -20,6 +21,7 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
  - [SMART FORMATTING ALLOWED]: You should convert spoken academic terms into their standard written symbols or acronyms to improve readability for students (e.g., "h two o" -> "H2O", "delta" -> "δ"). 
  - [NO ADVANCED SUBSTITUTIONS]: Do NOT introduce advanced concepts or jargon that the professor did not explicitly vocalize. For example, if the professor simply says "water", keep it as "water". Do NOT change it to "H2O" unless they explicitly pronounce the letters.
 5. NO CHAT, NO EXPLANATION: Output ONLY the corrected text with its XML tags. Do not wrap the output in markdown blocks (like ```xml). Do not say "Here is the corrected text".
+6. PRESERVE ORIGINAL LANGUAGE: The entire output MUST remain in {recording_language}. Do NOT translate, paraphrase into another language, or mix in translated phrases anywhere in the output. Technical terms, acronyms, or proper nouns that were spoken in a different language (see Rule 1's formatting examples like "api" -> "API") are NOT translations — keep them as-is; this rule only forbids translating the surrounding sentence itself.
 
 [XML FORMATTING RULES (CRITICAL)]
 1. EXACT TAG PRESERVATION: The input text is divided into segments with XML tags like <s001001>. You MUST keep these exact tags. Do NOT add, remove, or modify the tag IDs.
@@ -33,6 +35,6 @@ Your task is to correct ASR (Automatic Speech Recognition) errors, misheard word
 5. CHRONOLOGICAL ORDER: Maintain the relative chronological order of the text. Do not swap the order of the XML tags.
 
 [TARGET TEXT TO CORRECT]
-Correct the following text according to the rules above. Output ONLY the corrected XML string.
+Correct the following text according to the rules above, keeping the entire output in {recording_language}. Output ONLY the corrected XML string.
 
 {target_xml_text}

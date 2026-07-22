@@ -1,6 +1,6 @@
 import math
 import modal
-from fastapi import UploadFile, File
+from fastapi import UploadFile, File, Form
 
 # ==========================================
 # 1. Modalアプリと環境の定義
@@ -38,22 +38,22 @@ class WhisperAPI:
         print("✅ ロード完了！いつでも推論できます。")
 
     @modal.fastapi_endpoint(method="POST")
-    async def transcribe(self, file: UploadFile = File(...)):
+    async def transcribe(self, file: UploadFile = File(...), language: str | None = Form(None)):
         import time
         import io
-        
+
         start_time = time.time()
-        print(f"🎙️ リクエスト受信: {file.filename} のトランスクライブを開始します...")
-        
+        print(f"🎙️ リクエスト受信: {file.filename} のトランスクライブを開始します...(language={language or 'auto'})")
+
         # FastAPI経由で送られてきた音声ファイルをバイトデータとして読み込む
         audio_bytes = await file.read()
         audio_data = io.BytesIO(audio_bytes)
-        
-        # 推論実行（英語特化、幻覚防止オプション付き）
+
+        # 推論実行（幻覚防止オプション付き）。language未指定(None)ならfaster-whisperが自動言語判定する。
         segments, info = self.model.transcribe(
-            audio_data, 
-            beam_size=5, 
-            language="en", 
+            audio_data,
+            beam_size=5,
+            language=language or None,
             condition_on_previous_text=False,
             vad_filter=True,
         )

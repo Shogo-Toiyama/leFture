@@ -574,20 +574,27 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
     return new_graph
 
 
-def _get_sentence_review_context(lecture_id: str) -> tuple[str, str]:
+_UNKNOWN_RECORDING_LANGUAGE_LABEL = "the same language as the original spoken audio (do not translate under any circumstances)"
+
+
+def _get_sentence_review_context(lecture_id: str) -> tuple[str, str, str]:
     """
-    Sentence Review タスク用に、コースタイトルと直前講義のキーワード一覧を取得します。
+    Sentence Review タスク用に、コースタイトル・直前講義のキーワード一覧・
+    録音言語(プロンプト埋め込み用に解決済みの文字列)を取得します。
     """
     supabase = get_supabase_client()
-    
-    # 1. 今回の講義の course_id と created_at を取得
-    lec_res = supabase.table("lectures").select("course_id, created_at").eq("id", lecture_id).single().execute()
+
+    # 1. 今回の講義の course_id と created_at と recording_language を取得
+    lec_res = supabase.table("lectures").select("course_id, created_at, recording_language").eq("id", lecture_id).single().execute()
     if not lec_res.data:
-        return "University Lecture", ""
-        
+        return "University Lecture", "", _UNKNOWN_RECORDING_LANGUAGE_LABEL
+
     course_id = lec_res.data.get("course_id")
     created_at = lec_res.data.get("created_at")
-    
+    # 未設定(Whisperの自動言語判定に任せた講義)ならプロンプトにそのまま埋め込める
+    # フォールバック文言にしておく(nullをそのままformatに渡せないため)。
+    recording_language = lec_res.data.get("recording_language") or _UNKNOWN_RECORDING_LANGUAGE_LABEL
+
     # 2. courses から course_title を取得
     course_title = "University Lecture"
     if course_id:
@@ -619,8 +626,8 @@ def _get_sentence_review_context(lecture_id: str) -> tuple[str, str]:
         if kw_res.data:
             keywords = [item["keyword"] for item in kw_res.data if item.get("keyword")]
             keywords_list = ", ".join(keywords)
-            
-    return course_title, keywords_list
+
+    return course_title, keywords_list, recording_language
 
 
 def _get_student_profile(uid: str) -> str:

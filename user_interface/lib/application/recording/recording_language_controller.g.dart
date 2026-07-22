@@ -8,25 +8,28 @@ part of 'recording_language_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 録音言語(オンデバイスASRモデル選択)の設定。変更した瞬間にその言語の
-/// モデルダウンロード/バージョン整合性チェックをキックする(プロアクティブ
-/// ダウンロード)。もう1つのチェックポイント(RecordingPage入場時)は
-/// RecordingController.requestMicPermissionEarly() 側から呼ぶ。
+/// 録音言語(オンデバイスASRモデル選択)の設定。永続化と状態管理のみを行う。
+/// モデルのダウンロードはここでは行わない — Realtime Recordingが有効な
+/// 場合のみ、呼び出し側(言語ピッカーのUI/HomePageの自動チェック)が
+/// `AsrModelManager.ensureModelReady`を明示的に呼ぶ(無効なら無駄な
+/// ダウンロードを避ける)。
 
 @ProviderFor(RecordingLanguageController)
 final recordingLanguageControllerProvider =
     RecordingLanguageControllerProvider._();
 
-/// 録音言語(オンデバイスASRモデル選択)の設定。変更した瞬間にその言語の
-/// モデルダウンロード/バージョン整合性チェックをキックする(プロアクティブ
-/// ダウンロード)。もう1つのチェックポイント(RecordingPage入場時)は
-/// RecordingController.requestMicPermissionEarly() 側から呼ぶ。
+/// 録音言語(オンデバイスASRモデル選択)の設定。永続化と状態管理のみを行う。
+/// モデルのダウンロードはここでは行わない — Realtime Recordingが有効な
+/// 場合のみ、呼び出し側(言語ピッカーのUI/HomePageの自動チェック)が
+/// `AsrModelManager.ensureModelReady`を明示的に呼ぶ(無効なら無駄な
+/// ダウンロードを避ける)。
 final class RecordingLanguageControllerProvider
     extends $NotifierProvider<RecordingLanguageController, String> {
-  /// 録音言語(オンデバイスASRモデル選択)の設定。変更した瞬間にその言語の
-  /// モデルダウンロード/バージョン整合性チェックをキックする(プロアクティブ
-  /// ダウンロード)。もう1つのチェックポイント(RecordingPage入場時)は
-  /// RecordingController.requestMicPermissionEarly() 側から呼ぶ。
+  /// 録音言語(オンデバイスASRモデル選択)の設定。永続化と状態管理のみを行う。
+  /// モデルのダウンロードはここでは行わない — Realtime Recordingが有効な
+  /// 場合のみ、呼び出し側(言語ピッカーのUI/HomePageの自動チェック)が
+  /// `AsrModelManager.ensureModelReady`を明示的に呼ぶ(無効なら無駄な
+  /// ダウンロードを避ける)。
   RecordingLanguageControllerProvider._()
     : super(
         from: null,
@@ -55,12 +58,13 @@ final class RecordingLanguageControllerProvider
 }
 
 String _$recordingLanguageControllerHash() =>
-    r'53af728f5dc27024c2bad9b92783c1d2bbb8d9d2';
+    r'69a217ef0c5da539d555ea516e196a1485839c97';
 
-/// 録音言語(オンデバイスASRモデル選択)の設定。変更した瞬間にその言語の
-/// モデルダウンロード/バージョン整合性チェックをキックする(プロアクティブ
-/// ダウンロード)。もう1つのチェックポイント(RecordingPage入場時)は
-/// RecordingController.requestMicPermissionEarly() 側から呼ぶ。
+/// 録音言語(オンデバイスASRモデル選択)の設定。永続化と状態管理のみを行う。
+/// モデルのダウンロードはここでは行わない — Realtime Recordingが有効な
+/// 場合のみ、呼び出し側(言語ピッカーのUI/HomePageの自動チェック)が
+/// `AsrModelManager.ensureModelReady`を明示的に呼ぶ(無効なら無駄な
+/// ダウンロードを避ける)。
 
 abstract class _$RecordingLanguageController extends $Notifier<String> {
   String build();

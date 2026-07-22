@@ -4,7 +4,8 @@ class RecordingPreferences {
   static const String _keyRealtimeTranscribe = 'recording_realtime_transcribe';
   static const String _keyAutoStartAnalysis = 'recording_auto_start_analysis';
   static const String _keyRecordingLanguage = 'recording_language';
-  static const String _keyUiLanguage = 'ui_language';
+  static const String _keyDisplayLanguage = 'display_language';
+  static const String _keyAutoPausedAsrGroupKeys = 'asr_auto_paused_group_keys';
 
   late final SharedPreferences _prefs;
 
@@ -52,13 +53,24 @@ class RecordingPreferences {
     await _prefs.setString(_keyRecordingLanguage, value);
   }
 
-  /// UI言語の設定を取得（デフォルト: 'en'）。今回はまだ実際の切り替えは行わない。
-  String getUiLanguage() {
-    return _prefs.getString(_keyUiLanguage) ?? 'en';
+  /// Display Language(コンテンツ生成の出力言語)の設定を取得（デフォルト: 'en'）。
+  String getDisplayLanguage() {
+    return _prefs.getString(_keyDisplayLanguage) ?? 'en';
   }
 
-  /// UI言語の設定を保存
-  Future<void> setUiLanguage(String value) async {
-    await _prefs.setString(_keyUiLanguage, value);
+  /// Display Languageの設定を保存
+  Future<void> setDisplayLanguage(String value) async {
+    await _prefs.setString(_keyDisplayLanguage, value);
+  }
+
+  /// バックグラウンド移行(アプリのkillも含む)によって自動的に一時停止された
+  /// ASRモデルダウンロードのgroupKey一覧。ユーザーが手動でpauseした場合は
+  /// ここには含めない(次回起動時に勝手に再開させないため)。
+  List<String> getAutoPausedAsrGroupKeys() {
+    return _prefs.getStringList(_keyAutoPausedAsrGroupKeys) ?? const [];
+  }
+
+  Future<void> setAutoPausedAsrGroupKeys(List<String> groupKeys) async {
+    await _prefs.setStringList(_keyAutoPausedAsrGroupKeys, groupKeys);
   }
 }

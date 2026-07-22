@@ -152,6 +152,8 @@ class TranscribeChunkPayload(BaseModel):
     whisper_context: str = ""
     r2_audio_path: str
     uid: str
+    # 録音言語(lectures.recording_language)。未設定(None)ならWhisperの自動言語判定に任せる。
+    language: str | None = None
 
 class MasterAudioUploadUrlRequest(BaseModel):
     lecture_id: str
@@ -628,6 +630,7 @@ async def worker_transcribe_chunk_process(payload: TranscribeChunkPayload):
         whisper_context=payload.whisper_context,
         r2_audio_path=payload.r2_audio_path,
         uid=payload.uid,
+        language=payload.language,
     )
     return {"status": "success", "message": f"Chunk {payload.chunk_index} fully processed."}
 
@@ -859,6 +862,7 @@ async def enqueue_transcribe_chunk_task(
     whisper_context: str,
     r2_audio_path: str,
     uid: str,
+    language: str | None = None,
 ):
     """
     /worker/transcribe-chunk-process を叩くCloud Tasksタスクをenqueueする。
@@ -878,6 +882,7 @@ async def enqueue_transcribe_chunk_task(
         "whisper_context": whisper_context,
         "r2_audio_path": r2_audio_path,
         "uid": uid,
+        "language": language,
     }
 
     # name を lecture_id + chunk_index から決定的に組み立てることで、

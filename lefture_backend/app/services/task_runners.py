@@ -277,9 +277,10 @@ async def receive_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
     """
     supabase = get_supabase_client()
     res = await asyncio.to_thread(
-        lambda: supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
+        lambda: supabase.table("lectures").select("user_id, recording_language").eq("id", lecture_id).single().execute()
     )
     uid = res.data["user_id"] if res.data else "unknown_user"
+    language = res.data.get("recording_language") if res.data else None
 
     # 受け取った音声バイナリをそのまま R2 に保存（バックアップ＆参照用、非同期処理側が後で読み直す）
     seqStr = str(chunk_index).zfill(3)
@@ -301,6 +302,7 @@ async def receive_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
         whisper_context=whisper_context,
         r2_audio_path=audio_r2_path,
         uid=uid,
+        language=language,
     )
 
 
@@ -417,7 +419,7 @@ async def trigger_sentence_review_for_batch_if_ready(
             logger.log(f"🚀 Triggering Sentence Review for chunks {batch_start} to {batch_start + 3}")
 
             # SentenceReviewService を呼び出し
-            course_title, keywords_list = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
+            course_title, keywords_list, recording_language = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
 
             review_billing = BillingEngine(task_type="SENTENCE_REVIEW")
             llm = UnifiedLLM(review_billing)
@@ -426,7 +428,8 @@ async def trigger_sentence_review_for_batch_if_ready(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
                 course_title=course_title,
-                keywords_list=keywords_list
+                keywords_list=keywords_list,
+                recording_language=recording_language
             )
 
             # 返ってきた綺麗なデータを DB に書き込み REVIEWED に更新
@@ -503,7 +506,7 @@ async def trigger_sentence_review_for_batch_if_ready(
     return False
 
 
-async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time: float, whisper_context: str, r2_audio_path: str, uid: str):
+async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time: float, whisper_context: str, r2_audio_path: str, uid: str, language: str | None = None):
     """
     receive_transcribe_chunk がenqueueしたタスクを実際に処理する（Cloud Tasksから呼ばれる）。
     R2から音声を取得し、Cloudflare Whisperで文字起こしし、DBを更新、4チャンクごとの
@@ -545,6 +548,7 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
             audio_bytes=audio_bytes,
             chunk_index=chunk_index,
             prompt_keywords=whisper_context,
+            language=language,
         )
 
         # 3. DBを更新し、真実のテキストを書き込む（R2への保存は受付側で完了済み）
@@ -832,15 +836,16 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
             prev_chunk = next((c for c in all_chunks if c["chunk_index"] == first_leftover_idx - 1), None)
 
             # LLM職人を呼び出す
-            course_title, keywords_list = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
-            
+            course_title, keywords_list, recording_language = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
+
             llm = UnifiedLLM(billing)
             reviewer = SentenceReviewService(llm, logger)
             reviewed_leftovers = await reviewer.run_with_retry(
                 chunks_to_review=chunks_to_review,
                 previous_chunk=prev_chunk,
                 course_title=course_title,
-                keywords_list=keywords_list
+                keywords_list=keywords_list,
+                recording_language=recording_language
             )
             
             # レビュー結果をDBに書き込み、REVIEWED に昇格
@@ -950,13 +955,14 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         #     プリレコ（マスター音声）はコンテキスト不要のため空文字で処理する。
         lec_res = await asyncio.to_thread(
             lambda: supabase.table("lectures")
-                .select("audio_path")
+                .select("audio_path, recording_language")
                 .eq("id", lecture_id)
                 .single()
                 .execute()
         )
         lec_data = lec_res.data or {}
         audio_path = lec_data.get("audio_path")
+        language = lec_data.get("recording_language")
         whisper_context = ""
 
         # Fail-fast: audio_path が無い場合は R2 ダウンロード前に検査
@@ -982,8 +988,9 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
             audio_bytes=audio_bytes,
             chunk_index=0,
             prompt_keywords=whisper_context,
+            language=language,
         )
-        
+
         raw_segments = result.get("segments") or []
 
         # 4. AssembleTranscriptServiceを使用してアセンブリ（重複コード削減）
@@ -1176,7 +1183,7 @@ async def run_role_classification_task(job_id: str, task_id: str):
         classifier = RoleClassificationService(billing, logger)
         
         # コースタイトルを取得してテーマのフォールバックにする
-        course_title, _ = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
+        course_title, _, _ = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
 
         classified_data = await classifier.run_from_memory(
             transcript_data=transcript_data, 

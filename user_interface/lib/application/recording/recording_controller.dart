@@ -12,6 +12,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/audio_record/audio_recorder_service.dart';
 import '../../infrastructure/local_db/repositories/recording_repository_drift.dart';
+import '../profile/display_language_controller.dart';
 import 'recording_language_controller.dart';
 import 'recording_state.dart';
 import 'upload_manager.dart';
@@ -213,12 +214,16 @@ class RecordingController extends _$RecordingController {
 
     try {
       DevLog.add('[StartSession] 4/8 creating draft lecture...');
+      final recordingLanguage = ref.read(recordingLanguageControllerProvider);
+      final displayLanguage = ref.read(displayLanguageControllerProvider);
       final lectureId = await _repo.createDraftLecture(
         userId: user.id,
         presetCourseId: state.courseId,
         presetTitle: state.title.isNotEmpty ? state.title : null,
         autoStartAnalysis: state.autoStartAnalysis,
         isRealtime: state.realtimeTranscribe,
+        recordingLanguage: recordingLanguage,
+        displayLanguage: displayLanguage,
       );
       DevLog.add('[StartSession] 5/8 draft lecture created: $lectureId');
 
@@ -275,7 +280,6 @@ class RecordingController extends _$RecordingController {
       );
 
       if (state.realtimeTranscribe) {
-        final recordingLanguage = ref.read(recordingLanguageControllerProvider);
         ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
       }
 
@@ -493,6 +497,8 @@ class RecordingController extends _$RecordingController {
         presetTitle: state.title.isNotEmpty ? state.title : null,
         autoStartAnalysis: state.autoStartAnalysis,
         isRealtime: false, // 外部ファイルは常にプレレコ
+        recordingLanguage: ref.read(recordingLanguageControllerProvider),
+        displayLanguage: ref.read(displayLanguageControllerProvider),
       );
       DevLog.add('[UploadAudioFile] 2/4 draft lecture created: $lectureId');
 

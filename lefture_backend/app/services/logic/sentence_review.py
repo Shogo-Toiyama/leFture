@@ -3,7 +3,7 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 from nltk.tokenize import sent_tokenize, word_tokenize
 
-from app.services.helpers.helpers import _load_prompt, TaskLogger
+from app.services.helpers.helpers import _load_prompt, TaskLogger, _UNKNOWN_RECORDING_LANGUAGE_LABEL
 from app.services.helpers.llm_unified import UnifiedLLM, Message, LLMOptions
 
 
@@ -129,14 +129,14 @@ class SentenceReviewService:
         # LiteLLM 経由で呼び出すモデル
         self.model_alias = "gemini/gemini-2.5-flash-lite"
 
-    async def run_with_retry(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "") -> list:
+    async def run_with_retry(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "", recording_language: str = "") -> list:
         """
         通常のレビューを1回実行し、STTには中身があったのにレビュー結果が空になっている
         チャンク（LLMが重複/幻聴と誤判定して丸ごと空タグにしたと疑われるケース）があれば、
         バッチ全体をtemperatureを上げて1回だけリトライする。リトライ後もまだ空のチャンクだけ、
         個別に生Whisperデータへフォールバックする（リトライで直った他のチャンクの結果は破棄しない）。
         """
-        attempt = await self.run_from_memory(chunks_to_review, previous_chunk, course_title, keywords_list, temperature=0.4)
+        attempt = await self.run_from_memory(chunks_to_review, previous_chunk, course_title, keywords_list, recording_language, temperature=0.4)
 
         orig_by_index = {c["chunk_index"]: c for c in chunks_to_review}
         result_by_index = {rc["chunk_index"]: rc for rc in attempt}
@@ -148,7 +148,7 @@ class SentenceReviewService:
 
         if suspicious:
             self.logger.log(f"⚠️ [Sentence Review] Chunk(s) {suspicious} came back empty despite non-empty STT. Retrying batch with higher temperature...")
-            attempt = await self.run_from_memory(chunks_to_review, previous_chunk, course_title, keywords_list, temperature=0.7)
+            attempt = await self.run_from_memory(chunks_to_review, previous_chunk, course_title, keywords_list, recording_language, temperature=0.7)
             result_by_index = {rc["chunk_index"]: rc for rc in attempt}
 
             still_suspicious = [
@@ -164,7 +164,7 @@ class SentenceReviewService:
 
         return attempt
 
-    async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "", temperature: float = 0.4) -> list:
+    async def run_from_memory(self, chunks_to_review: list, previous_chunk: dict = None, course_title: str = "", keywords_list: str = "", recording_language: str = "", temperature: float = 0.4) -> list:
         self.logger.log(f"🧠 [Sentence Review] Starting review for {len(chunks_to_review)} chunks...")
 
         orig_map = {}
@@ -261,6 +261,7 @@ class SentenceReviewService:
         prompt = prompt_template.format(
             course_title=course_title,
             keywords_list=keywords_list,
+            recording_language=recording_language or _UNKNOWN_RECORDING_LANGUAGE_LABEL,
             target_xml_text=target_xml
         )
 

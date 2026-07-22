@@ -93,6 +93,13 @@ class LocalLectures extends Table {
   BoolColumn get isRealtime =>
       boolean().withDefault(const Constant(true))();
 
+  // 録音言語(ASRに明示的に渡す言語コード)。null = Whisperの自動言語判定に任せる。
+  TextColumn get recordingLanguage => text().nullable()();
+
+  // コンテンツ生成(Review Card/Deep Note等)の出力言語。null = recordingLanguageに
+  // フォールバック(バックエンド側で解決)。
+  TextColumn get displayLanguage => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id, userId};
 }
@@ -501,7 +508,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -680,6 +687,15 @@ class AppDatabase extends _$AppDatabase {
           // 削除に失敗しても致命的ではない(次回ensureModelReadyが再ダウンロード
           // する際にキー名が変わっているので単に無駄なディスク容量が残るだけ)。
         }
+      }
+      if (from < 22) {
+        // バージョン22: 録音言語(recordingLanguage)とコンテンツ生成言語
+        // (displayLanguage)をSupabase側と同じくlectures行に持たせるため、
+        // LocalLecturesに両カラムを追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
       }
     },
   );

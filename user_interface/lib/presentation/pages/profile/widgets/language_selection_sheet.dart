@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
 import 'package:lecture_companion_ui/application/profile/display_language_controller.dart';
+import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
 import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
+import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
 import 'package:lecture_companion_ui/domain/entities/app_language.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/presentation/widgets/asr_model_dialog_helpers.dart';
+import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
 enum LanguageSheetMode { recording, display }
 
@@ -136,13 +140,13 @@ class LanguageSelectionSheet extends ConsumerWidget {
                     isSelected: isSelected,
                     modelState: modelState,
                     onDownloadTap: isRecording
-                        ? () => ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang.code)
+                        ? () => ensureAsrModelWithErrorDialog(context, ref, lang.code)
                         : null,
                     onPauseTap: isRecording
                         ? () => ref.read(asrModelManagerProvider.notifier).pauseDownload(lang.code)
                         : null,
                     onResumeTap: isRecording
-                        ? () => ref.read(asrModelManagerProvider.notifier).resumeDownload(lang.code)
+                        ? () => resumeAsrModelWithErrorDialog(context, ref, lang.code)
                         : null,
                     onTap: () async {
                       if (!isSelected) {
@@ -150,6 +154,9 @@ class LanguageSelectionSheet extends ConsumerWidget {
                           await ref
                               .read(recordingLanguageControllerProvider.notifier)
                               .setLanguage(lang.code);
+                          if (context.mounted) {
+                            await _maybeDownloadForNewLanguage(context, ref, lang);
+                          }
                         } else {
                           await ref
                               .read(displayLanguageControllerProvider.notifier)
@@ -168,6 +175,45 @@ class LanguageSelectionSheet extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// 録音言語を変更した直後、Realtime Recordingが有効でその言語のモデルが
+/// まだ無い場合に、ダウンロードするかどうかをユーザーに確認する。
+/// 「ダウンロードしない」を選んだ場合はRealtime Recording自体をOFFにする
+/// (モデルが無いままONにしていても意味が無いため)。Realtime自体が無効なら
+/// 何もしない(無駄な自動ダウンロードを避ける)。
+Future<void> _maybeDownloadForNewLanguage(
+  BuildContext context,
+  WidgetRef ref,
+  AppLanguage lang,
+) async {
+  if (!RecordingPreferences().getRealtimeTranscribe()) return;
+
+  final status = ref.read(asrModelManagerProvider.notifier).statusForLanguage(lang.code).status;
+  // 既に準備済み/進行中なら何もしなくてよい。
+  if (status == AsrModelStatus.ready ||
+      status == AsrModelStatus.downloading ||
+      status == AsrModelStatus.checking) {
+    return;
+  }
+
+  final confirmed = await showCustomDialog(
+    context: context,
+    title: 'Speech model required',
+    message:
+        "Download the on-device speech model for ${lang.englishName}? If you skip, Realtime transcribe will be turned off.",
+    confirmLabel: 'Download',
+    cancelLabel: 'Turn off',
+    icon: Icons.download_rounded,
+  );
+
+  if (confirmed == true) {
+    if (context.mounted) {
+      await ensureAsrModelWithErrorDialog(context, ref, lang.code);
+    }
+  } else {
+    await ref.read(recordingControllerProvider.notifier).setRealtimeTranscribe(false);
   }
 }
 

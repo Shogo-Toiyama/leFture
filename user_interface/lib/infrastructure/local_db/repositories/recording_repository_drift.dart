@@ -31,6 +31,8 @@ class RecordingRepositoryDrift {
     DateTime? lectureDateTime,
     bool autoStartAnalysis = true,
     bool isRealtime = true,
+    String? recordingLanguage,
+    String? displayLanguage,
   }) async {
     final lectureId = presetLectureId ?? const Uuid().v4();
     final now = DateTime.now().toUtc();
@@ -48,6 +50,8 @@ class RecordingRepositoryDrift {
             sortOrder: const Value(0),
             autoStartAnalysis: Value(autoStartAnalysis),
             isRealtime: Value(isRealtime),
+            recordingLanguage: Value(recordingLanguage),
+            displayLanguage: Value(displayLanguage),
           ),
         );
 

@@ -76,6 +76,8 @@ class LectureSyncService {
           metadataJson: Value(metadata != null ? jsonEncode(metadata) : null),
           lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),
           sortOrder: Value(json['sort_order'] as int?),
+          recordingLanguage: Value(json['recording_language'] as String?),
+          displayLanguage: Value(json['display_language'] as String?),
           createdAt: Value(DateTime.parse(json['created_at'])),
           updatedAt: Value(updatedAt),
           deletedAt: Value(

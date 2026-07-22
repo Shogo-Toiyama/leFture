@@ -877,6 +877,29 @@ class $LocalLecturesTable extends LocalLectures
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _recordingLanguageMeta = const VerificationMeta(
+    'recordingLanguage',
+  );
+  @override
+  late final GeneratedColumn<String> recordingLanguage =
+      GeneratedColumn<String>(
+        'recording_language',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _displayLanguageMeta = const VerificationMeta(
+    'displayLanguage',
+  );
+  @override
+  late final GeneratedColumn<String> displayLanguage = GeneratedColumn<String>(
+    'display_language',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -901,6 +924,8 @@ class $LocalLecturesTable extends LocalLectures
     pendingTopicMapStaleCourseId,
     autoStartAnalysis,
     isRealtime,
+    recordingLanguage,
+    displayLanguage,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1074,6 +1099,24 @@ class $LocalLecturesTable extends LocalLectures
         isRealtime.isAcceptableOrUnknown(data['is_realtime']!, _isRealtimeMeta),
       );
     }
+    if (data.containsKey('recording_language')) {
+      context.handle(
+        _recordingLanguageMeta,
+        recordingLanguage.isAcceptableOrUnknown(
+          data['recording_language']!,
+          _recordingLanguageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('display_language')) {
+      context.handle(
+        _displayLanguageMeta,
+        displayLanguage.isAcceptableOrUnknown(
+          data['display_language']!,
+          _displayLanguageMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1171,6 +1214,14 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.bool,
         data['${effectivePrefix}is_realtime'],
       )!,
+      recordingLanguage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recording_language'],
+      ),
+      displayLanguage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_language'],
+      ),
     );
   }
 
@@ -1203,6 +1254,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final String? pendingTopicMapStaleCourseId;
   final bool autoStartAnalysis;
   final bool isRealtime;
+  final String? recordingLanguage;
+  final String? displayLanguage;
   const LocalLecture({
     required this.id,
     required this.userId,
@@ -1226,6 +1279,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     this.pendingTopicMapStaleCourseId,
     required this.autoStartAnalysis,
     required this.isRealtime,
+    this.recordingLanguage,
+    this.displayLanguage,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1280,6 +1335,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     }
     map['auto_start_analysis'] = Variable<bool>(autoStartAnalysis);
     map['is_realtime'] = Variable<bool>(isRealtime);
+    if (!nullToAbsent || recordingLanguage != null) {
+      map['recording_language'] = Variable<String>(recordingLanguage);
+    }
+    if (!nullToAbsent || displayLanguage != null) {
+      map['display_language'] = Variable<String>(displayLanguage);
+    }
     return map;
   }
 
@@ -1334,6 +1395,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           : Value(pendingTopicMapStaleCourseId),
       autoStartAnalysis: Value(autoStartAnalysis),
       isRealtime: Value(isRealtime),
+      recordingLanguage: recordingLanguage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recordingLanguage),
+      displayLanguage: displayLanguage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayLanguage),
     );
   }
 
@@ -1369,6 +1436,10 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       ),
       autoStartAnalysis: serializer.fromJson<bool>(json['autoStartAnalysis']),
       isRealtime: serializer.fromJson<bool>(json['isRealtime']),
+      recordingLanguage: serializer.fromJson<String?>(
+        json['recordingLanguage'],
+      ),
+      displayLanguage: serializer.fromJson<String?>(json['displayLanguage']),
     );
   }
   @override
@@ -1399,6 +1470,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       ),
       'autoStartAnalysis': serializer.toJson<bool>(autoStartAnalysis),
       'isRealtime': serializer.toJson<bool>(isRealtime),
+      'recordingLanguage': serializer.toJson<String?>(recordingLanguage),
+      'displayLanguage': serializer.toJson<String?>(displayLanguage),
     };
   }
 
@@ -1425,6 +1498,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     Value<String?> pendingTopicMapStaleCourseId = const Value.absent(),
     bool? autoStartAnalysis,
     bool? isRealtime,
+    Value<String?> recordingLanguage = const Value.absent(),
+    Value<String?> displayLanguage = const Value.absent(),
   }) => LocalLecture(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1460,6 +1535,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
         : this.pendingTopicMapStaleCourseId,
     autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
     isRealtime: isRealtime ?? this.isRealtime,
+    recordingLanguage: recordingLanguage.present
+        ? recordingLanguage.value
+        : this.recordingLanguage,
+    displayLanguage: displayLanguage.present
+        ? displayLanguage.value
+        : this.displayLanguage,
   );
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
@@ -1507,6 +1588,12 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       isRealtime: data.isRealtime.present
           ? data.isRealtime.value
           : this.isRealtime,
+      recordingLanguage: data.recordingLanguage.present
+          ? data.recordingLanguage.value
+          : this.recordingLanguage,
+      displayLanguage: data.displayLanguage.present
+          ? data.displayLanguage.value
+          : this.displayLanguage,
     );
   }
 
@@ -1536,7 +1623,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
             'pendingTopicMapStaleCourseId: $pendingTopicMapStaleCourseId, ',
           )
           ..write('autoStartAnalysis: $autoStartAnalysis, ')
-          ..write('isRealtime: $isRealtime')
+          ..write('isRealtime: $isRealtime, ')
+          ..write('recordingLanguage: $recordingLanguage, ')
+          ..write('displayLanguage: $displayLanguage')
           ..write(')'))
         .toString();
   }
@@ -1565,6 +1654,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     pendingTopicMapStaleCourseId,
     autoStartAnalysis,
     isRealtime,
+    recordingLanguage,
+    displayLanguage,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1592,7 +1683,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.pendingTopicMapStaleCourseId ==
               this.pendingTopicMapStaleCourseId &&
           other.autoStartAnalysis == this.autoStartAnalysis &&
-          other.isRealtime == this.isRealtime);
+          other.isRealtime == this.isRealtime &&
+          other.recordingLanguage == this.recordingLanguage &&
+          other.displayLanguage == this.displayLanguage);
 }
 
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
@@ -1618,6 +1711,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<String?> pendingTopicMapStaleCourseId;
   final Value<bool> autoStartAnalysis;
   final Value<bool> isRealtime;
+  final Value<String?> recordingLanguage;
+  final Value<String?> displayLanguage;
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
@@ -1642,6 +1737,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.pendingTopicMapStaleCourseId = const Value.absent(),
     this.autoStartAnalysis = const Value.absent(),
     this.isRealtime = const Value.absent(),
+    this.recordingLanguage = const Value.absent(),
+    this.displayLanguage = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalLecturesCompanion.insert({
@@ -1667,6 +1764,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.pendingTopicMapStaleCourseId = const Value.absent(),
     this.autoStartAnalysis = const Value.absent(),
     this.isRealtime = const Value.absent(),
+    this.recordingLanguage = const Value.absent(),
+    this.displayLanguage = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId);
@@ -1693,6 +1792,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<String>? pendingTopicMapStaleCourseId,
     Expression<bool>? autoStartAnalysis,
     Expression<bool>? isRealtime,
+    Expression<String>? recordingLanguage,
+    Expression<String>? displayLanguage,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1720,6 +1821,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
         'pending_topic_map_stale_course_id': pendingTopicMapStaleCourseId,
       if (autoStartAnalysis != null) 'auto_start_analysis': autoStartAnalysis,
       if (isRealtime != null) 'is_realtime': isRealtime,
+      if (recordingLanguage != null) 'recording_language': recordingLanguage,
+      if (displayLanguage != null) 'display_language': displayLanguage,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1747,6 +1850,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<String?>? pendingTopicMapStaleCourseId,
     Value<bool>? autoStartAnalysis,
     Value<bool>? isRealtime,
+    Value<String?>? recordingLanguage,
+    Value<String?>? displayLanguage,
     Value<int>? rowid,
   }) {
     return LocalLecturesCompanion(
@@ -1773,6 +1878,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           pendingTopicMapStaleCourseId ?? this.pendingTopicMapStaleCourseId,
       autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
       isRealtime: isRealtime ?? this.isRealtime,
+      recordingLanguage: recordingLanguage ?? this.recordingLanguage,
+      displayLanguage: displayLanguage ?? this.displayLanguage,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1848,6 +1955,12 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (isRealtime.present) {
       map['is_realtime'] = Variable<bool>(isRealtime.value);
     }
+    if (recordingLanguage.present) {
+      map['recording_language'] = Variable<String>(recordingLanguage.value);
+    }
+    if (displayLanguage.present) {
+      map['display_language'] = Variable<String>(displayLanguage.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1881,6 +1994,8 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           )
           ..write('autoStartAnalysis: $autoStartAnalysis, ')
           ..write('isRealtime: $isRealtime, ')
+          ..write('recordingLanguage: $recordingLanguage, ')
+          ..write('displayLanguage: $displayLanguage, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12680,6 +12795,8 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<String?> pendingTopicMapStaleCourseId,
       Value<bool> autoStartAnalysis,
       Value<bool> isRealtime,
+      Value<String?> recordingLanguage,
+      Value<String?> displayLanguage,
       Value<int> rowid,
     });
 typedef $$LocalLecturesTableUpdateCompanionBuilder =
@@ -12706,6 +12823,8 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<String?> pendingTopicMapStaleCourseId,
       Value<bool> autoStartAnalysis,
       Value<bool> isRealtime,
+      Value<String?> recordingLanguage,
+      Value<String?> displayLanguage,
       Value<int> rowid,
     });
 
@@ -12825,6 +12944,16 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<bool> get isRealtime => $composableBuilder(
     column: $table.isRealtime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recordingLanguage => $composableBuilder(
+    column: $table.recordingLanguage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayLanguage => $composableBuilder(
+    column: $table.displayLanguage,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -12948,6 +13077,16 @@ class $$LocalLecturesTableOrderingComposer
     column: $table.isRealtime,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get recordingLanguage => $composableBuilder(
+    column: $table.recordingLanguage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayLanguage => $composableBuilder(
+    column: $table.displayLanguage,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalLecturesTableAnnotationComposer
@@ -13047,6 +13186,16 @@ class $$LocalLecturesTableAnnotationComposer
     column: $table.isRealtime,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get recordingLanguage => $composableBuilder(
+    column: $table.recordingLanguage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get displayLanguage => $composableBuilder(
+    column: $table.displayLanguage,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalLecturesTableTableManager
@@ -13103,6 +13252,8 @@ class $$LocalLecturesTableTableManager
                     const Value.absent(),
                 Value<bool> autoStartAnalysis = const Value.absent(),
                 Value<bool> isRealtime = const Value.absent(),
+                Value<String?> recordingLanguage = const Value.absent(),
+                Value<String?> displayLanguage = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
@@ -13127,6 +13278,8 @@ class $$LocalLecturesTableTableManager
                 pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId,
                 autoStartAnalysis: autoStartAnalysis,
                 isRealtime: isRealtime,
+                recordingLanguage: recordingLanguage,
+                displayLanguage: displayLanguage,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13154,6 +13307,8 @@ class $$LocalLecturesTableTableManager
                     const Value.absent(),
                 Value<bool> autoStartAnalysis = const Value.absent(),
                 Value<bool> isRealtime = const Value.absent(),
+                Value<String?> recordingLanguage = const Value.absent(),
+                Value<String?> displayLanguage = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
@@ -13178,6 +13333,8 @@ class $$LocalLecturesTableTableManager
                 pendingTopicMapStaleCourseId: pendingTopicMapStaleCourseId,
                 autoStartAnalysis: autoStartAnalysis,
                 isRealtime: isRealtime,
+                recordingLanguage: recordingLanguage,
+                displayLanguage: displayLanguage,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
