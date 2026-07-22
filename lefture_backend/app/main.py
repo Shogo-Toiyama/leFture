@@ -750,6 +750,10 @@ async def get_asr_model_download_url(payload: AsrModelDownloadUrlRequest, reques
         raise HTTPException(status_code=404, detail=f"Manifest not found: {str(e)}")
 
     valid_model_ids = {lang["modelId"] for lang in manifest.get("languages", {}).values()}
+    if manifest.get("vad"):
+        valid_model_ids.add(manifest["vad"]["modelId"])
+    if manifest.get("whisper"):
+        valid_model_ids.add(manifest["whisper"]["modelId"])
     if payload.model_id not in valid_model_ids:
         raise HTTPException(status_code=404, detail=f"Unknown model_id: {payload.model_id}")
 
