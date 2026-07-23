@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/application/course/course_list_provider.dar
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/application/credit/credit_providers.dart';
 import 'package:lecture_companion_ui/presentation/widgets/user_avatar.dart';
 import 'recording_timer_chip.dart';
 
@@ -280,6 +281,15 @@ class CustomAppBar extends ConsumerWidget {
                   Consumer(
                     builder: (context, ref, child) {
                       final profile = ref.watch(currentUserProfileProvider).asData?.value;
+                      final summary = ref.watch(creditSummaryProvider).asData?.value;
+                      // ロード中/未取得/プラン未加入(hasActivePlan=false)は薄い赤の
+                      // ミニマムスリバーだけ見せる(0を「何も無い」ではなく
+                      // 「使い切った/未加入」として視覚的に区別するため)。
+                      final isDepleted = summary == null || !summary.hasActivePlan || (summary.creditBalanceDisplay ?? 0) <= 0;
+                      final gaugeValue = isDepleted ? 0.03 : summary.remainingFraction;
+                      final gaugeColor = isDepleted
+                          ? const Color(0xFFD32F2F)
+                          : (isLightBg ? AppColors.deepGold : AppColors.starGold);
                       return GestureDetector(
                         onTap: () => context.push(AppRoutes.account),
                         child: Stack(
@@ -290,14 +300,12 @@ class CustomAppBar extends ConsumerWidget {
                               width: 32,
                               height: 32,
                               child: CircularProgressIndicator(
-                                value: 0.7, // Fake: 残り70%
+                                value: gaugeValue,
                                 strokeWidth: 2.5,
-                                backgroundColor: isLightBg 
+                                backgroundColor: isLightBg
                                     ? AppColors.paper.textInk.withValues(alpha: 0.1)
                                     : AppColors.universe.glassWhiteLow,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isLightBg ? AppColors.deepGold : AppColors.starGold,
-                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
                               ),
                             ),
                             // User Avatar

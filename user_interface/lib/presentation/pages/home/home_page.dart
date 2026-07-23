@@ -8,6 +8,7 @@ import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
 import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
+import 'package:lecture_companion_ui/application/credit/credit_providers.dart';
 import 'package:lecture_companion_ui/application/fun_fact/fun_fact_list_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
@@ -19,6 +20,7 @@ import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
+import 'package:lecture_companion_ui/presentation/widgets/spaceship_announcement_modal.dart';
 
 import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
@@ -79,6 +81,29 @@ class HomePage extends HookConsumerWidget {
       }
       return null;
     }, const []);
+
+    // Home表示時に宇宙船風お知らせモーダルを表示（毎回テスト表示）
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showSpaceshipAnnouncementModal(context);
+      });
+      return null;
+    }, const []);
+
+    // プランに一度も加入していないユーザーは、通常のダッシュボードより先に
+    // クレジットページへ誘導する。hasActivePlanが変化した時だけ発火するので、
+    // 毎rebuildで無限にpushされることはない。
+    final creditSummary = ref.watch(creditSummaryProvider).asData?.value;
+    useEffect(() {
+      if (creditSummary != null && !creditSummary.hasActivePlan) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            context.push(AppRoutes.creditDetail);
+          }
+        });
+      }
+      return null;
+    }, [creditSummary?.hasActivePlan]);
 
     // コースが1件も無い、もしくはコースはあってもレクチャーが1件も無いユーザーには、
     // 通常のダッシュボードの代わりにオンボーディング用の空状態画面を表示する。

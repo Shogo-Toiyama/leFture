@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lecture_companion_ui/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -10,11 +13,50 @@ class NotStartedView extends ConsumerWidget {
 
   final Lecture lecture;
 
+  void _showInsufficientCreditsDialog(BuildContext context, InsufficientCreditsException error) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(error.isNoAllocation ? 'No Active Plan' : 'Out of Credits'),
+        content: Text(
+          error.isNoAllocation
+              ? 'You need to select a plan before you can analyze lectures.'
+              : "You've used up your credits for this period. Check your balance or wait for your next renewal.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.push(AppRoutes.creditDetail);
+            },
+            child: const Text('View Credits'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // クレジット不足/未加入エラーは、汎用のインラインエラー表示ではなく
+    // 専用ダイアログでクレジットページへ誘導する。ref.listenなのでstateが
+    // 変化した瞬間だけ発火し、rebuildのたびに再表示することはない。
+    ref.listen<AsyncValue<void>>(lectureControllerProvider, (previous, next) {
+      final error = next.error;
+      if (error is InsufficientCreditsException) {
+        _showInsufficientCreditsDialog(context, error);
+      }
+    });
+
     final controllerState = ref.watch(lectureControllerProvider);
     final isLoading = controllerState.isLoading;
     final hasCourse = lecture.courseId != null;
+    final creditError = controllerState.error;
+    final showInlineError = controllerState.hasError && creditError is! InsufficientCreditsException;
 
     Future<void> assignCourse() async {
       await showModalBottomSheet<void>(
@@ -128,7 +170,7 @@ class NotStartedView extends ConsumerWidget {
                     : const Icon(Icons.play_arrow),
                 label: Text(isLoading ? 'Starting...' : 'Start Analysis'),
               ),
-              if (controllerState.hasError)
+              if (showInlineError)
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: Text(

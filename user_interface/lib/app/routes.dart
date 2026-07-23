@@ -29,6 +29,7 @@ class AppRoutes {
   static const profile = '/profile';
   static const contact = '/contact';
   static const activityDetails = '/account/activity/:type';
+  static const creditDetail = '/account/credits';
   static const study = '/study';
 
   // Courses (Nested relative paths for GoRouter configuration)

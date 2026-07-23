@@ -33,6 +33,7 @@ def _dedup_bucket() -> int:
     return int(time.time() // TASK_DEDUP_WINDOW_SECONDS)
 
 from app.core.supabase import get_supabase_client
+from app.services.helpers.credits import CREDITS_PER_USD
 from app.services.email_service import (
     send_verification_email,
     send_password_reset_email,
@@ -91,6 +92,7 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 REGION = os.getenv("GCP_REGION", "us-west1")
 QUEUE_NAME = os.getenv("QUEUE_NAME", "lefture-processing-queue")
 CHUNK_QUEUE_NAME = os.getenv("CHUNK_QUEUE_NAME", "lefture-chunk-queue")
+SUBSCRIPTION_QUEUE_NAME = os.getenv("SUBSCRIPTION_QUEUE_NAME", "lefture-subscription-queue")
 CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL")
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -103,6 +105,7 @@ PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "
 CLOUD_TASKS_MAX_ATTEMPTS = int(os.getenv("CLOUD_TASKS_MAX_ATTEMPTS", "5")) # lefture-processing-queueのRetry Config(Max Attempts)と必ず一致させる。GCP側で変更したらここも変更すること
 STALE_FAILED_JOB_TIMEOUT_MINUTES = int(os.getenv("STALE_FAILED_JOB_TIMEOUT_MINUTES", "15")) # 即時判定(X-CloudTasks-TaskRetryCount)の取りこぼし対策。FAILEDのまま動きがないタスクを見て親ジョブをFAILED化するまでの分数
 PATROL_TIME_WINDOW_TOLERANCE_MINUTES = int(os.getenv("PATROL_TIME_WINDOW_TOLERANCE_MINUTES", "2")) # Cloud Schedulerは10分おきに叩くが、DB周回を伴う本チェックは0分・30分付近のみ実行(それ以外はウォームアップのみ)。配信遅延の許容幅
+PATROL_DAILY_HOUR_UTC = int(os.getenv("PATROL_DAILY_HOUR_UTC", "0")) # サブスク更新など「1日1回」でよいPatrolチェックを走らせるUTC時(0-23)
 SEND_EMAIL_HOOK_SECRET = os.getenv("SEND_EMAIL_HOOK_SECRET", "") # Supabase Auth「Send Email Hook」の署名検証シークレット(Standard Webhooks形式)
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
@@ -121,6 +124,15 @@ class WorkerPayload(BaseModel):
     """Cloud Tasks から各ワーカー (職人) に渡されるデータ"""
     job_id: str
     task_id: str
+
+class RenewSubscriptionPayload(BaseModel):
+    """Cloud Tasks から /worker/renew-subscription に渡されるデータ"""
+    mapping_id: str
+
+class ClaimPlanRequest(BaseModel):
+    """Flutterから /billing/claim-plan に渡されるデータ。claim_mode='self_serve'の
+    プランのみ有効化できる(store_purchaseプランはここでは弾かれる)。"""
+    plan_id: str
 
 class StartAnalysisRequest(BaseModel):
     lecture_id: str
@@ -195,6 +207,40 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
      # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
     admin_client = get_supabase_client()
+
+    # 3.4 クレジット残高ゲート: 新規ジョブの受付だけをブロックする。
+    # 実際の消費(consume_credits)は各タスク完了後の事後計測なので、進行中の
+    # ジョブがこの時点より後に残高を0以下にしても最後まで実行され続ける
+    # (オーバードラフト許容)。ここではあくまで「新しいジョブを始めさせない」
+    # ゲートとしてだけ使う。
+    #
+    # credit_balanceがNULL(=user_credit_balancesに行が無い=一度もgrant_creditsが
+    # 呼ばれていない、プラン未割当)と0以下(=割り当てられたが使い切った)は
+    # Flutter側での見せ方が変わるはずなのでerror_codeで区別できるようにしておく。
+    # user_credit_balancesはRLS有効・ポリシー無しでクライアントから直接触れない
+    # 専用テーブル(user_profilesはFlutterから直接書き換え可能なため、課金情報は
+    # 絶対に置かない)。
+    credit_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_credit_balances").select("credit_balance").eq("user_id", user_id).maybe_single().execute()
+    )
+    credit_balance = (credit_res.data or {}).get("credit_balance") if credit_res.data else None
+    if credit_balance is None:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error_code": "NO_CREDIT_ALLOCATION",
+                "message": "No credit plan has been assigned to this account yet.",
+            },
+        )
+    if credit_balance <= 0:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error_code": "INSUFFICIENT_CREDITS",
+                "message": "Insufficient credits to start a new analysis job.",
+                "credit_balance": credit_balance,
+            },
+        )
 
     # 3.5 講義情報を取得し、course_id が存在するか検証する
     try:
@@ -332,6 +378,104 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
     # 大成功！
     return {"message": "Analysis started successfully", "job_id": job_id}
+
+
+# ---------------------------------------------------------
+# 💳 課金: self_serveプランの選択・有効化
+# ---------------------------------------------------------
+# TODO: claim_mode='store_purchase'のプラン用に、Google Play/App Storeの
+# 購入トークン・レシートをサーバー側で検証してからgrant_creditsに合流させる
+# /billing/verify-google-purchase と /billing/verify-apple-purchase を実装する。
+# クライアントが送ってきた購入情報をそのまま信用せず、必ずGoogle Play
+# Developer API / App Store Server APIに問い合わせて真正性を確認すること。
+@app.post("/billing/claim-plan")
+async def claim_plan(payload: ClaimPlanRequest, request: Request):
+    """
+    claim_mode='self_serve'のプラン(現状はβ特別プランのみ)をユーザー自身が
+    選択・有効化するためのエンドポイント。user_idは必ずJWTから復元し、
+    リクエストボディからは絶対に受け取らない(なりすまし防止)。
+    実際の検証(プランの有効性・claim_mode・二重claim防止)は全て
+    claim_plan() SQL関数側でアトミックに行う。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+    user_id = user_res.user.id
+
+    admin_client = get_supabase_client()
+
+    try:
+        await asyncio.to_thread(
+            lambda: admin_client.rpc(
+                "claim_plan", {"p_user_id": user_id, "p_plan_id": payload.plan_id}
+            ).execute()
+        )
+    except Exception as e:
+        error_str = str(e)
+        if "plan_not_found" in error_str:
+            raise HTTPException(status_code=404, detail={"error_code": "PLAN_NOT_FOUND", "message": "Plan not found."})
+        if "plan_not_self_serve" in error_str:
+            raise HTTPException(status_code=403, detail={"error_code": "PLAN_NOT_SELF_SERVE", "message": "This plan cannot be claimed directly."})
+        if "plan_expired" in error_str:
+            raise HTTPException(status_code=410, detail={"error_code": "PLAN_EXPIRED", "message": "This plan is no longer available."})
+        if "plan_already_claimed" in error_str or "duplicate key" in error_str:
+            raise HTTPException(status_code=409, detail={"error_code": "PLAN_ALREADY_CLAIMED", "message": "This plan has already been claimed."})
+        raise HTTPException(status_code=500, detail=f"Failed to claim plan: {e}")
+
+    return {"status": "success", "plan_id": payload.plan_id}
+
+
+@app.get("/billing/summary")
+async def billing_summary(request: Request):
+    """
+    Flutter側のクレジット表示(プログレスバー・詳細ページ)向けの一括サマリー。
+    user_credit_balances/credit_grants/user_subscription_mappingsはどれも
+    RLSでクライアントから直接触れない専用テーブルなので、必ずこのエンドポイント
+    経由で取得させる。credits_per_usdも一緒に返すことで、Flutter側が
+    しきい値計算(例: Realtime可否の$0.1判定)のために自前でハードコードした
+    レートを持たずに済むようにする。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+    user_id = user_res.user.id
+
+    admin_client = get_supabase_client()
+
+    summary_res = await asyncio.to_thread(
+        lambda: admin_client.rpc("get_credit_summary", {"p_user_id": user_id}).execute()
+    )
+    row = (summary_res.data or [{}])[0] if summary_res.data else {}
+
+    return {
+        "credit_balance": row.get("credit_balance"),
+        "monthly_allocation": row.get("monthly_allocation"),
+        "extra_credit_balance": row.get("extra_credit_balance"),
+        "has_active_plan": bool(row.get("has_active_plan")),
+        "current_period_end": row.get("current_period_end"),
+        "credits_per_usd": CREDITS_PER_USD,
+    }
+
 
 # ---------------------------------------------------------
 # 個別タスクのリトライ (カスケード対応)
@@ -910,6 +1054,50 @@ async def enqueue_transcribe_chunk_task(
 
 
 # ---------------------------------------------------------
+# 💳 サブスクリプション月次更新専用のenqueue（DAG/チャンクとは別キュー）
+# ---------------------------------------------------------
+async def enqueue_renew_subscription_task(mapping_id: str) -> None:
+    """
+    /worker/renew-subscription を叩くCloud Tasksタスクをenqueueする。
+    請求処理のバーストが講義処理のキューに影響しないよう、専用の
+    SUBSCRIPTION_QUEUE_NAME を使う。
+
+    name は mapping_id + 当日の日付から決定的に組み立てる。/maintenance/
+    renew-subscriptions が万一同じ日に2回呼ばれても、Cloud Tasks側の名前
+    重複チェックで二重enqueueを弾ける(実際の冪等性はrenew_subscription()
+    SQL関数側の行ロック+期間チェックで担保済みだが、Cloud Tasksへの
+    不要な積み増し自体も避けたいため二重に防御している)。
+    """
+    if not (PROJECT_ID and CLOUD_RUN_URL and SERVICE_ACCOUNT_EMAIL):
+        raise RuntimeError("❌ Missing Environment Variables for Cloud Tasks enqueue!")
+
+    parent = client.queue_path(PROJECT_ID, REGION, SUBSCRIPTION_QUEUE_NAME)
+
+    worker_payload = {"mapping_id": mapping_id}
+    today_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+
+    task = {
+        "name": client.task_path(PROJECT_ID, REGION, SUBSCRIPTION_QUEUE_NAME, f"renew-{mapping_id}-{today_str}"),
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": f"{CLOUD_RUN_URL}/worker/renew-subscription",
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps(worker_payload).encode(),
+            "oidc_token": {
+                "service_account_email": SERVICE_ACCOUNT_EMAIL,
+                "audience": CLOUD_RUN_URL,
+            }
+        }
+    }
+
+    try:
+        response = await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
+        print(f"✅ Enqueued renew_subscription for mapping {mapping_id} to Cloud Tasks: {response.name}")
+    except AlreadyExists:
+        print(f"⏭️ Renewal for mapping {mapping_id} already enqueued today (duplicate request ignored).")
+
+
+# ---------------------------------------------------------
 # 2. 【裏の顔: 職人たちの部屋】Cloud Tasks から呼ばれる専用エンドポイント
 # ---------------------------------------------------------
 
@@ -989,6 +1177,20 @@ async def worker_detail_contents(payload: WorkerPayload, request: Request):
 @app.post("/worker/finalize-job")
 async def worker_finalize_job(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_finalize_job_task)
+
+
+@app.post("/worker/renew-subscription")
+async def worker_renew_subscription(payload: RenewSubscriptionPayload):
+    """
+    /maintenance/renew-subscriptions がenqueueしたタスクを実際に処理する。
+    renew_subscription() SQL関数側が行ロック+期間チェックで冪等性を担保しているので、
+    ここは失敗したら単に例外を再送出してCloud Tasksの自動リトライに任せるだけでよい。
+    """
+    admin_client = get_supabase_client()
+    await asyncio.to_thread(
+        lambda: admin_client.rpc("renew_subscription", {"p_mapping_id": payload.mapping_id}).execute()
+    )
+    return {"status": "success"}
 
 
 # ---------------------------------------------------------
@@ -1575,6 +1777,41 @@ PATROL_CHECKS = [
 ]
 
 
+async def _patrol_renew_subscriptions() -> dict:
+    """
+    毎日UTC PATROL_DAILY_HOUR_UTC時付近に1回だけ、patrol()から呼ばれる
+    (専用のCloud Schedulerジョブは用意しない。既存の10分おきpatrolに相乗り)。
+    全ユーザー分の更新処理をこの呼び出しの中で直接行うと、ユーザー数が
+    増えるほどタイムアウトのリスクが上がるため、ここでは「更新期限が
+    来ているmapping_idを集めてCloud Tasksに1件ずつ積む」だけの軽い処理に
+    留める。実際の更新(grant_credits + current_period_endの前進)は
+    /worker/renew-subscription が1件ずつ非同期に処理し、失敗しても他の
+    ユーザーの更新には影響しない。
+    """
+    admin_client = get_supabase_client()
+
+    due_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_subscription_mappings")
+            .select("id")
+            .eq("status", "active")
+            .lte("current_period_end", datetime.now(timezone.utc).isoformat())
+            .execute()
+    )
+    due_mappings = due_res.data or []
+
+    enqueued = 0
+    failed = 0
+    for row in due_mappings:
+        try:
+            await enqueue_renew_subscription_task(row["id"])
+            enqueued += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Failed to enqueue renewal for mapping {row['id']}: {e}")
+
+    return {"due": len(due_mappings), "enqueued": enqueued, "failed": failed}
+
+
 @app.post("/maintenance/patrol")
 async def patrol():
     """
@@ -1593,6 +1830,18 @@ async def patrol():
         except Exception as e:
             results[name] = {"error": str(e)}
             print(f"⚠️ Patrol check '{name}' failed: {e}")
+
+    # サブスク更新は他のチェックと違い「30分ごと」ではなく「1日1回」でよいので、
+    # 実行ウィンドウ(:00付近 or :30付近)のうち、PATROL_DAILY_HOUR_UTC時台の
+    # :00付近側だけを通す。:30付近側まで通すと1日2回走ってしまうため、hourに
+    # 加えてminute側もtoleranceで絞っている。
+    if now.hour == PATROL_DAILY_HOUR_UTC and now.minute < PATROL_TIME_WINDOW_TOLERANCE_MINUTES:
+        try:
+            results["renew_subscriptions"] = await _patrol_renew_subscriptions()
+        except Exception as e:
+            results["renew_subscriptions"] = {"error": str(e)}
+            print(f"⚠️ Patrol check 'renew_subscriptions' failed: {e}")
+
     return results
 
 

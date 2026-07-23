@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/network_constants.dart';
 import '../../domain/entities/processing_jobs.dart';
 import '../../domain/entities/processing_task.dart';
+import '../../domain/exceptions/insufficient_credits_exception.dart';
 
 class JobRepository {
   final SupabaseClient _supabase;
@@ -123,6 +124,26 @@ class JobRepository {
         'force': force,
       }),
     ).timeout(networkTimeout);
+
+    if (response.statusCode == 402) {
+      // バックエンドの/start-analysisは{"error_code": ..., "message": ...}を
+      // 想定通りのdetailとして返す(クレジット関連エラーのみ)。パースに
+      // 失敗した場合は想定外の形なので汎用Exceptionにフォールバックする。
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final detail = body['detail'] as Map<String, dynamic>?;
+        if (detail != null && detail['error_code'] != null) {
+          throw InsufficientCreditsException(
+            errorCode: detail['error_code'] as String,
+            message: detail['message'] as String? ?? 'Insufficient credits.',
+          );
+        }
+      } on InsufficientCreditsException {
+        rethrow;
+      } catch (_) {
+        // フォールスルーして下の汎用Exceptionを投げる
+      }
+    }
 
     if (response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Failed to start analysis (${response.statusCode}): ${response.body}');

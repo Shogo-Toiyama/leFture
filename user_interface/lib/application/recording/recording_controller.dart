@@ -13,12 +13,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/audio_record/audio_recorder_service.dart';
 import '../../infrastructure/local_db/repositories/recording_repository_drift.dart';
+import '../credit/credit_providers.dart';
 import '../profile/display_language_controller.dart';
 import 'recording_language_controller.dart';
 import 'recording_state.dart';
 import 'upload_manager.dart';
 
 part 'recording_controller.g.dart';
+
+/// Realtime文字起こしを許可する最低クレジット残高(USD換算)。録音自体は
+/// クレジット0でも常に可能。この制限はRealtime(継続的にサーバーへ送信し
+/// 続ける処理)にのみ適用する。
+const double kRealtimeMinCreditUsd = 0.1;
 
 /// コースとキーワードから Groq Whisper 用コンテキスト文字列を生成する
 Future<String> _buildWhisperContext({
@@ -280,8 +286,14 @@ class RecordingController extends _$RecordingController {
         },
       );
 
-      if (state.realtimeTranscribe) {
+      // 設定時点ではクレジットが足りていても、録音開始までの間に別デバイス/
+      // 別セッションで使い切っている可能性があるため、ここでも再確認する
+      // (録音自体はブロックしない。Realtimeだけを止める)。
+      if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
         ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
+      } else if (state.realtimeTranscribe) {
+        DevLog.add('[StartSession] Realtime Transcribe disabled due to insufficient credits.');
+        state = state.copyWith(realtimeTranscribe: false);
       }
 
       DevLog.add('[StartSession] 6/8 calling _recorder.startStream()...');
@@ -330,12 +342,28 @@ class RecordingController extends _$RecordingController {
     }
   }
 
+  /// クレジット残高が$kRealtimeMinCreditUsd以上あるか。未取得(ロード中/
+  /// オフライン等)の場合は安全側に倒してfalseを返す。
+  bool _hasEnoughCreditsForRealtime() {
+    final summary = ref.read(creditSummaryProvider).asData?.value;
+    if (summary == null) return false;
+    return summary.hasAtLeastUsd(kRealtimeMinCreditUsd);
+  }
+
   Future<void> setRealtimeTranscribe(bool value) async {
-    if (state.phase == RecordingPhase.idle) {
-      state = state.copyWith(realtimeTranscribe: value);
-      // Preferences に保存
-      await RecordingPreferences().setRealtimeTranscribe(value);
+    if (state.phase != RecordingPhase.idle) return;
+
+    if (value && !_hasEnoughCreditsForRealtime()) {
+      // 録音自体は常に可能なので、ここでブロックするのはRealtimeのON操作のみ。
+      state = state.copyWith(
+        errorMessage: 'Not enough credits for Realtime Transcribe. Recording will still work without it.',
+      );
+      return;
     }
+
+    state = state.copyWith(realtimeTranscribe: value, clearErrorMessage: true);
+    // Preferences に保存
+    await RecordingPreferences().setRealtimeTranscribe(value);
   }
 
   Future<void> addReaction(String momentType) async {

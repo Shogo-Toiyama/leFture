@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/application/credit/credit_providers.dart';
+import 'package:lecture_companion_ui/domain/entities/credit_summary.dart';
 import 'package:lecture_companion_ui/application/debug/debug_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/user_profile.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
@@ -311,7 +313,7 @@ class _HeaderSection extends HookConsumerWidget {
         const SizedBox(height: 20),
 
         // ── Credit Card ────────────────────────────────────────
-        _CreditCard(percent: 0.70),
+        const _CreditCard(),
       ],
     );
   }
@@ -444,53 +446,117 @@ class _ProfilePreviewTile extends StatelessWidget {
 // Credit Card Widget
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _CreditCard extends StatelessWidget {
-  const _CreditCard({required this.percent});
-  final double percent;
+class _CreditCard extends ConsumerWidget {
+  const _CreditCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(creditSummaryProvider);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.push(AppRoutes.creditDetail),
+      child: _GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: summaryAsync.when(
+            loading: () => const _CreditCardSkeleton(),
+            error: (_, _) => const _CreditCardSkeleton(isError: true),
+            data: (summary) => _CreditCardContent(summary: summary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreditCardSkeleton extends StatelessWidget {
+  const _CreditCardSkeleton({this.isError = false});
+  final bool isError;
 
   @override
   Widget build(BuildContext context) {
-    final pct = (percent * 100).round();
-    return _GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.starGold.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.bolt_rounded, color: AppColors.starGold, size: 16),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          isError ? 'Credits unavailable' : 'Loading credits…',
+          style: TextStyle(
+            color: isError ? Colors.white38 : const Color(0xFFF2F2F2),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CreditCardContent extends StatelessWidget {
+  const _CreditCardContent({required this.summary});
+  final CreditSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    // プラン未加入(=一度もclaimしていない)場合は「0」と明示的に表示する。
+    final balance = summary.hasActivePlan ? (summary.creditBalanceDisplay ?? 0) : 0;
+    final allocation = summary.hasActivePlan ? (summary.monthlyAllocationDisplay ?? 0) : 0;
+    final isDepleted = balance <= 0;
+
+    // 0でもバー自体は完全にはゼロにせず、薄く赤色のスリバーを残しておく
+    // (「何も無い」ではなく「使い切った」ことが視覚的に分かるようにするため)。
+    final displayFraction = isDepleted ? 0.03 : summary.remainingFraction;
+    final barColors = isDepleted
+        ? const [Color(0xFFFF5252), Color(0xFFD32F2F)]
+        : const [Color(0xFFFFB300), Color(0xFFFF8F00)];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.starGold.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.bolt_rounded,
-                        color: AppColors.starGold,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Credits',
-                      style: TextStyle(
-                        color: Color(0xFFF2F2F2),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ],
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.starGold.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.bolt_rounded,
+                    color: AppColors.starGold,
+                    size: 16,
+                  ),
                 ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Credits',
+                  style: TextStyle(
+                    color: Color(0xFFF2F2F2),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
                 RichText(
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: '$pct',
+                        text: '$balance',
                         style: const TextStyle(
                           color: AppColors.starGold,
                           fontSize: 16,
@@ -498,7 +564,7 @@ class _CreditCard extends StatelessWidget {
                         ),
                       ),
                       TextSpan(
-                        text: ' / 100',
+                        text: ' / $allocation',
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 13,
@@ -508,47 +574,47 @@ class _CreditCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded, color: AppColors.universe.textComet, size: 18),
               ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: Stack(
-                children: [
-                  // Track
-                  Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0x1AFFFFFF),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                  ),
-                  // Fill
-                  FractionallySizedBox(
-                    widthFactor: percent,
-                    child: Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
-                        ),
-                        borderRadius: BorderRadius.circular(100),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.starGold.withValues(alpha: 0.5),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: Stack(
+            children: [
+              // Track
+              Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: const Color(0x1AFFFFFF),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              // Fill
+              FractionallySizedBox(
+                widthFactor: displayFraction,
+                child: Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: barColors),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: barColors.first.withValues(alpha: 0.5),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

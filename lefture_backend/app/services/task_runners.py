@@ -1,5 +1,6 @@
 import os
 import asyncio
+import logging
 import shutil
 import traceback
 import json
@@ -13,6 +14,7 @@ from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
 from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
+from app.services.helpers.credits import charge_credits_for_task
 
 from app.services.logic.transcription import TranscriptionService, ModalTranscriptionService
 from app.services.logic.assemble_transcript import AssembleTranscriptService
@@ -33,6 +35,8 @@ from app.services.logic.topic_details_generation import TopicDetailGenerationSer
 # これ以上(分)動きが無いチャンクを「詰まっている」とみなして再enqueueする閾値。
 # DAGタスク用の閾値より短くしているのは、音声チャンクの処理はずっと短時間で終わる想定のため。
 CHUNK_STALE_TIMEOUT_MINUTES = int(os.getenv("CHUNK_STALE_TIMEOUT_MINUTES", "5"))
+
+_credits_logger = logging.getLogger("credits")
 
 
 # =========================================================
@@ -81,7 +85,14 @@ def reconstruct_chunk_start_times(chunks: list[dict]) -> list[dict]:
     return adjusted_chunks
 
 
-def _update_task_status_sync(task_id: str, status: str, payload: dict = None, error_msg: str = None):
+def _update_task_status_sync(
+    task_id: str,
+    status: str,
+    payload: dict = None,
+    error_msg: str = None,
+    user_id: str = None,
+    job_id: str = None,
+):
     supabase = get_supabase_client()
     update_data = {
         "status": status,
@@ -91,8 +102,31 @@ def _update_task_status_sync(task_id: str, status: str, payload: dict = None, er
         update_data["result_payload"] = payload
     if error_msg is not None:
         update_data["error_message"] = str(error_msg)
-        
+
     supabase.table("processing_tasks").update(update_data).eq("id", task_id).execute()
+
+    # billing_recordsが乗っているpayloadは、そのタスクが実際にAIコストを
+    # 発生させたタスクなので、ここでクレジット消費を確定させる。
+    # user_idが渡されていない呼び出し元は対象外(課金と無関係な状態更新)。
+    billing_records = (payload or {}).get("billing_records")
+    if billing_records and user_id:
+        cost_usd = sum(r.get("cost_usd", 0.0) for r in billing_records)
+        task_type = billing_records[0].get("task_type")
+        try:
+            charge_credits_for_task(
+                user_id=user_id,
+                task_id=task_id,
+                task_type=task_type,
+                cost_usd=cost_usd,
+                cost_breakdown=billing_records,
+                job_id=job_id,
+            )
+        except Exception:
+            # 課金の失敗でパイプライン自体を止めたくない。usage_records/
+            # credit_transactionsの欠損は後から突合・再計算で補える想定。
+            _credits_logger.exception(
+                f"Failed to charge credits for task_id={task_id} user_id={user_id}"
+            )
 
 def _get_job_context_sync(job_id: str) -> dict:
     supabase = get_supabase_client()
@@ -133,8 +167,17 @@ def _claim_task_sync(task_id: str) -> bool:
 # 上記5つは同期I/O（Supabase/boto3）を直接叩くため、async defの中から呼ぶ際は
 # 必ずスレッドに逃がす。ラッパーをここに集約することで、呼び出し側は
 # 「await するだけ」で済み、塗り漏らしを防ぐ。
-async def _update_task_status(task_id: str, status: str, payload: dict = None, error_msg: str = None):
-    await asyncio.to_thread(_update_task_status_sync, task_id, status, payload, error_msg)
+async def _update_task_status(
+    task_id: str,
+    status: str,
+    payload: dict = None,
+    error_msg: str = None,
+    user_id: str = None,
+    job_id: str = None,
+):
+    await asyncio.to_thread(
+        _update_task_status_sync, task_id, status, payload, error_msg, user_id, job_id
+    )
 
 async def _get_job_context(job_id: str) -> dict:
     return await asyncio.to_thread(_get_job_context_sync, job_id)
@@ -467,6 +510,23 @@ async def trigger_sentence_review_for_batch_if_ready(
             await asyncio.to_thread(_write_reviewed_chunks_sync)
             logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB (costs allocated)!")
 
+            # このバッチのSENTENCE_REVIEWコストは、4チャンクへ表示用に配分する前の
+            # 合計金額でここ1回だけ課金する(配分後の値で4回課金すると同額になるはず
+            # だが、丸め処理を分散させないためにも合計側で一度だけ行う)。
+            try:
+                charge_credits_for_task(
+                    user_id=uid,
+                    task_id=None,
+                    task_type="SENTENCE_REVIEW",
+                    cost_usd=review_billing.total_usd(),
+                    cost_breakdown=[vars(r) for r in review_billing.records],
+                    job_id=None,
+                )
+            except Exception:
+                _credits_logger.exception(
+                    f"Failed to charge credits for SENTENCE_REVIEW lecture_id={lecture_id} batch_start={batch_start}"
+                )
+
             # ★ 「全チャンクが揃った」を成立させ得るイベントは2種類ある:
             # (a) 個々のチャンクの文字起こし完了(process_transcribe_chunk側で呼んでいる)
             # (b) このバッチのレビュー完了(TRANSCRIBED→REVIEWEDへの遷移もカウント対象)
@@ -566,6 +626,23 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
                 "billing_records": [vars(r) for r in billing.records],
             }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         )
+
+        # このチャンクのTRANSCRIBE_CHUNKコストはここが唯一の課金ポイント。
+        # CHECK_AND_ASSEMBLEは後でこのbilling_recordsを合算してレポートに
+        # 使うだけなので、そちらでは絶対に二重課金しないこと。
+        try:
+            charge_credits_for_task(
+                user_id=uid,
+                task_id=None,
+                task_type="TRANSCRIBE_CHUNK",
+                cost_usd=billing.total_usd(),
+                cost_breakdown=[vars(r) for r in billing.records],
+                job_id=None,
+            )
+        except Exception:
+            _credits_logger.exception(
+                f"Failed to charge credits for TRANSCRIBE_CHUNK lecture_id={lecture_id} chunk_index={chunk_index}"
+            )
 
         logger.log(f"✅ Chunk transcription completed: Chunk {chunk_index}")
         if result["text"]:
@@ -912,6 +989,9 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         result_payload = {"transcript_json_path": remote_transcript_path, "billing_records": [vars(r) for r in aggregated_records]}
         logger.log(f"💰 Aggregated {len(billing.records)} billing records down to {len(aggregated_records)} for result_payload ({len(json.dumps(result_payload))} bytes).")
 
+        # ⚠️ ここでは絶対に user_id を渡さないこと。billing_records は
+        # process_transcribe_chunk / SENTENCE_REVIEW バッチ側で既に課金済みの
+        # 記録を集約しているだけなので、user_id を渡すと二重課金になる。
         await _update_task_status(task_id, "COMPLETED", payload=result_payload)
         logger.log(f"✅ CHECK_AND_ASSEMBLE Completed!")
         logger.save_to_r2(storage_service)
@@ -1048,11 +1128,13 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         # 7. 請求データの合算と保存
         aggregated_records = _aggregate_billing_records(billing.records)
         result_payload = {
-            "transcript_json_path": remote_transcript_path, 
+            "transcript_json_path": remote_transcript_path,
             "billing_records": [vars(r) for r in aggregated_records]
         }
-        
-        await _update_task_status(task_id, "COMPLETED", payload=result_payload)
+
+        # TRANSCRIBE_MASTERはプレレコ専用のDAGタスク(realtimeジョブではそもそも
+        # スケジュールされない)なので、ここが唯一の課金ポイント。
+        await _update_task_status(task_id, "COMPLETED", payload=result_payload, user_id=uid, job_id=job_id)
         logger.log(f"✅ TRANSCRIBE_MASTER Completed!")
         logger.save_to_r2(storage_service)
         
@@ -1136,7 +1218,7 @@ async def run_core_extraction_task(job_id: str, task_id: str):
 
         await asyncio.to_thread(_insert_keywords_sync)
 
-        await _update_task_status(task_id, "COMPLETED", payload={"core_extraction_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"core_extraction_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         # 📊 最後に今回のタスクのコストレポートを出力！
         logger.log(billing.report())
@@ -1195,7 +1277,7 @@ async def run_role_classification_task(job_id: str, task_id: str):
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "role_classification", classified_data)
 
         # 4. 次へバケツリレー
-        await _update_task_status(task_id, "COMPLETED", payload={"role_classification_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"role_classification_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         # 📊 最後にコストレポートを出力
         logger.log(billing.report())
@@ -1416,7 +1498,7 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
 
         await asyncio.to_thread(_insert_announcements_sync)
 
-        await _update_task_status(task_id, "COMPLETED", payload={"announcements_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"announcements_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         logger.log(billing.report())
         logger.log(f"✅ ANNOUNCEMENT_GENERATION Completed!")
@@ -1545,7 +1627,7 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
             deferred_result = {"graph_mutations": {}}
             r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "topic_mapping", deferred_result)
 
-            await _update_task_status(task_id, "COMPLETED", payload={"topic_mapping_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+            await _update_task_status(task_id, "COMPLETED", payload={"topic_mapping_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
             logger.log(f"✅ TOPIC_MAPPING deferred (course topic map is stale)!")
             logger.save_to_r2(storage_service)
             return
@@ -1598,7 +1680,7 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
             logger.log(f"💾 Upserted topic map for course {course_id} in Supabase")
 
         # 8. ステータス更新
-        await _update_task_status(task_id, "COMPLETED", payload={"topic_mapping_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"topic_mapping_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         # 📊 コストレポート出力
         logger.log(billing.report())
@@ -1890,6 +1972,25 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
             logger.log(billing.report())
             logger.log(f"✅ TOPIC_MAP_RECONSTRUCTION completed for course {course_id}!")
             logger.save_to_r2(storage_service)
+
+            # このタスクはCourse単位のバックグラウンド処理でprocessing_tasks行を
+            # 持たない(task_id/job_idが存在しない)ため、_update_task_status経由の
+            # 課金ではなくここで直接消費する。
+            try:
+                await asyncio.to_thread(
+                    charge_credits_for_task,
+                    uid,
+                    None,
+                    "TOPIC_MAP_RECONSTRUCTION",
+                    billing.total_usd(),
+                    [vars(r) for r in billing.records],
+                    None,
+                )
+            except Exception:
+                _credits_logger.exception(
+                    f"Failed to charge credits for TOPIC_MAP_RECONSTRUCTION course_id={course_id}"
+                )
+
             return {"status": "completed", "removed_lectures": len(pending_removals), "integrated_topics": len(flat_pending_topics)}
 
         except Exception as e:
@@ -1966,7 +2067,7 @@ async def run_review_card_task(job_id: str, task_id: str):
         await asyncio.to_thread(_insert_review_cards_sync)
 
         # 4. ステータス更新
-        await _update_task_status(task_id, "COMPLETED", payload={"review_cards_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"review_cards_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         # 📊 3Dコストレポートの出力
         logger.log(billing.report())
@@ -2007,7 +2108,7 @@ async def run_image_prompt_generation_task(job_id: str, task_id: str):
         image_prompts = await service.run_from_memory(review_results, core_data)
 
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "image_prompts", image_prompts)
-        await _update_task_status(task_id, "COMPLETED", payload={"image_prompts_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"image_prompts_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         logger.log(billing.report())
         logger.log(f"✅ IMAGE_GENERATION Completed!")
@@ -2059,7 +2160,7 @@ async def run_image_rendering_task(job_id: str, task_id: str):
         # 結果のパスリストを保存
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "rendered_images_manifest", rendering_results)
         
-        await _update_task_status(task_id, "COMPLETED", payload={"rendered_images_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"rendered_images_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         
         logger.log(billing.report())
         logger.log(f"✅ IMAGE_RENDERING Completed!")
@@ -2097,9 +2198,9 @@ async def run_fun_fact_search_task(job_id: str, task_id: str):
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "web_search_results", search_results)
 
         await _update_task_status(task_id, "COMPLETED", payload={
-            "search_results_path": r2_path, 
+            "search_results_path": r2_path,
             "billing_records": [vars(r) for r in billing.records]
-        })
+        }, user_id=uid, job_id=job_id)
         
         logger.log(billing.report())
         logger.save_to_r2(storage_service)
@@ -2171,7 +2272,7 @@ async def run_fun_facts_task(job_id: str, task_id: str):
 
         await asyncio.to_thread(_insert_fun_fact_sync)
 
-        await _update_task_status(task_id, "COMPLETED", payload={"fun_fact_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"fun_fact_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         logger.log(billing.report())
         logger.save_to_r2(storage_service)
     except Exception as e:
@@ -2255,7 +2356,7 @@ async def run_detail_contents_task(job_id: str, task_id: str):
 
         await asyncio.to_thread(_insert_details_sync)
 
-        await _update_task_status(task_id, "COMPLETED", payload={"details_path": r2_path, "billing_records": [vars(r) for r in billing.records]})
+        await _update_task_status(task_id, "COMPLETED", payload={"details_path": r2_path, "billing_records": [vars(r) for r in billing.records]}, user_id=uid, job_id=job_id)
         logger.log(billing.report())
         logger.save_to_r2(storage_service)
     except Exception as e:
