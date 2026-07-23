@@ -3,7 +3,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 
 
 import 'package:lecture_companion_ui/application/galaxy/galaxy_state_provider.dart';
@@ -35,29 +34,11 @@ class LearningGalaxyPage extends HookConsumerWidget {
             ),
           ),
 
-          // 2. 前面: SF HUD オーバーレイ (上部と下部に配置)
+          // 2. 前面: SF HUD オーバーレイ (下部に配置)
           Positioned.fill(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // 上部 HUD (戻る、タイトル、テレメトリ情報)
-                AnimatedSlide(
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeOutCubic,
-                  offset: showOverlay.value ? Offset.zero : const Offset(0, -0.2),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 400),
-                    opacity: showOverlay.value ? 1.0 : 0.0,
-                    child: const SafeArea(
-                      bottom: false,
-                      child: CustomAppBar(
-                        showHomeButton: true,
-                        title: 'ORBIT SECTOR MAP',
-                      ),
-                    ),
-                  ),
-                ),
-
                 // 下部 HUD (カメラ操作、オートオービットトグル、ロードマップ起動)
                 AnimatedSlide(
                   duration: const Duration(milliseconds: 500),

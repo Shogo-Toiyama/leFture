@@ -29,7 +29,15 @@ class MyApp extends ConsumerWidget {
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
 
-        final wrapped = OfflineBanner(child: child);
+        final unfocusedChild = GestureDetector(
+          onTap: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+          behavior: HitTestBehavior.translucent,
+          child: child,
+        );
+
+        final wrapped = OfflineBanner(child: unfocusedChild);
         return isTestMode ? DevLogOverlay(child: wrapped) : wrapped;
       },
     );

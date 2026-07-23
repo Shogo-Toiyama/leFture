@@ -1,11 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/domain/entities/app_transmission.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 /// 宇宙船の窓（ポータル）モチーフのお知らせアイテムモデル
 class SpaceshipAnnouncementItem {
   final String id;
-  final String category;
+  final String? category;
   final String title;
   final String content;
   final String? imageUrl;
@@ -16,7 +17,7 @@ class SpaceshipAnnouncementItem {
 
   const SpaceshipAnnouncementItem({
     required this.id,
-    required this.category,
+    this.category,
     required this.title,
     required this.content,
     this.imageUrl,
@@ -25,6 +26,21 @@ class SpaceshipAnnouncementItem {
     this.actionLabel,
     this.onAction,
   });
+
+  factory SpaceshipAnnouncementItem.fromTransmission(
+    AppTransmission t, {
+    VoidCallback? onAction,
+  }) {
+    return SpaceshipAnnouncementItem(
+      id: t.id,
+      category: t.category,
+      title: t.title,
+      content: t.content,
+      imageUrl: t.resolvedImageUrl,
+      actionLabel: t.actionLabel,
+      onAction: onAction,
+    );
+  }
 }
 
 /// デフォルトのダミーお知らせデータ（動作確認用）
@@ -32,29 +48,29 @@ final List<SpaceshipAnnouncementItem> kDefaultAnnouncements = [
   SpaceshipAnnouncementItem(
     id: '1',
     category: '✨ NEW FEATURE',
-    title: 'Galaxy Map 2.0 リリース！',
-    content: '講義ノートと関連トピックが星々のように輝く「Galaxy Map」が大幅アップデート。直感的なズーム＆ノード探索で知識の繋がりを体感しましょう。',
+    title: 'Galaxy Map 2.0 Released!',
+    content: 'Experience knowledge connections with interactive star node exploration in our upgraded Galaxy Map.',
     icon: Icons.auto_awesome_rounded,
     gradient: [const Color(0xFF1E1035), const Color(0xFF3B1D60), const Color(0xFF6B2FB3)],
-    actionLabel: 'マップを開く',
+    actionLabel: 'Open Map',
   ),
   SpaceshipAnnouncementItem(
     id: '2',
     category: '🚀 UPDATE',
-    title: 'AIリアルタイム文字起こし進化',
-    content: 'ノイズキャンセリング機能が強化され、講義中の教員の声をよりクリアにキャッチできるようになりました。リアルタイムサマリーの生成速度も向上！',
+    title: 'Real-time AI Transcription Upgrade',
+    content: 'Enhanced noise cancellation enables sharper voice capture during lectures with faster summary generation.',
     icon: Icons.graphic_eq_rounded,
     gradient: [const Color(0xFF0D253F), const Color(0xFF144570), const Color(0xFF1D78B4)],
-    actionLabel: '設定を確認',
+    actionLabel: 'View Settings',
   ),
   SpaceshipAnnouncementItem(
     id: '3',
     category: '🛰️ NOTICE',
-    title: 'Orbit カンファレンス開催決定',
-    content: '次世代のアクティブ・ラーニング体験を語り合うオンラインイベントを開催します。特別スピーカーによるセッションや新機能の先行発表も！',
+    title: 'Orbit Annual Conference',
+    content: 'Join our online interactive session showcasing future learning experiences and exclusive feature previews.',
     icon: Icons.rocket_launch_rounded,
     gradient: [const Color(0xFF331C08), const Color(0xFF663700), AppColors.starGold.withValues(alpha: 0.8)],
-    actionLabel: '詳細を見る',
+    actionLabel: 'Learn More',
   ),
 ];
 
@@ -104,7 +120,6 @@ class SpaceshipAnnouncementDialog extends StatefulWidget {
 class _SpaceshipAnnouncementDialogState extends State<SpaceshipAnnouncementDialog> {
   late final PageController _pageController;
   int _currentPage = 0;
-  bool _dontShowAgain = false;
 
   @override
   void initState() {
@@ -337,29 +352,30 @@ class _SpaceshipAnnouncementDialogState extends State<SpaceshipAnnouncementDialo
 
         const SizedBox(height: 14),
 
-        // --- カテゴリバッジ ---
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.starGold.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.starGold.withValues(alpha: 0.5),
-              width: 1,
+        // --- カテゴリバッジ (NULLでない場合のみ表示) ---
+        if (item.category != null && item.category!.trim().isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.starGold.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.starGold.withValues(alpha: 0.5),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              item.category!,
+              style: const TextStyle(
+                color: AppColors.starGold,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
             ),
           ),
-          child: Text(
-            item.category,
-            style: const TextStyle(
-              color: AppColors.starGold,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+        ],
 
         // --- タイトル ---
         Text(
@@ -467,83 +483,44 @@ class _SpaceshipAnnouncementDialogState extends State<SpaceshipAnnouncementDialo
     );
   }
 
-  /// フッター（チェックボックス ＋ アクションボタン）
+  /// フッター（アクションボタン）
   Widget _buildFooter(BuildContext context) {
     final currentItem = widget.items[_currentPage];
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // アクションボタン（宇宙船の操作スイッチ風）
-        SizedBox(
-          width: double.infinity,
-          height: 44,
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              currentItem.onAction?.call();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.starGold,
-              foregroundColor: Colors.black,
-              elevation: 4,
-              shadowColor: AppColors.starGold.withValues(alpha: 0.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  currentItem.actionLabel ?? '確認する',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(Icons.arrow_forward_rounded, size: 16),
-              ],
-            ),
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+          currentItem.onAction?.call();
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.starGold,
+          foregroundColor: Colors.black,
+          elevation: 4,
+          shadowColor: AppColors.starGold.withValues(alpha: 0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
-
-        const SizedBox(height: 8),
-
-        // 「次回から表示しない」トグル
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _dontShowAgain = !_dontShowAgain;
-            });
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                _dontShowAgain
-                    ? Icons.check_box_rounded
-                    : Icons.check_box_outline_blank_rounded,
-                size: 16,
-                color: _dontShowAgain
-                    ? AppColors.starGold
-                    : AppColors.universe.textComet,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              currentItem.actionLabel ?? 'Got It',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
-              const SizedBox(width: 6),
-              Text(
-                '今後はこのお知らせを表示しない',
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.arrow_forward_rounded, size: 16),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

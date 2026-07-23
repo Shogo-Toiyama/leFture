@@ -25,6 +25,8 @@ import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dar
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/user_avatar.dart';
+import 'package:lecture_companion_ui/presentation/widgets/spaceship_announcement_modal.dart';
+import 'package:lecture_companion_ui/application/transmission/transmission_provider.dart';
 
 class MyAccountPage extends ConsumerWidget {
   const MyAccountPage({super.key});
@@ -97,7 +99,20 @@ class MyAccountPage extends ConsumerWidget {
                 const SizedBox(height: 32),
 
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                // SECTION 3 — SETTINGS
+                // SECTION 3 — APPLICATION
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                _SectionHeader(
+                  icon: Icons.rocket_launch_rounded,
+                  label: 'Application',
+                  color: AppColors.starGold,
+                ),
+                const SizedBox(height: 8),
+                _ApplicationSection(),
+
+                const SizedBox(height: 32),
+
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                // SECTION 4 — SETTINGS
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 _SectionHeader(
                   icon: Icons.settings_rounded,
@@ -111,6 +126,7 @@ class MyAccountPage extends ConsumerWidget {
               ],
             ),
           ),
+
         ],
       ),
     );
@@ -455,7 +471,10 @@ class _CreditCard extends ConsumerWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push(AppRoutes.creditDetail),
+      onTap: () {
+        ref.invalidate(creditSummaryProvider);
+        context.push(AppRoutes.creditDetail);
+      },
       child: _GlassCard(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -620,7 +639,69 @@ class _CreditCardContent extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 2: Activity (Records)
+// SECTION 2: Application (Guides, Updates, Transmissions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ApplicationSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadAsync = ref.watch(unreadTransmissionsProvider);
+    final unreadList = unreadAsync.asData?.value ?? [];
+    final hasUnread = unreadList.isNotEmpty;
+
+    return _GlassCard(
+      child: Column(
+        children: [
+          _ActivityTile(
+            icon: Icons.satellite_alt_rounded,
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFF1E88E5),
+            title: 'Transmissions',
+            subtitle: "What's new & updates",
+            trailing: hasUnread
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.correctionRed,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'NEW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : null,
+            onTap: () async {
+              final allList = await ref.read(appTransmissionsProvider.future);
+              if (context.mounted && allList.isNotEmpty) {
+                final items = allList
+                    .map((t) => SpaceshipAnnouncementItem.fromTransmission(t))
+                    .toList();
+                await showSpaceshipAnnouncementModal(context, announcements: items);
+                if (context.mounted) {
+                  await markTransmissionsAsRead(ref, allList);
+                }
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No transmissions available at this time.'),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 3: Activity (Records)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ActivitySection extends StatelessWidget {
@@ -637,6 +718,8 @@ class _ActivitySection extends StatelessWidget {
             subtitle: 'Review Cards · Deep Notes',
             onTap: () => context.push('/account/activity/saved'),
           ),
+
+
           _Divider(),
           _ActivityTile(
             icon: Icons.favorite_rounded,
@@ -689,6 +772,7 @@ class _ActivityTile extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.iconBgColor,
+    this.trailing,
     this.showChevron = true,
     this.isLast = false,
   });
@@ -699,6 +783,7 @@ class _ActivityTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Widget? trailing;
   final bool showChevron;
   final bool isLast;
 
@@ -751,11 +836,16 @@ class _ActivityTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.universe.textComet,
-                size: 20,
-              ),
+              if (trailing != null) ...[
+                trailing!,
+                const SizedBox(width: 8),
+              ],
+              if (showChevron)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.universe.textComet,
+                  size: 20,
+                ),
             ],
           ),
         ),

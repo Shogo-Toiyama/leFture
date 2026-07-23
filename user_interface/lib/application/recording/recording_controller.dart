@@ -6,6 +6,7 @@ import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
+import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
 import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -150,13 +151,21 @@ class RecordingController extends _$RecordingController {
 
     // 2. Recording -> Pause
     if (state.phase == RecordingPhase.recording) {
-      await _recorder.pause(); 
+      await _recorder.pause();
       _timer?.cancel();
+
+      // マイクからの音声供給が止まるだけでは、既に起動済みのオンデバイスASR
+      // エンジン(モデルをロードした専用isolate)はメモリに常駐したままになって
+      // しまう。一時停止中に発熱・電池消費が続く原因になるため、ここで明示的に
+      // 止める(再開時に必要なら`start`し直す)。
+      if (state.realtimeTranscribe) {
+        await ref.read(liveAsrControllerProvider.notifier).stop();
+      }
 
       final flushed = _chunker?.flush();
       if (flushed != null && flushed.data.isNotEmpty) {
         final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
-        
+
         await _repo.attachAudioAndEnqueueUpload(
           userId: user.id,
           lectureId: state.currentLectureId!,
@@ -164,7 +173,7 @@ class RecordingController extends _$RecordingController {
           sequenceIndex: _currentChunkIndex,
           startTime: flushed.startTimeSec,
         );
-        _currentChunkIndex++; 
+        _currentChunkIndex++;
       }
 
       state = state.copyWith(phase: RecordingPhase.paused);
@@ -175,6 +184,12 @@ class RecordingController extends _$RecordingController {
     if (state.phase == RecordingPhase.paused) {
       await _recorder.resume();
       _startTimer();
+
+      if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
+        final recordingLanguage = ref.read(recordingLanguageControllerProvider);
+        ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
+      }
+
       state = state.copyWith(phase: RecordingPhase.recording);
       return;
     }
@@ -289,7 +304,17 @@ class RecordingController extends _$RecordingController {
       // 設定時点ではクレジットが足りていても、録音開始までの間に別デバイス/
       // 別セッションで使い切っている可能性があるため、ここでも再確認する
       // (録音自体はブロックしない。Realtimeだけを止める)。
-      if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
+      // モデルが「ダウンロード中/未確認」なだけならLiveAsrController.start()側が
+      // 静かにスキップしてくれる(今回のセッションだけ字幕無し)ので、ここで
+      // トグルまでは触らない。明確に`failed`(この言語用のモデルが結局
+      // 用意できなかった)の場合のみ、実体の無い設定として自動的にOffへ戻す。
+      final modelManager = ref.read(asrModelManagerProvider.notifier);
+      final modelUnavailable =
+          modelManager.statusForLanguage(recordingLanguage).status == AsrModelStatus.failed;
+      if (state.realtimeTranscribe && modelUnavailable) {
+        DevLog.add('[StartSession] Realtime Transcribe disabled: no model available for "$recordingLanguage".');
+        state = state.copyWith(realtimeTranscribe: false);
+      } else if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
         ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
       } else if (state.realtimeTranscribe) {
         DevLog.add('[StartSession] Realtime Transcribe disabled due to insufficient credits.');
@@ -315,8 +340,21 @@ class RecordingController extends _$RecordingController {
 
     } catch (e, st) {
       DevLog.add('🔴 [StartSession] failed: $e\n$st');
+      // startRecordingSession()の途中でLiveAsrController.start()が既に(あるいは
+      // まだ非同期で)呼ばれている可能性がある。ここでstop()しておかないと、
+      // ロード済みのモデル/isolateがどこからもdisposeされないまま、
+      // RecordingController/LiveAsrControllerがkeepAliveなので
+      // アプリを完全に再起動するまでメモリに残り続けてしまう。
+      await ref.read(liveAsrControllerProvider.notifier).stop();
       state = state.copyWith(phase: RecordingPhase.error, errorMessage: 'Failed to start: $e');
     }
+  }
+
+  /// エラー画面から復帰するための操作。録音を開始し直せる状態(idle)に戻す。
+  Future<void> resetAfterError() async {
+    if (state.phase != RecordingPhase.error) return;
+    await ref.read(liveAsrControllerProvider.notifier).stop();
+    state = state.copyWith(phase: RecordingPhase.idle, clearErrorMessage: true);
   }
 
   void _startTimer() {
@@ -506,7 +544,15 @@ class RecordingController extends _$RecordingController {
       await ref.read(lectureRepositoryProvider).softDeleteLecture(lectureId: state.currentLectureId!);
     }
 
-    state = RecordingState.idle();
+    // `RecordingState.idle()`はrealtimeTranscribe/autoStartAnalysisを常に
+    // デフォルト値(false/true)にリセットしてしまう。build()時と同様、保存済み
+    // のユーザー設定を読み直さないと、Discardする度にRealtime Transcribeの
+    // トグルが勝手にOffへ戻ってしまう。
+    final prefs = RecordingPreferences();
+    state = RecordingState.idle().copyWith(
+      realtimeTranscribe: prefs.getRealtimeTranscribe(),
+      autoStartAnalysis: prefs.getAutoStartAnalysis(),
+    );
   }
 
   Future<void> uploadAudioFile(String localFilePath) async {

@@ -53,6 +53,7 @@ class RecordingPage extends HookConsumerWidget {
     // useListenable(memoCtl);
     final showMoreSettings = useState(false);
     final selectedAudioFilePath = useState<String?>(null);
+    final isSelectingFile = useState(false);
     
     // 初期タブの設定 (noteなら1番目) - MVPのためコメントアウト
     /*
@@ -79,11 +80,19 @@ class RecordingPage extends HookConsumerWidget {
     // ASRモデルの準備は、Realtime Recordingが有効な場合のみ行う
     // (無効なら無駄なダウンロードを避ける)。
     useEffect(() {
-      Future.microtask(() {
+      Future.microtask(() async {
         ref.read(recordingControllerProvider.notifier).requestMicPermissionEarly();
         if (RecordingPreferences().getRealtimeTranscribe()) {
           final lang = ref.read(recordingLanguageControllerProvider);
-          ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+          final modelManager = ref.read(asrModelManagerProvider.notifier);
+          await modelManager.ensureModelReady(lang);
+          // この言語に対応するモデルが結局用意できなかった場合、Realtime
+          // Transcribeが「On」のまま実体の無い機能として残ってしまう
+          // (裏でモデルが動いていると誤解する原因にもなる)ため、ここで
+          // 自動的にOffへ戻す。
+          if (modelManager.statusForLanguage(lang).status == AsrModelStatus.failed) {
+            await ref.read(recordingControllerProvider.notifier).setRealtimeTranscribe(false);
+          }
         }
       });
       return null;
@@ -442,20 +451,49 @@ class RecordingPage extends HookConsumerWidget {
                                 child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
-                                    onTap: () async {
-                                      // ファイル選択（Course 選択の有無に関係なく）
-                                      final result = await FilePicker.pickFiles(
-                                        type: FileType.audio,
-                                        allowMultiple: false,
-                                      );
+                                    onTap: isSelectingFile.value
+                                        ? null
+                                        : () async {
+                                            isSelectingFile.value = true;
+                                            try {
+                                              final result = await FilePicker.pickFiles(
+                                                type: FileType.audio,
+                                                allowMultiple: false,
+                                              );
 
-                                      if (result != null && result.files.isNotEmpty) {
-                                        final filePath = result.files.first.path;
-                                        if (filePath != null && context.mounted) {
-                                          selectedAudioFilePath.value = filePath;
-                                        }
-                                      }
-                                    },
+                                              if (result == null) {
+                                                // ユーザーによるキャンセル
+                                                return;
+                                              }
+
+                                              if (result.files.isNotEmpty) {
+                                                final filePath = result.files.first.path;
+                                                if (filePath != null &&
+                                                    filePath.trim().isNotEmpty &&
+                                                    context.mounted) {
+                                                  selectedAudioFilePath.value = filePath;
+                                                } else if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Unable to access the selected file. Please try another file.',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Failed to select file: $e'),
+                                                  ),
+                                                );
+                                              }
+                                            } finally {
+                                              isSelectingFile.value = false;
+                                            }
+                                          },
                                     borderRadius: BorderRadius.circular(12),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -468,30 +506,53 @@ class RecordingPage extends HookConsumerWidget {
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(
-                                                selectedAudioFilePath.value != null
-                                                    ? Icons.check_circle
-                                                    : Icons.upload_file,
-                                                color: selectedAudioFilePath.value != null
-                                                    ? AppColors.starGold
-                                                    : AppColors.universe.textComet,
-                                                size: 20,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                selectedAudioFilePath.value != null
-                                                    ? 'File selected'
-                                                    : 'Select audio file',
-                                                style: TextStyle(
+                                              if (isSelectingFile.value) ...[
+                                                const SizedBox(
+                                                  width: 18,
+                                                  height: 18,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                                      AppColors.starGold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                const Text(
+                                                  'Processing audio file...',
+                                                  style: TextStyle(
+                                                    color: AppColors.starGold,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ] else ...[
+                                                Icon(
+                                                  selectedAudioFilePath.value != null
+                                                      ? Icons.check_circle
+                                                      : Icons.upload_file,
                                                   color: selectedAudioFilePath.value != null
                                                       ? AppColors.starGold
                                                       : AppColors.universe.textComet,
-                                                  fontSize: 16,
+                                                  size: 20,
                                                 ),
-                                              ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  selectedAudioFilePath.value != null
+                                                      ? 'File selected'
+                                                      : 'Select audio file',
+                                                  style: TextStyle(
+                                                    color: selectedAudioFilePath.value != null
+                                                        ? AppColors.starGold
+                                                        : AppColors.universe.textComet,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                              ],
                                             ],
                                           ),
-                                          if (selectedAudioFilePath.value != null)
+                                          if (!isSelectingFile.value &&
+                                              selectedAudioFilePath.value != null)
                                             Padding(
                                               padding: const EdgeInsets.only(top: 8),
                                               child: Text(
@@ -726,7 +787,29 @@ class RecordingPage extends HookConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Upload Recording', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: isBusy
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Uploading...',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'Upload Recording',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ),
                 ],
@@ -901,9 +984,18 @@ class _StatusArea extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: controller.openSettingsIfNeeded,
-            child: const Text('Open Settings', style: TextStyle(color: AppColors.starGold)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: controller.openSettingsIfNeeded,
+                child: const Text('Open Settings', style: TextStyle(color: AppColors.starGold)),
+              ),
+              TextButton(
+                onPressed: controller.resetAfterError,
+                child: Text('Try Again', style: TextStyle(color: AppColors.universe.textStarlight)),
+              ),
+            ],
           ),
         ],
       );
@@ -1145,6 +1237,8 @@ class _LiveTab extends HookConsumerWidget {
       controller.deleteMoment(id);
     }
 
+    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final listCount = moments.length;
@@ -1155,8 +1249,8 @@ class _LiveTab extends HookConsumerWidget {
                 : 3.5 * 44.0 + 3 * 8.0);
 
         if (state.realtimeTranscribe) {
-          // 下部要素（Padding + Timeline + ReactionRow + NoteInputRow + Gaps）の高さ合計
-          final bottomFixedArea = 40.0 + timelineHeight + 12.0 + 64.0 + 12.0 + 48.0 + 12.0;
+          // 下部要素（Padding[Top 20 + Bottom 36] + BottomSafeArea + Timeline + ReactionRow + NoteInputRow + Gaps）の高さ合計
+          final bottomFixedArea = 56.0 + bottomSafeArea + timelineHeight + 12.0 + 64.0 + 12.0 + 48.0 + 12.0;
           final availableTranscriptHeight = constraints.maxHeight - bottomFixedArea;
           const minTranscriptHeight = 160.0;
           final transcriptHeight = availableTranscriptHeight < minTranscriptHeight
@@ -1169,7 +1263,7 @@ class _LiveTab extends HookConsumerWidget {
             physics: isOverflowing
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 36 + bottomSafeArea),
             child: Column(
               children: [
                 SizedBox(
@@ -1196,7 +1290,7 @@ class _LiveTab extends HookConsumerWidget {
           );
         } else {
           // Realtime OFF の場合
-          final fixedAreaOff = 40.0 + 52.0 + 12.0 + 64.0 + 12.0 + 48.0 + 12.0;
+          final fixedAreaOff = 56.0 + bottomSafeArea + 52.0 + 12.0 + 64.0 + 12.0 + 48.0 + 12.0;
           final availableTimelineHeight = constraints.maxHeight - fixedAreaOff;
           const minTimelineHeight = 180.0;
           final timelineHeightOff = availableTimelineHeight < minTimelineHeight
@@ -1209,7 +1303,7 @@ class _LiveTab extends HookConsumerWidget {
             physics: isOverflowing
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 36 + bottomSafeArea),
             child: Column(
               children: [
                 const _RealtimeOffHint(),

@@ -21,6 +21,7 @@ import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/spaceship_announcement_modal.dart';
+import 'package:lecture_companion_ui/application/transmission/transmission_provider.dart';
 
 import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
@@ -70,6 +71,19 @@ class HomePage extends HookConsumerWidget {
       return null;
     }, const []);
 
+    // Homeに来るたびにクレジット残量を自動で再取得する(録音・解析の後に
+    // Homeへ戻ってきた時に古い値のままにならないようにするため)。
+    // ref.invalidateはInheritedWidget(ProviderScope)の検索を伴うため、
+    // useEffect内(HookState.initHook相当)で同期的に呼ぶとFlutterの
+    // 「initState中にdependOnInheritedWidgetOfExactTypeは呼べない」制約に
+    // 引っかかる。1フレーム後(addPostFrameCallback)まで遅らせて回避する。
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.invalidate(creditSummaryProvider);
+      });
+      return null;
+    }, const []);
+
     // Realtime Recordingが有効な場合、Homeに来るたびに現在のRecording Language
     // のオンデバイスASRモデルが揃っているか確認し、無ければ黙ってダウンロードを
     // 開始する(失敗してもダイアログは出さない。未準備の状態は言語ピッカーの
@@ -82,13 +96,25 @@ class HomePage extends HookConsumerWidget {
       return null;
     }, const []);
 
-    // Home表示時に宇宙船風お知らせモーダルを表示（毎回テスト表示）
+    // 未読のお知らせ（AppTransmission）が存在する場合のみ、宇宙船モーダルを自動ポップアップ
+    final unreadTransmissionsAsync = ref.watch(unreadTransmissionsProvider);
     useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showSpaceshipAnnouncementModal(context);
-      });
+      final unreadList = unreadTransmissionsAsync.asData?.value;
+      if (unreadList != null && unreadList.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!context.mounted) return;
+          final items = unreadList
+              .map((t) => SpaceshipAnnouncementItem.fromTransmission(t))
+              .toList();
+          await showSpaceshipAnnouncementModal(context, announcements: items);
+          if (context.mounted) {
+            await markTransmissionsAsRead(ref, unreadList);
+          }
+        });
+      }
       return null;
-    }, const []);
+    }, [unreadTransmissionsAsync.asData?.value]);
+
 
     // プランに一度も加入していないユーザーは、通常のダッシュボードより先に
     // クレジットページへ誘導する。hasActivePlanが変化した時だけ発火するので、
@@ -147,6 +173,7 @@ class HomePage extends HookConsumerWidget {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(recentFunFactsProvider);
       ref.invalidate(latestAnnouncementProvider);
+      ref.invalidate(creditSummaryProvider);
     }
 
     final double screenHeight = MediaQuery.of(context).size.height;

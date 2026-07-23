@@ -523,6 +523,156 @@ async def billing_summary(request: Request):
     }
 
 
+@app.get("/billing/history")
+async def billing_history(request: Request):
+    """
+    クレジット利用履歴のエンドポイント。
+    マイナス値(消費)は1時間ごとに合算まとめ、プラス値(付与・購入等)は個別のイベントとして抽出する。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+    user_id = user_res.user.id
+
+    admin_client = get_supabase_client()
+
+    tx_res = await asyncio.to_thread(
+        lambda: admin_client.table("credit_transactions")
+            .select("id, created_at, delta, reason")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(500)
+            .execute()
+    )
+
+    transactions = tx_res.data or []
+    if not transactions:
+        return {"history": []}
+
+    from collections import defaultdict
+    negative_hourly_buckets = defaultdict(lambda: {"sum_delta": 0, "reasons": set(), "sample_time": None})
+    positive_items = []
+
+    for tx in transactions:
+        created_at_str = tx.get("created_at")
+        delta = tx.get("delta") or 0
+        reason = tx.get("reason") or "USAGE"
+        tx_id = tx.get("id")
+
+        if not created_at_str:
+            continue
+
+        try:
+            dt = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+        except Exception:
+            continue
+
+        if delta < 0:
+            # マイナス値（消費）は1時間バケットで集計
+            hour_key = dt.strftime("%Y-%m-%d %H:00")
+            negative_hourly_buckets[hour_key]["sum_delta"] += delta
+            negative_hourly_buckets[hour_key]["reasons"].add(reason)
+            if negative_hourly_buckets[hour_key]["sample_time"] is None:
+                negative_hourly_buckets[hour_key]["sample_time"] = dt
+        elif delta > 0:
+            # プラス値（付与・購入等）は個別で記録
+            positive_items.append({
+                "id": str(tx_id) if tx_id else dt.isoformat(),
+                "dt": dt,
+                "delta": delta,
+                "reason": reason,
+            })
+
+    all_entries = []
+    now = datetime.now(timezone.utc)
+    today = now.date()
+    MICRO_PER_CREDIT = 1000000
+
+    # マイナス値バケットの展開
+    for hour_key, bdata in negative_hourly_buckets.items():
+        sample_time = bdata["sample_time"]
+        sum_delta = bdata["sum_delta"]
+        reasons = list(bdata["reasons"])
+
+        delta_credits = round(sum_delta / MICRO_PER_CREDIT)
+        if delta_credits == 0 and sum_delta != 0:
+            delta_credits = -1
+
+        sample_date = sample_time.date()
+        if sample_date == today:
+            date_label = "Today"
+        elif sample_date == today - timedelta(days=1):
+            date_label = "Yesterday"
+        else:
+            date_label = sample_time.strftime("%b %d")
+
+        time_label = sample_time.strftime("%I %p").lstrip("0")
+
+        all_entries.append({
+            "dt": sample_time,
+            "item": {
+                "id": hour_key,
+                "date_label": date_label,
+                "time_label": time_label,
+                "timestamp": sample_time.isoformat(),
+                "delta_credits": delta_credits,
+                "formatted_delta": f"{delta_credits}",
+                "is_positive": False,
+                "reason_summary": ", ".join(reasons) if reasons else "Usage",
+            }
+        })
+
+    # プラス値個別の展開
+    for p in positive_items:
+        dt = p["dt"]
+        delta = p["delta"]
+        reason = p["reason"]
+
+        delta_credits = round(delta / MICRO_PER_CREDIT)
+        if delta_credits == 0 and delta > 0:
+            delta_credits = 1
+
+        sample_date = dt.date()
+        if sample_date == today:
+            date_label = "Today"
+        elif sample_date == today - timedelta(days=1):
+            date_label = "Yesterday"
+        else:
+            date_label = dt.strftime("%b %d")
+
+        time_label = dt.strftime("%I %p").lstrip("0")
+
+        all_entries.append({
+            "dt": dt,
+            "item": {
+                "id": p["id"],
+                "date_label": date_label,
+                "time_label": time_label,
+                "timestamp": dt.isoformat(),
+                "delta_credits": delta_credits,
+                "formatted_delta": f"+{delta_credits}",
+                "is_positive": True,
+                "reason_summary": reason,
+            }
+        })
+
+    # 発生日時降順（新しい順）に並べ替え
+    all_entries.sort(key=lambda x: x["dt"], reverse=True)
+
+    history_items = [entry["item"] for entry in all_entries]
+    return {"history": history_items}
+
+
 # ---------------------------------------------------------
 # 個別タスクのリトライ (カスケード対応)
 # ---------------------------------------------------------

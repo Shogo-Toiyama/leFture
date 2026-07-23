@@ -289,13 +289,13 @@ class _OnboardingStepTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dimmed = !isEnabled && !isDone;
+    final dimmed = !isEnabled;
 
     return Opacity(
       opacity: dimmed ? 0.45 : 1.0,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: (isEnabled && !isDone) ? onTap : null,
+        onTap: isEnabled ? onTap : null,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -341,9 +341,9 @@ class _OnboardingStepTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!isEnabled && !isDone)
+              if (!isEnabled)
                 Icon(Icons.lock_outline, color: AppColors.universe.textComet, size: 18)
-              else if (!isDone)
+              else
                 Icon(Icons.chevron_right, color: AppColors.universe.textComet, size: 20),
             ],
           ),

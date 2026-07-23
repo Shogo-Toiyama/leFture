@@ -1,4 +1,5 @@
 // lib/application/asr/asr_model_manager.dart
+import 'dart:async';
 import 'dart:developer' as dev;
 import 'dart:io';
 
@@ -86,6 +87,14 @@ class AsrModelManager extends _$AsrModelManager {
     // 場合に備え、起動直後にも一度だけ自動一時停止の残骸を確認して再開する。
     _handleAppForegrounded();
 
+    // マニフェスト取得(ネットワーク)が終わるまでは`statusForLanguage`が常に
+    // `unknown`を返してしまい、実際にはディスクに揃っているモデルまで
+    // 「ダウンロードが必要」に見えてしまう。前回解決したlanguageCode→groupKey
+    // の対応表を使い、ネットワークを待たずにDB+ファイル存在チェックだけで
+    // 分かる範囲を先に`ready`として反映しておく(マニフェスト取得が完了すれば
+    // 通常通りその結果で上書きされる)。
+    unawaited(_reconcileFromDiskAtStartup());
+
     return {};
   }
 
@@ -120,9 +129,20 @@ class AsrModelManager extends _$AsrModelManager {
   /// まだmanifestを取得していない場合は`unknown`を返す。
   AsrLanguageModelState statusForLanguage(String languageCode) {
     final manifest = _cachedManifest;
-    if (manifest == null) return AsrLanguageModelState.initial;
-    final key = resolveAssetGroupKey(manifest, languageCode);
-    return state[key] ?? AsrLanguageModelState.initial;
+    if (manifest != null) {
+      final key = resolveAssetGroupKey(manifest, languageCode);
+      return state[key] ?? AsrLanguageModelState.initial;
+    }
+
+    // マニフェスト未取得(起動直後でまだネットワーク往復が終わっていない等)
+    // の場合でも、前回このlanguageCodeが解決したgroupKeyを覚えていれば、
+    // そのgroupKeyの状態(`_reconcileFromDiskAtStartup`がDB+ファイル存在
+    // チェックだけで先に埋めている可能性がある)をそのまま返す。
+    final cachedKey = RecordingPreferences().getAsrLanguageGroupKeys()[languageCode];
+    if (cachedKey != null) {
+      return state[cachedKey] ?? AsrLanguageModelState.initial;
+    }
+    return AsrLanguageModelState.initial;
   }
 
   void _update(String key, AsrLanguageModelState value) {
@@ -137,6 +157,7 @@ class AsrModelManager extends _$AsrModelManager {
     final info = manifest.languages[languageCode];
     if (info != null) {
       final groupKey = resolveAssetGroupKey(manifest, languageCode);
+      await RecordingPreferences().setAsrLanguageGroupKey(languageCode, groupKey);
       await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
       if (info.engine == 'sense_voice') {
         await ensureVadModelReady();
@@ -145,6 +166,7 @@ class AsrModelManager extends _$AsrModelManager {
     }
 
     // languagesマップに無い言語は共有Whisper(+VAD)にフォールバックする。
+    await RecordingPreferences().setAsrLanguageGroupKey(languageCode, kWhisperPseudoLanguageCode);
     await ensureWhisperModelReady();
     await ensureVadModelReady();
   }
@@ -431,11 +453,34 @@ class AsrModelManager extends _$AsrModelManager {
 
   /// 指定キーのローカルパス(ダウンロード済みでreadyな場合のみ)。エンジン初期化に使う。
   /// [key]は解決済みのgroupKey(通常はmodelId、またはVAD/Whisperの疑似コード)。
+  /// DBの`status`が'ready'でも、実ファイルが(ストレージクリア等で)既に
+  /// 存在しない場合があるため、必ずファイル存在チェックも行う。
   Future<String?> localPathFor(String key) async {
     final row =
         await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();
     if (row == null || row.status != 'ready') return null;
+    if (!await Directory(row.localPath).exists()) return null;
     return row.localPath;
+  }
+
+  /// 起動直後、マニフェストのネットワーク取得を待たずに、前回解決済みの
+  /// languageCode→groupKey対応表を頼りにDB+ファイル存在チェックだけで
+  /// `ready`と判定できるものを先に反映しておく。実際にモデルが使える状態か
+  /// どうかは`_ensureAsset`と全く同じ基準(status=='ready' かつ
+  /// ディレクトリが実在)で判定するため、二重管理にはならない。
+  Future<void> _reconcileFromDiskAtStartup() async {
+    final groupKeys = RecordingPreferences().getAsrLanguageGroupKeys().values.toSet();
+    for (final key in groupKeys) {
+      try {
+        final row =
+            await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();
+        if (row == null || row.status != 'ready') continue;
+        if (!await Directory(row.localPath).exists()) continue;
+        _update(key, const AsrLanguageModelState(status: AsrModelStatus.ready));
+      } catch (e, st) {
+        dev.log('🚨 [AsrModelManager] disk reconcile failed for "$key"', error: e, stackTrace: st);
+      }
+    }
   }
 }
 

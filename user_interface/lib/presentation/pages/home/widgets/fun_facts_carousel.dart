@@ -63,22 +63,35 @@ class _FunFactsCarouselState extends ConsumerState<FunFactsCarousel> {
         ),
         if (facts.length > 1) ...[
           const SizedBox(height: 8),
-          // インジケーター (.....)
+          // 宇宙船風アニメーション付き軌道ドットインジケーター
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               facts.length,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: index == _currentPage
-                      ? AppColors.starGold
-                      : AppColors.universe.textComet.withValues(alpha: 0.3),
-                ),
-              ),
+              (index) {
+                final isSelected = index == _currentPage;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: isSelected ? 20.0 : 6.0,
+                  height: 6.0,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: isSelected
+                        ? AppColors.starGold
+                        : AppColors.universe.textComet.withValues(alpha: 0.4),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.starGold.withValues(alpha: 0.8),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : [],
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -316,59 +329,84 @@ class _DefaultFunFactCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => context.push(AppRoutes.coursesRootPath),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppColors.universe.glassWhiteLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.universe.glassBorder),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: GlowingRainbowBorder(
+          borderRadius: 20.0,
+          borderWidth: 1.5,
+          glowRadius: 6.0,
+          animate: true,
+          innerGlow: true,
+          glowOpacity: 0.2,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.universe.glassWhiteLow,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.universe.glassBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 一番上の行にタイトルを表示
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Text(
-                    'Did you know? Quantum entanglement allows particles to affect each other instantly over any distance.',
+                    'We are made of star-stuff',
                     style: TextStyle(
-                      color: AppColors.universe.textStarlight,
+                      color: AppColors.starGold,
                       fontSize: 13,
-                      height: 1.4,
+                      fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
-                    maxLines: 3,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.white12)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
+                // 中部: Fact内容
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Center(
                       child: Text(
-                        'Intro to Physics',
+                        'You are made of star-stuff ✨ The carbon, oxygen, and iron in your body were forged in exploding stars billions of years ago. The history of the cosmos lives inside you.',
                         style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 12,
+                          color: AppColors.universe.textStarlight,
+                          fontSize: 13,
+                          height: 1.4,
                         ),
-                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                // 下部: メタデータ
+                Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.white12)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Cosmic Origin · Carl Sagan',
+                          style: TextStyle(
+                            color: AppColors.universe.textComet,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

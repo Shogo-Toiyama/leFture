@@ -26,6 +26,7 @@ import 'package:lecture_companion_ui/presentation/pages/learning_galaxy/learning
 import 'package:lecture_companion_ui/presentation/pages/ai_chat/ai_chat_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/my_account_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/credit_detail_page.dart';
+import 'package:lecture_companion_ui/presentation/pages/profile/plans_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/user_profile_detail_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/contact/contact_page.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/course_page.dart';
@@ -446,6 +447,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.creditDetail,
         builder: (context, state) => const CreditDetailPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.plans,
+        builder: (context, state) => const PlansPage(),
       ),
       GoRoute(
         path: AppRoutes.profile,

@@ -2,6 +2,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/entities/credit_summary.dart';
+import '../../domain/entities/credit_usage_item.dart';
+import '../../domain/entities/plan_option.dart';
 import '../../infrastructure/repositories/credit_repository.dart';
 
 /// このファイルだけ手書きのProvider(コード生成無し)にしている。他の多くの
@@ -19,4 +21,16 @@ final creditRepositoryProvider = Provider<CreditRepository>((ref) {
 /// で明示的に更新する。
 final creditSummaryProvider = FutureProvider<CreditSummary>((ref) async {
   return ref.watch(creditRepositoryProvider).fetchSummary();
+});
+
+/// 今claimできるプラン一覧(claim_mode='self_serve'かつ無効化されていないもの)。
+/// autoDisposeにして、プランページを離れたら破棄・次回開いた時に再取得する
+/// (claim後に古い一覧を見せ続けないようにするため)。
+final claimablePlansProvider = FutureProvider.autoDispose<List<PlanOption>>((ref) async {
+  return ref.watch(creditRepositoryProvider).fetchClaimablePlans();
+});
+
+/// GET /billing/history の結果 (1時間ごとの利用履歴)。
+final creditUsageHistoryProvider = FutureProvider.autoDispose<List<CreditUsageItem>>((ref) async {
+  return ref.watch(creditRepositoryProvider).fetchUsageHistory();
 });

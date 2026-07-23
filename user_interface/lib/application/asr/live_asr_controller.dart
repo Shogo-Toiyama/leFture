@@ -30,6 +30,19 @@ class LiveAsrController extends _$LiveAsrController {
   AsrEngine? _engine;
   StreamSubscription<AsrLiveSegment>? _subscription;
   bool _starting = false;
+  // start()実行中(モデルロード/isolate起動待ち)にstop()が呼ばれた場合、
+  // start()完了直後に即dispose()できるようにするためのフラグ。これが無いと
+  // 「start()完了 → _engineにセット」が「stop()実行(この時点では_engineが
+  // まだnullなので何もしない)」の後に起きてしまい、エンジンがどこからも
+  // dispose されないまま延々isolateが起動状態で残ってしまう
+  // (録音開始直後にエラーが起きて即エラー状態になるケースで実際に発生していた)。
+  bool _stopRequested = false;
+  // モデルが常駐している間、実際に音声が流れているかどうかに関わらず
+  // 一定間隔でログを出す。「録音を止めたはずなのにモデルがまだ生きている」
+  // ようなリーク(発熱の原因になりうる)を、DevLogを見るだけで気付けるように
+  // するための可視化目的のタイマー。
+  Timer? _heartbeat;
+  static const _heartbeatInterval = Duration(seconds: 30);
 
   AsrEngineFactory get _factory => AsrEngineFactory(
         repository: AsrModelRepository(Supabase.instance.client),
@@ -48,6 +61,7 @@ class LiveAsrController extends _$LiveAsrController {
       return;
     }
     _starting = true;
+    _stopRequested = false;
     try {
       final handle = await _factory.createEngine(languageCode);
       if (handle == null) {
@@ -59,11 +73,22 @@ class LiveAsrController extends _$LiveAsrController {
 
       final engine = handle.engine;
       await engine.start();
+
+      if (_stopRequested) {
+        DevLog.add(
+          '🎙️ [LiveAsrController] stop() was requested while starting — disposing the freshly '
+          'started engine instead of activating it',
+        );
+        await engine.dispose();
+        return;
+      }
+
       _engine = engine;
       state = [];
       DevLog.add(
         '🎙️ [LiveAsrController] engine started (groupKey="${handle.groupKey}", type=${engine.runtimeType})',
       );
+      _startHeartbeat(handle.groupKey, engine.runtimeType.toString());
       _subscription = engine.segments.listen((raw) {
         // 「とりあえずのリアルタイム文字起こし」であることが一目で分かるよう、
         // 句読点は付けずすべて小文字で表示する(後で来るサーバー版Whisper Large
@@ -96,6 +121,8 @@ class LiveAsrController extends _$LiveAsrController {
       );
     } catch (e, st) {
       DevLog.add('🚨 [LiveAsrController] Failed to start ASR engine: $e\n$st');
+      _heartbeat?.cancel();
+      _heartbeat = null;
       await _engine?.dispose();
       _engine = null;
     } finally {
@@ -107,8 +134,23 @@ class LiveAsrController extends _$LiveAsrController {
     _engine?.acceptPcm16(bytes);
   }
 
+  void _startHeartbeat(String groupKey, String engineType) {
+    _heartbeat?.cancel();
+    _heartbeat = Timer.periodic(_heartbeatInterval, (_) {
+      DevLog.add(
+        '💓 [LiveAsrController] model still resident (groupKey="$groupKey", type=$engineType) — '
+        'if recording is stopped and you see this repeating, the engine failed to shut down',
+      );
+    });
+  }
+
   Future<void> stop() async {
     DevLog.add('🎙️ [LiveAsrController] stop() requested (engine was ${_engine == null ? "not " : ""}running)');
+    if (_starting) {
+      _stopRequested = true;
+    }
+    _heartbeat?.cancel();
+    _heartbeat = null;
     await _subscription?.cancel();
     _subscription = null;
     await _engine?.dispose();
