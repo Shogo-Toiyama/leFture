@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lecture_companion_ui/domain/entities/keyword.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
@@ -11,8 +12,8 @@ KeywordRepositoryDrift keywordRepositoryDrift(Ref ref) {
   return KeywordRepositoryDrift(ref.watch(appDatabaseProvider));
 }
 
-/// Keywordはサーバー生成コンテンツで、ユーザーによる書き込みは無い。
-/// Pull(Supabase→ローカルDB)は[KeywordSyncService]が担う。
+/// Keywordはサーバー生成コンテンツ。
+/// ユーザーによるSave(ブックマーク)操作の書き込みと、Pull(Supabase→ローカルDB)をサポート。
 class KeywordRepositoryDrift {
   final AppDatabase _db;
 
@@ -25,6 +26,44 @@ class KeywordRepositoryDrift {
     return query.watch().map((rows) => rows.map(_toDomain).toList());
   }
 
+  Future<void> toggleSaveKeyword({
+    required String keywordId,
+    required String userId,
+    required bool isSaved,
+    String? existingMetadataJson,
+  }) async {
+    Map<String, dynamic> metadataMap = {};
+    if (existingMetadataJson != null && existingMetadataJson.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(existingMetadataJson);
+        if (decoded is Map<String, dynamic>) {
+          metadataMap = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
+
+    if (isSaved) {
+      metadataMap['saved'] = true;
+    } else {
+      metadataMap.remove('saved');
+    }
+
+    final newMetadataJson = metadataMap.isEmpty ? null : jsonEncode(metadataMap);
+
+    await _db.updateKeywordMetadata(
+      id: keywordId,
+      userId: userId,
+      metadataJson: newMetadataJson,
+    );
+
+    // Queue outbox for background sync to Supabase
+    await _db.enqueueOutbox(
+      entityType: 'keyword',
+      entityId: keywordId,
+      op: 'update',
+    );
+  }
+
   Keyword _toDomain(LocalKeyword row) {
     return Keyword(
       id: row.id,
@@ -33,6 +72,7 @@ class KeywordRepositoryDrift {
       topicNumber: row.topicNumber,
       keyword: row.keyword,
       definition: row.definition,
+      metadataJson: row.metadataJson,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,

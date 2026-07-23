@@ -93,6 +93,8 @@ REGION = os.getenv("GCP_REGION", "us-west1")
 QUEUE_NAME = os.getenv("QUEUE_NAME", "lefture-processing-queue")
 CHUNK_QUEUE_NAME = os.getenv("CHUNK_QUEUE_NAME", "lefture-chunk-queue")
 SUBSCRIPTION_QUEUE_NAME = os.getenv("SUBSCRIPTION_QUEUE_NAME", "lefture-subscription-queue")
+CLEANUP_QUEUE_NAME = os.getenv("CLEANUP_QUEUE_NAME", "lefture-maintenance-queue")
+AUDIO_CHUNKS_RETENTION_DAYS = int(os.getenv("AUDIO_CHUNKS_RETENTION_DAYS", "7"))
 CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL")
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -128,6 +130,11 @@ class WorkerPayload(BaseModel):
 class RenewSubscriptionPayload(BaseModel):
     """Cloud Tasks から /worker/renew-subscription に渡されるデータ"""
     mapping_id: str
+
+class CleanupAudioChunksPayload(BaseModel):
+    """Cloud Tasks から /worker/cleanup-audio-chunks に渡されるデータ"""
+    user_id: str
+    lecture_id: str
 
 class ClaimPlanRequest(BaseModel):
     """Flutterから /billing/claim-plan に渡されるデータ。claim_mode='self_serve'の
@@ -526,8 +533,9 @@ async def billing_summary(request: Request):
 @app.get("/billing/history")
 async def billing_history(request: Request):
     """
-    クレジット利用履歴のエンドポイント。
-    マイナス値(消費)は1時間ごとに合算まとめ、プラス値(付与・購入等)は個別のイベントとして抽出する。
+    クレジット利用履歴のエンドポイント (累積残量差分方式)。
+    古い順に残量(balance_after)の表示用クレジット変化額を追跡・計算することで、
+    履歴の合計と画面上の現在の残量数値が100%一致するように保証する。
     """
     auth_header = request.headers.get("Authorization")
     if not auth_header:
@@ -548,9 +556,9 @@ async def billing_history(request: Request):
 
     tx_res = await asyncio.to_thread(
         lambda: admin_client.table("credit_transactions")
-            .select("id, created_at, delta, reason")
+            .select("id, created_at, delta, balance_after, reason")
             .eq("user_id", user_id)
-            .order("created_at", desc=True)
+            .order("created_at", asc=True)
             .limit(500)
             .execute()
     )
@@ -559,17 +567,22 @@ async def billing_history(request: Request):
     if not transactions:
         return {"history": []}
 
-    from collections import defaultdict
-    negative_hourly_buckets = defaultdict(lambda: {"sum_delta": 0, "reasons": set(), "sample_time": None})
+    MICRO_PER_CREDIT = 1000000
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    negative_hourly_buckets = {}
     positive_items = []
+    prev_display_balance = None
 
     for tx in transactions:
         created_at_str = tx.get("created_at")
         delta = tx.get("delta") or 0
+        balance_after = tx.get("balance_after")
         reason = tx.get("reason") or "USAGE"
         tx_id = tx.get("id")
 
-        if not created_at_str:
+        if not created_at_str or balance_after is None:
             continue
 
         try:
@@ -577,35 +590,50 @@ async def billing_history(request: Request):
         except Exception:
             continue
 
+        curr_display_balance = balance_after // MICRO_PER_CREDIT
+
         if delta < 0:
-            # マイナス値（消費）は1時間バケットで集計
             hour_key = dt.strftime("%Y-%m-%d %H:00")
-            negative_hourly_buckets[hour_key]["sum_delta"] += delta
-            negative_hourly_buckets[hour_key]["reasons"].add(reason)
-            if negative_hourly_buckets[hour_key]["sample_time"] is None:
+            if hour_key not in negative_hourly_buckets:
+                start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
+                negative_hourly_buckets[hour_key] = {
+                    "start_display_balance": start_balance,
+                    "end_display_balance": curr_display_balance,
+                    "reasons": {reason},
+                    "sample_time": dt,
+                }
+            else:
+                negative_hourly_buckets[hour_key]["end_display_balance"] = curr_display_balance
+                negative_hourly_buckets[hour_key]["reasons"].add(reason)
                 negative_hourly_buckets[hour_key]["sample_time"] = dt
+
         elif delta > 0:
-            # プラス値（付与・購入等）は個別で記録
+            start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
+            delta_credits = curr_display_balance - start_balance
+            if delta_credits <= 0:
+                delta_credits = round(delta / MICRO_PER_CREDIT)
+                if delta_credits <= 0:
+                    delta_credits = 1
+
             positive_items.append({
                 "id": str(tx_id) if tx_id else dt.isoformat(),
                 "dt": dt,
-                "delta": delta,
+                "delta_credits": delta_credits,
                 "reason": reason,
             })
 
-    all_entries = []
-    now = datetime.now(timezone.utc)
-    today = now.date()
-    MICRO_PER_CREDIT = 1000000
+        prev_display_balance = curr_display_balance
 
-    # マイナス値バケットの展開
+    all_entries = []
+
     for hour_key, bdata in negative_hourly_buckets.items():
         sample_time = bdata["sample_time"]
-        sum_delta = bdata["sum_delta"]
+        start_bal = bdata["start_display_balance"]
+        end_bal = bdata["end_display_balance"]
         reasons = list(bdata["reasons"])
 
-        delta_credits = round(sum_delta / MICRO_PER_CREDIT)
-        if delta_credits == 0 and sum_delta != 0:
+        delta_credits = end_bal - start_bal
+        if delta_credits >= 0:
             delta_credits = -1
 
         sample_date = sample_time.date()
@@ -632,15 +660,10 @@ async def billing_history(request: Request):
             }
         })
 
-    # プラス値個別の展開
     for p in positive_items:
         dt = p["dt"]
-        delta = p["delta"]
+        delta_credits = p["delta_credits"]
         reason = p["reason"]
-
-        delta_credits = round(delta / MICRO_PER_CREDIT)
-        if delta_credits == 0 and delta > 0:
-            delta_credits = 1
 
         sample_date = dt.date()
         if sample_date == today:
@@ -666,10 +689,9 @@ async def billing_history(request: Request):
             }
         })
 
-    # 発生日時降順（新しい順）に並べ替え
     all_entries.sort(key=lambda x: x["dt"], reverse=True)
-
     history_items = [entry["item"] for entry in all_entries]
+
     return {"history": history_items}
 
 
@@ -1293,6 +1315,40 @@ async def enqueue_renew_subscription_task(mapping_id: str) -> None:
         print(f"⏭️ Renewal for mapping {mapping_id} already enqueued today (duplicate request ignored).")
 
 
+async def enqueue_cleanup_audio_chunks_task(user_id: str, lecture_id: str) -> None:
+    """
+    /worker/cleanup-audio-chunks を叩くCloud Tasksタスクをenqueueする。
+    1日1回のパトロール(_patrol_enqueue_audio_chunks_cleanup)で実行され、
+    同一日・同一講義の二重処理を防ぐ。
+    """
+    if not (PROJECT_ID and CLOUD_RUN_URL and SERVICE_ACCOUNT_EMAIL):
+        raise RuntimeError("❌ Missing Environment Variables for Cloud Tasks enqueue!")
+
+    parent = client.queue_path(PROJECT_ID, REGION, CLEANUP_QUEUE_NAME)
+    worker_payload = {"user_id": user_id, "lecture_id": lecture_id}
+    today_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+
+    task = {
+        "name": client.task_path(PROJECT_ID, REGION, CLEANUP_QUEUE_NAME, f"cleanup-chunks-{lecture_id}-{today_str}"),
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": f"{CLOUD_RUN_URL}/worker/cleanup-audio-chunks",
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps(worker_payload).encode(),
+            "oidc_token": {
+                "service_account_email": SERVICE_ACCOUNT_EMAIL,
+                "audience": CLOUD_RUN_URL,
+            }
+        }
+    }
+
+    try:
+        response = await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
+        print(f"✅ Enqueued cleanup_audio_chunks for lecture {lecture_id} to Cloud Tasks: {response.name}")
+    except AlreadyExists:
+        print(f"⏭️ Cleanup for lecture {lecture_id} already enqueued today (duplicate request ignored).")
+
+
 # ---------------------------------------------------------
 # 2. 【裏の顔: 職人たちの部屋】Cloud Tasks から呼ばれる専用エンドポイント
 # ---------------------------------------------------------
@@ -1387,6 +1443,43 @@ async def worker_renew_subscription(payload: RenewSubscriptionPayload):
         lambda: admin_client.rpc("renew_subscription", {"p_mapping_id": payload.mapping_id}).execute()
     )
     return {"status": "success"}
+
+
+@app.post("/worker/cleanup-audio-chunks")
+async def worker_cleanup_audio_chunks(payload: CleanupAudioChunksPayload):
+    """
+    _patrol_enqueue_audio_chunks_cleanup がenqueueしたタスクを実際に処理する。
+    指定講義の R2 audio_chunks/ 配下を一括削除し、
+    lectures テーブルの metadata (jsonb) に audio_chunks_cleaned: True を記録する。
+    """
+    admin_client = get_supabase_client()
+    from app.core.r2_storage import storage_service
+
+    # 1. R2 の audio_chunks/ 配下を全削除
+    prefix = f"{payload.user_id}/{payload.lecture_id}/audio_chunks/"
+    deleted_count = await asyncio.to_thread(storage_service.delete_prefix, prefix)
+    print(f"🧹 Cleaned up {deleted_count} audio chunks in R2 for lecture {payload.lecture_id}")
+
+    # 2. Supabase の lectures.metadata にフラグをマージ更新
+    lec_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .select("metadata")
+            .eq("id", payload.lecture_id)
+            .maybe_single()
+            .execute()
+    )
+
+    current_metadata = (lec_res.data or {}).get("metadata") or {}
+    current_metadata["audio_chunks_cleaned"] = True
+    current_metadata["audio_chunks_cleaned_at"] = datetime.now(timezone.utc).isoformat()
+
+    await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .update({"metadata": current_metadata})
+            .eq("id", payload.lecture_id)
+            .execute()
+    )
+    return {"status": "success", "deleted_chunks": deleted_count}
 
 
 # ---------------------------------------------------------
@@ -2008,6 +2101,42 @@ async def _patrol_renew_subscriptions() -> dict:
     return {"due": len(due_mappings), "enqueued": enqueued, "failed": failed}
 
 
+async def _patrol_enqueue_audio_chunks_cleanup() -> dict:
+    """
+    毎日UTC PATROL_DAILY_HOUR_UTC時付近に1回だけ、patrol()から呼ばれる。
+    作成から AUDIO_CHUNKS_RETENTION_DAYS (既定7日) 以上経過し、
+    まだ audio_chunks_cleaned が True になっていない講義を集め、
+    Cloud Tasks に 1 件ずつエンキューする。
+    """
+    admin_client = get_supabase_client()
+    retention_threshold = (
+        datetime.now(timezone.utc) - timedelta(days=AUDIO_CHUNKS_RETENTION_DAYS)
+    ).isoformat()
+
+    # created_at <= 7日前 ＆ deleted_at IS NULL ＆ metadata->>audio_chunks_cleaned が True でない講義を抽出
+    due_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .select("id, user_id")
+            .lte("created_at", retention_threshold)
+            .is_("deleted_at", "null")
+            .or_("metadata->>audio_chunks_cleaned.is.null,metadata->>audio_chunks_cleaned.eq.false")
+            .execute()
+    )
+    due_lectures = due_res.data or []
+
+    enqueued = 0
+    failed = 0
+    for row in due_lectures:
+        try:
+            await enqueue_cleanup_audio_chunks_task(row["user_id"], row["id"])
+            enqueued += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Failed to enqueue audio chunks cleanup for lecture {row['id']}: {e}")
+
+    return {"due": len(due_lectures), "enqueued": enqueued, "failed": failed}
+
+
 @app.post("/maintenance/patrol")
 async def patrol():
     """
@@ -2027,7 +2156,7 @@ async def patrol():
             results[name] = {"error": str(e)}
             print(f"⚠️ Patrol check '{name}' failed: {e}")
 
-    # サブスク更新は他のチェックと違い「30分ごと」ではなく「1日1回」でよいので、
+    # サブスク更新および音声チャンククリーンアップは「1日1回」でよいので、
     # 実行ウィンドウ(:00付近 or :30付近)のうち、PATROL_DAILY_HOUR_UTC時台の
     # :00付近側だけを通す。:30付近側まで通すと1日2回走ってしまうため、hourに
     # 加えてminute側もtoleranceで絞っている。
@@ -2037,6 +2166,12 @@ async def patrol():
         except Exception as e:
             results["renew_subscriptions"] = {"error": str(e)}
             print(f"⚠️ Patrol check 'renew_subscriptions' failed: {e}")
+
+        try:
+            results["cleanup_audio_chunks"] = await _patrol_enqueue_audio_chunks_cleanup()
+        except Exception as e:
+            results["cleanup_audio_chunks"] = {"error": str(e)}
+            print(f"⚠️ Patrol check 'cleanup_audio_chunks' failed: {e}")
 
     return results
 

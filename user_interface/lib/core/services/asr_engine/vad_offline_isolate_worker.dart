@@ -40,6 +40,8 @@ void vadOfflineIsolateEntry(SendPort mainSendPort) {
       mainSendPort.send(const VadOfflineIsolateReady());
     } else if (message is Uint8List) {
       logic?.acceptPcm16(message);
+    } else if (message is VadOfflineIsolateSetPaused) {
+      logic?.setPaused(message.paused);
     } else if (message is VadOfflineIsolateDisposeRequest) {
       await logic?.dispose();
       mainSendPort.send(const VadOfflineIsolateDisposed());
@@ -107,6 +109,11 @@ class _VadOfflineRecognitionLogic {
   final Queue<_PendingChunk> _decodeQueue = Queue();
   bool _isDecoding = false;
 
+  // Liveタブが非表示/アプリがバックグラウンドの間はtrueになる。この間は
+  // VAD推論・バッファリング・デコードを一切行わず、サンプルカウント
+  // (タイムスタンプの基準)だけを進める。
+  bool _paused = false;
+
   Future<void> start() async {
     sherpa_onnx.initBindings();
 
@@ -133,11 +140,37 @@ class _VadOfflineRecognitionLogic {
     DevLog.add('🎙️ [VadOfflineEngine/worker] recognizer + VAD ready');
   }
 
+  /// Liveタブの表示状態/アプリのフォアグラウンド状態が変わった際に呼ばれる。
+  /// 一時停止に入る瞬間は、直前までユーザーが実際に見ていた区間の音声を
+  /// 巻き込んで捨ててしまわないよう、まず溜まっている分を通常通りflushして
+  /// からフラグを立てる。再開時は特別な処理は不要(次のacceptPcm16から
+  /// 通常の蓄積/flushが自然に再開する)。SileroVADの内部状態が一時停止で
+  /// 不連続になることによる誤検出を避けるため、再開時にVADをリセットする。
+  void setPaused(bool paused) {
+    if (_paused == paused) return;
+    if (paused) {
+      _flushPending();
+    } else {
+      _vad?.reset();
+    }
+    _paused = paused;
+    DevLog.add('⏸️ [VadOfflineEngine/worker] setPaused($paused)');
+  }
+
   void acceptPcm16(Uint8List bytes) {
     final vad = _vad;
     if (vad == null) return;
 
     final samples = convertPcm16ToFloat32(bytes);
+
+    if (_paused) {
+      // VAD推論・バッファリング・デコードは一切行わない。タイムスタンプが
+      // 実時間からズレないよう、サンプルカウントの歩みだけは進め続ける。
+      _totalSamplesFed += samples.length;
+      _pendingStartSample = _totalSamplesFed;
+      return;
+    }
+
     vad.acceptWaveform(samples);
     _totalSamplesFed += samples.length;
 

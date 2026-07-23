@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -6,12 +8,14 @@ import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
+import 'package:lecture_companion_ui/application/lecture_viewer/lecture_content_recovery.dart';
 import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lecture_companion_ui/domain/entities/announcement.dart';
 import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
 import 'package:lecture_companion_ui/domain/entities/keyword.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/infrastructure/repositories/lecture_artifact_repository.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 import 'package:lecture_companion_ui/presentation/widgets/glowing_rainbow_border.dart';
@@ -19,6 +23,7 @@ import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/keyword_repository_drift.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
@@ -31,13 +36,8 @@ import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.d
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 
-
-
 class LectureViewerPage extends HookConsumerWidget {
-  const LectureViewerPage({
-    super.key,
-    required this.lectureId,
-  });
+  const LectureViewerPage({super.key, required this.lectureId});
 
   final String lectureId;
 
@@ -49,7 +49,14 @@ class LectureViewerPage extends HookConsumerWidget {
     // LRU判定用)。lectureIdが変わった時だけ実行し、再ビルドの度には走らない。
     useEffect(() {
       if (!isDummy) {
-        ref.read(appDatabaseProvider).touchLectureAccessed(lectureId);
+        final db = ref.read(appDatabaseProvider);
+        db.touchLectureAccessed(lectureId);
+        // ローカルキャッシュの容量上限([LocalRetentionService])でこの講義の
+        // Review Card/Deep Note/Fun Fact/Keyword/Topicが既に削除されていた
+        // 場合、Supabaseから再取得してローカルDBへ復元する(トピックが
+        // 1件でも既にあれば何もしない)。復元されたStream経由のプロバイダが
+        // 自動的にUIへ反映される。
+        unawaited(ensureLectureContentAvailable(db, lectureId));
       }
       return null;
     }, [lectureId]);
@@ -67,9 +74,7 @@ class LectureViewerPage extends HookConsumerWidget {
       );
       return Scaffold(
         backgroundColor: AppColors.universe.voidBackground,
-        body: _LectureViewerBody(
-          lecture: dummyLecture,
-        ),
+        body: _LectureViewerBody(lecture: dummyLecture),
       );
     }
 
@@ -91,7 +96,10 @@ class LectureViewerPage extends HookConsumerWidget {
       error: (err, stack) => Scaffold(
         backgroundColor: AppColors.universe.voidBackground,
         body: Center(
-          child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
+          child: Text(
+            'Error: $err',
+            style: const TextStyle(color: AppColors.correctionRed),
+          ),
         ),
       ),
       data: (lecture) {
@@ -99,7 +107,10 @@ class LectureViewerPage extends HookConsumerWidget {
           return Scaffold(
             backgroundColor: AppColors.universe.voidBackground,
             body: const Center(
-              child: Text('Lecture not found', style: TextStyle(color: Colors.white)),
+              child: Text(
+                'Lecture not found',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           );
         }
@@ -114,7 +125,10 @@ class LectureViewerPage extends HookConsumerWidget {
           error: (err, stack) => Scaffold(
             backgroundColor: AppColors.universe.voidBackground,
             body: Center(
-              child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
+              child: Text(
+                'Error: $err',
+                style: const TextStyle(color: AppColors.correctionRed),
+              ),
             ),
           ),
           data: (lectures) {
@@ -122,7 +136,9 @@ class LectureViewerPage extends HookConsumerWidget {
             final sortedLectures = [...lectures]
               ..sort((a, b) => a.lectureDatetime.compareTo(b.lectureDatetime));
 
-            final initialIndex = sortedLectures.indexWhere((l) => l.id == lecture.id);
+            final initialIndex = sortedLectures.indexWhere(
+              (l) => l.id == lecture.id,
+            );
 
             if (initialIndex == -1) {
               // Fallback if current lecture is not found in the list (e.g. database syncing)
@@ -140,10 +156,14 @@ class LectureViewerPage extends HookConsumerWidget {
                 onNotification: (notification) {
                   if (notification is ScrollEndNotification) {
                     final page = pageController.page?.round();
-                    if (page != null && page >= 0 && page < sortedLectures.length) {
+                    if (page != null &&
+                        page >= 0 &&
+                        page < sortedLectures.length) {
                       final targetLecture = sortedLectures[page];
                       if (targetLecture.id != lectureId) {
-                        context.replace('${AppRoutes.coursesRootPath}/c/${targetLecture.courseId}/v/${targetLecture.id}');
+                        context.replace(
+                          '${AppRoutes.coursesRootPath}/c/${targetLecture.courseId}/v/${targetLecture.id}',
+                        );
                       }
                     }
                   }
@@ -167,9 +187,7 @@ class LectureViewerPage extends HookConsumerWidget {
 }
 
 class _LecturePageContent extends ConsumerWidget {
-  const _LecturePageContent({
-    required this.lecture,
-  });
+  const _LecturePageContent({required this.lecture});
 
   final Lecture lecture;
 
@@ -177,27 +195,30 @@ class _LecturePageContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
 
-    ref.listen<AsyncValue<LectureUIState>>(
-      lectureStateProvider(lecture.id),
-      (previous, next) {
-        next.whenData((state) {
-          if (state == LectureUIState.complete) {
-            final uid = supabase.auth.currentUser?.id;
-            if (uid != null) {
-              ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
-            }
-            ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+    ref.listen<AsyncValue<LectureUIState>>(lectureStateProvider(lecture.id), (
+      previous,
+      next,
+    ) {
+      next.whenData((state) {
+        if (state == LectureUIState.complete) {
+          final uid = supabase.auth.currentUser?.id;
+          if (uid != null) {
+            ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
           }
-        });
-      },
-    );
+          ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+        }
+      });
+    });
 
     return uiStateAsync.when(
       loading: () => const Center(
         child: CircularProgressIndicator(color: AppColors.starGold),
       ),
       error: (err, stack) => Center(
-        child: Text('Error: $err', style: const TextStyle(color: AppColors.correctionRed)),
+        child: Text(
+          'Error: $err',
+          style: const TextStyle(color: AppColors.correctionRed),
+        ),
       ),
       data: (uiState) {
         if (uiState == LectureUIState.complete) {
@@ -211,20 +232,27 @@ class _LecturePageContent extends ConsumerWidget {
 }
 
 class _LectureViewerBody extends HookConsumerWidget {
-  const _LectureViewerBody({
-    required this.lecture,
-  });
+  const _LectureViewerBody({required this.lecture});
 
   final Lecture lecture;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final topics = ref.watch(lectureTopicsProvider(lecture.id)).asData?.value ?? const <LectureTopic>[];
-    final keywords = ref.watch(lectureKeywordsProvider(lecture.id)).asData?.value ?? const <Keyword>[];
-    final funFacts = ref.watch(funFactsForLectureProvider(lecture.id)).asData?.value ?? const <FunFact>[];
-    final announcements = ref.watch(announcementsForLectureProvider(lecture.id)).asData?.value ?? const <Announcement>[];
+    final topics =
+        ref.watch(lectureTopicsProvider(lecture.id)).asData?.value ??
+        const <LectureTopic>[];
+    final keywords =
+        ref.watch(lectureKeywordsProvider(lecture.id)).asData?.value ??
+        const <Keyword>[];
+    final funFacts =
+        ref.watch(funFactsForLectureProvider(lecture.id)).asData?.value ??
+        const <FunFact>[];
+    final announcements =
+        ref.watch(announcementsForLectureProvider(lecture.id)).asData?.value ??
+        const <Announcement>[];
 
-    final courses = ref.watch(courseListProvider).asData?.value ?? const <Course>[];
+    final courses =
+        ref.watch(courseListProvider).asData?.value ?? const <Course>[];
     final course = courses.cast<Course?>().firstWhere(
       (c) => c?.id == lecture.courseId,
       orElse: () => null,
@@ -234,10 +262,15 @@ class _LectureViewerBody extends HookConsumerWidget {
     final displayTitle = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
         : (lecture.titleGenerated?.trim().isNotEmpty == true
-            ? lecture.titleGenerated!
-            : 'Untitled Lecture');
-    final summary = lecture.summary == null ? null : stripSidCitations(lecture.summary!).trim();
-    final themeColor = CourseStyleHelper.hexToColor(course?.color, fallback: AppColors.starGold);
+              ? lecture.titleGenerated!
+              : 'Untitled Lecture');
+    final summary = lecture.summary == null
+        ? null
+        : stripSidCitations(lecture.summary!).trim();
+    final themeColor = CourseStyleHelper.hexToColor(
+      course?.color,
+      fallback: AppColors.starGold,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -257,247 +290,281 @@ class _LectureViewerBody extends HookConsumerWidget {
           children: [
             const CustomAppBar(showHomeButton: true),
             Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
 
-                  // Date & Course Code (left-aligned) - Moved above collage
-                  Row(
-                    children: [
-                      Text(
-                        DateFormat.yMMMd().format(lecture.lectureDatetime.toLocal()),
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '  •  ',
-                        style: TextStyle(
-                          color: AppColors.universe.textComet.withValues(alpha: 0.5),
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        courseCode,
-                        style: const TextStyle(
-                          color: AppColors.starGold,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Hero Collage View
-                  LectureHeroCollage(lectureId: lecture.id),
-                  const SizedBox(height: 20),
-
-                  // Title + Edit Button Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          displayTitle,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
+                    // Date & Course Code (left-aligned) - Moved above collage
+                    Row(
+                      children: [
+                        Text(
+                          DateFormat.yMMMd().format(
+                            lecture.lectureDatetime.toLocal(),
+                          ),
+                          style: TextStyle(
+                            color: AppColors.universe.textComet,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.edit_outlined,
-                          color: Colors.white70,
-                          size: 24,
+                        Text(
+                          '  •  ',
+                          style: TextStyle(
+                            color: AppColors.universe.textComet.withValues(
+                              alpha: 0.5,
+                            ),
+                            fontSize: 13,
+                          ),
                         ),
-                        onPressed: () async {
-                          await showModalBottomSheet<void>(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => LectureEditSheet(lecture: lecture),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Summary
-                  Text(
-                    (summary != null && summary.isNotEmpty)
-                        ? summary
-                        : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Start Review Session Button (horizontal capsule button)
-                  // GestureDetector(
-                  //   onTap: () {
-                  //     ScaffoldMessenger.of(context).showSnackBar(
-                  //       const SnackBar(content: Text('Starting Review Session...')),
-                  //     );
-                  //   },
-                  //   child: Container(
-                  //     height: 52,
-                  //     decoration: BoxDecoration(
-                  //       gradient: const LinearGradient(
-                  //         colors: [AppColors.starGold, Color(0xFFFFD700)],
-                  //       ),
-                  //       borderRadius: BorderRadius.circular(26),
-                  //       boxShadow: [
-                  //         BoxShadow(
-                  //           color: AppColors.starGold.withValues(alpha: 0.3),
-                  //           blurRadius: 12,
-                  //           offset: const Offset(0, 4),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //     child: Row(
-                  //       mainAxisAlignment: MainAxisAlignment.center,
-                  //       children: [
-                  //         Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
-                  //         const SizedBox(width: 8),
-                  //         Text(
-                  //           'Start Review Session',
-                  //           style: TextStyle(
-                  //             color: AppColors.universe.voidBackground,
-                  //             fontSize: 16,
-                  //             fontWeight: FontWeight.bold,
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 24),
-
-                  // Horizontal Info Chips Row
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _HighlightChip(
-                          icon: Icons.campaign_outlined,
-                          label: '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
-                          onTap: announcements.isNotEmpty
-                              ? () => _showAnnouncementsSheet(context, lecture.id, announcements)
-                              : null,
-                        ),
-                        const SizedBox(width: 8),
-                        _HighlightChip(
-                          icon: Icons.vpn_key_outlined,
-                          label: '${keywords.length} keyword${keywords.length == 1 ? '' : 's'}',
-                          onTap: keywords.isNotEmpty
-                              ? () => _showKeywordsSheet(context, keywords)
-                              : null,
-                        ),
-                        const SizedBox(width: 8),
-                        _HighlightChip(
-                          icon: Icons.hub_outlined,
-                          label: '${topics.length} topic${topics.length == 1 ? '' : 's'}',
-                          onTap: null, // Dummy/no-op
+                        Text(
+                          courseCode,
+                          style: const TextStyle(
+                            color: AppColors.starGold,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 12),
 
-                  // Two Large Buttons: Review Cards & Deep Notes (横並びでどでかく)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _LargeNavigatorCard(
-                          icon: Icons.style_outlined,
-                          title: 'Review Cards',
-                          onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _LargeNavigatorCard(
-                          icon: Icons.description_outlined,
-                          title: 'Deep Notes',
-                          onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
+                    // Hero Collage View
+                    LectureHeroCollage(lectureId: lecture.id),
+                    const SizedBox(height: 20),
 
-                  // Fun Fact Section
-                  if (funFacts.isNotEmpty) ...[
+                    // Title + Edit Button Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            displayTitle,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: Colors.white70,
+                            size: 24,
+                          ),
+                          onPressed: () async {
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) =>
+                                  LectureEditSheet(lecture: lecture),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Summary
                     Text(
-                      'FUN FACT',
+                      (summary != null && summary.isNotEmpty)
+                          ? summary
+                          : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
                       style: TextStyle(
-                        color: AppColors.universe.textComet,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        fontSize: 12,
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 14,
+                        height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    _ViewerFunFactCard(fact: funFacts.first),
-                    const SizedBox(height: 28),
-                  ],
+                    const SizedBox(height: 24),
 
-                  GestureDetector(
-                    onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript'),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.universe.glassWhiteLow,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.universe.glassBorder),
-                      ),
+                    // Start Review Session Button (horizontal capsule button)
+                    // GestureDetector(
+                    //   onTap: () {
+                    //     ScaffoldMessenger.of(context).showSnackBar(
+                    //       const SnackBar(content: Text('Starting Review Session...')),
+                    //     );
+                    //   },
+                    //   child: Container(
+                    //     height: 52,
+                    //     decoration: BoxDecoration(
+                    //       gradient: const LinearGradient(
+                    //         colors: [AppColors.starGold, Color(0xFFFFD700)],
+                    //       ),
+                    //       borderRadius: BorderRadius.circular(26),
+                    //       boxShadow: [
+                    //         BoxShadow(
+                    //           color: AppColors.starGold.withValues(alpha: 0.3),
+                    //           blurRadius: 12,
+                    //           offset: const Offset(0, 4),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //     child: Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 24),
+                    //         const SizedBox(width: 8),
+                    //         Text(
+                    //           'Start Review Session',
+                    //           style: TextStyle(
+                    //             color: AppColors.universe.voidBackground,
+                    //             fontSize: 16,
+                    //             fontWeight: FontWeight.bold,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
+                    // const SizedBox(height: 24),
+
+                    // Horizontal Info Chips Row
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long_outlined, color: AppColors.starGold, size: 20),
+                          _HighlightChip(
+                            icon: Icons.campaign_outlined,
+                            label:
+                                '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
+                            onTap: announcements.isNotEmpty
+                                ? () => _showAnnouncementsSheet(
+                                    context,
+                                    lecture.id,
+                                    announcements,
+                                  )
+                                : null,
+                          ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Transcript',
-                            style: TextStyle(
-                              color: AppColors.universe.textStarlight,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
+                          _HighlightChip(
+                            icon: Icons.vpn_key_outlined,
+                            label:
+                                '${keywords.length} keyword${keywords.length == 1 ? '' : 's'}',
+                            onTap: keywords.isNotEmpty
+                                ? () => _showKeywordsSheet(context, keywords)
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          _HighlightChip(
+                            icon: Icons.hub_outlined,
+                            label:
+                                '${topics.length} topic${topics.length == 1 ? '' : 's'}',
+                            onTap: null, // Dummy/no-op
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 28),
+
+                    // Two Large Buttons: Review Cards & Deep Notes (横並びでどでかく)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _LargeNavigatorCard(
+                            icon: Icons.style_outlined,
+                            title: 'Review Cards',
+                            onTap: () => context.push(
+                              '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _LargeNavigatorCard(
+                            icon: Icons.description_outlined,
+                            title: 'Deep Notes',
+                            onTap: () => context.push(
+                              '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Fun Fact Section
+                    if (funFacts.isNotEmpty) ...[
+                      Text(
+                        'FUN FACT',
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _ViewerFunFactCard(fact: funFacts.first),
+                      const SizedBox(height: 28),
+                    ],
+
+                    GestureDetector(
+                      onTap: () => context.push(
+                        '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript',
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.universe.glassWhiteLow,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.universe.glassBorder,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_outlined,
+                              color: AppColors.starGold,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Transcript',
+                              style: TextStyle(
+                                color: AppColors.universe.textStarlight,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  void _showAnnouncementsSheet(BuildContext context, String lectureId, List<Announcement> announcements) {
+  void _showAnnouncementsSheet(
+    BuildContext context,
+    String lectureId,
+    List<Announcement> announcements,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _LectureInfoSheet.announcements(lectureId: lectureId, announcements: announcements),
+      builder: (_) => _LectureInfoSheet.announcements(
+        lectureId: lectureId,
+        announcements: announcements,
+      ),
     );
   }
 
@@ -542,11 +609,7 @@ class _LargeNavigatorCard extends StatelessWidget {
                 color: AppColors.universe.glassWhiteHigh,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                color: AppColors.starGold,
-                size: 28,
-              ),
+              child: Icon(icon, color: AppColors.starGold, size: 28),
             ),
             const SizedBox(height: 16),
             Text(
@@ -565,9 +628,7 @@ class _LargeNavigatorCard extends StatelessWidget {
 }
 
 class _ViewerFunFactCard extends HookConsumerWidget {
-  const _ViewerFunFactCard({
-    required this.fact,
-  });
+  const _ViewerFunFactCard({required this.fact});
 
   final FunFact fact;
 
@@ -575,7 +636,9 @@ class _ViewerFunFactCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hook = fact.hook?.trim();
     final body = fact.body?.trim() ?? '';
-    final fullText = (hook != null && hook.isNotEmpty) ? '$hook\n\n$body' : body;
+    final fullText = (hook != null && hook.isNotEmpty)
+        ? '$hook\n\n$body'
+        : body;
 
     final currentReaction = fact.reaction;
 
@@ -743,11 +806,118 @@ class _HighlightChip extends StatelessWidget {
   }
 }
 
+class _KeywordCardTile extends HookConsumerWidget {
+  const _KeywordCardTile({
+    super.key,
+    required this.keyword,
+    this.backgroundColor,
+    this.borderColor,
+    this.textColor,
+    this.subtitleColor,
+    this.inactiveIconColor,
+  });
+
+  final Keyword keyword;
+  final Color? backgroundColor;
+  final Color? borderColor;
+  final Color? textColor;
+  final Color? subtitleColor;
+  final Color? inactiveIconColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSaved = useState(keyword.isSaved);
+    final hasDefinition = keyword.definition?.trim().isNotEmpty == true;
+
+    useEffect(() {
+      isSaved.value = keyword.isSaved;
+      return null;
+    }, [keyword.isSaved]);
+
+    final bg = backgroundColor ?? Colors.white.withValues(alpha: 0.03);
+    final border = borderColor ?? AppColors.universe.glassBorder;
+    final textCl = textColor ?? AppColors.universe.textStarlight;
+    final subTextCl = subtitleColor ?? AppColors.universe.textComet;
+    final inactIconCl = inactiveIconColor ?? AppColors.universe.textComet;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  keyword.keyword?.trim().isNotEmpty == true
+                      ? keyword.keyword!.trim()
+                      : 'Untitled term',
+                  style: TextStyle(
+                    color: textCl,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  isSaved.value ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  color: isSaved.value ? AppColors.growthGreen : inactIconCl,
+                  size: 20,
+                ),
+                onPressed: () async {
+                  final newSavedState = !isSaved.value;
+                  isSaved.value = newSavedState;
+
+                  final uid = supabase.auth.currentUser?.id;
+                  if (uid == null) return;
+
+                  await ref.read(keywordRepositoryDriftProvider).toggleSaveKeyword(
+                        keywordId: keyword.id,
+                        userId: uid,
+                        isSaved: newSavedState,
+                        existingMetadataJson: keyword.metadataJson,
+                      );
+                  ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                },
+              ),
+            ],
+          ),
+          if (hasDefinition) ...[
+            const SizedBox(height: 6),
+            Text(
+              keyword.definition!.trim(),
+              style: TextStyle(
+                color: subTextCl,
+                fontSize: 14,
+                height: 1.4,
+                fontStyle: FontStyle.normal,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 「Xお知らせ」「Y Fun Facts」チップをタップした時に開くボトムシート
 // ---------------------------------------------------------------------------
 class _LectureInfoSheet extends ConsumerWidget {
-  const _LectureInfoSheet._({required this.title, required this.itemsBuilder, this.lectureId});
+  const _LectureInfoSheet._({
+    required this.title,
+    required this.itemsBuilder,
+    this.lectureId,
+  });
 
   factory _LectureInfoSheet.announcements({
     required String lectureId,
@@ -759,7 +929,11 @@ class _LectureInfoSheet extends ConsumerWidget {
       itemsBuilder: (context, ref) {
         // 最新の状態を NotifierProvider から直接取得（スワイプ後の状態変化を反映）
         final currentAnnouncements =
-            ref.watch(announcementsForLectureProvider(lectureId)).asData?.value ?? announcements;
+            ref
+                .watch(announcementsForLectureProvider(lectureId))
+                .asData
+                ?.value ??
+            announcements;
         return currentAnnouncements
             .map(
               (a) => AnnouncementTile(
@@ -793,47 +967,15 @@ class _LectureInfoSheet extends ConsumerWidget {
     );
   }
 
-
-
   factory _LectureInfoSheet.keywords(List<Keyword> keywords) {
     return _LectureInfoSheet._(
       title: 'Keywords',
       itemsBuilder: (context, ref) => keywords.map((k) {
-        final hasDefinition = k.definition?.trim().isNotEmpty == true;
         return Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.universe.glassBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  k.keyword?.trim().isNotEmpty == true ? k.keyword!.trim() : 'Untitled term',
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (hasDefinition) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    k.definition!.trim(),
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 14,
-                      height: 1.4,
-                      fontStyle: FontStyle.normal,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          child: _KeywordCardTile(
+            key: ValueKey(k.id),
+            keyword: k,
           ),
         );
       }).toList(),
@@ -857,7 +999,9 @@ class _LectureInfoSheet extends ConsumerWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1A1C2E),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
+            border: Border(
+              top: BorderSide(color: AppColors.universe.glassBorder),
+            ),
           ),
           child: Column(
             children: [
@@ -888,14 +1032,17 @@ class _LectureInfoSheet extends ConsumerWidget {
               Expanded(
                 child: items.isEmpty
                     ? Center(
-                        child: Text('Nothing here yet',
-                            style: TextStyle(color: AppColors.universe.textComet)),
+                        child: Text(
+                          'Nothing here yet',
+                          style: TextStyle(color: AppColors.universe.textComet),
+                        ),
                       )
                     : ListView.separated(
                         controller: scrollController,
                         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                         itemCount: items.length,
-                        separatorBuilder: (context, _) => const SizedBox(height: 10),
+                        separatorBuilder: (context, _) =>
+                            const SizedBox(height: 10),
                         itemBuilder: (context, index) => items[index],
                       ),
               ),
@@ -906,7 +1053,6 @@ class _LectureInfoSheet extends ConsumerWidget {
     );
   }
 }
-
 
 /*
 class _FunFactRow extends StatelessWidget {
@@ -976,13 +1122,13 @@ class _FunFactRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Keywords View
 // ---------------------------------------------------------------------------
-class _KeywordsView extends StatelessWidget {
+class _KeywordsView extends HookConsumerWidget {
   const _KeywordsView({super.key, required this.keywords});
 
   final List<Keyword> keywords;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (keywords.isEmpty) {
       return Center(
         child: Text(
@@ -998,39 +1144,14 @@ class _KeywordsView extends StatelessWidget {
       separatorBuilder: (context, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final k = keywords[index];
-        final hasDefinition = k.definition?.trim().isNotEmpty == true;
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.paper.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                k.keyword?.trim().isNotEmpty == true ? k.keyword!.trim() : 'Untitled term',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (hasDefinition) ...[
-                const SizedBox(height: 6),
-                Text(
-                  k.definition!.trim(),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 14,
-                    height: 1.4,
-                    fontStyle: FontStyle.normal,
-                  ),
-                ),
-              ],
-            ],
-          ),
+        return _KeywordCardTile(
+          key: ValueKey(k.id),
+          keyword: k,
+          backgroundColor: AppColors.paper.surface,
+          borderColor: Colors.black.withValues(alpha: 0.06),
+          textColor: Theme.of(context).colorScheme.onSurface,
+          subtitleColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          inactiveIconColor: Theme.of(context).colorScheme.onSurfaceVariant,
         );
       },
     );
@@ -2089,7 +2210,9 @@ class _TranscriptView extends StatelessWidget {
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
       error: (err, _) => Center(
         child: Text(
-          'Transcript unavailable',
+          err is ArtifactOfflineException
+              ? "You're offline. Transcript will load once you're back online."
+              : 'Transcript unavailable',
           style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ),
@@ -2146,8 +2269,6 @@ class _TranscriptView extends StatelessWidget {
   }
 }
 */
-
-
 
 /*
 class _MeasureSize extends StatefulWidget {

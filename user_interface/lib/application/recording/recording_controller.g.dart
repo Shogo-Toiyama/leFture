@@ -94,7 +94,7 @@ final class RecordingControllerProvider
 }
 
 String _$recordingControllerHash() =>
-    r'3216ccef6d03ee747c21f8b4471ac7dbb1861b64';
+    r'198a81cbc48eaa80ea8a9d76a0fd167842f33067';
 
 abstract class _$RecordingController extends $Notifier<RecordingState> {
   RecordingState build();

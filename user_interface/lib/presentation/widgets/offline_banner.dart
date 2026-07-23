@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/application/connectivity/connectivity_status_provider.dart';
 
 /// アプリ全体共通で、オフライン中は画面上部（ステータスバー下）に
@@ -24,7 +25,7 @@ class OfflineBanner extends ConsumerWidget {
           child: !isOnline
               ? Container(
                   width: double.infinity,
-                  color: const Color(0xFFD93838), // Spotifyスタイルのダークレッド
+                  color: AppColors.cosmicBlue,
                   padding: EdgeInsets.only(
                     top: topPadding > 0 ? topPadding + 2 : 6,
                     bottom: 6,

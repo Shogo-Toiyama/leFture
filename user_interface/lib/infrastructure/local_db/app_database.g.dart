@@ -9319,6 +9319,17 @@ class $LocalKeywordsTable extends LocalKeywords
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _metadataJsonMeta = const VerificationMeta(
+    'metadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+    'metadata_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -9372,6 +9383,7 @@ class $LocalKeywordsTable extends LocalKeywords
     topicNumber,
     keyword,
     definition,
+    metadataJson,
     createdAt,
     updatedAt,
     deletedAt,
@@ -9437,6 +9449,15 @@ class $LocalKeywordsTable extends LocalKeywords
     } else if (isInserting) {
       context.missing(_definitionMeta);
     }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+        _metadataJsonMeta,
+        metadataJson.isAcceptableOrUnknown(
+          data['metadata_json']!,
+          _metadataJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -9501,6 +9522,10 @@ class $LocalKeywordsTable extends LocalKeywords
         DriftSqlType.string,
         data['${effectivePrefix}definition'],
       )!,
+      metadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata_json'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -9533,6 +9558,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
   final int topicNumber;
   final String keyword;
   final String definition;
+  final String? metadataJson;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -9544,6 +9570,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
     required this.topicNumber,
     required this.keyword,
     required this.definition,
+    this.metadataJson,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -9558,6 +9585,9 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
     map['topic_number'] = Variable<int>(topicNumber);
     map['keyword'] = Variable<String>(keyword);
     map['definition'] = Variable<String>(definition);
+    if (!nullToAbsent || metadataJson != null) {
+      map['metadata_json'] = Variable<String>(metadataJson);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -9575,6 +9605,9 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
       topicNumber: Value(topicNumber),
       keyword: Value(keyword),
       definition: Value(definition),
+      metadataJson: metadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadataJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -9596,6 +9629,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
       topicNumber: serializer.fromJson<int>(json['topicNumber']),
       keyword: serializer.fromJson<String>(json['keyword']),
       definition: serializer.fromJson<String>(json['definition']),
+      metadataJson: serializer.fromJson<String?>(json['metadataJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -9612,6 +9646,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
       'topicNumber': serializer.toJson<int>(topicNumber),
       'keyword': serializer.toJson<String>(keyword),
       'definition': serializer.toJson<String>(definition),
+      'metadataJson': serializer.toJson<String?>(metadataJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -9626,6 +9661,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
     int? topicNumber,
     String? keyword,
     String? definition,
+    Value<String?> metadataJson = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -9637,6 +9673,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
     topicNumber: topicNumber ?? this.topicNumber,
     keyword: keyword ?? this.keyword,
     definition: definition ?? this.definition,
+    metadataJson: metadataJson.present ? metadataJson.value : this.metadataJson,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -9654,6 +9691,9 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
       definition: data.definition.present
           ? data.definition.value
           : this.definition,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -9672,6 +9712,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
           ..write('topicNumber: $topicNumber, ')
           ..write('keyword: $keyword, ')
           ..write('definition: $definition, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -9688,6 +9729,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
     topicNumber,
     keyword,
     definition,
+    metadataJson,
     createdAt,
     updatedAt,
     deletedAt,
@@ -9703,6 +9745,7 @@ class LocalKeyword extends DataClass implements Insertable<LocalKeyword> {
           other.topicNumber == this.topicNumber &&
           other.keyword == this.keyword &&
           other.definition == this.definition &&
+          other.metadataJson == this.metadataJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
@@ -9716,6 +9759,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
   final Value<int> topicNumber;
   final Value<String> keyword;
   final Value<String> definition;
+  final Value<String?> metadataJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -9728,6 +9772,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
     this.topicNumber = const Value.absent(),
     this.keyword = const Value.absent(),
     this.definition = const Value.absent(),
+    this.metadataJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -9741,6 +9786,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
     required int topicNumber,
     required String keyword,
     required String definition,
+    this.metadataJson = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -9761,6 +9807,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
     Expression<int>? topicNumber,
     Expression<String>? keyword,
     Expression<String>? definition,
+    Expression<String>? metadataJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -9774,6 +9821,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
       if (topicNumber != null) 'topic_number': topicNumber,
       if (keyword != null) 'keyword': keyword,
       if (definition != null) 'definition': definition,
+      if (metadataJson != null) 'metadata_json': metadataJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -9789,6 +9837,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
     Value<int>? topicNumber,
     Value<String>? keyword,
     Value<String>? definition,
+    Value<String?>? metadataJson,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -9802,6 +9851,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
       topicNumber: topicNumber ?? this.topicNumber,
       keyword: keyword ?? this.keyword,
       definition: definition ?? this.definition,
+      metadataJson: metadataJson ?? this.metadataJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -9831,6 +9881,9 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
     if (definition.present) {
       map['definition'] = Variable<String>(definition.value);
     }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -9858,6 +9911,7 @@ class LocalKeywordsCompanion extends UpdateCompanion<LocalKeyword> {
           ..write('topicNumber: $topicNumber, ')
           ..write('keyword: $keyword, ')
           ..write('definition: $definition, ')
+          ..write('metadataJson: $metadataJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -16876,6 +16930,7 @@ typedef $$LocalKeywordsTableCreateCompanionBuilder =
       required int topicNumber,
       required String keyword,
       required String definition,
+      Value<String?> metadataJson,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> deletedAt,
@@ -16890,6 +16945,7 @@ typedef $$LocalKeywordsTableUpdateCompanionBuilder =
       Value<int> topicNumber,
       Value<String> keyword,
       Value<String> definition,
+      Value<String?> metadataJson,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -16933,6 +16989,11 @@ class $$LocalKeywordsTableFilterComposer
 
   ColumnFilters<String> get definition => $composableBuilder(
     column: $table.definition,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16996,6 +17057,11 @@ class $$LocalKeywordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -17045,6 +17111,11 @@ class $$LocalKeywordsTableAnnotationComposer
 
   GeneratedColumn<String> get definition => $composableBuilder(
     column: $table.definition,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
     builder: (column) => column,
   );
 
@@ -17100,6 +17171,7 @@ class $$LocalKeywordsTableTableManager
                 Value<int> topicNumber = const Value.absent(),
                 Value<String> keyword = const Value.absent(),
                 Value<String> definition = const Value.absent(),
+                Value<String?> metadataJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -17112,6 +17184,7 @@ class $$LocalKeywordsTableTableManager
                 topicNumber: topicNumber,
                 keyword: keyword,
                 definition: definition,
+                metadataJson: metadataJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -17126,6 +17199,7 @@ class $$LocalKeywordsTableTableManager
                 required int topicNumber,
                 required String keyword,
                 required String definition,
+                Value<String?> metadataJson = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -17138,6 +17212,7 @@ class $$LocalKeywordsTableTableManager
                 topicNumber: topicNumber,
                 keyword: keyword,
                 definition: definition,
+                metadataJson: metadataJson,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

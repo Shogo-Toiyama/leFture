@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/utils/connectivity_utils.dart';
 import '../../core/utils/network_constants.dart';
 import '../../domain/entities/lecture_data.dart';
 import '../local_db/app_database.dart';
@@ -30,6 +31,14 @@ class ArtifactFetchException implements Exception {
 
   @override
   String toString() => 'ArtifactFetchException($storagePath): $message';
+}
+
+/// [ArtifactFetchException]の一種で、そもそも端末がオフラインだったために
+/// リクエストすら送らなかったことを表す。呼び出し元(UI)はこれを他の失敗理由
+/// (未生成/認証切れ等)と区別して「オフラインです」という分かりやすい表示に
+/// 差し替えられる。
+class ArtifactOfflineException extends ArtifactFetchException {
+  ArtifactOfflineException({required super.storagePath}) : super('offline');
 }
 
 class LectureArtifactRepository {
@@ -61,6 +70,13 @@ class LectureArtifactRepository {
     if (localFile.existsSync() && localFile.lengthSync() > 0) {
       await _registerCacheEntry(storagePath, localFile);
       return localFile;
+    }
+
+    // 既にオフラインと分かっているなら、DNS解決待ちで何十秒も待たされた挙句に
+    // 生のSocketException文言をユーザーに見せてしまうことのないよう、
+    // リクエスト自体を送らずその場で分かりやすい専用の例外にする。
+    if (!await isDeviceOnline()) {
+      throw ArtifactOfflineException(storagePath: storagePath);
     }
 
     final token = _supabase.auth.currentSession?.accessToken;
@@ -145,6 +161,11 @@ class LectureArtifactRepository {
       final File file;
       try {
         file = await getArtifactFile('$uid/$lectureId/$fileName');
+      } on ArtifactOfflineException {
+        // オフラインなら他の候補ファイル名を試しても結果は変わらないので、
+        // ここで即座に伝播する。呼び出し元は「まだ生成中」と誤表示せず
+        // 「オフラインです」を出せる。
+        rethrow;
       } on ArtifactFetchException {
         continue;
       }

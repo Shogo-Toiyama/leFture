@@ -20,6 +20,7 @@ import 'package:lecture_companion_ui/application/sync/announcement_outbox_push_h
 import 'package:lecture_companion_ui/application/sync/review_card_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/deep_note_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/user_profile_outbox_push_handler.dart';
+import 'package:lecture_companion_ui/application/sync/keyword_outbox_push_handler.dart';
 import 'package:lecture_companion_ui/application/sync/user_profile_sync_service.dart';
 import 'package:lecture_companion_ui/application/maintenance/local_retention_service.dart';
 import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
@@ -57,6 +58,7 @@ class LectureController extends _$LectureController {
       'announcement': AnnouncementOutboxPushHandler(),
       'review_card': ReviewCardOutboxPushHandler(),
       'deep_note': DeepNoteOutboxPushHandler(),
+      'keyword': KeywordOutboxPushHandler(),
       'user_profile': UserProfileOutboxPushHandler(),
     });
   }

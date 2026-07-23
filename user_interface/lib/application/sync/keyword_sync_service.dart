@@ -80,4 +80,47 @@ class KeywordSyncService {
       lastFullPulledAt: needsFullPull ? now : null,
     );
   }
+
+  /// 特定の講義1件分だけをSupabaseから無条件Pullする。ローカルキャッシュの
+  /// 容量上限([LocalRetentionService.enforceCacheBudget])によってその講義の
+  /// 行が削除された後、講義ページを開いた際に復元するための経路。
+  /// 通常の[pull]と違い、`updated_at`での差分判定やsyncカーソルの更新は
+  /// 行わない(全体同期のカーソルを狂わせないため)。
+  Future<void> pullForLecture(String lectureId) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final now = DateTime.now().toUtc();
+    final List<dynamic> data = await supabase
+        .from('keywords')
+        .select()
+        .eq('user_id', uid)
+        .eq('lecture_id', lectureId)
+        .timeout(networkTimeout);
+
+    if (data.isEmpty) return;
+
+    final companions = data.map((json) {
+      return LocalKeywordsCompanion(
+        id: Value(json['id'] as String),
+        userId: Value(json['user_id'] as String),
+        lectureId: Value(json['lecture_id'] as String),
+        topicNumber: Value((json['topic_number'] as num?)?.toInt() ?? 0),
+        keyword: Value(json['keyword'] as String? ?? ''),
+        definition: Value(json['definition'] as String? ?? ''),
+        createdAt: Value(DateTime.parse(json['created_at'])),
+        updatedAt: Value(DateTime.parse(json['updated_at'])),
+        deletedAt: Value(
+          json['deleted_at'] == null ? null : DateTime.parse(json['deleted_at'] as String),
+        ),
+        lastSyncedAt: Value(now),
+      );
+    }).toList();
+
+    await _db.batch((batch) {
+      batch.insertAllOnConflictUpdate(_db.localKeywords, companions);
+    });
+
+    DevLog.add('📥 [KeywordSync] Restored ${companions.length} keyword(s) for lecture $lectureId.');
+  }
 }

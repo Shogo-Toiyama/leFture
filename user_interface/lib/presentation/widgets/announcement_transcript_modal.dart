@@ -15,6 +15,7 @@ import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
 import 'package:lecture_companion_ui/core/utils/topic_color_utils.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/infrastructure/repositories/lecture_artifact_repository.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/pages/transcript/transcript_page.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -848,7 +849,9 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                   ),
                   error: (err, _) => Center(
                     child: Text(
-                      'Transcript unavailable: $err',
+                      err is ArtifactOfflineException
+                          ? "You're offline. Transcript will load once you're back online."
+                          : 'Transcript unavailable: $err',
                       style: TextStyle(color: AppColors.paper.textPencil),
                     ),
                   ),
@@ -1168,7 +1171,9 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                   isAudioLoaded: isAudioLoaded.value,
                   isLoading: r2FileAsync.isLoading,
                   errorMessage: r2FileAsync.hasError
-                      ? r2FileAsync.error.toString()
+                      ? (r2FileAsync.error is ArtifactOfflineException
+                          ? "You're offline"
+                          : r2FileAsync.error.toString())
                       : null,
                   topics: topics,
                   currentTopic: currentTopic,

@@ -106,6 +106,12 @@ class VadOfflineEngine implements AsrEngine {
   }
 
   @override
+  void setDecodingPaused(bool paused) {
+    // ack待ちは不要(境界を跨いだ数百ms程度のズレは実害が無いため)。
+    _workerSendPort?.send(VadOfflineIsolateSetPaused(paused));
+  }
+
+  @override
   Future<void> dispose() async {
     DevLog.add('🎙️ [VadOfflineEngine] dispose() requested');
 

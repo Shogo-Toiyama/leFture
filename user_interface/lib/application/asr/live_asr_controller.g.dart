@@ -62,7 +62,7 @@ final class LiveAsrControllerProvider
   }
 }
 
-String _$liveAsrControllerHash() => r'f4df5149efb73577b8a22c9088ecb4d0fdb6d30e';
+String _$liveAsrControllerHash() => r'870a4f359b7d78eb368b87031961870215414b31';
 
 /// 録音の開始/終了に同期してオンデバイスASRエンジンの起動/停止を行う
 /// オーケストレーター。`RecordingController`の`onMasterDataReady`コールバックから

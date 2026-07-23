@@ -20,6 +20,7 @@ enum ActivityType {
 enum ActivityRecordType {
   reviewCard,
   deepNote,
+  keyword,
   funFact,
   announcement,
   lecture,
@@ -58,6 +59,12 @@ final allDeepNotesProvider = StreamProvider<List<LocalDeepNote>>((ref) {
   final uid = supabase.auth.currentUser?.id;
   if (uid == null) return Stream.value(const []);
   return ref.watch(appDatabaseProvider).watchAllDeepNotes(uid);
+});
+
+final allKeywordsProvider = StreamProvider<List<LocalKeyword>>((ref) {
+  final uid = supabase.auth.currentUser?.id;
+  if (uid == null) return Stream.value(const []);
+  return ref.watch(appDatabaseProvider).watchAllKeywords(uid);
 });
 
 final allLectureTopicsProvider = StreamProvider<List<LocalLectureTopic>>((ref) {
@@ -107,6 +114,7 @@ final activityRecordsProvider = FutureProvider.family<List<ActivityRecord>, Acti
     case ActivityType.saved:
       final cards = await ref.watch(allReviewCardsProvider.future);
       final notes = await ref.watch(allDeepNotesProvider.future);
+      final keywords = await ref.watch(allKeywordsProvider.future);
       final topics = await ref.watch(allLectureTopicsProvider.future);
       final db = ref.watch(appDatabaseProvider);
       final lectures = await db.watchAllLectures(uid).first;
@@ -158,6 +166,24 @@ final activityRecordsProvider = FutureProvider.family<List<ActivityRecord>, Acti
             type: ActivityRecordType.deepNote,
             title: title,
             content: plainTextPreview(row.noteContents),
+            dateTime: row.updatedAt,
+            lectureId: row.lectureId,
+            courseId: lectureCourseMap[row.lectureId],
+            rawData: row,
+          ));
+        }
+      }
+
+      for (final row in keywords) {
+        final metadata = row.metadataJson != null
+            ? Map<String, dynamic>.from(jsonDecode(row.metadataJson!) as Map)
+            : null;
+        if (metadata?['saved'] == true) {
+          list.add(ActivityRecord(
+            id: row.id,
+            type: ActivityRecordType.keyword,
+            title: row.keyword.trim().isNotEmpty ? row.keyword.trim() : 'Keyword',
+            content: plainTextPreview(row.definition),
             dateTime: row.updatedAt,
             lectureId: row.lectureId,
             courseId: lectureCourseMap[row.lectureId],

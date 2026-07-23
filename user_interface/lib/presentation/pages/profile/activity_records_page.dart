@@ -14,6 +14,8 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/review
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lecture_companion_ui/infrastructure/local_db/repositories/keyword_repository_drift.dart';
+import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_list_page.dart';
@@ -116,6 +118,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
           {'label': 'All', 'value': 'all'},
           {'label': 'Review Cards', 'value': 'reviewCard'},
           {'label': 'Deep Notes', 'value': 'deepNote'},
+          {'label': 'Keywords', 'value': 'keyword'},
         ];
         break;
       case ActivityType.likes:
@@ -291,6 +294,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                 if (type == ActivityType.saved || type == ActivityType.likes || type == ActivityType.dislikes) {
                   if (selectedFilter.value == 'reviewCard') return r.type == ActivityRecordType.reviewCard;
                   if (selectedFilter.value == 'deepNote') return r.type == ActivityRecordType.deepNote;
+                  if (selectedFilter.value == 'keyword') return r.type == ActivityRecordType.keyword;
                   if (selectedFilter.value == 'funFact') return r.type == ActivityRecordType.funFact;
                 }
                 if (type == ActivityType.announcements) {
@@ -572,10 +576,19 @@ class ActivityRecordsPage extends HookConsumerWidget {
   }
 
   Future<void> _toggleSave(WidgetRef ref, ActivityRecord record, bool save) async {
+    final uid = supabase.auth.currentUser?.id;
     if (record.type == ActivityRecordType.reviewCard) {
       await ref.read(reviewCardRepositoryDriftProvider).updateSaved(id: record.id, saved: save);
     } else if (record.type == ActivityRecordType.deepNote) {
       await ref.read(deepNoteRepositoryDriftProvider).updateSaved(id: record.id, saved: save);
+    } else if (record.type == ActivityRecordType.keyword && uid != null) {
+      final raw = record.rawData as LocalKeyword;
+      await ref.read(keywordRepositoryDriftProvider).toggleSaveKeyword(
+            keywordId: record.id,
+            userId: uid,
+            isSaved: save,
+            existingMetadataJson: raw.metadataJson,
+          );
     }
     ref.read(lectureControllerProvider.notifier).pushOutboxNow();
   }
@@ -735,6 +748,11 @@ class _ActivityContentCard extends ConsumerWidget {
       case ActivityRecordType.deepNote:
         icon = Icons.article_rounded;
         typeLabel = 'Deep Note';
+        badgeColor = AppColors.starGold;
+        break;
+      case ActivityRecordType.keyword:
+        icon = Icons.style_rounded;
+        typeLabel = 'Keyword';
         badgeColor = AppColors.starGold;
         break;
       case ActivityRecordType.funFact:

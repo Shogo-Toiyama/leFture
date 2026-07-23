@@ -715,7 +715,7 @@ class _ActivitySection extends StatelessWidget {
             iconColor: AppColors.starGold,
             iconBgColor: const Color(0xFF4CAF50),
             title: 'Saved',
-            subtitle: 'Review Cards · Deep Notes',
+            subtitle: 'Review Cards · Deep Notes · Keywords',
             onTap: () => context.push('/account/activity/saved'),
           ),
 

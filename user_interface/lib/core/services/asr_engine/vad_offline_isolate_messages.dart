@@ -39,5 +39,14 @@ class VadOfflineIsolateDisposed {
   const VadOfflineIsolateDisposed();
 }
 
+/// メインisolate→ワーカーisolate: デコード処理の一時停止/再開を指示する。
+/// 一時停止中もサンプルカウント(タイムスタンプの基準)は進め続けるが、
+/// VAD/デコードの実処理はスキップする(Liveタブが非表示/アプリが
+/// バックグラウンドの間、電力消費を抑えるため)。
+class VadOfflineIsolateSetPaused {
+  const VadOfflineIsolateSetPaused(this.paused);
+  final bool paused;
+}
+
 /// ワーカーisolateのエントリポイントの型(spawn時の型チェック用)。
 typedef VadOfflineIsolateEntry = void Function(SendPort mainSendPort);

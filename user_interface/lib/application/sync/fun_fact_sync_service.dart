@@ -93,4 +93,59 @@ class FunFactSyncService {
       lastFullPulledAt: needsFullPull ? now : null,
     );
   }
+
+  /// 特定の講義1件分だけをSupabaseから無条件Pullする。ローカルキャッシュの
+  /// 容量上限([LocalRetentionService.enforceCacheBudget])によってその講義の
+  /// 行が削除された後、講義ページを開いた際に復元するための経路。
+  /// 通常の[pull]と違い、`updated_at`での差分判定やsyncカーソルの更新は
+  /// 行わない(全体同期のカーソルを狂わせないため)。
+  Future<void> pullForLecture(String lectureId) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final now = DateTime.now().toUtc();
+    final List<dynamic> data = await supabase
+        .from('fun_facts')
+        .select()
+        .eq('user_id', uid)
+        .eq('lecture_id', lectureId)
+        .timeout(networkTimeout);
+
+    if (data.isEmpty) return;
+
+    // まだPushできていないローカルのreaction変更を、サーバーの古い値で
+    // 上書きしないためのガード(通常のpullと同じ配慮)。
+    final pendingIds = await _db.getPendingOutboxEntityIds(_entityType);
+
+    final companions = data.map((json) {
+      final id = json['id'] as String;
+      final metadata = json['metadata'] as Map<String, dynamic>?;
+      final isPending = pendingIds.contains(id);
+
+      return LocalFunFactsCompanion(
+        id: Value(id),
+        userId: Value(json['user_id'] as String),
+        lectureId: Value(json['lecture_id'] as String),
+        title: Value(json['title'] as String?),
+        hook: Value(json['hook'] as String? ?? ''),
+        body: Value(json['body'] as String? ?? ''),
+        metadataJson: Value(metadata != null ? jsonEncode(metadata) : null),
+        reaction: isPending
+            ? const Value.absent()
+            : Value(metadata?['reaction'] as String?),
+        createdAt: Value(DateTime.parse(json['created_at'])),
+        updatedAt: Value(DateTime.parse(json['updated_at'])),
+        deletedAt: Value(
+          json['deleted_at'] == null ? null : DateTime.parse(json['deleted_at'] as String),
+        ),
+        lastSyncedAt: Value(now),
+      );
+    }).toList();
+
+    await _db.batch((batch) {
+      batch.insertAllOnConflictUpdate(_db.localFunFacts, companions);
+    });
+
+    DevLog.add('📥 [FunFactSync] Restored ${companions.length} fun fact(s) for lecture $lectureId.');
+  }
 }

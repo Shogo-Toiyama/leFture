@@ -24,6 +24,8 @@ class RecordingState {
     this.draftCourseId,
     this.autoStartAnalysis = true,
     this.realtimeTranscribe = false,
+    this.transientNotice,
+    this.audioLevel = 0.0,
   });
 
   final RecordingPhase phase;
@@ -35,6 +37,11 @@ class RecordingState {
   final String? draftCourseId;
   final bool autoStartAnalysis;
   final bool realtimeTranscribe;
+  // フェーズを変えるほどではない一回きりの通知(SnackBar等)。RecordingPageが
+  // ref.listenで検知して表示した後、clearTransientNoticeで消す想定。
+  // errorMessageと違い、phase==errorの時だけ表示されるものではない。
+  final String? transientNotice;
+  final double audioLevel;
 
   // LocalLecture.courseId は build_runner 実行後に使用可能になる
   String get title => lecture?.title ?? draftTitle ?? '';
@@ -57,6 +64,7 @@ class RecordingState {
       elapsedSeconds: 0,
       autoStartAnalysis: true,
       realtimeTranscribe: false,
+      audioLevel: 0.0,
     );
   }
 
@@ -72,6 +80,9 @@ class RecordingState {
     bool forceClearCourseId = false,
     bool? autoStartAnalysis,
     bool? realtimeTranscribe,
+    String? transientNotice,
+    bool clearTransientNotice = false,
+    double? audioLevel,
   }) {
     return RecordingState(
       phase: phase ?? this.phase,
@@ -83,6 +94,8 @@ class RecordingState {
       draftCourseId: forceClearCourseId ? null : (courseId ?? draftCourseId),
       autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
       realtimeTranscribe: realtimeTranscribe ?? this.realtimeTranscribe,
+      transientNotice: clearTransientNotice ? null : (transientNotice ?? this.transientNotice),
+      audioLevel: audioLevel ?? this.audioLevel,
     );
   }
 }

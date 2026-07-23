@@ -378,6 +378,7 @@ class LocalKeywords extends Table {
   IntColumn get topicNumber => integer()();
   TextColumn get keyword => text()();
   TextColumn get definition => text()();
+  TextColumn get metadataJson => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -508,7 +509,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -697,6 +698,13 @@ class AppDatabase extends _$AppDatabase {
         }
         await m.createAll();
       }
+      if (from < 23) {
+        // バージョン23: LocalKeywords に metadataJson カラムを追加。
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      }
     },
   );
 
@@ -739,6 +747,31 @@ class AppDatabase extends _$AppDatabase {
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
     return query.watch();
+  }
+
+  /// ユーザーの全キーワードを監視する（Activity Records/Saved機能用）
+  Stream<List<LocalKeyword>> watchAllKeywords(String userId) {
+    final query = select(localKeywords)
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
+      ..orderBy([(t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc)]);
+    return query.watch();
+  }
+
+  /// キーワードのメタデータ(saved等)を更新する
+  Future<void> updateKeywordMetadata({
+    required String id,
+    required String userId,
+    String? metadataJson,
+  }) async {
+    final now = DateTime.now().toUtc();
+    await (update(localKeywords)
+          ..where((t) => t.id.equals(id) & t.userId.equals(userId)))
+        .write(
+      LocalKeywordsCompanion(
+        metadataJson: Value(metadataJson),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   /// 講義詳細ページ用。単一講義をIDで監視する(以前はSupabase Realtimeで

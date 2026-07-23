@@ -670,15 +670,15 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPos = item.isPositive;
-    final color = isPos ? const Color(0xFF4CAF50) : const Color(0xFFFF5252);
-    final icon = isPos ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded;
+    final color = isPos ? const Color(0xFF4CAF50) : const Color(0xFFE2E2EC);
+    final icon = isPos ? Icons.add_circle_outline_rounded : Icons.bolt_rounded;
 
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: color.withValues(alpha: isPos ? 0.12 : 0.08),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 18),
@@ -691,7 +691,7 @@ class _HistoryTile extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    item.timeLabel,
+                    item.localTimeLabel,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -700,7 +700,7 @@ class _HistoryTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '(${item.dateLabel})',
+                    '(${item.localDateLabel})',
                     style: TextStyle(
                       color: AppColors.universe.textComet,
                       fontSize: 12,

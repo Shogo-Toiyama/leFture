@@ -28,6 +28,9 @@ class StreamingZipformerEngine implements AsrEngine {
   int _samplesFed = 0;
   String _lastEmittedPartial = '';
 
+  // Liveタブが非表示/アプリがバックグラウンドの間はtrueになる。
+  bool _paused = false;
+
   @override
   Stream<AsrLiveSegment> get segments => _controller.stream;
 
@@ -67,6 +70,11 @@ class StreamingZipformerEngine implements AsrEngine {
   }
 
   @override
+  void setDecodingPaused(bool paused) {
+    _paused = paused;
+  }
+
+  @override
   void acceptPcm16(Uint8List bytes) {
     final recognizer = _recognizer;
     final stream = _stream;
@@ -74,6 +82,13 @@ class StreamingZipformerEngine implements AsrEngine {
 
     final samples = convertPcm16ToFloat32(bytes);
     _samplesFed += samples.length;
+
+    if (_paused) {
+      // decode/isEndpointは一切呼ばない。サンプルカウントだけ進めておき、
+      // 再開後のタイムスタンプが実時間からズレないようにする。
+      return;
+    }
+
     stream.acceptWaveform(samples: samples, sampleRate: _sampleRate);
 
     while (recognizer.isReady(stream)) {

@@ -28,6 +28,7 @@ import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
 import '../dev_tools/simulate_recording_tab.dart';
 import '../dev_tools/test_mode_flag.dart';
+import 'widgets/audio_waveform_visualizer.dart';
 import 'widgets/course_picker_sheet.dart';
 
 class RecordingPage extends HookConsumerWidget {
@@ -48,10 +49,32 @@ class RecordingPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // タブコントローラー (Voice / Live、isTestModeの時だけTestタブが加わる)
     final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
+
+    // Liveタブ(index 1)が表示中かどうかをLiveAsrControllerへ通知する。
+    // Liveタブを見ていない間はオンデバイスASRの重い処理(VAD推論・デコード)を
+    // 一時停止し、バッテリー消費を抑える(音声の受け取り自体は止めない)。
+    useEffect(() {
+      void listener() {
+        ref.read(liveAsrControllerProvider.notifier).setLiveTabFocused(tabController.index == 1);
+      }
+      tabController.addListener(listener);
+      listener(); // マウント時点の初期状態を反映
+      return () => tabController.removeListener(listener);
+    }, [tabController]);
+
+    // ページ自体から離れる(タブ切り替えではなく画面遷移)時もLiveタブは
+    // 見えなくなるので、一時停止扱いにする。上のeffectとは意図的に分けている
+    // (tabControllerのリスナー解除と「ページ離脱」を1つのeffectに混ぜると、
+    // 将来的にクリーンアップの意味が食い違って事故りやすいため)。
+    useEffect(() {
+      return () => ref.read(liveAsrControllerProvider.notifier).setLiveTabFocused(false);
+    }, []);
+
     // MVPのためコメントアウト
     // final memoCtl = useTextEditingController();
     // useListenable(memoCtl);
     final showMoreSettings = useState(false);
+    final scrollController = useScrollController();
     final selectedAudioFilePath = useState<String?>(null);
     final isSelectingFile = useState(false);
     
@@ -137,6 +160,17 @@ class RecordingPage extends HookConsumerWidget {
       }
     });
 
+    // フェーズを変えない一回きりの通知(例: モデルダウンロード中に録音を
+    // 始めた場合の案内)をSnackBarで表示する。
+    ref.listen<RecordingState>(recordingControllerProvider, (previous, next) {
+      final notice = next.transientNotice;
+      if (notice == null || notice == previous?.transientNotice) return;
+      controller.clearTransientNotice();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(notice)));
+      }
+    });
+
     final titleCtl = useTextEditingController(text: state.title);
     // タイトル同期
     useEffect(() {
@@ -150,10 +184,12 @@ class RecordingPage extends HookConsumerWidget {
     }, [state.title]);
 
     // 共通スタイル定義
-    InputDecoration glassInputDecoration(String label, IconData icon) {
+    InputDecoration glassInputDecoration(String label, IconData icon, {String? hintText}) {
       return InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: AppColors.universe.textComet),
+        hintText: hintText,
+        hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.5), fontSize: 13),
         prefixIcon: Icon(icon, color: AppColors.universe.textComet),
         filled: true,
         fillColor: AppColors.universe.glassWhiteLow,
@@ -261,6 +297,7 @@ class RecordingPage extends HookConsumerWidget {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
+                      controller: scrollController,
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
@@ -350,6 +387,71 @@ class RecordingPage extends HookConsumerWidget {
                               onTap: isBusy ? null : openCoursePicker,
                             ),
                           ),
+
+                          // 設定ステータスバッジ（言語 & Realtime）
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: InkWell(
+                              onTap: () {
+                                showMoreSettings.value = true;
+                                Future.microtask(() {
+                                  if (scrollController.hasClients) {
+                                    scrollController.animateTo(
+                                      scrollController.position.maxScrollExtent,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.universe.glassWhiteLow,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.universe.glassBorder),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.language, size: 14, color: AppColors.universe.textComet),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      recordingLanguageFromCode(recordingLanguage).nativeName,
+                                      style: TextStyle(
+                                        color: AppColors.universe.textStarlight,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Container(
+                                      height: 12,
+                                      width: 1,
+                                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                                      color: AppColors.universe.glassBorder,
+                                    ),
+                                    Icon(
+                                      state.realtimeTranscribe ? Icons.bolt : Icons.offline_bolt_outlined,
+                                      size: 14,
+                                      color: state.realtimeTranscribe ? AppColors.starGold : AppColors.universe.textComet,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      state.realtimeTranscribe ? 'Realtime ON' : 'Realtime OFF',
+                                      style: TextStyle(
+                                        color: state.realtimeTranscribe ? AppColors.starGold : AppColors.universe.textComet,
+                                        fontSize: 12,
+                                        fontWeight: state.realtimeTranscribe ? FontWeight.bold : FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(Icons.chevron_right, size: 14, color: AppColors.universe.textComet.withValues(alpha: 0.6)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                           
                           // コース未選択時の注意書き（録音開始後のみ表示）
                           if (state.courseId == null && (state.phase == RecordingPhase.recording || state.phase == RecordingPhase.paused))
@@ -405,7 +507,15 @@ class RecordingPage extends HookConsumerWidget {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 16),
+
+                          // 波形表示 (Audio Visualizer)
+                          AudioWaveformVisualizer(
+                            audioLevel: state.audioLevel,
+                            isRecording: state.isRecording,
+                            isPaused: state.isPaused,
+                          ),
+                          const SizedBox(height: 20),
 
                           // 4. Big Mic Button (Center)
                           _MicButton(state: state, controller: controller, isBusy: isBusy),
@@ -641,7 +751,7 @@ class RecordingPage extends HookConsumerWidget {
                                         ),
                                         const SizedBox(width: 10),
                                         Text(
-                                          'More Settings',
+                                          'Settings',
                                           style: TextStyle(
                                             color: AppColors.universe.textComet,
                                             fontSize: 14,
@@ -674,7 +784,11 @@ class RecordingPage extends HookConsumerWidget {
                                   controller: titleCtl,
                                   enabled: !isBusy,
                                   style: TextStyle(color: AppColors.universe.textStarlight),
-                                  decoration: glassInputDecoration('Lecture title', Icons.title),
+                                  decoration: glassInputDecoration(
+                                    'Lecture title (Optional)',
+                                    Icons.title,
+                                    hintText: '✨ Auto (AI will generate title)',
+                                  ),
                                   onChanged: controller.setTitle,
                                 ),
                                 const SizedBox(height: 16),
@@ -1389,12 +1503,23 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
         : const <LiveTranscriptSentence>[];
 
     // サーバー版(lecture_transcripts)とオンデバイス版(LiveAsrController)を
-    // 時刻順に素朴に連結するだけ(watermarkによる賢いマージはまだ次フェーズ)。
-    // サーバー版は常に確定済みなのでisFinal:true固定。
+    // 時刻順に連結する。サーバー版は常に確定済みなのでisFinal:true固定。
+    //
+    // サーバー版が既に文字起こし済みの区間をオンデバイス版が二重に表示
+    // しないよう、サーバー側から取れている最新のstart_time(watermark)より
+    // 前のオンデバイスセグメントは表示から除外する。サーバー版はいずれ
+    // その区間を追い越して確定させるので、それより前のオンデバイス分は
+    // 「もう不要な下書き」として捨ててよい。
+    final serverWatermark = sentences.isEmpty
+        ? null
+        : sentences.map((s) => s.startSec).reduce((a, b) => a > b ? a : b);
     final onDeviceSegments = ref.watch(liveAsrControllerProvider);
+    final visibleOnDeviceSegments = serverWatermark == null
+        ? onDeviceSegments
+        : onDeviceSegments.where((s) => s.timestampSec >= serverWatermark).toList();
     final combined = <(double, String, bool)>[
       for (final s in sentences) (s.startSec, s.text, true),
-      for (final s in onDeviceSegments) (s.timestampSec, s.text, s.isFinal),
+      for (final s in visibleOnDeviceSegments) (s.timestampSec, s.text, s.isFinal),
     ]..sort((a, b) => a.$1.compareTo(b.$1));
 
     void scrollToBottom() {

@@ -17,21 +17,43 @@ class LiveTranscriptRepository {
   /// 指定講義のlecture_transcriptsをポーリングし、文単位にフラット化して
   /// 返し続ける。watchJobと違って終端条件は無く、呼び出し側が購読をやめる
   /// までポーリングし続ける(ProviderをautoDisposeにして制御する)。
+  ///
+  /// `status == 'REVIEWED'`はサーバー側で一方向・終端の状態(戻ることは無い)
+  /// なので、一度REVIEWEDと確認できた行は内容をローカルにキャッシュし、
+  /// 以降のポーリングでは`.not('id', 'in', ...)`で除外して二度と取得しない。
+  /// これが無いと、2時間・200チャンク超の講義では、既に確定して二度と
+  /// 変わらない行のJSONペイロードまで毎回(3秒ごとに)丸ごと再取得する
+  /// ことになり、講義が長くなるほどポーリングのコストが際限なく増えていく。
   Stream<List<LiveTranscriptSentence>> watchLiveTranscript(String lectureId) async* {
+    // 行id → フラット化済み文。REVIEWEDと確認できた行だけをここに残す。
+    final finalized = <String, List<LiveTranscriptSentence>>{};
+
     while (true) {
       List<LiveTranscriptSentence> sentences = const [];
       try {
-        final rows = await _supabase
-            .from('lecture_transcripts')
-            .select()
-            .eq('lecture_id', lectureId)
-            .order('chunk_index')
-            .timeout(networkTimeout);
-
-        final all = <LiveTranscriptSentence>[];
-        for (final row in rows) {
-          all.addAll(_flattenRow(row));
+        var query = _supabase.from('lecture_transcripts').select().eq('lecture_id', lectureId);
+        if (finalized.isNotEmpty) {
+          query = query.not('id', 'in', finalized.keys.toList());
         }
+        final rows = await query.order('chunk_index').timeout(networkTimeout);
+
+        final pending = <LiveTranscriptSentence>[];
+        for (final row in rows) {
+          final id = row['id'] as String?;
+          final flattened = _flattenRow(row);
+          if (id != null && row['status'] == 'REVIEWED') {
+            // 無音チャンク等でsegmentsが空のREVIEWED行も、二度と内容が
+            // 変わらない点は同じなのでキャッシュして除外対象にする。
+            finalized[id] = flattened;
+          } else {
+            pending.addAll(flattened);
+          }
+        }
+
+        final all = [
+          for (final s in finalized.values) ...s,
+          ...pending,
+        ];
         all.sort((a, b) => a.startSec.compareTo(b.startSec));
         sentences = all;
       } catch (e, s) {

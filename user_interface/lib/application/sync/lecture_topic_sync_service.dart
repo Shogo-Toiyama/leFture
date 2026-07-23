@@ -84,4 +84,53 @@ class LectureTopicSyncService {
       lastFullPulledAt: needsFullPull ? now : null,
     );
   }
+
+  /// 特定の講義1件分だけをSupabaseから無条件Pullする。ローカルキャッシュの
+  /// 容量上限([LocalRetentionService.enforceCacheBudget])によってその講義の
+  /// 行が削除された後、講義ページを開いた際に復元するための経路。
+  /// 通常の[pull]と違い、`updated_at`での差分判定やsyncカーソルの更新は
+  /// 行わない(全体同期のカーソルを狂わせないため)。画像本体は`imagePath`
+  /// (ポインタ)を復元すれば、`artifactFileProvider`側が表示時に自動で
+  /// R2から取り直してくれるため、ここでは行わない。
+  Future<void> pullForLecture(String lectureId) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final now = DateTime.now().toUtc();
+    final List<dynamic> data = await supabase
+        .from('lecture_topics')
+        .select()
+        .eq('user_id', uid)
+        .eq('lecture_id', lectureId)
+        .timeout(networkTimeout);
+
+    if (data.isEmpty) return;
+
+    final companions = data.map((json) {
+      return LocalLectureTopicsCompanion(
+        id: Value(json['id'] as String),
+        userId: Value(json['user_id'] as String),
+        lectureId: Value(json['lecture_id'] as String),
+        topicIndex: Value((json['index'] as num?)?.toInt() ?? 0),
+        topicTitle: Value(json['topic_title'] as String? ?? ''),
+        topicType: Value(json['topic_type'] as String? ?? ''),
+        summary: Value(json['summary'] as String?),
+        startSid: Value(json['start_sid'] as String?),
+        endSid: Value(json['end_sid'] as String?),
+        imagePath: Value(json['image_path'] as String?),
+        createdAt: Value(DateTime.parse(json['created_at'])),
+        updatedAt: Value(DateTime.parse(json['updated_at'])),
+        deletedAt: Value(
+          json['deleted_at'] == null ? null : DateTime.parse(json['deleted_at'] as String),
+        ),
+        lastSyncedAt: Value(now),
+      );
+    }).toList();
+
+    await _db.batch((batch) {
+      batch.insertAllOnConflictUpdate(_db.localLectureTopics, companions);
+    });
+
+    DevLog.add('📥 [LectureTopicSync] Restored ${companions.length} topic(s) for lecture $lectureId.');
+  }
 }

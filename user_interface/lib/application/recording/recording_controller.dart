@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:lecture_companion_ui/core/services/audio_record/audio_chunker.dart';
 import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
@@ -26,6 +27,30 @@ part 'recording_controller.g.dart';
 /// クレジット0でも常に可能。この制限はRealtime(継続的にサーバーへ送信し
 /// 続ける処理)にのみ適用する。
 const double kRealtimeMinCreditUsd = 0.1;
+
+/// PCM16bitデータから音量振幅 (0.0 〜 1.0) を算出する
+double _calculatePcmAudioLevel(Uint8List data) {
+  if (data.length < 2) return 0.0;
+  final byteData = ByteData.sublistView(data);
+  final sampleCount = data.length ~/ 2;
+  if (sampleCount == 0) return 0.0;
+
+  double sumSquares = 0.0;
+  final step = sampleCount > 512 ? sampleCount ~/ 256 : 1;
+  int count = 0;
+
+  for (int i = 0; i < sampleCount; i += step) {
+    final sample = byteData.getInt16(i * 2, Endian.little);
+    final norm = sample / 32768.0;
+    sumSquares += norm * norm;
+    count++;
+  }
+
+  if (count == 0) return 0.0;
+  final rms = math.sqrt(sumSquares / count);
+  // 感度調整（マイク入力を視覚的に見やすくスケーリング）
+  return (rms * 3.5).clamp(0.0, 1.0);
+}
 
 /// コースとキーワードから Groq Whisper 用コンテキスト文字列を生成する
 Future<String> _buildWhisperContext({
@@ -176,7 +201,7 @@ class RecordingController extends _$RecordingController {
         _currentChunkIndex++;
       }
 
-      state = state.copyWith(phase: RecordingPhase.paused);
+      state = state.copyWith(phase: RecordingPhase.paused, audioLevel: 0.0);
       return;
     }
 
@@ -316,6 +341,16 @@ class RecordingController extends _$RecordingController {
         state = state.copyWith(realtimeTranscribe: false);
       } else if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
         ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
+        // ダウンロード中/未確認のままでも録音自体はブロックしない
+        // (LiveAsrController側がダウンロード完了を検知して自動的に
+        // 再試行してくれるが、それまでは字幕が出ないことをここで一言
+        // 知らせておく)。
+        if (modelManager.statusForLanguage(recordingLanguage).status != AsrModelStatus.ready) {
+          DevLog.add('[StartSession] ASR model still downloading for "$recordingLanguage" — captions will start once ready.');
+          state = state.copyWith(
+            transientNotice: 'Speech model is still downloading — live captions will start once it\'s ready.',
+          );
+        }
       } else if (state.realtimeTranscribe) {
         DevLog.add('[StartSession] Realtime Transcribe disabled due to insufficient credits.');
         state = state.copyWith(realtimeTranscribe: false);
@@ -328,6 +363,8 @@ class RecordingController extends _$RecordingController {
       _audioStreamSub = audioStream.listen(
         (data) {
           _chunker!.processAudioStream(data);
+          final level = _calculatePcmAudioLevel(data);
+          state = state.copyWith(audioLevel: level);
         },
         onError: (Object e, StackTrace st) {
           DevLog.add('🔴 [StartSession] audioStream error: $e\n$st');
@@ -623,5 +660,10 @@ class RecordingController extends _$RecordingController {
 
   Future<void> openSettingsIfNeeded() async {
     await openAppSettings();
+  }
+
+  void clearTransientNotice() {
+    if (state.transientNotice == null) return;
+    state = state.copyWith(clearTransientNotice: true);
   }
 }
