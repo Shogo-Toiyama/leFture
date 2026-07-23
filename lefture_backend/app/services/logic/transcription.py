@@ -4,7 +4,9 @@ import time
 import os
 import base64
 import asyncio
+import subprocess
 import requests
+from pathlib import Path
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 from pydub import AudioSegment
 from app.services.helpers.helpers import TaskLogger
@@ -14,6 +16,25 @@ from app.services.helpers.llm_unified import BillingEngine
 class _RetryableCloudflareError(Exception):
     """429/5xx等、リトライすれば成功する見込みがあるCloudflare APIエラー。"""
     pass
+
+
+async def _get_audio_duration_seconds(path: Path) -> float:
+    """
+    ffprobeでコンテナのヘッダのみを読み、音声の長さを取得する。
+    AudioSegment.from_file()のようにPCMへフルデコードしないため、
+    3時間超のマスター音声でもメモリ使用量はほぼゼロで済む。
+    """
+    proc = await asyncio.to_thread(
+        subprocess.run,
+        [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        capture_output=True, text=True, check=True,
+    )
+    return float(proc.stdout.strip())
 
 
 @retry(
@@ -168,36 +189,42 @@ class ModalTranscriptionService:
         if not self.modal_api_url:
             self.logger.log("⚠️ MODAL_WHISPER_URL is not set in environment variables.")
 
-    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "", language: str | None = None) -> dict:
+    async def transcribe_file(self, audio_path: Path, chunk_index: int, prompt_keywords: str = "", language: str | None = None) -> dict:
         """
         ローカル Modal 上の Faster Whisper にマスターオーディオを送信する。
         Cloudflare 形式のレスポンスに統一して返す。
-        """
-        self.logger.log(f"   [Logic] Loading audio into memory for Modal transcription")
 
-        # バイナリから音声を展開（長さを取得するためだけに読み込む）
-        audio = await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(audio_bytes), format="m4a")
-        actual_duration = len(audio) / 1000.0
+        マスター音声は3時間超に及ぶこともあるため、音声全体を`bytes`として
+        メモリに載せない。長さの取得はffprobe（ヘッダのみ読む）で行い、
+        Modalへのアップロードもディスク上のファイルをストリーミングで送信する。
+        """
+        self.logger.log(f"   [Logic] Reading audio duration via ffprobe (no full decode)")
+        actual_duration = await _get_audio_duration_seconds(audio_path)
 
         if not self.modal_api_url:
             self.logger.log("   [Logic] ❌ MODAL_WHISPER_URL not configured.")
             raise ValueError("MODAL_WHISPER_URL environment variable is not set!")
 
-        self.logger.log(f"   [Logic] Calling Modal Faster Whisper API...")
+        self.logger.log(f"   [Logic] Calling Modal Faster Whisper API (streaming upload)...")
         start_time = time.perf_counter()
 
         try:
             # Modal API にマルチパート形式でファイルを送信
             # language未指定ならdataフィールド自体を送らず、Modal側のデフォルト(自動言語判定)に任せる
             form_data = {"language": language} if language else None
-            response = await asyncio.to_thread(
-                lambda: requests.post(
-                    self.modal_api_url,
-                    files={"file": ("audio.m4a", audio_bytes, "audio/mpeg")},
-                    data=form_data,
-                    timeout=300  # 大容量ファイル対応
-                )
-            )
+
+            def _post() -> requests.Response:
+                # ファイルオブジェクトを渡すことでrequestsがディスクからチャンク単位で
+                # ストリーミング送信する（audio_bytesを丸ごとメモリに載せない）
+                with open(audio_path, "rb") as f:
+                    return requests.post(
+                        self.modal_api_url,
+                        files={"file": (audio_path.name, f, "audio/mpeg")},
+                        data=form_data,
+                        timeout=1800,  # 3時間超のマスター音声の推論待ちに耐えられるよう延長
+                    )
+
+            response = await asyncio.to_thread(_post)
 
             if response.status_code != 200:
                 raise Exception(f"Modal API HTTP {response.status_code}: {response.text}")

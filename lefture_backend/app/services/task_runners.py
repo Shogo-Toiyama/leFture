@@ -1049,27 +1049,35 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         if not audio_path:
             raise ValueError(f"Lecture {lecture_id} is missing audio_path. Cannot transcribe.")
 
-        logger.log(f"🎤 [Master] Downloading master audio from R2: {audio_path}")
-
-        # 2. R2からマスター音声バイナリを取得
-        audio_bytes = await asyncio.to_thread(storage_service.download_binary, audio_path)
-
         # 3. Realtime/PreRecorded に応じて適切な Whisper API を選択
         if is_realtime:
             # Realtime（チャンク）モード: Cloudflare Whisper を使用
+            # 34秒程度の小さいチャンクなのでメモリに載せても問題ない
             logger.log(f"   Using Cloudflare Whisper for Realtime mode")
+            logger.log(f"🎤 [Master] Downloading master audio from R2: {audio_path}")
+            audio_bytes = await asyncio.to_thread(storage_service.download_binary, audio_path)
             transcriber = TranscriptionService(logger, billing)
+            result = await transcriber.run_in_memory(
+                audio_bytes=audio_bytes,
+                chunk_index=0,
+                prompt_keywords=whisper_context,
+                language=language,
+            )
         else:
             # PreRecorded（マスター）モード: Modal Faster Whisper を使用
+            # マスター音声は3時間超になり得るため、bytesとしてメモリに載せず
+            # ディスクにストリーミングダウンロードしてからファイルのまま送信する
             logger.log(f"   Using Modal Faster Whisper for PreRecorded mode")
+            logger.log(f"🎤 [Master] Downloading master audio from R2 to disk: {audio_path}")
+            local_audio_path = work_dir / "master_audio.m4a"
+            await asyncio.to_thread(storage_service.download_file, audio_path, local_audio_path)
             transcriber = ModalTranscriptionService(logger, billing)
-
-        result = await transcriber.run_in_memory(
-            audio_bytes=audio_bytes,
-            chunk_index=0,
-            prompt_keywords=whisper_context,
-            language=language,
-        )
+            result = await transcriber.transcribe_file(
+                audio_path=local_audio_path,
+                chunk_index=0,
+                prompt_keywords=whisper_context,
+                language=language,
+            )
 
         raw_segments = result.get("segments") or []
 
