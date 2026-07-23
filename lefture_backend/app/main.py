@@ -435,6 +435,52 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
     return {"status": "success", "plan_id": payload.plan_id}
 
 
+@app.get("/billing/plans")
+async def billing_plans(request: Request):
+    """
+    今claimできる(claim_mode='self_serve'かつ無効化されていない)プラン一覧。
+    Flutter側にplan_idをハードコードさせないための一覧取得エンドポイント。
+    店舗課金(claim_mode='store_purchase')のプランはここには含めない
+    (ストアの購入フロー経由でのみ有効化されるべきなので)。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+
+    admin_client = get_supabase_client()
+
+    # disabled_atの絞り込みはPostgRESTのor=フィルタ文字列に頼らず、ここで
+    # 判定する(タイムゾーンオフセット付きISO文字列の'+'がURLエンコード時に
+    # 空白と誤解釈されるリスクを避けるため。プラン数は少ないので問題ない)。
+    plans_res = await asyncio.to_thread(
+        lambda: admin_client.table("subscription_plans")
+            .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, disabled_at")
+            .eq("claim_mode", "self_serve")
+            .execute()
+    )
+
+    now = datetime.now(timezone.utc)
+    claimable = []
+    for plan in (plans_res.data or []):
+        disabled_at = plan.get("disabled_at")
+        if disabled_at and datetime.fromisoformat(disabled_at) <= now:
+            continue
+        plan.pop("disabled_at", None)
+        claimable.append(plan)
+
+    return {"plans": claimable}
+
+
 @app.get("/billing/summary")
 async def billing_summary(request: Request):
     """
