@@ -1,5 +1,5 @@
-import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/domain/entities/deep_note.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'deep_note_repository_supabase.g.dart';

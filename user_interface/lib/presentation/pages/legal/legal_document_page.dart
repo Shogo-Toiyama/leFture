@@ -4,9 +4,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lecture_companion_ui/application/legal/legal_content_provider.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/legal/legal_content_provider.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// Generic "Paper"-themed reader for a Markdown legal document fetched from
 /// Supabase (see [LegalContentRepositorySupabase]). Both the Privacy Policy

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 /// メール確認/OAuthコールバック等、非同期に完了する認証系アクションの
 /// 結果を見せるための共通ビュー。ResetPasswordPage の成功状態の見た目を

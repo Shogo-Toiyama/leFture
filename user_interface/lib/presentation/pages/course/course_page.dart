@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
-import 'package:lecture_companion_ui/application/topic_map/topic_map_reconstruct_controller.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/course/course_announcement_provider.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/application/topic_map/topic_map_provider.dart';
+import 'package:lefture/application/topic_map/topic_map_reconstruct_controller.dart';
+import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/widgets/custom_app_bar.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_announcements_sheet.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_details_sheet.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
-import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_selection.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_announcements_sheet.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_details_sheet.dart';
+import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/core/utils/connectivity_utils.dart';
+import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
+import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
+import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_selection.dart';
 
-import 'package:lecture_companion_ui/presentation/widgets/course_tile.dart';
-import 'package:lecture_companion_ui/presentation/widgets/lecture_tile.dart';
+import 'package:lefture/presentation/widgets/course_tile.dart';
+import 'package:lefture/presentation/widgets/lecture_tile.dart';
 
 /// コース一覧 / コース内授業一覧 を兼ねるページ
 ///

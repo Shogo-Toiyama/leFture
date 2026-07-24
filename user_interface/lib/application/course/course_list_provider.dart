@@ -1,8 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/domain/entities/course_attribute.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_attribute_repository_supabase.dart';
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/domain/entities/course_attribute.dart';
+import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
+import 'package:lefture/infrastructure/supabase/repositories/course_attribute_repository_supabase.dart';
 
 part 'course_list_provider.g.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/presentation/widgets/auth_result_view.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/presentation/widgets/auth_result_view.dart';
 
 /// メールアドレス変更・ログイン方法変更・アカウント削除など、
 /// deep link 経由/同一セッション内で非同期に完了するアクションの結果を表示する。

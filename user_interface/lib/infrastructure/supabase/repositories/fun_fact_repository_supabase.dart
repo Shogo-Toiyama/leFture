@@ -1,5 +1,5 @@
-import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/domain/entities/fun_fact.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'fun_fact_repository_supabase.g.dart';

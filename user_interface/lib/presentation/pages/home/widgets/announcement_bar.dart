@@ -3,10 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/announcement/announcement_provider.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 import 'all_announcements_sheet.dart';
 

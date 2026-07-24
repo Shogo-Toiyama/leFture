@@ -3,9 +3,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as v;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/galaxy/galaxy_data_provider.dart';
-import 'package:lecture_companion_ui/application/galaxy/galaxy_state_provider.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/application/galaxy/galaxy_data_provider.dart';
+import 'package:lefture/application/galaxy/galaxy_state_provider.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 // 定数はクラスの外に出しておくとコンパイル時定数として扱われやすい
 const double _minZoom = 1.0;

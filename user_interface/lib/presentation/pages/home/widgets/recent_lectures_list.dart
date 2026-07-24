@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/presentation/widgets/lecture_tile.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/lecture_edit_sheet.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/presentation/widgets/lecture_tile.dart';
+import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
 
 class RecentLecturesList extends ConsumerWidget {
   const RecentLecturesList({super.key});

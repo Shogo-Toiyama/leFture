@@ -6,7 +6,7 @@ import 'package:flutter_background/flutter_background.dart';
 import 'package:record/record.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();

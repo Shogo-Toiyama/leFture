@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
+import 'package:lefture/application/topic_map/topic_map_provider.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
 
 /// Topic Map for a single course, fetched from the `topic_maps` table (the
 /// `map` jsonb column produced by the topic-mapping pipeline -- see

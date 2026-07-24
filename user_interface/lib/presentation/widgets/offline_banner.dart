@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/application/connectivity/connectivity_status_provider.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/application/connectivity/connectivity_status_provider.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// アプリ全体共通で、オフライン中は画面上部（ステータスバー下）に
 /// スムーズなSpotifyスタイルの「You're offline」トップバナーを表示する。

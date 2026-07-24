@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:lecture_companion_ui/core/utils/network_constants.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/core/utils/network_constants.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 /// FunFactのPull(Supabase→ローカルDB)専用サービス。
 /// [LectureSyncService]と同型の差分Pull(`updated_at`基準+24時間全件Pull

@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/domain/entities/app_transmission.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/domain/entities/app_transmission.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// 宇宙船の窓（ポータル）モチーフのお知らせアイテムモデル
 class SpaceshipAnnouncementItem {

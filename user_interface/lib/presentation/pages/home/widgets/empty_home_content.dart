@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/application/galaxy/galaxy_data_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
-import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
-import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/galaxy/galaxy_data_provider.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/application/profile/user_profile_provider.dart';
+import 'package:lefture/core/utils/connectivity_utils.dart';
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.dart';
+import 'package:lefture/presentation/pages/home/widgets/make_profile_sheet.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/galaxy/galaxy_view.dart';
+import 'package:lefture/presentation/widgets/custom_app_bar.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 // 銀河ウィジェットの高さの、画面縦幅に対する割合。HomePageと同じ比率に揃える。
 const double _kGalaxyHeightRatio = 0.25;

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class AnnouncementEditSheet extends HookConsumerWidget {
   const AnnouncementEditSheet({

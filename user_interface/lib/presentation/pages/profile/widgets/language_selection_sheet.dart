@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
-import 'package:lecture_companion_ui/application/profile/display_language_controller.dart';
-import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
-import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
-import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
-import 'package:lecture_companion_ui/domain/entities/app_language.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/asr_model_dialog_helpers.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/application/asr/asr_model_manager.dart';
+import 'package:lefture/application/profile/display_language_controller.dart';
+import 'package:lefture/application/recording/recording_controller.dart';
+import 'package:lefture/application/recording/recording_language_controller.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/domain/entities/app_language.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
 
 enum LanguageSheetMode { recording, display }
 

@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
+import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/domain/entities/lecture_data.dart';
 
 class LectureNotePage extends StatelessWidget {
   const LectureNotePage({

@@ -1,5 +1,5 @@
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
 
 /// entityType(例: "lecture", "fun_fact", "announcement")ごとの、Outbox 1行を
 /// 実際にSupabaseへ反映する処理。[push]は必ず[entityId]で対応するLocal*

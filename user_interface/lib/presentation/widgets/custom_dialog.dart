@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 class CustomDialog extends StatelessWidget {
   const CustomDialog({

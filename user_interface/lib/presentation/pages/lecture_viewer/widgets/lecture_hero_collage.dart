@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 class LectureHeroCollage extends ConsumerWidget {
   const LectureHeroCollage({

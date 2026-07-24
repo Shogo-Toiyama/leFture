@@ -1,4 +1,4 @@
-import 'package:lecture_companion_ui/domain/entities/annotation.dart';
+import 'package:lefture/domain/entities/annotation.dart';
 
 class DeepNote {
   const DeepNote({

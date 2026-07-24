@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/course/course_announcement_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/course/course_announcement_provider.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lefture/presentation/pages/course/widgets/announcement_edit_sheet.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/announcement_tile.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// コース内の全レクチャーを横断した、未完了のアナウンスメント一覧ボトムシート。
 class CourseAnnouncementsSheet extends ConsumerWidget {

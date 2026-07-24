@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 /// Multi-color Google "G" mark, embedded as SVG so no extra asset file is needed.
 const _googleLogoSvg = '''

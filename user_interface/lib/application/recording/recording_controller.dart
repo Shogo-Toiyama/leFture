@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'package:lecture_companion_ui/core/services/audio_record/audio_chunker.dart';
-import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
-import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
-import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/core/services/audio_record/audio_chunker.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
+import 'package:lefture/application/asr/asr_model_manager.dart';
+import 'package:lefture/application/asr/live_asr_controller.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

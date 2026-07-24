@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'lecture_topic_repository_drift.g.dart';

@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
-import 'package:lecture_companion_ui/presentation/widgets/password_strength_meter.dart';
-import 'package:lecture_companion_ui/presentation/widgets/social_sign_in_button.dart';
+import 'package:lefture/application/auth/auth_provider.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/presentation/widgets/password_strength_meter.dart';
+import 'package:lefture/presentation/widgets/social_sign_in_button.dart';
 
 class SignUpPage extends HookConsumerWidget {
   const SignUpPage({super.key});

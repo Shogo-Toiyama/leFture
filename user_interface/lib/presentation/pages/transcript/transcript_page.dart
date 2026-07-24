@@ -7,20 +7,20 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
 
-import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
-import 'package:lecture_companion_ui/application/recording/lecture_moments_provider.dart';
-import 'package:lecture_companion_ui/core/utils/moment_display_utils.dart';
-import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
-import 'package:lecture_companion_ui/core/utils/topic_color_utils.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/infrastructure/repositories/lecture_artifact_repository.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/audio_player_bar.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lefture/application/recording/lecture_moments_provider.dart';
+import 'package:lefture/core/utils/moment_display_utils.dart';
+import 'package:lefture/core/utils/sid_citation.dart';
+import 'package:lefture/core/utils/topic_color_utils.dart';
+import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/domain/entities/lecture_moment.dart';
+import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/infrastructure/repositories/lecture_artifact_repository.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/audio_player_bar.dart';
+import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
 
 // レイアウトに使う定数
 const double kHorizontalPagePadding = 24; // ListView自体の左右padding

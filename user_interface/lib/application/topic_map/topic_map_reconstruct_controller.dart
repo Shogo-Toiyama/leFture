@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:lecture_companion_ui/application/sync/topic_map_sync_service.dart';
-import 'package:lecture_companion_ui/application/topic_map/topic_map_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/topic_map_repository_supabase.dart';
+import 'package:lefture/application/sync/topic_map_sync_service.dart';
+import 'package:lefture/application/topic_map/topic_map_provider.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/infrastructure/supabase/repositories/topic_map_repository_supabase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'topic_map_reconstruct_controller.g.dart';

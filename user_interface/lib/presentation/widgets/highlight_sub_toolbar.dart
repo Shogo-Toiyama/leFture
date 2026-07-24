@@ -12,8 +12,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
-import 'package:lecture_companion_ui/presentation/widgets/draggable_toolbar_card.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/widgets/draggable_toolbar_card.dart';
 
 typedef HighlightMode = String; // "line" | "wave" | "marker" | "eraser"
 

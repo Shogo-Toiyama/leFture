@@ -12,11 +12,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
-import 'package:lecture_companion_ui/domain/entities/asr_model_manifest.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/repositories/asr_model_repository.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/domain/entities/asr_model_manifest.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/infrastructure/repositories/asr_model_repository.dart';
 
 part 'asr_model_manager.g.dart';
 

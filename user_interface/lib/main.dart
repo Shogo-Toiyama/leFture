@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 

@@ -7,18 +7,18 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/application/lecture_viewer/lecture_viewer_data_provider.dart';
-import 'package:lecture_companion_ui/core/utils/text_preview.dart';
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/domain/entities/review_card.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lefture/core/utils/text_preview.dart';
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/domain/entities/review_card.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/custom_app_bar.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 
 // ---------------------------------------------------------------------------

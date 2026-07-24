@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lecture_companion_ui/application/job/job_providers.dart';
-import 'package:lecture_companion_ui/domain/entities/processing_task.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/application/job/job_providers.dart';
+import 'package:lefture/domain/entities/processing_task.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
 
 /// パイプラインの各ステップ(processingTaskOrder順)を1行ずつ表示するリスト。
 /// [ProcessingView]（分析中）と[LectureStatusScaffold]のfailed状態、両方から

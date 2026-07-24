@@ -9,7 +9,7 @@
 
 import 'package:flutter/material.dart';
 
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 /// One of a Topic's graph neighbors, for the "Related Topics" section --
 /// only shown in Topic View. [isOutgoing] is true when the tapped topic is

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
+import 'package:lefture/domain/entities/announcement.dart';
 
 /// アナウンスメントのtype別アイコン。Home/Course/LectureViewerで共通利用する。
 IconData iconForAnnouncementType(AnnouncementType type) {

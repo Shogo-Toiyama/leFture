@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/application/fun_fact/fun_fact_list_provider.dart';
-import 'package:lecture_companion_ui/core/utils/text_preview.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/glowing_rainbow_border.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/fun_fact/fun_fact_list_provider.dart';
+import 'package:lefture/core/utils/text_preview.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/domain/entities/fun_fact.dart';
+import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/glowing_rainbow_border.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class FunFactsCarousel extends ConsumerStatefulWidget {
   const FunFactsCarousel({super.key});

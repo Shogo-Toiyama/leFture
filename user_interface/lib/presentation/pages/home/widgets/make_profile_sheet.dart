@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/profile/user_profile_provider.dart';
+import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// プロフィール作成/編集用ボトムシート。
 ///

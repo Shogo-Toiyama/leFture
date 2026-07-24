@@ -1,16 +1,16 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
-import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
-import 'package:lecture_companion_ui/domain/entities/keyword.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/domain/entities/review_card.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/keyword_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/review_card_repository_drift.dart';
+import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/domain/entities/deep_note.dart';
+import 'package:lefture/domain/entities/fun_fact.dart';
+import 'package:lefture/domain/entities/keyword.dart';
+import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/domain/entities/review_card.dart';
+import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lefture/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
+import 'package:lefture/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
+import 'package:lefture/infrastructure/local_db/repositories/keyword_repository_drift.dart';
+import 'package:lefture/infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
+import 'package:lefture/infrastructure/local_db/repositories/review_card_repository_drift.dart';
 
 part 'lecture_viewer_data_provider.g.dart';
 

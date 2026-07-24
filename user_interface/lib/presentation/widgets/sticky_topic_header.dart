@@ -1,9 +1,9 @@
 // lib/presentation/widgets/sticky_topic_header.dart
 
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/core/utils/topic_color_utils.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/core/utils/topic_color_utils.dart';
+import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 /// トランスクリプト画面上部に常時固定表示され、タップで目次メニューがスライド展開するヘッダーウィジェット。
 class StickyTopicHeader extends StatefulWidget {

@@ -1,4 +1,4 @@
-import 'package:lecture_companion_ui/domain/entities/annotation.dart';
+import 'package:lefture/domain/entities/annotation.dart';
 
 /// review_cards.card_content (jsonb) の1ブロック分。
 /// 例: {"type": "paragraph", "text": "..."} / {"type": "list", "items": ["...", "..."]}

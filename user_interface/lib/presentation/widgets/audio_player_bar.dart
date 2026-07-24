@@ -1,12 +1,12 @@
 // lib/presentation/widgets/audio_player_bar.dart
 
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/core/utils/moment_display_utils.dart';
-import 'package:lecture_companion_ui/core/utils/topic_color_utils.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/core/utils/moment_display_utils.dart';
+import 'package:lefture/core/utils/topic_color_utils.dart';
+import 'package:lefture/domain/entities/lecture_moment.dart';
+import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 class TopicProgressRange {
   const TopicProgressRange({

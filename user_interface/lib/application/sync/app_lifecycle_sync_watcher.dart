@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_lifecycle_sync_watcher.g.dart';

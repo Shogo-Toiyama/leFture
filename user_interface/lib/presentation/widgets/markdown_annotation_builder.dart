@@ -25,8 +25,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 
-import 'package:lecture_companion_ui/core/utils/annotation_text_utils.dart';
-import 'package:lecture_companion_ui/domain/entities/annotation.dart';
+import 'package:lefture/core/utils/annotation_text_utils.dart';
+import 'package:lefture/domain/entities/annotation.dart';
 
 /// Tags this builder must be registered under. Callers pass one shared
 /// instance to `MarkdownBody(builders: annotationMarkdownBuilders(builder))`.

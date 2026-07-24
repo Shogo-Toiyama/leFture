@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
+import 'package:lefture/core/utils/sid_citation.dart';
 
 void main() {
   group('parseSidCitations', () {

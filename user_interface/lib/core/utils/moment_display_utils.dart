@@ -1,7 +1,7 @@
 // lib/core/utils/moment_display_utils.dart
 
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 class MomentDisplayUtils {
   /// momentType ('fun', 'difficult', 'revisit', 'note') に応じたアイコン、カラー、デフォルトラベルを返す。

@@ -5,12 +5,12 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
-import 'package:lecture_companion_ui/core/services/asr_engine/asr_engine.dart';
-import 'package:lecture_companion_ui/core/services/asr_engine/asr_engine_factory.dart';
-import 'package:lecture_companion_ui/core/services/asr_engine/asr_live_segment.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/application/asr/asr_model_manager.dart';
+import 'package:lefture/core/services/asr_engine/asr_engine.dart';
+import 'package:lefture/core/services/asr_engine/asr_engine_factory.dart';
+import 'package:lefture/core/services/asr_engine/asr_live_segment.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 
 part 'live_asr_controller.g.dart';
 

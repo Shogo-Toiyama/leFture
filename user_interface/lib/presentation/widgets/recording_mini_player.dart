@@ -4,10 +4,10 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
-import 'package:lecture_companion_ui/application/recording/recording_state.dart';
-import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/recording/recording_controller.dart';
+import 'package:lefture/application/recording/recording_state.dart';
+import 'package:lefture/presentation/pages/recording/recording_page.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class RecordingMiniPlayer extends ConsumerWidget {
 

@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/domain/entities/datetime_parameters_formatter.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
-import 'package:lecture_companion_ui/presentation/widgets/announcement_transcript_modal.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
-import 'package:lecture_companion_ui/presentation/widgets/tile_actions_sheet.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/domain/entities/datetime_parameters_formatter.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
+import 'package:lefture/presentation/widgets/announcement_transcript_modal.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/presentation/widgets/tile_actions_sheet.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class AnnouncementTile extends HookConsumerWidget {
   const AnnouncementTile({

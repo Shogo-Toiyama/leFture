@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
-import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/application/asr/asr_model_manager.dart';
+import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 
 /// 明示的なユーザー操作(ダウンロード/リトライ/再開ボタンのタップなど)から
 /// [AsrModelManager.ensureModelReady]を呼び、失敗した場合は[AppErrorDialog]で

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// コースの詳細情報 (コード/教授/学校/科目/年度・学期/概要) を一覧表示するボトムシート。
 class CourseDetailsSheet extends StatelessWidget {

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'announcement_repository_drift.g.dart';

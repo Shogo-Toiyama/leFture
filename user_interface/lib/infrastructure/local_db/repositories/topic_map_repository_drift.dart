@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/topic_map_models.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'topic_map_repository_drift.g.dart';

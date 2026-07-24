@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/topic_map_models.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'topic_map_repository_supabase.g.dart';

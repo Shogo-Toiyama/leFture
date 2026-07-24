@@ -7,13 +7,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 // import 'package:go_router/go_router.dart';
-// import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/application/credit/credit_providers.dart';
-import 'package:lecture_companion_ui/domain/entities/credit_summary.dart';
-import 'package:lecture_companion_ui/domain/entities/credit_usage_item.dart';
-import 'package:lecture_companion_ui/domain/entities/plan_option.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+// import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
+import 'package:lefture/domain/entities/credit_summary.dart';
+import 'package:lefture/domain/entities/credit_usage_item.dart';
+import 'package:lefture/domain/entities/plan_option.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 /// クレジット残量の内訳を見せる詳細ページ。MyAccountPage上部のクレジット
 /// タイルから遷移してくる。追加クレジット購入・履歴表示は今はUIだけ用意し、

@@ -1,9 +1,9 @@
 // lib/application/lecture/lecture_list_provider.dart
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_repository_drift.dart';
+import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/infrastructure/local_db/repositories/lecture_repository_drift.dart';
 
 import '../auth/auth_provider.dart';
 

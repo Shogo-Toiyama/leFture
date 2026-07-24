@@ -1,4 +1,4 @@
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 /// A Markdown document (Privacy Policy, Terms of Service, ...) stored in
 /// Supabase so its content can be updated without an app release.

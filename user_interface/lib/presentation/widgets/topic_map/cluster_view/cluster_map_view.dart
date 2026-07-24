@@ -48,11 +48,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
-import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
+import 'package:lefture/core/utils/sid_citation.dart';
+import 'package:lefture/domain/entities/lecture.dart';
 
 import '../force_layout/graph_force_simulation.dart';
 import '../topic_map_models.dart';

@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/domain/entities/fun_fact.dart';
+import 'package:lefture/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 part 'fun_fact_list_provider.g.dart';
 

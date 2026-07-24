@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
 
 part 'display_language_controller.g.dart';
 

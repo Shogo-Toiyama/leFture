@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/domain/entities/announcement.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
+import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 
 import '../lecture/lecture_list_provider.dart';
 

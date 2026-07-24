@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/app/router.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/application/profile/display_language_controller.dart';
-import 'package:lecture_companion_ui/application/sync/app_lifecycle_sync_watcher.dart';
-import 'package:lecture_companion_ui/presentation/pages/dev_tools/dev_log_overlay.dart';
-import 'package:lecture_companion_ui/presentation/pages/dev_tools/test_mode_flag.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_theme.dart';
-import 'package:lecture_companion_ui/presentation/widgets/offline_banner.dart';
+import 'package:lefture/app/router.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/profile/display_language_controller.dart';
+import 'package:lefture/application/sync/app_lifecycle_sync_watcher.dart';
+import 'package:lefture/presentation/pages/dev_tools/dev_log_overlay.dart';
+import 'package:lefture/presentation/pages/dev_tools/test_mode_flag.dart';
+import 'package:lefture/presentation/themes/app_theme.dart';
+import 'package:lefture/presentation/widgets/offline_banner.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});

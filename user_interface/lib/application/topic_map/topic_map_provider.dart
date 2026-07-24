@@ -1,8 +1,8 @@
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_list_provider.dart';
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/repositories/topic_map_repository_drift.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/topic_map_models.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/infrastructure/local_db/repositories/topic_map_repository_drift.dart';
+import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'topic_map_provider.g.dart';

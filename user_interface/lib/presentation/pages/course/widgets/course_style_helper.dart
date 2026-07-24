@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// コースのカラーコードとアイコンの文字列マッピングを提供するヘルパークラス。
 class CourseStyleHelper {

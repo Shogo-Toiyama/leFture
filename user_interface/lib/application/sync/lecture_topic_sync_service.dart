@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:lecture_companion_ui/core/utils/network_constants.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/core/utils/network_constants.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 /// LectureTopicのPull(Supabase→ローカルDB)専用サービス。ユーザーによる
 /// 書き込みが無い読み取り専用キャッシュなので、Outbox/Push側の対応は不要。

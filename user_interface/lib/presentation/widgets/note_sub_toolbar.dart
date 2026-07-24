@@ -9,8 +9,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/widgets/draggable_toolbar_card.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/draggable_toolbar_card.dart';
 
 class NoteSubToolbar extends HookWidget {
   const NoteSubToolbar({

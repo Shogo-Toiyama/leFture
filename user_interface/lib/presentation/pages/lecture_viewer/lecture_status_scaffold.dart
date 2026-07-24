@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_state_providers.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart'; // Controller
-import 'package:lecture_companion_ui/domain/entities/course.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/application/lecture/lecture_state_providers.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart'; // Controller
+import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 import 'views/processing_view.dart';
 import 'views/not_started_view.dart';

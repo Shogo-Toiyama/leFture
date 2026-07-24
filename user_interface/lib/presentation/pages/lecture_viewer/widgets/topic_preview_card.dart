@@ -1,8 +1,8 @@
 // lib/presentation/pages/lecture_viewer/widgets/topic_preview_card.dart
 
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/domain/entities/lecture_data.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class TopicPreviewCard extends StatelessWidget {
   const TopicPreviewCard({

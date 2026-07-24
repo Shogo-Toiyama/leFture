@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lecture_companion_ui/app/routes.dart';
-import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/recording/recording_controller.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 class RecordingTimerChip extends ConsumerWidget {
   const RecordingTimerChip({super.key});

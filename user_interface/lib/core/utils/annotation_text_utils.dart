@@ -18,8 +18,8 @@ import 'dart:convert';
 import 'package:flutter/rendering.dart';
 import 'package:markdown/markdown.dart' as md;
 
-import 'package:lecture_companion_ui/core/utils/sid_citation.dart';
-import 'package:lecture_companion_ui/domain/entities/review_card.dart';
+import 'package:lefture/core/utils/sid_citation.dart';
+import 'package:lefture/domain/entities/review_card.dart';
 
 class TextLocation {
   const TextLocation({this.blockIdx, required this.startIdx, required this.endIdx});

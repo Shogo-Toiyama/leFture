@@ -1,5 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/repositories/legal_content_repository_supabase.dart';
+import 'package:lefture/infrastructure/supabase/repositories/legal_content_repository_supabase.dart';
 
 final legalContentRepositoryProvider = Provider<LegalContentRepositorySupabase>((ref) {
   return LegalContentRepositorySupabase();

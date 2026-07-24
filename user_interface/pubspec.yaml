@@ -1,5 +1,5 @@
-name: lecture_companion_ui
-description: "Flutter frontend for the lecture companion app (audio transcription & topic segmentation viewer)."
+name: lefture
+description: "Your lecture is for your future. Let's have fun learning time with leFture."
 publish_to: "none"
 version: 1.0.0+1
 

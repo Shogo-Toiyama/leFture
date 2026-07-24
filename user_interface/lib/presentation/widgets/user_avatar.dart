@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_providers.dart';
-import 'package:lecture_companion_ui/domain/entities/user_profile.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/domain/entities/user_profile.dart';
 
 class UserAvatar extends ConsumerWidget {
   const UserAvatar({

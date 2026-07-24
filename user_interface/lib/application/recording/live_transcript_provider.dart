@@ -2,8 +2,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:lecture_companion_ui/domain/entities/live_transcript_sentence.dart';
-import 'package:lecture_companion_ui/infrastructure/repositories/live_transcript_repository.dart';
+import 'package:lefture/domain/entities/live_transcript_sentence.dart';
+import 'package:lefture/infrastructure/repositories/live_transcript_repository.dart';
 
 part 'live_transcript_provider.g.dart';
 

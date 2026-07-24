@@ -1,13 +1,13 @@
 // lib/application/lecture_viewer/lecture_content_recovery.dart
 import 'package:drift/drift.dart';
 
-import 'package:lecture_companion_ui/application/sync/deep_note_sync_service.dart';
-import 'package:lecture_companion_ui/application/sync/fun_fact_sync_service.dart';
-import 'package:lecture_companion_ui/application/sync/keyword_sync_service.dart';
-import 'package:lecture_companion_ui/application/sync/lecture_topic_sync_service.dart';
-import 'package:lecture_companion_ui/application/sync/review_card_sync_service.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
+import 'package:lefture/application/sync/deep_note_sync_service.dart';
+import 'package:lefture/application/sync/fun_fact_sync_service.dart';
+import 'package:lefture/application/sync/keyword_sync_service.dart';
+import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
+import 'package:lefture/application/sync/review_card_sync_service.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
 
 /// [LocalRetentionService.enforceCacheBudget]の1GB LRU削除は、講義の
 /// キャッシュファイルを削除する際に、Review Card/Deep Note/Fun Fact/Keyword/

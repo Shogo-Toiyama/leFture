@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lecture_companion_ui/application/job/job_providers.dart';
-import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
-import 'package:lecture_companion_ui/domain/entities/processing_task.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
-import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/views/pipeline_steps_list.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/application/job/job_providers.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/domain/entities/processing_task.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/views/pipeline_steps_list.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
 
 /// 分析中(RUNNING/PENDING)とAnalysis Failed(FAILED)の両方を1つのウィジェットで
 /// 描画する。両者はヘッダーの色/文言とStart Overボタンの見せ方が違うだけで、

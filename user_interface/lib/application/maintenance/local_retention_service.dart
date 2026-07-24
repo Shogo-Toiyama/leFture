@@ -1,7 +1,7 @@
 import 'dart:developer' as dev;
 import 'dart:io';
 
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
 
 /// ローカルDB/ローカルファイルの保存領域を健全に保つための保守処理。
 ///

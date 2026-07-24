@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:lecture_companion_ui/application/job/job_providers.dart';
+import 'package:lefture/application/job/job_providers.dart';
 
 part 'lecture_state_providers.g.dart';
 

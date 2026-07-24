@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
 
 /// 録音中のマイク入力音量を動的波形（イコライザー）として可視化するウィジェット
 class AudioWaveformVisualizer extends StatefulWidget {

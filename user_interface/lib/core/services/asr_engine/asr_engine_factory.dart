@@ -1,8 +1,8 @@
 import 'package:path/path.dart' as p;
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
-import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
-import 'package:lecture_companion_ui/core/utils/dev_log.dart';
+import 'package:lefture/application/asr/asr_model_manager.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 
 import 'asr_engine.dart';
 import 'vad_offline_engine.dart';

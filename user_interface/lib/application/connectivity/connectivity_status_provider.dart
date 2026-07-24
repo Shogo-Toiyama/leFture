@@ -1,5 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:lecture_companion_ui/core/utils/connectivity_utils.dart';
+import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'connectivity_status_provider.g.dart';

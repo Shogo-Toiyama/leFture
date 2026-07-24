@@ -1,7 +1,7 @@
-import 'package:lecture_companion_ui/application/sync/outbox_sync_service.dart';
-import 'package:lecture_companion_ui/core/utils/network_constants.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/application/sync/outbox_sync_service.dart';
+import 'package:lefture/core/utils/network_constants.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 /// Announcementはサーバー生成コンテンツ。ユーザーが変更できるのは
 /// `completed_at`・`deleted_at`・`title`・`description`・`type`のみ。

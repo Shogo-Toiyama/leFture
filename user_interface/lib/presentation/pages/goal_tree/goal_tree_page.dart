@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
+import 'package:lefture/presentation/widgets/galaxy/galaxy_view.dart';
 
 class GoalTreePage extends StatelessWidget {
   const GoalTreePage({super.key});

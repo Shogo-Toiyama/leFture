@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:lecture_companion_ui/domain/entities/app_transmission.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/domain/entities/app_transmission.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 const String _kLastReadTransmissionKey = 'last_read_transmission_time';
 

@@ -7,24 +7,24 @@ import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 
-import 'package:lecture_companion_ui/application/course/course_list_provider.dart';
-import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart'; // 色追加
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/themes/app_colors.dart'; // 色追加
 // AIチャットはApple審査対応のため一時的に非表示。再有効化時にコメントアウトを外す。
-// import 'package:lecture_companion_ui/presentation/widgets/ai_chat_sheet.dart';
-import 'package:lecture_companion_ui/application/recording/lecture_moments_provider.dart';
-import 'package:lecture_companion_ui/application/recording/live_transcript_provider.dart';
-import 'package:lecture_companion_ui/application/asr/live_asr_controller.dart';
-import 'package:lecture_companion_ui/application/recording/recording_language_controller.dart';
-import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
-import 'package:lecture_companion_ui/core/services/recording_preferences.dart';
-import 'package:lecture_companion_ui/domain/entities/app_language.dart';
-import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
-import 'package:lecture_companion_ui/domain/entities/live_transcript_sentence.dart';
-import 'package:lecture_companion_ui/presentation/pages/profile/widgets/language_selection_sheet.dart';
-import 'package:lecture_companion_ui/presentation/widgets/asr_model_dialog_helpers.dart';
-import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+// import 'package:lefture/presentation/widgets/ai_chat_sheet.dart';
+import 'package:lefture/application/recording/lecture_moments_provider.dart';
+import 'package:lefture/application/recording/live_transcript_provider.dart';
+import 'package:lefture/application/asr/live_asr_controller.dart';
+import 'package:lefture/application/recording/recording_language_controller.dart';
+import 'package:lefture/application/asr/asr_model_manager.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/domain/entities/app_language.dart';
+import 'package:lefture/domain/entities/lecture_moment.dart';
+import 'package:lefture/domain/entities/live_transcript_sentence.dart';
+import 'package:lefture/presentation/pages/profile/widgets/language_selection_sheet.dart';
+import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
 import '../dev_tools/simulate_recording_tab.dart';

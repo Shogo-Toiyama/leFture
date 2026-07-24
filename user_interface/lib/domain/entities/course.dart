@@ -1,4 +1,4 @@
-import 'package:lecture_companion_ui/domain/entities/course_attribute.dart';
+import 'package:lefture/domain/entities/course_attribute.dart';
 
 class Course {
   const Course({

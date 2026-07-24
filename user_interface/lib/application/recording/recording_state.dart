@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:lecture_companion_ui/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database.dart';
 
 enum RecordingPhase {
   idle,

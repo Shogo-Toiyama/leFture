@@ -7,8 +7,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
-import 'package:lecture_companion_ui/presentation/widgets/topic_map/topic_map_models.dart';
+import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
+import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 
 class AiChatPage extends StatefulWidget {
   const AiChatPage({super.key});

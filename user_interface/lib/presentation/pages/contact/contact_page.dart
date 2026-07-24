@@ -8,11 +8,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 
-import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
-import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
-import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
-import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
-import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lefture/infrastructure/repositories/backend_warmup.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class ContactPage extends HookConsumerWidget {
   const ContactPage({super.key});
