@@ -13,8 +13,10 @@ part of 'live_asr_controller.dart';
 /// `acceptPcm16`が毎回呼ばれる想定。認識結果(確定した発話セグメント)を
 /// Riverpodの状態として蓄積し、Liveタブが購読できるようにする。
 ///
-/// サーバー版(`lecture_transcripts`)とのwatermarkマージはまだ行わない
-/// (今回はオンデバイス認識結果をそのまま蓄積するだけ)。
+/// このControllerはオンデバイス認識結果をそのまま蓄積するだけで、
+/// サーバー版(`lecture_transcripts`)とのwatermark除外は行わない
+/// (表示側の`_LiveTranscriptPanel`がサーバー側の最新start_timeより前の
+/// セグメントを描画時にフィルタしている)。
 
 @ProviderFor(LiveAsrController)
 final liveAsrControllerProvider = LiveAsrControllerProvider._();
@@ -24,8 +26,10 @@ final liveAsrControllerProvider = LiveAsrControllerProvider._();
 /// `acceptPcm16`が毎回呼ばれる想定。認識結果(確定した発話セグメント)を
 /// Riverpodの状態として蓄積し、Liveタブが購読できるようにする。
 ///
-/// サーバー版(`lecture_transcripts`)とのwatermarkマージはまだ行わない
-/// (今回はオンデバイス認識結果をそのまま蓄積するだけ)。
+/// このControllerはオンデバイス認識結果をそのまま蓄積するだけで、
+/// サーバー版(`lecture_transcripts`)とのwatermark除外は行わない
+/// (表示側の`_LiveTranscriptPanel`がサーバー側の最新start_timeより前の
+/// セグメントを描画時にフィルタしている)。
 final class LiveAsrControllerProvider
     extends $NotifierProvider<LiveAsrController, List<AsrLiveSegment>> {
   /// 録音の開始/終了に同期してオンデバイスASRエンジンの起動/停止を行う
@@ -33,8 +37,10 @@ final class LiveAsrControllerProvider
   /// `acceptPcm16`が毎回呼ばれる想定。認識結果(確定した発話セグメント)を
   /// Riverpodの状態として蓄積し、Liveタブが購読できるようにする。
   ///
-  /// サーバー版(`lecture_transcripts`)とのwatermarkマージはまだ行わない
-  /// (今回はオンデバイス認識結果をそのまま蓄積するだけ)。
+  /// このControllerはオンデバイス認識結果をそのまま蓄積するだけで、
+  /// サーバー版(`lecture_transcripts`)とのwatermark除外は行わない
+  /// (表示側の`_LiveTranscriptPanel`がサーバー側の最新start_timeより前の
+  /// セグメントを描画時にフィルタしている)。
   LiveAsrControllerProvider._()
     : super(
         from: null,
@@ -62,15 +68,17 @@ final class LiveAsrControllerProvider
   }
 }
 
-String _$liveAsrControllerHash() => r'870a4f359b7d78eb368b87031961870215414b31';
+String _$liveAsrControllerHash() => r'5ded3958d4e632d7c17a461df84740adae4bc819';
 
 /// 録音の開始/終了に同期してオンデバイスASRエンジンの起動/停止を行う
 /// オーケストレーター。`RecordingController`の`onMasterDataReady`コールバックから
 /// `acceptPcm16`が毎回呼ばれる想定。認識結果(確定した発話セグメント)を
 /// Riverpodの状態として蓄積し、Liveタブが購読できるようにする。
 ///
-/// サーバー版(`lecture_transcripts`)とのwatermarkマージはまだ行わない
-/// (今回はオンデバイス認識結果をそのまま蓄積するだけ)。
+/// このControllerはオンデバイス認識結果をそのまま蓄積するだけで、
+/// サーバー版(`lecture_transcripts`)とのwatermark除外は行わない
+/// (表示側の`_LiveTranscriptPanel`がサーバー側の最新start_timeより前の
+/// セグメントを描画時にフィルタしている)。
 
 abstract class _$LiveAsrController extends $Notifier<List<AsrLiveSegment>> {
   List<AsrLiveSegment> build();

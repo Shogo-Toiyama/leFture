@@ -38,20 +38,8 @@ class AsrLanguageModelState {
 /// 衝突しないアンダースコア始まりの疑似コードとして同じテーブルで管理する。
 const kVadPseudoLanguageCode = '_vad';
 
-/// 多言語Whisper(Tier3、languagesマップに無い言語すべてのフォールバック)用の
-/// 予約キー。VADと同様、全言語共有の単一アセット。
+/// 多言語Whisper(全言語共通)用の予約キー。VADと同様、全言語共有の単一アセット。
 const kWhisperPseudoLanguageCode = '_whisper';
-
-/// 言語コードから、実際のダウンロード/ストレージ/状態管理の単位となる
-/// "アセットグループキー"を解決する。manifest.languagesにあるモデルは
-/// modelIdをそのままキーに使う(ja/ko/yueのようにmodelIdが同一なら
-/// 自動的に1つのグループに束ねられ、二重ダウンロードを防げる)。
-/// 無ければ共有Whisperにフォールバックする。
-String resolveAssetGroupKey(AsrModelManifest manifest, String languageCode) {
-  final info = manifest.languages[languageCode];
-  if (info != null) return info.modelId;
-  return kWhisperPseudoLanguageCode;
-}
 
 /// 録音言語ごとのオンデバイスASRモデルのダウンロード/バージョン整合性を管理する。
 /// RecordingPageに入った瞬間と、録音言語の設定を変更した瞬間の2箇所から
@@ -63,17 +51,10 @@ String resolveAssetGroupKey(AsrModelManifest manifest, String languageCode) {
 /// 失敗時は既存のreadyなモデルを壊さない(新しいダウンロードが成功するまで
 /// 古いモデルを使い続けられるようにする、堅牢性優先)。
 ///
-/// 言語は3段構成: `manifest.languages`にエントリがあればTier1(streaming_zipformer)
-/// またはTier2(sense_voice、あわせて共有VADも必要)。無ければTier3として
-/// 共有Whisper(+共有VAD)にフォールバックする。
-///
-/// ストレージは、VADを除く(Whisperは含む)グループを最大[_maxResidentGroups]個
-/// までしか同時保持しない。3個目をダウンロードする際は、最も長く使われて
-/// いない(lastUsedAt基準)グループを自動的に退避する。
+/// 全言語が共有Whisper(+共有VAD)の2アセットのみを使うため、常にこの2つだけを
+/// 常駐させればよく、複数言語モデルを退避するLRU管理は不要。
 @Riverpod(keepAlive: true)
 class AsrModelManager extends _$AsrModelManager {
-  static const _maxResidentGroups = 2;
-
   @override
   Map<String, AsrLanguageModelState> build() {
     final observer = _AsrLifecycleObserver(
@@ -87,11 +68,8 @@ class AsrModelManager extends _$AsrModelManager {
     // 場合に備え、起動直後にも一度だけ自動一時停止の残骸を確認して再開する。
     _handleAppForegrounded();
 
-    // マニフェスト取得(ネットワーク)が終わるまでは`statusForLanguage`が常に
-    // `unknown`を返してしまい、実際にはディスクに揃っているモデルまで
-    // 「ダウンロードが必要」に見えてしまう。前回解決したlanguageCode→groupKey
-    // の対応表を使い、ネットワークを待たずにDB+ファイル存在チェックだけで
-    // 分かる範囲を先に`ready`として反映しておく(マニフェスト取得が完了すれば
+    // マニフェスト取得(ネットワーク)を待たずに、ディスク+DBだけで分かる
+    // 範囲を先に`ready`として反映しておく(マニフェスト取得が完了すれば
     // 通常通りその結果で上書きされる)。
     unawaited(_reconcileFromDiskAtStartup());
 
@@ -100,11 +78,6 @@ class AsrModelManager extends _$AsrModelManager {
 
   AsrModelRepository get _repo => AsrModelRepository(Supabase.instance.client);
   AppDatabase get _db => ref.read(appDatabaseProvider);
-
-  // UIが言語コードから状態を引けるようにするための、直近取得したmanifestの
-  // キャッシュ。ダウンロードの可否判定には使わず(ensureModelReadyは毎回
-  // fetchManifestし直す)、あくまでstatusForLanguageの同期的なキー解決用。
-  AsrModelManifest? _cachedManifest;
 
   // 進行中ダウンロードの中断ハンドル(groupKey単位)。pauseDownloadが
   // これを使ってストリームを中断する。
@@ -123,50 +96,18 @@ class AsrModelManager extends _$AsrModelManager {
 
   AsrLanguageModelState statusFor(String key) => state[key] ?? AsrLanguageModelState.initial;
 
-  /// 言語コードから、実際に紐づくアセットグループの状態を返す。ja/ko/yueの
-  /// ように複数の言語コードが同じグループを共有している場合、そのグループの
-  /// ダウンロードが完了すれば対応するすべての言語コードで`ready`になる。
-  /// まだmanifestを取得していない場合は`unknown`を返す。
-  AsrLanguageModelState statusForLanguage(String languageCode) {
-    final manifest = _cachedManifest;
-    if (manifest != null) {
-      final key = resolveAssetGroupKey(manifest, languageCode);
-      return state[key] ?? AsrLanguageModelState.initial;
-    }
-
-    // マニフェスト未取得(起動直後でまだネットワーク往復が終わっていない等)
-    // の場合でも、前回このlanguageCodeが解決したgroupKeyを覚えていれば、
-    // そのgroupKeyの状態(`_reconcileFromDiskAtStartup`がDB+ファイル存在
-    // チェックだけで先に埋めている可能性がある)をそのまま返す。
-    final cachedKey = RecordingPreferences().getAsrLanguageGroupKeys()[languageCode];
-    if (cachedKey != null) {
-      return state[cachedKey] ?? AsrLanguageModelState.initial;
-    }
-    return AsrLanguageModelState.initial;
-  }
+  /// 全言語が共有Whisperモデルを使うため、[languageCode]は無視して共有
+  /// Whisperグループの状態を返す。
+  AsrLanguageModelState statusForLanguage(String languageCode) => statusFor(kWhisperPseudoLanguageCode);
 
   void _update(String key, AsrLanguageModelState value) {
     state = {...state, key: value};
   }
 
-  /// 指定言語に必要なアセット一式(本体モデル + 該当すればVAD/Whisper)を揃える。
+  /// 共有Whisper + 共有VADの2アセットを揃える。[languageCode]は呼び出し側
+  /// (画面ごとの「今選択されている言語」)をそのまま渡せるようにするための
+  /// 引数だが、モデル選択には使わない。
   Future<void> ensureModelReady(String languageCode) async {
-    final manifest = await _fetchManifestOrMarkFailed(languageCode);
-    if (manifest == null) return;
-
-    final info = manifest.languages[languageCode];
-    if (info != null) {
-      final groupKey = resolveAssetGroupKey(manifest, languageCode);
-      await RecordingPreferences().setAsrLanguageGroupKey(languageCode, groupKey);
-      await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
-      if (info.engine == 'sense_voice') {
-        await ensureVadModelReady();
-      }
-      return;
-    }
-
-    // languagesマップに無い言語は共有Whisper(+VAD)にフォールバックする。
-    await RecordingPreferences().setAsrLanguageGroupKey(languageCode, kWhisperPseudoLanguageCode);
     await ensureWhisperModelReady();
     await ensureVadModelReady();
   }
@@ -210,9 +151,7 @@ class AsrModelManager extends _$AsrModelManager {
     }
     _update(key, const AsrLanguageModelState(status: AsrModelStatus.checking));
     try {
-      final manifest = await _repo.fetchManifest();
-      _cachedManifest = manifest;
-      return manifest;
+      return await _repo.fetchManifest();
     } catch (e, st) {
       dev.log('🚨 [AsrModelManager] fetchManifest failed for "$key"', error: e, stackTrace: st);
       _update(key, AsrLanguageModelState(status: AsrModelStatus.failed, errorMessage: e.toString()));
@@ -222,12 +161,11 @@ class AsrModelManager extends _$AsrModelManager {
     }
   }
 
-  /// 1アセット(言語モデル/VAD/Whisper共通)のダウンロード〜展開〜DB反映。
-  /// [key]は`LocalAsrModels.groupKey`に書き込むキー(通常はmodelIdそのもの、
-  /// または`kVadPseudoLanguageCode`/`kWhisperPseudoLanguageCode`)。
-  /// 同じgroupKeyに対する多重実行(例: バックグラウンド復帰時の自動再開と
-  /// ユーザーの手動再開ボタンが同時に走る)を防ぐため、groupKey単位で
-  /// 排他制御する。
+  /// 1アセット(VAD/Whisper共通)のダウンロード〜展開〜DB反映。
+  /// [key]は`LocalAsrModels.groupKey`に書き込むキー(`kVadPseudoLanguageCode`
+  /// または`kWhisperPseudoLanguageCode`)。同じgroupKeyに対する多重実行
+  /// (例: バックグラウンド復帰時の自動再開とユーザーの手動再開ボタンが
+  /// 同時に走る)を防ぐため、groupKey単位で排他制御する。
   Future<void> _ensureAsset(String key, int engineCompatVersion, AsrModelInfo info) async {
     if (!_ensureAssetInFlight.add(key)) return; // 既に同じgroupKeyで進行中
     try {
@@ -242,8 +180,6 @@ class AsrModelManager extends _$AsrModelManager {
         _update(key, const AsrLanguageModelState(status: AsrModelStatus.ready));
         return;
       }
-
-      await _evictIfOverCapacity(key);
 
       final supportDir = await getApplicationSupportDirectory();
       final modelsDir = Directory(p.join(supportDir.path, 'asr_models'));
@@ -332,18 +268,18 @@ class AsrModelManager extends _$AsrModelManager {
 
   /// 進行中のダウンロードを一時停止する。部分ファイルはディスクに残るため、
   /// 次に[ensureModelReady]/[resumeDownload]が呼ばれた際にその続きから
-  /// 再開される。
+  /// 再開される。共有アセットは常にVAD/Whisperの2つだけなので、
+  /// [languageCode]は使わず、現在進行中の全ダウンロードを止める。
   Future<void> pauseDownload(String languageCode) async {
-    final manifest = _cachedManifest;
-    if (manifest == null) return;
-    final groupKey = resolveAssetGroupKey(manifest, languageCode);
-    final handle = _activeDownloads.remove(groupKey);
-    if (handle == null) return;
-    _update(
-      groupKey,
-      AsrLanguageModelState(status: AsrModelStatus.paused, progress: statusFor(groupKey).progress),
-    );
-    await handle.cancel();
+    for (final groupKey in _activeDownloads.keys.toList()) {
+      final handle = _activeDownloads.remove(groupKey);
+      if (handle == null) continue;
+      _update(
+        groupKey,
+        AsrLanguageModelState(status: AsrModelStatus.paused, progress: statusFor(groupKey).progress),
+      );
+      await handle.cancel();
+    }
   }
 
   /// 一時停止中(または中断された)ダウンロードを再開する。実体は
@@ -395,12 +331,11 @@ class AsrModelManager extends _$AsrModelManager {
     }
   }
 
-  /// languageCodeを介さず、groupKeyから直接manifest上のAsrModelInfoを
-  /// 逆引きして[_ensureAsset]を呼ぶ。バックグラウンド復帰時の自動再開は、
-  /// どの言語から辿り着いたかを覚えていないgroupKey単位でしか行えないため。
+  /// groupKeyから直接manifest上のAsrModelInfoを逆引きして[_ensureAsset]を
+  /// 呼ぶ。バックグラウンド復帰時の自動再開は、どのgroupKeyが中断していたか
+  /// しか覚えていないため。
   Future<void> _ensureAssetForGroupKey(String groupKey) async {
-    final manifest = _cachedManifest ?? await _repo.fetchManifest();
-    _cachedManifest = manifest;
+    final manifest = await _repo.fetchManifest();
 
     if (groupKey == kVadPseudoLanguageCode) {
       final info = manifest.vad;
@@ -410,49 +345,11 @@ class AsrModelManager extends _$AsrModelManager {
     if (groupKey == kWhisperPseudoLanguageCode) {
       final info = manifest.whisper;
       if (info != null) await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
-      return;
-    }
-    for (final info in manifest.languages.values) {
-      if (info.modelId == groupKey) {
-        await _ensureAsset(groupKey, manifest.engineCompatVersion, info);
-        return;
-      }
-    }
-  }
-
-  /// [protectedGroupKey]をこれからダウンロードする前提で、VAD以外のreadyな
-  /// グループが[_maxResidentGroups]を超えていれば、最も長く使われていない
-  /// (lastUsedAt、無ければdownloadedAt基準)グループから順に削除する。
-  /// [protectedGroupKey]自身は絶対に退避しない。
-  Future<void> _evictIfOverCapacity(String protectedGroupKey) async {
-    final readyRows =
-        await (_db.select(_db.localAsrModels)..where((t) => t.status.equals('ready'))).get();
-    final residentOthers = readyRows
-        .where((r) => r.groupKey != kVadPseudoLanguageCode && r.groupKey != protectedGroupKey)
-        .toList();
-
-    if (residentOthers.length < _maxResidentGroups) return;
-
-    residentOthers.sort((a, b) {
-      final aAt = a.lastUsedAt ?? a.downloadedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bAt = b.lastUsedAt ?? b.downloadedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return aAt.compareTo(bAt);
-    });
-
-    final evictCount = residentOthers.length - _maxResidentGroups + 1;
-    for (final row in residentOthers.take(evictCount)) {
-      dev.log('🗑️ [AsrModelManager] evicting LRU group "${row.groupKey}" to make room for "$protectedGroupKey"');
-      final dir = Directory(row.localPath);
-      if (await dir.exists()) {
-        await dir.delete(recursive: true);
-      }
-      await (_db.delete(_db.localAsrModels)..where((t) => t.groupKey.equals(row.groupKey))).go();
-      _update(row.groupKey, const AsrLanguageModelState(status: AsrModelStatus.unknown));
     }
   }
 
   /// 指定キーのローカルパス(ダウンロード済みでreadyな場合のみ)。エンジン初期化に使う。
-  /// [key]は解決済みのgroupKey(通常はmodelId、またはVAD/Whisperの疑似コード)。
+  /// [key]は`kVadPseudoLanguageCode`または`kWhisperPseudoLanguageCode`。
   /// DBの`status`が'ready'でも、実ファイルが(ストレージクリア等で)既に
   /// 存在しない場合があるため、必ずファイル存在チェックも行う。
   Future<String?> localPathFor(String key) async {
@@ -463,14 +360,14 @@ class AsrModelManager extends _$AsrModelManager {
     return row.localPath;
   }
 
-  /// 起動直後、マニフェストのネットワーク取得を待たずに、前回解決済みの
-  /// languageCode→groupKey対応表を頼りにDB+ファイル存在チェックだけで
-  /// `ready`と判定できるものを先に反映しておく。実際にモデルが使える状態か
-  /// どうかは`_ensureAsset`と全く同じ基準(status=='ready' かつ
-  /// ディレクトリが実在)で判定するため、二重管理にはならない。
+  /// 起動直後、マニフェストのネットワーク取得を待たずに、DB+ファイル存在
+  /// チェックだけで`ready`と判定できるものを先に反映しておく。共有アセットは
+  /// VAD/Whisperの2つ固定なので、そのままこの2キーだけを見ればよい。実際に
+  /// モデルが使える状態かどうかは`_ensureAsset`と全く同じ基準
+  /// (status=='ready' かつディレクトリが実在)で判定するため、二重管理には
+  /// ならない。
   Future<void> _reconcileFromDiskAtStartup() async {
-    final groupKeys = RecordingPreferences().getAsrLanguageGroupKeys().values.toSet();
-    for (final key in groupKeys) {
+    for (final key in [kVadPseudoLanguageCode, kWhisperPseudoLanguageCode]) {
       try {
         final row =
             await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();

@@ -23,7 +23,7 @@ class AudioWaveformVisualizer extends StatefulWidget {
 class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animController;
-  final List<double> _waveformHistory = List.filled(25, 0.05);
+  final List<double> _waveformHistory = List.generate(25, (_) => 0.05);
 
   @override
   void initState() {
@@ -40,8 +40,9 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer>
     if (widget.isRecording && !widget.isPaused) {
       // 最新の音量レベルをキューに追加
       _waveformHistory.removeAt(0);
-      // ノイズ・急変防止のための滑らかな補正
-      final clampedLevel = math.max(0.08, widget.audioLevel.clamp(0.0, 1.0));
+      // 小さな教授の声でもしっかり視覚化されるよう感度ブースト
+      final boostedLevel = math.pow(widget.audioLevel, 0.65) * 1.25;
+      final clampedLevel = math.max(0.08, boostedLevel.clamp(0.0, 1.0));
       _waveformHistory.add(clampedLevel);
     } else {
       // 静止時の低水準レベル

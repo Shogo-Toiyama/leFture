@@ -48,8 +48,10 @@ double _calculatePcmAudioLevel(Uint8List data) {
 
   if (count == 0) return 0.0;
   final rms = math.sqrt(sumSquares / count);
-  // 感度調整（マイク入力を視覚的に見やすくスケーリング）
-  return (rms * 3.5).clamp(0.0, 1.0);
+  if (rms <= 0.0001) return 0.0;
+  // 講義室の離れた小さな教授の声でも波形が大きくアクティブに跳ねるよう感度ブースト
+  final boosted = math.sqrt(rms) * 2.8;
+  return boosted.clamp(0.0, 1.0);
 }
 
 /// コースとキーワードから Groq Whisper 用コンテキスト文字列を生成する
@@ -212,7 +214,14 @@ class RecordingController extends _$RecordingController {
 
       if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
         final recordingLanguage = ref.read(recordingLanguageControllerProvider);
-        ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
+        // 一時停止で止めたLiveAsrControllerは再開のたびに新しいisolateを
+        // 起動し内部タイムスタンプが0から数え直しになるため、これまでの
+        // 経過秒数を渡して録音全体での位置を維持する(渡さないと再開後の
+        // 字幕がサーバー側watermarkフィルタで全て消えてしまう)。
+        ref.read(liveAsrControllerProvider.notifier).start(
+              recordingLanguage,
+              initialOffsetSec: state.elapsedSeconds.toDouble(),
+            );
       }
 
       state = state.copyWith(phase: RecordingPhase.recording);

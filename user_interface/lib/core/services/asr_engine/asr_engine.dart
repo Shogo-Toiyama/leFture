@@ -3,8 +3,7 @@ import 'dart:typed_data';
 import 'asr_live_segment.dart';
 
 /// オンデバイスASRエンジンの共通インターフェース。
-/// 実装は3種類(streaming_zipformer/sense_voice/whisper)あるが、呼び出し側
-/// (LiveAsrController)から見た使い方は共通にする。
+/// 現状の実装は共有Whisperモデルを使う[VadOfflineEngine]のみ。
 abstract class AsrEngine {
   Future<void> start();
 

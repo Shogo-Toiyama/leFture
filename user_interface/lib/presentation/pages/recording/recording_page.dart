@@ -67,7 +67,8 @@ class RecordingPage extends HookConsumerWidget {
     // (tabControllerのリスナー解除と「ページ離脱」を1つのeffectに混ぜると、
     // 将来的にクリーンアップの意味が食い違って事故りやすいため)。
     useEffect(() {
-      return () => ref.read(liveAsrControllerProvider.notifier).setLiveTabFocused(false);
+      final liveAsrNotifier = ref.read(liveAsrControllerProvider.notifier);
+      return () => liveAsrNotifier.setLiveTabFocused(false);
     }, []);
 
     // MVPのためコメントアウト

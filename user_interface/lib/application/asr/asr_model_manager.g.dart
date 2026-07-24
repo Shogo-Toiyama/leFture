@@ -18,13 +18,8 @@ part of 'asr_model_manager.dart';
 /// 失敗時は既存のreadyなモデルを壊さない(新しいダウンロードが成功するまで
 /// 古いモデルを使い続けられるようにする、堅牢性優先)。
 ///
-/// 言語は3段構成: `manifest.languages`にエントリがあればTier1(streaming_zipformer)
-/// またはTier2(sense_voice、あわせて共有VADも必要)。無ければTier3として
-/// 共有Whisper(+共有VAD)にフォールバックする。
-///
-/// ストレージは、VADを除く(Whisperは含む)グループを最大[_maxResidentGroups]個
-/// までしか同時保持しない。3個目をダウンロードする際は、最も長く使われて
-/// いない(lastUsedAt基準)グループを自動的に退避する。
+/// 全言語が共有Whisper(+共有VAD)の2アセットのみを使うため、常にこの2つだけを
+/// 常駐させればよく、複数言語モデルを退避するLRU管理は不要。
 
 @ProviderFor(AsrModelManager)
 final asrModelManagerProvider = AsrModelManagerProvider._();
@@ -39,13 +34,8 @@ final asrModelManagerProvider = AsrModelManagerProvider._();
 /// 失敗時は既存のreadyなモデルを壊さない(新しいダウンロードが成功するまで
 /// 古いモデルを使い続けられるようにする、堅牢性優先)。
 ///
-/// 言語は3段構成: `manifest.languages`にエントリがあればTier1(streaming_zipformer)
-/// またはTier2(sense_voice、あわせて共有VADも必要)。無ければTier3として
-/// 共有Whisper(+共有VAD)にフォールバックする。
-///
-/// ストレージは、VADを除く(Whisperは含む)グループを最大[_maxResidentGroups]個
-/// までしか同時保持しない。3個目をダウンロードする際は、最も長く使われて
-/// いない(lastUsedAt基準)グループを自動的に退避する。
+/// 全言語が共有Whisper(+共有VAD)の2アセットのみを使うため、常にこの2つだけを
+/// 常駐させればよく、複数言語モデルを退避するLRU管理は不要。
 final class AsrModelManagerProvider
     extends
         $NotifierProvider<AsrModelManager, Map<String, AsrLanguageModelState>> {
@@ -59,13 +49,8 @@ final class AsrModelManagerProvider
   /// 失敗時は既存のreadyなモデルを壊さない(新しいダウンロードが成功するまで
   /// 古いモデルを使い続けられるようにする、堅牢性優先)。
   ///
-  /// 言語は3段構成: `manifest.languages`にエントリがあればTier1(streaming_zipformer)
-  /// またはTier2(sense_voice、あわせて共有VADも必要)。無ければTier3として
-  /// 共有Whisper(+共有VAD)にフォールバックする。
-  ///
-  /// ストレージは、VADを除く(Whisperは含む)グループを最大[_maxResidentGroups]個
-  /// までしか同時保持しない。3個目をダウンロードする際は、最も長く使われて
-  /// いない(lastUsedAt基準)グループを自動的に退避する。
+  /// 全言語が共有Whisper(+共有VAD)の2アセットのみを使うため、常にこの2つだけを
+  /// 常駐させればよく、複数言語モデルを退避するLRU管理は不要。
   AsrModelManagerProvider._()
     : super(
         from: null,
@@ -95,7 +80,7 @@ final class AsrModelManagerProvider
   }
 }
 
-String _$asrModelManagerHash() => r'6a88a232c5c0650cde792a02d1b350f7b5d4e596';
+String _$asrModelManagerHash() => r'4e3e3f6df9879b42dbbc3a7f2b24bb07dc3ed8b0';
 
 /// 録音言語ごとのオンデバイスASRモデルのダウンロード/バージョン整合性を管理する。
 /// RecordingPageに入った瞬間と、録音言語の設定を変更した瞬間の2箇所から
@@ -107,13 +92,8 @@ String _$asrModelManagerHash() => r'6a88a232c5c0650cde792a02d1b350f7b5d4e596';
 /// 失敗時は既存のreadyなモデルを壊さない(新しいダウンロードが成功するまで
 /// 古いモデルを使い続けられるようにする、堅牢性優先)。
 ///
-/// 言語は3段構成: `manifest.languages`にエントリがあればTier1(streaming_zipformer)
-/// またはTier2(sense_voice、あわせて共有VADも必要)。無ければTier3として
-/// 共有Whisper(+共有VAD)にフォールバックする。
-///
-/// ストレージは、VADを除く(Whisperは含む)グループを最大[_maxResidentGroups]個
-/// までしか同時保持しない。3個目をダウンロードする際は、最も長く使われて
-/// いない(lastUsedAt基準)グループを自動的に退避する。
+/// 全言語が共有Whisper(+共有VAD)の2アセットのみを使うため、常にこの2つだけを
+/// 常駐させればよく、複数言語モデルを退避するLRU管理は不要。
 
 abstract class _$AsrModelManager
     extends $Notifier<Map<String, AsrLanguageModelState>> {

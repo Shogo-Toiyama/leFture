@@ -11,7 +11,7 @@ import 'asr_live_segment.dart';
 import 'vad_offline_isolate_messages.dart';
 import 'vad_offline_isolate_worker.dart';
 
-/// Tier2(SenseVoice)/Tier3(Whisper)向けの[AsrEngine]実装。
+/// 共有Whisperモデル向けの[AsrEngine]実装。
 ///
 /// `sherpa_onnx`のVAD/OfflineRecognizerのdecode呼び出しは同期・ブロッキングな
 /// FFI呼び出しで、これをメインisolate(=UIスレッド)上で呼ぶと、画面操作
@@ -34,9 +34,10 @@ class VadOfflineEngine implements AsrEngine {
     this.minSilenceDuration = 0.5,
     this.minSpeechDuration = 0.25,
     this.confirmIntervalDuration = 10.0,
+    this.initialOffsetSec = 0.0,
   });
 
-  /// SenseVoice/Whisperどちらの設定を積むかは呼び出し側(AsrEngineFactory)が決める。
+  /// Whisperの設定は呼び出し側(AsrEngineFactory)が組み立てる。
   final sherpa_onnx.OfflineRecognizerConfig recognizerConfig;
   final String vadModelPath;
   final double maxSpeechDuration;
@@ -45,6 +46,12 @@ class VadOfflineEngine implements AsrEngine {
 
   /// VADの区切りが来ない場合でも、最低これだけの間隔で強制的に1回デコードする。
   final double confirmIntervalDuration;
+
+  /// 一時停止→再開のたびに新しいisolateが起動して内部のサンプルカウントが
+  /// 0から始まってしまうと、確定テキストのtimestampSecが録音全体の経過時間
+  /// より小さくなり、サーバー側watermarkによる表示フィルタで再開後の字幕が
+  /// 全て消えてしまう。呼び出し側が把握している経過秒数をここに渡す。
+  final double initialOffsetSec;
 
   Isolate? _isolate;
   ReceivePort? _mainReceivePort;
@@ -86,6 +93,7 @@ class VadOfflineEngine implements AsrEngine {
           minSilenceDuration: minSilenceDuration,
           minSpeechDuration: minSpeechDuration,
           confirmIntervalDuration: confirmIntervalDuration,
+          initialOffsetSec: initialOffsetSec,
         ),
       );
     } else if (message is VadOfflineIsolateReady) {

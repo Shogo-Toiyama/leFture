@@ -41,7 +41,10 @@ class CreditDetailPage extends HookConsumerWidget {
     Future<void> handleRefresh() async {
       ref.invalidate(creditSummaryProvider);
       ref.invalidate(creditUsageHistoryProvider);
-      await ref.read(creditSummaryProvider.future);
+      await Future.wait([
+        ref.read(creditSummaryProvider.future),
+        ref.read(creditUsageHistoryProvider.future),
+      ]);
     }
 
     return Scaffold(
@@ -60,7 +63,10 @@ class CreditDetailPage extends HookConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.refresh_rounded, color: Color(0xFFF2F2F2)),
                 tooltip: 'Refresh',
-                onPressed: () => ref.invalidate(creditSummaryProvider),
+                onPressed: () {
+                  ref.invalidate(creditSummaryProvider);
+                  ref.invalidate(creditUsageHistoryProvider);
+                },
               ),
             ],
           ),
@@ -597,12 +603,25 @@ class _HistorySection extends HookConsumerWidget {
               ),
               error: (err, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'Could not load usage history.',
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 13,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Could not load usage history.',
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => ref.invalidate(creditUsageHistoryProvider),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.starGold,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
               data: (items) {

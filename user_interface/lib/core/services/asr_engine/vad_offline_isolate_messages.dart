@@ -14,6 +14,7 @@ class VadOfflineIsolateConfig {
     required this.minSilenceDuration,
     required this.minSpeechDuration,
     required this.confirmIntervalDuration,
+    this.initialOffsetSec = 0.0,
   });
 
   final sherpa_onnx.OfflineRecognizerConfig recognizerConfig;
@@ -25,6 +26,14 @@ class VadOfflineIsolateConfig {
   /// VADの区切りが来ない場合でも、最低これだけの間隔で強制的に1回デコードする
   /// ("マシンガントーク"でも文字起こしが出続けるようにするための保険)。
   final double confirmIntervalDuration;
+
+  /// このエンジンが今回のセッションで最初に受け取る音声の、録音全体における
+  /// 開始位置(秒)。一時停止→再開のたびに新しいisolateが起動して内部の
+  /// サンプルカウントが0から始まってしまうと、確定テキストの`timestampSec`が
+  /// 録音全体の経過時間より小さくなり、サーバー側watermarkによる表示フィルタ
+  /// (`_LiveTranscriptPanel`)で再開後の字幕が全て消える不具合になるため、
+  /// 呼び出し側(RecordingController)が把握している経過秒数をここに渡す。
+  final double initialOffsetSec;
 }
 
 class VadOfflineIsolateReady {

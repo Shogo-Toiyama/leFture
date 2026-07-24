@@ -34,6 +34,7 @@ void vadOfflineIsolateEntry(SendPort mainSendPort) {
         minSilenceDuration: message.minSilenceDuration,
         minSpeechDuration: message.minSpeechDuration,
         confirmIntervalDuration: message.confirmIntervalDuration,
+        initialOffsetSec: message.initialOffsetSec,
         onSegment: (segment) => mainSendPort.send(segment),
       );
       await logic!.start();
@@ -77,6 +78,7 @@ class _VadOfflineRecognitionLogic {
     required this.minSpeechDuration,
     required this.confirmIntervalDuration,
     required this.onSegment,
+    this.initialOffsetSec = 0.0,
   });
 
   final sherpa_onnx.OfflineRecognizerConfig recognizerConfig;
@@ -85,6 +87,7 @@ class _VadOfflineRecognitionLogic {
   final double minSilenceDuration;
   final double minSpeechDuration;
   final double confirmIntervalDuration;
+  final double initialOffsetSec;
   final void Function(AsrLiveSegment segment) onSegment;
 
   static const _sampleRate = 16000;
@@ -122,6 +125,10 @@ class _VadOfflineRecognitionLogic {
       'maxSpeechDuration=${maxSpeechDuration}s minSilenceDuration=${minSilenceDuration}s '
       'minSpeechDuration=${minSpeechDuration}s confirmIntervalDuration=${confirmIntervalDuration}s',
     );
+
+    final initialSamples = (initialOffsetSec * _sampleRate).round();
+    _totalSamplesFed = initialSamples;
+    _pendingStartSample = initialSamples;
 
     _recognizer = sherpa_onnx.OfflineRecognizer(recognizerConfig);
     _vad = sherpa_onnx.VoiceActivityDetector(

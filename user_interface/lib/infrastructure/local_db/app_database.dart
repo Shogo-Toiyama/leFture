@@ -265,14 +265,10 @@ class LocalLectureMoments extends Table {
   Set<Column> get primaryKey => {id, userId};
 }
 
-/// オンデバイスASR(sherpa_onnx)の言語モデルのローカルキャッシュ管理。
-/// PKはgroupKey(通常はmodelIdそのもの。VAD/Whisperは疑似コード) —
-/// 同一modelIdを共有する言語(例: ja/ko/yueのsense_voice)は自動的に1行に
-/// 統合される(詳細はAsrModelManager.resolveAssetGroupKey参照)。
+/// オンデバイスASR(sherpa_onnx)のモデルのローカルキャッシュ管理。
+/// PKはgroupKey — 全言語共有の`_vad`/`_whisper`の2行のみが存在する。
 /// engineCompatVersion/modelVersionをマニフェストと突き合わせてバージョン
-/// 整合性を判定する。LRU容量管理(LocalCacheEntries)とは別枠で、
-/// VAD以外(Whisperは含む)のgroupKeyについて最大2件までの独自の容量上限を
-/// AsrModelManagerが管理する(lastUsedAt基準)。
+/// 整合性を判定する。
 class LocalAsrModels extends Table {
   TextColumn get groupKey => text()(); // modelIdそのもの、または_vad/_whisper
   TextColumn get modelId => text()();

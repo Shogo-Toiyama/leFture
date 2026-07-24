@@ -106,6 +106,13 @@ class LanguageSelectionSheet extends ConsumerWidget {
                 ],
               ),
             ),
+            if (isRecording) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _SharedSpeechModelStatus(),
+              ),
+            ],
             const SizedBox(height: 16),
             Divider(color: AppColors.universe.glassBorder, height: 1),
 
@@ -127,27 +134,10 @@ class LanguageSelectionSheet extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final lang = languages[index];
                   final isSelected = lang.code == currentCode;
-                  // watchで再描画をトリガーしつつ、実際の値はgroupKey解決込みの
-                  // statusForLanguageから読む(ja/ko/yueのような共有モデルでも
-                  // 正しく反映されるように)。
-                  ref.watch(asrModelManagerProvider);
-                  final modelState = isRecording
-                      ? ref.read(asrModelManagerProvider.notifier).statusForLanguage(lang.code)
-                      : null;
 
                   return _LanguageTile(
                     language: lang,
                     isSelected: isSelected,
-                    modelState: modelState,
-                    onDownloadTap: isRecording
-                        ? () => ensureAsrModelWithErrorDialog(context, ref, lang.code)
-                        : null,
-                    onPauseTap: isRecording
-                        ? () => ref.read(asrModelManagerProvider.notifier).pauseDownload(lang.code)
-                        : null,
-                    onResumeTap: isRecording
-                        ? () => resumeAsrModelWithErrorDialog(context, ref, lang.code)
-                        : null,
                     onTap: () async {
                       if (!isSelected) {
                         if (isRecording) {
@@ -222,93 +212,14 @@ class _LanguageTile extends StatelessWidget {
     required this.language,
     required this.isSelected,
     required this.onTap,
-    this.modelState,
-    this.onDownloadTap,
-    this.onPauseTap,
-    this.onResumeTap,
   });
 
   final AppLanguage language;
   final bool isSelected;
   final VoidCallback onTap;
-  final AsrLanguageModelState? modelState;
-  // recordingモードのみ。failed/unknown状態でタップするとダウンロード/リトライ。
-  final VoidCallback? onDownloadTap;
-  final VoidCallback? onPauseTap;
-  final VoidCallback? onResumeTap;
-
-  Widget? _buildStatusIndicator() {
-    final status = modelState?.status;
-    if (status == null) return null;
-    switch (status) {
-      case AsrModelStatus.checking:
-        return SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.universe.textComet),
-        );
-      case AsrModelStatus.downloading:
-        final progress = modelState?.progress;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: progress,
-                    color: AppColors.starGold,
-                  ),
-                  if (progress != null)
-                    Text(
-                      '${(progress * 100).round()}',
-                      style: TextStyle(fontSize: 6, color: AppColors.universe.textComet),
-                    ),
-                ],
-              ),
-            ),
-            if (onPauseTap != null) ...[
-              const SizedBox(width: 4),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onPauseTap,
-                child: Icon(Icons.pause_circle_outline, color: AppColors.universe.textComet, size: 18),
-              ),
-            ],
-          ],
-        );
-      case AsrModelStatus.paused:
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onResumeTap,
-          child: Icon(Icons.play_circle_outline, color: AppColors.starGold, size: 20),
-        );
-      case AsrModelStatus.ready:
-        return const Icon(Icons.check_circle, color: AppColors.growthGreen, size: 16);
-      case AsrModelStatus.failed:
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onDownloadTap,
-          child: const Icon(Icons.download_rounded, color: AppColors.correctionRed, size: 18),
-        );
-      case AsrModelStatus.unknown:
-        if (onDownloadTap == null) return null;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onDownloadTap,
-          child: Icon(Icons.download_rounded, color: AppColors.universe.textComet, size: 18),
-        );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final statusIndicator = _buildStatusIndicator();
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -342,10 +253,6 @@ class _LanguageTile extends StatelessWidget {
                 ],
               ),
             ),
-            if (statusIndicator != null) ...[
-              statusIndicator,
-              const SizedBox(width: 10),
-            ],
             if (isSelected)
               const Icon(
                 Icons.check_rounded,
@@ -354,6 +261,75 @@ class _LanguageTile extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 全言語が共有する1つのWhisperモデルのダウンロード状況を、言語ごとにではなく
+/// ここ1箇所だけで表示する。
+class _SharedSpeechModelStatus extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(asrModelManagerProvider);
+    final recordingLanguage = ref.read(recordingLanguageControllerProvider);
+    final modelState = ref.read(asrModelManagerProvider.notifier).statusForLanguage(recordingLanguage);
+
+    final (icon, iconColor, label, onTap) = switch (modelState.status) {
+      AsrModelStatus.checking => (
+          Icons.hourglass_top_rounded,
+          AppColors.universe.textComet,
+          'Checking speech model…',
+          null,
+        ),
+      AsrModelStatus.downloading => (
+          Icons.downloading_rounded,
+          AppColors.starGold,
+          modelState.progress != null
+              ? 'Downloading speech model… ${(modelState.progress! * 100).round()}%'
+              : 'Downloading speech model…',
+          () => ref.read(asrModelManagerProvider.notifier).pauseDownload(recordingLanguage),
+        ),
+      AsrModelStatus.paused => (
+          Icons.play_circle_outline,
+          AppColors.starGold,
+          'Speech model download paused — tap to resume',
+          () => resumeAsrModelWithErrorDialog(context, ref, recordingLanguage),
+        ),
+      AsrModelStatus.ready => (
+          Icons.check_circle,
+          AppColors.growthGreen,
+          'Speech model ready',
+          null,
+        ),
+      AsrModelStatus.failed => (
+          Icons.error_outline,
+          AppColors.correctionRed,
+          friendlyAsrModelErrorMessage,
+          () => ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
+        ),
+      AsrModelStatus.unknown => (
+          Icons.download_rounded,
+          AppColors.universe.textComet,
+          'Speech model not downloaded — tap to download',
+          () => ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
+        ),
+    };
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }

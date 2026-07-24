@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:lecture_companion_ui/application/asr/asr_model_manager.dart';
 import 'package:lecture_companion_ui/core/services/asr_engine/asr_engine.dart';
@@ -12,7 +11,6 @@ import 'package:lecture_companion_ui/core/services/asr_engine/asr_engine_factory
 import 'package:lecture_companion_ui/core/services/asr_engine/asr_live_segment.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/app_database_provider.dart';
-import 'package:lecture_companion_ui/infrastructure/repositories/asr_model_repository.dart';
 
 part 'live_asr_controller.g.dart';
 
@@ -73,16 +71,21 @@ class LiveAsrController extends _$LiveAsrController {
   // モデルがreadyになった時点で`_maybeRetryPendingStart`がこれを使って
   // start()をやり直す。
   String? _pendingRetryLanguage;
+  double _pendingRetryOffsetSec = 0.0;
 
-  AsrEngineFactory get _factory => AsrEngineFactory(
-        repository: AsrModelRepository(Supabase.instance.client),
-        modelManager: ref.read(asrModelManagerProvider.notifier),
-      );
+  AsrEngineFactory get _factory =>
+      AsrEngineFactory(modelManager: ref.read(asrModelManagerProvider.notifier));
 
   /// 必要なモデルがまだ揃っていない場合は何もしない(ログだけ残す)。
   /// その場合、そのセッションではオンデバイスのライブ字幕は出ないが、
   /// サーバー側のチャンク処理には影響しない。
-  Future<void> start(String languageCode) async {
+  ///
+  /// [initialOffsetSec]は、録音の一時停止→再開でエンジンを起動し直す場合に、
+  /// 呼び出し側(RecordingController)が把握している「録音全体でのこれまでの
+  /// 経過秒数」を渡す。これが無いと、再開のたびに新しいisolateが起動して
+  /// 内部のタイムスタンプが0から数え直しになり、サーバー側watermarkによる
+  /// 表示フィルタ(`_LiveTranscriptPanel`)で再開後の字幕が全て消えてしまう。
+  Future<void> start(String languageCode, {double initialOffsetSec = 0.0}) async {
     DevLog.add('🎙️ [LiveAsrController] start("$languageCode") requested');
     if (_engine != null || _starting) {
       DevLog.add(
@@ -93,13 +96,14 @@ class LiveAsrController extends _$LiveAsrController {
     _starting = true;
     _stopRequested = false;
     try {
-      final handle = await _factory.createEngine(languageCode);
+      final handle = await _factory.createEngine(languageCode, initialOffsetSec: initialOffsetSec);
       if (handle == null) {
         DevLog.add(
           '⚠️ [LiveAsrController] ASR model not ready for "$languageCode"; will retry once it '
           'finishes downloading.',
         );
         _pendingRetryLanguage = languageCode;
+        _pendingRetryOffsetSec = initialOffsetSec;
         return;
       }
       _pendingRetryLanguage = null;
@@ -179,7 +183,7 @@ class LiveAsrController extends _$LiveAsrController {
     DevLog.add(
       '🎙️ [LiveAsrController] model for "$languageCode" finished downloading — retrying start()',
     );
-    unawaited(start(languageCode));
+    unawaited(start(languageCode, initialOffsetSec: _pendingRetryOffsetSec));
   }
 
   /// Liveタブが表示中かどうかをRecordingPageから通知してもらう。タブ切り替え・
