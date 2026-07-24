@@ -559,7 +559,7 @@ async def billing_history(request: Request):
             lambda: admin_client.table("credit_transactions")
                 .select("id, created_at, delta, balance_after, reason")
                 .eq("user_id", user_id)
-                .order("created_at", asc=True)
+                .order("created_at", desc=False)
                 .limit(500)
                 .execute()
         )
