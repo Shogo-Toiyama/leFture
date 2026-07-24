@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 Future<void> showTileActionsSheet({
   required BuildContext context,
@@ -16,6 +17,7 @@ Future<void> showTileActionsSheet({
     context: context,
     backgroundColor: Colors.transparent,
     builder: (context) {
+      final l10n = AppLocalizations.of(context);
       return Container(
         padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 16),
         decoration: BoxDecoration(
@@ -66,7 +68,7 @@ Future<void> showTileActionsSheet({
             ],
             ListTile(
               leading: const Icon(Icons.edit_outlined, color: Colors.white),
-              title: const Text('Edit', style: TextStyle(color: Colors.white, fontSize: 14)),
+              title: Text(l10n.commonEditButton, style: const TextStyle(color: Colors.white, fontSize: 14)),
               onTap: () {
                 Navigator.of(context).pop();
                 onEdit();
@@ -75,7 +77,7 @@ Future<void> showTileActionsSheet({
             Divider(color: AppColors.universe.glassBorder, height: 1),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.correctionRed),
-              title: const Text('Delete', style: TextStyle(color: AppColors.correctionRed, fontSize: 14)),
+              title: Text(l10n.commonDeleteButton, style: const TextStyle(color: AppColors.correctionRed, fontSize: 14)),
               onTap: () {
                 Navigator.of(context).pop();
                 onDelete();

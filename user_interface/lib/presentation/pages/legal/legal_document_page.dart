@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/application/legal/legal_content_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// Generic "Paper"-themed reader for a Markdown legal document fetched from
 /// Supabase (see [LegalContentRepositorySupabase]). Both the Privacy Policy
@@ -27,6 +28,7 @@ class LegalDocumentPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final documentAsync = ref.watch(legalDocumentProvider(slug));
 
     return Scaffold(
@@ -63,7 +65,7 @@ class LegalDocumentPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Last updated ${DateFormat.yMMMd().format(document.updatedAt)}',
+                    l10n.legalDocumentLastUpdated(DateFormat.yMMMd(l10n.localeName).format(document.updatedAt)),
                     style: TextStyle(color: AppColors.paper.textPencil, fontSize: 13),
                   ),
                   const SizedBox(height: 20),
@@ -105,6 +107,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -114,12 +117,12 @@ class _ErrorState extends StatelessWidget {
             Icon(Icons.wifi_off_rounded, color: AppColors.paper.textPencil, size: 40),
             const SizedBox(height: 16),
             Text(
-              "Couldn't load this document",
+              l10n.legalDocumentLoadErrorTitle,
               style: TextStyle(color: AppColors.paper.textInk, fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
-              'Check your connection and try again.',
+              l10n.legalDocumentLoadErrorSubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.paper.textPencil),
             ),
@@ -131,7 +134,7 @@ class _ErrorState extends StatelessWidget {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Retry'),
+              child: Text(l10n.commonRetryButton),
             ),
           ],
         ),

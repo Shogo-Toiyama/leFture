@@ -5,6 +5,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// プロフィール作成/編集用ボトムシート。
 ///
@@ -15,6 +16,7 @@ class MakeProfileSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final existing = ref.read(currentUserProfileProvider).asData?.value;
 
     final usernameCtl = useTextEditingController(text: existing?.username ?? '');
@@ -40,7 +42,7 @@ class MakeProfileSheet extends HookConsumerWidget {
     Future<void> submit() async {
       final bio = bioCtl.text.trim();
       if (bio.isEmpty) {
-        errorMsg.value = 'Tell us a little about yourself first';
+        errorMsg.value = l10n.makeProfileBioEmptyError;
         return;
       }
       isSubmitting.value = true;
@@ -94,7 +96,7 @@ class MakeProfileSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Make Your Profile',
+                l10n.makeProfileSheetTitle,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 20,
@@ -103,7 +105,7 @@ class MakeProfileSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'This helps leFture personalize your fun facts and study material.',
+                l10n.makeProfileSheetSubtitle,
                 style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
               ),
               const SizedBox(height: 24),
@@ -154,10 +156,10 @@ class MakeProfileSheet extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Center(
+              Center(
                 child: Text(
-                  'Change Avatar (Coming Soon)',
-                  style: TextStyle(
+                  l10n.makeProfileChangeAvatarComingSoon,
+                  style: const TextStyle(
                     color: Colors.white30,
                     fontSize: 11,
                   ),
@@ -167,16 +169,16 @@ class MakeProfileSheet extends HookConsumerWidget {
 
               _ProfileTextField(
                 controller: usernameCtl,
-                label: 'Username',
-                hint: 'e.g. Shogo',
+                label: l10n.usernameLabel,
+                hint: l10n.makeProfileUsernameHint,
                 icon: Icons.badge_outlined,
               ),
               const SizedBox(height: 12),
 
               _ProfileTextField(
                 controller: bioCtl,
-                label: 'About You *',
-                hint: 'Who are you, what do you study, how do you like to learn?',
+                label: l10n.makeProfileAboutYouLabel,
+                hint: l10n.makeProfileAboutYouHint,
                 icon: Icons.person_outline,
                 maxLines: 4,
               ),
@@ -184,8 +186,8 @@ class MakeProfileSheet extends HookConsumerWidget {
 
               _ProfileTextField(
                 controller: interestsCtl,
-                label: 'Interests',
-                hint: 'e.g. astronomy, guitar, history',
+                label: l10n.makeProfileInterestsLabel,
+                hint: l10n.makeProfileInterestsHint,
                 icon: Icons.auto_awesome_outlined,
                 maxLines: 2,
               ),
@@ -193,8 +195,8 @@ class MakeProfileSheet extends HookConsumerWidget {
 
               _ProfileTextField(
                 controller: futureGoalsCtl,
-                label: 'Future Dreams',
-                hint: 'What are you working toward?',
+                label: l10n.makeProfileFutureDreamsLabel,
+                hint: l10n.makeProfileFutureDreamsHint,
                 icon: Icons.flag_outlined,
                 maxLines: 2,
               ),
@@ -231,9 +233,9 @@ class MakeProfileSheet extends HookConsumerWidget {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
-                          'Save Profile',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      : Text(
+                          l10n.makeProfileSaveButton,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
               ),

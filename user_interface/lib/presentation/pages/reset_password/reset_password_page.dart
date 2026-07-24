@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/auth_result_view.dart';
@@ -17,6 +18,7 @@ class ResetPasswordPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final passwordController = useTextEditingController();
     final confirmPasswordController = useTextEditingController();
     final obscurePassword = useState(true);
@@ -33,9 +35,9 @@ class ResetPasswordPage extends HookConsumerWidget {
       return AuthResultView(
         success: false,
         icon: Icons.error_outline_rounded,
-        title: 'Link invalid or expired',
+        title: l10n.resetPasswordLinkInvalidTitle,
         message: linkError,
-        buttonLabel: 'Request a New Link',
+        buttonLabel: l10n.requestNewLinkButton,
         onButtonPressed: () => context.go(AppRoutes.forgotPassword),
       );
     }
@@ -101,9 +103,9 @@ class ResetPasswordPage extends HookConsumerWidget {
       return AuthResultView(
         success: true,
         icon: Icons.check_rounded,
-        title: 'Password updated',
-        message: 'Your password has been updated successfully. You\'re all set!',
-        buttonLabel: 'Go to Dashboard',
+        title: l10n.resetPasswordSuccessTitle,
+        message: l10n.resetPasswordSuccessMessage,
+        buttonLabel: l10n.goToDashboardButton,
         onButtonPressed: () => context.go(AppRoutes.home),
       );
     }
@@ -166,7 +168,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Set a new password',
+                  l10n.resetPasswordTitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -175,7 +177,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your new password must be different from previously used passwords',
+                  l10n.resetPasswordSubtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.universe.textComet,
@@ -207,7 +209,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                                 cursorColor: AppColors.starGold,
                                 obscureText: obscurePassword.value,
                                 decoration: inputDecoration(
-                                  'New Password',
+                                  l10n.newPasswordLabel,
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -218,10 +220,10 @@ class ResetPasswordPage extends HookConsumerWidget {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter a new password';
+                                    return l10n.resetPasswordErrorEmpty;
                                   }
                                   if (value.length < 8) {
-                                    return 'Password must be at least 8 characters';
+                                    return l10n.passwordErrorTooShort;
                                   }
                                   return null;
                                 },
@@ -234,7 +236,7 @@ class ResetPasswordPage extends HookConsumerWidget {
                                 cursorColor: AppColors.starGold,
                                 obscureText: obscureConfirmPassword.value,
                                 decoration: inputDecoration(
-                                  'Confirm New Password',
+                                  l10n.confirmNewPasswordLabel,
                                   suffixIcon: IconButton(
                                     icon: Icon(
                                       obscureConfirmPassword.value
@@ -247,10 +249,10 @@ class ResetPasswordPage extends HookConsumerWidget {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please confirm your new password';
+                                    return l10n.confirmNewPasswordErrorEmpty;
                                   }
                                   if (value != passwordController.text) {
-                                    return 'Passwords do not match';
+                                    return l10n.passwordsMismatchError;
                                   }
                                   return null;
                                 },
@@ -272,9 +274,9 @@ class ResetPasswordPage extends HookConsumerWidget {
                                           borderRadius: BorderRadius.circular(14),
                                         ),
                                       ),
-                                      child: const Text(
-                                        'Reset Password',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      child: Text(
+                                        l10n.resetPasswordButton,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                       ),
                                     ),
                             ],

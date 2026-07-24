@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// コースのカラーコードとアイコンの文字列マッピングを提供するヘルパークラス。
 class CourseStyleHelper {
@@ -149,50 +150,50 @@ class CourseIconCategory {
 }
 
 /// コース編集シート用のカテゴリ一覧
-const List<CourseIconCategory> courseIconCategories = [
+List<CourseIconCategory> getCourseIconCategories(AppLocalizations l10n) => [
   CourseIconCategory(
-    title: 'School',
+    title: l10n.courseIconCategorySchool,
     emoji: '🎓',
-    iconNames: ['school', 'book', 'menu_book', 'auto_stories', 'quiz', 'edit_note', 'workspace_premium'],
+    iconNames: const ['school', 'book', 'menu_book', 'auto_stories', 'quiz', 'edit_note', 'workspace_premium'],
   ),
   CourseIconCategory(
-    title: 'Humanity & Lang',
+    title: l10n.courseIconCategoryHumanityLang,
     emoji: '✍️',
-    iconNames: ['history_edu', 'translate', 'abc', 'chat_bubble', 'record_voice_over', 'museum', 'hourglass_empty', 'self_improvement', 'lightbulb', 'psychology', 'festival', 'theater_comedy'],
+    iconNames: const ['history_edu', 'translate', 'abc', 'chat_bubble', 'record_voice_over', 'museum', 'hourglass_empty', 'self_improvement', 'lightbulb', 'psychology', 'festival', 'theater_comedy'],
   ),
   CourseIconCategory(
-    title: 'Society & Law',
+    title: l10n.courseIconCategorySocietyLaw,
     emoji: '⚖️',
-    iconNames: ['gavel', 'balance', 'account_balance', 'how_to_vote', 'public', 'flag'],
+    iconNames: const ['gavel', 'balance', 'account_balance', 'how_to_vote', 'public', 'flag'],
   ),
   CourseIconCategory(
-    title: 'Science & Space',
+    title: l10n.courseIconCategoryScienceSpace,
     emoji: '🔬',
-    iconNames: ['functions', 'calculate', 'timeline', 'science', 'biotech', 'nights_stay', 'rocket_launch', 'wb_sunny', 'bolt'],
+    iconNames: const ['functions', 'calculate', 'timeline', 'science', 'biotech', 'nights_stay', 'rocket_launch', 'wb_sunny', 'bolt'],
   ),
   CourseIconCategory(
-    title: 'Tech & Build',
+    title: l10n.courseIconCategoryTechBuild,
     emoji: '💻',
-    iconNames: ['settings', 'construction', 'memory', 'terminal', 'code', 'architecture', 'domain'],
+    iconNames: const ['settings', 'construction', 'memory', 'terminal', 'code', 'architecture', 'domain'],
   ),
   CourseIconCategory(
-    title: 'Agri & Marine',
+    title: l10n.courseIconCategoryAgriMarine,
     emoji: '🌾',
-    iconNames: ['agriculture', 'grass', 'nature', 'sailing', 'set_meal', 'phishing'],
+    iconNames: const ['agriculture', 'grass', 'nature', 'sailing', 'set_meal', 'phishing'],
   ),
   CourseIconCategory(
-    title: 'Medical',
+    title: l10n.courseIconCategoryMedical,
     emoji: '🏥',
-    iconNames: ['medical_services', 'local_hospital', 'vaccines', 'medication', 'health_and_safety', 'monitor_heart', 'sentiment_satisfied'],
+    iconNames: const ['medical_services', 'local_hospital', 'vaccines', 'medication', 'health_and_safety', 'monitor_heart', 'sentiment_satisfied'],
   ),
   CourseIconCategory(
-    title: 'Sports & Health',
+    title: l10n.courseIconCategorySportsHealth,
     emoji: '⚽',
-    iconNames: ['sports_soccer', 'sports_basketball', 'fitness_center', 'directions_run', 'spa', 'apple'],
+    iconNames: const ['sports_soccer', 'sports_basketball', 'fitness_center', 'directions_run', 'spa', 'apple'],
   ),
   CourseIconCategory(
-    title: 'Art & Travel',
+    title: l10n.courseIconCategoryArtTravel,
     emoji: '🎨',
-    iconNames: ['palette', 'brush', 'movie', 'theaters', 'flight_takeoff', 'luggage', 'attractions'],
+    iconNames: const ['palette', 'brush', 'movie', 'theaters', 'flight_takeoff', 'luggage', 'attractions'],
   ),
 ];

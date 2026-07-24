@@ -26,6 +26,7 @@ import 'package:lecture_companion_ui/presentation/widgets/announcement_transcrip
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
 import 'package:lecture_companion_ui/domain/entities/annotation.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'deep_notes_list_page.dart';
 
 // ---------------------------------------------------------------------------
@@ -210,7 +211,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                 _buildAppBar(
                   context,
                   ref,
-                  'Deep Notes',
+                  AppLocalizations.of(context).deepNotesListTitle,
                   currentIndex.value,
                   0,
                   () => _showNotesListSheet(
@@ -234,7 +235,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   child: Center(
                     child: isLoading
                         ? CircularProgressIndicator(color: textThemeColor)
-                        : const Text('No notes available'),
+                        : Text(AppLocalizations.of(context).deepNotesDetailNoNotesAvailable),
                   ),
                 ),
               ],
@@ -408,8 +409,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
                     if (result == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No source found for the selection.'),
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context).cardSelectionToolbarSourceNotFoundMessage,
+                          ),
                         ),
                       );
                       return;
@@ -531,9 +534,11 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     await Clipboard.setData(ClipboardData(text: text));
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Copied to clipboard'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context).cardSelectionToolbarCopiedToClipboardMessage,
+                        ),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   }
@@ -741,7 +746,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                 onPressed: onGridTap,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                tooltip: 'View List',
+                tooltip: AppLocalizations.of(context).deepNotesDetailViewListTooltip,
               ),
               Expanded(
                 child: CardSelectionToolbar(
@@ -803,7 +808,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
               const SizedBox(width: 8),
               if (totalCount > 0)
                 Text(
-                  '${currentIndex + 1} / $totalCount',
+                  AppLocalizations.of(context).deepNotesDetailPageCounter(
+                    currentIndex + 1,
+                    totalCount,
+                  ),
                   style: TextStyle(
                     color: AppColors.paper.textPencil,
                     fontSize: 14,
@@ -862,7 +870,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Deep Notes List',
+                          AppLocalizations.of(context).deepNotesDetailListSheetTitle,
                           style: TextStyle(
                             color: AppColors.paper.textInk,
                             fontSize: 20,
@@ -1193,7 +1201,7 @@ class _NoteDetailContent extends HookWidget {
                           onTap: onPrev,
                         ),
                         Text(
-                          'Pull or tap to previous note',
+                          AppLocalizations.of(context).deepNotesDetailPullPrevHint,
                           style: TextStyle(
                             color: AppColors.paper.textPencil,
                             fontSize: 11,
@@ -1278,7 +1286,7 @@ class _NoteDetailContent extends HookWidget {
                     key: ValueKey(annotationsCacheKeyValue),
                     data: topic.content.isNotEmpty
                         ? stripSidCitations(topic.content)
-                        : 'Deep notes for this topic are still being generated…',
+                        : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
                     selectable: false,
                     builders: topic.content.isNotEmpty
                         ? annotationMarkdownBuilders(annotationBuilder)
@@ -1332,7 +1340,7 @@ class _NoteDetailContent extends HookWidget {
                     child: Column(
                       children: [
                         Text(
-                          'Pull or tap to next note',
+                          AppLocalizations.of(context).deepNotesDetailPullNextHint,
                           style: TextStyle(
                             color: AppColors.paper.textPencil,
                             fontSize: 11,

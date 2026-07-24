@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class CardSelectionToolbar extends HookWidget {
@@ -50,6 +51,7 @@ class CardSelectionToolbar extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = accentColor ?? AppColors.paper.textInk;
 
     final scrollController = useScrollController();
@@ -67,27 +69,27 @@ class CardSelectionToolbar extends HookWidget {
         ? [
             _ToolbarButton(
               icon: Icons.brush_outlined,
-              label: 'Highlight',
+              label: l10n.cardSelectionToolbarHighlightLabel,
               color: color,
               isActive: isHighlightActive,
               onTap: onHighlightTap,
             ),
             _ToolbarButton(
               icon: Icons.edit_note_rounded,
-              label: 'Note',
+              label: l10n.cardSelectionToolbarNoteLabel,
               color: color,
               isActive: isNoteActive,
               onTap: onNoteTap,
             ),
             _ToolbarButton(
               icon: Icons.copy_rounded,
-              label: 'Copy',
+              label: l10n.cardSelectionToolbarCopyLabel,
               color: color,
               onTap: onCopyTap,
             ),
             _ToolbarButton(
               icon: Icons.description_outlined,
-              label: 'Source',
+              label: l10n.cardSelectionToolbarSourceLabel,
               color: color,
               onTap: onSourceTap,
             ),
@@ -95,21 +97,21 @@ class CardSelectionToolbar extends HookWidget {
         : [
             _ToolbarButton(
               icon: reaction == 'like' ? Icons.favorite : Icons.favorite_border,
-              label: 'Like',
+              label: l10n.cardSelectionToolbarLikeLabel,
               color: color,
               isActive: reaction == 'like',
               onTap: onLike,
             ),
             _ToolbarButton(
               icon: reaction == 'dislike' ? Icons.thumb_down : Icons.thumb_down_alt_outlined,
-              label: 'Dislike',
+              label: l10n.cardSelectionToolbarDislikeLabel,
               color: color,
               isActive: reaction == 'dislike',
               onTap: onDislike,
             ),
             _ToolbarButton(
               icon: saved ? Icons.bookmark : Icons.bookmark_border,
-              label: 'Save',
+              label: l10n.cardSelectionToolbarSaveLabel,
               color: color,
               isActive: saved,
               onTap: onSave,

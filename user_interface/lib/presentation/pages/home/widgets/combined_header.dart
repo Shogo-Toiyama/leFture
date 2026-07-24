@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'fun_facts_carousel.dart';
 
 class CoursesHeaderWidget extends StatelessWidget {
@@ -9,6 +10,7 @@ class CoursesHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -22,7 +24,7 @@ class CoursesHeaderWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Courses',
+                  l10n.homeCoursesSectionTitle,
                   style: TextStyle(
                     color: AppColors.starGold,
                     fontWeight: FontWeight.bold,
@@ -42,7 +44,7 @@ class CoursesHeaderWidget extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
           child: Text(
-            'RECENT LECTURES',
+            l10n.homeRecentLecturesSectionTitle,
             style: TextStyle(
               color: AppColors.universe.textComet,
               fontWeight: FontWeight.bold,

@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/pending_auth_action.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,6 +20,7 @@ class ChangeAccountSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final currentUser = ref.watch(currentUserProvider);
     final isSubmitting = useState(false);
     final errorMessage = useState<String?>(null);
@@ -80,7 +82,7 @@ class ChangeAccountSheet extends HookConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Change Account',
+                    l10n.myAccountChangeAccountTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.universe.textStarlight,
@@ -88,7 +90,7 @@ class ChangeAccountSheet extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Current: ${currentAccountEmail ?? providerLabel}',
+                    l10n.changeAccountCurrentLabel(currentAccountEmail ?? providerLabel),
                     style: TextStyle(
                       color: AppColors.universe.textComet,
                       fontSize: 12,
@@ -126,7 +128,7 @@ class ChangeAccountSheet extends HookConsumerWidget {
                         ),
                       ),
                       child: Text(
-                        'Choose a different $providerLabel account',
+                        l10n.changeAccountButtonLabel(providerLabel),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),

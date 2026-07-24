@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/widgets/draggable_toolbar_card.dart';
 
 class NoteSubToolbar extends HookWidget {
@@ -29,6 +30,7 @@ class NoteSubToolbar extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final controller = useTextEditingController(text: initialText);
 
     // If the initialText changes (e.g. from state change), update the controller text
@@ -54,7 +56,7 @@ class NoteSubToolbar extends HookWidget {
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: isEditing ? 'Add a note...' : '',
+                hintText: isEditing ? l10n.noteToolbarHintText : '',
                 hintStyle: const TextStyle(color: Colors.black38),
               ),
             ),

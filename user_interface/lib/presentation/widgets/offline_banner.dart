@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/application/connectivity/connectivity_status_provider.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// アプリ全体共通で、オフライン中は画面上部（ステータスバー下）に
 /// スムーズなSpotifyスタイルの「You're offline」トップバナーを表示する。
@@ -13,6 +14,7 @@ class OfflineBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     // 接続状態が判明するまで(初回のみ)はバナーを出さない(trueをデフォルトに)。
     final isOnline = ref.watch(isOnlineProvider).asData?.value ?? true;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -32,14 +34,14 @@ class OfflineBanner extends ConsumerWidget {
                     left: 16,
                     right: 16,
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.wifi_off_rounded, color: Colors.white, size: 14),
-                      SizedBox(width: 6),
+                      const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 14),
+                      const SizedBox(width: 6),
                       Text(
-                        "You're offline",
-                        style: TextStyle(
+                        l10n.offlineBannerMessage,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,

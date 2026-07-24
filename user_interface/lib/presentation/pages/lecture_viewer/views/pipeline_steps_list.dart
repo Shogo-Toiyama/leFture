@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/processing_task.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 
@@ -65,6 +66,7 @@ class _StepRow extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final label = processingTaskLabel(taskType);
 
     if (task == null) {
@@ -84,7 +86,7 @@ class _StepRow extends HookConsumerWidget {
         label: label,
         labelColor: AppColors.universe.textComet.withValues(alpha: 0.6),
         strikethrough: true,
-        subtitle: const Text('Cancelled'),
+        subtitle: Text(l10n.pipelineStepsCancelledLabel),
       );
     }
 
@@ -107,7 +109,7 @@ class _StepRow extends HookConsumerWidget {
         iconColor: AppColors.alertAmber,
         label: label,
         subtitle: Text(
-          'Retrying automatically…',
+          l10n.pipelineStepsRetryingAutomaticallyLabel,
           style: TextStyle(color: AppColors.alertAmber.withValues(alpha: 0.9), fontSize: 12),
         ),
       );
@@ -119,7 +121,7 @@ class _StepRow extends HookConsumerWidget {
         iconColor: AppColors.starGold,
         label: label,
         showSpinner: true,
-        subtitle: const Text('In progress'),
+        subtitle: Text(l10n.pipelineStepsInProgressLabel),
       );
     }
 
@@ -206,6 +208,7 @@ class _RetryableCompletedStep extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isRetrying = useState(false);
 
     Future<void> retryFromHere() async {
@@ -216,14 +219,17 @@ class _RetryableCompletedStep extends HookConsumerWidget {
           .toList();
 
       final message = downstreamLabels.isEmpty
-          ? 'This will redo "$label".'
-          : 'This will redo "$label" and re-run everything that depends on it:\n${downstreamLabels.join(', ')}.';
+          ? l10n.pipelineStepsRetryConfirmMessageSimple(label)
+          : l10n.pipelineStepsRetryConfirmMessageWithDownstream(
+              label,
+              downstreamLabels.join(', '),
+            );
 
       final confirm = await showCustomDialog(
         context: context,
-        title: 'Retry from here?',
+        title: l10n.pipelineStepsRetryDialogTitle,
         message: message,
-        confirmLabel: 'Retry',
+        confirmLabel: l10n.pipelineStepsRetryConfirmButton,
         icon: Icons.refresh,
         isDestructive: true,
       );
@@ -234,7 +240,9 @@ class _RetryableCompletedStep extends HookConsumerWidget {
         await ref.read(jobRepositoryProvider).retryTask(taskId: task.id);
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Retry failed: $e')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.pipelineStepsRetryFailedSnackbar(e.toString()))),
+          );
         }
       } finally {
         if (context.mounted) isRetrying.value = false;
@@ -245,10 +253,10 @@ class _RetryableCompletedStep extends HookConsumerWidget {
       icon: Icons.check_circle,
       iconColor: AppColors.growthGreen,
       label: label,
-      subtitle: Text(DateFormat.jm().format(task.updatedAt.toLocal())),
+      subtitle: Text(DateFormat.jm(l10n.localeName).format(task.updatedAt.toLocal())),
       trailing: IconButton(
         onPressed: isRetrying.value ? null : retryFromHere,
-        tooltip: 'Retry from here',
+        tooltip: l10n.pipelineStepsRetryTooltip,
         icon: isRetrying.value
             ? SizedBox(
                 width: 16,
@@ -270,6 +278,7 @@ class _StuckStepCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isRetrying = useState(false);
     final error = useState<String?>(null);
 
@@ -344,7 +353,11 @@ class _StuckStepCard extends HookConsumerWidget {
                       child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.correctionRed),
                     )
                   : const Icon(Icons.refresh, size: 16),
-              label: Text(isRetrying.value ? 'Retrying...' : 'Retry this step'),
+              label: Text(
+                isRetrying.value
+                    ? l10n.pipelineStepsRetryingLabel
+                    : l10n.pipelineStepsRetryThisStepButton,
+              ),
             ),
           ),
         ],

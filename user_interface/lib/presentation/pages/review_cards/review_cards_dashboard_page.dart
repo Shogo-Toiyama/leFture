@@ -18,6 +18,7 @@ import 'package:lecture_companion_ui/domain/entities/review_card.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 
 // ---------------------------------------------------------------------------
@@ -47,6 +48,7 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
     final courseId = lecture?.courseId ?? 'N/A';
@@ -119,9 +121,9 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              const CustomAppBar(
+              CustomAppBar(
                 showHomeButton: true,
-                title: 'Review Cards',
+                title: l10n.reviewCardsDashboardTitle,
                 isLightBg: true,
               ),
               Expanded(
@@ -158,7 +160,7 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                 size: 64, color: AppColors.paper.textPencil),
             const SizedBox(height: 16),
             Text(
-              'Review cards are being generated…',
+              AppLocalizations.of(context).reviewCardsDashboardGeneratingMessage,
               style:
                   TextStyle(color: AppColors.paper.textPencil, fontSize: 16),
             ),

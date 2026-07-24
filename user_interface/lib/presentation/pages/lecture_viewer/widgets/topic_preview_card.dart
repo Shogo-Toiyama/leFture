@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class TopicPreviewCard extends StatelessWidget {
   const TopicPreviewCard({
@@ -25,6 +26,7 @@ class TopicPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0,
@@ -89,19 +91,19 @@ class TopicPreviewCard extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.bookmark_border),
                     onPressed: () {}, // Dummy
-                    tooltip: 'Save',
+                    tooltip: l10n.topicPreviewSaveTooltip,
                     visualDensity: VisualDensity.compact,
                   ),
                   IconButton(
                     icon: const Icon(Icons.favorite_border),
                     onPressed: () {}, // Dummy
-                    tooltip: 'Like',
+                    tooltip: l10n.topicPreviewLikeTooltip,
                     visualDensity: VisualDensity.compact,
                   ),
                   const SizedBox(width: 8),
                   FilledButton.tonal(
                     onPressed: onTap,
-                    child: const Text('Read Note'),
+                    child: Text(l10n.topicPreviewReadNoteButton),
                   ),
                 ],
               ),

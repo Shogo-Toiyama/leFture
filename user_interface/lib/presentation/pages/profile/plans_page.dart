@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/credit/credit_providers.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 /// ユーザーに有料・無料のプラン選択肢を美しく見せる料金プラン一覧画面。
@@ -12,6 +13,7 @@ class PlansPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     // 年額/月額の切り替えトグル
     final isAnnual = useState<bool>(true);
     final summaryAsync = ref.watch(creditSummaryProvider);
@@ -36,9 +38,9 @@ class PlansPage extends HookConsumerWidget {
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            title: const Text(
-              'Plans & Pricing',
-              style: TextStyle(
+            title: Text(
+              l10n.plansTitle,
+              style: const TextStyle(
                 color: Color(0xFFF2F2F2),
                 fontWeight: FontWeight.w700,
                 fontSize: 20,
@@ -54,7 +56,7 @@ class PlansPage extends HookConsumerWidget {
                   
                   // ヘッダーキャッチコピー
                   Text(
-                    'Supercharge your learning journey',
+                    l10n.plansHeadline,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.universe.textStarlight,
@@ -65,7 +67,7 @@ class PlansPage extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose the plan that fits your study pace. Upgrade or downgrade anytime.',
+                    l10n.plansSubheadline,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.universe.textComet,
@@ -84,27 +86,27 @@ class PlansPage extends HookConsumerWidget {
 
                   // 1. Starter Plan (Free)
                   _PricingCard(
-                    title: 'Starter',
-                    subtitle: 'Essential tools for casual learners',
+                    title: l10n.plansStarterTitle,
+                    subtitle: l10n.plansStarterSubtitle,
                     price: '\$0',
-                    billingPeriod: 'forever free',
-                    badgeLabel: !hasActivePlan ? 'CURRENT PLAN' : null,
+                    billingPeriod: l10n.plansStarterBillingPeriod,
+                    badgeLabel: !hasActivePlan ? l10n.plansCurrentPlanBadge : null,
                     badgeColor: const Color(0x33FFFFFF),
                     badgeTextColor: Colors.white70,
                     isHighlighted: false,
                     buttonLabel: !hasActivePlan
-                        ? 'Current Active Plan'
-                        : 'Downgrade to Starter',
+                        ? l10n.plansStarterButtonCurrent
+                        : l10n.plansStarterButtonDowngrade,
                     isCurrentPlan: !hasActivePlan,
-                    features: const [
-                      '100 Monthly Credits',
-                      'Standard AI Lecture Transcripts',
-                      'Core Topic Map Generation',
-                      'Basic AI Q&A Chat',
+                    features: [
+                      l10n.plansStarterFeature1,
+                      l10n.plansStarterFeature2,
+                      l10n.plansStarterFeature3,
+                      l10n.plansStarterFeature4,
                     ],
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('You are already on the Starter plan.')),
+                        SnackBar(content: Text(l10n.plansStarterAlreadyOnSnackbar)),
                       );
                     },
                   ),
@@ -112,52 +114,52 @@ class PlansPage extends HookConsumerWidget {
 
                   // 2. Orbit Pro (Most Popular)
                   _PricingCard(
-                    title: 'Orbit Pro',
-                    subtitle: 'Maximum speed, unlimited insights',
+                    title: l10n.plansProTitle,
+                    subtitle: l10n.plansProSubtitle,
                     price: isAnnual.value ? '\$11.99' : '\$14.99',
-                    billingPeriod: isAnnual.value ? 'per month, billed yearly' : 'per month',
-                    badgeLabel: '🔥 MOST POPULAR',
+                    billingPeriod: isAnnual.value ? l10n.plansProBillingPeriodAnnual : l10n.plansBillingPeriodMonthly,
+                    badgeLabel: l10n.plansMostPopularBadge,
                     badgeColor: const Color(0xFFFFB300),
                     badgeTextColor: Colors.black,
                     isHighlighted: true,
-                    buttonLabel: 'Upgrade to Pro',
+                    buttonLabel: l10n.plansProButton,
                     isCurrentPlan: false,
-                    features: const [
-                      '1,200 Monthly Credits (12x boost)',
-                      'Realtime On-Device & Whisper ASR',
-                      'Unlimited Deep Notes & Review Cards',
-                      'High-Priority AI Model Speed',
-                      'Export Transcripts (PDF & Markdown)',
-                      'Full Galaxy Knowledge Graph',
+                    features: [
+                      l10n.plansProFeature1,
+                      l10n.plansProFeature2,
+                      l10n.plansProFeature3,
+                      l10n.plansProFeature4,
+                      l10n.plansProFeature5,
+                      l10n.plansProFeature6,
                     ],
                     onTap: () {
-                      _showPlanSelectDialog(context, 'Orbit Pro');
+                      _showPlanSelectDialog(context, l10n.plansProTitle);
                     },
                   ),
                   const SizedBox(height: 20),
 
                   // 3. Orbit Max (Unlimited)
                   _PricingCard(
-                    title: 'Orbit Max',
-                    subtitle: 'For heavy researchers & power users',
+                    title: l10n.plansMaxTitle,
+                    subtitle: l10n.plansMaxSubtitle,
                     price: isAnnual.value ? '\$23.99' : '\$29.99',
-                    billingPeriod: isAnnual.value ? 'per month, billed yearly' : 'per month',
-                    badgeLabel: '⚡ BEST VALUE',
+                    billingPeriod: isAnnual.value ? l10n.plansProBillingPeriodAnnual : l10n.plansBillingPeriodMonthly,
+                    badgeLabel: l10n.plansBestValueBadge,
                     badgeColor: const Color(0xFF7C4DFF),
                     badgeTextColor: Colors.white,
                     isHighlighted: false,
-                    buttonLabel: 'Get Orbit Max',
+                    buttonLabel: l10n.plansMaxButton,
                     isCurrentPlan: false,
-                    features: const [
-                      '3,500 Monthly Credits',
-                      'All Pro Features Included',
-                      'Advanced Galaxy Knowledge Graph',
-                      'Custom AI Model Context & Fine-tuning',
-                      'Dedicated 24/7 Priority Support',
-                      'Early Access to New Experimental Features',
+                    features: [
+                      l10n.plansMaxFeature1,
+                      l10n.plansMaxFeature2,
+                      l10n.plansMaxFeature3,
+                      l10n.plansMaxFeature4,
+                      l10n.plansMaxFeature5,
+                      l10n.plansMaxFeature6,
                     ],
                     onTap: () {
-                      _showPlanSelectDialog(context, 'Orbit Max');
+                      _showPlanSelectDialog(context, l10n.plansMaxTitle);
                     },
                   ),
                   const SizedBox(height: 32),
@@ -169,7 +171,7 @@ class PlansPage extends HookConsumerWidget {
                       const Icon(Icons.shield_outlined, color: Colors.white38, size: 16),
                       const SizedBox(width: 6),
                       Text(
-                        'Cancel anytime. Encrypted & secure.',
+                        l10n.plansFooterNote,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 12,
@@ -188,23 +190,24 @@ class PlansPage extends HookConsumerWidget {
   }
 
   void _showPlanSelectDialog(BuildContext context, String planName) {
+    final l10n = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF1E1F29),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Select $planName',
+          l10n.plansSelectDialogTitle(planName),
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Text(
-          '$planName purchasing flow is coming soon in the next update!',
+          l10n.plansSelectDialogMessage(planName),
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it', style: TextStyle(color: AppColors.starGold)),
+            child: Text(l10n.plansSelectDialogConfirmButton, style: const TextStyle(color: AppColors.starGold)),
           ),
         ],
       ),
@@ -223,6 +226,7 @@ class _BillingToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -244,7 +248,7 @@ class _BillingToggle extends StatelessWidget {
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text(
-                'Monthly',
+                l10n.plansBillingToggleMonthly,
                 style: TextStyle(
                   color: !isAnnual ? Colors.black : Colors.white70,
                   fontSize: 13,
@@ -267,7 +271,7 @@ class _BillingToggle extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Yearly',
+                    l10n.plansBillingToggleYearly,
                     style: TextStyle(
                       color: isAnnual ? Colors.black : Colors.white70,
                       fontSize: 13,
@@ -282,7 +286,7 @@ class _BillingToggle extends StatelessWidget {
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
-                      'SAVE 20%',
+                      l10n.plansBillingToggleSaveBadge,
                       style: TextStyle(
                         color: isAnnual ? Colors.black : Colors.white,
                         fontSize: 9.5,

@@ -22,6 +22,7 @@ import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/spaceship_announcement_modal.dart';
 import 'package:lecture_companion_ui/application/transmission/transmission_provider.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
@@ -40,6 +41,7 @@ class HomePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final scrollController = useScrollController();
     final scrollOffset = useState(0.0);
     final isTransitioning = useState(false);
@@ -162,7 +164,7 @@ class HomePage extends HookConsumerWidget {
       if (!await isDeviceOnline()) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("You're offline. Showing cached data.")),
+            SnackBar(content: Text(l10n.homeOfflineSnackBarMessage)),
           );
         }
         return;
@@ -431,14 +433,14 @@ class HomePage extends HookConsumerWidget {
                           ),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome, color: Colors.white, size: 22),
-                          SizedBox(width: 8),
+                          const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+                          const SizedBox(width: 8),
                           Text(
-                            'Record Lecture',
-                            style: TextStyle(
+                            l10n.homeRecordLectureButton,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,

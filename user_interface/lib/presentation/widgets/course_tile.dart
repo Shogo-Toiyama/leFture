@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/tile_actions_sheet.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class CourseTile extends StatelessWidget {
   const CourseTile({
@@ -26,6 +27,7 @@ class CourseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final themeColor = CourseStyleHelper.hexToColor(course.color, fallback: AppColors.starGold);
     final iconData = CourseStyleHelper.getIcon(course.icon);
 
@@ -41,9 +43,9 @@ class CourseTile extends StatelessWidget {
                 onDelete: () async {
                   final confirm = await showCustomDialog(
                     context: context,
-                    title: 'Delete Course?',
-                    message: 'Are you sure you want to delete "${course.displayTitle}"? All lectures inside this course, and everything generated from them, will be deleted too.',
-                    confirmLabel: 'Delete',
+                    title: l10n.courseDeleteDialogTitle,
+                    message: l10n.courseDeleteDialogMessage(course.displayTitle),
+                    confirmLabel: l10n.commonDeleteButton,
                     icon: Icons.delete_outline,
                     isDestructive: true,
                   );

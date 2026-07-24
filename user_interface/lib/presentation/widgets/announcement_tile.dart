@@ -10,6 +10,7 @@ import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon
 import 'package:lecture_companion_ui/presentation/widgets/announcement_transcript_modal.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/tile_actions_sheet.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class AnnouncementTile extends HookConsumerWidget {
   const AnnouncementTile({
@@ -37,10 +38,9 @@ class AnnouncementTile extends HookConsumerWidget {
   final VoidCallback? onEdit;
   final Future<void> Function(Announcement)? onDelete;
 
-  static final _dateFmt = DateFormat('MMM d, yyyy · h:mm a');
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isCompleted = announcement.isCompleted;
     final hasTranscript = announcement.startSid != null && announcement.endSid != null;
 
@@ -193,8 +193,9 @@ class AnnouncementTile extends HookConsumerWidget {
                             formatDatetimeParameters(
                                   announcement.datetimeParameters,
                                   anchor: announcement.createdAt,
+                                  locale: l10n.localeName,
                                 ) ??
-                                _dateFmt.format(announcement.createdAt.toLocal()),
+                                DateFormat.yMMMd(l10n.localeName).add_jm().format(announcement.createdAt.toLocal()),
                           ].join(' · '),
                           style: TextStyle(
                             color: AppColors.universe.textComet,
@@ -317,9 +318,9 @@ class AnnouncementTile extends HookConsumerWidget {
           onDelete: () async {
             final confirm = await showCustomDialog(
               context: context,
-              title: 'Delete Announcement?',
-              message: 'Are you sure you want to delete "$titleText"?',
-              confirmLabel: 'Delete',
+              title: l10n.announcementDeleteDialogTitle,
+              message: l10n.announcementDeleteDialogMessage(titleText),
+              confirmLabel: l10n.commonDeleteButton,
               icon: Icons.delete_outline,
               isDestructive: true,
             );

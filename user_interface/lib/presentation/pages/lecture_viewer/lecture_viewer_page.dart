@@ -15,7 +15,7 @@ import 'package:lecture_companion_ui/domain/entities/fun_fact.dart';
 import 'package:lecture_companion_ui/domain/entities/keyword.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
-import 'package:lecture_companion_ui/infrastructure/repositories/lecture_artifact_repository.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
 import 'package:lecture_companion_ui/presentation/widgets/glowing_rainbow_border.dart';
@@ -43,6 +43,7 @@ class LectureViewerPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isDummy = lectureId.startsWith('dummy_');
 
     // 講義詳細を開いたタイミングでlastAccessedAtを更新する(キャッシュ容量管理の
@@ -97,7 +98,7 @@ class LectureViewerPage extends HookConsumerWidget {
         backgroundColor: AppColors.universe.voidBackground,
         body: Center(
           child: Text(
-            'Error: $err',
+            l10n.lectureViewerErrorPrefix(err.toString()),
             style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
@@ -106,10 +107,10 @@ class LectureViewerPage extends HookConsumerWidget {
         if (lecture == null) {
           return Scaffold(
             backgroundColor: AppColors.universe.voidBackground,
-            body: const Center(
+            body: Center(
               child: Text(
-                'Lecture not found',
-                style: TextStyle(color: Colors.white),
+                l10n.lectureViewerLectureNotFound,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           );
@@ -126,7 +127,7 @@ class LectureViewerPage extends HookConsumerWidget {
             backgroundColor: AppColors.universe.voidBackground,
             body: Center(
               child: Text(
-                'Error: $err',
+                l10n.lectureViewerErrorPrefix(err.toString()),
                 style: const TextStyle(color: AppColors.correctionRed),
               ),
             ),
@@ -193,6 +194,7 @@ class _LecturePageContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
 
     ref.listen<AsyncValue<LectureUIState>>(lectureStateProvider(lecture.id), (
@@ -216,7 +218,7 @@ class _LecturePageContent extends ConsumerWidget {
       ),
       error: (err, stack) => Center(
         child: Text(
-          'Error: $err',
+          l10n.lectureViewerErrorPrefix(err.toString()),
           style: const TextStyle(color: AppColors.correctionRed),
         ),
       ),
@@ -238,6 +240,7 @@ class _LectureViewerBody extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final topics =
         ref.watch(lectureTopicsProvider(lecture.id)).asData?.value ??
         const <LectureTopic>[];
@@ -257,13 +260,13 @@ class _LectureViewerBody extends HookConsumerWidget {
       (c) => c?.id == lecture.courseId,
       orElse: () => null,
     );
-    final courseCode = course?.courseCode ?? 'N/A';
+    final courseCode = course?.courseCode ?? l10n.lectureViewerCourseCodeFallback;
 
     final displayTitle = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
         : (lecture.titleGenerated?.trim().isNotEmpty == true
               ? lecture.titleGenerated!
-              : 'Untitled Lecture');
+              : l10n.lectureViewerUntitledLecture);
     final summary = lecture.summary == null
         ? null
         : stripSidCitations(lecture.summary!).trim();
@@ -304,7 +307,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                     Row(
                       children: [
                         Text(
-                          DateFormat.yMMMd().format(
+                          DateFormat.yMMMd(l10n.localeName).format(
                             lecture.lectureDatetime.toLocal(),
                           ),
                           style: TextStyle(
@@ -377,7 +380,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                     Text(
                       (summary != null && summary.isNotEmpty)
                           ? summary
-                          : 'This lecture is still being analyzed. The summary will appear here once it\'s ready.',
+                          : l10n.lectureViewerSummaryPlaceholder,
                       style: TextStyle(
                         color: AppColors.universe.textStarlight,
                         fontSize: 14,
@@ -434,8 +437,9 @@ class _LectureViewerBody extends HookConsumerWidget {
                         children: [
                           _HighlightChip(
                             icon: Icons.campaign_outlined,
-                            label:
-                                '${announcements.length} announcement${announcements.length == 1 ? '' : 's'}',
+                            label: l10n.lectureViewerAnnouncementsChip(
+                              announcements.length,
+                            ),
                             onTap: announcements.isNotEmpty
                                 ? () => _showAnnouncementsSheet(
                                     context,
@@ -447,8 +451,9 @@ class _LectureViewerBody extends HookConsumerWidget {
                           const SizedBox(width: 8),
                           _HighlightChip(
                             icon: Icons.vpn_key_outlined,
-                            label:
-                                '${keywords.length} keyword${keywords.length == 1 ? '' : 's'}',
+                            label: l10n.lectureViewerKeywordsChip(
+                              keywords.length,
+                            ),
                             onTap: keywords.isNotEmpty
                                 ? () => _showKeywordsSheet(context, keywords)
                                 : null,
@@ -456,8 +461,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                           const SizedBox(width: 8),
                           _HighlightChip(
                             icon: Icons.hub_outlined,
-                            label:
-                                '${topics.length} topic${topics.length == 1 ? '' : 's'}',
+                            label: l10n.lectureViewerTopicsChip(topics.length),
                             onTap: null, // Dummy/no-op
                           ),
                         ],
@@ -471,7 +475,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                         Expanded(
                           child: _LargeNavigatorCard(
                             icon: Icons.style_outlined,
-                            title: 'Review Cards',
+                            title: l10n.lectureViewerReviewCardsTitle,
                             onTap: () => context.push(
                               '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0',
                             ),
@@ -481,7 +485,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                         Expanded(
                           child: _LargeNavigatorCard(
                             icon: Icons.description_outlined,
-                            title: 'Deep Notes',
+                            title: l10n.lectureViewerDeepNotesTitle,
                             onTap: () => context.push(
                               '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0',
                             ),
@@ -494,7 +498,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                     // Fun Fact Section
                     if (funFacts.isNotEmpty) ...[
                       Text(
-                        'FUN FACT',
+                        l10n.lectureViewerFunFactHeader,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontWeight: FontWeight.bold,
@@ -531,7 +535,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Transcript',
+                              l10n.lectureViewerTranscriptButtonLabel,
                               style: TextStyle(
                                 color: AppColors.universe.textStarlight,
                                 fontWeight: FontWeight.w600,
@@ -729,6 +733,7 @@ class _ViewerReactionButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isActive = currentReaction == reaction;
 
     IconData iconData;
@@ -757,7 +762,11 @@ class _ViewerReactionButton extends ConsumerWidget {
         } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update reaction: $e')),
+            SnackBar(
+              content: Text(
+                l10n.lectureViewerReactionUpdateFailedSnackbar(e.toString()),
+              ),
+            ),
           );
         }
       },
@@ -810,22 +819,13 @@ class _KeywordCardTile extends HookConsumerWidget {
   const _KeywordCardTile({
     super.key,
     required this.keyword,
-    this.backgroundColor,
-    this.borderColor,
-    this.textColor,
-    this.subtitleColor,
-    this.inactiveIconColor,
   });
 
   final Keyword keyword;
-  final Color? backgroundColor;
-  final Color? borderColor;
-  final Color? textColor;
-  final Color? subtitleColor;
-  final Color? inactiveIconColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isSaved = useState(keyword.isSaved);
     final hasDefinition = keyword.definition?.trim().isNotEmpty == true;
 
@@ -834,11 +834,11 @@ class _KeywordCardTile extends HookConsumerWidget {
       return null;
     }, [keyword.isSaved]);
 
-    final bg = backgroundColor ?? Colors.white.withValues(alpha: 0.03);
-    final border = borderColor ?? AppColors.universe.glassBorder;
-    final textCl = textColor ?? AppColors.universe.textStarlight;
-    final subTextCl = subtitleColor ?? AppColors.universe.textComet;
-    final inactIconCl = inactiveIconColor ?? AppColors.universe.textComet;
+    final bg = Colors.white.withValues(alpha: 0.03);
+    final border = AppColors.universe.glassBorder;
+    final textCl = AppColors.universe.textStarlight;
+    final subTextCl = AppColors.universe.textComet;
+    final inactIconCl = AppColors.universe.textComet;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -857,7 +857,7 @@ class _KeywordCardTile extends HookConsumerWidget {
                 child: Text(
                   keyword.keyword?.trim().isNotEmpty == true
                       ? keyword.keyword!.trim()
-                      : 'Untitled term',
+                      : l10n.lectureViewerUntitledTerm,
                   style: TextStyle(
                     color: textCl,
                     fontSize: 16,
@@ -912,9 +912,11 @@ class _KeywordCardTile extends HookConsumerWidget {
 // ---------------------------------------------------------------------------
 // 「Xお知らせ」「Y Fun Facts」チップをタップした時に開くボトムシート
 // ---------------------------------------------------------------------------
+enum _LectureInfoSheetKind { announcements, keywords }
+
 class _LectureInfoSheet extends ConsumerWidget {
   const _LectureInfoSheet._({
-    required this.title,
+    required this.kind,
     required this.itemsBuilder,
     this.lectureId,
   });
@@ -924,7 +926,7 @@ class _LectureInfoSheet extends ConsumerWidget {
     required List<Announcement> announcements,
   }) {
     return _LectureInfoSheet._(
-      title: 'Announcements',
+      kind: _LectureInfoSheetKind.announcements,
       lectureId: lectureId,
       itemsBuilder: (context, ref) {
         // 最新の状態を NotifierProvider から直接取得（スワイプ後の状態変化を反映）
@@ -969,7 +971,7 @@ class _LectureInfoSheet extends ConsumerWidget {
 
   factory _LectureInfoSheet.keywords(List<Keyword> keywords) {
     return _LectureInfoSheet._(
-      title: 'Keywords',
+      kind: _LectureInfoSheetKind.keywords,
       itemsBuilder: (context, ref) => keywords.map((k) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
@@ -982,12 +984,17 @@ class _LectureInfoSheet extends ConsumerWidget {
     );
   }
 
-  final String title;
+  final _LectureInfoSheetKind kind;
   final String? lectureId;
   final List<Widget> Function(BuildContext context, WidgetRef ref) itemsBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final title = switch (kind) {
+      _LectureInfoSheetKind.announcements => l10n.lectureViewerAnnouncementsSheetTitle,
+      _LectureInfoSheetKind.keywords => l10n.lectureViewerKeywordsSheetTitle,
+    };
     final items = itemsBuilder(context, ref);
     return DraggableScrollableSheet(
       initialChildSize: 0.55,
@@ -1033,7 +1040,7 @@ class _LectureInfoSheet extends ConsumerWidget {
                 child: items.isEmpty
                     ? Center(
                         child: Text(
-                          'Nothing here yet',
+                          l10n.lectureViewerInfoSheetEmptyState,
                           style: TextStyle(color: AppColors.universe.textComet),
                         ),
                       )

@@ -1,0 +1,3252 @@
+{
+  "@@locale": "en",
+
+  "signInWelcomeTitle": "Welcome back",
+  "@signInWelcomeTitle": {
+    "description": "Large headline on the sign-in screen, greeting a returning user. Warm and casual, not formal."
+  },
+
+  "signInSubtitle": "Sign in to continue your learning journey",
+  "@signInSubtitle": {
+    "description": "Subtitle under the sign-in headline. 'learning journey' refers to the user's ongoing lecture study progress in the app, keep the encouraging tone."
+  },
+
+  "emailLabel": "Email",
+  "@emailLabel": {
+    "description": "Floating label text inside the email text field. Short label, not a sentence."
+  },
+
+  "passwordLabel": "Password",
+  "@passwordLabel": {
+    "description": "Floating label text inside the password text field. Short label, not a sentence."
+  },
+
+  "signInErrorEmailEmpty": "Please enter your email address.",
+  "@signInErrorEmailEmpty": {
+    "description": "Inline validation error shown when the user taps Sign In with an empty email field. Polite request, not scolding."
+  },
+
+  "signInErrorPasswordEmpty": "Please enter your password.",
+  "@signInErrorPasswordEmpty": {
+    "description": "Inline validation error shown when the user taps Sign In with an empty password field. Polite request, not scolding."
+  },
+
+  "forgotPasswordLink": "Forgot password?",
+  "@forgotPasswordLink": {
+    "description": "Small tappable link above the Sign In button that leads to password reset. Standard app UI phrase, keep it short."
+  },
+
+  "signInButton": "Sign In",
+  "@signInButton": {
+    "description": "Primary call-to-action button label that submits the sign-in form. Keep as a short imperative/label, not a full sentence."
+  },
+
+  "authDividerOr": "or",
+  "@authDividerOr": {
+    "description": "Single word shown between two horizontal lines, separating email/password sign-in from social sign-in buttons below. Must stay very short (1 word) to fit the divider."
+  },
+
+  "continueWithGoogle": "Continue with Google",
+  "@continueWithGoogle": {
+    "description": "Button label to sign in via Google OAuth. 'Google' is the brand name and must NOT be translated or transliterated."
+  },
+
+  "continueWithApple": "Continue with Apple",
+  "@continueWithApple": {
+    "description": "Button label to sign in via Apple OAuth. 'Apple' is the brand name and must NOT be translated or transliterated."
+  },
+
+  "signInNoAccountPrompt": "Don't have an account? ",
+  "@signInNoAccountPrompt": {
+    "description": "Leading half of a sentence immediately followed by the 'Create Account' link button on the same line, e.g. \"Don't have an account? [Create Account]\". Keep it able to flow into a following link naturally; trailing space in English is intentional for layout, translations don't need to preserve the trailing space."
+  },
+
+  "createAccountLink": "Create Account",
+  "@createAccountLink": {
+    "description": "Tappable link, continues the sentence started by signInNoAccountPrompt, navigates to the sign-up screen. Short label, matches tone of a button/link rather than a full sentence."
+  },
+
+  "signUpSuccessSnackbar": "Account created! Please check your email to verify.",
+  "@signUpSuccessSnackbar": {
+    "description": "Snackbar toast shown right after successful sign-up, telling the user to check their inbox for a verification email. Celebratory but brief."
+  },
+
+  "signUpErrorAgreeTerms": "Please agree to the Terms and Conditions",
+  "@signUpErrorAgreeTerms": {
+    "description": "Inline error shown when the user taps Create Account without checking the terms-agreement checkbox."
+  },
+
+  "signUpTitle": "Join leFture",
+  "@signUpTitle": {
+    "description": "Large headline on the sign-up screen. 'leFture' is the app's brand name (stylized, lowercase 'le' + capital 'F') and must NOT be translated or transliterated — keep it verbatim in every language."
+  },
+
+  "signUpSubtitle": "Start your learning journey today",
+  "@signUpSubtitle": {
+    "description": "Subtitle under the sign-up headline. Encouraging, casual tone, same 'learning journey' concept as the sign-in screen."
+  },
+
+  "usernameLabel": "Username",
+  "@usernameLabel": {
+    "description": "Floating label text inside the username text field on sign-up. Short label, not a sentence."
+  },
+
+  "signUpErrorUsernameEmpty": "Please enter a username",
+  "@signUpErrorUsernameEmpty": {
+    "description": "Inline validation error when the username field is left empty on sign-up."
+  },
+
+  "signUpErrorUsernameTooShort": "Username must be at least 3 characters",
+  "@signUpErrorUsernameTooShort": {
+    "description": "Inline validation error when the username is shorter than the 3-character minimum."
+  },
+
+  "authErrorEmailRequired": "Please enter your email",
+  "@authErrorEmailRequired": {
+    "description": "Shared inline validation error for an empty email field, used across sign-up and forgot-password forms (not the sign-in form, which has its own slightly different wording)."
+  },
+
+  "authErrorEmailInvalid": "Please enter a valid email",
+  "@authErrorEmailInvalid": {
+    "description": "Shared inline validation error when the email field fails format validation, used across sign-up and forgot-password forms."
+  },
+
+  "confirmPasswordLabel": "Confirm Password",
+  "@confirmPasswordLabel": {
+    "description": "Floating label text inside the 'confirm password' field on sign-up. Short label, not a sentence."
+  },
+
+  "signUpErrorPasswordEmpty": "Please enter a password",
+  "@signUpErrorPasswordEmpty": {
+    "description": "Inline validation error when the password field is left empty on sign-up."
+  },
+
+  "passwordErrorTooShort": "Password must be at least 8 characters",
+  "@passwordErrorTooShort": {
+    "description": "Shared inline validation error when a password is shorter than the 8-character minimum, used on both sign-up and reset-password forms."
+  },
+
+  "confirmPasswordErrorEmpty": "Please confirm your password",
+  "@confirmPasswordErrorEmpty": {
+    "description": "Inline validation error when the 'confirm password' field is left empty on sign-up."
+  },
+
+  "passwordsMismatchError": "Passwords do not match",
+  "@passwordsMismatchError": {
+    "description": "Shared inline validation error when password and confirm-password fields differ, used on both sign-up and reset-password forms."
+  },
+
+  "signUpAgreementPrefix": "I agree to the ",
+  "@signUpAgreementPrefix": {
+    "description": "First fragment of a sentence rendered as: [signUpAgreementPrefix][termsAndConditionsLink (tappable)][signUpAgreementMiddle][privacyPolicyLink (tappable)][signUpAgreementSuffix]. The two link fragments are always rendered in this fixed order (Terms then Privacy) and are individually tappable, so they cannot be merged into the surrounding text. If your language's grammar needs the verb/particle at the end instead of the start, move that wording into signUpAgreementSuffix and leave this prefix empty or minimal — do not try to reorder the two links themselves."
+  },
+
+  "termsAndConditionsLink": "Terms and Conditions",
+  "@termsAndConditionsLink": {
+    "description": "Tappable link text (first of two) inside the sign-up agreement sentence; opens the Terms and Conditions document. See signUpAgreementPrefix for how the surrounding sentence is assembled."
+  },
+
+  "signUpAgreementMiddle": " and ",
+  "@signUpAgreementMiddle": {
+    "description": "Fragment between the two tappable links in the sign-up agreement sentence (see signUpAgreementPrefix). Just the conjunction/connector, e.g. ' and ' or the equivalent particle."
+  },
+
+  "privacyPolicyLink": "Privacy Policy",
+  "@privacyPolicyLink": {
+    "description": "Tappable link text (second of two) inside the sign-up agreement sentence; opens the Privacy Policy document. See signUpAgreementPrefix for how the surrounding sentence is assembled."
+  },
+
+  "signUpAgreementSuffix": "",
+  "@signUpAgreementSuffix": {
+    "description": "Final fragment of the sign-up agreement sentence, after both links (see signUpAgreementPrefix). Empty in English because the sentence already ends after the two links; languages that put the verb ('...に同意します' etc.) at the end should put it here instead of in the prefix."
+  },
+
+  "signUpSubmitButton": "Create Account",
+  "@signUpSubmitButton": {
+    "description": "Primary call-to-action button that submits the sign-up form and creates the account. Note this is a different UI element from createAccountLink (which is a small nav link elsewhere) even though the English text happens to match — translate based on this being a prominent submit button."
+  },
+
+  "signUpHasAccountPrompt": "Already have an account? ",
+  "@signUpHasAccountPrompt": {
+    "description": "Leading half of a sentence immediately followed by the 'Sign In' link on the sign-up screen, e.g. \"Already have an account? [Sign In]\". Same pattern as signInNoAccountPrompt but inverted direction."
+  },
+
+  "signInLink": "Sign In",
+  "@signInLink": {
+    "description": "Small tappable link (not a form-submit button) that navigates back to the sign-in screen, used from sign-up and forgot-password screens. Short label."
+  },
+
+  "forgotPasswordStatusWaking": "Waking up email service...",
+  "@forgotPasswordStatusWaking": {
+    "description": "Transient status line shown under a loading spinner while the backend cold-starts before sending a password reset email. Informal, reassuring tone."
+  },
+
+  "forgotPasswordStatusSending": "Sending reset link...",
+  "@forgotPasswordStatusSending": {
+    "description": "Transient status line shown under a loading spinner while the password reset email is being sent."
+  },
+
+  "forgotPasswordErrorSlowServer": "The email service is taking longer than usual to start.",
+  "@forgotPasswordErrorSlowServer": {
+    "description": "Error message shown if the backend fails to warm up in time before sending the password reset email."
+  },
+
+  "forgotPasswordSuccessTitle": "Check your email",
+  "@forgotPasswordSuccessTitle": {
+    "description": "Headline shown after a password reset email was successfully sent."
+  },
+
+  "forgotPasswordTitle": "Forgot password?",
+  "@forgotPasswordTitle": {
+    "description": "Headline on the forgot-password screen before the user submits their email. Casual, matches the tone of a question."
+  },
+
+  "forgotPasswordSuccessMessage": "We've sent a password reset link to {email}",
+  "@forgotPasswordSuccessMessage": {
+    "description": "Confirmation message shown after sending the reset email, with the user's own email address interpolated at the end.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "jane@example.com"
+      }
+    }
+  },
+
+  "forgotPasswordSubtitle": "No worries, enter your email and we'll send you a reset link",
+  "@forgotPasswordSubtitle": {
+    "description": "Subtitle on the forgot-password screen before submission, reassuring and casual tone ('No worries')."
+  },
+
+  "forgotPasswordRetryButton": "Didn't get it? Try again",
+  "@forgotPasswordRetryButton": {
+    "description": "Outlined button shown after the reset email is sent, lets the user go back and resend to a different email. Casual, conversational phrasing."
+  },
+
+  "forgotPasswordHaveLinkButton": "I have a reset link",
+  "@forgotPasswordHaveLinkButton": {
+    "description": "Button shown after the reset email is sent, for users who already clicked the emailed link elsewhere and want to jump to the reset-password form directly."
+  },
+
+  "sendResetLinkButton": "Send Reset Link",
+  "@sendResetLinkButton": {
+    "description": "Primary call-to-action button that submits the forgot-password form and triggers the reset email."
+  },
+
+  "rememberedPasswordPrompt": "Remembered your password? ",
+  "@rememberedPasswordPrompt": {
+    "description": "Leading half of a sentence immediately followed by the 'Sign In' link on the forgot-password screen, e.g. \"Remembered your password? [Sign In]\"."
+  },
+
+  "resetPasswordLinkInvalidTitle": "Link invalid or expired",
+  "@resetPasswordLinkInvalidTitle": {
+    "description": "Error-state headline shown when the user opens a password-reset email link that is no longer valid."
+  },
+
+  "requestNewLinkButton": "Request a New Link",
+  "@requestNewLinkButton": {
+    "description": "Button on the invalid/expired reset-link error screen that sends the user back to request a fresh reset email."
+  },
+
+  "resetPasswordSuccessTitle": "Password updated",
+  "@resetPasswordSuccessTitle": {
+    "description": "Success-state headline shown after the user successfully sets a new password."
+  },
+
+  "resetPasswordSuccessMessage": "Your password has been updated successfully. You're all set!",
+  "@resetPasswordSuccessMessage": {
+    "description": "Success-state body message shown after the user successfully sets a new password. Warm, celebratory closing tone ('You're all set!')."
+  },
+
+  "goToDashboardButton": "Go to Dashboard",
+  "@goToDashboardButton": {
+    "description": "Button on the password-reset success screen that takes the user into the app's main/home screen."
+  },
+
+  "resetPasswordTitle": "Set a new password",
+  "@resetPasswordTitle": {
+    "description": "Headline on the reset-password form (reached via emailed link)."
+  },
+
+  "resetPasswordSubtitle": "Your new password must be different from previously used passwords",
+  "@resetPasswordSubtitle": {
+    "description": "Subtitle/instruction on the reset-password form."
+  },
+
+  "newPasswordLabel": "New Password",
+  "@newPasswordLabel": {
+    "description": "Floating label text inside the new-password field on the reset-password form. Short label, not a sentence."
+  },
+
+  "resetPasswordErrorEmpty": "Please enter a new password",
+  "@resetPasswordErrorEmpty": {
+    "description": "Inline validation error when the new-password field is left empty on the reset-password form."
+  },
+
+  "confirmNewPasswordLabel": "Confirm New Password",
+  "@confirmNewPasswordLabel": {
+    "description": "Floating label text inside the 'confirm new password' field on the reset-password form. Short label, not a sentence."
+  },
+
+  "confirmNewPasswordErrorEmpty": "Please confirm your new password",
+  "@confirmNewPasswordErrorEmpty": {
+    "description": "Inline validation error when the 'confirm new password' field is left empty on the reset-password form."
+  },
+
+  "resetPasswordButton": "Reset Password",
+  "@resetPasswordButton": {
+    "description": "Primary call-to-action button that submits the reset-password form."
+  },
+
+  "passwordReqMinLength": "At least 8 characters",
+  "@passwordReqMinLength": {
+    "description": "Short checklist-item / helper-text label describing a password requirement (minimum length). Used both as a field helper text and as a live checklist item next to a checkmark icon — keep it short enough to fit inline next to an icon."
+  },
+
+  "passwordReqUpperLower": "Upper & lowercase letters",
+  "@passwordReqUpperLower": {
+    "description": "Short checklist-item label describing a password requirement (needs both uppercase and lowercase letters). Displayed next to a checkmark icon in a live password-strength checklist."
+  },
+
+  "passwordReqDigit": "At least one number",
+  "@passwordReqDigit": {
+    "description": "Short checklist-item label describing a password requirement (needs at least one digit). Displayed next to a checkmark icon in a live password-strength checklist."
+  },
+
+  "passwordReqSymbol": "At least one symbol",
+  "@passwordReqSymbol": {
+    "description": "Short checklist-item label describing a password requirement (needs at least one symbol/special character). Displayed next to a checkmark icon in a live password-strength checklist."
+  },
+
+  "passwordStrengthWeak": "Weak",
+  "@passwordStrengthWeak": {
+    "description": "Single-word password strength rating, shown next to a segmented strength bar as the user types a password. Keep to 1 short word."
+  },
+
+  "passwordStrengthFair": "Fair",
+  "@passwordStrengthFair": {
+    "description": "Single-word password strength rating (better than Weak, worse than Good), shown next to a segmented strength bar. Keep to 1 short word."
+  },
+
+  "passwordStrengthGood": "Good",
+  "@passwordStrengthGood": {
+    "description": "Single-word password strength rating (better than Fair, worse than Strong), shown next to a segmented strength bar. Keep to 1 short word."
+  },
+
+  "passwordStrengthStrong": "Strong",
+  "@passwordStrengthStrong": {
+    "description": "Single-word password strength rating, the highest tier, shown next to a segmented strength bar. Keep to 1 short word."
+  },
+
+  "recordingCourseLabel": "Course",
+  "@recordingCourseLabel": {
+    "description": "Small label above the selected course name on the Recording page's course-selector tile. Short label, not a sentence."
+  },
+
+  "recordingNoCourseSelected": "No course selected",
+  "@recordingNoCourseSelected": {
+    "description": "Placeholder text shown on the Recording page's course-selector tile when the user hasn't picked a course yet."
+  },
+
+  "recordingRealtimeOnBadge": "Realtime ON",
+  "@recordingRealtimeOnBadge": {
+    "description": "Short badge text inside a pill on the Recording page indicating the Realtime Transcribe toggle is currently on. Must stay short to fit inline in the pill."
+  },
+
+  "recordingRealtimeOffBadge": "Realtime OFF",
+  "@recordingRealtimeOffBadge": {
+    "description": "Companion badge to recordingRealtimeOnBadge, shown when Realtime Transcribe is off. Must stay short to fit inline in the pill."
+  },
+
+  "recordingNoCourseWarning": "No course selected. Automated AI analysis will not start unless a course is assigned. Please select a course before or after uploading to start analysis.",
+  "@recordingNoCourseWarning": {
+    "description": "Warning banner shown while actively recording/paused with no course assigned, explaining AI analysis needs a course to run. Informative, mildly cautionary tone, not alarming."
+  },
+
+  "recordingOrDivider": "OR",
+  "@recordingOrDivider": {
+    "description": "Short divider word between two horizontal lines on the Recording page, separating the record button area from the 'select an existing audio file' option below it. Must stay very short (1 word) to fit the divider. English uses uppercase for visual style; other languages should just use their natural word for 'or'."
+  },
+
+  "recordingFileAccessError": "Unable to access the selected file. Please try another file.",
+  "@recordingFileAccessError": {
+    "description": "Snackbar error shown when the file picker returns a file with no usable local path."
+  },
+
+  "recordingFileSelectError": "Failed to select file: {error}",
+  "@recordingFileSelectError": {
+    "description": "Snackbar error shown when the native file picker throws an exception while picking an audio file. {error} is the raw exception's toString() (technical, not pre-localized), appended plainly after the colon.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "PlatformException(read_external_storage_denied, ...)"
+      }
+    }
+  },
+
+  "recordingProcessingAudioFile": "Processing audio file...",
+  "@recordingProcessingAudioFile": {
+    "description": "Shown next to a spinner while a picked local audio file is being validated, before the 'file selected' state appears."
+  },
+
+  "recordingFileSelected": "File selected",
+  "@recordingFileSelected": {
+    "description": "Label shown once the user has successfully picked a local audio file, replacing the 'Select audio file' prompt."
+  },
+
+  "recordingSelectAudioFile": "Select audio file",
+  "@recordingSelectAudioFile": {
+    "description": "Tappable prompt inviting the user to pick an existing audio file from their device instead of recording live audio."
+  },
+
+  "recordingDiscardDialogTitle": "Discard Recording?",
+  "@recordingDiscardDialogTitle": {
+    "description": "Title of the confirmation dialog shown when the user taps the Discard button while a recording is active, paused, or errored."
+  },
+
+  "recordingDiscardDialogMessage": "This will delete the current recording. This action cannot be undone.",
+  "@recordingDiscardDialogMessage": {
+    "description": "Body text of the discard-recording confirmation dialog, warning the action is permanent and irreversible."
+  },
+
+  "recordingCancelButton": "Cancel",
+  "@recordingCancelButton": {
+    "description": "Generic Cancel button label, reused across the Recording page's confirmation dialogs (the discard-recording dialog and the speech-model-download-required dialog)."
+  },
+
+  "recordingDiscardConfirmButton": "Discard",
+  "@recordingDiscardConfirmButton": {
+    "description": "Destructive confirm button label inside the discard-recording dialog, permanently deletes the in-progress recording."
+  },
+
+  "recordingDiscardButtonLabel": "Discard Recording",
+  "@recordingDiscardButtonLabel": {
+    "description": "Text button (with a trash icon) below the recording controls that opens the discard-recording confirmation dialog. Different from recordingDiscardConfirmButton, which is the dialog's own confirm action."
+  },
+
+  "recordingSettingsSectionTitle": "Settings",
+  "@recordingSettingsSectionTitle": {
+    "description": "Header label for the collapsible 'More Settings' accordion section on the Recording page, which reveals the title field, auto-start toggle, realtime-transcribe toggle, and language row."
+  },
+
+  "recordingTitleFieldLabel": "Lecture title (Optional)",
+  "@recordingTitleFieldLabel": {
+    "description": "Floating label for the optional lecture-title text field inside the Recording page's More Settings section."
+  },
+
+  "recordingTitleFieldHint": "✨ Auto (AI will generate title)",
+  "@recordingTitleFieldHint": {
+    "description": "Hint text shown inside the empty lecture-title field, explaining that the AI will auto-generate a title if the field is left blank. Keep the ✨ emoji."
+  },
+
+  "recordingAutoStartAnalysisTitle": "Auto-start analysis",
+  "@recordingAutoStartAnalysisTitle": {
+    "description": "Title of a toggle row in the Recording page's More Settings section, controlling whether AI analysis starts automatically after upload."
+  },
+
+  "recordingAutoStartAnalysisSubtitle": "Automatically start processing tasks after upload completes.",
+  "@recordingAutoStartAnalysisSubtitle": {
+    "description": "Subtitle/description text under the 'Auto-start analysis' toggle row, explaining what the toggle does."
+  },
+
+  "recordingRealtimeTranscribeTitle": "Realtime transcribe",
+  "@recordingRealtimeTranscribeTitle": {
+    "description": "Title of a toggle row in the Recording page's More Settings section, enabling on-device live captions while recording."
+  },
+
+  "recordingRealtimeTranscribeSubtitle": "Transcribe audio stream in realtime as you record.",
+  "@recordingRealtimeTranscribeSubtitle": {
+    "description": "Subtitle/description text under the 'Realtime transcribe' toggle row, explaining what the toggle does."
+  },
+
+  "recordingSpeechModelDialogTitle": "Speech model required",
+  "@recordingSpeechModelDialogTitle": {
+    "description": "Title of the dialog shown when the user turns on Realtime transcribe but the on-device speech model for the current recording language hasn't been downloaded yet."
+  },
+
+  "recordingSpeechModelDialogMessage": "Realtime transcription needs this language's on-device speech model. Download it now?",
+  "@recordingSpeechModelDialogMessage": {
+    "description": "Body text of the speech-model-required dialog, asking the user to confirm downloading the on-device model for their selected recording language."
+  },
+
+  "recordingSpeechModelDownloadConfirm": "Download",
+  "@recordingSpeechModelDownloadConfirm": {
+    "description": "Confirm button label on the speech-model-required dialog; starts downloading the on-device speech model."
+  },
+
+  "recordingSelectCourseBeforeUploadSnackbar": "Please select a course before uploading",
+  "@recordingSelectCourseBeforeUploadSnackbar": {
+    "description": "Snackbar shown when the user tries to upload a picked local audio file without first selecting a course."
+  },
+
+  "recordingUploadingStatus": "Uploading...",
+  "@recordingUploadingStatus": {
+    "description": "Shared status text meaning an upload is currently in progress. Shown both inside the disabled Upload button and in the status area above the record button during the 'uploading' phase."
+  },
+
+  "recordingUploadButtonLabel": "Upload Recording",
+  "@recordingUploadButtonLabel": {
+    "description": "Primary call-to-action button label that submits/uploads the finished recording (or a selected local audio file)."
+  },
+
+  "recordingDoneOverlayTitle": "Recording Done!",
+  "@recordingDoneOverlayTitle": {
+    "description": "Headline shown in a full-screen success overlay right after the recording/upload flow completes. Celebratory, brief, exclamation intended."
+  },
+
+  "recordingRequestingPermissionStatus": "Requesting microphone permission...",
+  "@recordingRequestingPermissionStatus": {
+    "description": "Status text shown while the app is waiting on the OS's microphone-permission prompt, before recording can start."
+  },
+
+  "recordingGenericErrorFallback": "Error",
+  "@recordingGenericErrorFallback": {
+    "description": "Fallback single-word status text used only if a recording error occurred but no specific error message was available to show instead."
+  },
+
+  "recordingOpenSettingsButton": "Open Settings",
+  "@recordingOpenSettingsButton": {
+    "description": "Button shown in the recording error state that deep-links out to the OS app-settings screen (e.g. so the user can grant microphone permission)."
+  },
+
+  "recordingTryAgainButton": "Try Again",
+  "@recordingTryAgainButton": {
+    "description": "Button shown in the recording error state that resets the recording flow so the user can retry from scratch."
+  },
+
+  "recordingStatusPaused": "Paused",
+  "@recordingStatusPaused": {
+    "description": "Short status pill/badge label shown while a recording is paused. Reused in two places on the Recording page (a larger status pill and a small inline badge)."
+  },
+
+  "recordingStatusRecording": "Recording...",
+  "@recordingStatusRecording": {
+    "description": "Short status pill/badge label shown while actively recording audio. Reused in two places on the Recording page (a larger status pill and a small inline badge)."
+  },
+
+  "recordingStatusReady": "Ready to record",
+  "@recordingStatusReady": {
+    "description": "Status text shown before the user has started recording (idle phase)."
+  },
+
+  "recordingLanguageRowTitle": "Recording language",
+  "@recordingLanguageRowTitle": {
+    "description": "Title of the settings row that lets the user pick which language is used for on-device live transcription while recording."
+  },
+
+  "recordingAsrModelErrorPrefix": "⚠️ {message}",
+  "@recordingAsrModelErrorPrefix": {
+    "description": "Subtitle of the 'Recording language' settings row when the on-device speech model failed to prepare. {message} is an already-localized, human-readable error string produced elsewhere in the app; this key only supplies the warning-emoji prefix and placement. Keep the ⚠️ emoji.",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Download failed. Check your connection and try again."
+      }
+    }
+  },
+
+  "recordingOnDeviceModelSubtitle": "On-device speech model used for live captions.",
+  "@recordingOnDeviceModelSubtitle": {
+    "description": "Subtitle of the 'Recording language' settings row in the normal (non-error) case, explaining what the on-device model is used for."
+  },
+
+  "recordingMomentFunLabel": "Fun moment",
+  "@recordingMomentFunLabel": {
+    "description": "Label shown on a moment/reaction timeline entry when its type is 'fun' (the student marked this point in the lecture as fun/interesting), next to a star icon."
+  },
+
+  "recordingMomentDifficultLabel": "Difficult",
+  "@recordingMomentDifficultLabel": {
+    "description": "Label for a moment/reaction timeline entry of type 'difficult' (the student marked this point as hard to understand)."
+  },
+
+  "recordingMomentRevisitLabel": "Revisit later",
+  "@recordingMomentRevisitLabel": {
+    "description": "Label for a moment/reaction timeline entry of type 'revisit', meaning the student wants to come back and review this point later."
+  },
+
+  "recordingMomentNoteLabel": "Note",
+  "@recordingMomentNoteLabel": {
+    "description": "Label for a moment/reaction timeline entry of type 'note' (a free-text note the student typed during the lecture)."
+  },
+
+  "recordingLiveTranscriptHeader": "LIVE TRANSCRIPT",
+  "@recordingLiveTranscriptHeader": {
+    "description": "Small header above the scrolling live-transcript panel on the Recording page's Live tab. Shown in English as all-caps for visual style with letter-spacing; languages without case distinction (e.g. Japanese) can just use the natural phrase."
+  },
+
+  "recordingWaitingForAudio": "Waiting for audio...",
+  "@recordingWaitingForAudio": {
+    "description": "Placeholder text shown in the live transcript panel before any speech has been transcribed yet."
+  },
+
+  "recordingRealtimeOffHint": "Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.",
+  "@recordingRealtimeOffHint": {
+    "description": "Hint box shown on the Live tab when Realtime Transcribe is off, telling the user where to go to enable it (references the 'More Settings' section and 'Voice' tab by name — keep those consistent with how they're labeled elsewhere in the app)."
+  },
+
+  "recordingReactionFunLabel": "Fun",
+  "@recordingReactionFunLabel": {
+    "description": "Short caption under an icon on one of three reaction buttons (Fun / Difficult / Revisit) on the Recording page's Live tab. Must stay very short to fit under the icon."
+  },
+
+  "recordingReactionDifficultLabel": "Difficult",
+  "@recordingReactionDifficultLabel": {
+    "description": "Short caption under the icon on the 'Difficult' reaction button on the Live tab. Must stay very short to fit under the icon."
+  },
+
+  "recordingReactionRevisitLabel": "Revisit",
+  "@recordingReactionRevisitLabel": {
+    "description": "Short caption under the icon on the 'Revisit' reaction button on the Live tab. Must stay very short to fit under the icon (shorter than the timeline's fuller 'Revisit later' wording)."
+  },
+
+  "recordingNoteInputHint": "Jot a quick note...",
+  "@recordingNoteInputHint": {
+    "description": "Hint text inside the free-text note input field on the Live tab, inviting the student to type a quick note during the lecture. Casual tone."
+  },
+
+  "recordingMomentsEmptyHint": "Tap a reaction or add a note below — it'll show up here.",
+  "@recordingMomentsEmptyHint": {
+    "description": "Empty-state hint shown in the moments timeline before the user has added any reactions or notes yet. Casual, instructive tone."
+  },
+
+  "coursePickerTitle": "Select Course",
+  "@coursePickerTitle": {
+    "description": "Header title of the bottom sheet used to pick a course to assign to the current recording."
+  },
+
+  "coursePickerCancelButton": "Cancel",
+  "@coursePickerCancelButton": {
+    "description": "Cancel link in the course-picker bottom sheet's header; dismisses the sheet without changing the recording's selected course."
+  },
+
+  "coursePickerSearchHint": "Search courses...",
+  "@coursePickerSearchHint": {
+    "description": "Hint text inside the search field at the top of the course-picker bottom sheet."
+  },
+
+  "coursePickerErrorLoading": "Error: {error}",
+  "@coursePickerErrorLoading": {
+    "description": "Error text shown in the course-picker sheet if the course list fails to load. {error} is the raw exception's toString() (technical, not pre-localized).",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "coursePickerEmptyNoCourses": "No courses yet",
+  "@coursePickerEmptyNoCourses": {
+    "description": "Empty-state text in the course-picker sheet shown when the user hasn't created any courses at all."
+  },
+
+  "coursePickerEmptySearchResults": "No results",
+  "@coursePickerEmptySearchResults": {
+    "description": "Empty-state text in the course-picker sheet shown when the search query matches no courses (but the user does have courses)."
+  },
+
+  "coursePickerConfirmButton": "Confirm",
+  "@coursePickerConfirmButton": {
+    "description": "Primary bottom button label in the course-picker sheet when a course is currently selected; confirms that selection and closes the sheet."
+  },
+
+  "coursePickerContinueWithoutCourseButton": "Continue without Course",
+  "@coursePickerContinueWithoutCourseButton": {
+    "description": "Primary bottom button label in the course-picker sheet when no course is selected; lets the user proceed/close the sheet without assigning one."
+  },
+
+  "lectureViewerErrorPrefix": "Error: {error}",
+  "@lectureViewerErrorPrefix": {
+    "description": "Generic inline error fallback shown when an async provider (the lecture itself, or the course's lecture list) fails to load on the Lecture Viewer page. {error} is the raw exception's toString(), not pre-localized. Reused across a few async-loading fallbacks on this page.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "lectureViewerLectureNotFound": "Lecture not found",
+  "@lectureViewerLectureNotFound": {
+    "description": "Fallback body text shown if a lecture ID resolves to no record (e.g. a deleted lecture) on the Lecture Viewer page."
+  },
+
+  "lectureViewerUntitledLecture": "Untitled Lecture",
+  "@lectureViewerUntitledLecture": {
+    "description": "Fallback lecture title used when neither the user-set title nor the AI-generated title is available yet."
+  },
+
+  "lectureViewerCourseCodeFallback": "N/A",
+  "@lectureViewerCourseCodeFallback": {
+    "description": "Fallback shown next to the lecture date when the lecture has no assigned course (so there's no course code to show). Very short; use your language's common 'not applicable' abbreviation if one exists, otherwise a short dash is fine."
+  },
+
+  "lectureViewerSummaryPlaceholder": "This lecture is still being analyzed. The summary will appear here once it's ready.",
+  "@lectureViewerSummaryPlaceholder": {
+    "description": "Placeholder body text shown instead of an AI-generated summary while analysis hasn't produced one yet."
+  },
+
+  "lectureViewerAnnouncementsChip": "{count, plural, one{{count} announcement} other{{count} announcements}}",
+  "@lectureViewerAnnouncementsChip": {
+    "description": "Label inside a small tappable pill/chip near the top of the Lecture Viewer page, showing how many announcements exist for this lecture. Tapping it opens a bottom sheet listing them.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "lectureViewerKeywordsChip": "{count, plural, one{{count} keyword} other{{count} keywords}}",
+  "@lectureViewerKeywordsChip": {
+    "description": "Label inside a small tappable pill/chip near the top of the Lecture Viewer page, showing how many keywords exist for this lecture. Tapping it opens a bottom sheet listing them.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+
+  "lectureViewerTopicsChip": "{count, plural, one{{count} topic} other{{count} topics}}",
+  "@lectureViewerTopicsChip": {
+    "description": "Label inside a small pill/chip near the top of the Lecture Viewer page, showing how many topics were extracted from this lecture. Currently not tappable (informational only).",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+
+  "lectureViewerReviewCardsTitle": "Review Cards",
+  "@lectureViewerReviewCardsTitle": {
+    "description": "Title text inside one of two large square navigation cards on the Lecture Viewer page; taps into the Review Cards study mode for this lecture. Short label."
+  },
+
+  "lectureViewerDeepNotesTitle": "Deep Notes",
+  "@lectureViewerDeepNotesTitle": {
+    "description": "Title text inside the second large square navigation card on the Lecture Viewer page; taps into the Deep Notes reading view for this lecture. Short label."
+  },
+
+  "lectureViewerFunFactHeader": "FUN FACT",
+  "@lectureViewerFunFactHeader": {
+    "description": "Small all-caps section header above a single featured fun-fact card on the Lecture Viewer page. Shown uppercase in English for visual style with letter-spacing; languages without case distinction can just use the natural phrase."
+  },
+
+  "lectureViewerTranscriptButtonLabel": "Transcript",
+  "@lectureViewerTranscriptButtonLabel": {
+    "description": "Label on a full-width button/row at the bottom of the Lecture Viewer page that navigates to the full lecture transcript. Short label."
+  },
+
+  "lectureViewerReactionUpdateFailedSnackbar": "Failed to update reaction: {error}",
+  "@lectureViewerReactionUpdateFailedSnackbar": {
+    "description": "Snackbar shown if saving a like/dislike reaction on a fun-fact card fails. {error} is the raw exception's toString().",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "lectureViewerUntitledTerm": "Untitled term",
+  "@lectureViewerUntitledTerm": {
+    "description": "Fallback title shown for a keyword/term card when the keyword text itself is empty."
+  },
+
+  "lectureViewerAnnouncementsSheetTitle": "Announcements",
+  "@lectureViewerAnnouncementsSheetTitle": {
+    "description": "Header title of the bottom sheet opened by tapping the announcements chip, listing all announcements for this lecture."
+  },
+
+  "lectureViewerKeywordsSheetTitle": "Keywords",
+  "@lectureViewerKeywordsSheetTitle": {
+    "description": "Header title of the bottom sheet opened by tapping the keywords chip, listing all keyword/term cards for this lecture."
+  },
+
+  "lectureViewerInfoSheetEmptyState": "Nothing here yet",
+  "@lectureViewerInfoSheetEmptyState": {
+    "description": "Empty-state text shown inside the announcements/keywords bottom sheet when that list has no items."
+  },
+
+  "pipelineStepsCancelledLabel": "Cancelled",
+  "@pipelineStepsCancelledLabel": {
+    "description": "Subtitle shown under a pipeline step's name on the lecture processing screen when that step (task) was cancelled and will not run. Short status word."
+  },
+
+  "pipelineStepsRetryingAutomaticallyLabel": "Retrying automatically…",
+  "@pipelineStepsRetryingAutomaticallyLabel": {
+    "description": "Subtitle shown under a pipeline step that failed but the backend is expected to auto-retry it soon (the job as a whole isn't marked failed yet). Keep the ellipsis, conveys an ongoing background process."
+  },
+
+  "pipelineStepsInProgressLabel": "In progress",
+  "@pipelineStepsInProgressLabel": {
+    "description": "Subtitle shown under the pipeline step that is currently running, next to a small spinner icon."
+  },
+
+  "pipelineStepsRetryConfirmMessageSimple": "This will redo \"{step}\".",
+  "@pipelineStepsRetryConfirmMessageSimple": {
+    "description": "Confirmation dialog body when the user retries a single completed pipeline step that nothing else depends on. {step} is the human-readable step name (already localized elsewhere, e.g. \"Transcription\"), shown inside quotes.",
+    "placeholders": {
+      "step": {
+        "type": "String",
+        "example": "Transcription"
+      }
+    }
+  },
+
+  "pipelineStepsRetryConfirmMessageWithDownstream": "This will redo \"{step}\" and re-run everything that depends on it:\n{downstreamSteps}.",
+  "@pipelineStepsRetryConfirmMessageWithDownstream": {
+    "description": "Confirmation dialog body when retrying a completed pipeline step that later steps depend on; warns those downstream steps will also be redone. {step} is the step being retried; {downstreamSteps} is a comma-separated list of already human-readable downstream step names. Keep the line break before the list.",
+    "placeholders": {
+      "step": {
+        "type": "String",
+        "example": "Transcription"
+      },
+      "downstreamSteps": {
+        "type": "String",
+        "example": "Summary, Review Cards, Deep Notes"
+      }
+    }
+  },
+
+  "pipelineStepsRetryDialogTitle": "Retry from here?",
+  "@pipelineStepsRetryDialogTitle": {
+    "description": "Title of the confirmation dialog shown before retrying a completed pipeline step."
+  },
+
+  "pipelineStepsRetryConfirmButton": "Retry",
+  "@pipelineStepsRetryConfirmButton": {
+    "description": "Confirm button label on the 'Retry from here?' dialog. Short label/verb, not a full sentence."
+  },
+
+  "pipelineStepsRetryFailedSnackbar": "Retry failed: {error}",
+  "@pipelineStepsRetryFailedSnackbar": {
+    "description": "Snackbar shown if requesting a pipeline step retry throws an error. {error} is the raw exception's toString().",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "pipelineStepsRetryTooltip": "Retry from here",
+  "@pipelineStepsRetryTooltip": {
+    "description": "Tooltip on the small retry icon button next to a completed pipeline step, shown on long-press/hover."
+  },
+
+  "pipelineStepsRetryingLabel": "Retrying...",
+  "@pipelineStepsRetryingLabel": {
+    "description": "Label on the 'Retry this step' button while a stuck/failed step's retry request is in flight."
+  },
+
+  "pipelineStepsRetryThisStepButton": "Retry this step",
+  "@pipelineStepsRetryThisStepButton": {
+    "description": "Button label on a failed/stuck pipeline step card that lets the user manually retry just that step."
+  },
+
+  "notStartedNoActivePlanTitle": "No Active Plan",
+  "@notStartedNoActivePlanTitle": {
+    "description": "Dialog title shown when the user tries to start lecture analysis but has no active subscription/credit plan selected at all."
+  },
+
+  "notStartedOutOfCreditsTitle": "Out of Credits",
+  "@notStartedOutOfCreditsTitle": {
+    "description": "Dialog title shown when the user tries to start lecture analysis but has used up all their available credits for the current period."
+  },
+
+  "notStartedNoAllocationMessage": "You need to select a plan before you can analyze lectures.",
+  "@notStartedNoAllocationMessage": {
+    "description": "Body text of the dialog shown for the 'no active plan' case, explaining the user must pick a plan before analysis will run."
+  },
+
+  "notStartedOutOfCreditsMessage": "You've used up your credits for this period. Check your balance or wait for your next renewal.",
+  "@notStartedOutOfCreditsMessage": {
+    "description": "Body text of the dialog shown for the 'out of credits' case, explaining the user's options (check balance or wait for renewal)."
+  },
+
+  "notStartedCancelButton": "Cancel",
+  "@notStartedCancelButton": {
+    "description": "Cancel button on the insufficient-credits dialog shown from the 'Ready to Analyze' screen; dismisses without navigating anywhere."
+  },
+
+  "notStartedViewCreditsButton": "View Credits",
+  "@notStartedViewCreditsButton": {
+    "description": "Confirm button on the insufficient-credits dialog; navigates the user to the credit/plan detail screen."
+  },
+
+  "notStartedReadyTitle": "Ready to Analyze",
+  "@notStartedReadyTitle": {
+    "description": "Headline shown on the Lecture Viewer's 'not started' state, once audio has finished uploading but AI analysis hasn't been triggered yet."
+  },
+
+  "notStartedReadySubtitle": "The audio is ready. Generate transcript, summary, and notes with AI.",
+  "@notStartedReadySubtitle": {
+    "description": "Subtitle under the 'Ready to Analyze' headline, briefly explaining what starting analysis will produce."
+  },
+
+  "notStartedNoCourseWarning": "This lecture isn't assigned to a course yet. Analysis can't start until it is.",
+  "@notStartedNoCourseWarning": {
+    "description": "Warning banner shown on the 'Ready to Analyze' screen when the lecture has no course assigned yet, explaining analysis is blocked until one is chosen."
+  },
+
+  "notStartedChooseCourseButton": "Choose Course",
+  "@notStartedChooseCourseButton": {
+    "description": "Button inside the no-course warning banner that opens the lecture-edit sheet so the user can assign a course."
+  },
+
+  "notStartedStartingLabel": "Starting...",
+  "@notStartedStartingLabel": {
+    "description": "Label on the 'Start Analysis' button while the start-analysis request is in flight (shown with a spinner)."
+  },
+
+  "notStartedStartAnalysisButton": "Start Analysis",
+  "@notStartedStartAnalysisButton": {
+    "description": "Primary call-to-action button that kicks off AI analysis of the lecture's audio (transcript, summary, notes, etc)."
+  },
+
+  "notStartedErrorPrefix": "Error: {error}",
+  "@notStartedErrorPrefix": {
+    "description": "Inline error text shown below the Start Analysis button if starting analysis fails for a reason other than insufficient credits (that case gets its own dialog instead). {error} is the raw error object's toString().",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Exception: network error"
+      }
+    }
+  },
+
+  "topicPreviewSaveTooltip": "Save",
+  "@topicPreviewSaveTooltip": {
+    "description": "Tooltip on a bookmark icon button in the footer of a topic preview card (currently a placeholder/no-op action). Short label."
+  },
+
+  "topicPreviewLikeTooltip": "Like",
+  "@topicPreviewLikeTooltip": {
+    "description": "Tooltip on a heart/favorite icon button in the footer of a topic preview card (currently a placeholder/no-op action). Short label."
+  },
+
+  "topicPreviewReadNoteButton": "Read Note",
+  "@topicPreviewReadNoteButton": {
+    "description": "Button label in the footer of a topic preview card that opens the full deep-note content for this topic segment."
+  },
+
+  "processingViewStartOverDialogTitle": "Start Over?",
+  "@processingViewStartOverDialogTitle": {
+    "description": "Title of the confirmation dialog shown when the user long-presses the progress icon to restart the whole analysis pipeline from scratch."
+  },
+
+  "processingViewStartOverDialogMessage": "This restarts the whole analysis from scratch. Progress that's already completed will be discarded.",
+  "@processingViewStartOverDialogMessage": {
+    "description": "Body text of the start-over confirmation dialog, warning that all completed progress will be lost."
+  },
+
+  "processingViewStartOverConfirmButton": "Start Over",
+  "@processingViewStartOverConfirmButton": {
+    "description": "Destructive confirm button label on the start-over confirmation dialog."
+  },
+
+  "processingViewFailedTitle": "Analysis Failed",
+  "@processingViewFailedTitle": {
+    "description": "Headline shown on the processing screen when the lecture's analysis job has failed."
+  },
+
+  "processingViewAnalyzingTitle": "Analyzing Lecture...",
+  "@processingViewAnalyzingTitle": {
+    "description": "Headline shown on the processing screen while the lecture's analysis job is actively running."
+  },
+
+  "processingViewStepsCompletedLabel": "{completed} / {total} steps completed",
+  "@processingViewStepsCompletedLabel": {
+    "description": "Progress readout under the headline on the processing screen, showing how many of the pipeline's steps have finished. {completed} and {total} are plain integers.",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "6"
+      }
+    }
+  },
+
+  "processingViewHoldToRestartHint": "Hold the icon above to start over from scratch.",
+  "@processingViewHoldToRestartHint": {
+    "description": "Small hint text shown only while analysis is actively running (not failed), telling the user how to trigger a full restart via long-press."
+  },
+
+  "processingViewStartingOverLabel": "Starting over...",
+  "@processingViewStartingOverLabel": {
+    "description": "Label on the 'Start over from scratch' button while the restart request is in flight (shown with a spinner), only in the failed-job state."
+  },
+
+  "processingViewStartOverFromScratchButton": "Start over from scratch",
+  "@processingViewStartOverFromScratchButton": {
+    "description": "Button shown only when the analysis job has failed; lets the user manually trigger a full restart (a text alternative to the long-press gesture used in the non-failed state)."
+  },
+
+  "statusViewProcessingLabel": "Processing...",
+  "@statusViewProcessingLabel": {
+    "description": "Label shown on the shared StatusView widget's action button while its isLoading flag is true, replacing whatever specific buttonLabel the caller passed in (e.g. 'Retry', 'Continue'). Must stay generic enough to fit any caller's button."
+  },
+
+  "statusScaffoldErrorPrefix": "Error: {error}",
+  "@statusScaffoldErrorPrefix": {
+    "description": "Fallback error text shown if the lecture's UI-state stream itself fails to load (rare/unexpected). {error} is the raw exception's toString().",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "statusScaffoldSyncingTitle": "Syncing Audio...",
+  "@statusScaffoldSyncingTitle": {
+    "description": "Headline shown while the recorded lecture audio is still uploading/syncing to the server, before any processing can begin."
+  },
+
+  "statusScaffoldSyncingMessage": "Please wait for the upload to complete.",
+  "@statusScaffoldSyncingMessage": {
+    "description": "Subtitle under the syncing headline, asking the user to wait for the upload to finish."
+  },
+
+  "creditDetailTitle": "Credits",
+  "@creditDetailTitle": {
+    "description": "AppBar title on the Credit Detail page, reached by tapping the credit card on My Account. Also reused as the 'Credits' label inside that credit card widget itself. Short label."
+  },
+
+  "creditDetailRefreshTooltip": "Refresh",
+  "@creditDetailRefreshTooltip": {
+    "description": "Tooltip on the AppBar refresh icon button of the Credit Detail page; manually re-fetches credit summary and usage history."
+  },
+
+  "creditDetailLoadErrorMessage": "Could not load credit info. Check your connection and try again.",
+  "@creditDetailLoadErrorMessage": {
+    "description": "Body text shown under a wifi-off icon when the credit summary fails to load on the Credit Detail page."
+  },
+
+  "creditDetailRetryButton": "Retry",
+  "@creditDetailRetryButton": {
+    "description": "Short retry button/label, reused in two places on the Credit Detail page: below the credit-summary load error, and next to the usage-history load error."
+  },
+
+  "creditDetailCurrentPlanTitle": "Current Plan",
+  "@creditDetailCurrentPlanTitle": {
+    "description": "Section header on the card showing the user's currently active subscription plan, on the Credit Detail page."
+  },
+
+  "creditDetailActiveBadge": "ACTIVE",
+  "@creditDetailActiveBadge": {
+    "description": "Small all-caps pill badge next to the Current Plan header, indicating the plan is active. Keep it very short."
+  },
+
+  "creditDetailActivePlanFallback": "Active Plan",
+  "@creditDetailActivePlanFallback": {
+    "description": "Fallback plan name shown on the Current Plan card if the specific plan's display name isn't available yet."
+  },
+
+  "creditDetailCreditsPerMonth": "{credits} credits / month",
+  "@creditDetailCreditsPerMonth": {
+    "description": "Subtitle on the Current Plan card showing the plan's monthly credit allowance, e.g. '1200 credits / month'.",
+    "placeholders": {
+      "credits": {
+        "type": "int",
+        "example": "1200"
+      }
+    }
+  },
+
+  "creditDetailFullAccessSubtitle": "Enjoy full access to your lecture companion features.",
+  "@creditDetailFullAccessSubtitle": {
+    "description": "Fallback subtitle on the Current Plan card shown when no specific credit count is available for the active plan."
+  },
+
+  "creditDetailMonthlyCreditsTitle": "Monthly Credits",
+  "@creditDetailMonthlyCreditsTitle": {
+    "description": "Section header on the card showing the user's current credit balance vs monthly allocation, on the Credit Detail page."
+  },
+
+  "creditDetailResetsOn": "Resets on {date}",
+  "@creditDetailResetsOn": {
+    "description": "Small caption under the credit balance bar showing when the monthly allowance next resets. {date} is a locale-formatted date string (e.g. 'Jan 5, 2026') produced by intl's DateFormat.yMMMd, already localized.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Jan 5, 2026"
+      }
+    }
+  },
+
+  "creditDetailNoActivePlanTitle": "No active plan",
+  "@creditDetailNoActivePlanTitle": {
+    "description": "Headline on the plan-picker card shown to users who haven't claimed any plan yet, on the Credit Detail page."
+  },
+
+  "creditDetailNoActivePlanSubtitle": "Choose a plan below to start generating lecture materials.",
+  "@creditDetailNoActivePlanSubtitle": {
+    "description": "Subtitle under the 'No active plan' headline, prompting the user to pick one of the plan tiles below."
+  },
+
+  "creditDetailPlansLoadError": "Could not load plans. Pull to refresh and try again.",
+  "@creditDetailPlansLoadError": {
+    "description": "Error text shown in the plan-picker section if the list of claimable plans fails to load."
+  },
+
+  "creditDetailPlanActivatedSnackbar": "{planName} activated!",
+  "@creditDetailPlanActivatedSnackbar": {
+    "description": "Snackbar shown right after the user successfully claims/activates a plan from the plan-picker. Celebratory, brief.",
+    "placeholders": {
+      "planName": {
+        "type": "String",
+        "example": "Orbit Pro"
+      }
+    }
+  },
+
+  "creditDetailActivateErrorTitle": "Could not activate plan",
+  "@creditDetailActivateErrorTitle": {
+    "description": "Title of the error dialog shown if claiming/activating a plan fails."
+  },
+
+  "creditDetailOkButton": "OK",
+  "@creditDetailOkButton": {
+    "description": "Dismiss button on the 'Could not activate plan' error dialog."
+  },
+
+  "creditDetailPlanSubtitle": "{credits} credits {months, plural, one{/ month} other{/ {months} months}}",
+  "@creditDetailPlanSubtitle": {
+    "description": "Subtitle on a claimable-plan tile in the plan-picker, combining the credit amount with its billing interval, e.g. '100 credits / month' or '300 credits / 3 months'.",
+    "placeholders": {
+      "credits": {
+        "type": "int",
+        "example": "100"
+      },
+      "months": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+
+  "creditDetailPriceFree": "Free",
+  "@creditDetailPriceFree": {
+    "description": "Price label on a claimable-plan tile when the plan has no cost (price is null or zero)."
+  },
+
+  "creditDetailUsageHistoryTitle": "Usage History",
+  "@creditDetailUsageHistoryTitle": {
+    "description": "Section header for the credit usage history list on the Credit Detail page."
+  },
+
+  "creditDetailHourlySummaryLabel": "Hourly summary",
+  "@creditDetailHourlySummaryLabel": {
+    "description": "Small caption next to the Usage History header, clarifying that entries are grouped hourly."
+  },
+
+  "creditDetailUsageHistoryLoadError": "Could not load usage history.",
+  "@creditDetailUsageHistoryLoadError": {
+    "description": "Inline error text shown if the credit usage history fails to load, next to a Retry button."
+  },
+
+  "creditDetailNoUsageActivity": "No recent usage activity recorded.",
+  "@creditDetailNoUsageActivity": {
+    "description": "Empty-state text shown in the Usage History section when there are no usage entries yet."
+  },
+
+  "creditDetailViewMoreButton": "View More ({count} more)",
+  "@creditDetailViewMoreButton": {
+    "description": "Button below the first 10 usage history entries that expands the list to show the rest. {count} is how many additional entries remain hidden.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+
+  "creditDetailCreditsSuffix": "{delta} credits",
+  "@creditDetailCreditsSuffix": {
+    "description": "Trailing amount on a usage-history row, showing the signed credit delta for that entry (e.g. '+50 credits' or '-3 credits'). {delta} is already formatted with its sign.",
+    "placeholders": {
+      "delta": {
+        "type": "String",
+        "example": "+50"
+      }
+    }
+  },
+
+  "activityRecordsTitleSaved": "Saved",
+  "@activityRecordsTitleSaved": {
+    "description": "AppBar title of the Activity Records page when showing saved items (review cards, deep notes, keywords). Also reused as the 'Saved' tile title on the My Account page's Activity section, which links here."
+  },
+
+  "activityRecordsTitleLikes": "Likes",
+  "@activityRecordsTitleLikes": {
+    "description": "AppBar title of the Activity Records page when showing liked items. Also reused as the 'Likes' tile title on the My Account page's Activity section."
+  },
+
+  "activityRecordsTitleDislikes": "Dislikes",
+  "@activityRecordsTitleDislikes": {
+    "description": "AppBar title of the Activity Records page when showing disliked items. Also reused as the 'Dislikes' tile title on the My Account page's Activity section."
+  },
+
+  "activityRecordsTitleAnnouncements": "Announcements",
+  "@activityRecordsTitleAnnouncements": {
+    "description": "AppBar title of the Activity Records page when showing announcements. Also reused as the 'Announcements' tile title on the My Account page's Activity section, and as the 'Announcements' filter chip label on the Trash view of this same page."
+  },
+
+  "activityRecordsTitleTrash": "Trash",
+  "@activityRecordsTitleTrash": {
+    "description": "AppBar title of the Activity Records page when showing soft-deleted items. Also reused as the 'Trash' tile title on the My Account page's Activity section."
+  },
+
+  "activityRecordsEmptyTrashLabel": "Empty Trash",
+  "@activityRecordsEmptyTrashLabel": {
+    "description": "Reused in two places on the Trash view of the Activity Records page: as the tooltip on the AppBar's delete-sweep icon, and as the destructive confirm button label inside the resulting 'Empty Trash?' confirmation dialog."
+  },
+
+  "activityRecordsTrashRetentionBanner": "Items in Trash will be permanently deleted after 30 days.",
+  "@activityRecordsTrashRetentionBanner": {
+    "description": "Informational banner at the top of the Trash view, explaining the auto-purge retention policy."
+  },
+
+  "activityRecordsFilterAll": "All",
+  "@activityRecordsFilterAll": {
+    "description": "Filter chip label meaning no sub-filter is applied; used across all variants (Saved/Likes/Dislikes/Announcements/Trash) of the Activity Records page's filter row. Must stay short."
+  },
+
+  "activityRecordsFilterReviewCards": "Review Cards",
+  "@activityRecordsFilterReviewCards": {
+    "description": "Filter chip label restricting the list to review-card items, shown on the Saved/Likes/Dislikes variants of the Activity Records page."
+  },
+
+  "activityRecordsFilterDeepNotes": "Deep Notes",
+  "@activityRecordsFilterDeepNotes": {
+    "description": "Filter chip label restricting the list to deep-note items, shown on the Saved/Likes/Dislikes variants of the Activity Records page."
+  },
+
+  "activityRecordsFilterKeywords": "Keywords",
+  "@activityRecordsFilterKeywords": {
+    "description": "Filter chip label restricting the list to keyword/term items, shown only on the Saved variant of the Activity Records page (keywords can be saved but not liked/disliked)."
+  },
+
+  "activityRecordsFilterFunFacts": "Fun Facts",
+  "@activityRecordsFilterFunFacts": {
+    "description": "Filter chip label restricting the list to fun-fact items, shown on the Likes/Dislikes variants of the Activity Records page."
+  },
+
+  "activityRecordsFilterActive": "Active",
+  "@activityRecordsFilterActive": {
+    "description": "Filter chip label restricting the announcements list to not-yet-completed announcements, on the Announcements variant of the Activity Records page."
+  },
+
+  "activityRecordsFilterCompleted": "Completed",
+  "@activityRecordsFilterCompleted": {
+    "description": "Filter chip label restricting the announcements list to completed announcements, on the Announcements variant of the Activity Records page."
+  },
+
+  "activityRecordsFilterCourses": "Courses",
+  "@activityRecordsFilterCourses": {
+    "description": "Filter chip label restricting the list to deleted courses, on the Trash variant of the Activity Records page."
+  },
+
+  "activityRecordsFilterLectures": "Lectures",
+  "@activityRecordsFilterLectures": {
+    "description": "Filter chip label restricting the list to deleted lectures, on the Trash variant of the Activity Records page."
+  },
+
+  "activityRecordsItemsFoundCount": "{count} items found",
+  "@activityRecordsItemsFoundCount": {
+    "description": "Small counter text above the filter chips on the Activity Records page, showing how many items match the current filter.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+
+  "activityRecordsNoFilterMatch": "No items match this filter.",
+  "@activityRecordsNoFilterMatch": {
+    "description": "Empty-state text shown when the current filter selection matches zero records on the Activity Records page."
+  },
+
+  "activityRecordsLoadFailed": "Failed to load records: {error}",
+  "@activityRecordsLoadFailed": {
+    "description": "Error text shown if the activity records list fails to load. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "activityRecordsDeletedOnLabel": "Deleted on {date} · {type}",
+  "@activityRecordsDeletedOnLabel": {
+    "description": "Caption on a trash-list row showing when the item was deleted and what kind of item it is. {date} is already formatted (e.g. 'Jan 5, 2026'); {type} is one of the already-localized type labels (Course/Lecture/Announcement/Item).",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Jan 5, 2026"
+      },
+      "type": {
+        "type": "String",
+        "example": "Lecture"
+      }
+    }
+  },
+
+  "activityRecordsRestoredSnackbar": "Item restored successfully.",
+  "@activityRecordsRestoredSnackbar": {
+    "description": "Snackbar shown after successfully restoring a single item out of the Trash."
+  },
+
+  "activityRecordsDeleteItemDialogTitle": "Delete {title}?",
+  "@activityRecordsDeleteItemDialogTitle": {
+    "description": "Title of the confirmation dialog shown when permanently deleting a single trashed item. {title} is that item's own title/name (user content, not pre-localized).",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Intro to Biology"
+      }
+    }
+  },
+
+  "activityRecordsDeleteItemDialogMessage": "This item will be permanently deleted from both the local database and the cloud. This action cannot be undone.",
+  "@activityRecordsDeleteItemDialogMessage": {
+    "description": "Body text of the permanent-delete confirmation dialog for a single trashed item, warning it's irreversible."
+  },
+
+  "activityRecordsCancelButton": "Cancel",
+  "@activityRecordsCancelButton": {
+    "description": "Cancel button label, reused across the Activity Records page's two Trash confirmation dialogs (single-item delete and empty-trash)."
+  },
+
+  "activityRecordsDeleteButton": "Delete",
+  "@activityRecordsDeleteButton": {
+    "description": "Destructive confirm button label inside the single-item permanent-delete dialog on the Trash view."
+  },
+
+  "activityRecordsItemDeletedSnackbar": "Item permanently deleted.",
+  "@activityRecordsItemDeletedSnackbar": {
+    "description": "Snackbar shown after successfully permanently deleting a single trashed item."
+  },
+
+  "activityRecordsEmptyTrashDialogTitle": "Empty Trash?",
+  "@activityRecordsEmptyTrashDialogTitle": {
+    "description": "Title of the confirmation dialog shown when the user taps the AppBar's empty-trash icon."
+  },
+
+  "activityRecordsEmptyTrashDialogMessage": "All soft-deleted lectures, courses, and announcements will be permanently deleted from both the local database and the cloud. This action cannot be undone.",
+  "@activityRecordsEmptyTrashDialogMessage": {
+    "description": "Body text of the empty-trash confirmation dialog, warning that clearing the whole trash is irreversible."
+  },
+
+  "activityRecordsEmptyTrashSuccessSnackbar": "Trash emptied successfully.",
+  "@activityRecordsEmptyTrashSuccessSnackbar": {
+    "description": "Snackbar shown after successfully emptying the entire trash with no failures."
+  },
+
+  "activityRecordsEmptyTrashPartialFailureSnackbar": "{deletedCount} item(s) deleted, {failedCount} failed and remain in trash for retry.",
+  "@activityRecordsEmptyTrashPartialFailureSnackbar": {
+    "description": "Snackbar shown after emptying the trash when some items failed to delete (e.g. network issue) and remain for a later retry.",
+    "placeholders": {
+      "deletedCount": {
+        "type": "int",
+        "example": "5"
+      },
+      "failedCount": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+
+  "activityRecordsTypeLabelCourse": "Course",
+  "@activityRecordsTypeLabelCourse": {
+    "description": "Short type label shown next to a deleted-course row's date on the Trash view, and used as the Trash filter chip label restricting to courses."
+  },
+
+  "activityRecordsTypeLabelLecture": "Lecture",
+  "@activityRecordsTypeLabelLecture": {
+    "description": "Short type label shown next to a deleted-lecture row's date on the Trash view, and used as the Trash filter chip label restricting to lectures."
+  },
+
+  "activityRecordsTypeLabelAnnouncement": "Announcement",
+  "@activityRecordsTypeLabelAnnouncement": {
+    "description": "Short type label shown next to a deleted-announcement row's date on the Trash view, and used as the Trash filter chip label restricting to announcements (singular, distinct from the plural activityRecordsTitleAnnouncements used elsewhere)."
+  },
+
+  "activityRecordsTypeLabelItem": "Item",
+  "@activityRecordsTypeLabelItem": {
+    "description": "Generic fallback type label shown next to a trashed row's date when the item's specific type isn't one of Course/Lecture/Announcement."
+  },
+
+  "activityRecordsUndoUnsaved": "Unsaved • Tap to undo",
+  "@activityRecordsUndoUnsaved": {
+    "description": "Small italic caption shown on a content card in the Saved list right after the user unsaves it, before the list refreshes; tapping the card's action icon again undoes the unsave. Keep the bullet separator."
+  },
+
+  "activityRecordsUndoUnreacted": "Unreacted • Tap to undo",
+  "@activityRecordsUndoUnreacted": {
+    "description": "Small italic caption shown on a content card in the Likes/Dislikes list right after the user removes their reaction, before the list refreshes; tapping again undoes it. Keep the bullet separator."
+  },
+
+  "activityRecordsContentTypeReviewCard": "Review Card",
+  "@activityRecordsContentTypeReviewCard": {
+    "description": "All-caps badge label on a content card in the Saved/Likes/Dislikes lists identifying it as a review card."
+  },
+
+  "activityRecordsContentTypeDeepNote": "Deep Note",
+  "@activityRecordsContentTypeDeepNote": {
+    "description": "All-caps badge label on a content card in the Saved/Likes/Dislikes lists identifying it as a deep note."
+  },
+
+  "activityRecordsContentTypeKeyword": "Keyword",
+  "@activityRecordsContentTypeKeyword": {
+    "description": "All-caps badge label on a content card in the Saved list identifying it as a saved keyword/term."
+  },
+
+  "activityRecordsContentTypeFunFact": "Fun Fact",
+  "@activityRecordsContentTypeFunFact": {
+    "description": "All-caps badge label on a content card in the Likes/Dislikes lists identifying it as a fun fact."
+  },
+
+  "activityRecordsContentTypeDefault": "Content",
+  "@activityRecordsContentTypeDefault": {
+    "description": "Generic fallback all-caps badge label on a content card when its specific type doesn't match a known category."
+  },
+
+  "myAccountTitle": "My Account",
+  "@myAccountTitle": {
+    "description": "AppBar title of the My Account page (the main profile/settings hub)."
+  },
+
+  "myAccountSectionProfile": "Profile",
+  "@myAccountSectionProfile": {
+    "description": "All-caps section header on the My Account page, above the About You/Interests/Future Dreams preview tiles."
+  },
+
+  "myAccountSectionActivity": "Activity",
+  "@myAccountSectionActivity": {
+    "description": "All-caps section header on the My Account page, above the Saved/Likes/Dislikes/Announcements/Trash tiles."
+  },
+
+  "myAccountSectionApplication": "Application",
+  "@myAccountSectionApplication": {
+    "description": "All-caps section header on the My Account page, above the Transmissions tile."
+  },
+
+  "myAccountSectionSettings": "Settings",
+  "@myAccountSectionSettings": {
+    "description": "All-caps section header on the My Account page, above the language, legal, account, and sign-out settings groups."
+  },
+
+  "myAccountDefaultDisplayName": "Explorer",
+  "@myAccountDefaultDisplayName": {
+    "description": "Playful fallback display name shown in the My Account header when the user hasn't set a username yet."
+  },
+
+  "myAccountSaveNameTooltip": "Save",
+  "@myAccountSaveNameTooltip": {
+    "description": "Tooltip on the checkmark icon button that confirms an in-progress display-name edit on the My Account page header."
+  },
+
+  "myAccountCancelEditTooltip": "Cancel",
+  "@myAccountCancelEditTooltip": {
+    "description": "Tooltip on the close/X icon button that discards an in-progress display-name edit on the My Account page header."
+  },
+
+  "myAccountEditNameTooltip": "Edit Name",
+  "@myAccountEditNameTooltip": {
+    "description": "Tooltip on the pencil icon button next to the display name on the My Account page header, which starts inline editing."
+  },
+
+  "myAccountAboutYouLabel": "ABOUT YOU",
+  "@myAccountAboutYouLabel": {
+    "description": "All-caps small label above the user's bio text, reused on both the My Account page's profile preview tile and the full Profile detail page."
+  },
+
+  "myAccountAboutYouPlaceholder": "No description set yet.",
+  "@myAccountAboutYouPlaceholder": {
+    "description": "Placeholder text shown in place of the bio when the user hasn't written one yet, reused on both the My Account preview tile and the full Profile detail page."
+  },
+
+  "myAccountInterestsLabel": "INTERESTS",
+  "@myAccountInterestsLabel": {
+    "description": "All-caps small label above the user's interests text, reused on both the My Account page's profile preview tile and the full Profile detail page."
+  },
+
+  "myAccountInterestsPlaceholder": "No interests set yet.",
+  "@myAccountInterestsPlaceholder": {
+    "description": "Placeholder text shown in place of the interests field when unset, reused on both the My Account preview tile and the full Profile detail page."
+  },
+
+  "myAccountFutureDreamsLabel": "FUTURE DREAMS",
+  "@myAccountFutureDreamsLabel": {
+    "description": "All-caps small label above the user's future-goals text, reused on both the My Account page's profile preview tile and the full Profile detail page."
+  },
+
+  "myAccountFutureDreamsPlaceholder": "No future dream set yet.",
+  "@myAccountFutureDreamsPlaceholder": {
+    "description": "Placeholder text shown in place of the future-goals field when unset, reused on both the My Account preview tile and the full Profile detail page."
+  },
+
+  "myAccountCreditsUnavailable": "Credits unavailable",
+  "@myAccountCreditsUnavailable": {
+    "description": "Text shown in place of the credit balance on the My Account page's credit card if fetching the summary fails."
+  },
+
+  "myAccountLoadingCredits": "Loading credits…",
+  "@myAccountLoadingCredits": {
+    "description": "Text shown in place of the credit balance on the My Account page's credit card while the summary is still loading. Keep the ellipsis."
+  },
+
+  "myAccountTransmissionsTitle": "Transmissions",
+  "@myAccountTransmissionsTitle": {
+    "description": "Tile title in the Application section of the My Account page; opens the app announcements/what's-new modal."
+  },
+
+  "myAccountTransmissionsSubtitle": "What's new & updates",
+  "@myAccountTransmissionsSubtitle": {
+    "description": "Subtitle under the Transmissions tile on the My Account page, briefly describing what it contains."
+  },
+
+  "myAccountNewBadge": "NEW",
+  "@myAccountNewBadge": {
+    "description": "Tiny all-caps badge on the Transmissions tile shown when there are unread announcements. Must stay very short (fits a small pill)."
+  },
+
+  "myAccountNoTransmissionsSnackbar": "No transmissions available at this time.",
+  "@myAccountNoTransmissionsSnackbar": {
+    "description": "Snackbar shown if the user taps the Transmissions tile but there are currently no announcements to show."
+  },
+
+  "myAccountSavedSubtitle": "Review Cards · Deep Notes · Keywords",
+  "@myAccountSavedSubtitle": {
+    "description": "Subtitle under the 'Saved' tile in the Activity section of the My Account page, listing which content types can be saved. Keep the middle-dot separators."
+  },
+
+  "myAccountLikesDislikesSubtitle": "Review Cards · Deep Notes · Fun Facts",
+  "@myAccountLikesDislikesSubtitle": {
+    "description": "Subtitle under both the 'Likes' and 'Dislikes' tiles in the Activity section of the My Account page, listing which content types can be reacted to. Keep the middle-dot separators."
+  },
+
+  "myAccountAnnouncementsSubtitle": "Including completed ones",
+  "@myAccountAnnouncementsSubtitle": {
+    "description": "Subtitle under the 'Announcements' tile in the Activity section of the My Account page, clarifying the list includes already-completed announcements too."
+  },
+
+  "myAccountTrashSubtitle": "Deleted courses & lectures",
+  "@myAccountTrashSubtitle": {
+    "description": "Subtitle under the 'Trash' tile in the Activity section of the My Account page."
+  },
+
+  "myAccountRecordingLanguageTitle": "Recording Language",
+  "@myAccountRecordingLanguageTitle": {
+    "description": "Settings tile title on the My Account page that opens the language-selection sheet for the on-device recording/transcription language."
+  },
+
+  "myAccountDisplayLanguageTitle": "Display Language",
+  "@myAccountDisplayLanguageTitle": {
+    "description": "Settings tile title on the My Account page that opens the language-selection sheet for the app's UI display language."
+  },
+
+  "myAccountPrivacyPolicyTitle": "Privacy Policy",
+  "@myAccountPrivacyPolicyTitle": {
+    "description": "Settings tile title on the My Account page that navigates to the Privacy Policy document."
+  },
+
+  "myAccountTermsOfServiceTitle": "Terms of Service",
+  "@myAccountTermsOfServiceTitle": {
+    "description": "Settings tile title on the My Account page that navigates to the Terms of Service document."
+  },
+
+  "myAccountContactUsTitle": "Contact Us",
+  "@myAccountContactUsTitle": {
+    "description": "Settings tile title on the My Account page that navigates to the contact/support screen."
+  },
+
+  "myAccountChangeEmailTitle": "Change Email",
+  "@myAccountChangeEmailTitle": {
+    "description": "Settings tile title on the My Account page (shown only for email/password accounts) that opens the Change Email bottom sheet."
+  },
+
+  "myAccountChangePasswordTitle": "Change Password",
+  "@myAccountChangePasswordTitle": {
+    "description": "Settings tile title on the My Account page (shown only for email/password accounts) that opens the Change Password bottom sheet."
+  },
+
+  "myAccountChangeLoginMethodTitle": "Change Login Method",
+  "@myAccountChangeLoginMethodTitle": {
+    "description": "Settings tile title on the My Account page that opens the sheet for switching to a different OAuth login provider. Also reused as that sheet's own header title."
+  },
+
+  "myAccountChangeAccountTitle": "Change Account",
+  "@myAccountChangeAccountTitle": {
+    "description": "Settings tile title on the My Account page (shown only for OAuth-only accounts) that opens the Change Account bottom sheet. Also reused as that sheet's own header title."
+  },
+
+  "myAccountSignOutTitle": "Sign Out",
+  "@myAccountSignOutTitle": {
+    "description": "Destructive-styled settings tile title on the My Account page that signs the user out."
+  },
+
+  "myAccountDeleteAccountTitle": "Delete Account",
+  "@myAccountDeleteAccountTitle": {
+    "description": "Destructive-styled settings tile title on the My Account page that opens the account-deletion confirmation dialog."
+  },
+
+  "deleteAccountDialogTitle": "Delete Account?",
+  "@deleteAccountDialogTitle": {
+    "description": "Title of the account-deletion confirmation dialog, next to a warning icon."
+  },
+
+  "deleteAccountDialogWarningMessage": "Are you absolutely sure you want to delete your account? All your recorded lectures, transcripts, and personal profile data will be permanently deleted. This action cannot be undone.",
+  "@deleteAccountDialogWarningMessage": {
+    "description": "Body warning text at the top of the account-deletion confirmation dialog, before the password/email confirmation field."
+  },
+
+  "deleteAccountDialogWakingBackendStatus": "Waking up backend service...",
+  "@deleteAccountDialogWakingBackendStatus": {
+    "description": "Transient status line shown while the backend cold-starts before the delete-account request is sent."
+  },
+
+  "deleteAccountDialogDeletingStatus": "Deleting account...",
+  "@deleteAccountDialogDeletingStatus": {
+    "description": "Transient status line shown while the delete-account request is in flight."
+  },
+
+  "deleteAccountDialogSlowBackendError": "The backend service is taking longer than usual to start. Please try again in a moment.",
+  "@deleteAccountDialogSlowBackendError": {
+    "description": "Error message shown if the backend fails to warm up in time before the delete-account request can be sent."
+  },
+
+  "deleteAccountDialogPasswordPrompt": "Enter your password to confirm:",
+  "@deleteAccountDialogPasswordPrompt": {
+    "description": "Instruction label above the password field in the delete-account dialog, shown only for email/password accounts."
+  },
+
+  "deleteAccountDialogPasswordLabel": "Password",
+  "@deleteAccountDialogPasswordLabel": {
+    "description": "Floating label text inside the password confirmation field of the delete-account dialog."
+  },
+
+  "deleteAccountDialogEmailPrompt": "Type your email to confirm ({email}):",
+  "@deleteAccountDialogEmailPrompt": {
+    "description": "Instruction label above the email field in the delete-account dialog, shown only for OAuth-only accounts (no password to verify). {email} is the user's own current email address.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "jane@example.com"
+      }
+    }
+  },
+
+  "deleteAccountDialogEmailLabel": "Email Address",
+  "@deleteAccountDialogEmailLabel": {
+    "description": "Floating label text inside the email confirmation field of the delete-account dialog."
+  },
+
+  "deleteAccountDialogCancelButton": "Cancel",
+  "@deleteAccountDialogCancelButton": {
+    "description": "Cancel button on the delete-account confirmation dialog; dismisses without deleting anything."
+  },
+
+  "deleteAccountDialogConfirmButton": "Delete Account",
+  "@deleteAccountDialogConfirmButton": {
+    "description": "Destructive confirm button inside the delete-account dialog that actually submits the deletion request."
+  },
+
+  "plansTitle": "Plans & Pricing",
+  "@plansTitle": {
+    "description": "AppBar title of the Plans page, a pricing/upgrade screen reached from the account area."
+  },
+
+  "plansHeadline": "Supercharge your learning journey",
+  "@plansHeadline": {
+    "description": "Large marketing headline at the top of the Plans page. Energetic, casual tone, matches the 'learning journey' phrasing used elsewhere in onboarding/auth screens."
+  },
+
+  "plansSubheadline": "Choose the plan that fits your study pace. Upgrade or downgrade anytime.",
+  "@plansSubheadline": {
+    "description": "Subtitle under the Plans page headline, reassuring the user plan changes are flexible."
+  },
+
+  "plansBillingToggleMonthly": "Monthly",
+  "@plansBillingToggleMonthly": {
+    "description": "Left segment label of the monthly/yearly billing toggle switch at the top of the Plans page."
+  },
+
+  "plansBillingToggleYearly": "Yearly",
+  "@plansBillingToggleYearly": {
+    "description": "Right segment label of the monthly/yearly billing toggle switch at the top of the Plans page."
+  },
+
+  "plansBillingToggleSaveBadge": "SAVE 20%",
+  "@plansBillingToggleSaveBadge": {
+    "description": "Tiny all-caps badge next to the Yearly toggle segment, advertising the annual-billing discount. Must stay short to fit inline in the pill; keep the percentage."
+  },
+
+  "plansStarterTitle": "Starter",
+  "@plansStarterTitle": {
+    "description": "Name of the free pricing tier's card on the Plans page."
+  },
+
+  "plansStarterSubtitle": "Essential tools for casual learners",
+  "@plansStarterSubtitle": {
+    "description": "One-line tagline under the Starter plan's name on its pricing card."
+  },
+
+  "plansStarterBillingPeriod": "forever free",
+  "@plansStarterBillingPeriod": {
+    "description": "Small text next to the '$0' price on the Starter plan card, emphasizing it never expires/never charges."
+  },
+
+  "plansCurrentPlanBadge": "CURRENT PLAN",
+  "@plansCurrentPlanBadge": {
+    "description": "All-caps badge shown on a pricing card that matches the user's currently active plan (only ever the Starter card today, since paid tiers aren't purchasable yet)."
+  },
+
+  "plansStarterButtonCurrent": "Current Active Plan",
+  "@plansStarterButtonCurrent": {
+    "description": "Disabled button label on the Starter card when it is the user's current plan, replacing the normal call-to-action."
+  },
+
+  "plansStarterButtonDowngrade": "Downgrade to Starter",
+  "@plansStarterButtonDowngrade": {
+    "description": "Button label on the Starter card when the user is currently on a different (paid) plan, offering to downgrade."
+  },
+
+  "plansStarterFeature1": "100 Monthly Credits",
+  "@plansStarterFeature1": {
+    "description": "First bullet-point feature listed on the Starter pricing card, with a checkmark icon."
+  },
+
+  "plansStarterFeature2": "Standard AI Lecture Transcripts",
+  "@plansStarterFeature2": {
+    "description": "Second bullet-point feature listed on the Starter pricing card, with a checkmark icon."
+  },
+
+  "plansStarterFeature3": "Core Topic Map Generation",
+  "@plansStarterFeature3": {
+    "description": "Third bullet-point feature listed on the Starter pricing card, with a checkmark icon."
+  },
+
+  "plansStarterFeature4": "Basic AI Q&A Chat",
+  "@plansStarterFeature4": {
+    "description": "Fourth bullet-point feature listed on the Starter pricing card, with a checkmark icon."
+  },
+
+  "plansStarterAlreadyOnSnackbar": "You are already on the Starter plan.",
+  "@plansStarterAlreadyOnSnackbar": {
+    "description": "Snackbar shown if the user taps the Starter card's button while already on the free tier (a placeholder no-op today, since downgrade isn't wired up yet)."
+  },
+
+  "plansProTitle": "Orbit Pro",
+  "@plansProTitle": {
+    "description": "Name of the mid-tier paid pricing plan's card on the Plans page. 'Orbit' matches the app's space theme; keep as a proper-noun-style plan name, do not translate the word 'Pro' loosely if your language commonly keeps 'Pro' as a loanword for product tiers."
+  },
+
+  "plansProSubtitle": "Maximum speed, unlimited insights",
+  "@plansProSubtitle": {
+    "description": "One-line tagline under the Orbit Pro plan's name on its pricing card."
+  },
+
+  "plansProBillingPeriodAnnual": "per month, billed yearly",
+  "@plansProBillingPeriodAnnual": {
+    "description": "Small text next to the price on the Orbit Pro/Orbit Max cards when the annual-billing toggle is selected, clarifying the monthly-equivalent price is billed as one yearly charge."
+  },
+
+  "plansBillingPeriodMonthly": "per month",
+  "@plansBillingPeriodMonthly": {
+    "description": "Small text next to the price on the Orbit Pro/Orbit Max cards when the monthly-billing toggle is selected."
+  },
+
+  "plansMostPopularBadge": "🔥 MOST POPULAR",
+  "@plansMostPopularBadge": {
+    "description": "All-caps badge on the Orbit Pro pricing card highlighting it as the most popular choice. Keep the 🔥 emoji."
+  },
+
+  "plansProButton": "Upgrade to Pro",
+  "@plansProButton": {
+    "description": "Call-to-action button label on the Orbit Pro pricing card; opens the (placeholder) plan-selection dialog."
+  },
+
+  "plansProFeature1": "1,200 Monthly Credits (12x boost)",
+  "@plansProFeature1": {
+    "description": "First bullet-point feature on the Orbit Pro pricing card. Keep the '12x boost' emphasis on the multiplier over the free tier."
+  },
+
+  "plansProFeature2": "Realtime On-Device & Whisper ASR",
+  "@plansProFeature2": {
+    "description": "Second bullet-point feature on the Orbit Pro pricing card. 'ASR' (automatic speech recognition) and 'Whisper' (a specific speech-recognition model name) should stay as technical terms/brand-like names, not be translated."
+  },
+
+  "plansProFeature3": "Unlimited Deep Notes & Review Cards",
+  "@plansProFeature3": {
+    "description": "Third bullet-point feature on the Orbit Pro pricing card. 'Deep Notes' and 'Review Cards' are the app's own named study-material features, keep consistent with their labels elsewhere in the app."
+  },
+
+  "plansProFeature4": "High-Priority AI Model Speed",
+  "@plansProFeature4": {
+    "description": "Fourth bullet-point feature on the Orbit Pro pricing card."
+  },
+
+  "plansProFeature5": "Export Transcripts (PDF & Markdown)",
+  "@plansProFeature5": {
+    "description": "Fifth bullet-point feature on the Orbit Pro pricing card. 'PDF' and 'Markdown' are file-format names, keep untranslated."
+  },
+
+  "plansProFeature6": "Full Galaxy Knowledge Graph",
+  "@plansProFeature6": {
+    "description": "Sixth bullet-point feature on the Orbit Pro pricing card. 'Galaxy Knowledge Graph' is a named in-app feature, matching the app's space theme."
+  },
+
+  "plansMaxTitle": "Orbit Max",
+  "@plansMaxTitle": {
+    "description": "Name of the top-tier paid pricing plan's card on the Plans page. Keep as a proper-noun-style plan name, matching plansProTitle's naming convention."
+  },
+
+  "plansMaxSubtitle": "For heavy researchers & power users",
+  "@plansMaxSubtitle": {
+    "description": "One-line tagline under the Orbit Max plan's name on its pricing card."
+  },
+
+  "plansBestValueBadge": "⚡ BEST VALUE",
+  "@plansBestValueBadge": {
+    "description": "All-caps badge on the Orbit Max pricing card highlighting it as the best value tier. Keep the ⚡ emoji."
+  },
+
+  "plansMaxButton": "Get Orbit Max",
+  "@plansMaxButton": {
+    "description": "Call-to-action button label on the Orbit Max pricing card; opens the (placeholder) plan-selection dialog."
+  },
+
+  "plansMaxFeature1": "3,500 Monthly Credits",
+  "@plansMaxFeature1": {
+    "description": "First bullet-point feature on the Orbit Max pricing card."
+  },
+
+  "plansMaxFeature2": "All Pro Features Included",
+  "@plansMaxFeature2": {
+    "description": "Second bullet-point feature on the Orbit Max pricing card, noting it's a superset of the Orbit Pro tier."
+  },
+
+  "plansMaxFeature3": "Advanced Galaxy Knowledge Graph",
+  "@plansMaxFeature3": {
+    "description": "Third bullet-point feature on the Orbit Max pricing card, an upgraded version of plansProFeature6."
+  },
+
+  "plansMaxFeature4": "Custom AI Model Context & Fine-tuning",
+  "@plansMaxFeature4": {
+    "description": "Fourth bullet-point feature on the Orbit Max pricing card. 'Fine-tuning' is a machine-learning term, keep its conventional translation if your language has an established one."
+  },
+
+  "plansMaxFeature5": "Dedicated 24/7 Priority Support",
+  "@plansMaxFeature5": {
+    "description": "Fifth bullet-point feature on the Orbit Max pricing card. Keep '24/7' as-is (commonly understood numeral shorthand)."
+  },
+
+  "plansMaxFeature6": "Early Access to New Experimental Features",
+  "@plansMaxFeature6": {
+    "description": "Sixth bullet-point feature on the Orbit Max pricing card."
+  },
+
+  "plansFooterNote": "Cancel anytime. Encrypted & secure.",
+  "@plansFooterNote": {
+    "description": "Small reassurance note at the bottom of the Plans page, next to a shield icon."
+  },
+
+  "plansSelectDialogTitle": "Select {planName}",
+  "@plansSelectDialogTitle": {
+    "description": "Title of the placeholder dialog shown when tapping a paid plan's call-to-action button (purchasing isn't implemented yet). {planName} is the already-localized plan name (e.g. plansProTitle's value).",
+    "placeholders": {
+      "planName": {
+        "type": "String",
+        "example": "Orbit Pro"
+      }
+    }
+  },
+
+  "plansSelectDialogMessage": "{planName} purchasing flow is coming soon in the next update!",
+  "@plansSelectDialogMessage": {
+    "description": "Body text of the placeholder plan-selection dialog, telling the user purchasing isn't available yet. Upbeat, apologetic-but-excited tone. {planName} is the already-localized plan name.",
+    "placeholders": {
+      "planName": {
+        "type": "String",
+        "example": "Orbit Pro"
+      }
+    }
+  },
+
+  "plansSelectDialogConfirmButton": "Got it",
+  "@plansSelectDialogConfirmButton": {
+    "description": "Dismiss button on the placeholder plan-selection dialog. Casual acknowledgement phrase, not a formal 'OK'."
+  },
+
+  "changePasswordResetSentTitle": "Reset Link Sent",
+  "@changePasswordResetSentTitle": {
+    "description": "Success-state headline in the Change Password bottom sheet, shown after the reset email was sent."
+  },
+
+  "changePasswordResetSentMessage": "We have sent a password reset link to your email address ({email}). Please check your inbox and click the link to set your new password.",
+  "@changePasswordResetSentMessage": {
+    "description": "Success-state body message in the Change Password bottom sheet. {email} is the user's own account email address.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "jane@example.com"
+      }
+    }
+  },
+
+  "changePasswordCloseButton": "Close",
+  "@changePasswordCloseButton": {
+    "description": "Button that dismisses the bottom sheet after a successful action; reused in both the Change Password sheet's success state and the Change Email sheet's success state."
+  },
+
+  "changePasswordTitle": "Change Password",
+  "@changePasswordTitle": {
+    "description": "Headline at the top of the Change Password bottom sheet, before submission. Also matches the settings tile label that opens this sheet (myAccountChangePasswordTitle)."
+  },
+
+  "changePasswordSubtitle": "Enter your current password to verify your identity and send a reset link to your email.",
+  "@changePasswordSubtitle": {
+    "description": "Instruction text under the Change Password sheet's headline, explaining the current-password-verification flow."
+  },
+
+  "changePasswordSlowServerError": "The email service is taking longer than usual to start. Please try again in a moment.",
+  "@changePasswordSlowServerError": {
+    "description": "Error message shown in the Change Password sheet if the backend email service fails to warm up in time. Also reused verbatim in the Change Email sheet for the same cold-start scenario."
+  },
+
+  "changePasswordCurrentPasswordLabel": "Current Password",
+  "@changePasswordCurrentPasswordLabel": {
+    "description": "Floating label text inside the current-password field on the Change Password sheet."
+  },
+
+  "changePasswordCurrentPasswordRequiredError": "Please enter your current password",
+  "@changePasswordCurrentPasswordRequiredError": {
+    "description": "Form validation error shown if the user submits the Change Password sheet with an empty current-password field."
+  },
+
+  "changeEmailDifferentRequiredError": "New email must be different from current email",
+  "@changeEmailDifferentRequiredError": {
+    "description": "Validation error shown in the Change Email sheet if the entered new email is identical to the account's current email."
+  },
+
+  "changeEmailSendingVerificationStatus": "Sending verification email...",
+  "@changeEmailSendingVerificationStatus": {
+    "description": "Transient status line shown under a loading spinner while the Change Email sheet's verification email is being sent."
+  },
+
+  "changeEmailVerificationSentTitle": "Verification Email Sent",
+  "@changeEmailVerificationSentTitle": {
+    "description": "Success-state headline in the Change Email bottom sheet, shown after the verification email was sent."
+  },
+
+  "changeEmailVerificationSentMessage": "A verification link has been sent to both your current email and new email. Please verify the change from both boxes to complete the update.",
+  "@changeEmailVerificationSentMessage": {
+    "description": "Success-state body message in the Change Email bottom sheet, explaining both inboxes need to confirm the change."
+  },
+
+  "changeEmailTitle": "Change Email",
+  "@changeEmailTitle": {
+    "description": "Headline at the top of the Change Email bottom sheet, before submission. Also matches the settings tile label that opens this sheet (myAccountChangeEmailTitle)."
+  },
+
+  "changeEmailCurrentEmailLabel": "Your current email address is {email}",
+  "@changeEmailCurrentEmailLabel": {
+    "description": "Instruction text under the Change Email sheet's headline, showing the account's current email for reference. {email} is the user's own current email address.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "jane@example.com"
+      }
+    }
+  },
+
+  "changeEmailNewLabel": "New Email Address",
+  "@changeEmailNewLabel": {
+    "description": "Floating label text inside the new-email field on the Change Email sheet."
+  },
+
+  "changeEmailRequiredError": "Please enter a new email",
+  "@changeEmailRequiredError": {
+    "description": "Form validation error shown if the user submits the Change Email sheet with an empty new-email field."
+  },
+
+  "changeEmailInvalidError": "Please enter a valid email address",
+  "@changeEmailInvalidError": {
+    "description": "Form validation error shown if the new-email field fails basic format validation on the Change Email sheet."
+  },
+
+  "changeEmailConfirmButton": "Confirm Change",
+  "@changeEmailConfirmButton": {
+    "description": "Primary submit button label on the Change Email sheet's form."
+  },
+
+  "userProfileDetailTitle": "Profile",
+  "@userProfileDetailTitle": {
+    "description": "AppBar title of the full Profile detail page (About You/Interests/Future Dreams), reached by tapping a preview tile on My Account."
+  },
+
+  "userProfileDetailEditTooltip": "Edit Profile",
+  "@userProfileDetailEditTooltip": {
+    "description": "Tooltip on the AppBar edit-pencil icon of the Profile detail page; opens the profile-editing bottom sheet."
+  },
+
+  "changeAuthProviderCurrentLabel": "Current: {provider}",
+  "@changeAuthProviderCurrentLabel": {
+    "description": "Small caption under the Change Login Method sheet's title, showing which OAuth provider is currently linked. {provider} is already upper-cased (e.g. 'GOOGLE') or the changeAuthProviderUnknownProvider fallback text; not further translated.",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GOOGLE"
+      }
+    }
+  },
+
+  "changeAuthProviderUnknownProvider": "Unknown",
+  "@changeAuthProviderUnknownProvider": {
+    "description": "Fallback value shown in changeAuthProviderCurrentLabel if the current auth provider can't be determined. Short word."
+  },
+
+  "changeAuthProviderFooterNote": "※ Changing your login method will update your authentication settings. You can switch back anytime.",
+  "@changeAuthProviderFooterNote": {
+    "description": "Small reassurance note at the bottom of the Change Login Method sheet. Keep the ※ reference-mark symbol as a visual note-marker."
+  },
+
+  "changeAccountCurrentLabel": "Current: {value}",
+  "@changeAccountCurrentLabel": {
+    "description": "Small caption under the Change Account sheet's title, showing the currently linked account's email (or the provider name if the email isn't available). {value} is either an email address or an already-resolved provider display name (e.g. 'Google'), neither of which is further translated.",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "jane@example.com"
+      }
+    }
+  },
+
+  "changeAccountButtonLabel": "Choose a different {provider} account",
+  "@changeAccountButtonLabel": {
+    "description": "Primary button label on the Change Account sheet, prompting the user to pick another account with the same OAuth provider. {provider} is the provider's display name ('Google' or 'Apple'), a brand name kept untranslated.",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Google"
+      }
+    }
+  },
+
+  "courseSheetSaveButton": "Save",
+  "@courseSheetSaveButton": {
+    "description": "Save button in the top-right of a bottom sheet header, shared verbatim across the Course/Lecture/Announcement edit-or-create sheets (course_create_sheet.dart, lecture_edit_sheet.dart, announcement_edit_sheet.dart). Shows a small spinner in its place while the submit request is in flight. Short label, not a sentence."
+  },
+
+  "courseNoAnnouncementsLabel": "No announcements yet",
+  "@courseNoAnnouncementsLabel": {
+    "description": "Shared fallback/empty-state text meaning a course has no announcements. Used both as the placeholder text inside the Course page's announcement-preview card (when the course has none) and as the empty-state message in the Course Announcements bottom sheet (when the active-announcements list for that course is empty)."
+  },
+
+  "coursePageTitle": "Courses",
+  "@coursePageTitle": {
+    "description": "AppBar title on the top-level Course list page (shown when no specific course is selected, displaying all courses grouped by year/term)."
+  },
+
+  "coursePageNewCourseButton": "New Course",
+  "@coursePageNewCourseButton": {
+    "description": "Label reused on two buttons that both open the course-creation sheet on the Course list page: the floating action button, and the call-to-action button shown in the empty-courses state. Short label, fits next to a '+' icon."
+  },
+
+  "coursePageLoadError": "Error: {error}",
+  "@coursePageLoadError": {
+    "description": "Inline error text shown on the Course list page if the course list fails to load. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "coursePageEmptyTitle": "No courses yet",
+  "@coursePageEmptyTitle": {
+    "description": "Headline shown on the Course list page's empty state when the user has no courses at all yet."
+  },
+
+  "coursePageEmptySubtitle": "Create your first course to get started",
+  "@coursePageEmptySubtitle": {
+    "description": "Subtitle under the empty-state headline on the Course list page, encouraging the user to tap the New Course button below it."
+  },
+
+  "coursePageNoYearLabel": "No Year",
+  "@coursePageNoYearLabel": {
+    "description": "Section heading shown on the Course list page grouping courses that have no Year attribute set, sorted to the bottom of the year list. Short label, matches the style of an actual year value like '2026' since it's displayed in the same heading slot."
+  },
+
+  "coursePageNoTermLabel": "No Term",
+  "@coursePageNoTermLabel": {
+    "description": "Sub-heading shown on the Course list page (nested under a year section) grouping courses that have no Term attribute set. Short label, matches the style of an actual term value like 'Fall' since it's displayed in the same heading slot."
+  },
+
+  "coursePageTopicMapTitle": "Topic Map",
+  "@coursePageTopicMapTitle": {
+    "description": "Section header above the Topic Map preview card on the Course detail page (the per-course lecture list view)."
+  },
+
+  "coursePageTopicMapRecreatingLabel": "Recreating…",
+  "@coursePageTopicMapRecreatingLabel": {
+    "description": "Label shown over the Topic Map preview card while a stale topic map is being recreated in the background (with a small spinner above it). Keep the ellipsis."
+  },
+
+  "coursePageTopicMapRecreateLabel": "Recreate Topic Map",
+  "@coursePageTopicMapRecreateLabel": {
+    "description": "Call-to-action label overlaid on the Topic Map preview card when the map is stale (out of date due to recent lecture changes) and needs the user to tap it to regenerate."
+  },
+
+  "coursePageTopicMapOpenLabel": "Open Topic Map",
+  "@coursePageTopicMapOpenLabel": {
+    "description": "Small hint label in the bottom-left corner of the Topic Map preview card when a valid, up-to-date map exists and can be opened by tapping the card."
+  },
+
+  "coursePageTopicMapNotGeneratedLabel": "Not generated yet",
+  "@coursePageTopicMapNotGeneratedLabel": {
+    "description": "Small hint label in the bottom-left corner of the Topic Map preview card when no topic map has been generated for this course yet (e.g. zero lectures analyzed so far)."
+  },
+
+  "coursePageLecturesTitle": "Lectures",
+  "@coursePageLecturesTitle": {
+    "description": "Section header above the lecture list on the Course detail page."
+  },
+
+  "coursePageNoLecturesYet": "No lectures recorded yet",
+  "@coursePageNoLecturesYet": {
+    "description": "Empty-state text shown in the Lectures section of the Course detail page when this course has no recorded lectures yet."
+  },
+
+  "coursePageNewLectureButton": "New Lecture",
+  "@coursePageNewLectureButton": {
+    "description": "Floating action button label on the Course detail page that starts a new recording pre-assigned to this course. Short label, fits next to a '+' icon."
+  },
+
+  "coursePageRecreateTopicMapDialogTitle": "Recreate Topic Map?",
+  "@coursePageRecreateTopicMapDialogTitle": {
+    "description": "Title of the confirmation dialog shown when the user taps a stale Topic Map preview card, before regenerating it."
+  },
+
+  "coursePageRecreateTopicMapDialogMessage": "Do you want to recreate the topic map? This repairs it after recent lecture changes and may take a few minutes.",
+  "@coursePageRecreateTopicMapDialogMessage": {
+    "description": "Body text of the recreate-topic-map confirmation dialog, explaining why it's needed (recent lecture changes) and setting time expectations."
+  },
+
+  "coursePageRecreateConfirmButton": "Recreate",
+  "@coursePageRecreateConfirmButton": {
+    "description": "Confirm button label on the recreate-topic-map confirmation dialog. Short verb, not a full sentence."
+  },
+
+  "coursePageRecreateErrorTitle": "Could not recreate topic map",
+  "@coursePageRecreateErrorTitle": {
+    "description": "Title of the error dialog shown if recreating the topic map fails. The dialog's body shows the raw error message underneath (already stripped of a leading 'Exception: ' prefix elsewhere in code, not pre-localized)."
+  },
+
+  "coursePageOkButton": "OK",
+  "@coursePageOkButton": {
+    "description": "Dismiss button on the 'Could not recreate topic map' error dialog."
+  },
+
+  "coursePageOfflineSnackbar": "You're offline. Showing cached data.",
+  "@coursePageOfflineSnackbar": {
+    "description": "Snackbar shown on the Course list/detail pages when the user pulls to refresh while offline; the page still shows whatever was last cached locally."
+  },
+
+  "courseCreateSheetEditTitle": "Edit Course",
+  "@courseCreateSheetEditTitle": {
+    "description": "Header title of the Course Create/Edit bottom sheet when editing an existing course (an existingCourse was passed in)."
+  },
+
+  "courseCreateSheetNewTitle": "New Course",
+  "@courseCreateSheetNewTitle": {
+    "description": "Header title of the Course Create/Edit bottom sheet when creating a brand-new course (no existingCourse passed in). Distinct from coursePageNewCourseButton, which is a button label elsewhere, even though the English text happens to match."
+  },
+
+  "courseCreateSheetDesignPreviewLabel": "Design Preview",
+  "@courseCreateSheetDesignPreviewLabel": {
+    "description": "Small all-caps-style section label above the live preview card showing the course's chosen icon/color combination on the Course Create/Edit sheet."
+  },
+
+  "courseCreateSheetPreviewTitlePlaceholder": "New Course Title",
+  "@courseCreateSheetPreviewTitlePlaceholder": {
+    "description": "Placeholder title text shown inside the live design-preview card when the user hasn't typed a course title yet."
+  },
+
+  "courseCreateSheetPreviewSubtitle": "Visual Representation",
+  "@courseCreateSheetPreviewSubtitle": {
+    "description": "Fixed caption under the title inside the live design-preview card on the Course Create/Edit sheet, describing that this card previews the course's icon/color styling."
+  },
+
+  "courseCreateSheetColorLabel": "Course Color",
+  "@courseCreateSheetColorLabel": {
+    "description": "Small section label above the horizontal row of selectable color swatches on the Course Create/Edit sheet."
+  },
+
+  "courseCreateSheetIconLabel": "Course Icon",
+  "@courseCreateSheetIconLabel": {
+    "description": "Small section label above the icon-category chips and icon grid on the Course Create/Edit sheet."
+  },
+
+  "courseCreateSheetYearLabel": "Year",
+  "@courseCreateSheetYearLabel": {
+    "description": "Floating label text inside the Year autocomplete text field on the Course Create/Edit sheet. Short label, not a sentence."
+  },
+
+  "courseCreateSheetYearHint": "e.g. 2026",
+  "@courseCreateSheetYearHint": {
+    "description": "Hint/example text inside the empty Year field on the Course Create/Edit sheet. Keep the 'e.g.' example format; adapt the sample year value if useful, otherwise keep as-is."
+  },
+
+  "courseCreateSheetTermLabel": "Term",
+  "@courseCreateSheetTermLabel": {
+    "description": "Floating label text inside the Term autocomplete text field on the Course Create/Edit sheet. Also reused as the row label for the combined Term/Year row on the Course Details bottom sheet (course_details_sheet.dart), since both refer to the same course attribute. Short label, not a sentence."
+  },
+
+  "courseCreateSheetTermHint": "e.g. Fall",
+  "@courseCreateSheetTermHint": {
+    "description": "Hint/example text inside the empty Term field on the Course Create/Edit sheet. Keep the 'e.g.' example format; adapt the sample term value if useful (e.g. a season name common in your locale's academic calendar), otherwise keep as-is."
+  },
+
+  "courseCreateSheetTitleLabel": "Course Title *",
+  "@courseCreateSheetTitleLabel": {
+    "description": "Floating label text inside the required Course Title field on the Course Create/Edit sheet. Keep the trailing ' *' asterisk marker indicating the field is required."
+  },
+
+  "courseCreateSheetTitleHint": "e.g. Introduction to Computer Science",
+  "@courseCreateSheetTitleHint": {
+    "description": "Hint/example text inside the empty Course Title field. Keep the 'e.g.' example format; the sample course name can be adapted to something natural in your locale."
+  },
+
+  "courseCreateSheetMoreInfoLabel": "More Info",
+  "@courseCreateSheetMoreInfoLabel": {
+    "description": "Tappable label next to an expand/collapse chevron on the Course Create/Edit sheet, revealing optional fields (course code, professor, school, subject, summary) when tapped."
+  },
+
+  "courseCreateSheetCodeLabel": "Course Code",
+  "@courseCreateSheetCodeLabel": {
+    "description": "Floating label text inside the optional Course Code field on the Course Create/Edit sheet (e.g. 'CS101'). Also reused as the row label for the course code on the Course Details bottom sheet (course_details_sheet.dart). Short label, not a sentence."
+  },
+
+  "courseCreateSheetCodeHint": "e.g. CS101",
+  "@courseCreateSheetCodeHint": {
+    "description": "Hint/example text inside the empty Course Code field. Keep the 'e.g.' example format; the sample code (letters+digits) can stay as a generic example or use a locally natural equivalent."
+  },
+
+  "courseCreateSheetProfessorLabel": "Professor",
+  "@courseCreateSheetProfessorLabel": {
+    "description": "Floating label text inside the optional Professor autocomplete field on the Course Create/Edit sheet. Also reused as the row label for the professor's name on the Course Details bottom sheet (course_details_sheet.dart). Short label, not a sentence."
+  },
+
+  "courseCreateSheetProfessorHint": "e.g. Dr. Smith",
+  "@courseCreateSheetProfessorHint": {
+    "description": "Hint/example text inside the empty Professor field. Keep the 'e.g.' example format; the sample name/title can be adapted to a natural example for your locale."
+  },
+
+  "courseCreateSheetSchoolLabel": "School",
+  "@courseCreateSheetSchoolLabel": {
+    "description": "Floating label text inside the optional School autocomplete field on the Course Create/Edit sheet. Also reused as the row label for the school name on the Course Details bottom sheet (course_details_sheet.dart). Short label, not a sentence."
+  },
+
+  "courseCreateSheetSchoolHint": "e.g. UCLA",
+  "@courseCreateSheetSchoolHint": {
+    "description": "Hint/example text inside the empty School field. Keep the 'e.g.' example format; the sample school name can be adapted to something recognizable in your locale."
+  },
+
+  "courseCreateSheetSubjectLabel": "Subject",
+  "@courseCreateSheetSubjectLabel": {
+    "description": "Floating label text inside the optional Subject autocomplete field on the Course Create/Edit sheet. Also reused as the row label for the subject on the Course Details bottom sheet (course_details_sheet.dart). Short label, not a sentence."
+  },
+
+  "courseCreateSheetSubjectHint": "e.g. Computer Science",
+  "@courseCreateSheetSubjectHint": {
+    "description": "Hint/example text inside the empty Subject field. Keep the 'e.g.' example format."
+  },
+
+  "courseCreateSheetSummaryLabel": "Summary",
+  "@courseCreateSheetSummaryLabel": {
+    "description": "Floating label text inside the optional multi-line Summary field on the Course Create/Edit sheet. Also reused as the section header above the summary paragraph on the Course Details bottom sheet (course_details_sheet.dart), when a summary is set. Short label, not a sentence."
+  },
+
+  "courseCreateSheetSummaryHint": "What is this course about?",
+  "@courseCreateSheetSummaryHint": {
+    "description": "Hint text inside the empty multi-line Summary field, phrased as a friendly question inviting a short description."
+  },
+
+  "courseCreateSheetTitleRequiredError": "Course title is required",
+  "@courseCreateSheetTitleRequiredError": {
+    "description": "Inline form-validation error shown below the form if the user taps Save with an empty Course Title field. Should read as a plain, direct validation message rather than a full apologetic sentence."
+  },
+
+  "courseCreateSheetCustomColorDialogTitle": "Custom Color",
+  "@courseCreateSheetCustomColorDialogTitle": {
+    "description": "Title of the dialog that opens when the user taps the rainbow-gradient swatch at the end of the color row, letting them pick a fully custom course color via hue/lightness sliders or a hex code."
+  },
+
+  "courseCreateSheetHueLabel": "Hue",
+  "@courseCreateSheetHueLabel": {
+    "description": "Small label above the horizontal rainbow-gradient slider in the Custom Color dialog, letting the user pick the color's hue. Color-theory term; keep the conventional translation used in design/photo-editing tools in your language."
+  },
+
+  "courseCreateSheetLightnessLabel": "Lightness",
+  "@courseCreateSheetLightnessLabel": {
+    "description": "Small label above the dark-to-light gradient slider in the Custom Color dialog, letting the user pick the color's lightness. Color-theory term; keep the conventional translation used in design/photo-editing tools in your language."
+  },
+
+  "courseCreateSheetHexLabel": "Hex Color Code",
+  "@courseCreateSheetHexLabel": {
+    "description": "Floating label text inside the hex-code text field in the Custom Color dialog, where the user can type a color as text (e.g. '#FFB300') instead of using the sliders."
+  },
+
+  "courseCreateSheetCancelButton": "Cancel",
+  "@courseCreateSheetCancelButton": {
+    "description": "Cancel button in the Custom Color dialog's action row; closes the dialog without changing the course's selected color."
+  },
+
+  "courseCreateSheetOkButton": "OK",
+  "@courseCreateSheetOkButton": {
+    "description": "Confirm button in the Custom Color dialog's action row; applies the currently previewed custom color as the course's color and closes the dialog."
+  },
+
+  "lectureEditSheetChangeCourseDialogTitle": "Change Course?",
+  "@lectureEditSheetChangeCourseDialogTitle": {
+    "description": "Title of the confirmation dialog shown when the user changes a lecture's assigned course on the Lecture Edit sheet, before saving."
+  },
+
+  "lectureEditSheetChangeCourseDialogMessage": "Changing the course of this lecture will modify Topic Map structures and might affect synchronization. Are you sure you want to proceed?",
+  "@lectureEditSheetChangeCourseDialogMessage": {
+    "description": "Body text of the change-course confirmation dialog, warning about downstream effects on Topic Map structures and sync before the user confirms reassigning a lecture to a different course."
+  },
+
+  "lectureEditSheetProceedButton": "Proceed",
+  "@lectureEditSheetProceedButton": {
+    "description": "Confirm button label on the change-course confirmation dialog. Short verb, not a full sentence."
+  },
+
+  "lectureEditSheetTitle": "Edit Lecture",
+  "@lectureEditSheetTitle": {
+    "description": "Header title of the Lecture Edit bottom sheet, used to change a lecture's assigned course, date/time, and title."
+  },
+
+  "lectureEditSheetCourseLabel": "Course",
+  "@lectureEditSheetCourseLabel": {
+    "description": "Small section label above the tappable course-selector row on the Lecture Edit sheet."
+  },
+
+  "lectureEditSheetNoCourseLabel": "No Course (Unassigned)",
+  "@lectureEditSheetNoCourseLabel": {
+    "description": "Placeholder text shown inside the course-selector row on the Lecture Edit sheet when the lecture currently has no course assigned."
+  },
+
+  "lectureEditSheetUnknownCourseFallback": "Unknown Course",
+  "@lectureEditSheetUnknownCourseFallback": {
+    "description": "Fallback course title used in the rare case where the lecture's assigned course ID doesn't match any course currently loaded in memory (e.g. a sync race). Should practically never be visible to users."
+  },
+
+  "lectureEditSheetDateTimeLabel": "Lecture Date & Time",
+  "@lectureEditSheetDateTimeLabel": {
+    "description": "Small section label above the tappable date/time row on the Lecture Edit sheet, which opens the native date then time pickers."
+  },
+
+  "lectureEditSheetTitleFieldLabel": "Title",
+  "@lectureEditSheetTitleFieldLabel": {
+    "description": "Floating label text inside the optional lecture-title field on the Lecture Edit sheet. Short label, not a sentence."
+  },
+
+  "lectureEditSheetTitleFieldDefaultSuffix": "{title} (Default)",
+  "@lectureEditSheetTitleFieldDefaultSuffix": {
+    "description": "Hint text inside the empty lecture-title field when the lecture already has an AI-generated title, showing that title as the default that will be used if the user leaves the field blank. {title} is the AI-generated title (user/AI content, not pre-localized); keep the '(Default)' qualifier after it, translated naturally.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Introduction to Neural Networks"
+      }
+    }
+  },
+
+  "announcementEditSheetTitleRequiredError": "Title cannot be empty.",
+  "@announcementEditSheetTitleRequiredError": {
+    "description": "Inline form-validation error shown if the user taps Save on the Announcement Edit sheet with an empty title field."
+  },
+
+  "announcementEditSheetTitle": "Edit Announcement",
+  "@announcementEditSheetTitle": {
+    "description": "Header title of the Announcement Edit bottom sheet, used to change an announcement's type, title, and description."
+  },
+
+  "announcementEditSheetTypeLabel": "Type",
+  "@announcementEditSheetTypeLabel": {
+    "description": "Small section label above the row of type-selector chips (Todo/Event/Hint/Info) on the Announcement Edit sheet."
+  },
+
+  "announcementEditSheetTitleFieldLabel": "Title",
+  "@announcementEditSheetTitleFieldLabel": {
+    "description": "Floating label text inside the announcement title field on the Announcement Edit sheet. Short label, not a sentence."
+  },
+
+  "announcementEditSheetTitleFieldHint": "Announcement title",
+  "@announcementEditSheetTitleFieldHint": {
+    "description": "Hint text inside the empty announcement title field on the Announcement Edit sheet."
+  },
+
+  "announcementEditSheetDescriptionFieldLabel": "Description",
+  "@announcementEditSheetDescriptionFieldLabel": {
+    "description": "Floating label text inside the optional multi-line announcement description field on the Announcement Edit sheet. Short label, not a sentence."
+  },
+
+  "announcementEditSheetDescriptionFieldHint": "Additional details (optional)",
+  "@announcementEditSheetDescriptionFieldHint": {
+    "description": "Hint text inside the empty announcement description field, clarifying the field is optional."
+  },
+
+  "announcementEditSheetTypeTodo": "Todo",
+  "@announcementEditSheetTypeTodo": {
+    "description": "Label on the 'Todo' type-selector chip on the Announcement Edit sheet, one of four announcement categories the user picks from (Todo/Event/Hint/Info). Must stay short to fit inline in a chip next to an icon."
+  },
+
+  "announcementEditSheetTypeEvent": "Event",
+  "@announcementEditSheetTypeEvent": {
+    "description": "Label on the 'Event' type-selector chip on the Announcement Edit sheet, one of four announcement categories (Todo/Event/Hint/Info). Must stay short to fit inline in a chip next to an icon."
+  },
+
+  "announcementEditSheetTypeHint": "Hint",
+  "@announcementEditSheetTypeHint": {
+    "description": "Label on the 'Hint' type-selector chip on the Announcement Edit sheet, one of four announcement categories (Todo/Event/Hint/Info) — this 'Hint' refers to a study/exam tip announcement type, unrelated to text-field hint text. Must stay short to fit inline in a chip next to an icon."
+  },
+
+  "announcementEditSheetTypeInfo": "Info",
+  "@announcementEditSheetTypeInfo": {
+    "description": "Label on the 'Info' type-selector chip on the Announcement Edit sheet, one of four announcement categories (Todo/Event/Hint/Info). Must stay short to fit inline in a chip next to an icon."
+  },
+
+  "courseDetailsSheetCreatedLabel": "Created",
+  "@courseDetailsSheetCreatedLabel": {
+    "description": "Row label on the Course Details bottom sheet, next to the course's creation date. Short label, not a sentence."
+  },
+
+  "courseAnnouncementsSheetLoadError": "Error: {error}",
+  "@courseAnnouncementsSheetLoadError": {
+    "description": "Inline error text shown in the Course Announcements bottom sheet if the announcements list fails to load. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "audioPlayerBarTopicIndexTitle": "Topic Index",
+  "@audioPlayerBarTopicIndexTitle": {
+    "description": "Header title inside the slide-up topic index menu of the shared AudioPlayerBar (used from the Transcript page and the Announcement Transcript modal). Sits next to a list icon and a close button. Must stay short."
+  },
+
+  "audioPlayerBarTopicLabel": "Topic {index}",
+  "@audioPlayerBarTopicLabel": {
+    "description": "Small pill/badge label identifying a topic by its 1-based index number, shown both in the AudioPlayerBar's topic index list rows and in its embedded current-topic header bar above the playback controls. Must stay very short — it's rendered inline next to a color swatch and the topic's title.",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "audioPlayerBarDownloadingMessage": "Downloading audio from storage…",
+  "@audioPlayerBarDownloadingMessage": {
+    "description": "Status text shown next to a small spinner inside the AudioPlayerBar while the lecture's audio file is still being downloaded from remote storage, before playback controls become available."
+  },
+
+  "audioPlayerBarLoadErrorMessage": "Failed to load audio: {error}",
+  "@audioPlayerBarLoadErrorMessage": {
+    "description": "Error text shown inside the AudioPlayerBar in place of playback controls when the audio file failed to download/load. {error} may be a raw exception string or a short pre-localized phrase (e.g. an offline message) passed in by the caller.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "audioPlayerBarPreparingMessage": "Preparing audio player…",
+  "@audioPlayerBarPreparingMessage": {
+    "description": "Status text shown inside the AudioPlayerBar after the audio file has downloaded but before the underlying audio player has finished initializing playback."
+  },
+
+  "audioPlayerBarPreviousTopicTooltip": "Previous Topic / Restart Topic",
+  "@audioPlayerBarPreviousTopicTooltip": {
+    "description": "Tooltip on the 'skip previous' icon button in the AudioPlayerBar's control row. Pressing it either restarts the current topic (if recently started) or jumps to the previous topic. Describes both behaviors briefly."
+  },
+
+  "audioPlayerBarRewindTooltip": "Rewind 10s",
+  "@audioPlayerBarRewindTooltip": {
+    "description": "Tooltip on the 'rewind 10 seconds' icon button in the AudioPlayerBar's control row. Must stay short."
+  },
+
+  "audioPlayerBarForwardTooltip": "Forward 10s",
+  "@audioPlayerBarForwardTooltip": {
+    "description": "Tooltip on the 'forward 10 seconds' icon button in the AudioPlayerBar's control row. Must stay short."
+  },
+
+  "audioPlayerBarNextTopicTooltip": "Next Topic",
+  "@audioPlayerBarNextTopicTooltip": {
+    "description": "Tooltip on the 'skip next' icon button in the AudioPlayerBar's control row, which jumps playback to the start of the next topic. Must stay short."
+  },
+
+  "audioPlayerBarTopicIndexMenuTooltip": "Topic Index Menu",
+  "@audioPlayerBarTopicIndexMenuTooltip": {
+    "description": "Tooltip on the list/menu icon button at the right end of the AudioPlayerBar's control row, which opens the slide-up topic index menu. Must stay short."
+  },
+
+  "announcementTranscriptModalErrorPrefix": "Error: {error}",
+  "@announcementTranscriptModalErrorPrefix": {
+    "description": "Fallback error text shown filling the whole Announcement Transcript modal sheet if the underlying lecture fails to load. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "announcementTranscriptModalLectureNotFound": "Lecture not found",
+  "@announcementTranscriptModalLectureNotFound": {
+    "description": "Fallback message filling the whole Announcement Transcript modal sheet when the lecture referenced by the announcement can no longer be found."
+  },
+
+  "announcementTranscriptModalAutoScrollOnTooltip": "Auto-scroll Mode (5s Resume)",
+  "@announcementTranscriptModalAutoScrollOnTooltip": {
+    "description": "Tooltip on the sync/auto-scroll toggle icon button in the Announcement Transcript modal's header, shown while auto-scroll is currently ON. Explains that manual scrolling pauses it and it auto-resumes after 5 seconds of inactivity. Must stay short."
+  },
+
+  "announcementTranscriptModalAutoScrollOffTooltip": "Auto-scroll Disabled (OFF)",
+  "@announcementTranscriptModalAutoScrollOffTooltip": {
+    "description": "Tooltip on the sync/auto-scroll toggle icon button in the Announcement Transcript modal's header, shown while auto-scroll is currently OFF. Must stay short."
+  },
+
+  "announcementTranscriptModalOfflineMessage": "You're offline. Transcript will load once you're back online.",
+  "@announcementTranscriptModalOfflineMessage": {
+    "description": "Message shown in place of the transcript list in the Announcement Transcript modal when the transcript failed to load specifically because the device has no network connection (ArtifactOfflineException)."
+  },
+
+  "announcementTranscriptModalUnavailableError": "Transcript unavailable: {error}",
+  "@announcementTranscriptModalUnavailableError": {
+    "description": "Message shown in place of the transcript list in the Announcement Transcript modal when the transcript failed to load for a reason other than being offline. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Exception: 404 not found"
+      }
+    }
+  },
+
+  "announcementTranscriptModalGeneratingMessage": "Transcript is being generated…",
+  "@announcementTranscriptModalGeneratingMessage": {
+    "description": "Message shown in place of the transcript list in the Announcement Transcript modal when the transcript request succeeded but returned no sentences yet, meaning generation is still in progress."
+  },
+
+  "announcementTranscriptModalTopicLabel": "Topic {index}",
+  "@announcementTranscriptModalTopicLabel": {
+    "description": "Small badge label identifying a topic by its 1-based index number, shown on the standalone topic-header tile inside the Announcement Transcript modal's scrolling transcript list. Must stay very short — rendered inline next to a color bar and the topic's title.",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+
+  "announcementTranscriptModalLectureFallbackTitle": "Lecture",
+  "@announcementTranscriptModalLectureFallbackTitle": {
+    "description": "Fallback title shown at the top of the Announcement Transcript modal when the lecture has neither a user-given title nor an AI-generated title."
+  },
+
+  "announcementTranscriptModalOfflineErrorShort": "You're offline",
+  "@announcementTranscriptModalOfflineErrorShort": {
+    "description": "Short offline-error phrase passed as the {error} value into the AudioPlayerBar's own 'Failed to load audio: {error}' message, shown when the audio file couldn't download because the device has no network connection. Must stay short since it's embedded inside another sentence."
+  },
+
+  "transcriptPageLectureLoadError": "Error loading lecture: {error}",
+  "@transcriptPageLectureLoadError": {
+    "description": "Fallback error text shown filling the whole Transcript page when the lecture itself fails to load. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "SocketException: Failed host lookup"
+      }
+    }
+  },
+
+  "transcriptPageLectureNotFound": "Lecture not found",
+  "@transcriptPageLectureNotFound": {
+    "description": "Fallback message filling the whole Transcript page when the lecture referenced by the route can no longer be found."
+  },
+
+  "transcriptPageTitle": "Transcript",
+  "@transcriptPageTitle": {
+    "description": "AppBar title of the full-screen Transcript page (the standalone page reached from the lecture viewer, distinct from the Announcement Transcript modal bottom sheet)."
+  },
+
+  "transcriptPageAutoScrollOnTooltip": "Auto-scroll Mode (5s Resume)",
+  "@transcriptPageAutoScrollOnTooltip": {
+    "description": "Tooltip on the sync/auto-scroll toggle icon button in the Transcript page's AppBar, shown while auto-scroll is currently ON. Explains that manual scrolling pauses it and it auto-resumes after 5 seconds of inactivity. Must stay short."
+  },
+
+  "transcriptPageAutoScrollOffTooltip": "Auto-scroll Disabled (OFF)",
+  "@transcriptPageAutoScrollOffTooltip": {
+    "description": "Tooltip on the sync/auto-scroll toggle icon button in the Transcript page's AppBar, shown while auto-scroll is currently OFF. Must stay short."
+  },
+
+  "transcriptPageOfflineMessage": "You're offline. Transcript will load once you're back online.",
+  "@transcriptPageOfflineMessage": {
+    "description": "Message shown in place of the transcript list on the Transcript page when the transcript failed to load specifically because the device has no network connection (ArtifactOfflineException)."
+  },
+
+  "transcriptPageUnavailableError": "Transcript unavailable: {error}",
+  "@transcriptPageUnavailableError": {
+    "description": "Message shown in place of the transcript list on the Transcript page when the transcript failed to load for a reason other than being offline. {error} is the raw exception's toString(), not pre-localized.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Exception: 404 not found"
+      }
+    }
+  },
+
+  "transcriptPageGeneratingMessage": "Transcript is being generated…",
+  "@transcriptPageGeneratingMessage": {
+    "description": "Message shown in place of the transcript list on the Transcript page when the transcript request succeeded but returned no sentences yet, meaning generation is still in progress."
+  },
+
+  "transcriptPageTopicLabel": "Topic {index}",
+  "@transcriptPageTopicLabel": {
+    "description": "Small badge label identifying a topic by its 1-based index number, shown on the standalone topic-header tile inside the Transcript page's scrolling transcript list. Must stay very short — rendered inline next to a color bar and the topic's title.",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+
+  "transcriptPageOfflineErrorShort": "You're offline",
+  "@transcriptPageOfflineErrorShort": {
+    "description": "Short offline-error phrase passed as the {error} value into the AudioPlayerBar's own 'Failed to load audio: {error}' message, shown when the audio file couldn't download because the device has no network connection. Must stay short since it's embedded inside another sentence."
+  },
+
+  "cardSelectionToolbarHighlightLabel": "Highlight",
+  "@cardSelectionToolbarHighlightLabel": {
+    "description": "Icon+label button in the text-selection state of the CardSelectionToolbar (shown above Review Cards / Deep Notes content once the user selects text). Opens the highlight color/mode sub-toolbar. Must stay short — a single word under a small icon in a horizontally scrolling toolbar."
+  },
+
+  "cardSelectionToolbarNoteLabel": "Note",
+  "@cardSelectionToolbarNoteLabel": {
+    "description": "Icon+label button in the text-selection state of the CardSelectionToolbar (shown above Review Cards / Deep Notes content once the user selects text). Opens the note-taking sub-toolbar to attach a note to the selection. Must stay short."
+  },
+
+  "cardSelectionToolbarCopyLabel": "Copy",
+  "@cardSelectionToolbarCopyLabel": {
+    "description": "Icon+label button in the text-selection state of the CardSelectionToolbar, currently a UI-only placeholder action for copying the selected text. Must stay short."
+  },
+
+  "cardSelectionToolbarSourceLabel": "Source",
+  "@cardSelectionToolbarSourceLabel": {
+    "description": "Icon+label button in the text-selection state of the CardSelectionToolbar, currently a UI-only placeholder action for viewing the transcript source of the selected text. Must stay short."
+  },
+
+  "cardSelectionToolbarLikeLabel": "Like",
+  "@cardSelectionToolbarLikeLabel": {
+    "description": "Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to mark the card as liked. Must stay short."
+  },
+
+  "cardSelectionToolbarDislikeLabel": "Dislike",
+  "@cardSelectionToolbarDislikeLabel": {
+    "description": "Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to mark the card as disliked. Must stay short."
+  },
+
+  "cardSelectionToolbarSaveLabel": "Save",
+  "@cardSelectionToolbarSaveLabel": {
+    "description": "Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to bookmark/save the card. Must stay short."
+  },
+
+  "noteToolbarHintText": "Add a note...",
+  "@noteToolbarHintText": {
+    "description": "Placeholder hint text inside the empty text field of the NoteSubToolbar (the small draggable card used to attach a note to a highlighted text selection), shown only while the field is in editable mode."
+  },
+
+  "cardSelectionToolbarSourceNotFoundMessage": "No source found for the selection.",
+  "@cardSelectionToolbarSourceNotFoundMessage": {
+    "description": "SnackBar message shown on the Review Cards viewer and Deep Notes detail pages when the user taps the CardSelectionToolbar's 'Source' button but no matching transcript citation could be located for the currently selected text. Shared verbatim between both pages since the Source lookup logic and message are identical."
+  },
+
+  "cardSelectionToolbarCopiedToClipboardMessage": "Copied to clipboard",
+  "@cardSelectionToolbarCopiedToClipboardMessage": {
+    "description": "Brief SnackBar confirmation (shown for ~2 seconds) on the Review Cards viewer and Deep Notes detail pages after the user taps the CardSelectionToolbar's 'Copy' button and the selected text is copied. Shared verbatim between both pages since the Copy logic and message are identical."
+  },
+
+  "reviewCardsViewerNoCardsYet": "No review cards yet",
+  "@reviewCardsViewerNoCardsYet": {
+    "description": "Body text shown on the Review Cards viewer (full-screen flashcard page) when a lecture has no topics/groups to build cards from at all (distinct from an individual card still being generated)."
+  },
+
+  "reviewCardsViewerViewListTooltip": "View List",
+  "@reviewCardsViewerViewListTooltip": {
+    "description": "Tooltip for the grid-view icon button in the Review Cards viewer's header row, which opens a bottom sheet listing all cards grouped by topic so the user can jump directly to one."
+  },
+
+  "reviewCardsViewerPageCounter": "{current} / {total}",
+  "@reviewCardsViewerPageCounter": {
+    "description": "Compact 'current position / total count' counter shown in the Review Cards viewer header, e.g. '3 / 12'. Purely numeric with a slash separator, no words to localize, but placeholders let the number formatting/direction adapt per locale.",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "3"
+      },
+      "total": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+
+  "reviewCardsViewerListSheetTitle": "Review Cards List",
+  "@reviewCardsViewerListSheetTitle": {
+    "description": "Title at the top of the bottom sheet opened from the Review Cards viewer's grid-view button, listing every topic's cover and content cards for quick navigation."
+  },
+
+  "reviewCardsViewerNavigationHint": "Tap left / right  •  Swipe to change topic",
+  "@reviewCardsViewerNavigationHint": {
+    "description": "Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, swiping moves between whole topics. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator."
+  },
+
+  "reviewCardsDashboardGeneratingMessage": "Review cards are being generated…",
+  "@reviewCardsDashboardGeneratingMessage": {
+    "description": "Empty-state message on the Review Cards dashboard (topic overview grid for a lecture) shown while no review card topics/groups exist yet because generation hasn't produced any. Ellipsis conveys an in-progress background process."
+  },
+
+  "reviewCardsDashboardTitle": "Review Cards",
+  "@reviewCardsDashboardTitle": {
+    "description": "Header title on the Review Cards dashboard page."
+  },
+
+  "deepNotesListTitle": "Deep Notes",
+  "@deepNotesListTitle": {
+    "description": "Header title on the Deep Notes list and detail pages."
+  },
+
+  "deepNotesDetailNoNotesAvailable": "No notes available",
+  "@deepNotesDetailNoNotesAvailable": {
+    "description": "Fallback body text on the Deep Notes detail page (single-note reader/editor) shown when the topic list has finished resolving but is still empty, i.e. genuinely no notes exist (as opposed to the 'still being generated' placeholder shown per-note while content streams in)."
+  },
+
+  "deepNotesDetailViewListTooltip": "View List",
+  "@deepNotesDetailViewListTooltip": {
+    "description": "Tooltip for the grid-view icon button in the Deep Notes detail page's header row, which opens a bottom sheet listing all topics/notes for the lecture so the user can jump directly to one."
+  },
+
+  "deepNotesDetailPageCounter": "{current} / {total}",
+  "@deepNotesDetailPageCounter": {
+    "description": "Compact 'current position / total count' counter shown in the Deep Notes detail page header, e.g. '2 / 6'. Purely numeric with a slash separator, no words to localize, but placeholders let the number formatting/direction adapt per locale.",
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "6"
+      }
+    }
+  },
+
+  "deepNotesDetailListSheetTitle": "Deep Notes List",
+  "@deepNotesDetailListSheetTitle": {
+    "description": "Title at the top of the bottom sheet opened from the Deep Notes detail page's grid-view button, listing every topic's note for quick navigation, each with its index badge, title and summary."
+  },
+
+  "deepNotesDetailPullPrevHint": "Pull or tap to previous note",
+  "@deepNotesDetailPullPrevHint": {
+    "description": "Tiny hint label above the up-arrow at the very top of a Deep Note's scrollable content, shown only when there is a previous topic. Explains that overscrolling upward (or tapping the arrow) navigates to the previous note. Keep short — sits directly above/below a small icon."
+  },
+
+  "deepNotesDetailPullNextHint": "Pull or tap to next note",
+  "@deepNotesDetailPullNextHint": {
+    "description": "Tiny hint label below the down-arrow at the very bottom of a Deep Note's scrollable content, shown only when there is a next topic. Explains that overscrolling downward (or tapping the arrow) navigates to the next note. Keep short — sits directly above/below a small icon. Should read as a natural counterpart to deepNotesDetailPullPrevHint."
+  },
+
+  "deepNotesDetailContentGeneratingPlaceholder": "Deep notes for this topic are still being generated…",
+  "@deepNotesDetailContentGeneratingPlaceholder": {
+    "description": "Placeholder markdown body shown in place of a Deep Note's main content while that specific topic's note hasn't finished generating yet (the topic/summary already exist, but the detailed note body is still empty). Ellipsis conveys an in-progress background process."
+  },
+
+  "deepNotesListGeneratingMessage": "Deep notes are being generated…",
+  "@deepNotesListGeneratingMessage": {
+    "description": "Empty-state message on the Deep Notes list page (topic overview list for a lecture) shown while no topics exist yet because generation hasn't produced any. Ellipsis conveys an in-progress background process."
+  },
+
+  "lectureNotePageTopicLabel": "Topic {index}",
+  "@lectureNotePageTopicLabel": {
+    "description": "Small label line above the lecture title in the LectureNotePage app bar, showing the 1-based index of the topic/segment being viewed, e.g. 'Topic 3'. Same pattern as transcriptPageTopicLabel/announcementTranscriptModalTopicLabel elsewhere in the app.",
+    "placeholders": {
+      "index": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "homeOfflineSnackBarMessage": "You're offline. Showing cached data.",
+  "@homeOfflineSnackBarMessage": {
+    "description": "SnackBar message shown when pulling to refresh on the home page while offline."
+  },
+
+  "homeRecordLectureButton": "Record Lecture",
+  "@homeRecordLectureButton": {
+    "description": "Floating call-to-action button at the bottom of the home screen to start recording a lecture."
+  },
+
+  "homeAnnouncementsSheetTitle": "Announcements",
+  "@homeAnnouncementsSheetTitle": {
+    "description": "Title at the top of the All Announcements bottom sheet on the home page."
+  },
+
+  "homeAnnouncementsEmptyMessage": "No announcements — you're all caught up!",
+  "@homeAnnouncementsEmptyMessage": {
+    "description": "Empty state message shown in the All Announcements sheet when there are no active announcements."
+  },
+
+  "homeAnnouncementsSheetLoadError": "Error: {error}",
+  "@homeAnnouncementsSheetLoadError": {
+    "description": "Error state shown in the All Announcements sheet when the announcements list fails to load. Same 'Error: {error}' pattern used elsewhere in the app (e.g. coursePickerErrorLoading).",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "homeEmptyAnnouncementMessage1": "Keep exploring the universe!",
+  "@homeEmptyAnnouncementMessage1": {
+    "description": "Random empty state message for the home announcement bar."
+  },
+
+  "homeEmptyAnnouncementMessage2": "Every star started as stardust. Keep going.",
+  "@homeEmptyAnnouncementMessage2": {
+    "description": "Random empty state message for the home announcement bar."
+  },
+
+  "homeEmptyAnnouncementMessage3": "Your galaxy is quiet for now — the next lecture will light it up.",
+  "@homeEmptyAnnouncementMessage3": {
+    "description": "Random empty state message for the home announcement bar."
+  },
+
+  "homeEmptyAnnouncementMessage4": "No news is good news. Time to learn something new?",
+  "@homeEmptyAnnouncementMessage4": {
+    "description": "Random empty state message for the home announcement bar."
+  },
+
+  "homeEmptyAnnouncementMessage5": "The universe is patient. So can you be.",
+  "@homeEmptyAnnouncementMessage5": {
+    "description": "Random empty state message for the home announcement bar."
+  },
+
+  "homeCoursesSectionTitle": "Courses",
+  "@homeCoursesSectionTitle": {
+    "description": "Section header title for Courses on the home page."
+  },
+
+  "homeRecentLecturesSectionTitle": "RECENT LECTURES",
+  "@homeRecentLecturesSectionTitle": {
+    "description": "Section header subtitle for Recent Lectures on the home page."
+  },
+
+  "emptyHomeDefaultName": "Explorer",
+  "@emptyHomeDefaultName": {
+    "description": "Fallback name used in the welcome greeting on the empty home onboarding screen if the user has no username set."
+  },
+
+  "emptyHomeWelcomeGreeting": "Welcome to leFture, {name}.",
+  "@emptyHomeWelcomeGreeting": {
+    "description": "Headline greeting on the empty home onboarding screen.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Explorer"
+      }
+    }
+  },
+
+  "emptyHomeStartBuilding": "Start building your future.",
+  "@emptyHomeStartBuilding": {
+    "description": "Subheadline under the welcome greeting on the empty home screen."
+  },
+
+  "emptyHomeGalaxyDescription": "Every lecture you add lights a new star.\nKeep learning, and this galaxy will grow into one that's entirely your own.",
+  "@emptyHomeGalaxyDescription": {
+    "description": "Explanatory text under the galaxy graphic on the empty home onboarding screen."
+  },
+
+  "emptyHomeStepMakeProfileTitle": "Make Profile",
+  "@emptyHomeStepMakeProfileTitle": {
+    "description": "Step 1 title in the onboarding checklist on the empty home screen."
+  },
+
+  "emptyHomeStepMakeProfileDoneSubtitle": "Your profile is set",
+  "@emptyHomeStepMakeProfileDoneSubtitle": {
+    "description": "Step 1 subtitle when completed."
+  },
+
+  "emptyHomeStepMakeProfilePendingSubtitle": "Tell leFture a bit about yourself",
+  "@emptyHomeStepMakeProfilePendingSubtitle": {
+    "description": "Step 1 subtitle when pending."
+  },
+
+  "emptyHomeStepCreateCourseTitle": "Create Course",
+  "@emptyHomeStepCreateCourseTitle": {
+    "description": "Step 2 title in the onboarding checklist on the empty home screen."
+  },
+
+  "emptyHomeStepCreateCourseDisabledSubtitle": "Complete your profile first",
+  "@emptyHomeStepCreateCourseDisabledSubtitle": {
+    "description": "Step 2 subtitle when disabled."
+  },
+
+  "emptyHomeStepCreateCourseDoneSubtitle": "Course created",
+  "@emptyHomeStepCreateCourseDoneSubtitle": {
+    "description": "Step 2 subtitle when completed."
+  },
+
+  "emptyHomeStepCreateCoursePendingSubtitle": "Add your first course",
+  "@emptyHomeStepCreateCoursePendingSubtitle": {
+    "description": "Step 2 subtitle when pending."
+  },
+
+  "emptyHomeStepRecordLectureTitle": "Record Lecture",
+  "@emptyHomeStepRecordLectureTitle": {
+    "description": "Step 3 title in the onboarding checklist on the empty home screen."
+  },
+
+  "emptyHomeStepRecordLectureDisabledSubtitle": "Create a course first",
+  "@emptyHomeStepRecordLectureDisabledSubtitle": {
+    "description": "Step 3 subtitle when disabled."
+  },
+
+  "emptyHomeStepRecordLectureDoneSubtitle": "Lecture recorded",
+  "@emptyHomeStepRecordLectureDoneSubtitle": {
+    "description": "Step 3 subtitle when completed."
+  },
+
+  "emptyHomeStepRecordLecturePendingSubtitle": "Record your first lecture",
+  "@emptyHomeStepRecordLecturePendingSubtitle": {
+    "description": "Step 3 subtitle when pending."
+  },
+
+  "funFactsUntitledLecture": "Untitled Lecture",
+  "@funFactsUntitledLecture": {
+    "description": "Fallback title for a lecture in Fun Facts card when title is empty."
+  },
+
+  "funFactsUnknownLecture": "Unknown Lecture",
+  "@funFactsUnknownLecture": {
+    "description": "Fallback title for a lecture in Fun Facts card when lecture object is not found."
+  },
+
+  "funFactsUpdateReactionFailed": "Failed to update reaction: {error}",
+  "@funFactsUpdateReactionFailed": {
+    "description": "SnackBar error message when updating a Fun Fact reaction fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+
+  "funFactsDefaultCardTitle": "We are made of star-stuff",
+  "@funFactsDefaultCardTitle": {
+    "description": "Title for default Carl Sagan fun fact card shown when no fun facts exist yet."
+  },
+
+  "funFactsDefaultCardBody": "You are made of star-stuff ✨ The carbon, oxygen, and iron in your body were forged in exploding stars billions of years ago. The history of the cosmos lives inside you.",
+  "@funFactsDefaultCardBody": {
+    "description": "Body for default Carl Sagan fun fact card shown when no fun facts exist yet."
+  },
+
+  "funFactsDefaultCardFooter": "Cosmic Origin · Carl Sagan",
+  "@funFactsDefaultCardFooter": {
+    "description": "Footer metadata for default Carl Sagan fun fact card."
+  },
+
+  "makeProfileBioEmptyError": "Tell us a little about yourself first",
+  "@makeProfileBioEmptyError": {
+    "description": "Validation error when user tries to submit profile with empty bio."
+  },
+
+  "makeProfileSheetTitle": "Make Your Profile",
+  "@makeProfileSheetTitle": {
+    "description": "Title at top of Make Profile bottom sheet."
+  },
+
+  "makeProfileSheetSubtitle": "This helps leFture personalize your fun facts and study material.",
+  "@makeProfileSheetSubtitle": {
+    "description": "Subtitle text at top of Make Profile bottom sheet."
+  },
+
+  "makeProfileChangeAvatarComingSoon": "Change Avatar (Coming Soon)",
+  "@makeProfileChangeAvatarComingSoon": {
+    "description": "Disabled label below avatar preview in Make Profile sheet."
+  },
+
+  "makeProfileUsernameHint": "e.g. Shogo",
+  "@makeProfileUsernameHint": {
+    "description": "Hint text for username field in Make Profile sheet."
+  },
+
+  "makeProfileAboutYouLabel": "About You *",
+  "@makeProfileAboutYouLabel": {
+    "description": "Field label for Bio in Make Profile sheet."
+  },
+
+  "makeProfileAboutYouHint": "Who are you, what do you study, how do you like to learn?",
+  "@makeProfileAboutYouHint": {
+    "description": "Hint text for Bio field in Make Profile sheet."
+  },
+
+  "makeProfileInterestsLabel": "Interests",
+  "@makeProfileInterestsLabel": {
+    "description": "Field label for Interests in Make Profile sheet."
+  },
+
+  "makeProfileInterestsHint": "e.g. astronomy, guitar, history",
+  "@makeProfileInterestsHint": {
+    "description": "Hint text for Interests field in Make Profile sheet."
+  },
+
+  "makeProfileFutureDreamsLabel": "Future Dreams",
+  "@makeProfileFutureDreamsLabel": {
+    "description": "Field label for Future Dreams in Make Profile sheet."
+  },
+
+  "makeProfileFutureDreamsHint": "What are you working toward?",
+  "@makeProfileFutureDreamsHint": {
+    "description": "Hint text for Future Dreams field in Make Profile sheet."
+  },
+
+  "makeProfileSaveButton": "Save Profile",
+  "@makeProfileSaveButton": {
+    "description": "Submit button label in Make Profile sheet."
+  },
+
+  "courseIconCategorySchool": "School",
+  "@courseIconCategorySchool": { "description": "Course icon category title." },
+  "courseIconCategoryHumanityLang": "Humanity & Lang",
+  "@courseIconCategoryHumanityLang": { "description": "Course icon category title." },
+  "courseIconCategorySocietyLaw": "Society & Law",
+  "@courseIconCategorySocietyLaw": { "description": "Course icon category title." },
+  "courseIconCategoryScienceSpace": "Science & Space",
+  "@courseIconCategoryScienceSpace": { "description": "Course icon category title." },
+  "courseIconCategoryTechBuild": "Tech & Build",
+  "@courseIconCategoryTechBuild": { "description": "Course icon category title." },
+  "courseIconCategoryAgriMarine": "Agri & Marine",
+  "@courseIconCategoryAgriMarine": { "description": "Course icon category title." },
+  "courseIconCategoryMedical": "Medical",
+  "@courseIconCategoryMedical": { "description": "Course icon category title." },
+  "courseIconCategorySportsHealth": "Sports & Health",
+  "@courseIconCategorySportsHealth": { "description": "Course icon category title." },
+  "courseIconCategoryArtTravel": "Art & Travel",
+  "@courseIconCategoryArtTravel": { "description": "Course icon category title." },
+
+  "contactFailedToPickFile": "Failed to pick file: {error}",
+  "@contactFailedToPickFile": {
+    "description": "Error message when file picker fails.",
+    "placeholders": { "error": { "type": "String", "example": "Permission denied" } }
+  },
+  "contactAuthError": "Authentication error. Please sign in again.",
+  "@contactAuthError": { "description": "Auth error in contact page." },
+  "contactConnecting": "Connecting to support service...",
+  "@contactConnecting": { "description": "Status message while warming up backend in contact page." },
+  "contactSlowService": "The support service is taking longer than usual to start. Please try again in a moment, or email us directly at support@lefture.com.",
+  "@contactSlowService": { "description": "Backend timeout message in contact page." },
+  "contactSending": "Sending inquiry...",
+  "@contactSending": { "description": "Status message while sending inquiry." },
+  "contactPreparingUpload": "Preparing file upload...",
+  "@contactPreparingUpload": { "description": "Status message while preparing file upload." },
+  "contactUploadingAttachment": "Uploading attachment...",
+  "@contactUploadingAttachment": { "description": "Status message while uploading attachment." },
+  "contactSubmittingTicket": "Submitting support ticket...",
+  "@contactSubmittingTicket": { "description": "Status message while submitting ticket." },
+  "contactTimeoutError": "Connection timed out. Please check your network and try again, or email us at support@lefture.com.",
+  "@contactTimeoutError": { "description": "Timeout error message in contact page." },
+  "contactSubmissionError": "Submission failed: {error}. You can also email us at support@lefture.com.",
+  "@contactSubmissionError": {
+    "description": "General submission error message in contact page.",
+    "placeholders": { "error": { "type": "String", "example": "Server error" } }
+  },
+  "contactTitleSent": "Sent",
+  "@contactTitleSent": { "description": "App bar title when inquiry is sent." },
+  "contactTitle": "Contact Us",
+  "@contactTitle": { "description": "App bar title for contact page." },
+  "contactHelpTitle": "How can we help you?",
+  "@contactHelpTitle": { "description": "Heading on contact page form." },
+  "contactHelpSubtitle": "Please choose a category and specify your question or bug report below. We will reply to your email shortly.",
+  "@contactHelpSubtitle": { "description": "Subtitle instructions on contact page form." },
+  "contactCategoryLabel": "Category",
+  "@contactCategoryLabel": { "description": "Dropdown label for category in contact page." },
+  "contactCategoryBug": "Bug Report",
+  "@contactCategoryBug": { "description": "Category option for Bug Report." },
+  "contactCategoryFeedback": "Request / Feedback",
+  "@contactCategoryFeedback": { "description": "Category option for Request / Feedback." },
+  "contactCategoryAccount": "Account / Login",
+  "@contactCategoryAccount": { "description": "Category option for Account / Login." },
+  "contactCategoryOther": "Other",
+  "@contactCategoryOther": { "description": "Category option for Other." },
+  "contactMessageDetailsLabel": "Message Details",
+  "@contactMessageDetailsLabel": { "description": "Text area label for message details." },
+  "contactMessageRequired": "Please enter your message details",
+  "@contactMessageRequired": { "description": "Validation error when message details is empty." },
+  "contactAttachmentLabel": "Attachment (Optional)",
+  "@contactAttachmentLabel": { "description": "Label for attachment section." },
+  "contactUploadButton": "Upload Screenshot or File",
+  "@contactUploadButton": { "description": "Button text to upload attachment." },
+  "contactSubmitButton": "Send Inquiry",
+  "@contactSubmitButton": { "description": "Submit button label on contact page." },
+  "contactSuccessTitle": "Inquiry Sent",
+  "@contactSuccessTitle": { "description": "Success screen headline." },
+  "contactSuccessDescription": "Your inquiry has been successfully sent. A confirmation email has been sent to your inbox. We will review your message and reply via email.",
+  "@contactSuccessDescription": { "description": "Success screen body description." },
+  "contactTicketCodeLabel": "Ticket Code",
+  "@contactTicketCodeLabel": { "description": "Label for ticket code on success screen." },
+  "contactBackToSettingsButton": "Back to Settings",
+  "@contactBackToSettingsButton": { "description": "Button to return after inquiry sent." },
+
+  "appErrorDialogGuidance": "Please wait a moment and try again. If the issue persists, please take a screenshot of this screen and contact us via Contact Us.",
+  "@appErrorDialogGuidance": { "description": "User guidance paragraph in error dialog." },
+  "appErrorDialogTechnicalDetails": "Technical Details:",
+  "@appErrorDialogTechnicalDetails": { "description": "Technical details header in error dialog and error box." },
+  "appErrorDialogContactSupport": "Contact Support",
+  "@appErrorDialogContactSupport": { "description": "Button text to navigate to contact page from error dialog." },
+  "appErrorDialogClose": "Close",
+  "@appErrorDialogClose": { "description": "Button text to close error dialog." },
+  "appErrorBoxGuidance": "Please wait a moment and try again. If the issue persists, please take a screenshot and contact support.",
+  "@appErrorBoxGuidance": { "description": "User guidance paragraph in inline error box." },
+
+  "offlineBannerMessage": "You're offline",
+  "@offlineBannerMessage": {
+    "description": "Message displayed in the top banner when device is offline."
+  },
+
+  "recordingMiniPlayerRecording": "Recording...",
+  "@recordingMiniPlayerRecording": {
+    "description": "Status text in recording mini player when actively recording."
+  },
+
+  "recordingMiniPlayerPaused": "Recording Paused",
+  "@recordingMiniPlayerPaused": {
+    "description": "Status text in recording mini player when recording is paused."
+  },
+
+  "aiChatSheetTitle": "Ask AI",
+  "@aiChatSheetTitle": {
+    "description": "Title in AI chat sheet header."
+  },
+
+  "aiChatSheetInputHint": "Ask about this lecture...",
+  "@aiChatSheetInputHint": {
+    "description": "TextField hint text in AI chat sheet."
+  },
+
+  "aiChatSheetPreviewFallback": "This is a UI preview — real AI answers aren't wired up yet.",
+  "@aiChatSheetPreviewFallback": {
+    "description": "Fallback bot response text in dummy AI chat preview."
+  },
+
+  "courseDeleteDialogTitle": "Delete Course?",
+  "@courseDeleteDialogTitle": {
+    "description": "Dialog title when asking to delete a course."
+  },
+
+  "courseDeleteDialogMessage": "Are you sure you want to delete \"{title}\"? All lectures inside this course, and everything generated from them, will be deleted too.",
+  "@courseDeleteDialogMessage": {
+    "description": "Confirmation message when asking to delete a course.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Physics 101"
+      }
+    }
+  },
+
+  "announcementDeleteDialogTitle": "Delete Announcement?",
+  "@announcementDeleteDialogTitle": {
+    "description": "Dialog title when asking to delete an announcement."
+  },
+
+  "announcementDeleteDialogMessage": "Are you sure you want to delete \"{title}\"?",
+  "@announcementDeleteDialogMessage": {
+    "description": "Confirmation message when asking to delete an announcement.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Exam Next Week"
+      }
+    }
+  },
+
+  "spaceshipAnnouncementGotIt": "Got It",
+  "@spaceshipAnnouncementGotIt": {
+    "description": "Default action button text in spaceship announcement modal."
+  },
+
+  "authOrDivider": "or",
+  "@authOrDivider": {
+    "description": "Divider text separating password auth and social sign in."
+  },
+
+  "commonEditButton": "Edit",
+  "@commonEditButton": {
+    "description": "Generic Edit button label."
+  },
+
+  "commonDeleteButton": "Delete",
+  "@commonDeleteButton": {
+    "description": "Generic Delete button label."
+  },
+
+  "legalDocumentLoadErrorTitle": "Couldn't load this document",
+  "@legalDocumentLoadErrorTitle": {
+    "description": "Title text on error screen when legal document fails to load."
+  },
+
+  "legalDocumentLoadErrorSubtitle": "Check your connection and try again.",
+  "@legalDocumentLoadErrorSubtitle": {
+    "description": "Subtitle text on error screen when legal document fails to load."
+  },
+
+  "commonRetryButton": "Retry",
+  "@commonRetryButton": {
+    "description": "Generic Retry button label."
+  },
+
+  "legalDocumentLastUpdated": "Last updated {date}",
+  "@legalDocumentLastUpdated": {
+    "description": "Last updated date label shown at top of legal documents.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Jul 24, 2026"
+      }
+    }
+  }
+}

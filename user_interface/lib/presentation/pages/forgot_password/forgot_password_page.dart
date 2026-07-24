@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
@@ -14,6 +15,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final emailController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isSending = useState(false);
@@ -48,7 +50,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
       inlineError.value = null;
 
       try {
-        statusMessage.value = 'Waking up email service...';
+        statusMessage.value = l10n.forgotPasswordStatusWaking;
         final isServerReady = await warmupFuture;
         if (!isServerReady) {
           isSending.value = false;
@@ -57,7 +59,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
             AppErrorDialog.showSmartNamed(
               context,
               actionName: 'sending password reset link',
-              rawError: 'The email service is taking longer than usual to start.',
+              rawError: l10n.forgotPasswordErrorSlowServer,
               onFriendlyError: (err) {
                 inlineError.value = err;
               },
@@ -65,7 +67,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
           }
           return;
         }
-        statusMessage.value = 'Sending reset link...';
+        statusMessage.value = l10n.forgotPasswordStatusSending;
 
         await ref
             .read(authControllerProvider.notifier)
@@ -132,7 +134,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  emailSent.value ? 'Check your email' : 'Forgot password?',
+                  emailSent.value ? l10n.forgotPasswordSuccessTitle : l10n.forgotPasswordTitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -142,8 +144,8 @@ class ForgotPasswordPage extends HookConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   emailSent.value
-                      ? "We've sent a password reset link to ${emailController.text.trim()}"
-                      : "No worries, enter your email and we'll send you a reset link",
+                      ? l10n.forgotPasswordSuccessMessage(emailController.text.trim())
+                      : l10n.forgotPasswordSubtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.universe.textComet,
@@ -173,7 +175,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text("Didn't get it? Try again"),
+                              child: Text(l10n.forgotPasswordRetryButton),
                             ),
                             const SizedBox(height: 12),
                             ElevatedButton(
@@ -187,9 +189,9 @@ class ForgotPasswordPage extends HookConsumerWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'I have a reset link',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              child: Text(
+                                l10n.forgotPasswordHaveLinkButton,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                             ),
                           ],
@@ -212,7 +214,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
                                 cursorColor: AppColors.starGold,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: l10n.emailLabel,
                                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                                   prefixIcon: Icon(Icons.email_outlined, color: AppColors.universe.textComet),
                                   filled: true,
@@ -236,10 +238,10 @@ class ForgotPasswordPage extends HookConsumerWidget {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your email';
+                                    return l10n.authErrorEmailRequired;
                                   }
                                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                    return 'Please enter a valid email';
+                                    return l10n.authErrorEmailInvalid;
                                   }
                                   return null;
                                 },
@@ -277,9 +279,9 @@ class ForgotPasswordPage extends HookConsumerWidget {
                                           borderRadius: BorderRadius.circular(14),
                                         ),
                                       ),
-                                      child: const Text(
-                                        'Send Reset Link',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      child: Text(
+                                        l10n.sendResetLinkButton,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                       ),
                                     ),
                             ],
@@ -291,7 +293,7 @@ class ForgotPasswordPage extends HookConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Remembered your password? ',
+                      l10n.rememberedPasswordPrompt,
                       style: TextStyle(
                         color: AppColors.universe.textComet,
                         fontSize: 15,
@@ -304,9 +306,9 @@ class ForgotPasswordPage extends HookConsumerWidget {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
-                        'Sign In',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.signInLink,
+                        style: const TextStyle(
                           color: AppColors.starGold,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,

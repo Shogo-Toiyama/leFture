@@ -8,6 +8,7 @@ import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// コース作成/編集ボトムシート。成功時に作成/更新した [Course] を返す。
 /// [existingCourse] を渡すと編集モードになる。
@@ -28,6 +29,7 @@ class CourseCreateSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+     final l10n = AppLocalizations.of(context);
      final isEditing = existingCourse != null;
  
      final titleCtl = useTextEditingController(
@@ -92,7 +94,7 @@ class CourseCreateSheet extends HookConsumerWidget {
     Future<void> submit() async {
       final title = titleCtl.text.trim();
       if (title.isEmpty) {
-        errorMsg.value = 'Course title is required';
+        errorMsg.value = l10n.courseCreateSheetTitleRequiredError;
         return;
       }
       isSubmitting.value = true;
@@ -207,7 +209,7 @@ class CourseCreateSheet extends HookConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    isEditing ? 'Edit Course' : 'New Course',
+                    isEditing ? l10n.courseCreateSheetEditTitle : l10n.courseCreateSheetNewTitle,
                     style: TextStyle(
                       color: AppColors.universe.textStarlight,
                       fontSize: 20,
@@ -233,9 +235,9 @@ class CourseCreateSheet extends HookConsumerWidget {
                               color: AppColors.starGold,
                             ),
                           )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(
+                        : Text(
+                            l10n.courseSheetSaveButton,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -247,7 +249,7 @@ class CourseCreateSheet extends HookConsumerWidget {
 
               // Design - Live Preview Card
               Text(
-                'Design Preview',
+                l10n.courseCreateSheetDesignPreviewLabel,
                 style: TextStyle(
                   color: AppColors.universe.textComet,
                   fontSize: 12,
@@ -300,7 +302,7 @@ class CourseCreateSheet extends HookConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            titleCtl.text.isEmpty ? 'New Course Title' : titleCtl.text,
+                            titleCtl.text.isEmpty ? l10n.courseCreateSheetPreviewTitlePlaceholder : titleCtl.text,
                             style: TextStyle(
                               color: AppColors.universe.textStarlight,
                               fontSize: 16,
@@ -311,7 +313,7 @@ class CourseCreateSheet extends HookConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Visual Representation',
+                            l10n.courseCreateSheetPreviewSubtitle,
                             style: TextStyle(
                               color: AppColors.universe.textComet,
                               fontSize: 12,
@@ -327,7 +329,7 @@ class CourseCreateSheet extends HookConsumerWidget {
 
               // Course Color Selector
               Text(
-                'Course Color',
+                l10n.courseCreateSheetColorLabel,
                 style: TextStyle(
                   color: AppColors.universe.textComet,
                   fontSize: 12,
@@ -457,7 +459,7 @@ class CourseCreateSheet extends HookConsumerWidget {
 
               // Course Icon Selector
               Text(
-                'Course Icon',
+                l10n.courseCreateSheetIconLabel,
                 style: TextStyle(
                   color: AppColors.universe.textComet,
                   fontSize: 12,
@@ -469,9 +471,9 @@ class CourseCreateSheet extends HookConsumerWidget {
                 height: 36,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: courseIconCategories.length,
+                  itemCount: getCourseIconCategories(l10n).length,
                   itemBuilder: (context, index) {
-                    final cat = courseIconCategories[index];
+                    final cat = getCourseIconCategories(l10n)[index];
                     final isSelected = selectedCategoryIndex.value == index;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -514,7 +516,8 @@ class CourseCreateSheet extends HookConsumerWidget {
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final currentCategory = courseIconCategories[selectedCategoryIndex.value];
+                    final categories = getCourseIconCategories(l10n);
+                    final currentCategory = categories[selectedCategoryIndex.value];
                     return Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -559,8 +562,8 @@ class CourseCreateSheet extends HookConsumerWidget {
               // Year
               _AttributeField(
                 controller: yearCtl,
-                label: 'Year',
-                hint: 'e.g. 2026',
+                label: l10n.courseCreateSheetYearLabel,
+                hint: l10n.courseCreateSheetYearHint,
                 icon: Icons.calendar_today_outlined,
                 suggestions: existingYears.map((a) => a.attributeName).toList(),
               ),
@@ -569,8 +572,8 @@ class CourseCreateSheet extends HookConsumerWidget {
               // Term
               _AttributeField(
                 controller: termCtl,
-                label: 'Term',
-                hint: 'e.g. Fall',
+                label: l10n.courseCreateSheetTermLabel,
+                hint: l10n.courseCreateSheetTermHint,
                 icon: Icons.bookmark_border,
                 suggestions: existingTerms.map((a) => a.attributeName).toList(),
               ),
@@ -579,8 +582,8 @@ class CourseCreateSheet extends HookConsumerWidget {
               // Course Title
               _GlassTextField(
                 controller: titleCtl,
-                label: 'Course Title *',
-                hint: 'e.g. Introduction to Computer Science',
+                label: l10n.courseCreateSheetTitleLabel,
+                hint: l10n.courseCreateSheetTitleHint,
                 icon: Icons.school_outlined,
               ),
               const SizedBox(height: 16),
@@ -602,7 +605,7 @@ class CourseCreateSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'More Info',
+                        l10n.courseCreateSheetMoreInfoLabel,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 14,
@@ -623,15 +626,15 @@ class CourseCreateSheet extends HookConsumerWidget {
                     const SizedBox(height: 8),
                     _GlassTextField(
                       controller: codeCtl,
-                      label: 'Course Code',
-                      hint: 'e.g. CS101',
+                      label: l10n.courseCreateSheetCodeLabel,
+                      hint: l10n.courseCreateSheetCodeHint,
                       icon: Icons.tag,
                     ),
                     const SizedBox(height: 12),
                     _AttributeField(
                       controller: professorCtl,
-                      label: 'Professor',
-                      hint: 'e.g. Dr. Smith',
+                      label: l10n.courseCreateSheetProfessorLabel,
+                      hint: l10n.courseCreateSheetProfessorHint,
                       icon: Icons.person_outline,
                       suggestions: existingProfessors
                           .map((a) => a.attributeName)
@@ -640,8 +643,8 @@ class CourseCreateSheet extends HookConsumerWidget {
                     const SizedBox(height: 12),
                     _AttributeField(
                       controller: schoolCtl,
-                      label: 'School',
-                      hint: 'e.g. UCLA',
+                      label: l10n.courseCreateSheetSchoolLabel,
+                      hint: l10n.courseCreateSheetSchoolHint,
                       icon: Icons.account_balance_outlined,
                       suggestions: existingSchools
                           .map((a) => a.attributeName)
@@ -650,8 +653,8 @@ class CourseCreateSheet extends HookConsumerWidget {
                     const SizedBox(height: 12),
                     _AttributeField(
                       controller: subjectCtl,
-                      label: 'Subject',
-                      hint: 'e.g. Computer Science',
+                      label: l10n.courseCreateSheetSubjectLabel,
+                      hint: l10n.courseCreateSheetSubjectHint,
                       icon: Icons.category_outlined,
                       suggestions: existingSubjects
                           .map((a) => a.attributeName)
@@ -660,8 +663,8 @@ class CourseCreateSheet extends HookConsumerWidget {
                     const SizedBox(height: 12),
                     _GlassTextField(
                       controller: summaryCtl,
-                      label: 'Summary',
-                      hint: 'What is this course about?',
+                      label: l10n.courseCreateSheetSummaryLabel,
+                      hint: l10n.courseCreateSheetSummaryHint,
                       icon: Icons.notes_outlined,
                       maxLines: 3,
                     ),
@@ -820,6 +823,7 @@ class _CustomColorPickerDialog extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hsl = HSLColor.fromColor(initialColor);
     final hue = useState(hsl.hue);
     final lightness = useState(hsl.lightness.clamp(0.4, 1.0));
@@ -845,7 +849,7 @@ class _CustomColorPickerDialog extends HookWidget {
         side: BorderSide(color: AppColors.universe.glassBorder),
       ),
       title: Text(
-        'Custom Color',
+        l10n.courseCreateSheetCustomColorDialogTitle,
         style: TextStyle(color: AppColors.universe.textStarlight),
       ),
       content: SingleChildScrollView(
@@ -873,7 +877,7 @@ class _CustomColorPickerDialog extends HookWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Hue',
+                l10n.courseCreateSheetHueLabel,
                 style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
               ),
             ),
@@ -916,7 +920,7 @@ class _CustomColorPickerDialog extends HookWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Lightness',
+                l10n.courseCreateSheetLightnessLabel,
                 style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
               ),
             ),
@@ -956,7 +960,7 @@ class _CustomColorPickerDialog extends HookWidget {
               controller: hexController,
               style: TextStyle(color: AppColors.universe.textStarlight),
               decoration: InputDecoration(
-                labelText: 'Hex Color Code',
+                labelText: l10n.courseCreateSheetHexLabel,
                 labelStyle: TextStyle(color: AppColors.universe.textComet),
                 hintText: '#FFB300',
                 hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.5)),
@@ -993,7 +997,7 @@ class _CustomColorPickerDialog extends HookWidget {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            l10n.courseCreateSheetCancelButton,
             style: TextStyle(color: AppColors.universe.textComet),
           ),
         ),
@@ -1006,7 +1010,7 @@ class _CustomColorPickerDialog extends HookWidget {
             ),
           ),
           onPressed: () => Navigator.of(context).pop(currentColor),
-          child: const Text('OK'),
+          child: Text(l10n.courseCreateSheetOkButton),
         ),
       ],
     );

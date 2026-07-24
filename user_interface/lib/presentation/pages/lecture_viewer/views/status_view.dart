@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class StatusView extends StatelessWidget {
@@ -25,6 +26,7 @@ class StatusView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = isError ? AppColors.correctionRed : AppColors.starGold;
 
     return Container(
@@ -82,7 +84,7 @@ class StatusView extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : Icon(buttonIcon),
-                    label: Text(isLoading ? 'Processing...' : buttonLabel!),
+                    label: Text(isLoading ? l10n.statusViewProcessingLabel : buttonLabel!),
                   ),
                 ],
                 const SizedBox(height: 80),

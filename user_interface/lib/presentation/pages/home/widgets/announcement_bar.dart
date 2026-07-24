@@ -6,16 +6,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/announcement/announcement_provider.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 import 'all_announcements_sheet.dart';
 
 // アナウンスメントが1件も無いときにランダムで表示する言葉たち。
-const List<String> _kEmptyAnnouncementMessages = [
-  'Keep exploring the universe!',
-  'Every star started as stardust. Keep going.',
-  'Your galaxy is quiet for now — the next lecture will light it up.',
-  'No news is good news. Time to learn something new?',
-  'The universe is patient. So can you be.',
+List<String> emptyAnnouncementMessages(AppLocalizations l10n) => [
+  l10n.homeEmptyAnnouncementMessage1,
+  l10n.homeEmptyAnnouncementMessage2,
+  l10n.homeEmptyAnnouncementMessage3,
+  l10n.homeEmptyAnnouncementMessage4,
+  l10n.homeEmptyAnnouncementMessage5,
 ];
 
 class AnnouncementBar extends HookConsumerWidget {
@@ -23,14 +24,14 @@ class AnnouncementBar extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final announcement = ref.watch(latestAnnouncementProvider).asData?.value;
 
     // 空状態メッセージは、この画面がビルドされた（マウントされた）タイミングで1回だけランダムに選ぶ。
+    final messages = emptyAnnouncementMessages(l10n);
     final emptyMessage = useMemoized(
-      () =>
-          _kEmptyAnnouncementMessages[Random().nextInt(
-            _kEmptyAnnouncementMessages.length,
-          )],
+      () => messages[Random().nextInt(messages.length)],
+      [l10n],
     );
 
     final icon = announcement != null

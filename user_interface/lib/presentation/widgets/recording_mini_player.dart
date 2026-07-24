@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/recording/recording_controller.dart';
 import 'package:lecture_companion_ui/application/recording/recording_state.dart';
 import 'package:lecture_companion_ui/presentation/pages/recording/recording_page.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class RecordingMiniPlayer extends ConsumerWidget {
 
@@ -25,6 +26,7 @@ class RecordingMiniPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(recordingControllerProvider);
     log('👀 [MiniPlayer] Build Called. Time: ${ref.read(recordingControllerProvider).elapsedSeconds}');
 
@@ -92,8 +94,8 @@ class RecordingMiniPlayer extends ConsumerWidget {
                       children: [
                         Text(
                           state.phase == RecordingPhase.recording
-                              ? 'Recording...'
-                              : 'Recording Paused',
+                              ? l10n.recordingMiniPlayerRecording
+                              : l10n.recordingMiniPlayerPaused,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,

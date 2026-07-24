@@ -6,6 +6,7 @@ import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 
 class CoursePickerResult {
@@ -22,6 +23,7 @@ class CoursePickerSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final selectedId = useState<String?>(initialSelectedCourseId);
     final searchCtl = useTextEditingController();
     useListenable(searchCtl);
@@ -55,7 +57,7 @@ class CoursePickerSheet extends HookConsumerWidget {
             child: Row(
               children: [
                 Text(
-                  'Select Course',
+                  l10n.coursePickerTitle,
                   style: TextStyle(
                     color: AppColors.universe.textStarlight,
                     fontSize: 18,
@@ -67,7 +69,7 @@ class CoursePickerSheet extends HookConsumerWidget {
                   onPressed: () => Navigator.of(context).pop(
                     const CoursePickerResult(confirmed: false),
                   ),
-                  child: Text('Cancel', style: TextStyle(color: AppColors.universe.textComet)),
+                  child: Text(l10n.coursePickerCancelButton, style: TextStyle(color: AppColors.universe.textComet)),
                 ),
               ],
             ),
@@ -84,7 +86,7 @@ class CoursePickerSheet extends HookConsumerWidget {
                     controller: searchCtl,
                     style: TextStyle(color: AppColors.universe.textStarlight),
                     decoration: InputDecoration(
-                      hintText: 'Search courses...',
+                      hintText: l10n.coursePickerSearchHint,
                       hintStyle: TextStyle(color: AppColors.universe.textComet),
                       prefixIcon: Icon(Icons.search, color: AppColors.universe.textComet),
                       filled: true,
@@ -138,7 +140,7 @@ class CoursePickerSheet extends HookConsumerWidget {
             child: coursesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
               error: (e, _) => Center(
-                child: Text('Error: $e', style: const TextStyle(color: AppColors.correctionRed)),
+                child: Text(l10n.coursePickerErrorLoading(e.toString()), style: const TextStyle(color: AppColors.correctionRed)),
               ),
               data: (courses) {
                 final query = searchCtl.text.trim().toLowerCase();
@@ -154,7 +156,7 @@ class CoursePickerSheet extends HookConsumerWidget {
                 if (filtered.isEmpty) {
                   return Center(
                     child: Text(
-                      courses.isEmpty ? 'No courses yet' : 'No results',
+                      courses.isEmpty ? l10n.coursePickerEmptyNoCourses : l10n.coursePickerEmptySearchResults,
                       style: TextStyle(color: AppColors.universe.textComet),
                     ),
                   );
@@ -194,7 +196,7 @@ class CoursePickerSheet extends HookConsumerWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  selectedId.value != null ? 'Confirm' : 'Continue without Course',
+                  selectedId.value != null ? l10n.coursePickerConfirmButton : l10n.coursePickerContinueWithoutCourseButton,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

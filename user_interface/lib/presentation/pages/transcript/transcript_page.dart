@@ -17,6 +17,7 @@ import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/lecture_artifact_repository.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/audio_player_bar.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_scrollbar.dart';
@@ -170,6 +171,7 @@ class TranscriptPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final lectureAsync = ref.watch(lectureProvider(lectureId));
 
     final leadingButton = IconButton(
@@ -194,7 +196,7 @@ class TranscriptPage extends HookConsumerWidget {
         ),
         body: Center(
           child: Text(
-            'Error loading lecture: $err',
+            l10n.transcriptPageLectureLoadError(err.toString()),
             style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
@@ -209,7 +211,7 @@ class TranscriptPage extends HookConsumerWidget {
               scrolledUnderElevation: 0,
               leading: leadingButton,
             ),
-            body: const Center(child: Text('Lecture not found')),
+            body: Center(child: Text(l10n.transcriptPageLectureNotFound)),
           );
         }
 
@@ -242,6 +244,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
+    final l10n = AppLocalizations.of(context);
     final transcriptAsync = ref.watch(
       transcriptProvider(uid: lecture.userId, lectureId: lecture.id),
     );
@@ -863,7 +866,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Transcript',
+          l10n.transcriptPageTitle,
           style: TextStyle(
             color: AppColors.paper.textInk,
             fontSize: 16,
@@ -882,8 +885,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                     : AppColors.paper.textPencil,
               ),
               tooltip: isAutoModeEnabled.value
-                  ? 'Auto-scroll Mode (5s Resume)'
-                  : 'Auto-scroll Disabled (OFF)',
+                  ? l10n.transcriptPageAutoScrollOnTooltip
+                  : l10n.transcriptPageAutoScrollOffTooltip,
               onPressed: () {
                 isAutoModeEnabled.value = !isAutoModeEnabled.value;
                 if (isAutoModeEnabled.value) {
@@ -909,8 +912,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                 error: (err, _) => Center(
                   child: Text(
                     err is ArtifactOfflineException
-                        ? "You're offline. Transcript will load once you're back online."
-                        : 'Transcript unavailable: $err',
+                        ? l10n.transcriptPageOfflineMessage
+                        : l10n.transcriptPageUnavailableError(err.toString()),
                     style: TextStyle(color: AppColors.paper.textPencil),
                   ),
                 ),
@@ -918,7 +921,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
                   if (sentencesData == null || sentencesData.isEmpty) {
                     return Center(
                       child: Text(
-                        'Transcript is being generated…',
+                        l10n.transcriptPageGeneratingMessage,
                         style: TextStyle(
                           color: AppColors.paper.textPencil,
                           fontSize: 15,
@@ -998,7 +1001,9 @@ class _TranscriptPageContent extends HookConsumerWidget {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    'Topic ${item.topic.index}',
+                                    l10n.transcriptPageTopicLabel(
+                                      item.topic.index,
+                                    ),
                                     style: TextStyle(
                                       color: item.color,
                                       fontSize: 12,
@@ -1228,7 +1233,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
                 isLoading: r2FileAsync.isLoading,
                 errorMessage: r2FileAsync.hasError
                     ? (r2FileAsync.error is ArtifactOfflineException
-                        ? "You're offline"
+                        ? l10n.transcriptPageOfflineErrorShort
                         : r2FileAsync.error.toString())
                     : null,
                 topics: topics,

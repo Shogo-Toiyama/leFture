@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/job/job_providers.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
 import 'package:lecture_companion_ui/domain/entities/processing_task.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/pages/lecture_viewer/views/pipeline_steps_list.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
@@ -18,6 +19,7 @@ class ProcessingView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final jobAsync = ref.watch(jobStreamProvider(lectureId));
     final job = jobAsync.value;
     final jobFailed = job?.status == 'FAILED';
@@ -37,10 +39,9 @@ class ProcessingView extends HookConsumerWidget {
     Future<void> startOver() async {
       final confirm = await showCustomDialog(
         context: context,
-        title: 'Start Over?',
-        message:
-            'This restarts the whole analysis from scratch. Progress that\'s already completed will be discarded.',
-        confirmLabel: 'Start Over',
+        title: l10n.processingViewStartOverDialogTitle,
+        message: l10n.processingViewStartOverDialogMessage,
+        confirmLabel: l10n.processingViewStartOverConfirmButton,
         icon: Icons.refresh,
         isDestructive: true,
       );
@@ -91,7 +92,7 @@ class ProcessingView extends HookConsumerWidget {
               ),
               const SizedBox(height: 28),
               Text(
-                jobFailed ? 'Analysis Failed' : 'Analyzing Lecture...',
+                jobFailed ? l10n.processingViewFailedTitle : l10n.processingViewAnalyzingTitle,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 20,
@@ -100,7 +101,7 @@ class ProcessingView extends HookConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '$completed / $total steps completed',
+                l10n.processingViewStepsCompletedLabel(completed, total),
                 style: TextStyle(
                   color: themeColor,
                   fontSize: 15,
@@ -111,7 +112,7 @@ class ProcessingView extends HookConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(
-                    'Hold the icon above to start over from scratch.',
+                    l10n.processingViewHoldToRestartHint,
                     style: TextStyle(
                       color: AppColors.universe.textComet.withValues(alpha: 0.6),
                       fontSize: 11,
@@ -130,7 +131,11 @@ class ProcessingView extends HookConsumerWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.refresh, size: 16),
-                    label: Text(restartState.value ? 'Starting over...' : 'Start over from scratch'),
+                    label: Text(
+                      restartState.value
+                          ? l10n.processingViewStartingOverLabel
+                          : l10n.processingViewStartOverFromScratchButton,
+                    ),
                     style: TextButton.styleFrom(foregroundColor: AppColors.universe.textComet),
                   ),
                 ),

@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
@@ -12,6 +13,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final passwordController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
 
@@ -46,14 +48,13 @@ class ChangePasswordSheet extends HookConsumerWidget {
         // 待ってから本番リクエストを送ることで、Cloud Runのコールドスタートに
         // よるタイムアウトを避ける。起動確認できなかった場合は、どうせ
         // 失敗するだけの本番リクエストを送らずここで止める。
-        statusMessage.value = 'Waking up email service...';
+        statusMessage.value = l10n.forgotPasswordStatusWaking;
         final isServerReady = await warmupFuture;
         if (!isServerReady) {
-          errorMessage.value =
-              'The email service is taking longer than usual to start. Please try again in a moment.';
+          errorMessage.value = l10n.changePasswordSlowServerError;
           return;
         }
-        statusMessage.value = 'Sending reset link...';
+        statusMessage.value = l10n.forgotPasswordStatusSending;
 
         // 2. Send password reset link to the verified email
         // sendPasswordReset は AsyncValue.guard で例外を握りつぶすため、
@@ -152,7 +153,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Reset Link Sent',
+                        l10n.changePasswordResetSentTitle,
                         style: TextStyle(
                           color: AppColors.universe.textStarlight,
                           fontSize: 20,
@@ -161,8 +162,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'We have sent a password reset link to your email address ($userEmail). '
-                        'Please check your inbox and click the link to set your new password.',
+                        l10n.changePasswordResetSentMessage(userEmail),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
@@ -182,9 +182,9 @@ class ChangePasswordSheet extends HookConsumerWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Close',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        child: Text(
+                          l10n.changePasswordCloseButton,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ],
@@ -192,7 +192,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
                 ),
               ] else ...[
                 Text(
-                  'Change Password',
+                  l10n.changePasswordTitle,
                   style: TextStyle(
                     color: AppColors.universe.textStarlight,
                     fontSize: 20,
@@ -201,7 +201,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Enter your current password to verify your identity and send a reset link to your email.',
+                  l10n.changePasswordSubtitle,
                   style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                 ),
                 const SizedBox(height: 24),
@@ -223,7 +223,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
                         cursorColor: AppColors.starGold,
                         obscureText: obscurePassword.value,
                         decoration: inputDecoration(
-                          'Current Password',
+                          l10n.changePasswordCurrentPasswordLabel,
                           suffixIcon: IconButton(
                             icon: Icon(
                               obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -234,7 +234,7 @@ class ChangePasswordSheet extends HookConsumerWidget {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your current password';
+                            return l10n.changePasswordCurrentPasswordRequiredError;
                           }
                           return null;
                         },
@@ -269,9 +269,9 @@ class ChangePasswordSheet extends HookConsumerWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Send Reset Link',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              child: Text(
+                                l10n.sendResetLinkButton,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                             ),
                     ],

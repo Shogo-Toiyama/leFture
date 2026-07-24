@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 enum PasswordStrength { empty, weak, fair, good, strong }
 
+enum PasswordRequirementKind { minLength, upperLower, digit, symbol }
+
 class PasswordRequirement {
-  const PasswordRequirement(this.label, this.isMet);
-  final String label;
+  const PasswordRequirement(this.kind, this.isMet);
+  final PasswordRequirementKind kind;
   final bool isMet;
 }
 
@@ -23,10 +26,10 @@ PasswordStrengthResult evaluatePasswordStrength(String password) {
   final hasSymbol = RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\[\]/\\+=~`]').hasMatch(password);
 
   final requirements = [
-    PasswordRequirement('At least 8 characters', hasMinLength),
-    PasswordRequirement('Upper & lowercase letters', hasUpperAndLower),
-    PasswordRequirement('At least one number', hasDigit),
-    PasswordRequirement('At least one symbol', hasSymbol),
+    PasswordRequirement(PasswordRequirementKind.minLength, hasMinLength),
+    PasswordRequirement(PasswordRequirementKind.upperLower, hasUpperAndLower),
+    PasswordRequirement(PasswordRequirementKind.digit, hasDigit),
+    PasswordRequirement(PasswordRequirementKind.symbol, hasSymbol),
   ];
 
   if (password.isEmpty) {
@@ -51,13 +54,22 @@ PasswordStrengthResult evaluatePasswordStrength(String password) {
   return PasswordStrengthResult(strength, requirements);
 }
 
+extension on PasswordRequirementKind {
+  String label(AppLocalizations l10n) => switch (this) {
+        PasswordRequirementKind.minLength => l10n.passwordReqMinLength,
+        PasswordRequirementKind.upperLower => l10n.passwordReqUpperLower,
+        PasswordRequirementKind.digit => l10n.passwordReqDigit,
+        PasswordRequirementKind.symbol => l10n.passwordReqSymbol,
+      };
+}
+
 extension on PasswordStrength {
-  String get label => switch (this) {
+  String label(AppLocalizations l10n) => switch (this) {
         PasswordStrength.empty => '',
-        PasswordStrength.weak => 'Weak',
-        PasswordStrength.fair => 'Fair',
-        PasswordStrength.good => 'Good',
-        PasswordStrength.strong => 'Strong',
+        PasswordStrength.weak => l10n.passwordStrengthWeak,
+        PasswordStrength.fair => l10n.passwordStrengthFair,
+        PasswordStrength.good => l10n.passwordStrengthGood,
+        PasswordStrength.strong => l10n.passwordStrengthStrong,
       };
 
   Color get color => switch (this) {
@@ -87,6 +99,7 @@ class PasswordStrengthMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, _) {
@@ -119,7 +132,7 @@ class PasswordStrengthMeter extends StatelessWidget {
                   ],
                   const SizedBox(width: 10),
                   Text(
-                    result.strength.label,
+                    result.strength.label(l10n),
                     style: TextStyle(
                       color: result.strength.color,
                       fontSize: 12,
@@ -144,7 +157,7 @@ class PasswordStrengthMeter extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          requirement.label,
+                          requirement.kind.label(l10n),
                           style: TextStyle(
                             color: AppColors.universe.textComet,
                             fontSize: 12,

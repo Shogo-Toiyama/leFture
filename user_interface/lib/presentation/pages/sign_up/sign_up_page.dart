@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/password_strength_meter.dart';
@@ -28,13 +29,14 @@ class SignUpPage extends HookConsumerWidget {
     final inlineError = useState<dynamic>(null);
 
     final authState = ref.watch(authControllerProvider);
+    final l10n = AppLocalizations.of(context);
 
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account created! Please check your email to verify.'),
+            SnackBar(
+              content: Text(l10n.signUpSuccessSnackbar),
               backgroundColor: AppColors.starGold,
             ),
           );
@@ -62,7 +64,7 @@ class SignUpPage extends HookConsumerWidget {
           password: passwordController.text,
         );
       } else if (!agreedToTerms.value) {
-        inlineError.value = 'Please agree to the Terms and Conditions';
+        inlineError.value = l10n.signUpErrorAgreeTerms;
       }
     }
 
@@ -152,7 +154,7 @@ class SignUpPage extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Join leFture',
+                    l10n.signUpTitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -161,7 +163,7 @@ class SignUpPage extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Start your learning journey today',
+                    l10n.signUpSubtitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.universe.textComet,
@@ -191,13 +193,13 @@ class SignUpPage extends HookConsumerWidget {
                           controller: usernameController,
                           style: TextStyle(color: AppColors.universe.textStarlight),
                           cursorColor: AppColors.starGold,
-                          decoration: inputDecoration('Username', Icons.person_outlined),
+                          decoration: inputDecoration(l10n.usernameLabel, Icons.person_outlined),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter a username';
+                              return l10n.signUpErrorUsernameEmpty;
                             }
                             if (value.length < 3) {
-                              return 'Username must be at least 3 characters';
+                              return l10n.signUpErrorUsernameTooShort;
                             }
                             return null;
                           },
@@ -209,14 +211,14 @@ class SignUpPage extends HookConsumerWidget {
                           controller: emailController,
                           style: TextStyle(color: AppColors.universe.textStarlight),
                           cursorColor: AppColors.starGold,
-                          decoration: inputDecoration('Email', Icons.email_outlined),
+                          decoration: inputDecoration(l10n.emailLabel, Icons.email_outlined),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
+                              return l10n.authErrorEmailRequired;
                             }
                             if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return 'Please enter a valid email';
+                              return l10n.authErrorEmailInvalid;
                             }
                             return null;
                           },
@@ -229,7 +231,7 @@ class SignUpPage extends HookConsumerWidget {
                           style: TextStyle(color: AppColors.universe.textStarlight),
                           cursorColor: AppColors.starGold,
                           decoration: inputDecoration(
-                            'Password',
+                            l10n.passwordLabel,
                             Icons.lock_outlined,
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -239,16 +241,16 @@ class SignUpPage extends HookConsumerWidget {
                               onPressed: () => obscurePassword.value = !obscurePassword.value,
                             ),
                           ).copyWith(
-                            helperText: 'At least 8 characters',
+                            helperText: l10n.passwordReqMinLength,
                             helperStyle: TextStyle(color: AppColors.universe.textComet),
                           ),
                           obscureText: obscurePassword.value,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter a password';
+                              return l10n.signUpErrorPasswordEmpty;
                             }
                             if (value.length < 8) {
-                              return 'Password must be at least 8 characters';
+                              return l10n.passwordErrorTooShort;
                             }
                             return null;
                           },
@@ -262,7 +264,7 @@ class SignUpPage extends HookConsumerWidget {
                           style: TextStyle(color: AppColors.universe.textStarlight),
                           cursorColor: AppColors.starGold,
                           decoration: inputDecoration(
-                            'Confirm Password',
+                            l10n.confirmPasswordLabel,
                             Icons.lock_outlined,
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -275,10 +277,10 @@ class SignUpPage extends HookConsumerWidget {
                           obscureText: obscureConfirmPassword.value,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
+                              return l10n.confirmPasswordErrorEmpty;
                             }
                             if (value != passwordController.text) {
-                              return 'Passwords do not match';
+                              return l10n.passwordsMismatchError;
                             }
                             return null;
                           },
@@ -308,9 +310,9 @@ class SignUpPage extends HookConsumerWidget {
                                       fontSize: 14,
                                     ),
                                     children: [
-                                      const TextSpan(text: 'I agree to the '),
+                                      TextSpan(text: l10n.signUpAgreementPrefix),
                                       TextSpan(
-                                        text: 'Terms and Conditions',
+                                        text: l10n.termsAndConditionsLink,
                                         style: const TextStyle(
                                           color: AppColors.starGold,
                                           decoration: TextDecoration.underline,
@@ -318,9 +320,9 @@ class SignUpPage extends HookConsumerWidget {
                                         recognizer: TapGestureRecognizer()
                                           ..onTap = () => context.push(AppRoutes.termsOfService),
                                       ),
-                                      const TextSpan(text: ' and '),
+                                      TextSpan(text: l10n.signUpAgreementMiddle),
                                       TextSpan(
-                                        text: 'Privacy Policy',
+                                        text: l10n.privacyPolicyLink,
                                         style: const TextStyle(
                                           color: AppColors.starGold,
                                           decoration: TextDecoration.underline,
@@ -328,6 +330,7 @@ class SignUpPage extends HookConsumerWidget {
                                         recognizer: TapGestureRecognizer()
                                           ..onTap = () => context.push(AppRoutes.privacyPolicy),
                                       ),
+                                      TextSpan(text: l10n.signUpAgreementSuffix),
                                     ],
                                   ),
                                 ),
@@ -354,9 +357,9 @@ class SignUpPage extends HookConsumerWidget {
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Create Account',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                child: Text(
+                                  l10n.signUpSubmitButton,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                               ),
                         const SizedBox(height: 20),
@@ -379,7 +382,7 @@ class SignUpPage extends HookConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account? ',
+                        l10n.signUpHasAccountPrompt,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 15,
@@ -392,9 +395,9 @@ class SignUpPage extends HookConsumerWidget {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.signInLink,
+                          style: const TextStyle(
                             color: AppColors.starGold,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,

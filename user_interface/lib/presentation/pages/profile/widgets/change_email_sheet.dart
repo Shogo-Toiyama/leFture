@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/pending_auth_action.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 
@@ -12,6 +13,7 @@ class ChangeEmailSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final emailController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isSubmitting = useState(false);
@@ -31,7 +33,7 @@ class ChangeEmailSheet extends HookConsumerWidget {
 
       final newEmail = emailController.text.trim();
       if (newEmail == currentEmail) {
-        errorMessage.value = 'New email must be different from current email';
+        errorMessage.value = l10n.changeEmailDifferentRequiredError;
         return;
       }
 
@@ -44,14 +46,13 @@ class ChangeEmailSheet extends HookConsumerWidget {
         // 待ってから本番リクエストを送ることで、Cloud Runのコールドスタートに
         // よるタイムアウトを避ける。起動確認できなかった場合は、どうせ
         // 失敗するだけの本番リクエストを送らずここで止める。
-        statusMessage.value = 'Waking up email service...';
+        statusMessage.value = l10n.forgotPasswordStatusWaking;
         final isServerReady = await warmupFuture;
         if (!isServerReady) {
-          errorMessage.value =
-              'The email service is taking longer than usual to start. Please try again in a moment.';
+          errorMessage.value = l10n.changePasswordSlowServerError;
           return;
         }
-        statusMessage.value = 'Sending verification email...';
+        statusMessage.value = l10n.changeEmailSendingVerificationStatus;
 
         // deep linkコールバックだけでは「メールアドレス変更」由来だと判別できない
         // ケースに備え、リクエスト直前に待機中の操作を記録しておく。
@@ -151,7 +152,7 @@ class ChangeEmailSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Verification Email Sent',
+                        l10n.changeEmailVerificationSentTitle,
                         style: TextStyle(
                           color: AppColors.universe.textStarlight,
                           fontSize: 20,
@@ -160,8 +161,7 @@ class ChangeEmailSheet extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'A verification link has been sent to both your current email and new email. '
-                        'Please verify the change from both boxes to complete the update.',
+                        l10n.changeEmailVerificationSentMessage,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
@@ -181,9 +181,9 @@ class ChangeEmailSheet extends HookConsumerWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Close',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        child: Text(
+                          l10n.changePasswordCloseButton,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ],
@@ -191,7 +191,7 @@ class ChangeEmailSheet extends HookConsumerWidget {
                 ),
               ] else ...[
                 Text(
-                  'Change Email',
+                  l10n.changeEmailTitle,
                   style: TextStyle(
                     color: AppColors.universe.textStarlight,
                     fontSize: 20,
@@ -200,7 +200,7 @@ class ChangeEmailSheet extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Your current email address is $currentEmail',
+                  l10n.changeEmailCurrentEmailLabel(currentEmail),
                   style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                 ),
                 const SizedBox(height: 24),
@@ -221,15 +221,15 @@ class ChangeEmailSheet extends HookConsumerWidget {
                         style: TextStyle(color: AppColors.universe.textStarlight),
                         cursorColor: AppColors.starGold,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: inputDecoration('New Email Address'),
+                        decoration: inputDecoration(l10n.changeEmailNewLabel),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a new email';
+                            return l10n.changeEmailRequiredError;
                           }
                           final emailRegExp = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
                           if (!emailRegExp.hasMatch(value.trim())) {
-                            return 'Please enter a valid email address';
-                            
+                            return l10n.changeEmailInvalidError;
+
                           }
                           return null;
                         },
@@ -264,9 +264,9 @@ class ChangeEmailSheet extends HookConsumerWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Confirm Change',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              child: Text(
+                                l10n.changeEmailConfirmButton,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                             ),
                     ],

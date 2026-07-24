@@ -22,6 +22,7 @@ import 'package:lecture_companion_ui/domain/entities/app_language.dart';
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/language_selection_sheet.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/user_avatar.dart';
@@ -40,6 +41,7 @@ class MyAccountPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final profileAsync = ref.watch(currentUserProfileProvider);
     final profile = profileAsync.asData?.value;
 
@@ -52,9 +54,9 @@ class MyAccountPage extends ConsumerWidget {
             pinned: false,
             floating: true,
             backgroundColor: AppColors.universe.voidBackground,
-            title: const Text(
-              'My Account',
-              style: TextStyle(
+            title: Text(
+              l10n.myAccountTitle,
+              style: const TextStyle(
                 color: Color(0xFFF2F2F2),
                 fontWeight: FontWeight.w600,
                 fontSize: 20,
@@ -77,7 +79,7 @@ class MyAccountPage extends ConsumerWidget {
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 _SectionHeader(
                   icon: Icons.person_rounded,
-                  label: 'Profile',
+                  label: l10n.myAccountSectionProfile,
                   color: AppColors.starGold,
                 ),
                 const SizedBox(height: 8),
@@ -90,7 +92,7 @@ class MyAccountPage extends ConsumerWidget {
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 _SectionHeader(
                   icon: Icons.auto_stories_rounded,
-                  label: 'Activity',
+                  label: l10n.myAccountSectionActivity,
                   color: AppColors.starGold,
                 ),
                 const SizedBox(height: 8),
@@ -103,7 +105,7 @@ class MyAccountPage extends ConsumerWidget {
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 _SectionHeader(
                   icon: Icons.rocket_launch_rounded,
-                  label: 'Application',
+                  label: l10n.myAccountSectionApplication,
                   color: AppColors.starGold,
                 ),
                 const SizedBox(height: 8),
@@ -116,7 +118,7 @@ class MyAccountPage extends ConsumerWidget {
                 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 _SectionHeader(
                   icon: Icons.settings_rounded,
-                  label: 'Settings',
+                  label: l10n.myAccountSectionSettings,
                   color: const Color(0xFF8E99A6),
                 ),
                 const SizedBox(height: 8),
@@ -181,8 +183,9 @@ class _HeaderSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isEditing = useState(false);
-    final displayName = profile?.username ?? 'Explorer';
+    final displayName = profile?.username ?? l10n.myAccountDefaultDisplayName;
     final controller = useTextEditingController(text: displayName);
     final isSubmitting = useState(false);
 
@@ -275,7 +278,7 @@ class _HeaderSection extends HookConsumerWidget {
                                   onPressed: saveUsername,
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  tooltip: 'Save',
+                                  tooltip: l10n.myAccountSaveNameTooltip,
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
@@ -286,7 +289,7 @@ class _HeaderSection extends HookConsumerWidget {
                                   },
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  tooltip: 'Cancel',
+                                  tooltip: l10n.myAccountCancelEditTooltip,
                                 ),
                               ],
                             ],
@@ -315,7 +318,7 @@ class _HeaderSection extends HookConsumerWidget {
                                 onPressed: () {
                                   isEditing.value = true;
                                 },
-                                tooltip: 'Edit Name',
+                                tooltip: l10n.myAccountEditNameTooltip,
                               ),
                             ],
                           ),
@@ -345,30 +348,31 @@ class _ProfileTilesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _GlassCard(
       child: Column(
         children: [
           _ProfilePreviewTile(
             icon: Icons.person_outline_rounded,
-            label: 'ABOUT YOU',
+            label: l10n.myAccountAboutYouLabel,
             content: profile?.bio,
-            placeholder: 'No description set yet.',
+            placeholder: l10n.myAccountAboutYouPlaceholder,
             onTap: () => context.push(AppRoutes.profile),
           ),
           _Divider(),
           _ProfilePreviewTile(
             icon: Icons.auto_awesome_outlined,
-            label: 'INTERESTS',
+            label: l10n.myAccountInterestsLabel,
             content: profile?.interests,
-            placeholder: 'No interests set yet.',
+            placeholder: l10n.myAccountInterestsPlaceholder,
             onTap: () => context.push(AppRoutes.profile),
           ),
           _Divider(),
           _ProfilePreviewTile(
             icon: Icons.flag_outlined,
-            label: 'FUTURE DREAMS',
+            label: l10n.myAccountFutureDreamsLabel,
             content: profile?.futureGoals,
-            placeholder: 'No future dream set yet.',
+            placeholder: l10n.myAccountFutureDreamsPlaceholder,
             onTap: () => context.push(AppRoutes.profile),
           ),
         ],
@@ -495,6 +499,7 @@ class _CreditCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Container(
@@ -507,7 +512,7 @@ class _CreditCardSkeleton extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          isError ? 'Credits unavailable' : 'Loading credits…',
+          isError ? l10n.myAccountCreditsUnavailable : l10n.myAccountLoadingCredits,
           style: TextStyle(
             color: isError ? Colors.white38 : const Color(0xFFF2F2F2),
             fontSize: 14,
@@ -525,6 +530,7 @@ class _CreditCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     // プラン未加入(=一度もclaimしていない)場合は「0」と明示的に表示する。
     final balance = summary.hasActivePlan ? (summary.creditBalanceDisplay ?? 0) : 0;
     final allocation = summary.hasActivePlan ? (summary.monthlyAllocationDisplay ?? 0) : 0;
@@ -558,9 +564,9 @@ class _CreditCardContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Credits',
-                  style: TextStyle(
+                Text(
+                  l10n.creditDetailTitle,
+                  style: const TextStyle(
                     color: Color(0xFFF2F2F2),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -645,6 +651,7 @@ class _CreditCardContent extends StatelessWidget {
 class _ApplicationSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final unreadAsync = ref.watch(unreadTransmissionsProvider);
     final unreadList = unreadAsync.asData?.value ?? [];
     final hasUnread = unreadList.isNotEmpty;
@@ -656,8 +663,8 @@ class _ApplicationSection extends ConsumerWidget {
             icon: Icons.satellite_alt_rounded,
             iconColor: AppColors.starGold,
             iconBgColor: const Color(0xFF1E88E5),
-            title: 'Transmissions',
-            subtitle: "What's new & updates",
+            title: l10n.myAccountTransmissionsTitle,
+            subtitle: l10n.myAccountTransmissionsSubtitle,
             trailing: hasUnread
                 ? Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -665,9 +672,9 @@ class _ApplicationSection extends ConsumerWidget {
                       color: AppColors.correctionRed,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'NEW',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.myAccountNewBadge,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -687,8 +694,8 @@ class _ApplicationSection extends ConsumerWidget {
                 }
               } else if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No transmissions available at this time.'),
+                  SnackBar(
+                    content: Text(l10n.myAccountNoTransmissionsSnackbar),
                   ),
                 );
               }
@@ -707,6 +714,7 @@ class _ApplicationSection extends ConsumerWidget {
 class _ActivitySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _GlassCard(
       child: Column(
         children: [
@@ -714,8 +722,8 @@ class _ActivitySection extends StatelessWidget {
             icon: Icons.bookmark_rounded,
             iconColor: AppColors.starGold,
             iconBgColor: const Color(0xFF4CAF50),
-            title: 'Saved',
-            subtitle: 'Review Cards · Deep Notes · Keywords',
+            title: l10n.activityRecordsTitleSaved,
+            subtitle: l10n.myAccountSavedSubtitle,
             onTap: () => context.push('/account/activity/saved'),
           ),
 
@@ -725,8 +733,8 @@ class _ActivitySection extends StatelessWidget {
             icon: Icons.favorite_rounded,
             iconColor: AppColors.starGold,
             iconBgColor: const Color(0xFFE53935),
-            title: 'Likes',
-            subtitle: 'Review Cards · Deep Notes · Fun Facts',
+            title: l10n.activityRecordsTitleLikes,
+            subtitle: l10n.myAccountLikesDislikesSubtitle,
             onTap: () => context.push('/account/activity/likes'),
           ),
           _Divider(),
@@ -734,8 +742,8 @@ class _ActivitySection extends StatelessWidget {
             icon: Icons.thumb_down_rounded,
             iconColor: AppColors.starGold,
             iconBgColor: const Color(0xFF2196F3),
-            title: 'Dislikes',
-            subtitle: 'Review Cards · Deep Notes · Fun Facts',
+            title: l10n.activityRecordsTitleDislikes,
+            subtitle: l10n.myAccountLikesDislikesSubtitle,
             onTap: () => context.push('/account/activity/dislikes'),
           ),
           _Divider(),
@@ -743,8 +751,8 @@ class _ActivitySection extends StatelessWidget {
             icon: Icons.campaign_rounded,
             iconColor: AppColors.starGold,
             iconBgColor: const Color(0xFF9C27B0),
-            title: 'Announcements',
-            subtitle: 'Including completed ones',
+            title: l10n.activityRecordsTitleAnnouncements,
+            subtitle: l10n.myAccountAnnouncementsSubtitle,
             onTap: () => context.push('/account/activity/announcements'),
           ),
           _Divider(),
@@ -752,8 +760,8 @@ class _ActivitySection extends StatelessWidget {
             icon: Icons.delete_outline_rounded,
             iconColor: AppColors.correctionRed,
             iconBgColor: AppColors.correctionRed,
-            title: 'Trash',
-            subtitle: 'Deleted courses & lectures',
+            title: l10n.activityRecordsTitleTrash,
+            subtitle: l10n.myAccountTrashSubtitle,
             onTap: () => context.push('/account/activity/trash'),
             showChevron: true,
             isLast: true,
@@ -864,6 +872,7 @@ class _SettingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final user = ref.watch(currentUserProvider);
     // appMetadata['provider'] はGoTrue側で識別情報(identity)が追加/変更される
     // たびに再計算される「先頭のprovider」でしかなく、複数のidentityを持つ
@@ -889,7 +898,7 @@ class _SettingsSection extends ConsumerWidget {
                   _SettingsTile(
                     icon: Icons.record_voice_over_outlined,
                     iconColor: AppColors.universe.textComet,
-                    title: 'Recording Language',
+                    title: l10n.myAccountRecordingLanguageTitle,
                     subtitle: recordingLang.nativeName,
                     onTap: () {
                       showModalBottomSheet<void>(
@@ -906,7 +915,7 @@ class _SettingsSection extends ConsumerWidget {
                   _SettingsTile(
                     icon: Icons.language_rounded,
                     iconColor: AppColors.universe.textComet,
-                    title: 'Display Language',
+                    title: l10n.myAccountDisplayLanguageTitle,
                     subtitle: displayLang.nativeName,
                     isLast: true,
                     onTap: () {
@@ -935,21 +944,21 @@ class _SettingsSection extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.privacy_tip_outlined,
                 iconColor: AppColors.universe.textComet,
-                title: 'Privacy Policy',
+                title: l10n.myAccountPrivacyPolicyTitle,
                 onTap: () => context.push(AppRoutes.privacyPolicy),
               ),
               _Divider(),
               _SettingsTile(
                 icon: Icons.gavel_rounded,
                 iconColor: AppColors.universe.textComet,
-                title: 'Terms of Service',
+                title: l10n.myAccountTermsOfServiceTitle,
                 onTap: () => context.push(AppRoutes.termsOfService),
               ),
               _Divider(),
               _SettingsTile(
                 icon: Icons.mail_outline_rounded,
                 iconColor: AppColors.universe.textComet,
-                title: 'Contact Us',
+                title: l10n.myAccountContactUsTitle,
                 onTap: () => context.push(AppRoutes.contact),
                 isLast: true,
               ),
@@ -967,7 +976,7 @@ class _SettingsSection extends ConsumerWidget {
                     _SettingsTile(
                       icon: Icons.email_outlined,
                       iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Email',
+                      title: l10n.myAccountChangeEmailTitle,
                       onTap: () {
                         showModalBottomSheet<void>(
                           context: context,
@@ -981,7 +990,7 @@ class _SettingsSection extends ConsumerWidget {
                     _SettingsTile(
                       icon: Icons.lock_outline_rounded,
                       iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Password',
+                      title: l10n.myAccountChangePasswordTitle,
                       onTap: () {
                         showModalBottomSheet<void>(
                           context: context,
@@ -995,7 +1004,7 @@ class _SettingsSection extends ConsumerWidget {
                     _SettingsTile(
                       icon: Icons.security_rounded,
                       iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Login Method',
+                      title: l10n.myAccountChangeLoginMethodTitle,
                       onTap: () {
                         showModalBottomSheet<void>(
                           context: context,
@@ -1011,7 +1020,7 @@ class _SettingsSection extends ConsumerWidget {
                     _SettingsTile(
                       icon: Icons.manage_accounts_outlined,
                       iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Account',
+                      title: l10n.myAccountChangeAccountTitle,
                       onTap: () {
                         showModalBottomSheet<void>(
                           context: context,
@@ -1025,7 +1034,7 @@ class _SettingsSection extends ConsumerWidget {
                     _SettingsTile(
                       icon: Icons.security_rounded,
                       iconColor: const Color(0xFF7C83FD),
-                      title: 'Change Login Method',
+                      title: l10n.myAccountChangeLoginMethodTitle,
                       onTap: () {
                         showModalBottomSheet<void>(
                           context: context,
@@ -1049,7 +1058,7 @@ class _SettingsSection extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.logout_rounded,
                 iconColor: AppColors.correctionRed,
-                title: 'Sign Out',
+                title: l10n.myAccountSignOutTitle,
                 titleColor: AppColors.correctionRed,
                 onTap: onSignOut,
               ),
@@ -1057,7 +1066,7 @@ class _SettingsSection extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.person_remove_outlined,
                 iconColor: AppColors.correctionRed,
-                title: 'Delete Account',
+                title: l10n.myAccountDeleteAccountTitle,
                 titleColor: AppColors.correctionRed,
                 tileColor: AppColors.correctionRed.withValues(alpha: 0.2),
                 onTap: () {
@@ -1074,8 +1083,8 @@ class _SettingsSection extends ConsumerWidget {
         ),
 
         // Debug section (kept but tucked at the bottom)
-        const SizedBox(height: 12),
-        _DebugSection(),
+        // const SizedBox(height: 12),
+        // _DebugSection(),
       ],
     );
   }
@@ -1275,6 +1284,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final passwordController = useTextEditingController();
     final emailController = useTextEditingController();
     final obscurePassword = useState(true);
@@ -1307,18 +1317,17 @@ class _DeleteAccountDialog extends HookConsumerWidget {
       errorMessage.value = null;
 
       try {
-        statusMessage.value = 'Waking up backend service...';
+        statusMessage.value = l10n.deleteAccountDialogWakingBackendStatus;
         final isServerReady = await warmupFuture;
         if (!isServerReady) {
           if (context.mounted) {
             isSubmitting.value = false;
             statusMessage.value = null;
-            errorMessage.value =
-                'The backend service is taking longer than usual to start. Please try again in a moment.';
+            errorMessage.value = l10n.deleteAccountDialogSlowBackendError;
           }
           return;
         }
-        statusMessage.value = 'Deleting account...';
+        statusMessage.value = l10n.deleteAccountDialogDeletingStatus;
 
         // deleteAccount は AsyncValue.guard で例外を握りつぶすため throw されない。
         // 戻り値の AsyncValue を見て成否を判定する。
@@ -1352,13 +1361,13 @@ class _DeleteAccountDialog extends HookConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: AppColors.universe.glassBorder),
       ),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed),
-          SizedBox(width: 10),
+          const Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed),
+          const SizedBox(width: 10),
           Text(
-            'Delete Account?',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            l10n.deleteAccountDialogTitle,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -1368,7 +1377,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Are you absolutely sure you want to delete your account? All your recorded lectures, transcripts, and personal profile data will be permanently deleted. This action cannot be undone.',
+              l10n.deleteAccountDialogWarningMessage,
               style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 20),
@@ -1392,7 +1401,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
             ],
             if (isEmailUser) ...[
               Text(
-                'Enter your password to confirm:',
+                l10n.deleteAccountDialogPasswordPrompt,
                 style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -1402,7 +1411,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                 obscureText: obscurePassword.value,
                 cursorColor: AppColors.starGold,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: l10n.deleteAccountDialogPasswordLabel,
                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                   filled: true,
                   fillColor: AppColors.universe.glassWhiteLow,
@@ -1429,7 +1438,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
               ),
             ] else ...[
               Text(
-                'Type your email to confirm ($userEmail):',
+                l10n.deleteAccountDialogEmailPrompt(userEmail),
                 style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -1439,7 +1448,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                 cursorColor: AppColors.starGold,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  labelText: l10n.deleteAccountDialogEmailLabel,
                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                   filled: true,
                   fillColor: AppColors.universe.glassWhiteLow,
@@ -1465,7 +1474,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
         TextButton(
           onPressed: isSubmitting.value ? null : () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            l10n.deleteAccountDialogCancelButton,
             style: TextStyle(color: AppColors.universe.textComet, fontWeight: FontWeight.bold),
           ),
         ),
@@ -1484,7 +1493,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                   height: 20,
                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
-              : const Text('Delete Account'),
+              : Text(l10n.deleteAccountDialogConfirmButton),
         ),
       ],
     );

@@ -24,6 +24,7 @@ import 'package:lecture_companion_ui/domain/entities/live_transcript_sentence.da
 import 'package:lecture_companion_ui/presentation/pages/profile/widgets/language_selection_sheet.dart';
 import 'package:lecture_companion_ui/presentation/widgets/asr_model_dialog_helpers.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
 import '../dev_tools/simulate_recording_tab.dart';
@@ -47,6 +48,7 @@ class RecordingPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     // タブコントローラー (Voice / Live、isTestModeの時だけTestタブが加わる)
     final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
 
@@ -333,12 +335,12 @@ class RecordingPage extends HookConsumerWidget {
                                   size: 20,
                                 ),
                               ),
-                              title: Text('Course', style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
+                              title: Text(l10n.recordingCourseLabel, style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
                               subtitle: LayoutBuilder(
                                 builder: (context, constraints) {
                                   final text = selectedCourse != null
                                       ? selectedCourse.displayTitle
-                                      : 'No course selected';
+                                      : l10n.recordingNoCourseSelected;
                                   // 1. テキストのスタイル定義
                                   final style = TextStyle(
                                     color: AppColors.universe.textStarlight,
@@ -439,7 +441,7 @@ class RecordingPage extends HookConsumerWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      state.realtimeTranscribe ? 'Realtime ON' : 'Realtime OFF',
+                                      state.realtimeTranscribe ? l10n.recordingRealtimeOnBadge : l10n.recordingRealtimeOffBadge,
                                       style: TextStyle(
                                         color: state.realtimeTranscribe ? AppColors.starGold : AppColors.universe.textComet,
                                         fontSize: 12,
@@ -476,7 +478,7 @@ class RecordingPage extends HookConsumerWidget {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
-                                        'No course selected. Automated AI analysis will not start unless a course is assigned. Please select a course before or after uploading to start analysis.',
+                                        l10n.recordingNoCourseWarning,
                                         style: TextStyle(
                                           color: AppColors.universe.textStarlight,
                                           fontSize: 12,
@@ -535,7 +537,7 @@ class RecordingPage extends HookConsumerWidget {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
-                                      'OR',
+                                      l10n.recordingOrDivider,
                                       style: TextStyle(
                                         color: AppColors.universe.textComet,
                                         fontSize: 12,
@@ -585,9 +587,9 @@ class RecordingPage extends HookConsumerWidget {
                                                   selectedAudioFilePath.value = filePath;
                                                 } else if (context.mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
+                                                    SnackBar(
                                                       content: Text(
-                                                        'Unable to access the selected file. Please try another file.',
+                                                        l10n.recordingFileAccessError,
                                                       ),
                                                     ),
                                                   );
@@ -597,7 +599,7 @@ class RecordingPage extends HookConsumerWidget {
                                               if (context.mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   SnackBar(
-                                                    content: Text('Failed to select file: $e'),
+                                                    content: Text(l10n.recordingFileSelectError(e.toString())),
                                                   ),
                                                 );
                                               }
@@ -629,8 +631,8 @@ class RecordingPage extends HookConsumerWidget {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 10),
-                                                const Text(
-                                                  'Processing audio file...',
+                                                Text(
+                                                  l10n.recordingProcessingAudioFile,
                                                   style: TextStyle(
                                                     color: AppColors.starGold,
                                                     fontSize: 16,
@@ -650,8 +652,8 @@ class RecordingPage extends HookConsumerWidget {
                                                 const SizedBox(width: 8),
                                                 Text(
                                                   selectedAudioFilePath.value != null
-                                                      ? 'File selected'
-                                                      : 'Select audio file',
+                                                      ? l10n.recordingFileSelected
+                                                      : l10n.recordingSelectAudioFile,
                                                   style: TextStyle(
                                                     color: selectedAudioFilePath.value != null
                                                         ? AppColors.starGold
@@ -698,19 +700,19 @@ class RecordingPage extends HookConsumerWidget {
                                       side: BorderSide(color: AppColors.universe.glassBorder),
                                       borderRadius: BorderRadius.circular(16)
                                     ),
-                                    title: Text('Discard Recording?', style: TextStyle(color: AppColors.universe.textStarlight)),
+                                    title: Text(l10n.recordingDiscardDialogTitle, style: TextStyle(color: AppColors.universe.textStarlight)),
                                     content: Text(
-                                      'This will delete the current recording. This action cannot be undone.',
+                                      l10n.recordingDiscardDialogMessage,
                                       style: TextStyle(color: AppColors.universe.textComet),
                                     ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => ctx.pop(false), 
-                                        child: Text('Cancel', style: TextStyle(color: AppColors.universe.textComet))
+                                        onPressed: () => ctx.pop(false),
+                                        child: Text(l10n.recordingCancelButton, style: TextStyle(color: AppColors.universe.textComet))
                                       ),
                                       TextButton(
                                         onPressed: () => ctx.pop(true),
-                                        child: const Text('Discard', style: TextStyle(color: AppColors.correctionRed)),
+                                        child: Text(l10n.recordingDiscardConfirmButton, style: const TextStyle(color: AppColors.correctionRed)),
                                       ),
                                     ],
                                   ),
@@ -722,7 +724,7 @@ class RecordingPage extends HookConsumerWidget {
                                 }
                               },
                               icon: Icon(Icons.delete_outline, size: 20, color: AppColors.universe.textComet),
-                              label: Text('Discard Recording', style: TextStyle(color: AppColors.universe.textComet)),
+                              label: Text(l10n.recordingDiscardButtonLabel, style: TextStyle(color: AppColors.universe.textComet)),
                             ),
 
                           const SizedBox(height: 24),
@@ -752,7 +754,7 @@ class RecordingPage extends HookConsumerWidget {
                                         ),
                                         const SizedBox(width: 10),
                                         Text(
-                                          'Settings',
+                                          l10n.recordingSettingsSectionTitle,
                                           style: TextStyle(
                                             color: AppColors.universe.textComet,
                                             fontSize: 14,
@@ -786,37 +788,36 @@ class RecordingPage extends HookConsumerWidget {
                                   enabled: !isBusy,
                                   style: TextStyle(color: AppColors.universe.textStarlight),
                                   decoration: glassInputDecoration(
-                                    'Lecture title (Optional)',
+                                    l10n.recordingTitleFieldLabel,
                                     Icons.title,
-                                    hintText: '✨ Auto (AI will generate title)',
+                                    hintText: l10n.recordingTitleFieldHint,
                                   ),
                                   onChanged: controller.setTitle,
                                 ),
                                 const SizedBox(height: 16),
                                 buildToggleRow(
                                   icon: Icons.play_circle_outline,
-                                  title: 'Auto-start analysis',
-                                  subtitle: 'Automatically start processing tasks after upload completes.',
+                                  title: l10n.recordingAutoStartAnalysisTitle,
+                                  subtitle: l10n.recordingAutoStartAnalysisSubtitle,
                                   value: state.autoStartAnalysis,
                                   onChanged: (val) => controller.setAutoStartAnalysis(val),
                                 ),
                                 const SizedBox(height: 12),
                                 buildToggleRow(
                                   icon: Icons.chat_bubble_outline,
-                                  title: 'Realtime transcribe',
-                                  subtitle: 'Transcribe audio stream in realtime as you record.',
+                                  title: l10n.recordingRealtimeTranscribeTitle,
+                                  subtitle: l10n.recordingRealtimeTranscribeSubtitle,
                                   value: state.realtimeTranscribe,
                                   onChanged: state.phase == RecordingPhase.idle
                                       ? (val) async {
                                           if (val && asrModelState.status != AsrModelStatus.ready) {
                                             final confirmed = await showCustomDialog(
                                               context: context,
-                                              title: 'Speech model required',
-                                              message:
-                                                  'Realtime transcription needs this language\'s on-device speech model. Download it now?',
+                                              title: l10n.recordingSpeechModelDialogTitle,
+                                              message: l10n.recordingSpeechModelDialogMessage,
                                               icon: Icons.download_rounded,
-                                              confirmLabel: 'Download',
-                                              cancelLabel: 'Cancel',
+                                              confirmLabel: l10n.recordingSpeechModelDownloadConfirm,
+                                              cancelLabel: l10n.recordingCancelButton,
                                             );
                                             if (confirmed != true) return;
                                             controller.setRealtimeTranscribe(true);
@@ -877,8 +878,8 @@ class RecordingPage extends HookConsumerWidget {
                                   // Course が未選択なら警告
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Please select a course before uploading'),
+                                      SnackBar(
+                                        content: Text(l10n.recordingSelectCourseBeforeUploadSnackbar),
                                       ),
                                     );
                                   }
@@ -905,8 +906,8 @@ class RecordingPage extends HookConsumerWidget {
                       child: isBusy
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                SizedBox(
+                              children: [
+                                const SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
@@ -914,16 +915,16 @@ class RecordingPage extends HookConsumerWidget {
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Text(
-                                  'Uploading...',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  l10n.recordingUploadingStatus,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             )
-                          : const Text(
-                              'Upload Recording',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          : Text(
+                              l10n.recordingUploadButtonLabel,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),
@@ -1054,7 +1055,7 @@ class RecordingPage extends HookConsumerWidget {
                       const Icon(Icons.check_circle, color: AppColors.growthGreen, size: 64),
                       const SizedBox(height: 16),
                       Text(
-                        'Recording Done!',
+                        l10n.recordingDoneOverlayTitle,
                         style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -1076,8 +1077,9 @@ class _StatusArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (state.phase == RecordingPhase.requestingPermission) {
-      return Text('Requesting microphone permission...', style: TextStyle(color: AppColors.universe.textComet));
+      return Text(l10n.recordingRequestingPermissionStatus, style: TextStyle(color: AppColors.universe.textComet));
     }
 
     if (state.phase == RecordingPhase.uploading) {
@@ -1085,7 +1087,7 @@ class _StatusArea extends StatelessWidget {
         children: [
           const CircularProgressIndicator(color: AppColors.starGold),
           const SizedBox(height: 12),
-          Text('Uploading...', style: TextStyle(color: AppColors.universe.textStarlight)),
+          Text(l10n.recordingUploadingStatus, style: TextStyle(color: AppColors.universe.textStarlight)),
         ],
       );
     }
@@ -1094,7 +1096,7 @@ class _StatusArea extends StatelessWidget {
       return Column(
         children: [
           Text(
-            state.errorMessage ?? 'Error',
+            state.errorMessage ?? l10n.recordingGenericErrorFallback,
             style: const TextStyle(color: AppColors.correctionRed),
             textAlign: TextAlign.center,
           ),
@@ -1104,11 +1106,11 @@ class _StatusArea extends StatelessWidget {
             children: [
               TextButton(
                 onPressed: controller.openSettingsIfNeeded,
-                child: const Text('Open Settings', style: TextStyle(color: AppColors.starGold)),
+                child: Text(l10n.recordingOpenSettingsButton, style: const TextStyle(color: AppColors.starGold)),
               ),
               TextButton(
                 onPressed: controller.resetAfterError,
-                child: Text('Try Again', style: TextStyle(color: AppColors.universe.textStarlight)),
+                child: Text(l10n.recordingTryAgainButton, style: TextStyle(color: AppColors.universe.textStarlight)),
               ),
             ],
           ),
@@ -1117,14 +1119,14 @@ class _StatusArea extends StatelessWidget {
     }
 
     if (state.phase == RecordingPhase.paused) {
-      return const _StatusPill(icon: Icons.pause_circle_filled, color: AppColors.alertAmber, label: 'Paused');
+      return _StatusPill(icon: Icons.pause_circle_filled, color: AppColors.alertAmber, label: l10n.recordingStatusPaused);
     }
 
     if (state.phase == RecordingPhase.recording) {
-      return const _StatusPill(icon: Icons.fiber_manual_record, color: AppColors.correctionRed, label: 'Recording...');
+      return _StatusPill(icon: Icons.fiber_manual_record, color: AppColors.correctionRed, label: l10n.recordingStatusRecording);
     }
 
-    return Text('Ready to record', style: TextStyle(color: AppColors.universe.textComet));
+    return Text(l10n.recordingStatusReady, style: TextStyle(color: AppColors.universe.textComet));
   }
 }
 
@@ -1179,6 +1181,7 @@ class _RecordingLanguageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     Widget statusIndicator;
     switch (modelState.status) {
       case AsrModelStatus.checking:
@@ -1256,13 +1259,13 @@ class _RecordingLanguageRow extends StatelessWidget {
         enabled: onTap != null,
         leading: Icon(Icons.translate, color: AppColors.universe.textComet),
         title: Text(
-          'Recording language',
+          l10n.recordingLanguageRowTitle,
           style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14, fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
           modelState.status == AsrModelStatus.failed
-              ? '⚠️ $friendlyAsrModelErrorMessage'
-              : 'On-device speech model used for live captions.',
+              ? l10n.recordingAsrModelErrorPrefix(friendlyAsrModelErrorMessage)
+              : l10n.recordingOnDeviceModelSubtitle,
           maxLines: 3,
           style: TextStyle(
             color: modelState.status == AsrModelStatus.failed
@@ -1304,16 +1307,16 @@ String _formatMmSs(int sec) {
 /// `moment_type`はSupabase/ローカルDBどちらもenumやCHECK制約の無いプレーンな
 /// text列(将来種類が増える前提)なので、DB由来の値は生Stringで受け取り、
 /// 未知の値でも例外を投げず汎用表示にフォールバックする。
-(IconData, Color, String) _momentDisplay(String momentType) {
+(IconData, Color, String) _momentDisplay(String momentType, AppLocalizations l10n) {
   switch (momentType) {
     case 'fun':
-      return (Icons.star_rounded, AppColors.starGold, 'Fun moment');
+      return (Icons.star_rounded, AppColors.starGold, l10n.recordingMomentFunLabel);
     case 'difficult':
-      return (Icons.help_rounded, AppColors.cosmicBlue, 'Difficult');
+      return (Icons.help_rounded, AppColors.cosmicBlue, l10n.recordingMomentDifficultLabel);
     case 'revisit':
-      return (Icons.bookmark_rounded, AppColors.growthGreen, 'Revisit later');
+      return (Icons.bookmark_rounded, AppColors.growthGreen, l10n.recordingMomentRevisitLabel);
     case 'note':
-      return (Icons.edit_note_rounded, AppColors.universe.textComet, 'Note');
+      return (Icons.edit_note_rounded, AppColors.universe.textComet, l10n.recordingMomentNoteLabel);
     default:
       return (Icons.emoji_objects_rounded, AppColors.universe.textComet, momentType);
   }
@@ -1453,6 +1456,7 @@ class _RecordingStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     IconData icon;
     Color color;
     String label;
@@ -1460,11 +1464,11 @@ class _RecordingStatusBadge extends StatelessWidget {
       case RecordingPhase.recording:
         icon = Icons.fiber_manual_record;
         color = AppColors.correctionRed;
-        label = 'Recording...';
+        label = l10n.recordingStatusRecording;
       case RecordingPhase.paused:
         icon = Icons.pause_circle_filled;
         color = AppColors.alertAmber;
-        label = 'Paused';
+        label = l10n.recordingStatusPaused;
       default:
         return const SizedBox.shrink();
     }
@@ -1495,6 +1499,7 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final scrollController = useScrollController();
     final isFollowing = useState(true);
 
@@ -1555,7 +1560,7 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
                 Icon(Icons.podcasts_rounded, size: 16, color: AppColors.starGold),
                 const SizedBox(width: 8),
                 Text(
-                  'LIVE TRANSCRIPT',
+                  l10n.recordingLiveTranscriptHeader,
                   style: TextStyle(
                     color: AppColors.starGold,
                     fontSize: 12,
@@ -1575,7 +1580,7 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
                 combined.isEmpty
                     ? Center(
                         child: Text(
-                          'Waiting for audio...',
+                          l10n.recordingWaitingForAudio,
                           style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                         ),
                       )
@@ -1717,6 +1722,7 @@ class _RealtimeOffHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1732,7 +1738,7 @@ class _RealtimeOffHint extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.',
+              l10n.recordingRealtimeOffHint,
               style: TextStyle(color: AppColors.universe.textComet, fontSize: 12, height: 1.5),
             ),
           ),
@@ -1754,14 +1760,8 @@ class _ReactionRow extends StatelessWidget {
     _MomentType.revisit,
   ];
 
-  static const _captions = <_MomentType, String>{
-    _MomentType.fun: 'Fun',
-    _MomentType.difficult: 'Difficult',
-    _MomentType.revisit: 'Revisit',
-  };
-
-  Widget _button(_MomentType type) {
-    final (icon, color, _) = _momentDisplay(type.name);
+  Widget _button(_MomentType type, AppLocalizations l10n) {
+    final (icon, color, _) = _momentDisplay(type.name, l10n);
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1783,7 +1783,7 @@ class _ReactionRow extends StatelessWidget {
                   children: [
                     Icon(icon, size: 22, color: color),
                     const SizedBox(height: 4),
-                    Text(_captions[type]!, style: TextStyle(color: AppColors.universe.textComet, fontSize: 11)),
+                    Text(type.label(l10n), style: TextStyle(color: AppColors.universe.textComet, fontSize: 11)),
                   ],
                 ),
               ),
@@ -1796,8 +1796,17 @@ class _ReactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [for (final type in _options) _button(type)]);
+    final l10n = AppLocalizations.of(context);
+    return Row(children: [for (final type in _options) _button(type, l10n)]);
   }
+}
+
+extension on _MomentType {
+  String label(AppLocalizations l10n) => switch (this) {
+        _MomentType.fun => l10n.recordingReactionFunLabel,
+        _MomentType.difficult => l10n.recordingReactionDifficultLabel,
+        _MomentType.revisit => l10n.recordingReactionRevisitLabel,
+      };
 }
 
 class _NoteInputRow extends StatelessWidget {
@@ -1809,6 +1818,7 @@ class _NoteInputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
@@ -1817,7 +1827,7 @@ class _NoteInputRow extends StatelessWidget {
             enabled: enabled,
             style: TextStyle(color: AppColors.universe.textStarlight),
             decoration: InputDecoration(
-              hintText: 'Jot a quick note...',
+              hintText: l10n.recordingNoteInputHint,
               hintStyle: TextStyle(color: AppColors.universe.textComet),
               filled: true,
               fillColor: AppColors.universe.glassWhiteLow,
@@ -1864,11 +1874,12 @@ class _MomentsTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (moments.isEmpty) {
       final hintWidget = Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Text(
-          'Tap a reaction or add a note below — it\'ll show up here.',
+          l10n.recordingMomentsEmptyHint,
           style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
         ),
       );
@@ -1885,7 +1896,7 @@ class _MomentsTimeline extends StatelessWidget {
       separatorBuilder: (_, _) => const SizedBox(height: _tileGap),
       itemBuilder: (context, i) {
         final moment = reversed[i];
-        final (icon, color, label) = _momentDisplay(moment.momentType);
+        final (icon, color, label) = _momentDisplay(moment.momentType, l10n);
         return Container(
           height: _tileHeight,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

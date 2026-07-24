@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class AppErrorUtils {
   AppErrorUtils._();
@@ -162,6 +163,7 @@ class AppErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final formattedError = AppErrorUtils.formatRawError(rawError);
 
     return AlertDialog(
@@ -194,7 +196,7 @@ class AppErrorDialog extends StatelessWidget {
           children: [
             // User guidance message
             Text(
-              'Please wait a moment and try again. If the issue persists, please take a screenshot of this screen and contact us via Contact Us.',
+              l10n.appErrorDialogGuidance,
               style: TextStyle(
                 color: AppColors.universe.textStarlight,
                 fontSize: 13,
@@ -216,7 +218,7 @@ class AppErrorDialog extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Technical Details:',
+                    l10n.appErrorDialogTechnicalDetails,
                     style: TextStyle(
                       color: AppColors.universe.textComet,
                       fontSize: 11,
@@ -244,9 +246,9 @@ class AppErrorDialog extends StatelessWidget {
             Navigator.of(context).pop();
             context.push(AppRoutes.contact);
           },
-          child: const Text(
-            'Contact Support',
-            style: TextStyle(
+          child: Text(
+            l10n.appErrorDialogContactSupport,
+            style: const TextStyle(
               color: AppColors.starGold,
               fontWeight: FontWeight.bold,
             ),
@@ -263,7 +265,7 @@ class AppErrorDialog extends StatelessWidget {
               side: BorderSide(color: AppColors.universe.glassBorder),
             ),
           ),
-          child: const Text('Close'),
+          child: Text(l10n.appErrorDialogClose),
         ),
       ],
     );
@@ -283,6 +285,7 @@ class AppErrorBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (rawError == null || rawError.toString().trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -350,7 +353,7 @@ class AppErrorBox extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Please wait a moment and try again. If the issue persists, please take a screenshot and contact support.',
+            l10n.appErrorBoxGuidance,
             style: TextStyle(
               color: AppColors.universe.textStarlight,
               fontSize: 12,
@@ -370,7 +373,7 @@ class AppErrorBox extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Technical Details:',
+                  l10n.appErrorDialogTechnicalDetails,
                   style: TextStyle(
                     color: AppColors.universe.textComet,
                     fontSize: 10,

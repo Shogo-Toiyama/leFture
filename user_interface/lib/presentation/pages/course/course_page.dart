@@ -9,6 +9,7 @@ import 'package:lecture_companion_ui/application/topic_map/topic_map_reconstruct
 import 'package:lecture_companion_ui/infrastructure/supabase/repositories/course_repository_supabase.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 
 import 'package:lecture_companion_ui/app/routes.dart';
@@ -57,6 +58,7 @@ class _CourseTreeView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final coursesAsync = ref.watch(courseListProvider);
 
     return Scaffold(
@@ -65,15 +67,15 @@ class _CourseTreeView extends ConsumerWidget {
         backgroundColor: AppColors.starGold,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('New Course'),
+        label: Text(l10n.coursePageNewCourseButton),
         onPressed: () => _openCreateSheet(context, ref),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            const CustomAppBar(
+            CustomAppBar(
               showHomeButton: true,
-              title: 'Courses',
+              title: l10n.coursePageTitle,
             ),
             Expanded(
               child: coursesAsync.when(
@@ -82,7 +84,7 @@ class _CourseTreeView extends ConsumerWidget {
                 ),
                 error: (e, _) => Center(
                   child: Text(
-                    'Error: $e',
+                    l10n.coursePageLoadError(e.toString()),
                     style: const TextStyle(color: AppColors.correctionRed),
                   ),
                 ),
@@ -92,7 +94,7 @@ class _CourseTreeView extends ConsumerWidget {
                       onCreateTap: () => _openCreateSheet(context, ref),
                     );
                   }
-                  final grouped = _groupCourses(courses);
+                  final grouped = _groupCourses(courses, l10n);
                   return RefreshIndicator(
                     color: AppColors.starGold,
                     onRefresh: () => _handleRefresh(context, ref),
@@ -125,12 +127,17 @@ class _CourseTreeView extends ConsumerWidget {
   }
 
   /// courses → { yearName → { termName → [Course] } }
-  /// Year/Term 未設定は "No Year" / "No Term" に分類
-  Map<String, Map<String, List<Course>>> _groupCourses(List<Course> courses) {
+  /// Year/Term 未設定は l10n.coursePageNoYearLabel / l10n.coursePageNoTermLabel に分類
+  Map<String, Map<String, List<Course>>> _groupCourses(
+    List<Course> courses,
+    AppLocalizations l10n,
+  ) {
+    final noYearLabel = l10n.coursePageNoYearLabel;
+    final noTermLabel = l10n.coursePageNoTermLabel;
     final result = <String, Map<String, List<Course>>>{};
     for (final course in courses) {
-      final yearName = course.year?.attributeName ?? 'No Year';
-      final termName = course.term?.attributeName ?? 'No Term';
+      final yearName = course.year?.attributeName ?? noYearLabel;
+      final termName = course.term?.attributeName ?? noTermLabel;
       result.putIfAbsent(yearName, () => {});
       result[yearName]!.putIfAbsent(termName, () => []);
       result[yearName]![termName]!.add(course);
@@ -138,8 +145,8 @@ class _CourseTreeView extends ConsumerWidget {
     // Year を降順（新しい年が上）、No Year は末尾
     final sorted = Map.fromEntries(
       result.entries.toList()..sort((a, b) {
-        if (a.key == 'No Year') return 1;
-        if (b.key == 'No Year') return -1;
+        if (a.key == noYearLabel) return 1;
+        if (b.key == noYearLabel) return -1;
         return b.key.compareTo(a.key);
       }),
     );
@@ -258,6 +265,7 @@ class _EmptyCoursesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -269,7 +277,7 @@ class _EmptyCoursesView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No courses yet',
+            l10n.coursePageEmptyTitle,
             style: TextStyle(
               color: AppColors.universe.textStarlight,
               fontSize: 18,
@@ -278,14 +286,14 @@ class _EmptyCoursesView extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create your first course to get started',
+            l10n.coursePageEmptySubtitle,
             style: TextStyle(color: AppColors.universe.textComet),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: onCreateTap,
             icon: const Icon(Icons.add),
-            label: const Text('New Course'),
+            label: Text(l10n.coursePageNewCourseButton),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.starGold,
               foregroundColor: Colors.white,
@@ -319,6 +327,7 @@ class _CourseLectureListView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final courses =
         ref.watch(courseListProvider).asData?.value ?? const <Course>[];
     final course = _findCourse(courses);
@@ -529,7 +538,7 @@ class _CourseLectureListView extends ConsumerWidget {
                                                     true
                                                 ? announcement!.description!
                                                       .trim()
-                                                : 'No announcements yet'),
+                                                : l10n.courseNoAnnouncementsLabel),
                                       style: TextStyle(
                                         color: AppColors.universe.textStarlight,
                                         fontSize: 14,
@@ -570,7 +579,7 @@ class _CourseLectureListView extends ConsumerWidget {
 
                     // Row 4: Topic Map
                     Text(
-                      'Topic Map',
+                      l10n.coursePageTopicMapTitle,
                       style: TextStyle(
                         color: AppColors.universe.textStarlight,
                         fontSize: 16,
@@ -680,8 +689,8 @@ class _CourseLectureListView extends ConsumerWidget {
                                             ),
                                             child: Text(
                                               isReconstructingTopicMap
-                                                  ? 'Recreating…'
-                                                  : 'Recreate Topic Map',
+                                                  ? l10n.coursePageTopicMapRecreatingLabel
+                                                  : l10n.coursePageTopicMapRecreateLabel,
                                               textAlign: TextAlign.center,
                                               style: TextStyle(
                                                 color: AppColors
@@ -716,8 +725,8 @@ class _CourseLectureListView extends ConsumerWidget {
                                         children: [
                                           Text(
                                             canOpenTopicMap
-                                                ? 'Open Topic Map'
-                                                : 'Not generated yet',
+                                                ? l10n.coursePageTopicMapOpenLabel
+                                                : l10n.coursePageTopicMapNotGeneratedLabel,
                                             style: TextStyle(
                                               color:
                                                   AppColors.universe.textComet,
@@ -747,7 +756,7 @@ class _CourseLectureListView extends ConsumerWidget {
 
                     // Row 5: Lectures Section
                     Text(
-                      'Lectures',
+                      l10n.coursePageLecturesTitle,
                       style: TextStyle(
                         color: AppColors.universe.textStarlight,
                         fontSize: 16,
@@ -768,7 +777,7 @@ class _CourseLectureListView extends ConsumerWidget {
                   sliver: SliverToBoxAdapter(
                     child: Center(
                       child: Text(
-                        'No lectures recorded yet',
+                        l10n.coursePageNoLecturesYet,
                         style: TextStyle(color: AppColors.universe.textComet),
                       ),
                     ),
@@ -815,7 +824,7 @@ class _CourseLectureListView extends ConsumerWidget {
       backgroundColor: AppColors.starGold,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.add),
-      label: const Text('New Lecture'),
+      label: Text(l10n.coursePageNewLectureButton),
       onPressed: () {
         context.push('${AppRoutes.recording}?courseId=$courseId');
       },
@@ -855,11 +864,12 @@ class _CourseLectureListView extends ConsumerWidget {
     WidgetRef ref,
     String courseId,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final confirm = await showCustomDialog(
       context: context,
-      title: 'Recreate Topic Map?',
-      message: 'Do you want to recreate the topic map? This repairs it after recent lecture changes and may take a few minutes.',
-      confirmLabel: 'Recreate',
+      title: l10n.coursePageRecreateTopicMapDialogTitle,
+      message: l10n.coursePageRecreateTopicMapDialogMessage,
+      confirmLabel: l10n.coursePageRecreateConfirmButton,
       icon: Icons.refresh,
     );
     if (confirm != true) return;
@@ -872,9 +882,9 @@ class _CourseLectureListView extends ConsumerWidget {
     if (state.hasError && context.mounted) {
       await showCustomDialog(
         context: context,
-        title: 'Could not recreate topic map',
+        title: l10n.coursePageRecreateErrorTitle,
         message: state.error.toString().replaceFirst('Exception: ', ''),
-        confirmLabel: 'OK',
+        confirmLabel: l10n.coursePageOkButton,
         cancelLabel: null,
         icon: Icons.error_outline,
         isDestructive: true,
@@ -943,7 +953,7 @@ Future<void> _handleRefresh(BuildContext context, WidgetRef ref, {String? course
   if (!await isDeviceOnline()) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You're offline. Showing cached data.")),
+        SnackBar(content: Text(AppLocalizations.of(context).coursePageOfflineSnackbar)),
       );
     }
     return;

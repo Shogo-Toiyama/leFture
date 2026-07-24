@@ -17,6 +17,7 @@ import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/infrastructure/repositories/lecture_artifact_repository.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/pages/transcript/transcript_page.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/audio_player_bar.dart';
@@ -99,6 +100,7 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
     final topics = topicsAsync.value ?? const <LectureTopic>[];
@@ -148,7 +150,7 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
         ),
         child: Center(
           child: Text(
-            'Error: $err',
+            l10n.announcementTranscriptModalErrorPrefix(err.toString()),
             style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
@@ -162,7 +164,9 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
             ),
-            child: const Center(child: Text('Lecture not found')),
+            child: Center(
+              child: Text(l10n.announcementTranscriptModalLectureNotFound),
+            ),
           );
         }
 
@@ -747,8 +751,9 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
 
         final isPlaying = playerState.value == PlayerState.playing;
 
-        final displayTitle =
-            lecture.title ?? lecture.titleGenerated ?? 'Lecture';
+        final displayTitle = lecture.title ??
+            lecture.titleGenerated ??
+            l10n.announcementTranscriptModalLectureFallbackTitle;
         final displayDate =
             lecture.lectureDatetime.toIso8601String().split('T').first;
 
@@ -817,8 +822,8 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                               : AppColors.paper.textPencil,
                         ),
                         tooltip: isAutoModeEnabled.value
-                            ? 'Auto-scroll Mode (5s Resume)'
-                            : 'Auto-scroll Disabled (OFF)',
+                            ? l10n.announcementTranscriptModalAutoScrollOnTooltip
+                            : l10n.announcementTranscriptModalAutoScrollOffTooltip,
                         onPressed: () {
                           isAutoModeEnabled.value = !isAutoModeEnabled.value;
                           if (isAutoModeEnabled.value) {
@@ -850,8 +855,10 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                   error: (err, _) => Center(
                     child: Text(
                       err is ArtifactOfflineException
-                          ? "You're offline. Transcript will load once you're back online."
-                          : 'Transcript unavailable: $err',
+                          ? l10n.announcementTranscriptModalOfflineMessage
+                          : l10n.announcementTranscriptModalUnavailableError(
+                              err.toString(),
+                            ),
                       style: TextStyle(color: AppColors.paper.textPencil),
                     ),
                   ),
@@ -859,7 +866,7 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                     if (sentencesData == null || sentencesData.isEmpty) {
                       return Center(
                         child: Text(
-                          'Transcript is being generated…',
+                          l10n.announcementTranscriptModalGeneratingMessage,
                           style: TextStyle(
                             color: AppColors.paper.textPencil,
                             fontSize: 15,
@@ -939,7 +946,9 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
-                                      'Topic ${item.topic.index}',
+                                      l10n.announcementTranscriptModalTopicLabel(
+                                        item.topic.index,
+                                      ),
                                       style: TextStyle(
                                         color: item.color,
                                         fontSize: 12,
@@ -1172,7 +1181,7 @@ class AnnouncementTranscriptModal extends HookConsumerWidget {
                   isLoading: r2FileAsync.isLoading,
                   errorMessage: r2FileAsync.hasError
                       ? (r2FileAsync.error is ArtifactOfflineException
-                          ? "You're offline"
+                          ? l10n.announcementTranscriptModalOfflineErrorShort
                           : r2FileAsync.error.toString())
                       : null,
                   topics: topics,

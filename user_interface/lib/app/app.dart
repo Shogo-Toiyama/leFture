@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/router.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
+import 'package:lecture_companion_ui/application/profile/display_language_controller.dart';
 import 'package:lecture_companion_ui/application/sync/app_lifecycle_sync_watcher.dart';
 import 'package:lecture_companion_ui/presentation/pages/dev_tools/dev_log_overlay.dart';
 import 'package:lecture_companion_ui/presentation/pages/dev_tools/test_mode_flag.dart';
@@ -16,6 +18,7 @@ class MyApp extends ConsumerWidget {
     ref.watch(appLifecycleSyncWatcherProvider);
 
     final router = ref.watch(routerProvider);
+    final displayLanguageCode = ref.watch(displayLanguageControllerProvider);
 
     return MaterialApp.router(
       title: 'leFture',
@@ -23,6 +26,9 @@ class MyApp extends ConsumerWidget {
       themeMode: ThemeMode.dark,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      locale: Locale(displayLanguageCode),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       // builder内はDirectionality/Localizations等が既に確立された後なので、
       // DevLogOverlayのStackをここでラップする(MaterialAppの外側で
       // ラップするとDirectionalityが無くエラーになる)。

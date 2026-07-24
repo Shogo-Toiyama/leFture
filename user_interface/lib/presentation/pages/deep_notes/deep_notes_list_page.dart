@@ -13,6 +13,7 @@ import 'package:lecture_companion_ui/domain/entities/deep_note.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 
 // ---------------------------------------------------------------------------
@@ -52,6 +53,7 @@ class DeepNotesListPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
     final courseId = lecture?.courseId ?? 'N/A';
@@ -86,9 +88,9 @@ class DeepNotesListPage extends HookConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const CustomAppBar(
+            CustomAppBar(
               showHomeButton: true,
-              title: 'Deep Notes',
+              title: l10n.deepNotesListTitle,
               isLightBg: true,
             ),
             Expanded(
@@ -120,7 +122,7 @@ class DeepNotesListPage extends HookConsumerWidget {
                 size: 64, color: AppColors.paper.textPencil),
             const SizedBox(height: 16),
             Text(
-              'Deep notes are being generated…',
+              AppLocalizations.of(context).deepNotesListGeneratingMessage,
               style:
                   TextStyle(color: AppColors.paper.textPencil, fontSize: 16),
             ),

@@ -5,12 +5,13 @@ import 'package:intl/intl.dart';
 String? formatDatetimeParameters(
   Map<String, dynamic>? params, {
   required DateTime anchor,
+  String? locale,
 }) {
-  if (params == null) return null;
+  if (params == null || params.isEmpty) return null;
 
-  final timeType = params['time_type'] as String?;
   final extractedDate = params['extracted_date'] as Map<String, dynamic>?;
   final extractedTime = params['extracted_time'] as Map<String, dynamic>?;
+  final timeType = params['time_type'] as String?;
   final rawTimeText = params['raw_time_text'] as String?;
 
   if (timeType == 'recurring') {
@@ -21,8 +22,8 @@ String? formatDatetimeParameters(
       ? null
       : _resolveDate(extractedDate, anchor: anchor, rawTimeText: rawTimeText);
 
-  final dateStr = date == null ? null : DateFormat('EEE, MMM d').format(date);
-  final timeStr = _formatTimeRange(extractedTime, timeType);
+  final dateStr = date == null ? null : DateFormat.MMMEd(locale).format(date);
+  final timeStr = _formatTimeRange(extractedTime, timeType, locale);
 
   if (dateStr == null && timeStr == null) return rawTimeText;
 
@@ -93,17 +94,17 @@ int? _weekdayFromName(String? name) {
   return idx == -1 ? null : idx + 1; // DateTime.weekday: Monday=1..Sunday=7
 }
 
-String? _formatTimeRange(Map<String, dynamic>? extractedTime, String? timeType) {
+String? _formatTimeRange(Map<String, dynamic>? extractedTime, String? timeType, [String? locale]) {
   if (extractedTime == null) return null;
-  final start = _formatClock(extractedTime['start_24h'] as String?);
-  final end = _formatClock(extractedTime['end_24h'] as String?);
+  final start = _formatClock(extractedTime['start_24h'] as String?, locale);
+  final end = _formatClock(extractedTime['end_24h'] as String?, locale);
 
   if (start != null && end != null) return '$start – $end';
   if (timeType == 'deadline') return end;
   return start ?? end;
 }
 
-String? _formatClock(String? hhmmss) {
+String? _formatClock(String? hhmmss, [String? locale]) {
   if (hhmmss == null) return null;
   final parts = hhmmss.split(':');
   if (parts.length < 2) return null;
@@ -111,7 +112,7 @@ String? _formatClock(String? hhmmss) {
   final minute = int.tryParse(parts[1]);
   if (hour == null || minute == null) return null;
   final dummy = DateTime(2000, 1, 1, hour, minute);
-  return DateFormat('h:mm a').format(dummy);
+  return DateFormat.jm(locale).format(dummy);
 }
 
 String? _formatRecurring(Map<String, dynamic>? rule) {

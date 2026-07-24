@@ -17,6 +17,7 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announ
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/keyword_repository_drift.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/pages/deep_notes/deep_notes_list_page.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
@@ -28,23 +29,24 @@ class ActivityRecordsPage extends HookConsumerWidget {
 
   final ActivityType type;
 
-  String get _pageTitle {
+  String _pageTitle(AppLocalizations l10n) {
     switch (type) {
       case ActivityType.saved:
-        return 'Saved';
+        return l10n.activityRecordsTitleSaved;
       case ActivityType.likes:
-        return 'Likes';
+        return l10n.activityRecordsTitleLikes;
       case ActivityType.dislikes:
-        return 'Dislikes';
+        return l10n.activityRecordsTitleDislikes;
       case ActivityType.announcements:
-        return 'Announcements';
+        return l10n.activityRecordsTitleAnnouncements;
       case ActivityType.trash:
-        return 'Trash';
+        return l10n.activityRecordsTitleTrash;
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final recordsAsync = ref.watch(activityRecordsProvider(type));
     final selectedFilter = useState('all');
 
@@ -114,35 +116,35 @@ class ActivityRecordsPage extends HookConsumerWidget {
     final List<Map<String, String>> filters;
     switch (type) {
       case ActivityType.saved:
-        filters = const [
-          {'label': 'All', 'value': 'all'},
-          {'label': 'Review Cards', 'value': 'reviewCard'},
-          {'label': 'Deep Notes', 'value': 'deepNote'},
-          {'label': 'Keywords', 'value': 'keyword'},
+        filters = [
+          {'label': l10n.activityRecordsFilterAll, 'value': 'all'},
+          {'label': l10n.activityRecordsFilterReviewCards, 'value': 'reviewCard'},
+          {'label': l10n.activityRecordsFilterDeepNotes, 'value': 'deepNote'},
+          {'label': l10n.activityRecordsFilterKeywords, 'value': 'keyword'},
         ];
         break;
       case ActivityType.likes:
       case ActivityType.dislikes:
-        filters = const [
-          {'label': 'All', 'value': 'all'},
-          {'label': 'Review Cards', 'value': 'reviewCard'},
-          {'label': 'Deep Notes', 'value': 'deepNote'},
-          {'label': 'Fun Facts', 'value': 'funFact'},
+        filters = [
+          {'label': l10n.activityRecordsFilterAll, 'value': 'all'},
+          {'label': l10n.activityRecordsFilterReviewCards, 'value': 'reviewCard'},
+          {'label': l10n.activityRecordsFilterDeepNotes, 'value': 'deepNote'},
+          {'label': l10n.activityRecordsFilterFunFacts, 'value': 'funFact'},
         ];
         break;
       case ActivityType.announcements:
-        filters = const [
-          {'label': 'All', 'value': 'all'},
-          {'label': 'Active', 'value': 'active'},
-          {'label': 'Completed', 'value': 'completed'},
+        filters = [
+          {'label': l10n.activityRecordsFilterAll, 'value': 'all'},
+          {'label': l10n.activityRecordsFilterActive, 'value': 'active'},
+          {'label': l10n.activityRecordsFilterCompleted, 'value': 'completed'},
         ];
         break;
       case ActivityType.trash:
-        filters = const [
-          {'label': 'All', 'value': 'all'},
-          {'label': 'Courses', 'value': 'course'},
-          {'label': 'Lectures', 'value': 'lecture'},
-          {'label': 'Announcements', 'value': 'announcement'},
+        filters = [
+          {'label': l10n.activityRecordsFilterAll, 'value': 'all'},
+          {'label': l10n.activityRecordsFilterCourses, 'value': 'course'},
+          {'label': l10n.activityRecordsFilterLectures, 'value': 'lecture'},
+          {'label': l10n.activityRecordsTitleAnnouncements, 'value': 'announcement'},
         ];
         break;
     }
@@ -156,7 +158,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
             pinned: true,
             backgroundColor: AppColors.universe.voidBackground,
             title: Text(
-              _pageTitle,
+              _pageTitle(l10n),
               style: const TextStyle(
                 color: Color(0xFFF2F2F2),
                 fontWeight: FontWeight.w600,
@@ -168,7 +170,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.correctionRed),
                   onPressed: () => _confirmEmptyTrash(context, ref),
-                  tooltip: 'Empty Trash',
+                  tooltip: l10n.activityRecordsEmptyTrashLabel,
                 ),
             ],
           ),
@@ -189,14 +191,14 @@ class ActivityRecordsPage extends HookConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.25), width: 1),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.info_outline_rounded, color: AppColors.correctionRed, size: 20),
-                          SizedBox(width: 10),
+                          const Icon(Icons.info_outline_rounded, color: AppColors.correctionRed, size: 20),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Items in Trash will be permanently deleted after 30 days.',
-                              style: TextStyle(
+                              l10n.activityRecordsTrashRetentionBanner,
+                              style: const TextStyle(
                                 color: Color(0xFFF2F2F2),
                                 fontSize: 13,
                               ),
@@ -233,7 +235,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                       }).length;
 
                       return Text(
-                        '$count items found',
+                        l10n.activityRecordsItemsFoundCount(count),
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 13,
@@ -311,11 +313,11 @@ class ActivityRecordsPage extends HookConsumerWidget {
               }).toList();
 
               if (filtered.isEmpty) {
-                return const SliverFillRemaining(
+                return SliverFillRemaining(
                   child: Center(
                     child: Text(
-                      'No items match this filter.',
-                      style: TextStyle(color: Colors.white38, fontSize: 14),
+                      l10n.activityRecordsNoFilterMatch,
+                      style: const TextStyle(color: Colors.white38, fontSize: 14),
                     ),
                   ),
                 );
@@ -345,7 +347,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
             error: (error, stackTrace) => SliverFillRemaining(
               child: Center(
                 child: Text(
-                  'Failed to load records: $error',
+                  l10n.activityRecordsLoadFailed(error.toString()),
                   style: const TextStyle(color: Colors.redAccent),
                 ),
               ),
@@ -464,25 +466,26 @@ class ActivityRecordsPage extends HookConsumerWidget {
     ActivityRecord record,
     ValueNotifier<Set<String>> removedRecordIds,
   ) {
+    final l10n = AppLocalizations.of(context);
     final IconData icon;
     final String typeLabel;
 
     switch (record.type) {
       case ActivityRecordType.course:
         icon = Icons.school_rounded;
-        typeLabel = 'Course';
+        typeLabel = l10n.activityRecordsTypeLabelCourse;
         break;
       case ActivityRecordType.lecture:
         icon = Icons.mic_rounded;
-        typeLabel = 'Lecture';
+        typeLabel = l10n.activityRecordsTypeLabelLecture;
         break;
       case ActivityRecordType.announcement:
         icon = Icons.campaign_rounded;
-        typeLabel = 'Announcement';
+        typeLabel = l10n.activityRecordsTypeLabelAnnouncement;
         break;
       default:
         icon = Icons.delete_rounded;
-        typeLabel = 'Item';
+        typeLabel = l10n.activityRecordsTypeLabelItem;
     }
 
     return Container(
@@ -523,7 +526,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Deleted on ${DateFormat('MMM d, yyyy').format(record.dateTime)} · $typeLabel',
+                  l10n.activityRecordsDeletedOnLabel(DateFormat.yMMMd(l10n.localeName).format(record.dateTime), typeLabel),
                   style: TextStyle(
                     color: AppColors.universe.textComet,
                     fontSize: 12,
@@ -594,13 +597,14 @@ class ActivityRecordsPage extends HookConsumerWidget {
   }
 
   Future<void> _restoreTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record, ValueNotifier<Set<String>> removedRecordIds) async {
+    final l10n = AppLocalizations.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       await TrashController.restoreItem(ref, record);
       removedRecordIds.value = {...removedRecordIds.value, record.id};
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
-          content: Text('Item restored successfully.'),
+        SnackBar(
+          content: Text(l10n.activityRecordsRestoredSnackbar),
           backgroundColor: AppColors.growthGreen,
         ),
       );
@@ -612,23 +616,24 @@ class ActivityRecordsPage extends HookConsumerWidget {
   }
 
   void _confirmDeleteSingleTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record, ValueNotifier<Set<String>> removedRecordIds) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.universe.voidBackground,
           title: Text(
-            'Delete ${record.title}?',
+            l10n.activityRecordsDeleteItemDialogTitle(record.title),
             style: const TextStyle(color: Color(0xFFF2F2F2)),
           ),
-          content: const Text(
-            'This item will be permanently deleted from both the local database and the cloud. This action cannot be undone.',
-            style: TextStyle(color: Colors.white70),
+          content: Text(
+            l10n.activityRecordsDeleteItemDialogMessage,
+            style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: Text(l10n.activityRecordsCancelButton, style: const TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () async {
@@ -642,8 +647,8 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   await TrashController.deleteSingleItem(ref, record);
                   removedRecordIds.value = {...removedRecordIds.value, record.id};
                   scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Item permanently deleted.'),
+                    SnackBar(
+                      content: Text(l10n.activityRecordsItemDeletedSnackbar),
                       backgroundColor: AppColors.growthGreen,
                     ),
                   );
@@ -653,7 +658,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   }
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: AppColors.correctionRed)),
+              child: Text(l10n.activityRecordsDeleteButton, style: const TextStyle(color: AppColors.correctionRed)),
             ),
           ],
         );
@@ -662,23 +667,24 @@ class ActivityRecordsPage extends HookConsumerWidget {
   }
 
   void _confirmEmptyTrash(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.universe.voidBackground,
-          title: const Text(
-            'Empty Trash?',
-            style: TextStyle(color: Color(0xFFF2F2F2)),
+          title: Text(
+            l10n.activityRecordsEmptyTrashDialogTitle,
+            style: const TextStyle(color: Color(0xFFF2F2F2)),
           ),
-          content: const Text(
-            'All soft-deleted lectures, courses, and announcements will be permanently deleted from both the local database and the cloud. This action cannot be undone.',
-            style: TextStyle(color: Colors.white70),
+          content: Text(
+            l10n.activityRecordsEmptyTrashDialogMessage,
+            style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: Text(l10n.activityRecordsCancelButton, style: const TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () async {
@@ -694,9 +700,9 @@ class ActivityRecordsPage extends HookConsumerWidget {
                     SnackBar(
                       content: Text(
                         result.hasFailures
-                            ? '${result.coursesDeleted + result.lecturesDeleted} item(s) deleted, '
-                                '$failedCount failed and remain in trash for retry.'
-                            : 'Trash emptied successfully.',
+                            ? l10n.activityRecordsEmptyTrashPartialFailureSnackbar(
+                                result.coursesDeleted + result.lecturesDeleted, failedCount)
+                            : l10n.activityRecordsEmptyTrashSuccessSnackbar,
                       ),
                       backgroundColor: result.hasFailures ? AppColors.correctionRed : AppColors.growthGreen,
                     ),
@@ -707,7 +713,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   }
                 }
               },
-              child: const Text('Empty Trash', style: TextStyle(color: AppColors.correctionRed)),
+              child: Text(l10n.activityRecordsEmptyTrashLabel, style: const TextStyle(color: AppColors.correctionRed)),
             ),
           ],
         );
@@ -735,6 +741,7 @@ class _ActivityContentCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final IconData icon;
     final String typeLabel;
     final Color badgeColor;
@@ -742,33 +749,33 @@ class _ActivityContentCard extends ConsumerWidget {
     switch (record.type) {
       case ActivityRecordType.reviewCard:
         icon = Icons.bookmark_rounded;
-        typeLabel = 'Review Card';
+        typeLabel = l10n.activityRecordsContentTypeReviewCard;
         badgeColor = AppColors.starGold;
         break;
       case ActivityRecordType.deepNote:
         icon = Icons.article_rounded;
-        typeLabel = 'Deep Note';
+        typeLabel = l10n.activityRecordsContentTypeDeepNote;
         badgeColor = AppColors.starGold;
         break;
       case ActivityRecordType.keyword:
         icon = Icons.style_rounded;
-        typeLabel = 'Keyword';
+        typeLabel = l10n.activityRecordsContentTypeKeyword;
         badgeColor = AppColors.starGold;
         break;
       case ActivityRecordType.funFact:
         icon = Icons.lightbulb_rounded;
-        typeLabel = 'Fun Fact';
+        typeLabel = l10n.activityRecordsContentTypeFunFact;
         badgeColor = AppColors.starGold;
         break;
       default:
         icon = Icons.star_rounded;
-        typeLabel = 'Content';
+        typeLabel = l10n.activityRecordsContentTypeDefault;
         badgeColor = AppColors.starGold;
     }
 
     final undoLabel = switch (activityType) {
-      ActivityType.saved => 'Unsaved • Tap to undo',
-      ActivityType.likes || ActivityType.dislikes => 'Unreacted • Tap to undo',
+      ActivityType.saved => l10n.activityRecordsUndoUnsaved,
+      ActivityType.likes || ActivityType.dislikes => l10n.activityRecordsUndoUnreacted,
       _ => null,
     };
 
@@ -887,7 +894,7 @@ class _ActivityContentCard extends ConsumerWidget {
                     ),
                     const Spacer(),
                     Text(
-                      DateFormat('MMM d, h:mm a').format(record.dateTime),
+                      DateFormat.MMMd(l10n.localeName).add_jm().format(record.dateTime),
                       style: TextStyle(
                         color: AppColors.universe.textComet,
                         fontSize: 11,

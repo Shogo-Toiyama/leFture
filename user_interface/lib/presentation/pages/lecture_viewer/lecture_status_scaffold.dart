@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/application/lecture/lecture_controller.dart
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -21,6 +22,7 @@ class LectureStatusScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
 
     final coursesAsync = ref.watch(courseListProvider);
@@ -71,7 +73,7 @@ class LectureStatusScaffold extends ConsumerWidget {
         ),
         child: uiStateAsync.when(
           loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
-          error: (err, stack) => Center(child: Text('Error: $err')),
+          error: (err, stack) => Center(child: Text(l10n.statusScaffoldErrorPrefix(err.toString()))),
           data: (uiState) {
             switch (uiState) {
               case LectureUIState.loading:
@@ -90,10 +92,10 @@ class LectureStatusScaffold extends ConsumerWidget {
                 return NotStartedView(lecture: lecture);
 
               case LectureUIState.syncing:
-                return const StatusView(
+                return StatusView(
                   icon: Icons.cloud_upload_outlined,
-                  title: 'Syncing Audio...',
-                  message: 'Please wait for the upload to complete.',
+                  title: l10n.statusScaffoldSyncingTitle,
+                  message: l10n.statusScaffoldSyncingMessage,
                 );
 
             }

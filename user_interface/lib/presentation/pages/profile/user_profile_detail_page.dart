@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/profile/user_profile_provider.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profile_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
@@ -9,6 +10,7 @@ class UserProfileDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final profileAsync = ref.watch(currentUserProfileProvider);
     final profile = profileAsync.asData?.value;
     return Scaffold(
@@ -20,9 +22,9 @@ class UserProfileDetailPage extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFFF2F2F2), size: 18),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Profile',
-          style: TextStyle(
+        title: Text(
+          l10n.userProfileDetailTitle,
+          style: const TextStyle(
             color: Color(0xFFF2F2F2),
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -31,7 +33,7 @@ class UserProfileDetailPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: AppColors.starGold, size: 20),
-            tooltip: 'Edit Profile',
+            tooltip: l10n.userProfileDetailEditTooltip,
             onPressed: () {
               showModalBottomSheet<void>(
                 context: context,
@@ -60,23 +62,23 @@ class UserProfileDetailPage extends ConsumerWidget {
                 children: [
                   _ProfileDetailItem(
                     icon: Icons.person_outline_rounded,
-                    label: 'ABOUT YOU',
+                    label: l10n.myAccountAboutYouLabel,
                     content: profile?.bio,
-                    placeholder: 'No description set yet.',
+                    placeholder: l10n.myAccountAboutYouPlaceholder,
                   ),
                   const Divider(color: Colors.white12, height: 1),
                   _ProfileDetailItem(
                     icon: Icons.auto_awesome_outlined,
-                    label: 'INTERESTS',
+                    label: l10n.myAccountInterestsLabel,
                     content: profile?.interests,
-                    placeholder: 'No interests set yet.',
+                    placeholder: l10n.myAccountInterestsPlaceholder,
                   ),
                   const Divider(color: Colors.white12, height: 1),
                   _ProfileDetailItem(
                     icon: Icons.flag_outlined,
-                    label: 'FUTURE DREAMS',
+                    label: l10n.myAccountFutureDreamsLabel,
                     content: profile?.futureGoals,
-                    placeholder: 'No future dream set yet.',
+                    placeholder: l10n.myAccountFutureDreamsPlaceholder,
                   ),
                 ],
               ),

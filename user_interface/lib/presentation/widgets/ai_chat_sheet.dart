@@ -10,6 +10,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// 講義に関するAIチャットのボトムシートを開く。
 Future<void> showAiChatSheet(BuildContext context) {
@@ -75,6 +76,7 @@ class _AiChatSheet extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final messages = useState<List<_ChatMessage>>(_fakeConversation);
     final inputCtl = useTextEditingController();
     final heightFraction = useState<double>(_initialHeightFraction);
@@ -89,9 +91,9 @@ class _AiChatSheet extends HookWidget {
       Future.delayed(const Duration(milliseconds: 500), () {
         messages.value = [
           ...messages.value,
-          const _ChatMessage(
+          _ChatMessage(
             isUser: false,
-            text: "This is a UI preview — real AI answers aren't wired up yet.",
+            text: l10n.aiChatSheetPreviewFallback,
           ),
         ];
       });
@@ -160,7 +162,7 @@ class _AiChatSheet extends HookWidget {
                       Icon(Icons.auto_awesome, size: 18, color: AppColors.starGold),
                       const SizedBox(width: 8),
                       Text(
-                        'Ask AI',
+                        l10n.aiChatSheetTitle,
                         style: TextStyle(
                           color: AppColors.universe.textStarlight,
                           fontSize: 16,
@@ -198,7 +200,7 @@ class _AiChatSheet extends HookWidget {
                     controller: inputCtl,
                     style: TextStyle(color: AppColors.universe.textStarlight),
                     decoration: InputDecoration(
-                      hintText: 'Ask about this lecture...',
+                      hintText: l10n.aiChatSheetInputHint,
                       hintStyle: TextStyle(color: AppColors.universe.textComet),
                       filled: true,
                       fillColor: AppColors.universe.glassWhiteLow,

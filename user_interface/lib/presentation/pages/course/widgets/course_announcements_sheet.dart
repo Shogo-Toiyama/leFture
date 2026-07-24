@@ -7,6 +7,7 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announ
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// コース内の全レクチャーを横断した、未完了のアナウンスメント一覧ボトムシート。
 class CourseAnnouncementsSheet extends ConsumerWidget {
@@ -16,6 +17,7 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final announcementsAsync = ref.watch(activeAnnouncementsForCourseProvider(courseId));
 
     return DraggableScrollableSheet(
@@ -46,7 +48,7 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
                 child: Row(
                   children: [
                     Text(
-                      'Announcements',
+                      l10n.lectureViewerAnnouncementsSheetTitle,
                       style: TextStyle(
                         color: AppColors.universe.textStarlight,
                         fontSize: 20,
@@ -62,13 +64,13 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
                     child: CircularProgressIndicator(color: AppColors.starGold),
                   ),
                   error: (e, _) => Center(
-                    child: Text('Error: $e', style: const TextStyle(color: AppColors.correctionRed)),
+                    child: Text(l10n.courseAnnouncementsSheetLoadError(e.toString()), style: const TextStyle(color: AppColors.correctionRed)),
                   ),
                   data: (announcements) {
                     if (announcements.isEmpty) {
                       return Center(
                         child: Text(
-                          'No announcements yet',
+                          l10n.courseNoAnnouncementsLabel,
                           style: TextStyle(color: AppColors.universe.textComet),
                         ),
                       );

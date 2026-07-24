@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lecture_companion_ui/domain/entities/app_transmission.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// 宇宙船の窓（ポータル）モチーフのお知らせアイテムモデル
 class SpaceshipAnnouncementItem {
@@ -485,6 +486,7 @@ class _SpaceshipAnnouncementDialogState extends State<SpaceshipAnnouncementDialo
 
   /// フッター（アクションボタン）
   Widget _buildFooter(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentItem = widget.items[_currentPage];
 
     return SizedBox(
@@ -509,7 +511,7 @@ class _SpaceshipAnnouncementDialogState extends State<SpaceshipAnnouncementDialo
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              currentItem.actionLabel ?? 'Got It',
+              currentItem.actionLabel ?? l10n.spaceshipAnnouncementGotIt,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,

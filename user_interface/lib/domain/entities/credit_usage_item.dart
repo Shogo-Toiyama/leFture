@@ -23,7 +23,7 @@ class CreditUsageItem {
   final String reasonSummary;
 
   /// スマホ端末の現地時間に合わせた日付ラベル (例: "Today", "Yesterday", "Jul 23")
-  String get localDateLabel {
+  String localDateLabel([String? locale]) {
     final localDt = timestamp.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -35,14 +35,14 @@ class CreditUsageItem {
     } else if (differenceInDays == 1) {
       return 'Yesterday';
     } else {
-      return DateFormat.MMMd().format(localDt);
+      return DateFormat.MMMd(locale).format(localDt);
     }
   }
 
   /// スマホ端末の現地時間に合わせた時間ラベル (例: "1 PM", "8 PM", "11 AM")
-  String get localTimeLabel {
+  String localTimeLabel([String? locale]) {
     final localDt = timestamp.toLocal();
-    return DateFormat('h a').format(localDt);
+    return DateFormat.j(locale).format(localDt);
   }
 
   factory CreditUsageItem.fromJson(Map<String, dynamic> json) {

@@ -12,6 +12,7 @@ import 'package:lecture_companion_ui/application/credit/credit_providers.dart';
 import 'package:lecture_companion_ui/domain/entities/credit_summary.dart';
 import 'package:lecture_companion_ui/domain/entities/credit_usage_item.dart';
 import 'package:lecture_companion_ui/domain/entities/plan_option.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 /// クレジット残量の内訳を見せる詳細ページ。MyAccountPage上部のクレジット
@@ -28,6 +29,7 @@ class CreditDetailPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final summaryAsync = ref.watch(creditSummaryProvider);
 
     useEffect(() {
@@ -55,14 +57,14 @@ class CreditDetailPage extends HookConsumerWidget {
             pinned: false,
             floating: true,
             backgroundColor: AppColors.universe.voidBackground,
-            title: const Text(
-              'Credits',
-              style: TextStyle(color: Color(0xFFF2F2F2), fontWeight: FontWeight.w600, fontSize: 20),
+            title: Text(
+              l10n.creditDetailTitle,
+              style: const TextStyle(color: Color(0xFFF2F2F2), fontWeight: FontWeight.w600, fontSize: 20),
             ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.refresh_rounded, color: Color(0xFFF2F2F2)),
-                tooltip: 'Refresh',
+                tooltip: l10n.creditDetailRefreshTooltip,
                 onPressed: () {
                   ref.invalidate(creditSummaryProvider);
                   ref.invalidate(creditUsageHistoryProvider);
@@ -84,14 +86,14 @@ class CreditDetailPage extends HookConsumerWidget {
                     const Icon(Icons.wifi_off_rounded, color: Colors.white38, size: 40),
                     const SizedBox(height: 12),
                     Text(
-                      'Could not load credit info. Check your connection and try again.',
+                      l10n.creditDetailLoadErrorMessage,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
                       onPressed: () => ref.invalidate(creditSummaryProvider),
-                      child: const Text('Retry'),
+                      child: Text(l10n.creditDetailRetryButton),
                     ),
                   ],
                 ),
@@ -140,14 +142,15 @@ class _CurrentPlanCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final plansAsync = ref.watch(claimablePlansProvider);
     final activePlan = plansAsync.asData?.value.firstOrNull;
 
-    final planTitle = activePlan?.name ?? 'Active Plan';
+    final planTitle = activePlan?.name ?? l10n.creditDetailActivePlanFallback;
     final creditsCount = summary.monthlyAllocationDisplay ?? activePlan?.monthlyCreditAmountDisplay;
     final creditsSubtitle = creditsCount != null
-        ? '$creditsCount credits / month'
-        : 'Enjoy full access to your lecture companion features.';
+        ? l10n.creditDetailCreditsPerMonth(creditsCount)
+        : l10n.creditDetailFullAccessSubtitle;
 
     return _GlassCard(
       child: Padding(
@@ -158,9 +161,9 @@ class _CurrentPlanCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Current Plan',
-                  style: TextStyle(
+                Text(
+                  l10n.creditDetailCurrentPlanTitle,
+                  style: const TextStyle(
                     color: Color(0xFFF2F2F2),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -173,9 +176,9 @@ class _CurrentPlanCard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(100),
                     border: Border.all(color: AppColors.starGold.withValues(alpha: 0.4)),
                   ),
-                  child: const Text(
-                    'ACTIVE',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.creditDetailActiveBadge,
+                    style: const TextStyle(
                       color: AppColors.starGold,
                       fontSize: 10.5,
                       fontWeight: FontWeight.bold,
@@ -239,6 +242,7 @@ class _MonthlyCreditCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (!summary.hasActivePlan) {
       return const _PlanPickerSection();
     }
@@ -252,7 +256,7 @@ class _MonthlyCreditCard extends StatelessWidget {
         : const [Color(0xFFFFB300), Color(0xFFFF8F00)];
 
     final resetLabel = summary.currentPeriodEnd != null
-        ? 'Resets on ${DateFormat.yMMMd().format(summary.currentPeriodEnd!.toLocal())}'
+        ? l10n.creditDetailResetsOn(DateFormat.yMMMd(l10n.localeName).format(summary.currentPeriodEnd!.toLocal()))
         : null;
 
     return _GlassCard(
@@ -264,9 +268,9 @@ class _MonthlyCreditCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Monthly Credits',
-                  style: TextStyle(color: Color(0xFFF2F2F2), fontSize: 15, fontWeight: FontWeight.w600),
+                Text(
+                  l10n.creditDetailMonthlyCreditsTitle,
+                  style: const TextStyle(color: Color(0xFFF2F2F2), fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 RichText(
                   text: TextSpan(children: [
@@ -332,6 +336,7 @@ class _PlanPickerSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final plansAsync = ref.watch(claimablePlansProvider);
     final claimingPlanId = useState<String?>(null);
 
@@ -343,7 +348,7 @@ class _PlanPickerSection extends HookConsumerWidget {
         ref.invalidate(claimablePlansProvider);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${plan.name} activated!')),
+            SnackBar(content: Text(l10n.creditDetailPlanActivatedSnackbar(plan.name))),
           );
         }
       } catch (e) {
@@ -351,12 +356,12 @@ class _PlanPickerSection extends HookConsumerWidget {
           showDialog<void>(
             context: context,
             builder: (_) => AlertDialog(
-              title: const Text('Could not activate plan'),
+              title: Text(l10n.creditDetailActivateErrorTitle),
               content: Text('$e'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
+                  child: Text(l10n.creditDetailOkButton),
                 ),
               ],
             ),
@@ -376,13 +381,13 @@ class _PlanPickerSection extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'No active plan',
-                  style: TextStyle(color: Color(0xFFF2F2F2), fontSize: 16, fontWeight: FontWeight.w700),
+                Text(
+                  l10n.creditDetailNoActivePlanTitle,
+                  style: const TextStyle(color: Color(0xFFF2F2F2), fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Choose a plan below to start generating lecture materials.',
+                  l10n.creditDetailNoActivePlanSubtitle,
                   style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                 ),
               ],
@@ -398,7 +403,7 @@ class _PlanPickerSection extends HookConsumerWidget {
           error: (err, _) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Text(
-              'Could not load plans. Pull to refresh and try again.',
+              l10n.creditDetailPlansLoadError,
               style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
             ),
           ),
@@ -407,10 +412,9 @@ class _PlanPickerSection extends HookConsumerWidget {
               for (final plan in plans) ...[
                 _PlanTile(
                   title: plan.name,
-                  subtitle: '${plan.monthlyCreditAmountDisplay} credits'
-                      '${plan.billingIntervalMonths > 1 ? ' / ${plan.billingIntervalMonths} months' : ' / month'}',
+                  subtitle: l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),
                   priceLabel: (plan.priceUsd == null || plan.priceUsd == 0)
-                      ? 'Free'
+                      ? l10n.creditDetailPriceFree
                       : '\$${plan.priceUsd!.toStringAsFixed(2)}',
                   enabled: true,
                   isLoading: claimingPlanId.value == plan.id,
@@ -561,6 +565,7 @@ class _PlanTile extends StatelessWidget {
 class _HistorySection extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final historyAsync = ref.watch(creditUsageHistoryProvider);
     final isExpanded = useState<bool>(false);
 
@@ -573,16 +578,16 @@ class _HistorySection extends HookConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Usage History',
-                  style: TextStyle(
+                Text(
+                  l10n.creditDetailUsageHistoryTitle,
+                  style: const TextStyle(
                     color: Color(0xFFF2F2F2),
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'Hourly summary',
+                  l10n.creditDetailHourlySummaryLabel,
                   style: TextStyle(
                     color: AppColors.universe.textComet,
                     fontSize: 12,
@@ -607,7 +612,7 @@ class _HistorySection extends HookConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Could not load usage history.',
+                        l10n.creditDetailUsageHistoryLoadError,
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 13,
@@ -619,7 +624,7 @@ class _HistorySection extends HookConsumerWidget {
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.starGold,
                       ),
-                      child: const Text('Retry'),
+                      child: Text(l10n.creditDetailRetryButton),
                     ),
                   ],
                 ),
@@ -629,7 +634,7 @@ class _HistorySection extends HookConsumerWidget {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
-                      'No recent usage activity recorded.',
+                      l10n.creditDetailNoUsageActivity,
                       style: TextStyle(
                         color: AppColors.universe.textComet,
                         fontSize: 13,
@@ -662,7 +667,7 @@ class _HistorySection extends HookConsumerWidget {
                           ),
                           icon: const Icon(Icons.expand_more_rounded, size: 18),
                           label: Text(
-                            'View More (${items.length - 10} more)',
+                            l10n.creditDetailViewMoreButton(items.length - 10),
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -688,6 +693,7 @@ class _HistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isPos = item.isPositive;
     final color = isPos ? const Color(0xFF4CAF50) : const Color(0xFFE2E2EC);
     final icon = isPos ? Icons.add_circle_outline_rounded : Icons.bolt_rounded;
@@ -710,7 +716,7 @@ class _HistoryTile extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    item.localTimeLabel,
+                    item.localTimeLabel(l10n.localeName),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -719,7 +725,7 @@ class _HistoryTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '(${item.localDateLabel})',
+                    '(${item.localDateLabel(l10n.localeName)})',
                     style: TextStyle(
                       color: AppColors.universe.textComet,
                       fontSize: 12,
@@ -742,7 +748,7 @@ class _HistoryTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          '${item.formattedDelta} credits',
+          l10n.creditDetailCreditsSuffix(item.formattedDelta),
           style: TextStyle(
             color: color,
             fontSize: 14,

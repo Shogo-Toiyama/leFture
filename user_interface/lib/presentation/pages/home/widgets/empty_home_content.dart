@@ -14,6 +14,7 @@ import 'package:lecture_companion_ui/presentation/pages/home/widgets/make_profil
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/galaxy/galaxy_view.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_app_bar.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 // 銀河ウィジェットの高さの、画面縦幅に対する割合。HomePageと同じ比率に揃える。
 const double _kGalaxyHeightRatio = 0.25;
@@ -29,9 +30,10 @@ class EmptyHomeContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final profile = ref.watch(currentUserProfileProvider).asData?.value;
     final displayName = profile?.username?.trim();
-    final greetingName = (displayName != null && displayName.isNotEmpty) ? displayName : 'Explorer';
+    final greetingName = (displayName != null && displayName.isNotEmpty) ? displayName : l10n.emptyHomeDefaultName;
 
     final profileComplete = (profile?.bio?.trim().isNotEmpty ?? false);
     final courses = ref.watch(courseListProvider).asData?.value ?? const [];
@@ -46,7 +48,7 @@ class EmptyHomeContent extends ConsumerWidget {
       if (!await isDeviceOnline()) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("You're offline. Showing cached data.")),
+            SnackBar(content: Text(l10n.homeOfflineSnackBarMessage)),
           );
         }
         return;
@@ -83,7 +85,7 @@ class EmptyHomeContent extends ConsumerWidget {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 32),
                               child: Text(
-                                'Welcome to leFture, $greetingName.',
+                                l10n.emptyHomeWelcomeGreeting(greetingName),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: AppColors.universe.textStarlight,
@@ -95,7 +97,7 @@ class EmptyHomeContent extends ConsumerWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Start building your future.',
+                              l10n.emptyHomeStartBuilding,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: AppColors.starGold,
@@ -168,7 +170,7 @@ class EmptyHomeContent extends ConsumerWidget {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 32),
                               child: Text(
-                                'Every lecture you add lights a new star.\nKeep learning, and this galaxy will grow into one that\'s entirely your own.',
+                                l10n.emptyHomeGalaxyDescription,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: AppColors.universe.textComet,
@@ -185,10 +187,10 @@ class EmptyHomeContent extends ConsumerWidget {
                                 children: [
                                   _OnboardingStepTile(
                                     stepNumber: 1,
-                                    title: 'Make Profile',
+                                    title: l10n.emptyHomeStepMakeProfileTitle,
                                     subtitle: profileComplete
-                                        ? 'Your profile is set'
-                                        : 'Tell leFture a bit about yourself',
+                                        ? l10n.emptyHomeStepMakeProfileDoneSubtitle
+                                        : l10n.emptyHomeStepMakeProfilePendingSubtitle,
                                     icon: Icons.person_outline,
                                     isDone: profileComplete,
                                     isEnabled: true,
@@ -197,12 +199,12 @@ class EmptyHomeContent extends ConsumerWidget {
                                   const SizedBox(height: 12),
                                   _OnboardingStepTile(
                                     stepNumber: 2,
-                                    title: 'Create Course',
+                                    title: l10n.emptyHomeStepCreateCourseTitle,
                                     subtitle: !profileComplete
-                                        ? 'Complete your profile first'
+                                        ? l10n.emptyHomeStepCreateCourseDisabledSubtitle
                                         : hasCourse
-                                            ? 'Course created'
-                                            : 'Add your first course',
+                                            ? l10n.emptyHomeStepCreateCourseDoneSubtitle
+                                            : l10n.emptyHomeStepCreateCoursePendingSubtitle,
                                     icon: Icons.school_outlined,
                                     isDone: hasCourse,
                                     isEnabled: profileComplete,
@@ -211,12 +213,12 @@ class EmptyHomeContent extends ConsumerWidget {
                                   const SizedBox(height: 12),
                                   _OnboardingStepTile(
                                     stepNumber: 3,
-                                    title: 'Record Lecture',
+                                    title: l10n.emptyHomeStepRecordLectureTitle,
                                     subtitle: !hasCourse
-                                        ? 'Create a course first'
+                                        ? l10n.emptyHomeStepRecordLectureDisabledSubtitle
                                         : hasLecture
-                                            ? 'Lecture recorded'
-                                            : 'Record your first lecture',
+                                            ? l10n.emptyHomeStepRecordLectureDoneSubtitle
+                                            : l10n.emptyHomeStepRecordLecturePendingSubtitle,
                                     icon: Icons.mic_none,
                                     isDone: hasLecture,
                                     isEnabled: hasCourse,

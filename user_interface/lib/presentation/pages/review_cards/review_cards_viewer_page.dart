@@ -30,6 +30,7 @@ import 'package:lecture_companion_ui/presentation/widgets/note_sub_toolbar.dart'
 import 'package:lecture_companion_ui/presentation/widgets/announcement_transcript_modal.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_data.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
 // Data classes
@@ -87,6 +88,7 @@ class ReviewCardsViewerPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
     final cardsAsync = ref.watch(reviewCardsProvider(lectureId));
 
@@ -131,7 +133,7 @@ class ReviewCardsViewerPage extends HookConsumerWidget {
         ),
         body: Center(
           child: Text(
-            'No review cards yet',
+            l10n.reviewCardsViewerNoCardsYet,
             style: TextStyle(color: AppColors.paper.textPencil, fontSize: 16),
           ),
         ),
@@ -165,6 +167,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
+    final l10n = AppLocalizations.of(context);
     final lectureAsync = widgetRef.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
 
@@ -540,7 +543,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      tooltip: 'View List',
+                      tooltip: l10n.reviewCardsViewerViewListTooltip,
                     ),
                     Expanded(
                       child: flatItems[index].isCover
@@ -769,9 +772,11 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   );
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Copied to clipboard'),
-                                      duration: Duration(seconds: 2),
+                                    SnackBar(
+                                      content: Text(
+                                        l10n.cardSelectionToolbarCopiedToClipboardMessage,
+                                      ),
+                                      duration: const Duration(seconds: 2),
                                     ),
                                   );
                                 }
@@ -844,7 +849,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${index + 1} / $totalCards',
+                      l10n.reviewCardsViewerPageCounter(
+                        index + 1,
+                        totalCards,
+                      ),
                       style: TextStyle(
                         color: AppColors.paper.textPencil,
                         fontSize: 14,
@@ -1220,7 +1228,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Tap left / right  •  Swipe to change topic',
+                      l10n.reviewCardsViewerNavigationHint,
                       style: TextStyle(
                         color: AppColors.paper.textPencil,
                         fontSize: 12,
@@ -1290,7 +1298,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Review Cards List',
+                          AppLocalizations.of(context).reviewCardsViewerListSheetTitle,
                           style: TextStyle(
                             color: AppColors.paper.textInk,
                             fontSize: 20,

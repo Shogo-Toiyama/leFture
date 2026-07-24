@@ -11,6 +11,7 @@ import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/glowing_rainbow_border.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class FunFactsCarousel extends ConsumerStatefulWidget {
   const FunFactsCarousel({super.key});
@@ -162,13 +163,14 @@ class _FunFactCard extends ConsumerWidget {
       ),
     );
 
+    final l10n = AppLocalizations.of(context);
     final lectureTitle = (lecture.id.isNotEmpty)
         ? (lecture.title?.trim().isNotEmpty == true
             ? lecture.title!
             : (lecture.titleGenerated?.trim().isNotEmpty == true
                 ? lecture.titleGenerated!
-                : 'Untitled Lecture'))
-        : 'Unknown Lecture';
+                : l10n.funFactsUntitledLecture))
+        : l10n.funFactsUnknownLecture;
 
     return GestureDetector(
       // FunFactの元になった講義のビューワーへ飛ぶ (講義が特定できない場合はコース一覧へ)
@@ -312,7 +314,11 @@ class _ReactionButton extends ConsumerWidget {
         } catch (e) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update reaction: $e')),
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context).funFactsUpdateReactionFailed(e.toString()),
+              ),
+            ),
           );
         }
       },
@@ -327,6 +333,7 @@ class _DefaultFunFactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () => context.push(AppRoutes.coursesRootPath),
       child: Padding(
@@ -351,7 +358,7 @@ class _DefaultFunFactCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Text(
-                    'We are made of star-stuff',
+                    l10n.funFactsDefaultCardTitle,
                     style: TextStyle(
                       color: AppColors.starGold,
                       fontSize: 13,
@@ -368,7 +375,7 @@ class _DefaultFunFactCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Center(
                       child: Text(
-                        'You are made of star-stuff ✨ The carbon, oxygen, and iron in your body were forged in exploding stars billions of years ago. The history of the cosmos lives inside you.',
+                        l10n.funFactsDefaultCardBody,
                         style: TextStyle(
                           color: AppColors.universe.textStarlight,
                           fontSize: 13,
@@ -392,7 +399,7 @@ class _DefaultFunFactCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Cosmic Origin · Carl Sagan',
+                          l10n.funFactsDefaultCardFooter,
                           style: TextStyle(
                             color: AppColors.universe.textComet,
                             fontSize: 11,

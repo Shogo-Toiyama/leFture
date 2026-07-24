@@ -5,6 +5,7 @@ import 'package:lecture_companion_ui/core/utils/moment_display_utils.dart';
 import 'package:lecture_companion_ui/core/utils/topic_color_utils.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_moment.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture_topic.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 class TopicProgressRange {
@@ -89,6 +90,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasTopics = widget.topics != null && widget.topics!.isNotEmpty;
     final currentTopic = widget.currentTopic;
 
@@ -138,7 +140,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Topic Index',
+                            l10n.audioPlayerBarTopicIndexTitle,
                             style: TextStyle(
                               color: AppColors.paper.textInk,
                               fontSize: 12.5,
@@ -214,7 +216,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    'Topic ${topic.index}',
+                                    l10n.audioPlayerBarTopicLabel(topic.index),
                                     style: TextStyle(
                                       color: isSelected
                                           ? topicColor
@@ -296,7 +298,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          'Topic ${currentTopic.index}',
+                          l10n.audioPlayerBarTopicLabel(currentTopic.index),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10.5,
@@ -343,6 +345,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
   }
 
   Widget _buildPlayerContent(BuildContext context, bool hasTopics) {
+    final l10n = AppLocalizations.of(context);
+
     if (widget.isLoading) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -359,7 +363,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
             ),
             const SizedBox(width: 12),
             Text(
-              'Downloading audio from storage…',
+              l10n.audioPlayerBarDownloadingMessage,
               style: TextStyle(
                 color: AppColors.paper.textPencil,
                 fontSize: 13,
@@ -375,7 +379,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'Failed to load audio: ${widget.errorMessage}',
+            l10n.audioPlayerBarLoadErrorMessage(widget.errorMessage!),
             style: TextStyle(color: AppColors.paper.textPencil, fontSize: 13),
           ),
         ),
@@ -387,7 +391,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'Preparing audio player…',
+            l10n.audioPlayerBarPreparingMessage,
             style: TextStyle(
               color: AppColors.paper.textPencil,
               fontSize: 13,
@@ -471,7 +475,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     size: 26,
                   ),
                   onPressed: widget.onPreviousTopic,
-                  tooltip: 'Previous Topic / Restart Topic',
+                  tooltip: l10n.audioPlayerBarPreviousTopicTooltip,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
@@ -483,7 +487,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     size: 25,
                   ),
                   onPressed: widget.onRewind10,
-                  tooltip: 'Rewind 10s',
+                  tooltip: l10n.audioPlayerBarRewindTooltip,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
@@ -519,7 +523,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     size: 25,
                   ),
                   onPressed: widget.onForward10,
-                  tooltip: 'Forward 10s',
+                  tooltip: l10n.audioPlayerBarForwardTooltip,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
@@ -531,7 +535,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                     size: 26,
                   ),
                   onPressed: widget.onNextTopic,
-                  tooltip: 'Next Topic',
+                  tooltip: l10n.audioPlayerBarNextTopicTooltip,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
@@ -555,7 +559,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
                           _isMenuExpanded = !_isMenuExpanded;
                         });
                       },
-                      tooltip: 'Topic Index Menu',
+                      tooltip: l10n.audioPlayerBarTopicIndexMenuTooltip,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 44, minHeight: 36),
                     )

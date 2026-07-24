@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// コースの詳細情報 (コード/教授/学校/科目/年度・学期/概要) を一覧表示するボトムシート。
 class CourseDetailsSheet extends StatelessWidget {
@@ -9,28 +10,27 @@ class CourseDetailsSheet extends StatelessWidget {
 
   final Course course;
 
-  static final _dateFmt = DateFormat('MMM d, yyyy');
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rows = <(IconData, String, String)>[
       if (course.courseCode?.trim().isNotEmpty == true)
-        (Icons.tag, 'Course Code', course.courseCode!.trim()),
+        (Icons.tag, l10n.courseCreateSheetCodeLabel, course.courseCode!.trim()),
       if (course.professor != null)
-        (Icons.person_outline, 'Professor', course.professor!.attributeName),
+        (Icons.person_outline, l10n.courseCreateSheetProfessorLabel, course.professor!.attributeName),
       if (course.school != null)
-        (Icons.account_balance_outlined, 'School', course.school!.attributeName),
+        (Icons.account_balance_outlined, l10n.courseCreateSheetSchoolLabel, course.school!.attributeName),
       if (course.subject != null)
-        (Icons.category_outlined, 'Subject', course.subject!.attributeName),
+        (Icons.category_outlined, l10n.courseCreateSheetSubjectLabel, course.subject!.attributeName),
       if (course.year != null || course.term != null)
         (
           Icons.calendar_today_outlined,
-          'Term',
+          l10n.courseCreateSheetTermLabel,
           [course.term?.attributeName, course.year?.attributeName]
               .whereType<String>()
               .join(' '),
         ),
-      (Icons.schedule, 'Created', _dateFmt.format(course.createdAt.toLocal())),
+      (Icons.schedule, l10n.courseDetailsSheetCreatedLabel, DateFormat.yMMMd(l10n.localeName).format(course.createdAt.toLocal())),
     ];
 
     return Container(
@@ -94,7 +94,7 @@ class CourseDetailsSheet extends StatelessWidget {
           if (course.summary?.trim().isNotEmpty == true) ...[
             const SizedBox(height: 4),
             Text(
-              'Summary',
+              l10n.courseCreateSheetSummaryLabel,
               style: TextStyle(
                 color: AppColors.universe.textComet,
                 fontSize: 13,

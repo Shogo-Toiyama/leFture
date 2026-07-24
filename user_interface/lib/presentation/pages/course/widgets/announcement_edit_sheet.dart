@@ -6,6 +6,7 @@ import 'package:lecture_companion_ui/domain/entities/announcement.dart';
 import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_type_icon.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class AnnouncementEditSheet extends HookConsumerWidget {
   const AnnouncementEditSheet({
@@ -17,6 +18,7 @@ class AnnouncementEditSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final titleCtl = useTextEditingController(
       text: announcement.title?.trim() ?? '',
     );
@@ -30,7 +32,7 @@ class AnnouncementEditSheet extends HookConsumerWidget {
     Future<void> submit() async {
       final title = titleCtl.text.trim();
       if (title.isEmpty) {
-        errorMsg.value = 'Title cannot be empty.';
+        errorMsg.value = l10n.announcementEditSheetTitleRequiredError;
         return;
       }
 
@@ -94,7 +96,7 @@ class AnnouncementEditSheet extends HookConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Edit Announcement',
+                    l10n.announcementEditSheetTitle,
                     style: TextStyle(
                       color: AppColors.universe.textStarlight,
                       fontSize: 20,
@@ -120,9 +122,9 @@ class AnnouncementEditSheet extends HookConsumerWidget {
                               color: AppColors.starGold,
                             ),
                           )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(
+                        : Text(
+                            l10n.courseSheetSaveButton,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -134,7 +136,7 @@ class AnnouncementEditSheet extends HookConsumerWidget {
 
               // 1. タイプ選択
               Text(
-                'Type',
+                l10n.announcementEditSheetTypeLabel,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 14,
@@ -153,8 +155,8 @@ class AnnouncementEditSheet extends HookConsumerWidget {
                 controller: titleCtl,
                 style: TextStyle(color: AppColors.universe.textStarlight),
                 decoration: InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'Announcement title',
+                  labelText: l10n.announcementEditSheetTitleFieldLabel,
+                  hintText: l10n.announcementEditSheetTitleFieldHint,
                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                   hintStyle: TextStyle(
                     color: AppColors.universe.textComet.withValues(alpha: 0.5),
@@ -180,8 +182,8 @@ class AnnouncementEditSheet extends HookConsumerWidget {
                 style: TextStyle(color: AppColors.universe.textStarlight),
                 maxLines: 3,
                 decoration: InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Additional details (optional)',
+                  labelText: l10n.announcementEditSheetDescriptionFieldLabel,
+                  hintText: l10n.announcementEditSheetDescriptionFieldHint,
                   alignLabelWithHint: true,
                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                   hintStyle: TextStyle(
@@ -239,15 +241,15 @@ class _TypeSelector extends StatelessWidget {
     AnnouncementType.info,
   ];
 
-  static const _labels = {
-    AnnouncementType.todo: 'Todo',
-    AnnouncementType.event: 'Event',
-    AnnouncementType.hint: 'Hint',
-    AnnouncementType.info: 'Info',
-  };
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final labels = {
+      AnnouncementType.todo: l10n.announcementEditSheetTypeTodo,
+      AnnouncementType.event: l10n.announcementEditSheetTypeEvent,
+      AnnouncementType.hint: l10n.announcementEditSheetTypeHint,
+      AnnouncementType.info: l10n.announcementEditSheetTypeInfo,
+    };
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -280,7 +282,7 @@ class _TypeSelector extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  _labels[type] ?? type.name,
+                  labels[type] ?? type.name,
                   style: TextStyle(
                     color: isSelected ? AppColors.starGold : AppColors.universe.textComet,
                     fontSize: 13,

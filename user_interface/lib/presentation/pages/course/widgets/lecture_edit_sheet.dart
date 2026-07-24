@@ -10,6 +10,7 @@ import 'package:lecture_companion_ui/presentation/pages/recording/widgets/course
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:intl/intl.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 
 class LectureEditSheet extends HookConsumerWidget {
@@ -22,6 +23,7 @@ class LectureEditSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final titleCtl = useTextEditingController(
       text: lecture.title ?? '',
     );
@@ -41,9 +43,9 @@ class LectureEditSheet extends HookConsumerWidget {
         // 所属コースの変更を警告する
         final confirm = await showCustomDialog(
           context: context,
-          title: 'Change Course?',
-          message: 'Changing the course of this lecture will modify Topic Map structures and might affect synchronization. Are you sure you want to proceed?',
-          confirmLabel: 'Proceed',
+          title: l10n.lectureEditSheetChangeCourseDialogTitle,
+          message: l10n.lectureEditSheetChangeCourseDialogMessage,
+          confirmLabel: l10n.lectureEditSheetProceedButton,
           icon: Icons.swap_horiz,
         );
         if (confirm != true) return;
@@ -108,7 +110,7 @@ class LectureEditSheet extends HookConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Edit Lecture',
+                    l10n.lectureEditSheetTitle,
                     style: TextStyle(
                       color: AppColors.universe.textStarlight,
                       fontSize: 20,
@@ -134,9 +136,9 @@ class LectureEditSheet extends HookConsumerWidget {
                               color: AppColors.starGold,
                             ),
                           )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(
+                        : Text(
+                            l10n.courseSheetSaveButton,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -148,7 +150,7 @@ class LectureEditSheet extends HookConsumerWidget {
 
               // 1. Course Selection Dropdown
               Text(
-                'Course',
+                l10n.lectureEditSheetCourseLabel,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 14,
@@ -186,7 +188,7 @@ class LectureEditSheet extends HookConsumerWidget {
                             final currentId = selectedCourseId.value;
                             if (currentId == null) {
                               return Text(
-                                'No Course (Unassigned)',
+                                l10n.lectureEditSheetNoCourseLabel,
                                 style: TextStyle(color: AppColors.universe.textComet),
                               );
                             }
@@ -195,7 +197,7 @@ class LectureEditSheet extends HookConsumerWidget {
                               orElse: () => Course(
                                 id: currentId,
                                 userId: '',
-                                courseTitle: 'Unknown Course',
+                                courseTitle: l10n.lectureEditSheetUnknownCourseFallback,
                                 metadata: const {
                                   'color': '#E5A93B',
                                   'icon': 'school',
@@ -234,7 +236,7 @@ class LectureEditSheet extends HookConsumerWidget {
 
               // 2. Lecture Date & Time (DatePicker / TimePicker)
               Text(
-                'Lecture Date & Time',
+                l10n.lectureEditSheetDateTimeLabel,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 14,
@@ -277,7 +279,7 @@ class LectureEditSheet extends HookConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        DateFormat('yyyy-MM-dd HH:mm').format(selectedDateTime.value),
+                        DateFormat.yMMMd(l10n.localeName).add_jm().format(selectedDateTime.value),
                         style: TextStyle(color: AppColors.universe.textStarlight),
                       ),
                       Icon(Icons.calendar_today, color: AppColors.universe.textComet, size: 18),
@@ -292,10 +294,10 @@ class LectureEditSheet extends HookConsumerWidget {
                 controller: titleCtl,
                 style: TextStyle(color: AppColors.universe.textStarlight),
                 decoration: InputDecoration(
-                  labelText: 'Title',
+                  labelText: l10n.lectureEditSheetTitleFieldLabel,
                   hintText: lecture.titleGenerated?.trim().isNotEmpty == true
-                      ? '${lecture.titleGenerated} (Default)'
-                      : 'Untitled Lecture',
+                      ? l10n.lectureEditSheetTitleFieldDefaultSuffix(lecture.titleGenerated!)
+                      : l10n.lectureViewerUntitledLecture,
                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                   hintStyle: TextStyle(
                     color: AppColors.universe.textComet.withValues(alpha: 0.5),

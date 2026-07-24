@@ -11,6 +11,7 @@ import 'package:lecture_companion_ui/infrastructure/local_db/repositories/announ
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/announcement_tile.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 /// 全コース横断の未完了アナウンスメント一覧シート (HomeのAnnouncementBarから開く)。
 /// 各アナウンスをタップすると、そのアナウンスが属するコースのページへ遷移する。
@@ -19,6 +20,7 @@ class AllAnnouncementsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final announcementsAsync = ref.watch(activeAnnouncementsProvider);
 
     // アナウンス→コースへ辿るための対応表 (announcementsはlecture_id経由の紐付けのみ)
@@ -55,7 +57,7 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                 child: Row(
                   children: [
                     Text(
-                      'Announcements',
+                      l10n.homeAnnouncementsSheetTitle,
                       style: TextStyle(
                         color: AppColors.universe.textStarlight,
                         fontSize: 20,
@@ -71,13 +73,16 @@ class AllAnnouncementsSheet extends ConsumerWidget {
                     child: CircularProgressIndicator(color: AppColors.starGold),
                   ),
                   error: (e, _) => Center(
-                    child: Text('Error: $e', style: const TextStyle(color: AppColors.correctionRed)),
+                    child: Text(
+                      l10n.homeAnnouncementsSheetLoadError(e.toString()),
+                      style: const TextStyle(color: AppColors.correctionRed),
+                    ),
                   ),
                   data: (announcements) {
                     if (announcements.isEmpty) {
                       return Center(
                         child: Text(
-                          'No announcements — you\'re all caught up!',
+                          l10n.homeAnnouncementsEmptyMessage,
                           style: TextStyle(color: AppColors.universe.textComet),
                         ),
                       );

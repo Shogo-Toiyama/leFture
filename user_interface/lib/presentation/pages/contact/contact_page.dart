@@ -12,6 +12,7 @@ import 'package:lecture_companion_ui/infrastructure/repositories/backend_warmup.
 import 'package:lecture_companion_ui/infrastructure/supabase/supabase_client.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 class ContactPage extends HookConsumerWidget {
   const ContactPage({super.key});
@@ -20,6 +21,7 @@ class ContactPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final formKey = useMemoized(() => GlobalKey<FormState>());
     
     // 画面が開いた瞬間にバックグラウンドでウォームアップ開始。
@@ -50,7 +52,7 @@ class ContactPage extends HookConsumerWidget {
           selectedFile.value = result.files.first;
         }
       } catch (e) {
-        errorMessage.value = 'Failed to pick file: $e';
+        errorMessage.value = l10n.contactFailedToPickFile(e.toString());
       }
     }
 
@@ -63,20 +65,19 @@ class ContactPage extends HookConsumerWidget {
 
       final jwt = supabase.auth.currentSession?.accessToken;
       if (jwt == null) {
-        errorMessage.value = 'Authentication error. Please sign in again.';
+        errorMessage.value = l10n.contactAuthError;
         isSubmitting.value = false;
         return;
       }
 
       try {
-        statusMessage.value = 'Connecting to support service...';
+        statusMessage.value = l10n.contactConnecting;
         final isServerReady = await warmupFuture;
         if (!isServerReady) {
-          errorMessage.value =
-              'The support service is taking longer than usual to start. Please try again in a moment, or email us directly at support@lefture.com.';
+          errorMessage.value = l10n.contactSlowService;
           return;
         }
-        statusMessage.value = 'Sending inquiry...';
+        statusMessage.value = l10n.contactSending;
 
         String? attachmentR2Path;
 
@@ -84,7 +85,7 @@ class ContactPage extends HookConsumerWidget {
         if (selectedFile.value != null) {
           final file = selectedFile.value!;
           
-          statusMessage.value = 'Preparing file upload...';
+          statusMessage.value = l10n.contactPreparingUpload;
 
           // Request presigned URL from backend (with 30s timeout)
           final presignedRes = await http.post(
@@ -107,7 +108,7 @@ class ContactPage extends HookConsumerWidget {
           final uploadUrl = presignedData['upload_url'] as String;
           attachmentR2Path = presignedData['storage_path'] as String;
 
-          statusMessage.value = 'Uploading attachment...';
+          statusMessage.value = l10n.contactUploadingAttachment;
 
           // PUT file bytes to R2 (with 30s timeout)
           final fileBytes = file.bytes ?? await File(file.path!).readAsBytes();
@@ -124,7 +125,7 @@ class ContactPage extends HookConsumerWidget {
           }
         }
 
-        statusMessage.value = 'Submitting support ticket...';
+        statusMessage.value = l10n.contactSubmittingTicket;
 
         // Gather device info
         final deviceInfo = {
@@ -158,9 +159,9 @@ class ContactPage extends HookConsumerWidget {
         submissionSuccess.value = true;
       } catch (e) {
         if (e is TimeoutException || e.toString().contains('TimeoutException')) {
-          errorMessage.value = 'Connection timed out. Please check your network and try again, or email us at support@lefture.com.';
+          errorMessage.value = l10n.contactTimeoutError;
         } else {
-          errorMessage.value = 'Submission failed: ${e.toString().replaceAll('Exception: ', '')}. You can also email us at support@lefture.com.';
+          errorMessage.value = l10n.contactSubmissionError(e.toString().replaceAll('Exception: ', ''));
         }
       } finally {
         isSubmitting.value = false;
@@ -199,7 +200,7 @@ class ContactPage extends HookConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          submissionSuccess.value ? 'Sent' : 'Contact Us',
+          submissionSuccess.value ? l10n.contactTitleSent : l10n.contactTitle,
           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         leading: IconButton(
@@ -219,7 +220,7 @@ class ContactPage extends HookConsumerWidget {
                       children: [
                         const SizedBox(height: 12),
                         Text(
-                          'How can we help you?',
+                          l10n.contactHelpTitle,
                           style: TextStyle(
                             color: AppColors.universe.textStarlight,
                             fontSize: 22,
@@ -228,7 +229,7 @@ class ContactPage extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Please choose a category and specify your question or bug report below. We will reply to your email shortly.',
+                          l10n.contactHelpSubtitle,
                           style: TextStyle(
                             color: AppColors.universe.textComet,
                             fontSize: 14,
@@ -250,12 +251,12 @@ class ContactPage extends HookConsumerWidget {
                           initialValue: selectedCategory.value,
                           dropdownColor: const Color(0xFF13131C),
                           style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 15),
-                          decoration: inputDecoration('Category'),
-                          items: const [
-                            DropdownMenuItem(value: 'bug', child: Text('Bug Report')),
-                            DropdownMenuItem(value: 'feature_request', child: Text('Request / Feedback')),
-                            DropdownMenuItem(value: 'account', child: Text('Account / Login')),
-                            DropdownMenuItem(value: 'other', child: Text('Other')),
+                          decoration: inputDecoration(l10n.contactCategoryLabel),
+                          items: [
+                            DropdownMenuItem(value: 'bug', child: Text(l10n.contactCategoryBug)),
+                            DropdownMenuItem(value: 'feature_request', child: Text(l10n.contactCategoryFeedback)),
+                            DropdownMenuItem(value: 'account', child: Text(l10n.contactCategoryAccount)),
+                            DropdownMenuItem(value: 'other', child: Text(l10n.contactCategoryOther)),
                           ],
                           onChanged: (val) {
                             if (val != null) selectedCategory.value = val;
@@ -269,12 +270,12 @@ class ContactPage extends HookConsumerWidget {
                           maxLines: 8,
                           style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 15),
                           cursorColor: AppColors.starGold,
-                          decoration: inputDecoration('Message Details').copyWith(
+                          decoration: inputDecoration(l10n.contactMessageDetailsLabel).copyWith(
                             alignLabelWithHint: true,
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your message details';
+                              return l10n.contactMessageRequired;
                             }
                             return null;
                           },
@@ -283,7 +284,7 @@ class ContactPage extends HookConsumerWidget {
 
                         // Attachment Box
                         Text(
-                          'Attachment (Optional)',
+                          l10n.contactAttachmentLabel,
                           style: TextStyle(
                             color: AppColors.universe.textStarlight,
                             fontWeight: FontWeight.bold,
@@ -324,9 +325,13 @@ class ContactPage extends HookConsumerWidget {
                                     children: [
                                       Icon(Icons.cloud_upload_outlined, color: AppColors.universe.textComet),
                                       const SizedBox(width: 12),
-                                      Text(
-                                        'Upload Screenshot or File',
-                                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
+                                      Flexible(
+                                        child: Text(
+                                          l10n.contactUploadButton,
+                                          style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -365,9 +370,9 @@ class ContactPage extends HookConsumerWidget {
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Send Inquiry',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                child: Text(
+                                  l10n.contactSubmitButton,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
                               ),
                       ],
@@ -379,6 +384,7 @@ class ContactPage extends HookConsumerWidget {
   }
 
   Widget _buildSuccessUI(BuildContext context, String code) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -403,7 +409,7 @@ class ContactPage extends HookConsumerWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Inquiry Sent',
+            l10n.contactSuccessTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.universe.textStarlight,
@@ -413,7 +419,7 @@ class ContactPage extends HookConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Your inquiry has been successfully sent. A confirmation email has been sent to your inbox. We will review your message and reply via email.',
+            l10n.contactSuccessDescription,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.universe.textComet,
@@ -433,7 +439,7 @@ class ContactPage extends HookConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Ticket Code',
+                  l10n.contactTicketCodeLabel,
                   style: TextStyle(color: AppColors.universe.textComet, fontWeight: FontWeight.bold),
                 ),
                 Text(
@@ -460,9 +466,9 @@ class ContactPage extends HookConsumerWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: const Text(
-              'Back to Settings',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: Text(
+              l10n.contactBackToSettingsButton,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],

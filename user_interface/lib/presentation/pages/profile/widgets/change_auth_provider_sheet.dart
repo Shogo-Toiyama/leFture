@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
 import 'package:lecture_companion_ui/core/utils/dev_log.dart';
 import 'package:lecture_companion_ui/infrastructure/supabase/pending_auth_action.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/social_sign_in_button.dart';
@@ -14,6 +15,7 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     // currentProvider は supabase.auth.currentUser を直接読むだけなので、
     // ユーザー情報が変わった際にこのシートが再構築されるよう購読しておく。
     ref.watch(currentUserProvider);
@@ -71,7 +73,7 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Change Login Method',
+                    l10n.myAccountChangeLoginMethodTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.universe.textStarlight,
@@ -79,7 +81,8 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Current: ${currentProvider?.toUpperCase() ?? "Unknown"}',
+                    l10n.changeAuthProviderCurrentLabel(
+                        currentProvider?.toUpperCase() ?? l10n.changeAuthProviderUnknownProvider),
                     style: TextStyle(
                       color: AppColors.universe.textComet,
                       fontSize: 12,
@@ -167,7 +170,7 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Text(
-                '※ Changing your login method will update your authentication settings. You can switch back anytime.',
+                l10n.changeAuthProviderFooterNote,
                 style: TextStyle(
                   color: AppColors.universe.textComet,
                   fontSize: 12,

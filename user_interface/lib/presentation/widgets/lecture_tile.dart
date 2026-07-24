@@ -12,6 +12,7 @@ import 'package:lecture_companion_ui/domain/entities/course.dart';
 import 'package:lecture_companion_ui/domain/entities/lecture.dart';
 import 'package:lecture_companion_ui/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 
 import 'package:lecture_companion_ui/presentation/widgets/custom_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/tile_actions_sheet.dart';
@@ -33,8 +34,6 @@ class LectureTile extends ConsumerWidget {
   final bool showChevron;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-
-  static final _dateFmt = DateFormat('MMM d, yyyy');
 
   String _relativeTime(DateTime dateTime) {
     final diff = DateTime.now().difference(dateTime);
@@ -63,6 +62,7 @@ class LectureTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final coursesAsync = ref.watch(courseListProvider);
     final courses = coursesAsync.asData?.value;
     Course? parentCourse;
@@ -197,7 +197,7 @@ class LectureTile extends ConsumerWidget {
                       Text(
                         useRelativeTime
                             ? _relativeTime(lecture.lectureDatetime)
-                            : _dateFmt.format(lecture.lectureDatetime.toLocal()),
+                            : DateFormat.yMMMd(l10n.localeName).format(lecture.lectureDatetime.toLocal()),
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 12,

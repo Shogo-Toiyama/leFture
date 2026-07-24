@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lecture_companion_ui/app/routes.dart';
 import 'package:lecture_companion_ui/application/auth/auth_provider.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 import 'package:lecture_companion_ui/presentation/widgets/app_error_dialog.dart';
 import 'package:lecture_companion_ui/presentation/widgets/social_sign_in_button.dart';
@@ -20,6 +21,7 @@ class SignInPage extends HookConsumerWidget {
     final inlineError = useState<dynamic>(null);
 
     final authState = ref.watch(authControllerProvider);
+    final l10n = AppLocalizations.of(context);
 
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
@@ -43,11 +45,11 @@ class SignInPage extends HookConsumerWidget {
       final password = passwordController.text;
 
       if (email.isEmpty) {
-        inlineError.value = 'Please enter your email address.';
+        inlineError.value = l10n.signInErrorEmailEmpty;
         return;
       }
       if (password.isEmpty) {
-        inlineError.value = 'Please enter your password.';
+        inlineError.value = l10n.signInErrorPasswordEmpty;
         return;
       }
 
@@ -133,7 +135,7 @@ class SignInPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Welcome back',
+                  l10n.signInWelcomeTitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -142,7 +144,7 @@ class SignInPage extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue your learning journey',
+                  l10n.signInSubtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.universe.textComet,
@@ -170,7 +172,7 @@ class SignInPage extends HookConsumerWidget {
                         controller: emailController,
                         style: TextStyle(color: AppColors.universe.textStarlight),
                         cursorColor: AppColors.starGold,
-                        decoration: inputDecoration('Email', Icons.email_outlined),
+                        decoration: inputDecoration(l10n.emailLabel, Icons.email_outlined),
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 16),
@@ -179,7 +181,7 @@ class SignInPage extends HookConsumerWidget {
                         style: TextStyle(color: AppColors.universe.textStarlight),
                         cursorColor: AppColors.starGold,
                         decoration: inputDecoration(
-                          'Password',
+                          l10n.passwordLabel,
                           Icons.lock_outlined,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -202,7 +204,7 @@ class SignInPage extends HookConsumerWidget {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           child: Text(
-                            'Forgot password?',
+                            l10n.forgotPasswordLink,
                             style: TextStyle(
                               color: AppColors.universe.textComet,
                               fontSize: 14,
@@ -228,13 +230,13 @@ class SignInPage extends HookConsumerWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Sign In',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              child: Text(
+                                l10n.signInButton,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                             ),
                       const SizedBox(height: 20),
-                      const AuthDivider(),
+                      AuthDivider(label: l10n.authDividerOr),
                       const SizedBox(height: 20),
                       SocialSignInButton(
                         provider: SocialProvider.google,
@@ -253,7 +255,7 @@ class SignInPage extends HookConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Don't have an account? ",
+                      l10n.signInNoAccountPrompt,
                       style: TextStyle(
                         color: AppColors.universe.textComet,
                         fontSize: 15,
@@ -266,9 +268,9 @@ class SignInPage extends HookConsumerWidget {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
-                        'Create Account',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.createAccountLink,
+                        style: const TextStyle(
                           color: AppColors.starGold,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,

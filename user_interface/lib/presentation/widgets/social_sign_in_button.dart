@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lecture_companion_ui/l10n/generated/app_localizations.dart';
 import 'package:lecture_companion_ui/presentation/themes/app_colors.dart';
 
 /// Multi-color Google "G" mark, embedded as SVG so no extra asset file is needed.
@@ -42,9 +43,10 @@ class SocialSignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final label = switch (provider) {
-      SocialProvider.google => 'Continue with Google',
-      SocialProvider.apple => 'Continue with Apple',
+      SocialProvider.google => l10n.continueWithGoogle,
+      SocialProvider.apple => l10n.continueWithApple,
     };
 
     final Widget icon = switch (provider) {
@@ -80,12 +82,14 @@ class SocialSignInButton extends StatelessWidget {
 
 /// "── or ──" divider used to separate password auth from social auth.
 class AuthDivider extends StatelessWidget {
-  const AuthDivider({super.key, this.label = 'or'});
+  const AuthDivider({super.key, this.label});
 
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final textLabel = label ?? l10n.authOrDivider;
     final line = Expanded(
       child: Divider(color: AppColors.universe.glassBorder, thickness: 1),
     );
@@ -95,7 +99,7 @@ class AuthDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            label,
+            textLabel,
             style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
           ),
         ),
