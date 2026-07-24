@@ -547,152 +547,166 @@ async def billing_history(request: Request):
         SUPABASE_PUBLISHABLE_KEY,
         options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
     )
-    user_res = user_client.auth.get_user(token)
+    user_res = await asyncio.to_thread(lambda: user_client.auth.get_user(token))
     if not user_res or not user_res.user:
         raise HTTPException(status_code=401, detail="Unauthorized user")
     user_id = user_res.user.id
 
     admin_client = get_supabase_client()
 
-    tx_res = await asyncio.to_thread(
-        lambda: admin_client.table("credit_transactions")
-            .select("id, created_at, delta, balance_after, reason")
-            .eq("user_id", user_id)
-            .order("created_at", asc=True)
-            .limit(500)
-            .execute()
-    )
+    try:
+        tx_res = await asyncio.to_thread(
+            lambda: admin_client.table("credit_transactions")
+                .select("id, created_at, delta, balance_after, reason")
+                .eq("user_id", user_id)
+                .order("created_at", asc=True)
+                .limit(500)
+                .execute()
+        )
 
-    transactions = tx_res.data or []
-    if not transactions:
-        return {"history": []}
+        transactions = tx_res.data or []
+        if not transactions:
+            return {"history": []}
 
-    MICRO_PER_CREDIT = 1000000
-    now = datetime.now(timezone.utc)
-    today = now.date()
+        MICRO_PER_CREDIT = 1000000
+        now = datetime.now(timezone.utc)
+        today = now.date()
 
-    negative_hourly_buckets = {}
-    positive_items = []
-    prev_display_balance = None
+        negative_hourly_buckets = {}
+        positive_items = []
+        prev_display_balance = None
 
-    for tx in transactions:
-        created_at_str = tx.get("created_at")
-        delta = tx.get("delta") or 0
-        balance_after = tx.get("balance_after")
-        reason = tx.get("reason") or "USAGE"
-        tx_id = tx.get("id")
+        for tx in transactions:
+            created_at_str = tx.get("created_at")
+            balance_after_raw = tx.get("balance_after")
+            if not created_at_str or balance_after_raw is None:
+                continue
 
-        if not created_at_str or balance_after is None:
-            continue
+            try:
+                delta = int(tx.get("delta") or 0)
+                balance_after = int(balance_after_raw)
+            except (ValueError, TypeError):
+                continue
 
-        try:
-            dt = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
-        except Exception:
-            continue
+            reason_raw = tx.get("reason") or "USAGE"
+            reason = str(reason_raw) if not isinstance(reason_raw, (dict, list)) else "USAGE"
+            tx_id = tx.get("id")
 
-        curr_display_balance = balance_after // MICRO_PER_CREDIT
+            try:
+                dt = datetime.fromisoformat(str(created_at_str).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                else:
+                    dt = dt.astimezone(timezone.utc)
+            except Exception:
+                continue
 
-        if delta < 0:
-            hour_key = dt.strftime("%Y-%m-%d %H:00")
-            if hour_key not in negative_hourly_buckets:
+            curr_display_balance = balance_after // MICRO_PER_CREDIT
+
+            if delta < 0:
+                hour_key = dt.strftime("%Y-%m-%d %H:00")
+                if hour_key not in negative_hourly_buckets:
+                    start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
+                    negative_hourly_buckets[hour_key] = {
+                        "start_display_balance": start_balance,
+                        "end_display_balance": curr_display_balance,
+                        "reasons": {reason},
+                        "sample_time": dt,
+                    }
+                else:
+                    negative_hourly_buckets[hour_key]["end_display_balance"] = curr_display_balance
+                    negative_hourly_buckets[hour_key]["reasons"].add(reason)
+                    negative_hourly_buckets[hour_key]["sample_time"] = dt
+
+            elif delta > 0:
                 start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
-                negative_hourly_buckets[hour_key] = {
-                    "start_display_balance": start_balance,
-                    "end_display_balance": curr_display_balance,
-                    "reasons": {reason},
-                    "sample_time": dt,
-                }
-            else:
-                negative_hourly_buckets[hour_key]["end_display_balance"] = curr_display_balance
-                negative_hourly_buckets[hour_key]["reasons"].add(reason)
-                negative_hourly_buckets[hour_key]["sample_time"] = dt
-
-        elif delta > 0:
-            start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
-            delta_credits = curr_display_balance - start_balance
-            if delta_credits <= 0:
-                delta_credits = round(delta / MICRO_PER_CREDIT)
+                delta_credits = curr_display_balance - start_balance
                 if delta_credits <= 0:
-                    delta_credits = 1
+                    delta_credits = round(delta / MICRO_PER_CREDIT)
+                    if delta_credits <= 0:
+                        delta_credits = 1
 
-            positive_items.append({
-                "id": str(tx_id) if tx_id else dt.isoformat(),
-                "dt": dt,
-                "delta_credits": delta_credits,
-                "reason": reason,
+                positive_items.append({
+                    "id": str(tx_id) if tx_id else dt.isoformat(),
+                    "dt": dt,
+                    "delta_credits": delta_credits,
+                    "reason": reason,
+                })
+
+            prev_display_balance = curr_display_balance
+
+        all_entries = []
+
+        for hour_key, bdata in negative_hourly_buckets.items():
+            sample_time = bdata["sample_time"]
+            start_bal = bdata["start_display_balance"]
+            end_bal = bdata["end_display_balance"]
+            reasons = list(bdata["reasons"])
+
+            delta_credits = end_bal - start_bal
+            if delta_credits >= 0:
+                delta_credits = -1
+
+            sample_date = sample_time.date()
+            if sample_date == today:
+                date_label = "Today"
+            elif sample_date == today - timedelta(days=1):
+                date_label = "Yesterday"
+            else:
+                date_label = sample_time.strftime("%b %d")
+
+            time_label = sample_time.strftime("%I %p").lstrip("0")
+
+            all_entries.append({
+                "dt": sample_time,
+                "item": {
+                    "id": hour_key,
+                    "date_label": date_label,
+                    "time_label": time_label,
+                    "timestamp": sample_time.isoformat(),
+                    "delta_credits": delta_credits,
+                    "formatted_delta": f"{delta_credits}",
+                    "is_positive": False,
+                    "reason_summary": ", ".join(reasons) if reasons else "Usage",
+                }
             })
 
-        prev_display_balance = curr_display_balance
+        for p in positive_items:
+            dt = p["dt"]
+            delta_credits = p["delta_credits"]
+            reason = p["reason"]
 
-    all_entries = []
+            sample_date = dt.date()
+            if sample_date == today:
+                date_label = "Today"
+            elif sample_date == today - timedelta(days=1):
+                date_label = "Yesterday"
+            else:
+                date_label = dt.strftime("%b %d")
 
-    for hour_key, bdata in negative_hourly_buckets.items():
-        sample_time = bdata["sample_time"]
-        start_bal = bdata["start_display_balance"]
-        end_bal = bdata["end_display_balance"]
-        reasons = list(bdata["reasons"])
+            time_label = dt.strftime("%I %p").lstrip("0")
 
-        delta_credits = end_bal - start_bal
-        if delta_credits >= 0:
-            delta_credits = -1
+            all_entries.append({
+                "dt": dt,
+                "item": {
+                    "id": p["id"],
+                    "date_label": date_label,
+                    "time_label": time_label,
+                    "timestamp": dt.isoformat(),
+                    "delta_credits": delta_credits,
+                    "formatted_delta": f"+{delta_credits}",
+                    "is_positive": True,
+                    "reason_summary": reason,
+                }
+            })
 
-        sample_date = sample_time.date()
-        if sample_date == today:
-            date_label = "Today"
-        elif sample_date == today - timedelta(days=1):
-            date_label = "Yesterday"
-        else:
-            date_label = sample_time.strftime("%b %d")
+        all_entries.sort(key=lambda x: x["dt"], reverse=True)
+        history_items = [entry["item"] for entry in all_entries]
 
-        time_label = sample_time.strftime("%I %p").lstrip("0")
-
-        all_entries.append({
-            "dt": sample_time,
-            "item": {
-                "id": hour_key,
-                "date_label": date_label,
-                "time_label": time_label,
-                "timestamp": sample_time.isoformat(),
-                "delta_credits": delta_credits,
-                "formatted_delta": f"{delta_credits}",
-                "is_positive": False,
-                "reason_summary": ", ".join(reasons) if reasons else "Usage",
-            }
-        })
-
-    for p in positive_items:
-        dt = p["dt"]
-        delta_credits = p["delta_credits"]
-        reason = p["reason"]
-
-        sample_date = dt.date()
-        if sample_date == today:
-            date_label = "Today"
-        elif sample_date == today - timedelta(days=1):
-            date_label = "Yesterday"
-        else:
-            date_label = dt.strftime("%b %d")
-
-        time_label = dt.strftime("%I %p").lstrip("0")
-
-        all_entries.append({
-            "dt": dt,
-            "item": {
-                "id": p["id"],
-                "date_label": date_label,
-                "time_label": time_label,
-                "timestamp": dt.isoformat(),
-                "delta_credits": delta_credits,
-                "formatted_delta": f"+{delta_credits}",
-                "is_positive": True,
-                "reason_summary": reason,
-            }
-        })
-
-    all_entries.sort(key=lambda x: x["dt"], reverse=True)
-    history_items = [entry["item"] for entry in all_entries]
-
-    return {"history": history_items}
+        return {"history": history_items}
+    except Exception as e:
+        logger.error(f"Error processing billing history: {e}", exc_info=True)
+        return {"history": []}
 
 
 # ---------------------------------------------------------
