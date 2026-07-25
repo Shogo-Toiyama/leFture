@@ -11,6 +11,9 @@ class AppErrorUtils {
   /// 対象外（予期せぬエラー）の場合は null を返す。
   static String? getFriendlyErrorMessage(dynamic error) {
     if (error == null) return null;
+    // 自前のバリデーションメッセージ(l10nの文字列)はStringとしてそのまま渡ってくる。
+    // 例外オブジェクトと違ってすでに人に見せてよい文言なので、そのまま1行表示する。
+    if (error is String) return error;
     final str = error.toString().toLowerCase();
 
     if (str.contains('invalid login credentials') ||

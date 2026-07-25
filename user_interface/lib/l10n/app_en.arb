@@ -56,6 +56,11 @@
     "description": "Button label to sign in via Apple OAuth. 'Apple' is the brand name and must NOT be translated or transliterated."
   },
 
+  "continueWithEmail": "Continue with email",
+  "@continueWithEmail": {
+    "description": "Button label on the sign-up screen that expands an accordion with email/password fields, shown alongside 'Continue with Google'/'Continue with Apple' as an equal third option."
+  },
+
   "signInNoAccountPrompt": "Don't have an account? ",
   "@signInNoAccountPrompt": {
     "description": "Leading half of a sentence immediately followed by the 'Create Account' link button on the same line, e.g. \"Don't have an account? [Create Account]\". Keep it able to flow into a following link naturally; trailing space in English is intentional for layout, translations don't need to preserve the trailing space."

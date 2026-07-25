@@ -25,7 +25,7 @@ class GoogleLogoIcon extends StatelessWidget {
   }
 }
 
-enum SocialProvider { google, apple }
+enum SocialProvider { google, apple, email }
 
 /// Outlined, glassmorphic button for third-party sign-in options.
 ///
@@ -47,11 +47,13 @@ class SocialSignInButton extends StatelessWidget {
     final label = switch (provider) {
       SocialProvider.google => l10n.continueWithGoogle,
       SocialProvider.apple => l10n.continueWithApple,
+      SocialProvider.email => l10n.continueWithEmail,
     };
 
     final Widget icon = switch (provider) {
       SocialProvider.google => const GoogleLogoIcon(size: 20),
       SocialProvider.apple => const Icon(Icons.apple, size: 22, color: Colors.white),
+      SocialProvider.email => Icon(Icons.email_outlined, size: 22, color: AppColors.universe.textStarlight),
     };
 
     return SizedBox(

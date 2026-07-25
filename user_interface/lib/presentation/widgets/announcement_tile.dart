@@ -7,7 +7,7 @@ import 'package:lefture/domain/entities/announcement.dart';
 import 'package:lefture/domain/entities/datetime_parameters_formatter.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
-import 'package:lefture/presentation/widgets/announcement_transcript_modal.dart';
+import 'package:lefture/presentation/widgets/transcript_modal.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:lefture/presentation/widgets/tile_actions_sheet.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -237,7 +237,7 @@ class AnnouncementTile extends HookConsumerWidget {
               child: GestureDetector(
                 onTap: () {
                   if (announcement.lectureId != null) {
-                    showAnnouncementTranscriptModal(
+                    showTranscriptModal(
                       context,
                       lectureId: announcement.lectureId!,
                       startSid: announcement.startSid,

@@ -164,6 +164,12 @@ abstract class AppLocalizations {
   /// **'Continue with Apple'**
   String get continueWithApple;
 
+  /// Button label on the sign-up screen that expands an accordion with email/password fields, shown alongside 'Continue with Google'/'Continue with Apple' as an equal third option.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with email'**
+  String get continueWithEmail;
+
   /// Leading half of a sentence immediately followed by the 'Create Account' link button on the same line, e.g. "Don't have an account? [Create Account]". Keep it able to flow into a following link naturally; trailing space in English is intentional for layout, translations don't need to preserve the trailing space.
   ///
   /// In en, this message translates to:

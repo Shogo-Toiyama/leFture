@@ -25,6 +25,7 @@ class SignUpPage extends HookConsumerWidget {
     final agreedToTerms = useState(false);
     final obscurePassword = useState(true);
     final obscureConfirmPassword = useState(true);
+    final isEmailExpanded = useState(false);
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final inlineError = useState<dynamic>(null);
 
@@ -68,12 +69,34 @@ class SignUpPage extends HookConsumerWidget {
       }
     }
 
+    // Google/Appleでの登録前も、ユーザーネーム・チェックボックスは
+    // Email登録と同じく必須にする。アコーディオンが閉じている間はEmail/Password
+    // のTextFormFieldがツリーに存在しないため、ここでのvalidate()は
+    // ユーザーネーム欄のみを検証する。
+    bool validateUsernameAndTerms() {
+      inlineError.value = null;
+      if (!formKey.currentState!.validate()) {
+        return false;
+      }
+      if (!agreedToTerms.value) {
+        inlineError.value = l10n.signUpErrorAgreeTerms;
+        return false;
+      }
+      return true;
+    }
+
     void signInWithGoogle() {
-      ref.read(authControllerProvider.notifier).signInWithGoogle();
+      if (!validateUsernameAndTerms()) return;
+      ref.read(authControllerProvider.notifier).signInWithGoogle(
+        desiredUsername: usernameController.text.trim(),
+      );
     }
 
     void signInWithApple() {
-      ref.read(authControllerProvider.notifier).signInWithApple();
+      if (!validateUsernameAndTerms()) return;
+      ref.read(authControllerProvider.notifier).signInWithApple(
+        desiredUsername: usernameController.text.trim(),
+      );
     }
 
     InputDecoration inputDecoration(String label, IconData icon, {Widget? suffixIcon}) {
@@ -122,294 +145,310 @@ class SignUpPage extends HookConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [AppColors.starGold, AppColors.deepGold],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.starGold.withValues(alpha: 0.35),
-                            blurRadius: 22,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 30),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 440,
+                      minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    l10n.signUpTitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.universe.textStarlight,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.signUpSubtitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.universe.textComet,
-                        ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.universe.glassWhiteLow,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.universe.glassBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (inlineError.value != null) ...[
-                          AppErrorBox(
-                            actionName: 'creating your account',
-                            rawError: inlineError.value,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        // ユーザーネーム
-                        TextFormField(
-                          controller: usernameController,
-                          style: TextStyle(color: AppColors.universe.textStarlight),
-                          cursorColor: AppColors.starGold,
-                          decoration: inputDecoration(l10n.usernameLabel, Icons.person_outlined),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return l10n.signUpErrorUsernameEmpty;
-                            }
-                            if (value.length < 3) {
-                              return l10n.signUpErrorUsernameTooShort;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // メールアドレス
-                        TextFormField(
-                          controller: emailController,
-                          style: TextStyle(color: AppColors.universe.textStarlight),
-                          cursorColor: AppColors.starGold,
-                          decoration: inputDecoration(l10n.emailLabel, Icons.email_outlined),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return l10n.authErrorEmailRequired;
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return l10n.authErrorEmailInvalid;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // パスワード
-                        TextFormField(
-                          controller: passwordController,
-                          style: TextStyle(color: AppColors.universe.textStarlight),
-                          cursorColor: AppColors.starGold,
-                          decoration: inputDecoration(
-                            l10n.passwordLabel,
-                            Icons.lock_outlined,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                color: AppColors.universe.textComet,
-                              ),
-                              onPressed: () => obscurePassword.value = !obscurePassword.value,
-                            ),
-                          ).copyWith(
-                            helperText: l10n.passwordReqMinLength,
-                            helperStyle: TextStyle(color: AppColors.universe.textComet),
-                          ),
-                          obscureText: obscurePassword.value,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return l10n.signUpErrorPasswordEmpty;
-                            }
-                            if (value.length < 8) {
-                              return l10n.passwordErrorTooShort;
-                            }
-                            return null;
-                          },
-                        ),
-                        PasswordStrengthMeter(controller: passwordController),
-                        const SizedBox(height: 16),
-
-                        // パスワード確認
-                        TextFormField(
-                          controller: confirmPasswordController,
-                          style: TextStyle(color: AppColors.universe.textStarlight),
-                          cursorColor: AppColors.starGold,
-                          decoration: inputDecoration(
-                            l10n.confirmPasswordLabel,
-                            Icons.lock_outlined,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                obscureConfirmPassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                color: AppColors.universe.textComet,
-                              ),
-                              onPressed: () => obscureConfirmPassword.value = !obscureConfirmPassword.value,
-                            ),
-                          ),
-                          obscureText: obscureConfirmPassword.value,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return l10n.confirmPasswordErrorEmpty;
-                            }
-                            if (value != passwordController.text) {
-                              return l10n.passwordsMismatchError;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // 利用規約チェックボックス
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Checkbox(
-                              value: agreedToTerms.value,
-                              activeColor: AppColors.starGold,
-                              checkColor: Colors.white,
-                              side: BorderSide(color: AppColors.universe.glassBorder, width: 2),
-                              onChanged: (value) {
-                                agreedToTerms.value = value ?? false;
-                              },
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: TextStyle(
-                                      color: AppColors.universe.textComet,
-                                      fontSize: 14,
-                                    ),
-                                    children: [
-                                      TextSpan(text: l10n.signUpAgreementPrefix),
-                                      TextSpan(
-                                        text: l10n.termsAndConditionsLink,
-                                        style: const TextStyle(
-                                          color: AppColors.starGold,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () => context.push(AppRoutes.termsOfService),
-                                      ),
-                                      TextSpan(text: l10n.signUpAgreementMiddle),
-                                      TextSpan(
-                                        text: l10n.privacyPolicyLink,
-                                        style: const TextStyle(
-                                          color: AppColors.starGold,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () => context.push(AppRoutes.privacyPolicy),
-                                      ),
-                                      TextSpan(text: l10n.signUpAgreementSuffix),
-                                    ],
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [AppColors.starGold, AppColors.deepGold],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.starGold.withValues(alpha: 0.35),
+                                    blurRadius: 22,
+                                    spreadRadius: 2,
                                   ),
+                                ],
+                              ),
+                              child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 30),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            l10n.signUpTitle,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.universe.textStarlight,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.signUpSubtitle,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.universe.textComet,
+                                ),
+                          ),
+                          const SizedBox(height: 28),
+
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: AppColors.universe.glassWhiteLow,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: AppColors.universe.glassBorder),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (inlineError.value != null) ...[
+                                  AppErrorBox(
+                                    actionName: 'creating your account',
+                                    rawError: inlineError.value,
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                                // ユーザーネーム(どのサインアップ方法でも必須)
+                                TextFormField(
+                                  controller: usernameController,
+                                  style: TextStyle(color: AppColors.universe.textStarlight),
+                                  cursorColor: AppColors.starGold,
+                                  decoration: inputDecoration(l10n.usernameLabel, Icons.person_outlined),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return l10n.signUpErrorUsernameEmpty;
+                                    }
+                                    if (value.length < 3) {
+                                      return l10n.signUpErrorUsernameTooShort;
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+
+                                // 利用規約チェックボックス(どのサインアップ方法でも必須)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Checkbox(
+                                      value: agreedToTerms.value,
+                                      activeColor: AppColors.starGold,
+                                      checkColor: Colors.white,
+                                      side: BorderSide(color: AppColors.universe.glassBorder, width: 2),
+                                      onChanged: (value) {
+                                        agreedToTerms.value = value ?? false;
+                                      },
+                                    ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 12),
+                                        child: RichText(
+                                          text: TextSpan(
+                                            style: TextStyle(
+                                              color: AppColors.universe.textComet,
+                                              fontSize: 14,
+                                            ),
+                                            children: [
+                                              TextSpan(text: l10n.signUpAgreementPrefix),
+                                              TextSpan(
+                                                text: l10n.termsAndConditionsLink,
+                                                style: const TextStyle(
+                                                  color: AppColors.starGold,
+                                                  decoration: TextDecoration.underline,
+                                                ),
+                                                recognizer: TapGestureRecognizer()
+                                                  ..onTap = () => context.push(AppRoutes.termsOfService),
+                                              ),
+                                              TextSpan(text: l10n.signUpAgreementMiddle),
+                                              TextSpan(
+                                                text: l10n.privacyPolicyLink,
+                                                style: const TextStyle(
+                                                  color: AppColors.starGold,
+                                                  decoration: TextDecoration.underline,
+                                                ),
+                                                recognizer: TapGestureRecognizer()
+                                                  ..onTap = () => context.push(AppRoutes.privacyPolicy),
+                                              ),
+                                              TextSpan(text: l10n.signUpAgreementSuffix),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Google/Apple/Emailの3つを対等な選択肢として並べる
+                                SocialSignInButton(
+                                  provider: SocialProvider.google,
+                                  onPressed: signInWithGoogle,
+                                ),
+                                const SizedBox(height: 12),
+                                SocialSignInButton(
+                                  provider: SocialProvider.apple,
+                                  onPressed: signInWithApple,
+                                ),
+                                const SizedBox(height: 12),
+                                SocialSignInButton(
+                                  provider: SocialProvider.email,
+                                  onPressed: () => isEmailExpanded.value = !isEmailExpanded.value,
+                                ),
+
+                                // アコーディオン: 「Continue with email」がタップされた時だけ、
+                                // Email/Password欄一式とサインアップ実行ボタンを表示する。
+                                // Visibilityではなくツリーからの出し入れにしている
+                                // (閉じている間はvalidatorが存在せず、ユーザーネームだけの
+                                // 検証で済むようにするため)。
+                                if (isEmailExpanded.value) ...[
+                                  const SizedBox(height: 20),
+                                  TextFormField(
+                                    controller: emailController,
+                                    style: TextStyle(color: AppColors.universe.textStarlight),
+                                    cursorColor: AppColors.starGold,
+                                    decoration: inputDecoration(l10n.emailLabel, Icons.email_outlined),
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return l10n.authErrorEmailRequired;
+                                      }
+                                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                        return l10n.authErrorEmailInvalid;
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextFormField(
+                                    controller: passwordController,
+                                    style: TextStyle(color: AppColors.universe.textStarlight),
+                                    cursorColor: AppColors.starGold,
+                                    decoration: inputDecoration(
+                                      l10n.passwordLabel,
+                                      Icons.lock_outlined,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                          color: AppColors.universe.textComet,
+                                        ),
+                                        onPressed: () => obscurePassword.value = !obscurePassword.value,
+                                      ),
+                                    ).copyWith(
+                                      helperText: l10n.passwordReqMinLength,
+                                      helperStyle: TextStyle(color: AppColors.universe.textComet),
+                                    ),
+                                    obscureText: obscurePassword.value,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return l10n.signUpErrorPasswordEmpty;
+                                      }
+                                      if (value.length < 8) {
+                                        return l10n.passwordErrorTooShort;
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  PasswordStrengthMeter(controller: passwordController),
+                                  const SizedBox(height: 16),
+                                  TextFormField(
+                                    controller: confirmPasswordController,
+                                    style: TextStyle(color: AppColors.universe.textStarlight),
+                                    cursorColor: AppColors.starGold,
+                                    decoration: inputDecoration(
+                                      l10n.confirmPasswordLabel,
+                                      Icons.lock_outlined,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          obscureConfirmPassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                          color: AppColors.universe.textComet,
+                                        ),
+                                        onPressed: () => obscureConfirmPassword.value = !obscureConfirmPassword.value,
+                                      ),
+                                    ),
+                                    obscureText: obscureConfirmPassword.value,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return l10n.confirmPasswordErrorEmpty;
+                                      }
+                                      if (value != passwordController.text) {
+                                        return l10n.passwordsMismatchError;
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+                                  authState.isLoading
+                                      ? const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 12),
+                                          child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+                                        )
+                                      : ElevatedButton(
+                                          onPressed: signUp,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.starGold,
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            minimumSize: const Size(double.infinity, 52),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            l10n.signUpSubmitButton,
+                                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                l10n.signUpHasAccountPrompt,
+                                style: TextStyle(
+                                  color: AppColors.universe.textComet,
+                                  fontSize: 15,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // サインアップボタン
-                        authState.isLoading
-                            ? const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 12),
-                                child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
-                              )
-                            : ElevatedButton(
-                                onPressed: signUp,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.starGold,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  minimumSize: const Size(double.infinity, 52),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
+                              TextButton(
+                                onPressed: () => context.pop(),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
-                                  l10n.signUpSubmitButton,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  l10n.signInLink,
+                                  style: const TextStyle(
+                                    color: AppColors.starGold,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                 ),
                               ),
-                        const SizedBox(height: 20),
-                        const AuthDivider(),
-                        const SizedBox(height: 20),
-                        SocialSignInButton(
-                          provider: SocialProvider.google,
-                          onPressed: signInWithGoogle,
-                        ),
-                        const SizedBox(height: 12),
-                        SocialSignInButton(
-                          provider: SocialProvider.apple,
-                          onPressed: signInWithApple,
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        l10n.signUpHasAccountPrompt,
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 15,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => context.pop(),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          l10n.signInLink,
-                          style: const TextStyle(
-                            color: AppColors.starGold,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),

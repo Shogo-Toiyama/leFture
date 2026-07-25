@@ -134,157 +134,169 @@ class ResetPasswordPage extends HookConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 24),
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [AppColors.starGold, AppColors.deepGold],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.starGold.withValues(alpha: 0.35),
-                          blurRadius: 22,
-                          spreadRadius: 2,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 440,
+                      minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [AppColors.starGold, AppColors.deepGold],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.starGold.withValues(alpha: 0.35),
+                                  blurRadius: 22,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.key_rounded,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          l10n.resetPasswordTitle,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.universe.textStarlight,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.resetPasswordSubtitle,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.universe.textComet,
+                              ),
+                        ),
+                        const SizedBox(height: 32),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: AppColors.universe.glassWhiteLow,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: AppColors.universe.glassBorder),
+                          ),
+                          child: Form(
+                            key: formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (inlineError.value != null) ...[
+                                  AppErrorBox(
+                                    actionName: 'updating your password',
+                                    rawError: inlineError.value,
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                                TextFormField(
+                                  controller: passwordController,
+                                  style: TextStyle(color: AppColors.universe.textStarlight),
+                                  cursorColor: AppColors.starGold,
+                                  obscureText: obscurePassword.value,
+                                  decoration: inputDecoration(
+                                    l10n.newPasswordLabel,
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                        color: AppColors.universe.textComet,
+                                      ),
+                                      onPressed: () => obscurePassword.value = !obscurePassword.value,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return l10n.resetPasswordErrorEmpty;
+                                    }
+                                    if (value.length < 8) {
+                                      return l10n.passwordErrorTooShort;
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                PasswordStrengthMeter(controller: passwordController),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: confirmPasswordController,
+                                  style: TextStyle(color: AppColors.universe.textStarlight),
+                                  cursorColor: AppColors.starGold,
+                                  obscureText: obscureConfirmPassword.value,
+                                  decoration: inputDecoration(
+                                    l10n.confirmNewPasswordLabel,
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        obscureConfirmPassword.value
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
+                                        color: AppColors.universe.textComet,
+                                      ),
+                                      onPressed: () => obscureConfirmPassword.value = !obscureConfirmPassword.value,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return l10n.confirmNewPasswordErrorEmpty;
+                                    }
+                                    if (value != passwordController.text) {
+                                      return l10n.passwordsMismatchError;
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 24),
+                                isSubmitting.value
+                                    ? const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 12),
+                                        child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+                                      )
+                                    : ElevatedButton(
+                                        onPressed: submit,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.starGold,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          minimumSize: const Size(double.infinity, 52),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          l10n.resetPasswordButton,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                      ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.key_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  l10n.resetPasswordTitle,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.universe.textStarlight,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.resetPasswordSubtitle,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.universe.textComet,
-                      ),
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: AppColors.universe.glassWhiteLow,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.universe.glassBorder),
-                  ),
-                  child: Form(
-                          key: formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (inlineError.value != null) ...[
-                                AppErrorBox(
-                                  actionName: 'updating your password',
-                                  rawError: inlineError.value,
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              TextFormField(
-                                controller: passwordController,
-                                style: TextStyle(color: AppColors.universe.textStarlight),
-                                cursorColor: AppColors.starGold,
-                                obscureText: obscurePassword.value,
-                                decoration: inputDecoration(
-                                  l10n.newPasswordLabel,
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                      color: AppColors.universe.textComet,
-                                    ),
-                                    onPressed: () => obscurePassword.value = !obscurePassword.value,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return l10n.resetPasswordErrorEmpty;
-                                  }
-                                  if (value.length < 8) {
-                                    return l10n.passwordErrorTooShort;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              PasswordStrengthMeter(controller: passwordController),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: confirmPasswordController,
-                                style: TextStyle(color: AppColors.universe.textStarlight),
-                                cursorColor: AppColors.starGold,
-                                obscureText: obscureConfirmPassword.value,
-                                decoration: inputDecoration(
-                                  l10n.confirmNewPasswordLabel,
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      obscureConfirmPassword.value
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: AppColors.universe.textComet,
-                                    ),
-                                    onPressed: () => obscureConfirmPassword.value = !obscureConfirmPassword.value,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return l10n.confirmNewPasswordErrorEmpty;
-                                  }
-                                  if (value != passwordController.text) {
-                                    return l10n.passwordsMismatchError;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              isSubmitting.value
-                                  ? const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 12),
-                                      child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
-                                    )
-                                  : ElevatedButton(
-                                      onPressed: submit,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.starGold,
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        minimumSize: const Size(double.infinity, 52),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        l10n.resetPasswordButton,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
-                                    ),
-                            ],
-                          ),
-                        ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

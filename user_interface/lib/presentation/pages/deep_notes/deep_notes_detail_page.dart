@@ -22,7 +22,7 @@ import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
-import 'package:lefture/presentation/widgets/announcement_transcript_modal.dart';
+import 'package:lefture/presentation/widgets/transcript_modal.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
 import 'package:lefture/domain/entities/annotation.dart';
@@ -504,7 +504,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     final courseIdVal = course?.id;
                     if (!context.mounted) return;
                     if (lectureId.isNotEmpty) {
-                      await showAnnouncementTranscriptModal(
+                      await showTranscriptModal(
                         context,
                         lectureId: lectureId,
                         startSid: startSid,

@@ -42,6 +42,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get continueWithApple => 'Appleで続ける';
 
   @override
+  String get continueWithEmail => 'メールアドレスで登録';
+
+  @override
   String get signInNoAccountPrompt => 'アカウントをお持ちでない方は ';
 
   @override

@@ -105,182 +105,194 @@ class SignInPage extends HookConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 24),
-                Center(
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [AppColors.starGold, AppColors.deepGold],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.starGold.withValues(alpha: 0.35),
-                          blurRadius: 24,
-                          spreadRadius: 2,
-                        ),
-                      ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 440,
+                      minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
                     ),
-                    child: const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 34),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  l10n.signInWelcomeTitle,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.universe.textStarlight,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.signInSubtitle,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.universe.textComet,
-                      ),
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: AppColors.universe.glassWhiteLow,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.universe.glassBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (inlineError.value != null) ...[
-                        AppErrorBox(
-                          actionName: 'signing in',
-                          rawError: inlineError.value,
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      TextField(
-                        controller: emailController,
-                        style: TextStyle(color: AppColors.universe.textStarlight),
-                        cursorColor: AppColors.starGold,
-                        decoration: inputDecoration(l10n.emailLabel, Icons.email_outlined),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: passwordController,
-                        style: TextStyle(color: AppColors.universe.textStarlight),
-                        cursorColor: AppColors.starGold,
-                        decoration: inputDecoration(
-                          l10n.passwordLabel,
-                          Icons.lock_outlined,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                              color: AppColors.universe.textComet,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [AppColors.starGold, AppColors.deepGold],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.starGold.withValues(alpha: 0.35),
+                                  blurRadius: 24,
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
-                            onPressed: () => obscurePassword.value = !obscurePassword.value,
+                            child: const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 34),
                           ),
                         ),
-                        obscureText: obscurePassword.value,
-                      ),
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => context.push(AppRoutes.forgotPassword),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            l10n.forgotPasswordLink,
-                            style: TextStyle(
-                              color: AppColors.universe.textComet,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        const SizedBox(height: 20),
+                        Text(
+                          l10n.signInWelcomeTitle,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.universe.textStarlight,
+                              ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      authState.isLoading
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
-                            )
-                          : ElevatedButton(
-                              onPressed: signIn,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.starGold,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                minimumSize: const Size(double.infinity, 52),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.signInSubtitle,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.universe.textComet,
+                              ),
+                        ),
+                        const SizedBox(height: 32),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: AppColors.universe.glassWhiteLow,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: AppColors.universe.glassBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (inlineError.value != null) ...[
+                                AppErrorBox(
+                                  actionName: 'signing in',
+                                  rawError: inlineError.value,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                              TextField(
+                                controller: emailController,
+                                style: TextStyle(color: AppColors.universe.textStarlight),
+                                cursorColor: AppColors.starGold,
+                                decoration: inputDecoration(l10n.emailLabel, Icons.email_outlined),
+                                keyboardType: TextInputType.emailAddress,
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: passwordController,
+                                style: TextStyle(color: AppColors.universe.textStarlight),
+                                cursorColor: AppColors.starGold,
+                                decoration: inputDecoration(
+                                  l10n.passwordLabel,
+                                  Icons.lock_outlined,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                      color: AppColors.universe.textComet,
+                                    ),
+                                    onPressed: () => obscurePassword.value = !obscurePassword.value,
+                                  ),
+                                ),
+                                obscureText: obscurePassword.value,
+                              ),
+                              const SizedBox(height: 4),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => context.push(AppRoutes.forgotPassword),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    l10n.forgotPasswordLink,
+                                    style: TextStyle(
+                                      color: AppColors.universe.textComet,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                l10n.signInButton,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              const SizedBox(height: 16),
+                              authState.isLoading
+                                  ? const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                      child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+                                    )
+                                  : ElevatedButton(
+                                      onPressed: signIn,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.starGold,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        minimumSize: const Size(double.infinity, 52),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.signInButton,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                    ),
+                              const SizedBox(height: 20),
+                              AuthDivider(label: l10n.authDividerOr),
+                              const SizedBox(height: 20),
+                              SocialSignInButton(
+                                provider: SocialProvider.google,
+                                onPressed: signInWithGoogle,
+                              ),
+                              const SizedBox(height: 12),
+                              SocialSignInButton(
+                                provider: SocialProvider.apple,
+                                onPressed: signInWithApple,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.signInNoAccountPrompt,
+                              style: TextStyle(
+                                color: AppColors.universe.textComet,
+                                fontSize: 15,
                               ),
                             ),
-                      const SizedBox(height: 20),
-                      AuthDivider(label: l10n.authDividerOr),
-                      const SizedBox(height: 20),
-                      SocialSignInButton(
-                        provider: SocialProvider.google,
-                        onPressed: signInWithGoogle,
-                      ),
-                      const SizedBox(height: 12),
-                      SocialSignInButton(
-                        provider: SocialProvider.apple,
-                        onPressed: signInWithApple,
-                      ),
-                    ],
+                            TextButton(
+                              onPressed: () => context.push(AppRoutes.signUp),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                l10n.createAccountLink,
+                                style: const TextStyle(
+                                  color: AppColors.starGold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                 const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      l10n.signInNoAccountPrompt,
-                      style: TextStyle(
-                        color: AppColors.universe.textComet,
-                        fontSize: 15,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => context.push(AppRoutes.signUp),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        l10n.createAccountLink,
-                        style: const TextStyle(
-                          color: AppColors.starGold,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

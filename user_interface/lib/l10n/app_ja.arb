@@ -12,6 +12,7 @@
   "authDividerOr": "または",
   "continueWithGoogle": "Googleで続ける",
   "continueWithApple": "Appleで続ける",
+  "continueWithEmail": "メールアドレスで登録",
   "signInNoAccountPrompt": "アカウントをお持ちでない方は ",
   "createAccountLink": "アカウントを作成",
 

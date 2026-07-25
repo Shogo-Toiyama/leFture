@@ -1,14 +1,47 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:http/http.dart' as http;
 
 import '../../core/utils/dev_log.dart';
+import '../../infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import '../../infrastructure/supabase/supabase_client.dart';
 
 part 'auth_provider.g.dart';
+
+/// nonce検証用のランダムな生文字列を生成する。
+/// Supabaseはプロバイダーによらず「渡されたnonceをSHA-256でハッシュした値」と
+/// IDトークンのnonceクレームを比較して検証する。そのためGoogle・Appleいずれも
+/// IdP(Google/Apple)へのリクエストにはこの値のSHA-256ハッシュを渡し、
+/// Supabase側へは生の値をそのまま渡す。
+String _generateRawNonce({int length = 32}) {
+  const charset =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+  final random = Random.secure();
+  return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+      .join();
+}
+
+/// Google Sign-Inのnonce(生の値)。Supabaseの signInWithIdToken にはこちらを渡す。
+/// GoogleSignIn.instance.initialize()はアプリ起動時に一度しか呼べない制約が
+/// あるため、ここで一度だけ生成してmain.dartでの初期化とsignInWithGoogle()の
+/// 両方から参照する。
+final String googleSignInRawNonce = _generateRawNonce();
+
+/// Google Sign-Inのnonce(SHA-256ハッシュ済み)。GoogleSignIn.instance.initialize()
+/// の nonce 引数にはこちら(ハッシュ済み)を渡す — IDトークンのnonceクレームに
+/// この値が入り、Supabase側で生の値をハッシュして突き合わせる仕組みのため。
+final String googleSignInHashedNonce =
+    sha256.convert(utf8.encode(googleSignInRawNonce)).toString();
 
 /// 🔄 現在のセッション（ログイン状態）を監視
 @riverpod
@@ -138,30 +171,125 @@ class AuthController extends _$AuthController {
     return result;
   }
 
+  /// サインアップ画面でGoogle/Appleを選んだ場合に、入力済みのユーザーネームを
+  /// user_profiles に反映する。既にusernameが設定済み(＝以前から使っている
+  /// アカウントで、サインアップ画面から誤って実行したケースを含む)の場合は
+  /// 上書きしない。反映の失敗はサインイン自体の成否には影響させない
+  /// (ベストエフォート)。
+  Future<void> _applyDesiredUsernameIfMissing(String? desiredUsername) async {
+    if (desiredUsername == null || desiredUsername.isEmpty) return;
+    try {
+      final repository = ref.read(userProfileRepositoryProvider);
+      final profile = await repository.getCurrentProfile();
+      if (profile?.username == null) {
+        await repository.updateProfile(username: desiredUsername);
+      }
+    } catch (e) {
+      DevLog.add('[Auth] Failed to apply desired username after social sign-in: $e');
+    }
+  }
+
   /// Google でサインイン
-  Future<void> signInWithGoogle() async {
+  /// ネイティブSDK(google_sign_in)経由でGoogleと直接やり取りし、得たIDトークンを
+  /// signInWithIdTokenでSupabaseに渡す。ブラウザを一切開かないため、
+  /// Supabaseのプロジェクトドメインが同意画面に表示されない。
+  ///
+  /// [desiredUsername] はサインアップ画面で入力されたユーザーネーム。
+  /// サインイン画面からの呼び出しではnullのままでよい。
+  Future<void> signInWithGoogle({String? desiredUsername}) async {
     state = const AsyncLoading();
-    final result = await AsyncValue.guard(() async {
-      await supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'com.lefture.app://login-callback/',
-      );
-    });
-    if (!ref.mounted) return;
-    state = result;
+    try {
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null) {
+        throw Exception('Google sign-in did not return an ID token.');
+      }
+      final result = await AsyncValue.guard(() async {
+        await supabase.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: idToken,
+          nonce: googleSignInRawNonce,
+        );
+      });
+      if (!result.hasError) {
+        await _applyDesiredUsernameIfMissing(desiredUsername);
+      }
+      if (!ref.mounted) return;
+      state = result;
+    } on GoogleSignInException catch (e) {
+      if (!ref.mounted) return;
+      // ユーザーによる明示的なキャンセルはエラー扱いにしない
+      state = e.code == GoogleSignInExceptionCode.canceled
+          ? const AsyncData(null)
+          : AsyncError(e, StackTrace.current);
+    }
   }
 
   /// Apple でサインイン
-  Future<void> signInWithApple() async {
+  /// ネイティブSDK(sign_in_with_apple)経由でAppleと直接やり取りし、得た
+  /// IDトークンをsignInWithIdTokenでSupabaseに渡す。Googleと同様、ブラウザを
+  /// 一切開かない。Appleはnonceの検証を要求するため、生のnonceを生成して
+  /// そのSHA-256ハッシュをApple側のリクエストに渡し、Supabase側へは
+  /// 検証用に生のnonceをそのまま渡す。
+  ///
+  /// AndroidにはネイティブのSign in with Apple自体が存在せず、
+  /// sign_in_with_apple パッケージはAndroidでは別途Services ID/返却URLの
+  /// Web用設定(webAuthenticationOptions)が無いと動作しない。その設定は
+  /// 未実施のため、Android(および万一のWeb)では従来のブラウザ経由の
+  /// signInWithOAuthにフォールバックする。iOS/macOSのみネイティブフローを使う。
+  ///
+  /// [desiredUsername] はサインアップ画面で入力されたユーザーネーム。
+  /// サインイン画面からの呼び出しではnullのままでよい。ブラウザ経由の
+  /// Androidフォールバックはこの場では認証が完了しない(ディープリンク
+  /// コールバック待ち)ため、ユーザーネームの反映は非ネイティブ経路では行わない。
+  Future<void> signInWithApple({String? desiredUsername}) async {
+    if (kIsWeb || !(Platform.isIOS || Platform.isMacOS)) {
+      state = const AsyncLoading();
+      final result = await AsyncValue.guard(() async {
+        await supabase.auth.signInWithOAuth(
+          OAuthProvider.apple,
+          redirectTo: 'com.lefture.app://login-callback/',
+        );
+      });
+      if (!ref.mounted) return;
+      state = result;
+      return;
+    }
+
     state = const AsyncLoading();
-    final result = await AsyncValue.guard(() async {
-      await supabase.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: 'com.lefture.app://login-callback/',
+    try {
+      final rawNonce = _generateRawNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
       );
-    });
-    if (!ref.mounted) return;
-    state = result;
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        throw Exception('Apple sign-in did not return an identity token.');
+      }
+      final result = await AsyncValue.guard(() async {
+        await supabase.auth.signInWithIdToken(
+          provider: OAuthProvider.apple,
+          idToken: idToken,
+          nonce: rawNonce,
+        );
+      });
+      if (!result.hasError) {
+        await _applyDesiredUsernameIfMissing(desiredUsername);
+      }
+      if (!ref.mounted) return;
+      state = result;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (!ref.mounted) return;
+      // ユーザーによる明示的なキャンセルはエラー扱いにしない
+      state = e.code == AuthorizationErrorCode.canceled
+          ? const AsyncData(null)
+          : AsyncError(e, StackTrace.current);
+    }
   }
 
   /// 現在のプロバイダーを取得（Email, Google, Apple など）

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +12,15 @@ import 'app/app.dart';
 
 const supabaseUrl = 'https://lvbpuywjxmmeecftinkb.supabase.co';
 const supabaseAnonKey = 'sb_publishable_LUfg9T2f-zvargd7GgR7Cw_KAl86N8c';
+
+// Google Cloud Console で作成した2種類のOAuthクライアントID。
+// - googleIosClientId: iOSアプリ用クライアント(ネイティブSDKがこのIDで認証する)
+// - googleWebServerClientId: Web用クライアント(SupabaseのGoogleプロバイダー設定と
+//   同じものを使う。signInWithIdTokenのトークン検証はこちらのIDを対象に行われる)
+const googleIosClientId =
+    '511705914929-omh4h6phcvvldef0ssc6jb6o1ep8ijke.apps.googleusercontent.com';
+const googleWebServerClientId =
+    '511705914929-t0vvqbco2e60rh8gjhpb3qusbvbbrp2o.apps.googleusercontent.com';
 
 void _logUncaughtError(Object error, StackTrace stack) {
   DevLog.add('🔴 [UNCAUGHT ERROR] $error\n$stack');
@@ -35,6 +46,14 @@ Future<void> main() async {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
+    );
+
+    // GoogleSignIn.instance はこの初期化が完了するまで他のメソッドを
+    // 呼んではいけない(公式ドキュメントの制約)ため、起動時に一度だけ実行する。
+    await GoogleSignIn.instance.initialize(
+      clientId: googleIosClientId,
+      serverClientId: googleWebServerClientId,
+      nonce: googleSignInHashedNonce,
     );
 
     // 設定の永続化を初期化

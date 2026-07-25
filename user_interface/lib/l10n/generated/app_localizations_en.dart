@@ -42,6 +42,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithApple => 'Continue with Apple';
 
   @override
+  String get continueWithEmail => 'Continue with email';
+
+  @override
   String get signInNoAccountPrompt => 'Don\'t have an account? ';
 
   @override

@@ -101,7 +101,8 @@ List<double> computeDisplayItemHeights(
       kHorizontalPagePadding * 2 -
       kRowHorizontalPadding * 2 -
       timestampWidth -
-      kTimestampGap;
+      kTimestampGap -
+      3.0;
 
   final List<double> heights = [];
   for (final item in displayItems) {
@@ -115,7 +116,7 @@ List<double> computeDisplayItemHeights(
         textScaler: textScaler,
       )..layout(maxWidth: availableTextWidth);
 
-      final double rowHeight = painter.height + kRowVerticalPadding * 2 + 2.0;
+      final double rowHeight = painter.height + kRowVerticalPadding * 2 + 4.0;
       heights.add(rowHeight);
     } else if (item is MomentDisplayItem) {
       final m = item.moment;
@@ -1165,10 +1166,6 @@ class _TranscriptPageContent extends HookConsumerWidget {
                             }
                           }
 
-                          final displayWeight = isPlayingActive
-                              ? FontWeight.bold
-                              : FontWeight.normal;
-
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 250),
                             decoration: itemDecoration,
@@ -1196,13 +1193,12 @@ class _TranscriptPageContent extends HookConsumerWidget {
                                       ),
                                     ),
                                     const SizedBox(width: kTimestampGap),
-                                    // Sentence text
                                     Expanded(
                                       child: Text(
                                         stripSidCitations(s.text),
                                         style: kSentenceTextStyle.copyWith(
                                           color: displayColor,
-                                          fontWeight: displayWeight,
+                                          shadows: isPlayingActive ? [Shadow(color: displayColor, offset: const Offset(0.25, 0)), Shadow(color: displayColor, offset: const Offset(-0.25, 0)), Shadow(color: displayColor, offset: const Offset(0, 0.25)), Shadow(color: displayColor, offset: const Offset(0, -0.25))] : null,
                                           fontStyle: isItalic
                                               ? FontStyle.italic
                                               : FontStyle.normal,
