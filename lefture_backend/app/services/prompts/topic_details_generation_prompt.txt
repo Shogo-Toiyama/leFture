@@ -8,6 +8,9 @@ INPUTS
 - Topic segment: { "idx": <number>, "title": "<string>", "start_sid": "<string>", "end_sid": "<string>" }
 - Partial transcript: [{ "sid": "<string>", "text": "<string>", "role": "CONTENT|INTERACTION|LOGISTICS" }, ...]
 
+OUTPUT LANGUAGE
+${LANGUAGE_INSTRUCTIONS}
+
 STRICT FAITHFULNESS & NO META-LANGUAGE
 - **No Outside Facts/Terms:** Do not introduce external facts, examples, or expert consensus. Avoid introducing terms that do not appear in the transcript unless they are needed for a brief Supplement.
 - **Transcript Scope:** The partial transcript includes context before and after the topic range. Use `start_sid` to `end_sid` as the primary scope. Outside-range context is for understanding only, not for generating main content. Refer to it briefly only when it is necessary to explain essential prior setup, clarify the topic’s motivation, or bridge to the next topic. Do not explain outside-range content in detail, because adjacent topics are generated separately. When uncertain, ignore outside-range context.

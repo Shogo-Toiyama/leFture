@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from app.core.r2_storage import storage_service
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import TaskLogger, _load_prompt, _sid_to_int
+from app.services.helpers.helpers import TaskLogger, _load_prompt, _sid_to_int, _build_bilingual_gloss_instruction
 
 class ReviewCardGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -15,17 +15,24 @@ class ReviewCardGenerationService:
         self.model_alias = "gemini/gemini-2.5-flash"
 
     async def run_from_memory(
-        self, 
-        role_classified_data: List[Dict[str, Any]], 
+        self,
+        role_classified_data: List[Dict[str, Any]],
         core_data: Dict[str, Any],
         mapping_result: Dict[str, Any],
         uid: str,
-        lecture_id: str
+        lecture_id: str,
+        content_language: str = "English",
+        transcript_language: str = "English",
+        is_bilingual: bool = False,
     ) -> List[Dict[str, Any]]:
-        
+
         self.logger.log(f"   [Logic] Starting Review Card Generation with {self.model_alias}")
-        
+
         prompt_template = _load_prompt("review_cards_generation_prompt.txt")
+        prompt_template = prompt_template.replace(
+            "${LANGUAGE_INSTRUCTIONS}",
+            _build_bilingual_gloss_instruction(content_language, transcript_language, is_bilingual),
+        )
         options_json = LLMOptions(output_type="json", temperature=0.3)
         
         all_review_results = []

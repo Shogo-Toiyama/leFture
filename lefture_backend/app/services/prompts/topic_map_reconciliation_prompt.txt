@@ -23,6 +23,10 @@ Every node (past and pending) also carries a `lecture_num` field: the lecture's 
 
 ---
 
+## OUTPUT LANGUAGE
+${LANGUAGE_INSTRUCTIONS}
+This applies to cluster `name` and ghost node `name` only. Never rename or translate existing node titles — nodes are identified purely by their pre-assigned `topic_id`.
+
 ## THE IMMUTABLE LAWS OF MAPPING
 
 ### 1. Knowledge Flow (Node Parents & Edges)

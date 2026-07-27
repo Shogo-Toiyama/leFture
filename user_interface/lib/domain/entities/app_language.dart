@@ -35,6 +35,7 @@ const List<AppLanguage> kRecordingLanguages = [
   AppLanguage(code: 'es', nativeName: 'Español', englishName: 'Spanish'),
   AppLanguage(code: 'de', nativeName: 'Deutsch', englishName: 'German'),
   AppLanguage(code: 'zh', nativeName: '中文', englishName: 'Chinese'),
+  AppLanguage(code: 'yue', nativeName: '廣東話', englishName: 'Cantonese'),
   AppLanguage(code: 'ko', nativeName: '한국어', englishName: 'Korean'),
   AppLanguage(code: 'pt', nativeName: 'Português', englishName: 'Portuguese'),
   AppLanguage(code: 'it', nativeName: 'Italiano', englishName: 'Italian'),

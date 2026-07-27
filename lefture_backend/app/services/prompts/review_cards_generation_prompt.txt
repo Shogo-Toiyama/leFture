@@ -11,6 +11,10 @@ ${COURSE_TOPIC_MAP}
 ${TRANSCRIPT_SEGMENT}
 </transcript_segment>
 
+### OUTPUT LANGUAGE
+${LANGUAGE_INSTRUCTIONS}
+This applies to every piece of written text you generate: `micro_topics` titles/summaries, `card_mapping_strategy`, `core_concept_identified`, card `title`s, and all `content_blocks` text. Evidence citations (`⟦sXXXXXX⟧`) and code/math inside `code` blocks are never translated.
+
 ### TOPIC EVALUATION (The Mapping & Synthesis Engine)
 Before generating any cards, you MUST evaluate the transcript segment. This acts as both your "Semantic Zoom" data for the Course Map and a concise planning summary for card generation. Follow this exact sequence:
 

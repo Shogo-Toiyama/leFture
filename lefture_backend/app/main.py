@@ -50,6 +50,7 @@ from app.services.task_runners import (
     run_announcement_generation_task,
     run_topic_mapping_task,
     run_review_card_task,
+    run_fun_fact_brainstorming_task,
     run_fun_fact_search_task,
     run_fun_facts_task,
     run_detail_contents_task,
@@ -351,8 +352,9 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
         {"task_type": "IMAGE_PROMPT_GENERATION", "dependencies": ["REVIEW_CARD_GENERATION"]},
         {"task_type": "IMAGE_RENDERING", "dependencies": ["IMAGE_PROMPT_GENERATION"]},
 
-        # Phase 6-B: Fun Fact (検索 -> 生成の2段階)
-        {"task_type": "FUN_FACT_SEARCH", "dependencies": ["CORE_EXTRACTION"]}, # 検索ワードだけあれば走れる
+        # Phase 6-B: Fun Fact (種出し -> 検索 -> 生成の3段階)
+        {"task_type": "FUN_FACT_BRAINSTORMING", "dependencies": ["CORE_EXTRACTION"]}, # 選ばれたトピック/概念があれば走れる
+        {"task_type": "FUN_FACT_SEARCH", "dependencies": ["FUN_FACT_BRAINSTORMING"]}, # 検索ワードだけあれば走れる
         {"task_type": "FUN_FACTS_GENERATION", "dependencies": ["REVIEW_CARD_GENERATION", "FUN_FACT_SEARCH"]}, # レビューカードと検索結果の両方を待つ
         
         # Phase 6-C: Detail Contents
@@ -1156,6 +1158,7 @@ TASK_ROUTES = {
     "REVIEW_CARD_GENERATION": "/worker/review-card",
     "IMAGE_PROMPT_GENERATION": "/worker/image-prompt-generation",
     "IMAGE_RENDERING": "/worker/image-rendering",
+    "FUN_FACT_BRAINSTORMING": "/worker/fun-fact-brainstorming",
     "FUN_FACT_SEARCH": "/worker/fun-fact-search",
     "FUN_FACTS_GENERATION": "/worker/fun-facts-generation",
     "DETAIL_CONTENTS_GENERATION": "/worker/detail-contents",
@@ -1427,6 +1430,10 @@ async def worker_image_prompt_generation(payload: WorkerPayload, request: Reques
 @app.post("/worker/image-rendering")
 async def worker_image_rendering(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_image_rendering_task)
+
+@app.post("/worker/fun-fact-brainstorming")
+async def worker_fun_fact_brainstorming(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_fun_fact_brainstorming_task)
 
 @app.post("/worker/fun-fact-search")
 async def worker_fun_fact_search(payload: WorkerPayload, request: Request):

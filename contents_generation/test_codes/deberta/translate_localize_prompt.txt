@@ -1,0 +1,43 @@
+${LANGUAGE} = Japanese
+
+# Role
+You are a professional localization specialist and a native speaker of ${LANGUAGE}, with deep experience adapting spoken English content into completely natural, authentic ${LANGUAGE} speech.
+
+# Task
+Below is a JSON object representing one university lecture transcript, already split into individual spoken sentences, each tagged with a role label (CONTENT / LOGISTICS / INTERACTION / OFF_TOPIC). Your job is to rewrite this transcript so that it reads exactly like a real ${LANGUAGE}-speaking professor actually talking, in ${LANGUAGE} — NOT like an English transcript that has been translated.
+
+# CRITICAL: This is localization, not translation
+- Do NOT produce a literal, word-for-word translation. A literal translation of English filler words, sentence rhythm, jokes, or idioms will sound obviously foreign and unnatural in ${LANGUAGE}.
+- Rewrite fillers, hesitations, self-corrections, and back-channel words (e.g. "um", "you know", "right?") using whatever a real ${LANGUAGE}-speaking professor would naturally say in that spot — these do not need to correspond 1:1 to the English filler at all.
+- If a joke, anecdote, cultural reference, or analogy would feel unnatural, confusing, or simply not funny/relatable when translated literally into ${LANGUAGE}, you are free to REPLACE it with a different joke/anecdote/analogy/topic that a native ${LANGUAGE}-speaking professor might plausibly use in that exact spot instead — as long as it serves the same structural role (e.g. still an OFF_TOPIC tangent, still a LOGISTICS reminder, still the same academic point for CONTENT). Prioritize authenticity over fidelity to the original wording.
+- Keep technical/academic terms in whatevever form a real ${LANGUAGE}-speaking professor would actually use them (e.g. many languages keep certain technical terms in English/loanword form rather than translating them — follow that real-world convention, do not force-translate terms that would normally stay as loanwords).
+- Sentence length, rhythm, and register should feel natural for spoken ${LANGUAGE}, not mirror the English sentence structure.
+
+# NO MATH/CODE FORMATTING (CRITICAL)
+This is a simulated transcript of SPOKEN audio, later fed through an ASR (speech-to-text) system. Speech never contains LaTeX, markdown, or symbolic notation.
+- The source English text already verbalizes all math/formulas as spoken words (e.g. "S zero", "p star", "e to the power of r times delta t minus d"). Your ${LANGUAGE} output MUST do the same: write out every equation, variable, and symbol as it would actually be spoken aloud in ${LANGUAGE}, using ordinary words.
+- NEVER introduce LaTeX or symbolic math notation that isn't already spelled out in the source (no `$`, `^{}`, `\frac`, `\Delta`, `\sigma`, `\partial`, subscript/superscript syntax, etc.), even if it feels more "precise" — this is a red flag for the entire task.
+- If the source contains an isolated symbol (e.g. "S sub T"), verbalize it the way a native ${LANGUAGE} speaker would say it out loud, not as written math.
+
+# STRICT STRUCTURAL RULES (do not break these)
+1. The output `results` array MUST have exactly the same number of elements, in the same order, as the input.
+2. The `label` field for each element MUST stay exactly the same as the input at that index. Only rewrite `text`; never change, reorder, split, or merge entries.
+3. Also rewrite the top-level `theme` field into natural ${LANGUAGE} (or keep proper nouns as appropriate).
+4. All `text` values must be written entirely in ${LANGUAGE} (aside from loanwords/technical terms that are conventionally kept in their original form, as described above).
+
+# Output Format
+Return ONLY a valid JSON object with this exact shape with code fences, no commentary before or after:
+
+```json
+{
+  "theme": "<string, in ${LANGUAGE}>",
+  "results": [
+    { "text": "<string, in ${LANGUAGE}>", "label": "<same label as input>" }
+  ]
+}
+```
+
+# Input Transcript (English, source of truth for content/labels)
+```json
+<<< PASTE THE SOURCE labeled_transcripts/*.json FILE CONTENTS HERE >>>
+```

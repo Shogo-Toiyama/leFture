@@ -4,7 +4,7 @@ import time
 from typing import Any, Dict
 
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import TaskLogger, _load_prompt, _strip_code_fence
+from app.services.helpers.helpers import TaskLogger, _load_prompt, _strip_code_fence, _build_language_instruction
 
 class TopicMappingService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -12,10 +12,15 @@ class TopicMappingService:
         self.logger = logger
         self.model_alias = "together_ai/openai/gpt-oss-120b"
 
-    async def run_from_memory(self, current_graph: Dict[str, Any], todays_topics: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_from_memory(
+        self,
+        current_graph: Dict[str, Any],
+        todays_topics: Dict[str, Any],
+        content_language: str = "English",
+    ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Topic Mapping with {self.model_alias}")
         start_time = time.perf_counter()
-        
+
         # 1. プロンプトの読み込み
         prompt = _load_prompt("topic_mapping_prompt.txt")
         options_json = LLMOptions(output_type="json", temperature=0.3, reasoning_effort="medium")
@@ -23,11 +28,13 @@ class TopicMappingService:
         # 2. プロンプト内の変数をJSON文字列に置換
         # ※ インデントを無しにしてトークンを節約しつつ、構造を伝える
         prompt_text = prompt.replace(
-            "${CURRENT_GRAPH_JSON}", 
+            "${CURRENT_GRAPH_JSON}",
             json.dumps(current_graph, ensure_ascii=False)
         ).replace(
-            "${TODAYS_MACRO_TOPICS_JSON}", 
+            "${TODAYS_MACRO_TOPICS_JSON}",
             json.dumps(todays_topics, ensure_ascii=False)
+        ).replace(
+            "${LANGUAGE_INSTRUCTIONS}", _build_language_instruction(content_language)
         )
 
         messages = [

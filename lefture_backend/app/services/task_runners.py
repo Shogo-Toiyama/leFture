@@ -12,7 +12,7 @@ from typing import Any
 from app.core.config import BASE_WORK_DIR
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
-from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
+from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_content_language_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
 from app.services.helpers.credits import charge_credits_for_task
 
@@ -28,6 +28,7 @@ from app.services.logic.review_card_generation import ReviewCardGenerationServic
 from app.services.logic.image_generation import ImageGenerationService
 from app.services.logic.image_rendering import ImageRenderingService
 from app.services.logic.web_search import WebSearchService
+from app.services.logic.fun_fact_brainstorming import FunFactBrainstormingService
 from app.services.logic.fun_fact_generation import FunFactGenerationService
 from app.services.logic.topic_details_generation import TopicDetailGenerationService
 
@@ -1182,12 +1183,23 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         # 学生プロフィールの取得
         student_profile = await asyncio.to_thread(_get_student_profile, uid)
 
+        # 出力言語の解決 (表示言語/録音言語)
+        content_language, transcript_language, is_bilingual = await asyncio.to_thread(
+            _get_content_language_context, lecture_id
+        )
+
         # UnifiedLLMを初期化して職人に渡す
         llm = UnifiedLLM(billing)
         extractor = CoreExtractionService(llm, logger)
-        
+
         # メモリ上で処理
-        extraction_result = await extractor.run_from_memory(transcript_data, student_profile)
+        extraction_result = await extractor.run_from_memory(
+            transcript_data,
+            student_profile,
+            content_language=content_language,
+            transcript_language=transcript_language,
+            is_bilingual=is_bilingual,
+        )
 
         # ログをR2に保存
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "core_extraction", extraction_result)
@@ -1439,10 +1451,12 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
         formatted_transcript = "\n\n".join(formatted_blocks)
         await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "input_announcement_generation", {"formatted_transcript": formatted_transcript})
         
+        content_language, _, _ = await asyncio.to_thread(_get_content_language_context, lecture_id)
+
         llm = UnifiedLLM(billing)
         announcer = AnnouncementGenerationService(llm, logger)
-        
-        announcements_json = await announcer.run_from_memory(formatted_transcript)
+
+        announcements_json = await announcer.run_from_memory(formatted_transcript, content_language=content_language)
         
         # 4. フルログを R2 に保存
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "announcements", announcements_json)
@@ -1655,13 +1669,15 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
         )
 
         # 4. 職人を呼ぶ
+        content_language, _, _ = await asyncio.to_thread(_get_content_language_context, lecture_id)
         llm = UnifiedLLM(billing)
         mapper = TopicMappingService(llm, logger)
 
         # メモリ上でマッピング実行
         mapping_result = await mapper.run_from_memory(
             current_graph=annotated_graph_for_llm,
-            todays_topics=todays_macro_topics
+            todays_topics=todays_macro_topics,
+            content_language=content_language,
         )
 
         # 5. フルログをR2に保存
@@ -1905,6 +1921,13 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
             lecture_ids = await asyncio.to_thread(_fetch_live_lecture_order_sync, supabase, course_id)
             lecture_num_by_id = {lid: i + 1 for i, lid in enumerate(lecture_ids)}
 
+            # コース全体の出力言語は代表として最新のLectureの表示言語を使う
+            content_language = "English"
+            if lecture_ids:
+                content_language, _, _ = await asyncio.to_thread(
+                    _get_content_language_context, lecture_ids[-1]
+                )
+
             billing = BillingEngine(task_type="TOPIC_MAP_RECONSTRUCTION")
             llm = UnifiedLLM(billing)
 
@@ -1943,6 +1966,7 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
                     mapping_result = await mapper.run_from_memory(
                         current_graph=annotated_graph,
                         todays_topics=todays_topics,
+                        content_language=content_language,
                     )
                     mutations = mapping_result.get("graph_mutations") or {}
                     new_graph = _merge_graph_mutation(new_graph, mutations, batch.get("topics", []), logger=logger)
@@ -1960,7 +1984,8 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
                 reconciliation_result = await reconciler.run_from_memory(
                     current_graph=annotated_graph,
                     removed_topics=removed_topics_context,
-                    pending_additions=annotated_pending_topics
+                    pending_additions=annotated_pending_topics,
+                    content_language=content_language,
                 )
 
                 mutations = reconciliation_result.get("graph_mutations") or {}
@@ -2037,16 +2062,22 @@ async def run_review_card_task(job_id: str, task_id: str):
         mapping_result = await _download_from_r2_to_memory(mapping_payload["topic_mapping_path"])
 
         # 2. 職人を呼ぶ
+        content_language, transcript_language, is_bilingual = await asyncio.to_thread(
+            _get_content_language_context, lecture_id
+        )
         llm = UnifiedLLM(billing)
         generator = ReviewCardGenerationService(llm, logger)
-        
+
         # 💡 メモリ駆動でトピックごとの一括生成を実行
         review_cards_results = await generator.run_from_memory(
             role_classified_data=classified_data,
             core_data=core_data,
             mapping_result=mapping_result,
             uid=uid,
-            lecture_id=lecture_id
+            lecture_id=lecture_id,
+            content_language=content_language,
+            transcript_language=transcript_language,
+            is_bilingual=is_bilingual,
         )
 
         # 3. フルログをR2に保存
@@ -2179,13 +2210,71 @@ async def run_image_rendering_task(job_id: str, task_id: str):
         raise e
 
 # ---------------------------------------------------------
-# Phase 6-B-1: FUN_FACT_SEARCH 
+# Phase 6-B-0: FUN_FACT_BRAINSTORMING
+# ---------------------------------------------------------
+async def run_fun_fact_brainstorming_task(job_id: str, task_id: str):
+    job_ctx = await _get_job_context(job_id)
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
+    logger = TaskLogger(uid, lecture_id, "FUN_FACT_BRAINSTORMING")
+
+    logger.log(f"▶️ Starting FUN_FACT_BRAINSTORMING (Task: {task_id})")
+    if not await _claim_task(task_id):
+        logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
+        return
+    billing = BillingEngine(task_type="FUN_FACT_BRAINSTORMING")
+
+    try:
+        # 1. Core Extraction が選んだトピック/概念を読み込む
+        core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
+        core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
+        fun_fact_selection = core_data.get("fun_fact_selection", {})
+
+        selected_topic_idx = fun_fact_selection.get("selected_topic_idx")
+        concept_focus = fun_fact_selection.get("concept_focus", "")
+        selected_topic = next(
+            (t for t in core_data.get("topics", []) if t.get("idx") == selected_topic_idx),
+            {},
+        )
+        topic_title = selected_topic.get("title", "")
+
+        course_title, _, _ = await asyncio.to_thread(_get_sentence_review_context, lecture_id)
+        student_profile = await asyncio.to_thread(_get_student_profile, uid)
+
+        # 2. アイデア出しを実行
+        llm = UnifiedLLM(billing)
+        service = FunFactBrainstormingService(llm, logger)
+        brainstorming_result = await service.run_from_memory(
+            student_profile=student_profile,
+            topic_title=topic_title,
+            concept_focus=concept_focus,
+            course_title=course_title,
+        )
+
+        r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "fun_fact_brainstorming", brainstorming_result)
+
+        await _update_task_status(task_id, "COMPLETED", payload={
+            "fun_fact_brainstorming_path": r2_path,
+            "billing_records": [vars(r) for r in billing.records]
+        }, user_id=uid, job_id=job_id)
+
+        logger.log(billing.report())
+        logger.log(f"✅ FUN_FACT_BRAINSTORMING Completed!")
+        logger.save_to_r2(storage_service)
+    except Exception as e:
+        # 後続(FUN_FACT_SEARCH/FUN_FACTS_GENERATION)を止めないよう、
+        # 種が無いまま完了させる(各サービス側で空シードにフォールバックする)。
+        logger.log(f"❌ FUN_FACT_BRAINSTORMING Fatal Error: {e}. Proceeding with empty seed.")
+        await _update_task_status(task_id, "COMPLETED", payload={"fun_fact_brainstorming_path": None, "billing_records": []}, user_id=uid, job_id=job_id)
+        logger.save_to_r2(storage_service)
+
+# ---------------------------------------------------------
+# Phase 6-B-1: FUN_FACT_SEARCH
 # ---------------------------------------------------------
 async def run_fun_fact_search_task(job_id: str, task_id: str):
     job_ctx = await _get_job_context(job_id)
     uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
     logger = TaskLogger(uid, lecture_id, "FUN_FACT_SEARCH")
-    
+
     logger.log(f"▶️ Starting FUN_FACT_SEARCH (Task: {task_id})")
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
@@ -2193,10 +2282,12 @@ async def run_fun_fact_search_task(job_id: str, task_id: str):
     billing = BillingEngine(task_type="FUN_FACT_SEARCH")
 
     try:
-        # 1. Core Extraction の結果を読み込む
-        core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
-        core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
-        fun_fact_seed = core_data.get("fun_fact_idea", {})
+        # 1. Fun Fact Brainstorming の結果(検索要否・クエリ)を読み込む
+        brainstorming_payload = await _get_dependency_payload(job_id, "FUN_FACT_BRAINSTORMING")
+        fun_fact_seed = {}
+        brainstorming_path = brainstorming_payload.get("fun_fact_brainstorming_path")
+        if brainstorming_path:
+            fun_fact_seed = await _download_from_r2_to_memory(brainstorming_path)
 
         # 2. 検索実行
         search_service = WebSearchService(logger, billing)
@@ -2235,9 +2326,13 @@ async def run_fun_facts_task(job_id: str, task_id: str):
         # 必要なデータをすべてダウンロード
         core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
         core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
-        
-        classified_payload = await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION")
-        classified_data = await _download_from_r2_to_memory(classified_payload["role_classification_path"])
+
+        # FUN_FACT_BRAINSTORMING の結果(seed)を読み込む
+        brainstorming_payload = await _get_dependency_payload(job_id, "FUN_FACT_BRAINSTORMING")
+        seed_data = {}
+        brainstorming_path = brainstorming_payload.get("fun_fact_brainstorming_path")
+        if brainstorming_path:
+            seed_data = await _download_from_r2_to_memory(brainstorming_path)
 
         # FUN_FACT_SEARCH の結果を読み込む
         search_payload = await _get_dependency_payload(job_id, "FUN_FACT_SEARCH")
@@ -2249,16 +2344,20 @@ async def run_fun_facts_task(job_id: str, task_id: str):
         # 職人を呼んで丸投げ
         llm = UnifiedLLM(billing)
         service = FunFactGenerationService(llm, logger)
-        
+
         # 学生プロフィールの取得
         student_profile = await asyncio.to_thread(_get_student_profile, uid)
-        
-        # 💡 メモリ上の分類済みデータと検索結果を渡す！
+
+        # 出力言語の解決
+        content_language, _, _ = await asyncio.to_thread(_get_content_language_context, lecture_id)
+
+        # 💡 Core Extractionの選定結果とBrainstormingの種、検索結果を渡す！
         fun_fact = await service.run_from_memory(
-            role_classified_data=classified_data,
             core_data=core_data,
+            seed_data=seed_data,
             search_results=search_results,
-            student_profile=student_profile
+            student_profile=student_profile,
+            content_language=content_language,
         )
 
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "fun_fact", fun_fact)
@@ -2310,14 +2409,20 @@ async def run_detail_contents_task(job_id: str, task_id: str):
         core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
 
         # 職人を呼んで丸投げ
+        content_language, transcript_language, is_bilingual = await asyncio.to_thread(
+            _get_content_language_context, lecture_id
+        )
         llm = UnifiedLLM(billing)
         service = TopicDetailGenerationService(llm, logger)
-        
+
         # 💡 Review Cardと同じく、全データを渡して中でループ・フィルタリングしてもらう！
         all_details = await service.run_from_memory(
             classified_data, core_data,
             uid=uid,
-            lecture_id=lecture_id
+            lecture_id=lecture_id,
+            content_language=content_language,
+            transcript_language=transcript_language,
+            is_bilingual=is_bilingual,
         )
 
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "detail_contents", all_details)

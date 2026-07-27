@@ -4,7 +4,7 @@ import time
 from typing import Any, Dict, List
 
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import TaskLogger, _load_prompt
+from app.services.helpers.helpers import TaskLogger, _load_prompt, _build_language_instruction
 
 class TopicMapReconciliationService:
     """
@@ -23,6 +23,7 @@ class TopicMapReconciliationService:
         current_graph: Dict[str, Any],
         removed_topics: List[Dict[str, Any]],
         pending_additions: List[Dict[str, Any]],
+        content_language: str = "English",
     ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Topic Map Reconciliation with {self.model_alias}")
         start_time = time.perf_counter()
@@ -39,6 +40,8 @@ class TopicMapReconciliationService:
         ).replace(
             "${PENDING_ADDITIONS_JSON}",
             json.dumps(pending_additions, ensure_ascii=False)
+        ).replace(
+            "${LANGUAGE_INSTRUCTIONS}", _build_language_instruction(content_language)
         )
 
         messages = [

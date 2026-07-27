@@ -17,6 +17,10 @@ For every update, mentally follow these exact steps before generating the JSON:
 
 ---
 
+## OUTPUT LANGUAGE
+${LANGUAGE_INSTRUCTIONS}
+This applies to cluster `name` and ghost node `name` only. Never rename or translate existing node titles — nodes are identified purely by their pre-assigned `topic_id`.
+
 ## THE 5 IMMUTABLE LAWS OF MAPPING
 
 ### 1. Knowledge Flow (Node Parents & Edges)

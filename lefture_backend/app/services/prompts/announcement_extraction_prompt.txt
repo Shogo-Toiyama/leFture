@@ -8,6 +8,10 @@ Format: `<sid>: <text>`
 ${TRANSCRIPT_INPUT}
 --- END TRANSCRIPT ---
 
+### OUTPUT LANGUAGE
+${LANGUAGE_INSTRUCTIONS}
+This applies to `title` and `description` only. Do NOT translate `location`, `related_topic_title`, or `raw_time_text` — keep those as exact quotes/proper nouns from the transcript.
+
 ### CATEGORY DEFINITIONS
 1. TODO: Tasks the student must complete and submit by a deadline.
 2. EVENT: Scheduled occurrences at a specific time/place.

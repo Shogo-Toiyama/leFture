@@ -630,6 +630,87 @@ def _get_sentence_review_context(lecture_id: str) -> tuple[str, str, str]:
     return course_title, keywords_list, recording_language
 
 
+# user_interface/lib/domain/entities/app_language.dart の言語コードと対応させる。
+_LANGUAGE_CODE_TO_NAME = {
+    "en": "English",
+    "ja": "Japanese",
+    "fr": "French",
+    "es": "Spanish",
+    "de": "German",
+    "zh": "Chinese",
+    "yue": "Cantonese",
+    "ko": "Korean",
+    "pt": "Portuguese",
+    "it": "Italian",
+    "ru": "Russian",
+    "ar": "Arabic",
+    "hi": "Hindi",
+}
+
+
+def _resolve_language_name(code: str | None) -> str | None:
+    if not code:
+        return None
+    return _LANGUAGE_CODE_TO_NAME.get(code, code)
+
+
+def _get_content_language_context(lecture_id: str) -> tuple[str, str, bool]:
+    """
+    コンテンツ生成タスク(Core Extraction, Review Cards, Deep Notesなど)向けに、
+    「何語で書くか(content_language)」と「トランスクリプトの原語(transcript_language)」
+    を解決します。
+
+    - content_language: lectures.display_language が優先。無ければ
+      lectures.recording_language、それも無ければ "English" にフォールバックする
+      (Flutter側 app_database.dart のコメント通りの設計)。
+    - is_bilingual: 表示言語と録音言語が実際に異なり、専門用語の原語併記が必要なケースかどうか。
+    """
+    supabase = get_supabase_client()
+
+    lec_res = supabase.table("lectures").select("recording_language, display_language").eq("id", lecture_id).single().execute()
+    if not lec_res.data:
+        return "English", "English", False
+
+    recording_code = lec_res.data.get("recording_language")
+    display_code = lec_res.data.get("display_language")
+
+    transcript_language = _resolve_language_name(recording_code) or "English"
+    content_language = _resolve_language_name(display_code) or transcript_language
+
+    is_bilingual = bool(recording_code) and bool(display_code) and recording_code != display_code
+
+    return content_language, transcript_language, is_bilingual
+
+
+def _build_language_instruction(content_language: str) -> str:
+    """announcement/topic mapping系のような、原語併記が不要な単純な出力言語指示。"""
+    return f"Write all output text in {content_language}."
+
+
+def _build_bilingual_gloss_instruction(
+    content_language: str, transcript_language: str, is_bilingual: bool
+) -> str:
+    """
+    Core Extraction/Review Cards/Deep Notesのように、専門用語をトランスクリプトの
+    原語から抽出しつつ出力自体は表示言語で書く必要があるタスク向けの言語指示。
+    表示言語と録音言語が同じ場合は原語併記ルールを省き、無駄な指示でプロンプトを
+    汚さないようにする。
+    """
+    base = f"Write all output text in {content_language}."
+    if not is_bilingual:
+        return base
+    return (
+        f"{base} The source transcript is in {transcript_language}, which is a "
+        f"different language from {content_language}. For any technical term, "
+        f"keyword, or jargon that a student would want to recognize in its "
+        f"original form, write it in {content_language} first and then include "
+        f"the original {transcript_language} term in parentheses on first "
+        f"mention (e.g. \"Address Translation (アドレス変換)\"). Do not do this "
+        f"for every word — only for genuine technical/academic terms, not for "
+        f"ordinary sentence content."
+    )
+
+
 def _get_student_profile(uid: str) -> str:
     """
     user_profiles から学生のプロフィール情報を取得し、LLMに渡すコンテキスト文字列を構築します。

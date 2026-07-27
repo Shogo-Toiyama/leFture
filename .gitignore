@@ -9,6 +9,7 @@ __pycache__/
 *.m4a
 supabase/.temp/
 contents_generation/test_codes/deberta/labeled_transcripts/
+contents_generation/test_codes/deberta/labeled_transcripts_multilingual/
 contents_generation/test_codes/deberta/version1/
 contents_generation/test_codes/deberta/transcript_with_role.json
 contents_generation/test_codes/deberta/transcript_data.json

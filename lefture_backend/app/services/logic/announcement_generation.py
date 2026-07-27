@@ -2,7 +2,7 @@
 from typing import Any, Dict
 
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import TaskLogger, _load_prompt
+from app.services.helpers.helpers import TaskLogger, _load_prompt, _build_language_instruction
 
 class AnnouncementGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -10,9 +10,9 @@ class AnnouncementGenerationService:
         self.logger = logger
         self.model_alias = "gemini/gemini-2.5-flash-lite"
 
-    async def run_from_memory(self, formatted_transcript: str) -> Dict[str, Any]:
+    async def run_from_memory(self, formatted_transcript: str, content_language: str = "English") -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Announcement Generation with {self.model_alias}")
-        
+
         # もし入力データが空なら、無駄なAPI呼び出しをせずに空の配列を返す
         if not formatted_transcript.strip():
             self.logger.log("   [Logic] No logistics data found. Skipping LLM call.")
@@ -23,6 +23,9 @@ class AnnouncementGenerationService:
 
         # プロンプト内の変数を実際のテキストに置換
         prompt_text = prompt.replace("${TRANSCRIPT_INPUT}", formatted_transcript)
+        prompt_text = prompt_text.replace(
+            "${LANGUAGE_INSTRUCTIONS}", _build_language_instruction(content_language)
+        )
 
         messages = [
             Message(role="system", content=prompt_text),

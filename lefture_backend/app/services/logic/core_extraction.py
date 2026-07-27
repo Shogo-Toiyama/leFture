@@ -7,6 +7,7 @@ from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 from app.services.helpers.helpers import _load_prompt
 from app.services.helpers.helpers import TaskLogger
 from app.services.helpers.helpers import _sid_to_int, _int_to_sid
+from app.services.helpers.helpers import _build_bilingual_gloss_instruction
 
 # 重なりを自動補正してよい上限（文数）。これを超える場合は「軽微なズレ」とは
 # 言えないため補正を諦め、リトライに任せる。
@@ -23,11 +24,22 @@ class CoreExtractionService:
         self.logger = logger
         self.model_alias = "gemini/gemini-3.1-flash-lite"
 
-    async def run_from_memory(self, transcript_data: list[dict], student_profile: str) -> Dict[str, Any]:
+    async def run_from_memory(
+        self,
+        transcript_data: list[dict],
+        student_profile: str,
+        content_language: str = "English",
+        transcript_language: str = "English",
+        is_bilingual: bool = False,
+    ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Core Extraction with {self.model_alias}")
 
         prompt = _load_prompt("core_extraction_prompt.txt")
         prompt = prompt.replace("${STUDENT_PROFILE}", student_profile)
+        prompt = prompt.replace(
+            "${LANGUAGE_INSTRUCTIONS}",
+            _build_bilingual_gloss_instruction(content_language, transcript_language, is_bilingual),
+        )
         options_json = LLMOptions(output_type="json", temperature=0.4)
 
         # データの整形 (<sid>: <text> のプレーンテキストを作成)
@@ -73,7 +85,7 @@ class CoreExtractionService:
                 content=(
                     "Here is the transcript data:\n"
                     f"{formatted_transcript}\n\n"
-                    "Please extract the core metadata, topics, and fun fact idea "
+                    "Please extract the core metadata, topics, and fun fact selection "
                     "as strictly requested in JSON."
                 ),
             ),
@@ -126,7 +138,7 @@ class CoreExtractionService:
         This is intentionally strict because downstream tasks rely heavily on:
         - topics[].start_sid / end_sid
         - topics[].topic_type
-        - fun_fact_idea.start_sid / end_sid
+        - fun_fact_selection.selected_topic_idx / concept_focus
 
         If the LLM hallucinates a SID, we fail fast instead of silently producing
         missing blocks in later tasks.
@@ -138,7 +150,7 @@ class CoreExtractionService:
             "summary",
             "title",
             "topics",
-            "fun_fact_idea",
+            "fun_fact_selection",
         ]
         missing_keys = [key for key in required_top_level_keys if key not in output]
         if missing_keys:
@@ -167,10 +179,10 @@ class CoreExtractionService:
                 raise ValueError(f"topics[{idx}].title must be a non-empty string.")
 
             topic_type = topic.get("topic_type")
-            if topic_type not in {"ACADEMIC", "LOGISTICS"}:
+            if topic_type not in {"ACADEMIC", "LOGISTICS", "OFF_TOPIC"}:
                 raise ValueError(
-                    f"topics[{idx}].topic_type must be 'ACADEMIC' or 'LOGISTICS'. "
-                    f"Got: {topic_type}"
+                    f"topics[{idx}].topic_type must be 'ACADEMIC', 'LOGISTICS', or "
+                    f"'OFF_TOPIC'. Got: {topic_type}"
                 )
 
             # keywords のバリデーション
@@ -265,54 +277,41 @@ class CoreExtractionService:
 
         output["topics"] = normalized_topics
 
-        fun_fact_idea = output["fun_fact_idea"]
-        if not isinstance(fun_fact_idea, dict):
-            raise ValueError("Core extraction field 'fun_fact_idea' must be an object.")
+        fun_fact_selection = output["fun_fact_selection"]
+        if not isinstance(fun_fact_selection, dict):
+            raise ValueError("Core extraction field 'fun_fact_selection' must be an object.")
 
-        fun_fact_idea["start_sid"], fun_fact_idea["end_sid"] = self._validate_sid_range(
-            start_sid=fun_fact_idea.get("start_sid"),
-            end_sid=fun_fact_idea.get("end_sid"),
-            valid_sids=valid_sids,
-            sid_to_order=sid_to_order,
-            label="fun_fact_idea",
+        # selected_topic_idx は正規化後のACADEMICトピックのidxと一致している必要がある
+        # （LOGISTICS/OFF_TOPICはidx=Noneなので選択対象にならない）。
+        academic_idxs = {
+            topic["idx"] for topic in normalized_topics if topic["topic_type"] == "ACADEMIC"
+        }
+
+        selected_topic_idx = fun_fact_selection.get("selected_topic_idx")
+        if not isinstance(selected_topic_idx, int) or isinstance(selected_topic_idx, bool):
+            raise ValueError("fun_fact_selection.selected_topic_idx must be an integer.")
+        if selected_topic_idx not in academic_idxs:
+            raise ValueError(
+                f"fun_fact_selection.selected_topic_idx ({selected_topic_idx}) does not "
+                f"match any ACADEMIC topic idx: {sorted(academic_idxs)}"
+            )
+
+        selected_topic = next(
+            topic for topic in normalized_topics if topic["idx"] == selected_topic_idx
         )
 
-        concept_focus = fun_fact_idea.get("concept_focus")
+        concept_focus = fun_fact_selection.get("concept_focus")
         if not isinstance(concept_focus, str) or not concept_focus.strip():
-            raise ValueError("fun_fact_idea.concept_focus must be a non-empty string.")
+            raise ValueError("fun_fact_selection.concept_focus must be a non-empty string.")
+        if concept_focus not in selected_topic["keywords"]:
+            raise ValueError(
+                f"fun_fact_selection.concept_focus ({concept_focus!r}) must be one of the "
+                f"selected topic's keywords: {selected_topic['keywords']}"
+            )
 
-        exciting_angle = fun_fact_idea.get("exciting_angle")
-        if not isinstance(exciting_angle, str) or not exciting_angle.strip():
-            raise ValueError("fun_fact_idea.exciting_angle must be a non-empty string.")
-
-        needs_web_search = fun_fact_idea.get("needs_web_search")
-        if not isinstance(needs_web_search, bool):
-            raise ValueError("fun_fact_idea.needs_web_search must be a boolean.")
-
-        search_queries = fun_fact_idea.get("search_queries")
-        if not isinstance(search_queries, list):
-            raise ValueError("fun_fact_idea.search_queries must be a list.")
-
-        if not all(isinstance(query, str) for query in search_queries):
-            raise ValueError("fun_fact_idea.search_queries must contain only strings.")
-
-        search_reasoning = fun_fact_idea.get("search_reasoning")
-        if not isinstance(search_reasoning, str):
-            raise ValueError("fun_fact_idea.search_reasoning must be a string.")
-
-        if needs_web_search:
-            if not search_queries:
-                raise ValueError(
-                    "fun_fact_idea.search_queries must be non-empty when needs_web_search is true."
-                )
-            if not search_reasoning.strip():
-                raise ValueError(
-                    "fun_fact_idea.search_reasoning must be non-empty when needs_web_search is true."
-                )
-        else:
-            # 後続処理を単純にするため、Web検索不要の場合は必ず空に正規化する。
-            fun_fact_idea["search_queries"] = []
-            fun_fact_idea["search_reasoning"] = ""
+        concept_intro_line = fun_fact_selection.get("concept_intro_line")
+        if not isinstance(concept_intro_line, str) or not concept_intro_line.strip():
+            raise ValueError("fun_fact_selection.concept_intro_line must be a non-empty string.")
 
         return output
 

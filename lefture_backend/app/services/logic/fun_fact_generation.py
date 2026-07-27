@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt, TaskLogger
+from app.services.helpers.helpers import _load_prompt, TaskLogger, _build_language_instruction
 
 class FunFactGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -10,40 +10,34 @@ class FunFactGenerationService:
         self.model_alias = "gemini/gemini-2.5-flash"
 
     async def run_from_memory(
-        self, 
-        role_classified_data: List[Dict[str, Any]], 
+        self,
         core_data: Dict[str, Any],
+        seed_data: Dict[str, Any],
         search_results: List[Dict[str, Any]],
-        student_profile: str
+        student_profile: str,
+        content_language: str = "English",
     ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Fun Fact Generation")
-        
+
         prompt_template = _load_prompt("fun_fact_generation_prompt.txt")
+        prompt_template = prompt_template.replace(
+            "${LANGUAGE_INSTRUCTIONS}", _build_language_instruction(content_language)
+        )
         options_json = LLMOptions(output_type="json", temperature=0.7)
 
-        # 💡 全トランスクリプトから確率ベースでノイズを除去
-        trimmed_lines = []
-        for s in role_classified_data:
-            probs = s.get("all_probabilities")
-            
-            # Role Classification で確率データが無い場合のフォールバック
-            if not probs:
-                if s.get("role") in ["CONTENT", "INTERACTION"]:
-                    trimmed_lines.append(f"{s['sid']}: {s['text']}")
-                continue
-                
-            content_prob = probs.get("CONTENT", 0.0)
-            interaction_prob = probs.get("INTERACTION", 0.0)
-            
-            if content_prob >= 0.10 or interaction_prob >= 0.50:
-                trimmed_lines.append(f"{s['sid']}: {s['text']}")
+        fun_fact_selection = core_data.get("fun_fact_selection") or {}
+        concept_focus = fun_fact_selection.get("concept_focus", "")
+        concept_intro_line = fun_fact_selection.get("concept_intro_line", "")
 
-        transcript_segment = "\n".join(trimmed_lines)
-        seed_idea = core_data.get("fun_fact_idea") or {}
-        if not seed_idea:
-            self.logger.log("   [Logic] ⚠️ No fun_fact_idea found in core_data. Continuing with empty seed.")
+        if not seed_data:
+            self.logger.log("   [Logic] ⚠️ No fun fact seed found from brainstorming. Continuing with empty seed.")
 
-        # student_profile is passed dynamically as a parameter
+        seed_for_prompt = {
+            "seed_fun_fact_idea": seed_data.get("seed_fun_fact_idea", ""),
+            "named_instance": seed_data.get("named_instance", ""),
+            "concrete_detail": seed_data.get("concrete_detail", ""),
+            "domain": seed_data.get("domain", ""),
+        }
 
         search_text = ""
         if search_results:
@@ -55,8 +49,9 @@ class FunFactGenerationService:
             Message(role="system", content=prompt_template),
             Message(role="user", content=(
                 f"<STUDENT_PROFILE>\n{student_profile}\n</STUDENT_PROFILE>\n\n"
-                f"<TRANSCRIPT_SEGMENT>\n{transcript_segment}\n</TRANSCRIPT_SEGMENT>\n\n"
-                f"<SEED_FUN_FACT_IDEA>\n{json.dumps(seed_idea, ensure_ascii=False)}\n</SEED_FUN_FACT_IDEA>\n\n"
+                f"<CONCEPT_FOCUS>\n{concept_focus}\n</CONCEPT_FOCUS>\n\n"
+                f"<CONCEPT_INTRO_LINE>\n{concept_intro_line}\n</CONCEPT_INTRO_LINE>\n\n"
+                f"<SEED_FUN_FACT_IDEA>\n{json.dumps(seed_for_prompt, ensure_ascii=False)}\n</SEED_FUN_FACT_IDEA>\n\n"
                 f"<WEB_SEARCH_RESULTS>\n{search_text}\n</WEB_SEARCH_RESULTS>"
             ))
         ]
