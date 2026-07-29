@@ -175,6 +175,7 @@
   "notStartedStartingLabel": "開始しています...",
   "notStartedStartAnalysisButton": "解析を開始",
   "notStartedErrorPrefix": "エラー: {error}",
+  "notStartedAutoStartFailedWarning": "アップロード後の自動解析開始を試みましたが失敗し、バックグラウンドで再試行中です: {error}\n下のボタンから手動で開始することもできます。",
 
   "topicPreviewSaveTooltip": "保存",
   "topicPreviewLikeTooltip": "いいね",
@@ -283,6 +284,11 @@
   "myAccountLoadingCredits": "クレジットを読み込んでいます…",
   "myAccountTransmissionsTitle": "トランスミッション",
   "myAccountTransmissionsSubtitle": "最新情報とアップデート",
+  "myAccountIntroductionTitle": "アプリ紹介",
+  "myAccountIntroductionSubtitle": "導入スライドを見返す",
+  "myAccountTutorialTitle": "チュートリアル",
+  "myAccountTutorialSubtitle": "使い方ガイド",
+  "myAccountTutorialComingSoonSnackbar": "チュートリアルは今後のアップデートで提供予定です。",
   "myAccountNewBadge": "NEW",
   "myAccountNoTransmissionsSnackbar": "現在利用可能なトランスミッションはありません。",
   "myAccountSavedSubtitle": "復習カード・詳細ノート・キーワード",
@@ -645,5 +651,33 @@
   "legalDocumentLoadErrorTitle": "文書を読み込めませんでした",
   "legalDocumentLoadErrorSubtitle": "ネットワーク接続を確認して、もう一度お試しください。",
   "commonRetryButton": "再試行",
-  "legalDocumentLastUpdated": "最終更新日: {date}"
+  "legalDocumentLastUpdated": "最終更新日: {date}",
+  "broadSelectionSheetTitle": "文字起こしセクションの選択",
+  "broadSelectionSheetDescription": "選択範囲に複数のセクションが含まれています。表示したいセクションを選択してください:",
+
+  "introBackButton": "戻る",
+  "introLanguageButton": "言語",
+  "introNextButton": "次へ",
+
+  "introHeroEyebrow": "ようこそ leFture へ",
+  "introHeroTitleLine1": "Record your lectures,",
+  "introHeroTitleLine2": "for your futures.",
+  "introHeroSubtitle": "退屈だった授業は、今日からあなただけのエンタメに。",
+  "introHeroStageLabel": "録音 → あなただけの宇宙へ",
+
+  "introMagicEyebrow": "その未来が待つ、3つの魔法",
+  "introMagicHeadline": "録音ボタンを押すだけ。\nここが、あなたの新しい遊び場になる。",
+  "introMagicCard1Tag": "Review Cards",
+  "introMagicCard1Title": "授業後すぐに、簡単復習",
+  "introMagicCard1Desc": "録り終えた瞬間、要点はもうカードに集約。",
+  "introMagicCard2Tag": "Deep Notes",
+  "introMagicCard2Title": "詳細なノートで、完全理解",
+  "introMagicCard2Desc": "聞き逃しても大丈夫。深く、ていねいに。",
+  "introMagicCard3Tag": "Fun Facts",
+  "introMagicCard3Title": "“おもしろ知識”が興味にダイレクトヒット",
+  "introMagicCard3Desc": "あなたの「へぇ！」を狙い撃ちで届ける。",
+
+  "introCtaLead": "体験したことのない、\nワクワクする学びを。",
+  "introCtaSub": "さあ、今日から始めよう。\nアカウント作成は無料・30秒。",
+  "introCtaButton": "無料で、未来を録りはじめる"
 }

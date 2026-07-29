@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -67,6 +68,13 @@ class NotStartedView extends ConsumerWidget {
     final hasCourse = lecture.courseId != null;
     final creditError = controllerState.error;
     final showInlineError = controllerState.hasError && creditError is! InsufficientCreditsException;
+
+    // アップロード完了後の自動分析開始(start_analysisジョブ)が既に1回以上失敗して
+    // バックグラウンドでリトライ待ちになっている場合、無言で失敗させず可視化する。
+    final startAnalysisJobs = ref.watch(startAnalysisJobsProvider(lecture.id)).value ?? const [];
+    final autoStartError = startAnalysisJobs
+        .map((j) => j.lastError)
+        .firstWhere((e) => e != null, orElse: () => null);
 
     Future<void> assignCourse() async {
       await showModalBottomSheet<void>(
@@ -150,6 +158,34 @@ class NotStartedView extends ConsumerWidget {
                           ),
                           icon: const Icon(Icons.school_outlined, size: 18),
                           label: Text(l10n.notStartedChooseCourseButton),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (autoStartError != null) ...[
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.correctionRed.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.notStartedAutoStartFailedWarning(autoStartError),
+                          style: TextStyle(
+                            color: AppColors.universe.textStarlight,
+                            fontSize: 12.5,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ],

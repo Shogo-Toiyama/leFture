@@ -29,7 +29,9 @@ class UserProfile {
       bio: map['bio'] as String?,
       interests: map['interests'] as String?,
       futureGoals: map['future_goals'] as String?,
-      metadata: map['metadata'] as Map<String, dynamic>?,
+      metadata: map['metadata'] != null
+          ? Map<String, dynamic>.from(map['metadata'] as Map)
+          : null,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse((map['updated_at'] ?? map['created_at']) as String),
     );

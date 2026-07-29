@@ -1109,6 +1109,12 @@ abstract class AppLocalizations {
   /// **'Error: {error}'**
   String notStartedErrorPrefix(String error);
 
+  /// Warning banner shown on the 'Ready to Analyze' screen when the background job that auto-triggers analysis after upload has failed at least once and is retrying. {error} is the last recorded error message.
+  ///
+  /// In en, this message translates to:
+  /// **'We tried to start analysis automatically after upload, but it failed and will keep retrying in the background: {error}\nYou can also start it manually below.'**
+  String notStartedAutoStartFailedWarning(String error);
+
   /// Tooltip on a bookmark icon button in the footer of a topic preview card (currently a placeholder/no-op action). Short label.
   ///
   /// In en, this message translates to:
@@ -1717,6 +1723,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What\'s new & updates'**
   String get myAccountTransmissionsSubtitle;
+
+  /// Tile title on the My Account page to replay the intro slides.
+  ///
+  /// In en, this message translates to:
+  /// **'App Introduction'**
+  String get myAccountIntroductionTitle;
+
+  /// Subtitle under the App Introduction tile on the My Account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay introduction slides'**
+  String get myAccountIntroductionSubtitle;
+
+  /// Tile title on the My Account page for interactive app tutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial'**
+  String get myAccountTutorialTitle;
+
+  /// Subtitle under the Tutorial tile on the My Account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Interactive guide'**
+  String get myAccountTutorialSubtitle;
+
+  /// Snackbar shown when tapping the Tutorial tile before it is implemented.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial will be available in a future update.'**
+  String get myAccountTutorialComingSoonSnackbar;
 
   /// Tiny all-caps badge on the Transmissions tile shown when there are unread announcements. Must stay very short (fits a small pill).
   ///
@@ -3727,6 +3763,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last updated {date}'**
   String legalDocumentLastUpdated(String date);
+
+  /// Title of the modal bottom sheet shown when a selection spans multiple transcript sections.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Transcript Section'**
+  String get broadSelectionSheetTitle;
+
+  /// Description text inside the broad selection modal bottom sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple sections are included in your selection. Select which section you would like to view:'**
+  String get broadSelectionSheetDescription;
+
+  /// Semantic label for the back button on the pre-signup introduction slides.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get introBackButton;
+
+  /// Semantic label for the language-switch button on the pre-signup introduction slides (top-right, replaces a skip button).
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get introLanguageButton;
+
+  /// Button label to advance to the next introduction slide (slides 1 and 2 of 3).
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get introNextButton;
+
+  /// Small uppercase kicker/eyebrow label above the hero title on slide 1 of the introduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to leFture'**
+  String get introHeroEyebrow;
+
+  /// First line of the two-line hero title on slide 1. Continues into introHeroTitleLine2.
+  ///
+  /// In en, this message translates to:
+  /// **'Record your lectures,'**
+  String get introHeroTitleLine1;
+
+  /// Second line of the two-line hero title on slide 1, rendered in a gold accent color. Continues from introHeroTitleLine1 ('Record your lectures, for your futures.').
+  ///
+  /// In en, this message translates to:
+  /// **'for your futures.'**
+  String get introHeroTitleLine2;
+
+  /// Emotional hook subtitle on slide 1, right under the hero title. Punchy, one short sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Dull lectures are now your entertainment.'**
+  String get introHeroSubtitle;
+
+  /// Tiny ambient uppercase label under the animated waveform/orbit visual on slide 1, describing what the animation depicts (a recording turning into the user's own galaxy of study material).
+  ///
+  /// In en, this message translates to:
+  /// **'recording → your universe'**
+  String get introHeroStageLabel;
+
+  /// Small uppercase kicker/eyebrow label above the headline on slide 2 (the 3 value-proposition cards).
+  ///
+  /// In en, this message translates to:
+  /// **'Three kinds of magic waiting for you'**
+  String get introMagicEyebrow;
+
+  /// Two-line headline on slide 2, introducing the three value cards below it. The \n marks the line break between the two short lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Just hit record.\nWe’ll build your playground.'**
+  String get introMagicHeadline;
+
+  /// Small pill/badge label naming the app's 'Review Cards' feature, shown above the card title on slide 2's first value card. This is the feature's proper name, keep it exactly as-is (matches the feature name used elsewhere in the app) rather than translating it as a generic phrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Cards'**
+  String get introMagicCard1Tag;
+
+  /// Bold title of the first value card on slide 2 (about the Review Cards feature).
+  ///
+  /// In en, this message translates to:
+  /// **'Right after class, review made easy'**
+  String get introMagicCard1Title;
+
+  /// Short supporting description under the first value card's title on slide 2.
+  ///
+  /// In en, this message translates to:
+  /// **'The moment you stop recording, key points are already distilled into cards.'**
+  String get introMagicCard1Desc;
+
+  /// Small pill/badge label naming the app's 'Deep Notes' feature, shown above the card title on slide 2's second value card. This is the feature's proper name, keep it exactly as-is rather than translating it as a generic phrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Notes'**
+  String get introMagicCard2Tag;
+
+  /// Bold title of the second value card on slide 2 (about the Deep Notes feature).
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed notes, complete understanding'**
+  String get introMagicCard2Title;
+
+  /// Short supporting description under the second value card's title on slide 2.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed something? No worries — thorough notes have you covered.'**
+  String get introMagicCard2Desc;
+
+  /// Small pill/badge label naming the app's 'Fun Facts' feature, shown above the card title on slide 2's third value card. This is the feature's proper name, keep it exactly as-is rather than translating it as a generic phrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Fun Facts'**
+  String get introMagicCard3Tag;
+
+  /// Bold title of the third value card on slide 2 (about the Fun Facts feature).
+  ///
+  /// In en, this message translates to:
+  /// **'Fun facts that hit your curiosity dead-on'**
+  String get introMagicCard3Title;
+
+  /// Short supporting description under the third value card's title on slide 2.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered to spark exactly the kind of ‘huh, neat!’ you love.'**
+  String get introMagicCard3Desc;
+
+  /// Large bold headline on slide 3 (the final CTA slide), right under the animated logo. The \n marks the line break between the two short lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning excitement\nlike you\'ve never felt before.'**
+  String get introCtaLead;
+
+  /// Supporting subtext on slide 3, under the lead headline. The \n marks the line break.
+  ///
+  /// In en, this message translates to:
+  /// **'Start today.\nCreating an account is free and takes 30 seconds.'**
+  String get introCtaSub;
+
+  /// Primary call-to-action button label on slide 3, leading to the sign-up screen. Should feel inviting and energetic, not a generic 'Sign up' or 'Get started'.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording your future, free'**
+  String get introCtaButton;
 }
 
 class _AppLocalizationsDelegate

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/domain/entities/credit_summary.dart';
 import 'package:lefture/application/debug/debug_providers.dart';
@@ -32,10 +33,17 @@ import 'package:lefture/application/transmission/transmission_provider.dart';
 class MyAccountPage extends ConsumerWidget {
   const MyAccountPage({super.key});
 
-  Future<void> _signOut(BuildContext context) async {
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     await supabase.auth.signOut();
+    // courseListProviderはkeepAlive化しており、サインアウト時に自動では
+    // 再取得されない。別アカウントで再ログインした際に前のアカウントの
+    // コース一覧が残ってしまわないよう、ここで明示的に無効化する
+    // (常時currentUserProviderをwatchしてReactiveに再取得する形にすると、
+    // Supabaseの認証イベントをきっかけにビルド中のタイミングと衝突して
+    // Riverpodのエラーになったため、この一回限りの無効化にしている)。
+    ref.invalidate(courseListProvider);
     if (context.mounted) {
-      context.go(AppRoutes.signIn);
+      context.go(AppRoutes.welcome);
     }
   }
 
@@ -122,13 +130,12 @@ class MyAccountPage extends ConsumerWidget {
                   color: const Color(0xFF8E99A6),
                 ),
                 const SizedBox(height: 8),
-                _SettingsSection(onSignOut: () => _signOut(context)),
+                _SettingsSection(onSignOut: () => _signOut(context, ref)),
 
                 const SizedBox(height: 48),
               ],
             ),
           ),
-
         ],
       ),
     );
@@ -212,7 +219,11 @@ class _HeaderSection extends HookConsumerWidget {
         isEditing.value = false;
       } catch (e) {
         if (context.mounted) {
-          AppErrorDialog.showSmart(context, e, actionName: 'updating display name');
+          AppErrorDialog.showSmart(
+            context,
+            e,
+            actionName: 'updating display name',
+          );
         }
       } finally {
         isSubmitting.value = false;
@@ -250,16 +261,26 @@ class _HeaderSection extends HookConsumerWidget {
                                   ),
                                   decoration: InputDecoration(
                                     isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 8,
+                                    ),
                                     filled: true,
-                                    fillColor: Colors.white.withValues(alpha: 0.08),
+                                    fillColor: Colors.white.withValues(
+                                      alpha: 0.08,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppColors.starGold),
+                                      borderSide: BorderSide(
+                                        color: AppColors.starGold,
+                                      ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: AppColors.starGold, width: 1.5),
+                                      borderSide: BorderSide(
+                                        color: AppColors.starGold,
+                                        width: 1.5,
+                                      ),
                                     ),
                                   ),
                                   onSubmitted: (_) => saveUsername(),
@@ -270,11 +291,18 @@ class _HeaderSection extends HookConsumerWidget {
                                 const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.starGold),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.starGold,
+                                  ),
                                 )
                               else ...[
                                 IconButton(
-                                  icon: const Icon(Icons.check_rounded, color: AppColors.growthGreen, size: 22),
+                                  icon: const Icon(
+                                    Icons.check_rounded,
+                                    color: AppColors.growthGreen,
+                                    size: 22,
+                                  ),
                                   onPressed: saveUsername,
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
@@ -282,7 +310,11 @@ class _HeaderSection extends HookConsumerWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
-                                  icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                                  icon: const Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.white54,
+                                    size: 20,
+                                  ),
                                   onPressed: () {
                                     isEditing.value = false;
                                     controller.text = displayName;
@@ -415,11 +447,7 @@ class _ProfilePreviewTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          icon,
-                          size: 15,
-                          color: AppColors.starGold,
-                        ),
+                        Icon(icon, size: 15, color: AppColors.starGold),
                         const SizedBox(width: 6),
                         Text(
                           label,
@@ -508,11 +536,17 @@ class _CreditCardSkeleton extends StatelessWidget {
             color: AppColors.starGold.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.bolt_rounded, color: AppColors.starGold, size: 16),
+          child: const Icon(
+            Icons.bolt_rounded,
+            color: AppColors.starGold,
+            size: 16,
+          ),
         ),
         const SizedBox(width: 8),
         Text(
-          isError ? l10n.myAccountCreditsUnavailable : l10n.myAccountLoadingCredits,
+          isError
+              ? l10n.myAccountCreditsUnavailable
+              : l10n.myAccountLoadingCredits,
           style: TextStyle(
             color: isError ? Colors.white38 : const Color(0xFFF2F2F2),
             fontSize: 14,
@@ -532,8 +566,12 @@ class _CreditCardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     // プラン未加入(=一度もclaimしていない)場合は「0」と明示的に表示する。
-    final balance = summary.hasActivePlan ? (summary.creditBalanceDisplay ?? 0) : 0;
-    final allocation = summary.hasActivePlan ? (summary.monthlyAllocationDisplay ?? 0) : 0;
+    final balance = summary.hasActivePlan
+        ? (summary.creditBalanceDisplay ?? 0)
+        : 0;
+    final allocation = summary.hasActivePlan
+        ? (summary.monthlyAllocationDisplay ?? 0)
+        : 0;
     final isDepleted = balance <= 0;
 
     // 0でもバー自体は完全にはゼロにせず、薄く赤色のスリバーを残しておく
@@ -600,7 +638,11 @@ class _CreditCardContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, color: AppColors.universe.textComet, size: 18),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.universe.textComet,
+                  size: 18,
+                ),
               ],
             ),
           ],
@@ -667,7 +709,10 @@ class _ApplicationSection extends ConsumerWidget {
             subtitle: l10n.myAccountTransmissionsSubtitle,
             trailing: hasUnread
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.correctionRed,
                       borderRadius: BorderRadius.circular(10),
@@ -688,7 +733,10 @@ class _ApplicationSection extends ConsumerWidget {
                 final items = allList
                     .map((t) => SpaceshipAnnouncementItem.fromTransmission(t))
                     .toList();
-                await showSpaceshipAnnouncementModal(context, announcements: items);
+                await showSpaceshipAnnouncementModal(
+                  context,
+                  announcements: items,
+                );
                 if (context.mounted) {
                   await markTransmissionsAsRead(ref, allList);
                 }
@@ -699,6 +747,30 @@ class _ApplicationSection extends ConsumerWidget {
                   ),
                 );
               }
+            },
+          ),
+          _ActivityTile(
+            icon: Icons.auto_awesome_rounded,
+            iconColor: AppColors.starGold,
+            iconBgColor: AppColors.starGold.withValues(alpha: 0.18),
+            title: l10n.myAccountIntroductionTitle,
+            subtitle: l10n.myAccountIntroductionSubtitle,
+            onTap: () {
+              context.push(AppRoutes.introduction);
+            },
+          ),
+          _ActivityTile(
+            icon: Icons.school_rounded,
+            iconColor: const Color(0xFFB98BFF),
+            iconBgColor: const Color(0xFFB98BFF).withValues(alpha: 0.18),
+            title: l10n.myAccountTutorialTitle,
+            subtitle: l10n.myAccountTutorialSubtitle,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.myAccountTutorialComingSoonSnackbar),
+                ),
+              );
             },
           ),
         ],
@@ -726,7 +798,6 @@ class _ActivitySection extends StatelessWidget {
             subtitle: l10n.myAccountSavedSubtitle,
             onTap: () => context.push('/account/activity/saved'),
           ),
-
 
           _Divider(),
           _ActivityTile(
@@ -844,10 +915,7 @@ class _ActivityTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                trailing!,
-                const SizedBox(width: 8),
-              ],
+              if (trailing != null) ...[trailing!, const SizedBox(width: 8)],
               if (showChevron)
                 Icon(
                   Icons.chevron_right_rounded,
@@ -881,7 +949,7 @@ class _SettingsSection extends ConsumerWidget {
     // 含まれているかで判定する方が安定する。
     final isEmailUser =
         user?.identities?.any((identity) => identity.provider == 'email') ??
-            false;
+        false;
 
     return Column(
       children: [
@@ -889,7 +957,9 @@ class _SettingsSection extends ConsumerWidget {
         _GlassCard(
           child: Builder(
             builder: (context) {
-              final recordingCode = ref.watch(recordingLanguageControllerProvider);
+              final recordingCode = ref.watch(
+                recordingLanguageControllerProvider,
+              );
               final displayCode = ref.watch(displayLanguageControllerProvider);
               final recordingLang = recordingLanguageFromCode(recordingCode);
               final displayLang = displayLanguageFromCode(displayCode);
@@ -1299,8 +1369,10 @@ class _DeleteAccountDialog extends HookConsumerWidget {
     final userEmail = currentUser?.email ?? '';
     // appMetadata['provider'] は複数identityを持つユーザーでは不安定なため、
     // identity一覧に email が含まれるかで判定する(_SettingsSectionと同じ理由)。
-    final isEmailUser = currentUser?.identities
-            ?.any((identity) => identity.provider == 'email') ??
+    final isEmailUser =
+        currentUser?.identities?.any(
+          (identity) => identity.provider == 'email',
+        ) ??
         false;
 
     // Verify if submission is allowed
@@ -1332,17 +1404,19 @@ class _DeleteAccountDialog extends HookConsumerWidget {
         // deleteAccount は AsyncValue.guard で例外を握りつぶすため throw されない。
         // 戻り値の AsyncValue を見て成否を判定する。
         final result = isEmailUser
-            ? await ref.read(authControllerProvider.notifier).deleteAccount(
-                  password: passwordController.text,
-                )
+            ? await ref
+                  .read(authControllerProvider.notifier)
+                  .deleteAccount(password: passwordController.text)
             : await ref.read(authControllerProvider.notifier).deleteAccount();
 
         if (!context.mounted) return;
         isSubmitting.value = false;
 
         if (result.hasError) {
-          errorMessage.value =
-              result.error.toString().replaceAll('Exception: ', '');
+          errorMessage.value = result.error.toString().replaceAll(
+            'Exception: ',
+            '',
+          );
           return;
         }
 
@@ -1363,11 +1437,17 @@ class _DeleteAccountDialog extends HookConsumerWidget {
       ),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.correctionRed,
+          ),
           const SizedBox(width: 10),
           Text(
             l10n.deleteAccountDialogTitle,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -1378,7 +1458,11 @@ class _DeleteAccountDialog extends HookConsumerWidget {
           children: [
             Text(
               l10n.deleteAccountDialogWarningMessage,
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, height: 1.5),
+              style: TextStyle(
+                color: AppColors.universe.textComet,
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 20),
             if (errorMessage.value != null) ...[
@@ -1402,7 +1486,11 @@ class _DeleteAccountDialog extends HookConsumerWidget {
             if (isEmailUser) ...[
               Text(
                 l10n.deleteAccountDialogPasswordPrompt,
-                style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppColors.universe.textStarlight,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -1420,26 +1508,38 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                    borderSide: BorderSide(
+                      color: AppColors.universe.glassBorder,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: AppColors.starGold, width: 1.5),
+                    borderSide: const BorderSide(
+                      color: AppColors.starGold,
+                      width: 1.5,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      obscurePassword.value
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                       color: AppColors.universe.textComet,
                     ),
-                    onPressed: () => obscurePassword.value = !obscurePassword.value,
+                    onPressed: () =>
+                        obscurePassword.value = !obscurePassword.value,
                   ),
                 ),
               ),
             ] else ...[
               Text(
                 l10n.deleteAccountDialogEmailPrompt(userEmail),
-                style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppColors.universe.textStarlight,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -1457,11 +1557,16 @@ class _DeleteAccountDialog extends HookConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                    borderSide: BorderSide(
+                      color: AppColors.universe.glassBorder,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: AppColors.starGold, width: 1.5),
+                    borderSide: const BorderSide(
+                      color: AppColors.starGold,
+                      width: 1.5,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -1472,26 +1577,40 @@ class _DeleteAccountDialog extends HookConsumerWidget {
       ),
       actions: [
         TextButton(
-          onPressed: isSubmitting.value ? null : () => Navigator.of(context).pop(),
+          onPressed: isSubmitting.value
+              ? null
+              : () => Navigator.of(context).pop(),
           child: Text(
             l10n.deleteAccountDialogCancelButton,
-            style: TextStyle(color: AppColors.universe.textComet, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: AppColors.universe.textComet,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         ElevatedButton(
-          onPressed: (isInputValid && !isSubmitting.value) ? handleDelete : null,
+          onPressed: (isInputValid && !isSubmitting.value)
+              ? handleDelete
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.correctionRed,
             foregroundColor: Colors.white,
             elevation: 0,
-            disabledBackgroundColor: AppColors.correctionRed.withValues(alpha: 0.3),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            disabledBackgroundColor: AppColors.correctionRed.withValues(
+              alpha: 0.3,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: isSubmitting.value
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
                 )
               : Text(l10n.deleteAccountDialogConfirmButton),
         ),

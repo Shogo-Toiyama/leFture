@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
@@ -25,7 +27,11 @@ class SignInPage extends HookConsumerWidget {
 
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
-        data: (_) => context.go(AppRoutes.home),
+        data: (_) {
+          ref.read(lectureControllerProvider.notifier).resetThrottle();
+          ref.invalidate(courseListProvider);
+          context.go(AppRoutes.home);
+        },
         error: (error, stackTrace) {
           AppErrorDialog.showSmartNamed(
             context,

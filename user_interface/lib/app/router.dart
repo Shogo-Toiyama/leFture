@@ -7,12 +7,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/infrastructure/supabase/pending_auth_action.dart';
 
 // Pages
 import 'package:lefture/presentation/pages/auth_result/auth_result_page.dart';
+import 'package:lefture/presentation/pages/introduction/introduction_page.dart';
 import 'package:lefture/presentation/pages/sign_in/sign_in_page.dart';
 import 'package:lefture/presentation/pages/sign_up/sign_up_page.dart';
 import 'package:lefture/presentation/pages/forgot_password/forgot_password_page.dart';
@@ -43,13 +45,31 @@ import 'package:lefture/presentation/pages/profile/activity_records_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
+/// Welcomeのタイトル演出からそのまま繋がるように、既定のプラットフォーム
+/// 遷移(スライド等)ではなくフェードで入ってくるページ。
+CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 420),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      );
+    },
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshStream = GoRouterRefreshStream(supabase.auth.onAuthStateChange);
 
   return GoRouter(
     navigatorKey: _rootKey,
-    // ★ 常にHomeからスタート！復元ロジックなし！
-    initialLocation: AppRoutes.home,
+    // ★ 常にWelcome(タイトル演出)からスタート！復元ロジックなし！
+    // WelcomePageはアニメーション再生後に自分でAppRoutes.homeへgo()し、
+    // そこで改めてredirectがログイン状態を見て本当の行き先を決める。
+    initialLocation: AppRoutes.welcome,
     debugLogDiagnostics: true,
     refreshListenable: refreshStream,
 
@@ -189,8 +209,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final path = state.uri.path;
 
       // Auth関連のパスかどうか（ログイン済みならホームへ飛ばす対象）
+      // ★ welcome/introductionはここに含めない：ログイン状態に関わらず演出を
+      //   見せたい・マイアカウントからいつでも閲覧可能にするため。
       final isAuthRoute =
-          path == AppRoutes.welcome ||
           path == AppRoutes.signIn ||
           path == AppRoutes.signUp ||
           path == AppRoutes.forgotPassword ||
@@ -198,14 +219,22 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ログイン状態に関わらず見られるページ（例: サインアップ画面やプロフィール画面からのリンク、
       // アカウント削除完了画面はセッションが既に無い状態で表示するため公開扱いが必要）
+      // welcome/introductionもここでは公開扱いにする。
       final isPublicRoute =
           isAuthRoute ||
+          path == AppRoutes.introduction ||
+          path == AppRoutes.welcome ||
           path == AppRoutes.privacyPolicy ||
           path == AppRoutes.termsOfService ||
           path == AppRoutes.accountDeleted;
 
-      // 1. 未ログインならサインインへ強制移動
-      if (session == null && !isPublicRoute) return AppRoutes.signIn;
+      // 1. 未ログインなら基本サインインへ強制移動。ただしこの端末でまだ
+      //    Introduction(3枚のスライド)を見せていなければ、サインインより
+      //    先にそちらへ誘導する(新規インストール限定の一度きりの導線)。
+      if (session == null && !isPublicRoute) {
+        final hasSeenIntro = RecordingPreferences().getHasSeenIntroduction();
+        return hasSeenIntro ? AppRoutes.signIn : AppRoutes.introduction;
+      }
 
       // 2. ログイン済みなのにAuth画面に来たらホームへ飛ばす（ただしパスワード再設定画面は除く）
       if (session != null && isAuthRoute && path != AppRoutes.resetPassword) {
@@ -215,9 +244,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 3. ログイン済みでオンボーディング未完了なら、オンボーディング画面以外への
       //    遷移をすべて差し戻す(オンボーディング自体・公開ルートは素通しする)。
       if (session != null && !isPublicRoute && path != AppRoutes.onboarding) {
+        DevLog.add('[Router] checking onboarding status for path=$path...');
         final completed =
             await ref.read(userProfileRepositoryProvider).hasCompletedOnboarding();
-        if (!completed) return AppRoutes.onboarding;
+        DevLog.add('[Router] completed=$completed');
+        if (!completed) {
+          DevLog.add('[Router] redirecting to AppRoutes.onboarding');
+          return AppRoutes.onboarding;
+        }
       }
 
       // ★ 保存ロジックも削除しました。シンプル！
@@ -264,12 +298,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const WelcomePage(),
       ),
       GoRoute(
+        path: AppRoutes.introduction,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const IntroductionPage()),
+      ),
+      GoRoute(
         path: AppRoutes.signIn,
-        builder: (context, state) => const SignInPage(),
+        pageBuilder: (context, state) => _fadePage(state, const SignInPage()),
       ),
       GoRoute(
         path: AppRoutes.signUp,
-        builder: (context, state) => const SignUpPage(),
+        pageBuilder: (context, state) => _fadePage(state, const SignUpPage()),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
@@ -307,7 +346,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (context, state) => const OnboardingPage(),
+        pageBuilder: (context, state) =>
+            _fadePage(state, const OnboardingPage()),
       ),
 
       // =================================================================
@@ -318,7 +358,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 1. Home (Dashboard) - 宇宙のコックピット
       GoRoute(
         path: AppRoutes.home,
-        builder: (context, state) => const HomePage(),
+        pageBuilder: (context, state) => _fadePage(state, const HomePage()),
         routes: [
           // 2. Courses System (Nested under /home)
           GoRoute(

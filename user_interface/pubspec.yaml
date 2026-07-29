@@ -82,6 +82,7 @@ flutter:
   generate: true
   assets:
     - assets/images/lecture_folder_test.svg
+    - assets/images/intro/
     - lib/presentation/pages/ai_chat/test_topic_map.json
 
 flutter_launcher_icons:

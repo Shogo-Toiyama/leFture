@@ -21,18 +21,21 @@ class GalaxyView extends ConsumerStatefulWidget {
     super.key,
     this.config = defaultGalaxyConfig,
     this.glowScale = 1.0,
+    this.enableAutoRotate = true,
+    this.zoom,
   });
 
-  /// 銀河生成パラメーター。省略時はこれまで通りの標準的な銀河になる。
-  /// 例: `defaultGalaxyConfig.copyWith(diskStarCount: 0, nebulaCount: 0)` で
-  /// 「まだ星が少ないユーザー向けの、中心核だけの銀河」になる。
+  /// 銀河生成パラメーター。
   final GalaxyConfig config;
 
-  /// 中心に重ねて光らせている2枚の楕円（Outer Glow / Inner Core）の
-  /// 半径にかける倍率。星の生成データとは無関係の純粋な見た目調整用なので
-  /// [GalaxyConfig] ではなくこちらのパラメーターで持つ。
-  /// 例: バルジだけの小さな銀河では 0.4〜0.5 程度に絞ると馴染む。
+  /// 中心に重ねて光らせている2枚の楕円の倍率。
   final double glowScale;
+
+  /// 自動回転を有効にするかどうか。
+  final bool enableAutoRotate;
+
+  /// 銀河のカメラズーム倍率（直接制御用）
+  final double? zoom;
 
   @override
   ConsumerState<GalaxyView> createState() => GalaxyViewState();
@@ -87,7 +90,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
       } else {
         _spinVector = v.Vector3.zero();
 
-        if (state.autoRotate) {
+        if (widget.enableAutoRotate && state.autoRotate) {
           const spin = 0.002;
           final worldUp = v.Vector3(0, 1, 0);
           final q = v.Quaternion.axisAngle(worldUp, spin);
@@ -231,7 +234,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
                           bgStars: galaxyData.bgStars,
                           time: t,
                           camRot: state.camRot,
-                          zoom: state.zoom,
+                          zoom: widget.zoom ?? state.zoom,
                           onProjected: (_) {},
                           sprite: galaxyData.sprite,
                           glowScale: widget.glowScale,

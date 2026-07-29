@@ -35,7 +35,12 @@ import 'package:lefture/core/utils/dev_log.dart';
 
 part 'lecture_controller.g.dart';
 
-@riverpod
+// keepAlive: true — autoDisposeのままだと、Welcome画面での先読み
+// (bootstrapIfNeeded)が終わった直後にWelcomeが破棄されて、このController
+// ごと(_lastBootstrapAttemptAtの記憶も)消えてしまう。すると直後のHome表示時に
+// もう一度bootstrapIfNeededを呼んだ時、15分スロットルが効かず全データを
+// 再度Pullし直してしまっていた。セッション中は保持し続けることでこれを防ぐ。
+@Riverpod(keepAlive: true)
 class LectureController extends _$LectureController {
   @override
   FutureOr<void> build() {
@@ -141,7 +146,12 @@ class LectureController extends _$LectureController {
     await db.setLecturePinned(lectureId, pinned);
   }
 
+  void resetThrottle() {
+    _lastBootstrapAttemptAt = null;
+  }
+
   Future<void> bootstrapIfNeeded({Duration interval = const Duration(minutes: 15)}) async {
+    if (supabase.auth.currentUser == null) return;
     final last = _lastBootstrapAttemptAt;
     final now = DateTime.now().toUtc();
 

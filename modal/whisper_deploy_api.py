@@ -20,11 +20,14 @@ image = (
 # 2. クラスベースのAPI定義
 # ==========================================
 @app.cls(
-    image=image, 
+    image=image,
     gpu="T4",
     scaledown_window=2,
     enable_memory_snapshot=True,
     experimental_options={"enable_gpu_snapshot": True},
+    # デフォルト300秒だと3時間超のマスター音声で推論中に強制キャンセルされるため、
+    # Cloud Run側のrequests.post timeout(1800秒)に合わせて延長。
+    timeout=1800,
 )
 class WhisperAPI:
     

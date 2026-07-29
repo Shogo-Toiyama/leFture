@@ -6,6 +6,7 @@ class RecordingPreferences {
   static const String _keyRecordingLanguage = 'recording_language';
   static const String _keyDisplayLanguage = 'display_language';
   static const String _keyAutoPausedAsrGroupKeys = 'asr_auto_paused_group_keys';
+  static const String _keyHasSeenIntroduction = 'has_seen_introduction';
 
   late final SharedPreferences _prefs;
 
@@ -72,5 +73,16 @@ class RecordingPreferences {
 
   Future<void> setAutoPausedAsrGroupKeys(List<String> groupKeys) async {
     await _prefs.setStringList(_keyAutoPausedAsrGroupKeys, groupKeys);
+  }
+
+  /// サインアップ前の Introduction(3枚のオンボーディングスライド)を、
+  /// この端末で既に見たかどうか。アカウント作成前の話なのでユーザーには
+  /// 紐付けず、端末ローカルの設定として一度だけ表示する。
+  bool getHasSeenIntroduction() {
+    return _prefs.getBool(_keyHasSeenIntroduction) ?? false;
+  }
+
+  Future<void> setHasSeenIntroduction(bool value) async {
+    await _prefs.setBool(_keyHasSeenIntroduction, value);
   }
 }

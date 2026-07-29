@@ -1147,7 +1147,10 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         logger.log(f"✅ TRANSCRIBE_MASTER Completed!")
         logger.save_to_r2(storage_service)
         
-    except Exception as e:
+    except (Exception, asyncio.CancelledError) as e:
+        # CancelledError(Python 3.8+はBaseException)を拾わないと、Modal/Cloud Run側の
+        # タイムアウトでリクエストが打ち切られた際にFAILEDへの更新がスキップされ、
+        # タスクがRUNNINGのまま20分のstale patrolを待つまで詰まってしまう。
         error_msg = f"{str(e)}\n{traceback.format_exc()}"
         logger.log(f"❌ TRANSCRIBE_MASTER Failed: {error_msg}")
         await _update_task_status(task_id, "FAILED", error_msg=error_msg)

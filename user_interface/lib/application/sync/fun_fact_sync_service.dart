@@ -54,7 +54,9 @@ class FunFactSyncService {
         }
 
         final id = json['id'] as String;
-        final metadata = json['metadata'] as Map<String, dynamic>?;
+        final metadata = json['metadata'] != null
+            ? Map<String, dynamic>.from(json['metadata'] as Map)
+            : null;
         final isPending = pendingIds.contains(id);
 
         return LocalFunFactsCompanion(
@@ -119,7 +121,9 @@ class FunFactSyncService {
 
     final companions = data.map((json) {
       final id = json['id'] as String;
-      final metadata = json['metadata'] as Map<String, dynamic>?;
+      final metadata = json['metadata'] != null
+          ? Map<String, dynamic>.from(json['metadata'] as Map)
+          : null;
       final isPending = pendingIds.contains(id);
 
       return LocalFunFactsCompanion(

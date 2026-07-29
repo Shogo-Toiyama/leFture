@@ -549,6 +549,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String notStartedAutoStartFailedWarning(String error) {
+    return 'アップロード後の自動解析開始を試みましたが失敗し、バックグラウンドで再試行中です: $error\n下のボタンから手動で開始することもできます。';
+  }
+
+  @override
   String get topicPreviewSaveTooltip => '保存';
 
   @override
@@ -888,6 +893,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get myAccountTransmissionsSubtitle => '最新情報とアップデート';
+
+  @override
+  String get myAccountIntroductionTitle => 'アプリ紹介';
+
+  @override
+  String get myAccountIntroductionSubtitle => '導入スライドを見返す';
+
+  @override
+  String get myAccountTutorialTitle => 'チュートリアル';
+
+  @override
+  String get myAccountTutorialSubtitle => '使い方ガイド';
+
+  @override
+  String get myAccountTutorialComingSoonSnackbar => 'チュートリアルは今後のアップデートで提供予定です。';
 
   @override
   String get myAccountNewBadge => 'NEW';
@@ -1974,4 +1994,77 @@ class AppLocalizationsJa extends AppLocalizations {
   String legalDocumentLastUpdated(String date) {
     return '最終更新日: $date';
   }
+
+  @override
+  String get broadSelectionSheetTitle => '文字起こしセクションの選択';
+
+  @override
+  String get broadSelectionSheetDescription =>
+      '選択範囲に複数のセクションが含まれています。表示したいセクションを選択してください:';
+
+  @override
+  String get introBackButton => '戻る';
+
+  @override
+  String get introLanguageButton => '言語';
+
+  @override
+  String get introNextButton => '次へ';
+
+  @override
+  String get introHeroEyebrow => 'ようこそ leFture へ';
+
+  @override
+  String get introHeroTitleLine1 => 'Record your lectures,';
+
+  @override
+  String get introHeroTitleLine2 => 'for your futures.';
+
+  @override
+  String get introHeroSubtitle => '退屈だった授業は、今日からあなただけのエンタメに。';
+
+  @override
+  String get introHeroStageLabel => '録音 → あなただけの宇宙へ';
+
+  @override
+  String get introMagicEyebrow => 'その未来が待つ、3つの魔法';
+
+  @override
+  String get introMagicHeadline => '録音ボタンを押すだけ。\nここが、あなたの新しい遊び場になる。';
+
+  @override
+  String get introMagicCard1Tag => 'Review Cards';
+
+  @override
+  String get introMagicCard1Title => '授業後すぐに、簡単復習';
+
+  @override
+  String get introMagicCard1Desc => '録り終えた瞬間、要点はもうカードに集約。';
+
+  @override
+  String get introMagicCard2Tag => 'Deep Notes';
+
+  @override
+  String get introMagicCard2Title => '詳細なノートで、完全理解';
+
+  @override
+  String get introMagicCard2Desc => '聞き逃しても大丈夫。深く、ていねいに。';
+
+  @override
+  String get introMagicCard3Tag => 'Fun Facts';
+
+  @override
+  String get introMagicCard3Title => '“おもしろ知識”が興味にダイレクトヒット';
+
+  @override
+  String get introMagicCard3Desc => 'あなたの「へぇ！」を狙い撃ちで届ける。';
+
+  @override
+  String get introCtaLead => '体験したことのない、\nワクワクする学びを。';
+
+  @override
+  String get introCtaSub => 'さあ、今日から始めよう。\nアカウント作成は無料・30秒。';
+
+  @override
+  String get introCtaButton => '無料で、未来を録りはじめる';
 }

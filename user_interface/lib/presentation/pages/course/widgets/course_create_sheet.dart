@@ -171,12 +171,14 @@ class CourseCreateSheet extends HookConsumerWidget {
       }
     }
 
+    final scrollController = useScrollController();
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         decoration: BoxDecoration(
           color: const Color(0xFF1A1C2E),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -187,76 +189,87 @@ class CourseCreateSheet extends HookConsumerWidget {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ハンドル
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.universe.glassBorder,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 固定ヘッダー (Top Header) - スクロールしても保存ボタンが常時固定
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.universe.glassBorder,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 14),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isEditing ? l10n.courseCreateSheetEditTitle : l10n.courseCreateSheetNewTitle,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isEditing ? l10n.courseCreateSheetEditTitle : l10n.courseCreateSheetNewTitle,
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextButton(
+                  onPressed: isSubmitting.value ? null : submit,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.starGold,
+                    disabledForegroundColor: AppColors.universe.textComet.withValues(alpha: 0.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  TextButton(
-                    onPressed: isSubmitting.value ? null : submit,
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.starGold,
-                      disabledForegroundColor: AppColors.universe.textComet.withValues(alpha: 0.5),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: isSubmitting.value
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.starGold,
+                          ),
+                        )
+                      : Text(
+                          l10n.courseSheetSaveButton,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 1,
+              color: AppColors.universe.glassBorder.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+
+            // スクロール可能なフォームコンテンツ
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Design - Live Preview Card
+                    Text(
+                      l10n.courseCreateSheetDesignPreviewLabel,
+                      style: TextStyle(
+                        color: AppColors.universe.textComet,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
                       ),
                     ),
-                    child: isSubmitting.value
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.starGold,
-                            ),
-                          )
-                        : Text(
-                            l10n.courseSheetSaveButton,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Design - Live Preview Card
-              Text(
-                l10n.courseCreateSheetDesignPreviewLabel,
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
               const SizedBox(height: 8),
 
               Container(
@@ -475,10 +488,18 @@ class CourseCreateSheet extends HookConsumerWidget {
                   itemBuilder: (context, index) {
                     final cat = getCourseIconCategories(l10n)[index];
                     final isSelected = selectedCategoryIndex.value == index;
+                    final firstIconName = cat.iconNames.isNotEmpty ? cat.iconNames.first : '';
+                    final firstIconData = CourseStyleHelper.iconMap[firstIconName] ?? Icons.category;
+
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        label: Text('${cat.emoji} ${cat.title}'),
+                        avatar: Icon(
+                          firstIconData,
+                          size: 16,
+                          color: isSelected ? Colors.black : AppColors.universe.textStarlight,
+                        ),
+                        label: Text(cat.title),
                         selected: isSelected,
                         onSelected: (val) {
                           if (val) selectedCategoryIndex.value = index;
@@ -590,24 +611,38 @@ class CourseCreateSheet extends HookConsumerWidget {
 
               // More Info アコーディオン
               InkWell(
-                onTap: () => showMoreInfo.value = !showMoreInfo.value,
+                onTap: () {
+                  final willExpand = !showMoreInfo.value;
+                  showMoreInfo.value = willExpand;
+                  if (willExpand) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (scrollController.hasClients) {
+                        scrollController.animateTo(
+                          scrollController.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                        );
+                      }
+                    });
+                  }
+                },
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Row(
                     children: [
                       Icon(
                         showMoreInfo.value
                             ? Icons.expand_less
                             : Icons.expand_more,
-                        color: AppColors.universe.textComet,
+                        color: showMoreInfo.value ? AppColors.starGold : AppColors.universe.textComet,
                         size: 20,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         l10n.courseCreateSheetMoreInfoLabel,
                         style: TextStyle(
-                          color: AppColors.universe.textComet,
+                          color: showMoreInfo.value ? AppColors.starGold : AppColors.universe.textComet,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -617,58 +652,82 @@ class CourseCreateSheet extends HookConsumerWidget {
                 ),
               ),
               AnimatedCrossFade(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
                 crossFadeState: showMoreInfo.value
                     ? CrossFadeState.showFirst
                     : CrossFadeState.showSecond,
-                firstChild: Column(
-                  children: [
-                    const SizedBox(height: 8),
-                    _GlassTextField(
-                      controller: codeCtl,
-                      label: l10n.courseCreateSheetCodeLabel,
-                      hint: l10n.courseCreateSheetCodeHint,
-                      icon: Icons.tag,
+                firstChild: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.only(top: 8, bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: showMoreInfo.value
+                        ? AppColors.starGold.withValues(alpha: 0.05)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: showMoreInfo.value
+                          ? AppColors.starGold.withValues(alpha: 0.5)
+                          : AppColors.universe.glassBorder,
+                      width: 1.5,
                     ),
-                    const SizedBox(height: 12),
-                    _AttributeField(
-                      controller: professorCtl,
-                      label: l10n.courseCreateSheetProfessorLabel,
-                      hint: l10n.courseCreateSheetProfessorHint,
-                      icon: Icons.person_outline,
-                      suggestions: existingProfessors
-                          .map((a) => a.attributeName)
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    _AttributeField(
-                      controller: schoolCtl,
-                      label: l10n.courseCreateSheetSchoolLabel,
-                      hint: l10n.courseCreateSheetSchoolHint,
-                      icon: Icons.account_balance_outlined,
-                      suggestions: existingSchools
-                          .map((a) => a.attributeName)
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    _AttributeField(
-                      controller: subjectCtl,
-                      label: l10n.courseCreateSheetSubjectLabel,
-                      hint: l10n.courseCreateSheetSubjectHint,
-                      icon: Icons.category_outlined,
-                      suggestions: existingSubjects
-                          .map((a) => a.attributeName)
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    _GlassTextField(
-                      controller: summaryCtl,
-                      label: l10n.courseCreateSheetSummaryLabel,
-                      hint: l10n.courseCreateSheetSummaryHint,
-                      icon: Icons.notes_outlined,
-                      maxLines: 3,
-                    ),
-                  ],
+                    boxShadow: [
+                      if (showMoreInfo.value)
+                        BoxShadow(
+                          color: AppColors.starGold.withValues(alpha: 0.15),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _GlassTextField(
+                        controller: codeCtl,
+                        label: l10n.courseCreateSheetCodeLabel,
+                        hint: l10n.courseCreateSheetCodeHint,
+                        icon: Icons.tag,
+                      ),
+                      const SizedBox(height: 12),
+                      _AttributeField(
+                        controller: professorCtl,
+                        label: l10n.courseCreateSheetProfessorLabel,
+                        hint: l10n.courseCreateSheetProfessorHint,
+                        icon: Icons.person_outline,
+                        suggestions: existingProfessors
+                            .map((a) => a.attributeName)
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      _AttributeField(
+                        controller: schoolCtl,
+                        label: l10n.courseCreateSheetSchoolLabel,
+                        hint: l10n.courseCreateSheetSchoolHint,
+                        icon: Icons.account_balance_outlined,
+                        suggestions: existingSchools
+                            .map((a) => a.attributeName)
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      _AttributeField(
+                        controller: subjectCtl,
+                        label: l10n.courseCreateSheetSubjectLabel,
+                        hint: l10n.courseCreateSheetSubjectHint,
+                        icon: Icons.category_outlined,
+                        suggestions: existingSubjects
+                            .map((a) => a.attributeName)
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      _GlassTextField(
+                        controller: summaryCtl,
+                        label: l10n.courseCreateSheetSummaryLabel,
+                        hint: l10n.courseCreateSheetSummaryHint,
+                        icon: Icons.notes_outlined,
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
                 ),
                 secondChild: const SizedBox(width: double.infinity),
               ),
@@ -687,7 +746,10 @@ class CourseCreateSheet extends HookConsumerWidget {
           ),
         ),
       ),
-    );
+    ],
+  ),
+),
+);
   }
 }
 

@@ -923,6 +923,17 @@
     }
   },
 
+  "notStartedAutoStartFailedWarning": "We tried to start analysis automatically after upload, but it failed and will keep retrying in the background: {error}\nYou can also start it manually below.",
+  "@notStartedAutoStartFailedWarning": {
+    "description": "Warning banner shown on the 'Ready to Analyze' screen when the background job that auto-triggers analysis after upload has failed at least once and is retrying. {error} is the last recorded error message.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Cloud Run error (402): Insufficient credits"
+      }
+    }
+  },
+
   "topicPreviewSaveTooltip": "Save",
   "@topicPreviewSaveTooltip": {
     "description": "Tooltip on a bookmark icon button in the footer of a topic preview card (currently a placeholder/no-op action). Short label."
@@ -1520,6 +1531,31 @@
   "myAccountTransmissionsSubtitle": "What's new & updates",
   "@myAccountTransmissionsSubtitle": {
     "description": "Subtitle under the Transmissions tile on the My Account page, briefly describing what it contains."
+  },
+
+  "myAccountIntroductionTitle": "App Introduction",
+  "@myAccountIntroductionTitle": {
+    "description": "Tile title on the My Account page to replay the intro slides."
+  },
+
+  "myAccountIntroductionSubtitle": "Replay introduction slides",
+  "@myAccountIntroductionSubtitle": {
+    "description": "Subtitle under the App Introduction tile on the My Account page."
+  },
+
+  "myAccountTutorialTitle": "Tutorial",
+  "@myAccountTutorialTitle": {
+    "description": "Tile title on the My Account page for interactive app tutorial."
+  },
+
+  "myAccountTutorialSubtitle": "Interactive guide",
+  "@myAccountTutorialSubtitle": {
+    "description": "Subtitle under the Tutorial tile on the My Account page."
+  },
+
+  "myAccountTutorialComingSoonSnackbar": "Tutorial will be available in a future update.",
+  "@myAccountTutorialComingSoonSnackbar": {
+    "description": "Snackbar shown when tapping the Tutorial tile before it is implemented."
   },
 
   "myAccountNewBadge": "NEW",
@@ -3253,5 +3289,107 @@
         "example": "Jul 24, 2026"
       }
     }
+  },
+
+  "broadSelectionSheetTitle": "Select Transcript Section",
+  "@broadSelectionSheetTitle": {
+    "description": "Title of the modal bottom sheet shown when a selection spans multiple transcript sections."
+  },
+
+  "broadSelectionSheetDescription": "Multiple sections are included in your selection. Select which section you would like to view:",
+  "@broadSelectionSheetDescription": {
+    "description": "Description text inside the broad selection modal bottom sheet."
+  },
+
+  "introBackButton": "Back",
+  "@introBackButton": {
+    "description": "Semantic label for the back button on the pre-signup introduction slides."
+  },
+  "introLanguageButton": "Language",
+  "@introLanguageButton": {
+    "description": "Semantic label for the language-switch button on the pre-signup introduction slides (top-right, replaces a skip button)."
+  },
+  "introNextButton": "Next",
+  "@introNextButton": {
+    "description": "Button label to advance to the next introduction slide (slides 1 and 2 of 3)."
+  },
+
+  "introHeroEyebrow": "Welcome to leFture",
+  "@introHeroEyebrow": {
+    "description": "Small uppercase kicker/eyebrow label above the hero title on slide 1 of the introduction."
+  },
+  "introHeroTitleLine1": "Record your lectures,",
+  "@introHeroTitleLine1": {
+    "description": "First line of the two-line hero title on slide 1. Continues into introHeroTitleLine2."
+  },
+  "introHeroTitleLine2": "for your futures.",
+  "@introHeroTitleLine2": {
+    "description": "Second line of the two-line hero title on slide 1, rendered in a gold accent color. Continues from introHeroTitleLine1 ('Record your lectures, for your futures.')."
+  },
+  "introHeroSubtitle": "Dull lectures are now your entertainment.",
+  "@introHeroSubtitle": {
+    "description": "Emotional hook subtitle on slide 1, right under the hero title. Punchy, one short sentence."
+  },
+  "introHeroStageLabel": "recording → your universe",
+  "@introHeroStageLabel": {
+    "description": "Tiny ambient uppercase label under the animated waveform/orbit visual on slide 1, describing what the animation depicts (a recording turning into the user's own galaxy of study material)."
+  },
+
+  "introMagicEyebrow": "Three kinds of magic waiting for you",
+  "@introMagicEyebrow": {
+    "description": "Small uppercase kicker/eyebrow label above the headline on slide 2 (the 3 value-proposition cards)."
+  },
+  "introMagicHeadline": "Just hit record.\nWe’ll build your playground.",
+  "@introMagicHeadline": {
+    "description": "Two-line headline on slide 2, introducing the three value cards below it. The \\n marks the line break between the two short lines."
+  },
+  "introMagicCard1Tag": "Review Cards",
+  "@introMagicCard1Tag": {
+    "description": "Small pill/badge label naming the app's 'Review Cards' feature, shown above the card title on slide 2's first value card. This is the feature's proper name, keep it exactly as-is (matches the feature name used elsewhere in the app) rather than translating it as a generic phrase."
+  },
+  "introMagicCard1Title": "Right after class, review made easy",
+  "@introMagicCard1Title": {
+    "description": "Bold title of the first value card on slide 2 (about the Review Cards feature)."
+  },
+  "introMagicCard1Desc": "The moment you stop recording, key points are already distilled into cards.",
+  "@introMagicCard1Desc": {
+    "description": "Short supporting description under the first value card's title on slide 2."
+  },
+  "introMagicCard2Tag": "Deep Notes",
+  "@introMagicCard2Tag": {
+    "description": "Small pill/badge label naming the app's 'Deep Notes' feature, shown above the card title on slide 2's second value card. This is the feature's proper name, keep it exactly as-is rather than translating it as a generic phrase."
+  },
+  "introMagicCard2Title": "Detailed notes, complete understanding",
+  "@introMagicCard2Title": {
+    "description": "Bold title of the second value card on slide 2 (about the Deep Notes feature)."
+  },
+  "introMagicCard2Desc": "Missed something? No worries — thorough notes have you covered.",
+  "@introMagicCard2Desc": {
+    "description": "Short supporting description under the second value card's title on slide 2."
+  },
+  "introMagicCard3Tag": "Fun Facts",
+  "@introMagicCard3Tag": {
+    "description": "Small pill/badge label naming the app's 'Fun Facts' feature, shown above the card title on slide 2's third value card. This is the feature's proper name, keep it exactly as-is rather than translating it as a generic phrase."
+  },
+  "introMagicCard3Title": "Fun facts that hit your curiosity dead-on",
+  "@introMagicCard3Title": {
+    "description": "Bold title of the third value card on slide 2 (about the Fun Facts feature)."
+  },
+  "introMagicCard3Desc": "Delivered to spark exactly the kind of ‘huh, neat!’ you love.",
+  "@introMagicCard3Desc": {
+    "description": "Short supporting description under the third value card's title on slide 2."
+  },
+
+  "introCtaLead": "Learning excitement\nlike you've never felt before.",
+  "@introCtaLead": {
+    "description": "Large bold headline on slide 3 (the final CTA slide), right under the animated logo. The \\n marks the line break between the two short lines."
+  },
+  "introCtaSub": "Start today.\nCreating an account is free and takes 30 seconds.",
+  "@introCtaSub": {
+    "description": "Supporting subtext on slide 3, under the lead headline. The \\n marks the line break."
+  },
+  "introCtaButton": "Start recording your future, free",
+  "@introCtaButton": {
+    "description": "Primary call-to-action button label on slide 3, leading to the sign-up screen. Should feel inviting and energetic, not a generic 'Sign up' or 'Get started'."
   }
 }

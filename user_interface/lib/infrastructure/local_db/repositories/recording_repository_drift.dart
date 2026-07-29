@@ -364,4 +364,46 @@ class RecordingRepositoryDrift {
 
     return jobId;
   }
+
+  // 分析開始(StartAnalysis)呼び出し専用のジョブをエンキューする。
+  // アップロード完了直後の"号砲"だった_triggerStartAnalysisは、失敗してもDevLogに
+  // 書くだけで誰にも気づかれず消えていた。他のアップロードジョブと同じ
+  // queued/retry_wait/lastError/attemptCountの仕組みに乗せることで、失敗時に
+  // 自動リトライされ、かつUI側からlastErrorを参照して表示できるようにする。
+  // assetIdは実体を持たない(参照用の列が必須なので、直前に完了したアップロード
+  // ジョブのassetIdをそのまま流用する)。
+  Future<String> enqueueStartAnalysis({
+    required String userId,
+    required String lectureId,
+    required String assetId,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final jobId = const Uuid().v4();
+
+    await db.into(db.localUploadJobs).insertOnConflictUpdate(
+          LocalUploadJobsCompanion(
+            id: Value(jobId),
+            userId: Value(userId),
+            lectureId: Value(lectureId),
+            assetId: Value(assetId),
+            kind: const Value('start_analysis'),
+            status: const Value('queued'),
+            attemptCount: const Value(0),
+            lastError: const Value(null),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+
+    return jobId;
+  }
+
+  // UI側(NotStartedView等)がstart_analysisジョブの失敗状況を表示するためのwatch。
+  Stream<List<LocalUploadJob>> watchStartAnalysisJobsForLecture(String lectureId) {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.equals('start_analysis'))
+          ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+        .watch();
+  }
 }

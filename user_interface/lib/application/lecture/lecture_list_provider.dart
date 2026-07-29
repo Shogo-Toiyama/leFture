@@ -31,7 +31,11 @@ Stream<List<Lecture>> lectureListStream(Ref ref, String? courseId) {
 }
 
 // コースの有無に関わらず、ユーザーが1件でもレクチャーを持っているかを判定するためのProvider
-@riverpod
+// keepAlive: true — Welcome画面で先読み(ref.read(...future))した直後にWelcomeが
+// 破棄されると、autoDisposeのままではこのProviderも一緒に破棄されてしまい、
+// Home表示時にもう一度ゼロから購読し直し(ローディング表示)になっていた。
+// セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
+@Riverpod(keepAlive: true)
 Stream<List<Lecture>> allLecturesStream(Ref ref) {
   final user = ref.watch(currentUserProvider);
   final uid = user?.id;

@@ -403,7 +403,10 @@ class TrashController {
         Uri.parse('$_backendBaseUrl/courses/${record.id}/hard-delete'),
         headers: {'Authorization': 'Bearer $jwt'},
       ).timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) {
+      // 404 = バックエンド側では既に削除済み(前回の呼び出しが実は成功していた/
+      // 二重タップ等)。これはエラーではなく「削除完了」として扱い、ローカルの
+      // 掃除だけ行う。404以外の失敗だけを本当の失敗として例外送出する。
+      if (response.statusCode != 200 && response.statusCode != 404) {
         throw Exception('Failed to delete course (${response.statusCode}): ${response.body}');
       }
       await db.hardDeleteCourseCascade(record.id);
@@ -414,7 +417,8 @@ class TrashController {
         Uri.parse('$_backendBaseUrl/lectures/${record.id}/hard-delete'),
         headers: {'Authorization': 'Bearer $jwt'},
       ).timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) {
+      // 404 = バックエンド側では既に削除済み。同上の理由でエラー扱いにしない。
+      if (response.statusCode != 200 && response.statusCode != 404) {
         throw Exception('Failed to delete lecture (${response.statusCode}): ${response.body}');
       }
       await db.hardDeleteLectureCascade(record.id);

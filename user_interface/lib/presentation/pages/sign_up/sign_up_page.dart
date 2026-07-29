@@ -425,7 +425,17 @@ class SignUpPage extends HookConsumerWidget {
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => context.pop(),
+                                onPressed: () {
+                                  // 通常はSignInPageからpushされてくるのでpopで戻れるが、
+                                  // Introduction(サインアップ前の3枚)のCTAからはgo()で
+                                  // 直接遷移してくる(スタックにSignInが無い)ため、
+                                  // popできる場合だけpopし、できなければsignInへ遷移する。
+                                  if (context.canPop()) {
+                                    context.pop();
+                                  } else {
+                                    context.go(AppRoutes.signIn);
+                                  }
+                                },
                                 style: TextButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 8),
                                   minimumSize: Size.zero,

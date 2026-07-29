@@ -20,7 +20,7 @@ final class LectureControllerProvider
         argument: null,
         retry: null,
         name: r'lectureControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -33,7 +33,7 @@ final class LectureControllerProvider
   LectureController create() => LectureController();
 }
 
-String _$lectureControllerHash() => r'1500d52b7a00a8ce7d00aa8aef11c5223ec7e414';
+String _$lectureControllerHash() => r'8d01af460cd353246884220875d1d769ad22ec60';
 
 abstract class _$LectureController extends $AsyncNotifier<void> {
   FutureOr<void> build();

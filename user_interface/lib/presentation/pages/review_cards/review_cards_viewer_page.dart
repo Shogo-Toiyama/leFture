@@ -27,6 +27,7 @@ import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
+import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
 import 'package:lefture/presentation/widgets/transcript_modal.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
@@ -759,9 +760,38 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   });
                                 } on SelectionTooBroadException catch (e) {
                                   if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(e.message)),
-                                  );
+                                  if (e.options.isNotEmpty) {
+                                    final selectedCitation =
+                                        await BroadSelectionSheet.show(
+                                      context,
+                                      options: e.options,
+                                    );
+                                    if (selectedCitation != null &&
+                                        context.mounted) {
+                                      final sortedSids = List<int>.from(
+                                        selectedCitation.sids,
+                                      )..sort();
+                                      final startSid =
+                                          formatSid(sortedSids.first);
+                                      final endSid = formatSid(sortedSids.last);
+                                      final courseIdVal = course?.id;
+                                      if (lectureId.isNotEmpty) {
+                                        await showTranscriptModal(
+                                          context,
+                                          lectureId: lectureId,
+                                          startSid: startSid,
+                                          endSid: endSid,
+                                          highlightSids:
+                                              selectedCitation.sidStrings,
+                                          courseId: courseIdVal,
+                                        );
+                                      }
+                                    }
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(e.message)),
+                                    );
+                                  }
                                 }
                               },
                               onCopyTap: () async {

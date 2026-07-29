@@ -8,6 +8,7 @@ import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart' show StreamProvider;
 import 'package:http/http.dart' as http;
 
 import '../../infrastructure/supabase/services/lecture_write_service.dart';
@@ -29,6 +30,13 @@ UploadManager uploadManager(Ref ref) {
   ref.onDispose(mgr.dispose);
   return mgr;
 }
+
+/// UIが「自動分析開始の呼び出しが失敗してリトライ待ちになっている」ことを
+/// 表示するためのwatch。lastErrorが入っていれば、少なくとも1回は失敗している。
+final startAnalysisJobsProvider =
+    StreamProvider.family<List<LocalUploadJob>, String>((ref, lectureId) {
+  return ref.watch(recordingRepositoryDriftProvider).watchStartAnalysisJobsForLecture(lectureId);
+});
 
 class UploadManager {
   UploadManager({
@@ -157,7 +165,14 @@ class UploadManager {
           final expectedChunks = lecture.expectedChunks;
           
           // リアルタイム時の自動発火判定
-          if (lecture.isRealtime == true && remainingJobs.isEmpty && expectedChunks != null) {
+          // ★ job.kindを'audio_upload'に限定する: これが無いと、後段でstart_analysis
+          // ジョブ自体が完了した時にもこの条件(remainingJobs.isEmpty等)を満たしてしまい、
+          // start_analysisジョブを再エンキュー→それがまた完了→再エンキュー…と
+          // 無限ループしてしまう。
+          if (job.kind == 'audio_upload' &&
+              lecture.isRealtime == true &&
+              remainingJobs.isEmpty &&
+              expectedChunks != null) {
             if (lecture.autoStartAnalysis == false) {
               DevLog.add('⏸️ 自動分析がOFFのため、自動発火はスキップします（手動でStart Analysisが必要）。');
               continue;
@@ -169,7 +184,11 @@ class UploadManager {
             }
 
             DevLog.add('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
-            await _triggerStartAnalysis(lectureId: lecture.id, expectedChunks: expectedChunks);
+            await _repo.enqueueStartAnalysis(
+              userId: lecture.userId,
+              lectureId: lecture.id,
+              assetId: job.assetId,
+            );
           }
 
           // プレレコーデッド時の自動発火判定
@@ -184,7 +203,11 @@ class UploadManager {
             }
 
             DevLog.add('🎉 マスター音声の送信完了！分析開始の号砲を鳴らします！');
-            await _triggerStartAnalysis(lectureId: lecture.id, expectedChunks: 0);
+            await _repo.enqueueStartAnalysis(
+              userId: lecture.userId,
+              lectureId: lecture.id,
+              assetId: job.assetId,
+            );
           }
         } catch (e) {
           // 失敗...
@@ -217,11 +240,26 @@ class UploadManager {
   Future<void> _performUpload(LocalUploadJob job) async {
     // 1. 必要なデータをローカルDBから集める
     final lecture = await _repo.getLecture(job.lectureId);
-    final asset = await _repo.getAsset(job.assetId);
 
     // データがない場合（ユーザーが途中でDiscardして消した等）
-    if (lecture == null || asset == null) {
-      throw Exception('Lecture or Asset not found (maybe discarded?)');
+    if (lecture == null) {
+      throw Exception('Lecture not found (maybe discarded?)');
+    }
+
+    // start_analysisジョブはファイルを送るわけではなく、Cloud Runの
+    // /start-analysisを叩くだけなので、ローカルファイルの存在チェックより前で分岐する
+    // (紐づくassetIdは他ジョブ完了時の使い回しで、ローカルファイルは既に削除済みのことがある)。
+    if (job.kind == 'start_analysis') {
+      await _callStartAnalysis(
+        lectureId: lecture.id,
+        expectedChunks: (lecture.isRealtime == true) ? (lecture.expectedChunks ?? 0) : 0,
+      );
+      return;
+    }
+
+    final asset = await _repo.getAsset(job.assetId);
+    if (asset == null) {
+      throw Exception('Asset not found (maybe discarded?)');
     }
 
     final localPath = asset.localPath;
@@ -422,39 +460,40 @@ class UploadManager {
     DevLog.add('🚀 [UploadManager] Master Audio $lectureId をR2へ直接送信完了！');
   }
 
-  Future<void> _triggerStartAnalysis({
+  /// ★ 以前はここで例外を握りつぶしてDevLogに書くだけだったため、失敗しても
+  /// 誰にも気づかれず、講義が音声だけアップロードされて分析が永遠に始まらない
+  /// まま放置される事故が起きた。今は呼び出し元(_performUpload経由でstart_analysis
+  /// ジョブとして実行される)の共通リトライ機構に乗せるため、例外はそのまま
+  /// 投げっぱなしにする(呼び出し元がlastError記録とバックオフ再試行を行う)。
+  Future<void> _callStartAnalysis({
     required String lectureId,
     required int expectedChunks,
   }) async {
-    try {
-      final session = supabase.auth.currentSession;
-      final jwt = session?.accessToken;
+    final session = supabase.auth.currentSession;
+    final jwt = session?.accessToken;
 
-      if (jwt == null) {
-        throw Exception('ログインしていません。分析を開始できません。');
-      }
+    if (jwt == null) {
+      throw Exception('ログインしていません。分析を開始できません。');
+    }
 
-      final url = Uri.parse('https://lefture-511705914929.us-west1.run.app/start-analysis');
+    final url = Uri.parse('https://lefture-511705914929.us-west1.run.app/start-analysis');
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $jwt',
-        },
-        body: jsonEncode({
-          'lecture_id': lectureId,
-          'expected_chunks': expectedChunks,
-        }),
-      );
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $jwt',
+      },
+      body: jsonEncode({
+        'lecture_id': lectureId,
+        'expected_chunks': expectedChunks,
+      }),
+    );
 
-      if (response.statusCode == 200 || response.statusCode == 202) {
-        DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
-      } else {
-        throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
-      }
-    } catch (invokeError) {
-      DevLog.add('❌ start_analysis の呼び出しでエラー: $invokeError');
+    if (response.statusCode == 200 || response.statusCode == 202) {
+      DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
+    } else {
+      throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
     }
   }
 }

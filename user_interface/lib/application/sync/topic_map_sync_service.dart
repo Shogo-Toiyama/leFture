@@ -51,7 +51,9 @@ class TopicMapSyncService {
         if (maxUpdatedAt == null || updatedAt.isAfter(maxUpdatedAt!)) {
           maxUpdatedAt = updatedAt;
         }
-        final map = json['map'] as Map<String, dynamic>?;
+        final map = json['map'] != null
+            ? Map<String, dynamic>.from(json['map'] as Map)
+            : null;
         return LocalTopicMapsCompanion(
           courseId: Value(json['course_id'] as String),
           userId: Value(json['user_id'] as String),

@@ -9,11 +9,33 @@ part of 'course_list_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// 全コース一覧（attributes 付き）
+// keepAlive: true — Welcome画面で先読み(ref.read(...future))した直後に
+// Welcomeが破棄されると、autoDisposeのままではこのProviderも一緒に破棄されて
+// しまい、Home表示時にもう一度ゼロから読み込み直し(ローディング表示)になって
+// いた。セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
+//
+// keepAliveにした副作用として、サインアウト→別アカウントでサインインしても
+// このProviderは自動では再取得されなくなる(以前はautoDisposeで一度画面から
+// 外れると勝手に消えて次回読み直しになっていた、という偶然の安全策があった)。
+// currentUserProviderを監視しておくことで、ユーザーが変わった時に確実に
+// 再取得されるようにする(値自体はlistCourses()側でSupabaseのRLSにより
+// 自動的にユーザー単位でフィルタされるため使わないが、依存関係としてwatchする)。
 
 @ProviderFor(courseList)
 final courseListProvider = CourseListProvider._();
 
 /// 全コース一覧（attributes 付き）
+// keepAlive: true — Welcome画面で先読み(ref.read(...future))した直後に
+// Welcomeが破棄されると、autoDisposeのままではこのProviderも一緒に破棄されて
+// しまい、Home表示時にもう一度ゼロから読み込み直し(ローディング表示)になって
+// いた。セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
+//
+// keepAliveにした副作用として、サインアウト→別アカウントでサインインしても
+// このProviderは自動では再取得されなくなる(以前はautoDisposeで一度画面から
+// 外れると勝手に消えて次回読み直しになっていた、という偶然の安全策があった)。
+// currentUserProviderを監視しておくことで、ユーザーが変わった時に確実に
+// 再取得されるようにする(値自体はlistCourses()側でSupabaseのRLSにより
+// 自動的にユーザー単位でフィルタされるため使わないが、依存関係としてwatchする)。
 
 final class CourseListProvider
     extends
@@ -24,13 +46,24 @@ final class CourseListProvider
         >
     with $FutureModifier<List<Course>>, $FutureProvider<List<Course>> {
   /// 全コース一覧（attributes 付き）
+  // keepAlive: true — Welcome画面で先読み(ref.read(...future))した直後に
+  // Welcomeが破棄されると、autoDisposeのままではこのProviderも一緒に破棄されて
+  // しまい、Home表示時にもう一度ゼロから読み込み直し(ローディング表示)になって
+  // いた。セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
+  //
+  // keepAliveにした副作用として、サインアウト→別アカウントでサインインしても
+  // このProviderは自動では再取得されなくなる(以前はautoDisposeで一度画面から
+  // 外れると勝手に消えて次回読み直しになっていた、という偶然の安全策があった)。
+  // currentUserProviderを監視しておくことで、ユーザーが変わった時に確実に
+  // 再取得されるようにする(値自体はlistCourses()側でSupabaseのRLSにより
+  // 自動的にユーザー単位でフィルタされるため使わないが、依存関係としてwatchする)。
   CourseListProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'courseListProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -50,7 +83,7 @@ final class CourseListProvider
   }
 }
 
-String _$courseListHash() => r'86b1eb9c5e9361a31c0261363bae3913c207c32b';
+String _$courseListHash() => r'ad78ee81b9d35581624f3679d03256a928bc9f75';
 
 /// Year アトリビュート一覧（コース作成フォームの候補）
 

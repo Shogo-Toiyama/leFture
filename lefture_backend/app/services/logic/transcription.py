@@ -279,6 +279,8 @@ class ModalTranscriptionService:
                 "audio_duration": actual_duration
             }
 
-        except Exception as e:
+        except (Exception, asyncio.CancelledError) as e:
+            # asyncio.CancelledErrorはPython 3.8+でBaseExceptionを継承しているため、
+            # 明示的に拾わないとログ・ステータス更新が素通りされて詰まる原因になる。
             self.logger.log(f"   [Logic] ❌ Modal API error: {e}")
             raise

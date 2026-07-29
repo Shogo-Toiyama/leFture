@@ -585,6 +585,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String notStartedAutoStartFailedWarning(String error) {
+    return 'We tried to start analysis automatically after upload, but it failed and will keep retrying in the background: $error\nYou can also start it manually below.';
+  }
+
+  @override
   String get topicPreviewSaveTooltip => 'Save';
 
   @override
@@ -935,6 +940,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myAccountTransmissionsSubtitle => 'What\'s new & updates';
+
+  @override
+  String get myAccountIntroductionTitle => 'App Introduction';
+
+  @override
+  String get myAccountIntroductionSubtitle => 'Replay introduction slides';
+
+  @override
+  String get myAccountTutorialTitle => 'Tutorial';
+
+  @override
+  String get myAccountTutorialSubtitle => 'Interactive guide';
+
+  @override
+  String get myAccountTutorialComingSoonSnackbar =>
+      'Tutorial will be available in a future update.';
 
   @override
   String get myAccountNewBadge => 'NEW';
@@ -2061,4 +2082,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String legalDocumentLastUpdated(String date) {
     return 'Last updated $date';
   }
+
+  @override
+  String get broadSelectionSheetTitle => 'Select Transcript Section';
+
+  @override
+  String get broadSelectionSheetDescription =>
+      'Multiple sections are included in your selection. Select which section you would like to view:';
+
+  @override
+  String get introBackButton => 'Back';
+
+  @override
+  String get introLanguageButton => 'Language';
+
+  @override
+  String get introNextButton => 'Next';
+
+  @override
+  String get introHeroEyebrow => 'Welcome to leFture';
+
+  @override
+  String get introHeroTitleLine1 => 'Record your lectures,';
+
+  @override
+  String get introHeroTitleLine2 => 'for your futures.';
+
+  @override
+  String get introHeroSubtitle => 'Dull lectures are now your entertainment.';
+
+  @override
+  String get introHeroStageLabel => 'recording → your universe';
+
+  @override
+  String get introMagicEyebrow => 'Three kinds of magic waiting for you';
+
+  @override
+  String get introMagicHeadline =>
+      'Just hit record.\nWe’ll build your playground.';
+
+  @override
+  String get introMagicCard1Tag => 'Review Cards';
+
+  @override
+  String get introMagicCard1Title => 'Right after class, review made easy';
+
+  @override
+  String get introMagicCard1Desc =>
+      'The moment you stop recording, key points are already distilled into cards.';
+
+  @override
+  String get introMagicCard2Tag => 'Deep Notes';
+
+  @override
+  String get introMagicCard2Title => 'Detailed notes, complete understanding';
+
+  @override
+  String get introMagicCard2Desc =>
+      'Missed something? No worries — thorough notes have you covered.';
+
+  @override
+  String get introMagicCard3Tag => 'Fun Facts';
+
+  @override
+  String get introMagicCard3Title =>
+      'Fun facts that hit your curiosity dead-on';
+
+  @override
+  String get introMagicCard3Desc =>
+      'Delivered to spark exactly the kind of ‘huh, neat!’ you love.';
+
+  @override
+  String get introCtaLead =>
+      'Learning excitement\nlike you\'ve never felt before.';
+
+  @override
+  String get introCtaSub =>
+      'Start today.\nCreating an account is free and takes 30 seconds.';
+
+  @override
+  String get introCtaButton => 'Start recording your future, free';
 }

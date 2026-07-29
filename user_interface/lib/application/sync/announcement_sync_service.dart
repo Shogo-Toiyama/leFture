@@ -57,8 +57,12 @@ class AnnouncementSyncService {
 
         final id = json['id'] as String;
         final isPending = pendingIds.contains(id);
-        final metadata = json['metadata'] as Map<String, dynamic>?;
-        final datetimeParameters = json['datetime_parameters'] as Map<String, dynamic>?;
+        final metadata = json['metadata'] != null
+            ? Map<String, dynamic>.from(json['metadata'] as Map)
+            : null;
+        final datetimeParameters = json['datetime_parameters'] != null
+            ? Map<String, dynamic>.from(json['datetime_parameters'] as Map)
+            : null;
 
         return LocalAnnouncementsCompanion(
           id: Value(id),

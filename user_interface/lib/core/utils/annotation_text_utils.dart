@@ -231,51 +231,191 @@ Color? parseHexColor(String? hex) {
   return Color(0xFF000000 | value);
 }
 
+/// 広範囲選択時にボトムシートへ渡すためのセクション＆ハイライト情報
+class BroadSelectionOption {
+  const BroadSelectionOption({
+    required this.citation,
+    required this.sectionPlainText,
+    this.selectedStartInSection,
+    this.selectedEndInSection,
+  });
+
+  /// 対象の引用情報
+  final SidCitation citation;
+
+  /// その引用区間全体の表示用プレーンテキスト
+  final String sectionPlainText;
+
+  /// 引用区間内でのユーザー選択範囲の開始インデックス (含まれない場合はnull)
+  final int? selectedStartInSection;
+
+  /// 引用区間内でのユーザー選択範囲の終了インデックス (含まれない場合はnull)
+  final int? selectedEndInSection;
+}
+
 class SelectionTooBroadException implements Exception {
+  const SelectionTooBroadException({
+    this.message = 'The selection is too broad.',
+    this.options = const [],
+  });
+
   final String message;
-  const SelectionTooBroadException([this.message = 'The selection is too broad.']);
-  
+  final List<BroadSelectionOption> options;
+
   @override
   String toString() => message;
 }
 
+class _TolerantSelectionResult {
+  const _TolerantSelectionResult({
+    required this.effectiveRawStart,
+    required this.effectiveRawEnd,
+  });
+
+  final int effectiveRawStart;
+  final int effectiveRawEnd;
+}
+
+_TolerantSelectionResult _validateAndAdjustSelection({
+  required List<SidCitation> citations,
+  required FlattenedTextMap map,
+  required String rawText,
+  required int startIdx,
+  required int endIdx,
+  required int rawStart,
+  required int rawEnd,
+}) {
+  final selectionLen = (endIdx - startIdx).abs();
+
+  bool isMinor(int len) {
+    return len <= 5 || (selectionLen > 0 && (len / selectionLen) <= 0.15);
+  }
+
+  // 重なっている引用マーカーをすべて抽出
+  final overlapping = <SidCitation>[];
+  for (final c in citations) {
+    if (c.start < rawEnd && c.end > rawStart) {
+      overlapping.add(c);
+    }
+  }
+
+  List<BroadSelectionOption> buildBroadOptions() {
+    final options = <BroadSelectionOption>[];
+    for (var i = 0; i < citations.length; i++) {
+      final c = citations[i];
+      final secRawStart = i == 0 ? 0 : citations[i - 1].end;
+      final secRawEnd = c.start;
+
+      if (secRawStart >= secRawEnd) continue;
+
+      // 生Markdown上の選択範囲とセクション範囲の交差を算出
+      final rawOverlapStart = rawStart > secRawStart ? rawStart : secRawStart;
+      final rawOverlapEnd = rawEnd < secRawEnd ? rawEnd : secRawEnd;
+
+      if (rawOverlapStart < rawOverlapEnd) {
+        final secRawChunk = rawText.substring(secRawStart, secRawEnd);
+        // セクション単体で完全にフラット化・インデックスマッピングを生成
+        final secMap = buildFlattenedTextMap(secRawChunk);
+
+        final secRawStartInSec = rawOverlapStart - secRawStart;
+        final secRawEndInSec = rawOverlapEnd - secRawStart;
+
+        final selStartInSec = secMap.toFlattened(secRawStartInSec);
+        final selEndInSec = secMap.toFlattened(secRawEndInSec);
+
+        options.add(BroadSelectionOption(
+          citation: c,
+          sectionPlainText: secMap.flattenedText,
+          selectedStartInSection: selStartInSec,
+          selectedEndInSection: selEndInSec,
+        ));
+      }
+    }
+    return options;
+  }
+
+  // 1. 1つの引用マーカーが含まれる場合（単一境界の食い込み）
+  if (overlapping.length == 1) {
+    final c = overlapping.first;
+    final flatBoundary = map.toFlattened(c.start);
+
+    final leftLen = (flatBoundary - startIdx).clamp(0, selectionLen);
+    final rightLen = (endIdx - flatBoundary).clamp(0, selectionLen);
+    final minorLen = leftLen < rightLen ? leftLen : rightLen;
+
+    if (isMinor(minorLen)) {
+      if (leftLen >= rightLen) {
+        return _TolerantSelectionResult(
+          effectiveRawStart: rawStart,
+          effectiveRawEnd: c.start,
+        );
+      } else {
+        return _TolerantSelectionResult(
+          effectiveRawStart: c.end,
+          effectiveRawEnd: rawEnd,
+        );
+      }
+    }
+  }
+
+  // 2. 2つの引用マーカーが含まれる場合（前後両端の食い込み）
+  if (overlapping.length == 2) {
+    final c1 = overlapping.first;
+    final c2 = overlapping.last;
+
+    final flatB1 = map.toFlattened(c1.start);
+    final flatB2 = map.toFlattened(c2.start);
+
+    final frontLen = (flatB1 - startIdx).clamp(0, selectionLen);
+    final backLen = (endIdx - flatB2).clamp(0, selectionLen);
+
+    if (isMinor(frontLen) && isMinor(backLen)) {
+      // 前後ともに5文字以下または15%以下であれば真ん中の区間を採用
+      return _TolerantSelectionResult(
+        effectiveRawStart: c1.end,
+        effectiveRawEnd: c2.start,
+      );
+    }
+  }
+
+  // 許容できない場合または3つ以上のマーカーが含まれる場合
+  if (overlapping.isNotEmpty) {
+    throw SelectionTooBroadException(
+      message: 'The selection spans multiple sections.',
+      options: buildBroadOptions(),
+    );
+  }
+
+  // 重なりがない場合
+  return _TolerantSelectionResult(
+    effectiveRawStart: rawStart,
+    effectiveRawEnd: rawEnd,
+  );
+}
+
 /// 選択された範囲から、元テキスト（引用記号付き）内の対応する引用情報を検索する。
-///
-/// [rawText] 引用記号 `⟦sXXXXXX⟧` を含んだ元の Markdown テキスト。
-/// [startIdx] 表示用プレーンテキスト上での選択開始位置。
-/// [endIdx] 表示用プレーンテキスト上での選択終了位置。
-///
-/// 戻り値:
-/// - 該当する `SidCitation`
-/// - もし引用がなければ `null`
-///
-/// 例外:
-/// - 選択範囲が引用記号を跨いでいる、または選択範囲の中に引用記号が含まれている場合は `SelectionTooBroadException` をスローする。
 SidCitation? findSourceCitation(String rawText, int startIdx, int endIdx) {
   final citations = parseSidCitations(rawText);
   if (citations.isEmpty) return null;
 
-  // インデックス変換マップを作成 (引用記号の除去だけでなく、Markdown構文の
-  // フラット化も合わせて考慮したマッピング。startIdx/endIdxはSelectionAreaが
-  // 測定する完全フラット化テキスト上の位置なので、これに揃える必要がある)
   final map = buildFlattenedTextMap(rawText);
-
-  // 表示上の位置から元の rawText 上の位置に変換
   final rawStart = map.toRaw(startIdx);
   final rawEnd = map.toRaw(endIdx);
 
-  // 重なり判定と、直後の引用の探索
+  final adjusted = _validateAndAdjustSelection(
+    citations: citations,
+    map: map,
+    rawText: rawText,
+    startIdx: startIdx,
+    endIdx: endIdx,
+    rawStart: rawStart,
+    rawEnd: rawEnd,
+  );
+
   SidCitation? closestNextCitation;
 
   for (final c in citations) {
-    // 跨いでいるか、または選択範囲に含まれているか
-    // (c.start < rawEnd && c.end > rawStart) のとき重なっている
-    if (c.start < rawEnd && c.end > rawStart) {
-      throw const SelectionTooBroadException();
-    }
-
-    // 選択範囲より後（c.start >= rawEnd）にあるものを検索
-    if (c.start >= rawEnd) {
+    if (c.start >= adjusted.effectiveRawEnd) {
       if (closestNextCitation == null || c.start < closestNextCitation.start) {
         closestNextCitation = c;
       }
@@ -298,46 +438,35 @@ class SourceContextResult {
 }
 
 /// 選択された範囲に基づき、対応する引用情報（直後のもの）と一時ハイライトを表示すべきコンテキスト範囲を算出する。
-///
-/// [rawText] 引用記号 `⟦sXXXXXX⟧` を含んだ元の Markdown テキスト。
-/// [startIdx] 表示用プレーンテキスト上での選択開始位置。
-/// [endIdx] 表示用プレーンテキスト上での選択終了位置。
-///
-/// 戻り値:
-/// - 解決結果の `SourceContextResult`
-/// - 引用がなければ `null`
-///
-/// 例外:
-/// - 選択範囲が引用記号を跨いでいる、または選択範囲の中に引用記号が含まれている場合は `SelectionTooBroadException` をスローする。
 SourceContextResult? findSourceContextRange(String rawText, int startIdx, int endIdx) {
   final citations = parseSidCitations(rawText);
   if (citations.isEmpty) return null;
 
-  // マッピング関数を作成 (引用記号除去 + Markdown構文フラット化を合わせて考慮)
   final map = buildFlattenedTextMap(rawText);
-
-  // 表示上の位置から元の rawText 上の位置に変換
   final rawStart = map.toRaw(startIdx);
   final rawEnd = map.toRaw(endIdx);
+
+  final adjusted = _validateAndAdjustSelection(
+    citations: citations,
+    map: map,
+    rawText: rawText,
+    startIdx: startIdx,
+    endIdx: endIdx,
+    rawStart: rawStart,
+    rawEnd: rawEnd,
+  );
 
   SidCitation? nextCitation;
   SidCitation? prevCitation;
 
   for (final c in citations) {
-    // 重なり判定
-    if (c.start < rawEnd && c.end > rawStart) {
-      throw const SelectionTooBroadException();
-    }
-
-    // 選択範囲より後（c.start >= rawEnd）
-    if (c.start >= rawEnd) {
+    if (c.start >= adjusted.effectiveRawEnd) {
       if (nextCitation == null || c.start < nextCitation.start) {
         nextCitation = c;
       }
     }
 
-    // 選択範囲より前（c.end <= rawStart）
-    if (c.end <= rawStart) {
+    if (c.end <= adjusted.effectiveRawStart) {
       if (prevCitation == null || c.end > prevCitation.end) {
         prevCitation = c;
       }
@@ -348,11 +477,9 @@ SourceContextResult? findSourceContextRange(String rawText, int startIdx, int en
     return null;
   }
 
-  // 元テキスト上でのハイライトコンテキスト範囲を算出
   final rawContextStart = prevCitation != null ? prevCitation.end : 0;
   final rawContextEnd = nextCitation.start;
 
-  // 表示用テキストのインデックスに戻す
   final contextStartIdx = map.toFlattened(rawContextStart);
   final contextEndIdx = map.toFlattened(rawContextEnd);
 

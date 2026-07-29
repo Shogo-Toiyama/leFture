@@ -64,7 +64,9 @@ class LectureSyncService {
         if (maxUpdatedAt == null || updatedAt.isAfter(maxUpdatedAt!)) {
           maxUpdatedAt = updatedAt;
         }
-        final metadata = json['metadata'] as Map<String, dynamic>?;
+        final metadata = json['metadata'] != null
+            ? Map<String, dynamic>.from(json['metadata'] as Map)
+            : null;
         return LocalLecturesCompanion(
           id: Value(json['id'] as String),
           userId: Value(json['user_id'] as String),

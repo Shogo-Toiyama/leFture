@@ -216,11 +216,12 @@ class RecordingPage extends HookConsumerWidget {
     }) {
       return Container(
         decoration: BoxDecoration(
-          color: AppColors.universe.glassWhiteLow,
+          color: const Color(0xFF1A1C2E).withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.universe.glassBorder),
         ),
         child: SwitchListTile(
+          tileColor: Colors.transparent,
           secondary: Icon(icon, color: AppColors.universe.textComet),
           title: Text(
             title,
@@ -730,15 +731,45 @@ class RecordingPage extends HookConsumerWidget {
                           const SizedBox(height: 24),
 
                           // More Settings アコーディオン
-                          Container(
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
-                              color: AppColors.universe.glassWhiteLow,
+                              color: showMoreSettings.value
+                                  ? AppColors.starGold.withValues(alpha: 0.08)
+                                  : const Color(0xFF1A1C2E).withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.universe.glassBorder),
+                              border: Border.all(
+                                color: showMoreSettings.value
+                                    ? AppColors.starGold.withValues(alpha: 0.5)
+                                    : AppColors.universe.glassBorder,
+                                width: showMoreSettings.value ? 1.5 : 1.0,
+                              ),
+                              boxShadow: [
+                                if (showMoreSettings.value)
+                                  BoxShadow(
+                                    color: AppColors.starGold.withValues(alpha: 0.15),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  ),
+                              ],
                             ),
                             child: InkWell(
-                              onTap: () => showMoreSettings.value = !showMoreSettings.value,
+                              onTap: () {
+                                final willExpand = !showMoreSettings.value;
+                                showMoreSettings.value = willExpand;
+                                if (willExpand) {
+                                  Future.microtask(() {
+                                    if (scrollController.hasClients) {
+                                      scrollController.animateTo(
+                                        scrollController.position.maxScrollExtent,
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeOutCubic,
+                                      );
+                                    }
+                                  });
+                                }
+                              },
                               borderRadius: BorderRadius.circular(12),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -749,14 +780,18 @@ class RecordingPage extends HookConsumerWidget {
                                       children: [
                                         Icon(
                                           Icons.settings_outlined,
-                                          color: AppColors.universe.textComet,
+                                          color: showMoreSettings.value
+                                              ? AppColors.starGold
+                                              : AppColors.universe.textComet,
                                           size: 20,
                                         ),
                                         const SizedBox(width: 10),
                                         Text(
                                           l10n.recordingSettingsSectionTitle,
                                           style: TextStyle(
-                                            color: AppColors.universe.textComet,
+                                            color: showMoreSettings.value
+                                                ? AppColors.starGold
+                                                : AppColors.universe.textComet,
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -767,7 +802,9 @@ class RecordingPage extends HookConsumerWidget {
                                       showMoreSettings.value
                                           ? Icons.expand_less
                                           : Icons.expand_more,
-                                      color: AppColors.universe.textComet,
+                                      color: showMoreSettings.value
+                                          ? AppColors.starGold
+                                          : AppColors.universe.textComet,
                                       size: 20,
                                     ),
                                   ],
@@ -776,83 +813,93 @@ class RecordingPage extends HookConsumerWidget {
                             ),
                           ),
                           AnimatedCrossFade(
-                            duration: const Duration(milliseconds: 200),
+                            duration: const Duration(milliseconds: 250),
                             crossFadeState: showMoreSettings.value
                                 ? CrossFadeState.showFirst
                                 : CrossFadeState.showSecond,
-                            firstChild: Column(
-                              children: [
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: titleCtl,
-                                  enabled: !isBusy,
-                                  style: TextStyle(color: AppColors.universe.textStarlight),
-                                  decoration: glassInputDecoration(
-                                    l10n.recordingTitleFieldLabel,
-                                    Icons.title,
-                                    hintText: l10n.recordingTitleFieldHint,
+                            firstChild: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF131525).withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.starGold.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  TextField(
+                                    controller: titleCtl,
+                                    enabled: !isBusy,
+                                    style: TextStyle(color: AppColors.universe.textStarlight),
+                                    decoration: glassInputDecoration(
+                                      l10n.recordingTitleFieldLabel,
+                                      Icons.title,
+                                      hintText: l10n.recordingTitleFieldHint,
+                                    ),
+                                    onChanged: controller.setTitle,
                                   ),
-                                  onChanged: controller.setTitle,
-                                ),
-                                const SizedBox(height: 16),
-                                buildToggleRow(
-                                  icon: Icons.play_circle_outline,
-                                  title: l10n.recordingAutoStartAnalysisTitle,
-                                  subtitle: l10n.recordingAutoStartAnalysisSubtitle,
-                                  value: state.autoStartAnalysis,
-                                  onChanged: (val) => controller.setAutoStartAnalysis(val),
-                                ),
-                                const SizedBox(height: 12),
-                                buildToggleRow(
-                                  icon: Icons.chat_bubble_outline,
-                                  title: l10n.recordingRealtimeTranscribeTitle,
-                                  subtitle: l10n.recordingRealtimeTranscribeSubtitle,
-                                  value: state.realtimeTranscribe,
-                                  onChanged: state.phase == RecordingPhase.idle
-                                      ? (val) async {
-                                          if (val && asrModelState.status != AsrModelStatus.ready) {
-                                            final confirmed = await showCustomDialog(
-                                              context: context,
-                                              title: l10n.recordingSpeechModelDialogTitle,
-                                              message: l10n.recordingSpeechModelDialogMessage,
-                                              icon: Icons.download_rounded,
-                                              confirmLabel: l10n.recordingSpeechModelDownloadConfirm,
-                                              cancelLabel: l10n.recordingCancelButton,
-                                            );
-                                            if (confirmed != true) return;
-                                            controller.setRealtimeTranscribe(true);
-                                            if (context.mounted) {
-                                              await ensureAsrModelWithErrorDialog(context, ref, recordingLanguage);
+                                  const SizedBox(height: 16),
+                                  buildToggleRow(
+                                    icon: Icons.play_circle_outline,
+                                    title: l10n.recordingAutoStartAnalysisTitle,
+                                    subtitle: l10n.recordingAutoStartAnalysisSubtitle,
+                                    value: state.autoStartAnalysis,
+                                    onChanged: (val) => controller.setAutoStartAnalysis(val),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  buildToggleRow(
+                                    icon: Icons.chat_bubble_outline,
+                                    title: l10n.recordingRealtimeTranscribeTitle,
+                                    subtitle: l10n.recordingRealtimeTranscribeSubtitle,
+                                    value: state.realtimeTranscribe,
+                                    onChanged: state.phase == RecordingPhase.idle
+                                        ? (val) async {
+                                            if (val && asrModelState.status != AsrModelStatus.ready) {
+                                              final confirmed = await showCustomDialog(
+                                                context: context,
+                                                title: l10n.recordingSpeechModelDialogTitle,
+                                                message: l10n.recordingSpeechModelDialogMessage,
+                                                icon: Icons.download_rounded,
+                                                confirmLabel: l10n.recordingSpeechModelDownloadConfirm,
+                                                cancelLabel: l10n.recordingCancelButton,
+                                              );
+                                              if (confirmed != true) return;
+                                              controller.setRealtimeTranscribe(true);
+                                              if (context.mounted) {
+                                                await ensureAsrModelWithErrorDialog(context, ref, recordingLanguage);
+                                              }
+                                              return;
                                             }
-                                            return;
+                                            controller.setRealtimeTranscribe(val);
                                           }
-                                          controller.setRealtimeTranscribe(val);
-                                        }
-                                      : null,
-                                ),
-                                const SizedBox(height: 12),
-                                _RecordingLanguageRow(
-                                  languageLabel: recordingLanguageFromCode(recordingLanguage).englishName,
-                                  modelState: asrModelState,
-                                  onDownloadTap: () =>
-                                      ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
-                                  onPauseTap: () => ref
-                                      .read(asrModelManagerProvider.notifier)
-                                      .pauseDownload(recordingLanguage),
-                                  onResumeTap: () =>
-                                      resumeAsrModelWithErrorDialog(context, ref, recordingLanguage),
-                                  onTap: isBusy
-                                      ? null
-                                      : () => showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            builder: (_) => const LanguageSelectionSheet(
-                                              mode: LanguageSheetMode.recording,
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _RecordingLanguageRow(
+                                    languageLabel: recordingLanguageFromCode(recordingLanguage).englishName,
+                                    modelState: asrModelState,
+                                    onDownloadTap: () =>
+                                        ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
+                                    onPauseTap: () => ref
+                                        .read(asrModelManagerProvider.notifier)
+                                        .pauseDownload(recordingLanguage),
+                                    onResumeTap: () =>
+                                        resumeAsrModelWithErrorDialog(context, ref, recordingLanguage),
+                                    onTap: isBusy
+                                        ? null
+                                        : () => showModalBottomSheet(
+                                              context: context,
+                                              isScrollControlled: true,
+                                              backgroundColor: Colors.transparent,
+                                              builder: (_) => const LanguageSelectionSheet(
+                                                mode: LanguageSheetMode.recording,
+                                              ),
                                             ),
-                                          ),
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
                             ),
                             secondChild: const SizedBox(width: double.infinity),
                           ),
@@ -1250,11 +1297,12 @@ class _RecordingLanguageRow extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
+        color: const Color(0xFF1A1C2E).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.universe.glassBorder),
       ),
       child: ListTile(
+        tileColor: Colors.transparent,
         onTap: onTap,
         enabled: onTap != null,
         leading: Icon(Icons.translate, color: AppColors.universe.textComet),

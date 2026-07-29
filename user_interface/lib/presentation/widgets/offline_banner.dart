@@ -25,35 +25,46 @@ class OfflineBanner extends ConsumerWidget {
           duration: const Duration(milliseconds: 300),
           curve: Curves.fastOutSlowIn,
           child: !isOnline
-              ? Container(
-                  width: double.infinity,
+              ? Material(
                   color: AppColors.cosmicBlue,
-                  padding: EdgeInsets.only(
-                    top: topPadding > 0 ? topPadding + 2 : 6,
-                    bottom: 6,
-                    left: 16,
-                    right: 16,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                        l10n.offlineBannerMessage,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          letterSpacing: 0.2,
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.only(
+                      top: topPadding > 0 ? topPadding + 2 : 6,
+                      bottom: 6,
+                      left: 16,
+                      right: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.offlineBannerMessage,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            letterSpacing: 0.2,
+                            decoration: TextDecoration.none,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 )
               : const SizedBox(width: double.infinity, height: 0),
         ),
-        Expanded(child: child),
+        Expanded(
+          child: !isOnline
+              ? MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: child,
+                )
+              : child,
+        ),
       ],
     );
   }

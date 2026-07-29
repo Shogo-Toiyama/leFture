@@ -1,6 +1,9 @@
 class AppRoutes {
   // Auth
   static const welcome = '/welcome';
+  // 新規インストール端末限定で、サインイン/サインアップより先に一度だけ見せる
+  // 3枚のイントロダクション(Hero/3つの価値/CTA)。
+  static const introduction = '/introduction';
   static const signIn = '/sign_in';
   static const signUp = '/sign_up';
   static const forgotPassword = '/forgot_password';

@@ -148,7 +148,7 @@ final class AllLecturesStreamProvider
         argument: null,
         retry: null,
         name: r'allLecturesStreamProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -168,4 +168,4 @@ final class AllLecturesStreamProvider
   }
 }
 
-String _$allLecturesStreamHash() => r'02496b6fee8a489c480471de9b6396ce81cb220d';
+String _$allLecturesStreamHash() => r'411c73f36057c3d5c7469f087ff5731da106192d';
