@@ -44,39 +44,14 @@ class _OnboardingTutorialStepState extends State<OnboardingTutorialStep> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'le',
-                  style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-                const Text('F', style: TextStyle(color: AppColors.starGold, fontSize: 16, fontWeight: FontWeight.w800)),
-                Text(
-                  'ture',
-                  style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-              ],
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: widget.onNext,
+            child: Text(
+              l10n.onboardingSkipButton,
+              style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            TextButton(
-              onPressed: widget.onNext,
-              child: Text(
-                l10n.onboardingSkipButton,
-                style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text(
-          l10n.onboardingTutorialEyebrow,
-          style: TextStyle(
-            color: AppColors.universe.textComet,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(height: 16),

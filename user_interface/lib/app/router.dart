@@ -219,6 +219,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == AppRoutes.forgotPassword ||
           path == AppRoutes.resetPassword;
 
+      // メール確認待ち(サインアップ直後、まだセッションが無い状態)の
+      // 案内画面。/auth_resultの他のkind(email_changed等)はログイン済みで
+      // しか到達しないが、これだけは未ログインのまま表示する必要があるため、
+      // 個別に公開扱いにする(でないとredirectがサインイン画面へ差し戻してしまい、
+      // 「メールを送信しました」の案内が一切表示されない)。
+      final isEmailSignupPendingResult =
+          path == AppRoutes.authResult &&
+          state.uri.queryParameters['kind'] == 'email_signup_pending';
+
       // ログイン状態に関わらず見られるページ（例: サインアップ画面やプロフィール画面からのリンク、
       // アカウント削除完了画面はセッションが既に無い状態で表示するため公開扱いが必要）
       // welcome/introductionもここでは公開扱いにする。
@@ -228,7 +237,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == AppRoutes.welcome ||
           path == AppRoutes.privacyPolicy ||
           path == AppRoutes.termsOfService ||
-          path == AppRoutes.accountDeleted;
+          path == AppRoutes.accountDeleted ||
+          isEmailSignupPendingResult;
 
       // 1. 未ログインなら基本サインインへ強制移動。ただしこの端末でまだ
       //    Introduction(3枚のスライド)を見せていなければ、サインインより

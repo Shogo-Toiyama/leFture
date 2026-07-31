@@ -73,11 +73,19 @@ class _IntroMagicSlideState extends State<IntroMagicSlide>
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(26, 8, 26, 176),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                    padding: EdgeInsets.fromLTRB(
+                      26,
+                      MediaQuery.paddingOf(context).top + 52,
+                      26,
+                      176,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 440),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                         RiseIn(
                           visible: _eyebrow,
                           duration: const Duration(milliseconds: 550),
@@ -151,6 +159,8 @@ class _IntroMagicSlideState extends State<IntroMagicSlide>
                 ),
               ),
             ),
+          ),
+        ),
 
             // --- 手前にふわふわ浮遊する激薄レンズフレア・ボケオーブ（魔法感演出） ---
             const Positioned.fill(

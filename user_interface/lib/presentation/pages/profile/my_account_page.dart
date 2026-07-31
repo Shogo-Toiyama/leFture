@@ -1257,6 +1257,7 @@ class _SettingsTile extends StatelessWidget {
 // Debug Section (collapsed / hidden by default visually)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ignore: unused_element
 class _DebugSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {

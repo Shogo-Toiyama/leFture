@@ -120,6 +120,7 @@ class UserProfileRepositorySupabase {
   }
 
   static const _onboardingCompletedMetadataKey = 'onboarding_completed_at';
+  bool? _cachedOnboardingCompleted;
 
   /// 初回オンボーディング(プロフィール設定・Recording Language・Realtime
   /// Recording ON/OFF)を完了済みかどうか。ローカルにプロフィール行が
@@ -132,6 +133,11 @@ class UserProfileRepositorySupabase {
   /// ローカルにフラグが見当たらない場合は、一度だけサーバーの最新値を
   /// 取得してローカルにも埋めてから、改めて判定し直す。
   Future<bool> hasCompletedOnboarding() async {
+    if (_cachedOnboardingCompleted == true) {
+      DevLog.add('[ProfileRepo] hasCompletedOnboarding returning in-memory true cache');
+      return true;
+    }
+
     final uid = _requireUid();
     DevLog.add('[ProfileRepo] hasCompletedOnboarding called for uid=$uid');
     var existing = await _db.getUserProfile(uid);
@@ -156,11 +162,15 @@ class UserProfileRepositorySupabase {
     );
     final completed = metadata[_onboardingCompletedMetadataKey] != null;
     DevLog.add('[ProfileRepo] onboarding_completed_at check = $completed (metadata=$metadata)');
+    if (completed) {
+      _cachedOnboardingCompleted = true;
+    }
     return completed;
   }
 
   /// オンボーディング完了をmetadataにマージして記録し、サーバーにも同期する。
   Future<void> markOnboardingCompleted() async {
+    _cachedOnboardingCompleted = true;
     final uid = _requireUid();
 
     // ローカルキャッシュがまだ空/古い状態(スキーママイグレーション直後や、

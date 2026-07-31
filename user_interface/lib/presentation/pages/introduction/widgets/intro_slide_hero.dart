@@ -145,82 +145,92 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
 
                 // --- タイトル文章ブロック ---
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(26, 8, 26, 176),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RiseIn(
-                        visible: _eyebrow,
-                        duration: const Duration(milliseconds: 600),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(width: 20, height: 1.5, color: AppColors.starGold),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.introHeroEyebrow.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2.2,
-                                color: AppColors.starGold,
+                  padding: EdgeInsets.fromLTRB(
+                    26,
+                    MediaQuery.paddingOf(context).top + 52,
+                    26,
+                    176,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        RiseIn(
+                          visible: _eyebrow,
+                          duration: const Duration(milliseconds: 600),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(width: 20, height: 1.5, color: AppColors.starGold),
+                              const SizedBox(width: 8),
+                              Text(
+                                l10n.introHeroEyebrow.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2.2,
+                                  color: AppColors.starGold,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      RiseIn(
-                        visible: _title1,
-                        duration: const Duration(milliseconds: 700),
-                        child: Text(
-                          l10n.introHeroTitleLine1,
-                          style: TextStyle(
-                            fontSize: 35,
-                            fontWeight: FontWeight.w800,
-                            height: 1.16,
-                            letterSpacing: -0.5,
-                            color: starlight,
+                            ],
                           ),
                         ),
-                      ),
-                      RiseIn(
-                        visible: _title2,
-                        duration: const Duration(milliseconds: 700),
-                        child: ShaderMask(
-                          shaderCallback: (rect) => const LinearGradient(
-                            colors: [Color(0xFFFFD166), AppColors.starGold, Color(0xFFCC8D00)],
-                          ).createShader(rect),
+                        const SizedBox(height: 16),
+                        RiseIn(
+                          visible: _title1,
+                          duration: const Duration(milliseconds: 700),
                           child: Text(
-                            l10n.introHeroTitleLine2,
-                            style: const TextStyle(
+                            l10n.introHeroTitleLine1,
+                            style: TextStyle(
                               fontSize: 35,
                               fontWeight: FontWeight.w800,
                               height: 1.16,
                               letterSpacing: -0.5,
-                              color: Colors.white,
+                              color: starlight,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      RiseIn(
-                        visible: _subtitle,
-                        duration: const Duration(milliseconds: 700),
-                        child: Text(
-                          l10n.introHeroSubtitle,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            height: 1.5,
-                            color: starlight,
+                        RiseIn(
+                          visible: _title2,
+                          duration: const Duration(milliseconds: 700),
+                          child: ShaderMask(
+                            shaderCallback: (rect) => const LinearGradient(
+                              colors: [Color(0xFFFFD166), AppColors.starGold, Color(0xFFCC8D00)],
+                            ).createShader(rect),
+                            child: Text(
+                              l10n.introHeroTitleLine2,
+                              style: const TextStyle(
+                                fontSize: 35,
+                                fontWeight: FontWeight.w800,
+                                height: 1.16,
+                                letterSpacing: -0.5,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 18),
+                        RiseIn(
+                          visible: _subtitle,
+                          duration: const Duration(milliseconds: 700),
+                          child: Text(
+                            l10n.introHeroSubtitle,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              height: 1.5,
+                              color: starlight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ),
 
                 // --- 全端末・OS（iOS/Android）で完全同一パーセンテージ（77-80%位置）に固定配置されるイコライザー ---
                 Positioned(
@@ -228,7 +238,12 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
                   left: 26,
                   right: 26,
                   height: 64,
-                  child: _RecordingStyleWaveform(grown: _barsGrown),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: _RecordingStyleWaveform(grown: _barsGrown),
+                    ),
+                  ),
                 ),
 
                 // --- Cosmic Toybox: 最前面に配置（タイトルより手前）---
@@ -443,7 +458,7 @@ const _toys = [
     asset: 'assets/images/intro/clay_headphones.png',
     size: 92,  // ヘッドフォン: 右上
     angle: -0.08 * math.pi,
-    distance: 0.21,
+    distance: 0.18,
     floatAmp: 10,
     floatSpeed: 1.0,
     floatPhase: 1.1,
@@ -455,7 +470,7 @@ const _toys = [
     asset: 'assets/images/intro/clay_suitcase.png',
     size: 94,  // スーツケース: 右下
     angle: 0.30 * math.pi,
-    distance: 0.23,
+    distance: 0.21,
     floatAmp: 11,
     floatSpeed: 1.0,
     floatPhase: 2.0,
@@ -557,7 +572,7 @@ class _ToyboxPopBurstState extends State<_ToyboxPopBurst>
             return Stack(
               children: [
                 for (int i = 0; i < _toys.length; i++)
-                  _buildToy(i, cx, cy, constraints.maxHeight),
+                  _buildToy(i, cx, cy, constraints.maxHeight, constraints.maxWidth),
               ],
             );
           },
@@ -566,33 +581,37 @@ class _ToyboxPopBurstState extends State<_ToyboxPopBurst>
     );
   }
 
-  Widget _buildToy(int i, double cx, double cy, double screenH) {
+  Widget _buildToy(int i, double cx, double cy, double screenH, double screenW) {
     final toy = _toys[i];
     final popped = _popped[i];
+
+    // スマホ標準幅（390px）を基準にし、iPad等の大画面でアセットサイズ・配置半径をスケールさせる
+    final scale = (math.min(screenW, screenH * 0.8) / 390.0).clamp(1.0, 1.45);
+    final toySize = toy.size * scale;
 
     // サイン波で上下にゆらゆら浮遊
     final floatY = math.sin(
           _floatController.value * 2 * math.pi * toy.floatSpeed + toy.floatPhase,
         ) *
-        toy.floatAmp;
+        (toy.floatAmp * scale);
 
     // バースト原点をタイトルの真下（画面中央より少し下）へシフト
     // → 上から約62%の高さを中心にオブジェクトが散らばる
     final originY = cy + screenH * 0.12;
 
     // 最終的な配置座標（中心から放射状）
-    final dist = screenH * toy.distance;
+    final dist = screenH * toy.distance * scale;
     final dx = math.cos(toy.angle) * dist;
     final dy = math.sin(toy.angle) * dist;
 
-    final left = cx + dx - toy.size / 2;
-    final top = originY + dy - toy.size / 2 + floatY;
+    final left = cx + dx - toySize / 2;
+    final top = originY + dy - toySize / 2 + floatY;
 
     return Positioned(
       left: left,
       top: top,
-      width: toy.size,
-      height: toy.size,
+      width: toySize,
+      height: toySize,
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.0, end: popped ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 700),

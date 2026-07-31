@@ -153,16 +153,23 @@ class CourseCreateSheet extends HookConsumerWidget {
                 metadata: metadata,
               );
 
-        // 関連Providerを再フェッチ
-        ref.invalidate(courseListProvider);
-        ref.invalidate(yearAttributesProvider);
-        ref.invalidate(termAttributesProvider);
-        ref.invalidate(professorAttributesProvider);
-        ref.invalidate(schoolAttributesProvider);
-        ref.invalidate(subjectAttributesProvider);
-
         if (context.mounted) {
+          // このシートを閉じる前にref.invalidate()を何件も同期実行すると、
+          // それらが引き起こすリビルドのスケジューリングとNavigator.pop()に
+          // よるルート破棄が同一フレーム内で競合し、Navigatorのロック違反
+          // (`_debugLocked`)で背後の画面が真っ黒なまま固まることがあった。
+          // 先にシートを閉じてから、Providerの再フェッチは次のフレームへ
+          // 遅らせることでこの競合を避ける。
+          final container = ProviderScope.containerOf(context, listen: false);
           Navigator.of(context).pop(course);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            container.invalidate(courseListProvider);
+            container.invalidate(yearAttributesProvider);
+            container.invalidate(termAttributesProvider);
+            container.invalidate(professorAttributesProvider);
+            container.invalidate(schoolAttributesProvider);
+            container.invalidate(subjectAttributesProvider);
+          });
         }
       } catch (e) {
         errorMsg.value = e.toString();

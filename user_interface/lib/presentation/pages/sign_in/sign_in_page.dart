@@ -7,6 +7,7 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
@@ -28,9 +29,12 @@ class SignInPage extends HookConsumerWidget {
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
-          ref.read(lectureControllerProvider.notifier).resetThrottle();
-          ref.invalidate(courseListProvider);
-          context.go(AppRoutes.home);
+          final session = supabase.auth.currentSession;
+          if (session != null) {
+            ref.read(lectureControllerProvider.notifier).resetThrottle();
+            ref.invalidate(courseListProvider);
+            context.go(AppRoutes.home);
+          }
         },
         error: (error, stackTrace) {
           AppErrorDialog.showSmartNamed(

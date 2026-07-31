@@ -86,6 +86,8 @@ class _IntroductionPageState extends ConsumerState<IntroductionPage> {
   }
 
   Future<void> _openLanguageSheet() async {
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -170,39 +172,31 @@ class _IntroductionPageState extends ConsumerState<IntroductionPage> {
               fit: StackFit.expand,
               children: [
                 Positioned.fill(
-                  child: IntroParticleField(
-                    key: _particleFieldKey,
-                    mode: isLast
-                        ? IntroParticleMode.converge
-                        : IntroParticleMode.ambient,
-                  ),
+                  child: isLast
+                      ? IntroParticleField(
+                          key: _particleFieldKey,
+                          mode: IntroParticleMode.converge,
+                        )
+                      : const SizedBox.shrink(),
                 ),
                 Positioned.fill(
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 44),
-                      child: _CrossFadeStage(
-                        index: _index,
-                        builder: _buildSlide,
-                      ),
-                    ),
+                  child: _CrossFadeStage(
+                    index: _index,
+                    builder: _buildSlide,
                   ),
                 ),
 
                 // --- Top chrome (Header) ---
                 Positioned(
-                  top: 0,
+                  top: 4,
                   left: 0,
                   right: 0,
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
                       child: SizedBox(
-                        height: 44,
+                        height: 48,
                         child: Row(
                           children: [
                             _ChromeIconButton(
@@ -234,23 +228,28 @@ class _IntroductionPageState extends ConsumerState<IntroductionPage> {
                     top: false,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _Dots(
-                            count: _slideCount,
-                            index: _index,
-                            onTap: _goTo,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 340),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _Dots(
+                                count: _slideCount,
+                                index: _index,
+                                onTap: _goTo,
+                              ),
+                              const SizedBox(height: 18),
+                              _PrimaryButton(
+                                label: isLast
+                                    ? l10n.introCtaButton
+                                    : l10n.introNextButton,
+                                primary: isLast,
+                                onPressed: _onPrimaryPressed,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 18),
-                          _PrimaryButton(
-                            label: isLast
-                                ? l10n.introCtaButton
-                                : l10n.introNextButton,
-                            primary: isLast,
-                            onPressed: _onPrimaryPressed,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -279,6 +278,10 @@ class _ChromeIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
+    final buttonSize = isTablet ? 46.0 : 38.0;
+    final iconSize = isTablet ? 24.0 : 20.0;
+
     return AnimatedOpacity(
       opacity: visible ? 1 : 0,
       duration: const Duration(milliseconds: 250),
@@ -293,11 +296,11 @@ class _ChromeIconButton extends StatelessWidget {
             child: Tooltip(
               message: tooltip,
               child: SizedBox(
-                width: 38,
-                height: 38,
+                width: buttonSize,
+                height: buttonSize,
                 child: Icon(
                   icon,
-                  size: 20,
+                  size: iconSize,
                   color: AppColors.universe.textStarlight,
                 ),
               ),

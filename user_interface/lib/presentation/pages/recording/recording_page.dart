@@ -303,8 +303,11 @@ class RecordingPage extends HookConsumerWidget {
                     child: SingleChildScrollView(
                       controller: scrollController,
                       padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: Column(
+                            children: [
                           // 1. Course
                           Container(
                             decoration: BoxDecoration(
@@ -570,8 +573,28 @@ class RecordingPage extends HookConsumerWidget {
                                         : () async {
                                             isSelectingFile.value = true;
                                             try {
+                                              // FileType.audioはiOSでは「ミュージック
+                                              // ライブラリ」ピッカー(MPMediaPickerController)
+                                              // を開く実装で、Info.plistに
+                                              // NSAppleMusicUsageDescriptionが無いと
+                                              // 即クラッシュする上、ダウンロードした
+                                              // 音声ファイルやiCloud Drive上のファイルには
+                                              // そもそも辿り着けない。FileType.customで
+                                              // 拡張子指定すれば標準の書類ピッカー(Files)が
+                                              // 開き、ダウンロード/iCloud Drive/他アプリの
+                                              // 共有先まで選択できる。
                                               final result = await FilePicker.pickFiles(
-                                                type: FileType.audio,
+                                                type: FileType.custom,
+                                                allowedExtensions: const [
+                                                  'mp3',
+                                                  'm4a',
+                                                  'wav',
+                                                  'aac',
+                                                  'aiff',
+                                                  'caf',
+                                                  'flac',
+                                                  'ogg',
+                                                ],
                                                 allowMultiple: false,
                                               );
 
@@ -907,6 +930,8 @@ class RecordingPage extends HookConsumerWidget {
                       ),
                     ),
                   ),
+                ),
+              ),
 
                   // 5. Upload Button (Bottom)
                   Container(
@@ -916,63 +941,68 @@ class RecordingPage extends HookConsumerWidget {
                       border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
                       color: AppColors.universe.voidBackground.withValues(alpha:0.8),
                     ),
-                    child: ElevatedButton(
-                      onPressed: !isBusy && (state.canUpload || selectedAudioFilePath.value != null)
-                          ? () async {
-                              if (selectedAudioFilePath.value != null) {
-                                // ファイル選択がある場合
-                                if (state.courseId == null) {
-                                  // Course が未選択なら警告
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(l10n.recordingSelectCourseBeforeUploadSnackbar),
-                                      ),
-                                    );
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 500),
+                        child: ElevatedButton(
+                          onPressed: !isBusy && (state.canUpload || selectedAudioFilePath.value != null)
+                              ? () async {
+                                  if (selectedAudioFilePath.value != null) {
+                                    // ファイル選択がある場合
+                                    if (state.courseId == null) {
+                                      // Course が未選択なら警告
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(l10n.recordingSelectCourseBeforeUploadSnackbar),
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
+                                    await controller.uploadAudioFile(selectedAudioFilePath.value!);
+                                    selectedAudioFilePath.value = null; // 完了後にリセット
+                                  } else {
+                                    // 通常の録音アップロード
+                                    if (state.canUpload) {
+                                      await controller.upload();
+                                    }
                                   }
-                                  return;
                                 }
-                                await controller.uploadAudioFile(selectedAudioFilePath.value!);
-                                selectedAudioFilePath.value = null; // 完了後にリセット
-                              } else {
-                                // 通常の録音アップロード
-                                if (state.canUpload) {
-                                  await controller.upload();
-                                }
-                              }
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.starGold,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.universe.glassWhiteLow,
-                        disabledForegroundColor: AppColors.universe.textComet,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: isBusy
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  l10n.recordingUploadingStatus,
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.starGold,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: AppColors.universe.glassWhiteLow,
+                            disabledForegroundColor: AppColors.universe.textComet,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: isBusy
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      l10n.recordingUploadingStatus,
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  l10n.recordingUploadButtonLabel,
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
-                              ],
-                            )
-                          : Text(
-                              l10n.recordingUploadButtonLabel,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1086,7 +1116,13 @@ class RecordingPage extends HookConsumerWidget {
               // ==========================================
               // Tab 3: Test (Tier 1 simulate-recording harness, isTestMode only)
               // ==========================================
-              if (isTestMode) const SimulateRecordingTab(),
+              if (isTestMode)
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: const SimulateRecordingTab(),
+                  ),
+                ),
             ],
           ),
 
@@ -1430,28 +1466,33 @@ class _LiveTab extends HookConsumerWidget {
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(20, 20, 20, 36 + bottomSafeArea),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: transcriptHeight,
-                  child: _LiveTranscriptPanel(
-                    phase: state.phase,
-                    lectureId: lectureId,
-                    canInteract: canInteract,
-                  ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: transcriptHeight,
+                      child: _LiveTranscriptPanel(
+                        phase: state.phase,
+                        lectureId: lectureId,
+                        canInteract: canInteract,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _MomentsTimeline(
+                      moments: moments,
+                      isExpanded: false,
+                      canInteract: canInteract,
+                      onDelete: deleteMoment,
+                    ),
+                    const SizedBox(height: 12),
+                    _ReactionRow(onTap: addMoment, canInteract: canInteract),
+                    const SizedBox(height: 12),
+                    _NoteInputRow(controller: noteCtl, onSubmit: submitNote, enabled: canInteract),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _MomentsTimeline(
-                  moments: moments,
-                  isExpanded: false,
-                  canInteract: canInteract,
-                  onDelete: deleteMoment,
-                ),
-                const SizedBox(height: 12),
-                _ReactionRow(onTap: addMoment, canInteract: canInteract),
-                const SizedBox(height: 12),
-                _NoteInputRow(controller: noteCtl, onSubmit: submitNote, enabled: canInteract),
-              ],
+              ),
             ),
           );
         } else {
@@ -1470,24 +1511,29 @@ class _LiveTab extends HookConsumerWidget {
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(20, 20, 20, 36 + bottomSafeArea),
-            child: Column(
-              children: [
-                const _RealtimeOffHint(),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: timelineHeightOff,
-                  child: _MomentsTimeline(
-                    moments: moments,
-                    isExpanded: true,
-                    canInteract: canInteract,
-                    onDelete: deleteMoment,
-                  ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  children: [
+                    const _RealtimeOffHint(),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: timelineHeightOff,
+                      child: _MomentsTimeline(
+                        moments: moments,
+                        isExpanded: true,
+                        canInteract: canInteract,
+                        onDelete: deleteMoment,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _ReactionRow(onTap: addMoment, canInteract: canInteract),
+                    const SizedBox(height: 12),
+                    _NoteInputRow(controller: noteCtl, onSubmit: submitNote, enabled: canInteract),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _ReactionRow(onTap: addMoment, canInteract: canInteract),
-                const SizedBox(height: 12),
-                _NoteInputRow(controller: noteCtl, onSubmit: submitNote, enabled: canInteract),
-              ],
+              ),
             ),
           );
         }

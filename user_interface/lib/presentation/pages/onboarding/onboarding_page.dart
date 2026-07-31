@@ -63,11 +63,16 @@ class OnboardingPage extends HookConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 180),
-            child: KeyedSubtree(key: ValueKey(step.value), child: steps[step.value]),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: KeyedSubtree(key: ValueKey(step.value), child: steps[step.value]),
+              ),
+            ),
           ),
         ),
       ),

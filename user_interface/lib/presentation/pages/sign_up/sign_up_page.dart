@@ -29,6 +29,7 @@ class SignUpPage extends HookConsumerWidget {
     final isEmailExpanded = useState(false);
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final inlineError = useState<dynamic>(null);
+    final isEmailSubmitting = useState(false);
 
     final authState = ref.watch(authControllerProvider);
     final l10n = AppLocalizations.of(context);
@@ -39,9 +40,11 @@ class SignUpPage extends HookConsumerWidget {
           final session = supabase.auth.currentSession;
           if (session != null) {
             // Social ログイン等、既にセッションが確立している場合は直接オンボーディング画面へ直行
+            isEmailSubmitting.value = false;
             context.go(AppRoutes.onboarding);
-          } else {
-            // メールアドレス登録等、認証メール送信完了待ち（セッションなし）の場合は案内画面へ遷移
+          } else if (isEmailSubmitting.value) {
+            // メールアドレス登録処理を実行し、認証メール送信完了待ち（セッションなし）の場合のみ案内画面へ遷移
+            isEmailSubmitting.value = false;
             final email = emailController.text.trim();
             final target = email.isNotEmpty
                 ? '${AppRoutes.authResult}?kind=email_signup_pending&detail=${Uri.encodeComponent(email)}'
@@ -50,6 +53,7 @@ class SignUpPage extends HookConsumerWidget {
           }
         },
         error: (error, stackTrace) {
+          isEmailSubmitting.value = false;
           AppErrorDialog.showSmartNamed(
             context,
             actionName: 'creating your account',
@@ -65,6 +69,7 @@ class SignUpPage extends HookConsumerWidget {
     void signUp() {
       inlineError.value = null;
       if (formKey.currentState!.validate() && agreedToTerms.value) {
+        isEmailSubmitting.value = true;
         ref.read(authControllerProvider.notifier).signUp(
           username: usernameController.text.trim(),
           email: emailController.text.trim(),

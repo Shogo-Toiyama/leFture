@@ -64,10 +64,18 @@ class _IntroCtaSlideState extends State<IntroCtaSlide>
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(30, 8, 30, 190),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+              padding: EdgeInsets.fromLTRB(
+                30,
+                MediaQuery.paddingOf(context).top + 52,
+                30,
+                190,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                   RiseIn(
                     visible: _portal,
                     duration: const Duration(milliseconds: 700),
@@ -139,7 +147,9 @@ class _IntroCtaSlideState extends State<IntroCtaSlide>
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
     );
   }

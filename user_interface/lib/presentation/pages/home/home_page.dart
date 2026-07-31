@@ -169,8 +169,12 @@ class HomePage extends HookConsumerWidget {
     // （コースがあってもレクチャーが無ければ、RecentLecturesList等はどのみち空になるため）
     final coursesAsync = ref.watch(courseListProvider);
     final lecturesAsync = ref.watch(allLecturesStreamProvider);
-    final courses = coursesAsync.asData?.value;
-    final lectures = lecturesAsync.asData?.value;
+    // .asDataだとCourse作成後のref.invalidate(courseListProvider)で
+    // 再取得中(AsyncLoading)の間ずっとnullになり、ホーム全体がローディング
+    // 画面(ほぼ黒背景)に差し替わってしまう。.valueは再取得中でも直前の値を
+    // 保持し続けるため、チラつき/暗転を防げる。
+    final courses = coursesAsync.value;
+    final lectures = lecturesAsync.value;
     final forceEmpty = ref.watch(debugForceEmptyHomeProvider);
 
     // DevLog.add(

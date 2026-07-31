@@ -31,14 +31,17 @@ class EmptyHomeContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final profile = ref.watch(currentUserProfileProvider).asData?.value;
+    // .asDataは再取得中(AsyncLoading)に一律nullへ倒れてしまい、
+    // Course作成直後のref.invalidate()でチェックリストの状態が一瞬消える
+    // 原因になるため、直前の値を保持し続ける.valueを使う。
+    final profile = ref.watch(currentUserProfileProvider).value;
     final displayName = profile?.username?.trim();
     final greetingName = (displayName != null && displayName.isNotEmpty) ? displayName : l10n.emptyHomeDefaultName;
 
     final profileComplete = (profile?.bio?.trim().isNotEmpty ?? false);
-    final courses = ref.watch(courseListProvider).asData?.value ?? const [];
+    final courses = ref.watch(courseListProvider).value ?? const [];
     final hasCourse = courses.isNotEmpty;
-    final lectures = ref.watch(allLecturesStreamProvider).asData?.value ?? const [];
+    final lectures = ref.watch(allLecturesStreamProvider).value ?? const [];
     final hasLecture = lectures.isNotEmpty;
 
     final screenHeight = MediaQuery.of(context).size.height;

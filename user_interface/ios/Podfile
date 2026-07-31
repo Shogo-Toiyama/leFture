@@ -41,11 +41,12 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
 
     target.build_configurations.each do |config|
-      # マイクの権限を有効化する設定
+      # マイク・通知の権限を有効化する設定
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
         '$(inherited)',
         'PERMISSION_MICROPHONE=1',
         'PERMISSION_SPEECH_RECOGNIZER=1', # ついでに音声認識もONにしておきます
+        'PERMISSION_NOTIFICATIONS=1', # 通知許可のプロンプトを出すために必須
       ]
     end
   end
