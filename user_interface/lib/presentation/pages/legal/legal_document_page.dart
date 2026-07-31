@@ -65,7 +65,7 @@ class LegalDocumentPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    l10n.legalDocumentLastUpdated(DateFormat.yMMMd(l10n.localeName).format(document.updatedAt)),
+                    l10n.legalDocumentEffectiveDate(DateFormat.yMMMd(l10n.localeName).format(document.effectiveDate)),
                     style: TextStyle(color: AppColors.paper.textPencil, fontSize: 13),
                   ),
                   const SizedBox(height: 20),

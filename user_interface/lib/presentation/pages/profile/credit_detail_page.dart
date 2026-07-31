@@ -161,12 +161,14 @@ class _CurrentPlanCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.creditDetailCurrentPlanTitle,
-                  style: const TextStyle(
-                    color: Color(0xFFF2F2F2),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    l10n.creditDetailCurrentPlanTitle,
+                    style: const TextStyle(
+                      color: Color(0xFFF2F2F2),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Container(
@@ -268,9 +270,11 @@ class _MonthlyCreditCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.creditDetailMonthlyCreditsTitle,
-                  style: const TextStyle(color: Color(0xFFF2F2F2), fontSize: 15, fontWeight: FontWeight.w600),
+                Expanded(
+                  child: Text(
+                    l10n.creditDetailMonthlyCreditsTitle,
+                    style: const TextStyle(color: Color(0xFFF2F2F2), fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
                 ),
                 RichText(
                   text: TextSpan(children: [

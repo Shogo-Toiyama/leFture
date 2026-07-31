@@ -218,10 +218,10 @@ abstract class AppLocalizations {
   /// **'Please enter a username'**
   String get signUpErrorUsernameEmpty;
 
-  /// Inline validation error when the username is shorter than the 3-character minimum.
+  /// Inline validation error when the username does not contain at least one letter or number.
   ///
   /// In en, this message translates to:
-  /// **'Username must be at least 3 characters'**
+  /// **'Username must contain at least 1 letter or number'**
   String get signUpErrorUsernameTooShort;
 
   /// Shared inline validation error for an empty email field, used across sign-up and forgot-password forms (not the sign-in form, which has its own slightly different wording).
@@ -1802,6 +1802,24 @@ abstract class AppLocalizations {
   /// **'Display Language'**
   String get myAccountDisplayLanguageTitle;
 
+  /// Settings tile title on the My Account page that navigates to the standalone permissions page.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get myAccountPermissionsTitle;
+
+  /// Settings tile subtitle on the My Account page, under the Permissions title.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone, notifications, background'**
+  String get myAccountPermissionsSubtitle;
+
+  /// AppBar title of the standalone permissions page reachable from Account settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get permissionsSettingsPageTitle;
+
   /// Settings tile title on the My Account page that navigates to the Privacy Policy document.
   ///
   /// In en, this message translates to:
@@ -1909,6 +1927,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email Address'**
   String get deleteAccountDialogEmailLabel;
+
+  /// Instruction label above the username field in the delete-account dialog, shown for OAuth accounts without password.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your username to confirm ({username}):'**
+  String deleteAccountDialogUsernamePrompt(String username);
+
+  /// Floating label text inside the username confirmation field of the delete-account dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get deleteAccountDialogUsernameLabel;
 
   /// Cancel button on the delete-account confirmation dialog; dismisses without deleting anything.
   ///
@@ -3758,11 +3788,11 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get commonRetryButton;
 
-  /// Last updated date label shown at top of legal documents.
+  /// Effective date label shown at top of legal documents.
   ///
   /// In en, this message translates to:
-  /// **'Last updated {date}'**
-  String legalDocumentLastUpdated(String date);
+  /// **'Effective Date: {date}'**
+  String legalDocumentEffectiveDate(String date);
 
   /// Title of the modal bottom sheet shown when a selection spans multiple transcript sections.
   ///
@@ -3974,16 +4004,16 @@ abstract class AppLocalizations {
   /// **'Setup'**
   String get onboardingPermissionsEyebrow;
 
-  /// Title on the onboarding permissions step.
+  /// Title on the onboarding permissions step. Deliberately vague about the count since it differs by platform (2 on iOS, 3 on Android).
   ///
   /// In en, this message translates to:
-  /// **'Two quick permissions'**
+  /// **'leFture needs a few permissions'**
   String get onboardingPermissionsTitle;
 
   /// Subtitle on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'leFture needs these to record and to let you know when your notes are ready.'**
+  /// **'leFture needs these to record safely in the background and keep you updated on processing status.'**
   String get onboardingPermissionsSubtitle;
 
   /// Microphone permission row title on the onboarding permissions step.
@@ -4007,8 +4037,68 @@ abstract class AppLocalizations {
   /// Notification permission row subtitle on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'Know when notes and fun facts finish processing in the background.'**
+  /// **'Required to keep background recording active and show processing status.'**
   String get onboardingPermissionsNotifSubtitle;
+
+  /// Battery-optimization-exemption permission row title on the onboarding permissions step. Android only.
+  ///
+  /// In en, this message translates to:
+  /// **'Run reliably in the background'**
+  String get onboardingPermissionsBackgroundTitle;
+
+  /// Battery-optimization-exemption permission row subtitle on the onboarding permissions step. Android only.
+  ///
+  /// In en, this message translates to:
+  /// **'Some phones stop recording apps running in the background unless this is allowed.'**
+  String get onboardingPermissionsBackgroundSubtitle;
+
+  /// Small tappable chip on a not-yet-granted permission row, on both the onboarding step and the account settings permissions page.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to allow'**
+  String get onboardingPermissionsNotGrantedLabel;
+
+  /// Title of the confirmation dialog shown when microphone/notification permissions aren't granted and the user tries to continue past the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue without all permissions?'**
+  String get onboardingPermissionsOptionalDialogTitle;
+
+  /// Body of the optional-permissions confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'You can turn these on anytime later from Account settings.'**
+  String get onboardingPermissionsOptionalDialogMessage;
+
+  /// Dismiss button on the optional-permissions confirmation dialog — returns to the permissions screen so the user can grant via the row's retry chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get onboardingPermissionsOptionalDialogCancel;
+
+  /// Confirm button on the optional-permissions confirmation dialog — proceeds past the step despite missing grants.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get onboardingPermissionsOptionalDialogContinue;
+
+  /// Title of the blocking dialog shown when the required battery-optimization-exemption permission isn't granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Background permission needed'**
+  String get onboardingPermissionsRequiredDialogTitle;
+
+  /// Body of the blocking required-permission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture needs this to keep recording once the app moves to the background. Please allow it to continue.'**
+  String get onboardingPermissionsRequiredDialogMessage;
+
+  /// Sole dismiss button on the blocking required-permission dialog — no bypass option, matches the row's own retry chip being the only way forward.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get onboardingPermissionsRequiredDialogButton;
 
   /// Small eyebrow label above the title on the onboarding plan step.
   ///
@@ -4045,6 +4135,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t activate your free plan. You can try again from your account page later.'**
   String get onboardingPlanClaimError;
+
+  /// Small progress counter above each question on the onboarding profile step, e.g. 'Profile · 1 of 3'.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile · {current} of {total}'**
+  String onboardingProfileStepCounter(int current, int total);
+
+  /// Title of the first onboarding profile question (maps to the Interests field).
+  ///
+  /// In en, this message translates to:
+  /// **'What are you into?'**
+  String get onboardingProfileInterestsTitle;
+
+  /// Subtitle of the first onboarding profile question.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps leFture tailor your fun facts and examples.'**
+  String get onboardingProfileInterestsSubtitle;
+
+  /// Title of the second onboarding profile question (maps to the Future Dreams field).
+  ///
+  /// In en, this message translates to:
+  /// **'Where are you headed?'**
+  String get onboardingProfileDreamsTitle;
+
+  /// Subtitle of the second onboarding profile question.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-term goals, a dream career, anything you\'re working toward.'**
+  String get onboardingProfileDreamsSubtitle;
+
+  /// Title of the third, required onboarding profile question (maps to the Bio field).
+  ///
+  /// In en, this message translates to:
+  /// **'Anything else that\'s you?'**
+  String get onboardingProfileBioTitle;
+
+  /// Subtitle of the third onboarding profile question.
+  ///
+  /// In en, this message translates to:
+  /// **'Your personality, values, or what you\'re grinding on right now.'**
+  String get onboardingProfileBioSubtitle;
+
+  /// Small note under the required Bio question on the onboarding profile step.
+  ///
+  /// In en, this message translates to:
+  /// **'Required — this is what makes your content actually personal.'**
+  String get onboardingProfileBioRequiredNote;
 
   /// Title on the final onboarding step.
   ///

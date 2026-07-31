@@ -70,6 +70,15 @@ bool isLoggedIn(Ref ref) {
   return user != null;
 }
 
+/// deleteAccount() が signOut() を呼ぶ直前にセットするフラグ。
+/// signOut() は onAuthStateChange を発火させ、GoRouter の redirect が
+/// 「未ログイン→/sign_in」判定を、まだ画面遷移前(ダイアログが開いたまま)の
+/// 現在地に対して割り込み的に行ってしまう。redirect 側はこのフラグを見て
+/// /sign_in ではなく /account_deleted へ誘導する(router.dart 参照)。
+/// リダイレクトに一度使われたら redirect 側で false に戻すため、ここでは
+/// セットのみを行う。
+bool isAccountBeingDeleted = false;
+
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 @riverpod
 class AuthController extends _$AuthController {
@@ -100,17 +109,13 @@ class AuthController extends _$AuthController {
   }) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
-      final response = await supabase.auth.signUp(
+      await supabase.auth.signUp(
         data: {
           'display_name': username,
         },
         email: email,
         password: password,
       );
-
-      if (response.user != null && response.session == null) {
-        throw Exception('Please check your email to verify your account.');
-      }
     });
     if (!ref.mounted) return;
     state = result;
@@ -180,10 +185,8 @@ class AuthController extends _$AuthController {
     if (desiredUsername == null || desiredUsername.isEmpty) return;
     try {
       final repository = ref.read(userProfileRepositoryProvider);
-      final profile = await repository.getCurrentProfile();
-      if (profile?.username == null) {
-        await repository.updateProfile(username: desiredUsername);
-      }
+      // サインアップ画面でユーザーが入力した名前を、Social側の名前に関わらず無条件で最優先適用する
+      await repository.updateProfile(username: desiredUsername);
     } catch (e) {
       DevLog.add('[Auth] Failed to apply desired username after social sign-in: $e');
     }
@@ -367,6 +370,9 @@ class AuthController extends _$AuthController {
       }
 
       // 3. ローカルサインアウト
+      // signOut() が発火する onAuthStateChange より先に、router.dart の
+      // redirect がこのフラグを参照できるよう必ず呼び出し前にセットする。
+      isAccountBeingDeleted = true;
       await supabase.auth.signOut();
     });
     if (ref.mounted) state = result;

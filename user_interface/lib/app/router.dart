@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -31,6 +32,7 @@ import 'package:lefture/presentation/pages/profile/credit_detail_page.dart';
 import 'package:lefture/presentation/pages/profile/plans_page.dart';
 import 'package:lefture/presentation/pages/profile/user_profile_detail_page.dart';
 import 'package:lefture/presentation/pages/contact/contact_page.dart';
+import 'package:lefture/presentation/pages/profile/permissions_settings_page.dart';
 import 'package:lefture/presentation/pages/course/course_page.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
 import 'package:lefture/presentation/pages/review_cards/review_cards_dashboard_page.dart';
@@ -232,6 +234,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       //    Introduction(3枚のスライド)を見せていなければ、サインインより
       //    先にそちらへ誘導する(新規インストール限定の一度きりの導線)。
       if (session == null && !isPublicRoute) {
+        // アカウント削除によるsignOut()直後の場合、まだこの画面(ダイアログ表示中)
+        // へ到達した状態でredirectが割り込むことがある。このケースだけは通常の
+        // /sign_inではなく削除完了画面へ誘導する(一度使ったらフラグは消費する)。
+        if (isAccountBeingDeleted) {
+          isAccountBeingDeleted = false;
+          return AppRoutes.accountDeleted;
+        }
         final hasSeenIntro = RecordingPreferences().getHasSeenIntroduction();
         return hasSeenIntro ? AppRoutes.signIn : AppRoutes.introduction;
       }
@@ -499,6 +508,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.contact,
         builder: (context, state) => const ContactPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.permissionsSettings,
+        builder: (context, state) => const PermissionsSettingsPage(),
       ),
       GoRoute(
         path: AppRoutes.activityDetails,

@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lefture/domain/entities/app_language.dart';
 
 class RecordingPreferences {
   static const String _keyRealtimeTranscribe = 'recording_realtime_transcribe';
@@ -44,9 +47,14 @@ class RecordingPreferences {
     await _prefs.setBool(_keyAutoStartAnalysis, value);
   }
 
-  /// 録音言語(オンデバイスASRモデル選択に使う)の設定を取得（デフォルト: 'en'）
+  /// 録音言語(オンデバイスASRモデル選択に使う)の設定を取得。
+  /// ユーザー設定が未保存の初期状態では、OSの端末言語（未対応の場合は'en'）を自動初期値とする。
   String getRecordingLanguage() {
-    return _prefs.getString(_keyRecordingLanguage) ?? 'en';
+    final saved = _prefs.getString(_keyRecordingLanguage);
+    if (saved != null) return saved;
+
+    final deviceLangCode = ui.PlatformDispatcher.instance.locale.languageCode;
+    return recordingLanguageFromCode(deviceLangCode).code;
   }
 
   /// 録音言語の設定を保存
@@ -54,9 +62,14 @@ class RecordingPreferences {
     await _prefs.setString(_keyRecordingLanguage, value);
   }
 
-  /// Display Language(コンテンツ生成の出力言語)の設定を取得（デフォルト: 'en'）。
+  /// Display Language(コンテンツ生成の出力言語)の設定を取得。
+  /// ユーザー設定が未保存の初期状態では、OSの端末言語（未対応の場合は'en'）を自動初期値とする。
   String getDisplayLanguage() {
-    return _prefs.getString(_keyDisplayLanguage) ?? 'en';
+    final saved = _prefs.getString(_keyDisplayLanguage);
+    if (saved != null) return saved;
+
+    final deviceLangCode = ui.PlatformDispatcher.instance.locale.languageCode;
+    return displayLanguageFromCode(deviceLangCode).code;
   }
 
   /// Display Languageの設定を保存

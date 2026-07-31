@@ -101,9 +101,9 @@
     "description": "Inline validation error when the username field is left empty on sign-up."
   },
 
-  "signUpErrorUsernameTooShort": "Username must be at least 3 characters",
+  "signUpErrorUsernameTooShort": "Username must contain at least 1 letter or number",
   "@signUpErrorUsernameTooShort": {
-    "description": "Inline validation error when the username is shorter than the 3-character minimum."
+    "description": "Inline validation error when the username does not contain at least one letter or number."
   },
 
   "authErrorEmailRequired": "Please enter your email",
@@ -1598,6 +1598,19 @@
     "description": "Settings tile title on the My Account page that opens the language-selection sheet for the app's UI display language."
   },
 
+  "myAccountPermissionsTitle": "Permissions",
+  "@myAccountPermissionsTitle": {
+    "description": "Settings tile title on the My Account page that navigates to the standalone permissions page."
+  },
+  "myAccountPermissionsSubtitle": "Microphone, notifications, background",
+  "@myAccountPermissionsSubtitle": {
+    "description": "Settings tile subtitle on the My Account page, under the Permissions title."
+  },
+  "permissionsSettingsPageTitle": "Permissions",
+  "@permissionsSettingsPageTitle": {
+    "description": "AppBar title of the standalone permissions page reachable from Account settings."
+  },
+
   "myAccountPrivacyPolicyTitle": "Privacy Policy",
   "@myAccountPrivacyPolicyTitle": {
     "description": "Settings tile title on the My Account page that navigates to the Privacy Policy document."
@@ -1692,6 +1705,22 @@
   "deleteAccountDialogEmailLabel": "Email Address",
   "@deleteAccountDialogEmailLabel": {
     "description": "Floating label text inside the email confirmation field of the delete-account dialog."
+  },
+
+  "deleteAccountDialogUsernamePrompt": "Type your username to confirm ({username}):",
+  "@deleteAccountDialogUsernamePrompt": {
+    "description": "Instruction label above the username field in the delete-account dialog, shown for OAuth accounts without password.",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "explorer42"
+      }
+    }
+  },
+
+  "deleteAccountDialogUsernameLabel": "Username",
+  "@deleteAccountDialogUsernameLabel": {
+    "description": "Floating label text inside the username confirmation field of the delete-account dialog."
   },
 
   "deleteAccountDialogCancelButton": "Cancel",
@@ -3280,9 +3309,9 @@
     "description": "Generic Retry button label."
   },
 
-  "legalDocumentLastUpdated": "Last updated {date}",
-  "@legalDocumentLastUpdated": {
-    "description": "Last updated date label shown at top of legal documents.",
+  "legalDocumentEffectiveDate": "Effective Date: {date}",
+  "@legalDocumentEffectiveDate": {
+    "description": "Effective date label shown at top of legal documents.",
     "placeholders": {
       "date": {
         "type": "String",
@@ -3440,11 +3469,11 @@
   "@onboardingPermissionsEyebrow": {
     "description": "Small eyebrow label above the title on the onboarding permissions step."
   },
-  "onboardingPermissionsTitle": "Two quick permissions",
+  "onboardingPermissionsTitle": "leFture needs a few permissions",
   "@onboardingPermissionsTitle": {
-    "description": "Title on the onboarding permissions step."
+    "description": "Title on the onboarding permissions step. Deliberately vague about the count since it differs by platform (2 on iOS, 3 on Android)."
   },
-  "onboardingPermissionsSubtitle": "leFture needs these to record and to let you know when your notes are ready.",
+  "onboardingPermissionsSubtitle": "leFture needs these to record safely in the background and keep you updated on processing status.",
   "@onboardingPermissionsSubtitle": {
     "description": "Subtitle on the onboarding permissions step."
   },
@@ -3460,9 +3489,49 @@
   "@onboardingPermissionsNotifTitle": {
     "description": "Notification permission row title on the onboarding permissions step."
   },
-  "onboardingPermissionsNotifSubtitle": "Know when notes and fun facts finish processing in the background.",
+  "onboardingPermissionsNotifSubtitle": "Required to keep background recording active and show processing status.",
   "@onboardingPermissionsNotifSubtitle": {
     "description": "Notification permission row subtitle on the onboarding permissions step."
+  },
+  "onboardingPermissionsBackgroundTitle": "Run reliably in the background",
+  "@onboardingPermissionsBackgroundTitle": {
+    "description": "Battery-optimization-exemption permission row title on the onboarding permissions step. Android only."
+  },
+  "onboardingPermissionsBackgroundSubtitle": "Some phones stop recording apps running in the background unless this is allowed.",
+  "@onboardingPermissionsBackgroundSubtitle": {
+    "description": "Battery-optimization-exemption permission row subtitle on the onboarding permissions step. Android only."
+  },
+  "onboardingPermissionsNotGrantedLabel": "Tap to allow",
+  "@onboardingPermissionsNotGrantedLabel": {
+    "description": "Small tappable chip on a not-yet-granted permission row, on both the onboarding step and the account settings permissions page."
+  },
+  "onboardingPermissionsOptionalDialogTitle": "Continue without all permissions?",
+  "@onboardingPermissionsOptionalDialogTitle": {
+    "description": "Title of the confirmation dialog shown when microphone/notification permissions aren't granted and the user tries to continue past the onboarding permissions step."
+  },
+  "onboardingPermissionsOptionalDialogMessage": "You can turn these on anytime later from Account settings.",
+  "@onboardingPermissionsOptionalDialogMessage": {
+    "description": "Body of the optional-permissions confirmation dialog."
+  },
+  "onboardingPermissionsOptionalDialogCancel": "Go back",
+  "@onboardingPermissionsOptionalDialogCancel": {
+    "description": "Dismiss button on the optional-permissions confirmation dialog — returns to the permissions screen so the user can grant via the row's retry chip."
+  },
+  "onboardingPermissionsOptionalDialogContinue": "Continue anyway",
+  "@onboardingPermissionsOptionalDialogContinue": {
+    "description": "Confirm button on the optional-permissions confirmation dialog — proceeds past the step despite missing grants."
+  },
+  "onboardingPermissionsRequiredDialogTitle": "Background permission needed",
+  "@onboardingPermissionsRequiredDialogTitle": {
+    "description": "Title of the blocking dialog shown when the required battery-optimization-exemption permission isn't granted."
+  },
+  "onboardingPermissionsRequiredDialogMessage": "leFture needs this to keep recording once the app moves to the background. Please allow it to continue.",
+  "@onboardingPermissionsRequiredDialogMessage": {
+    "description": "Body of the blocking required-permission dialog."
+  },
+  "onboardingPermissionsRequiredDialogButton": "Got it",
+  "@onboardingPermissionsRequiredDialogButton": {
+    "description": "Sole dismiss button on the blocking required-permission dialog — no bypass option, matches the row's own retry chip being the only way forward."
   },
 
   "onboardingPlanEyebrow": "Almost done",
@@ -3488,6 +3557,43 @@
   "onboardingPlanClaimError": "Couldn't activate your free plan. You can try again from your account page later.",
   "@onboardingPlanClaimError": {
     "description": "Inline error shown on the onboarding plan step if claiming the free plan fails."
+  },
+
+  "onboardingProfileStepCounter": "Profile · {current} of {total}",
+  "@onboardingProfileStepCounter": {
+    "description": "Small progress counter above each question on the onboarding profile step, e.g. 'Profile · 1 of 3'.",
+    "placeholders": {
+      "current": {"type": "int", "example": "1"},
+      "total": {"type": "int", "example": "3"}
+    }
+  },
+  "onboardingProfileInterestsTitle": "What are you into?",
+  "@onboardingProfileInterestsTitle": {
+    "description": "Title of the first onboarding profile question (maps to the Interests field)."
+  },
+  "onboardingProfileInterestsSubtitle": "Helps leFture tailor your fun facts and examples.",
+  "@onboardingProfileInterestsSubtitle": {
+    "description": "Subtitle of the first onboarding profile question."
+  },
+  "onboardingProfileDreamsTitle": "Where are you headed?",
+  "@onboardingProfileDreamsTitle": {
+    "description": "Title of the second onboarding profile question (maps to the Future Dreams field)."
+  },
+  "onboardingProfileDreamsSubtitle": "Long-term goals, a dream career, anything you're working toward.",
+  "@onboardingProfileDreamsSubtitle": {
+    "description": "Subtitle of the second onboarding profile question."
+  },
+  "onboardingProfileBioTitle": "Anything else that's you?",
+  "@onboardingProfileBioTitle": {
+    "description": "Title of the third, required onboarding profile question (maps to the Bio field)."
+  },
+  "onboardingProfileBioSubtitle": "Your personality, values, or what you're grinding on right now.",
+  "@onboardingProfileBioSubtitle": {
+    "description": "Subtitle of the third onboarding profile question."
+  },
+  "onboardingProfileBioRequiredNote": "Required — this is what makes your content actually personal.",
+  "@onboardingProfileBioRequiredNote": {
+    "description": "Small note under the required Bio question on the onboarding profile step."
   },
 
   "onboardingDoneTitle": "You're all set",

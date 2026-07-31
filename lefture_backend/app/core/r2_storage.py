@@ -194,7 +194,7 @@ class R2StorageService:
         """お問い合わせ添付ファイルを R2 へアップロードするための署名付きURLを発行"""
         import uuid
         unique_file_name = f"{uuid.uuid4()}_{file_name}"
-        path = f"{uid}/support/{unique_file_name}"
+        path = f"support_attachments/{uid}/{unique_file_name}"
         url = self.s3.generate_presigned_url(
             "put_object",
             Params={

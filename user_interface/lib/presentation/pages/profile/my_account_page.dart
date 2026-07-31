@@ -34,17 +34,11 @@ class MyAccountPage extends ConsumerWidget {
   const MyAccountPage({super.key});
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
-    await supabase.auth.signOut();
-    // courseListProviderはkeepAlive化しており、サインアウト時に自動では
-    // 再取得されない。別アカウントで再ログインした際に前のアカウントの
-    // コース一覧が残ってしまわないよう、ここで明示的に無効化する
-    // (常時currentUserProviderをwatchしてReactiveに再取得する形にすると、
-    // Supabaseの認証イベントをきっかけにビルド中のタイミングと衝突して
-    // Riverpodのエラーになったため、この一回限りの無効化にしている)。
+    // onAuthStateChange による GoRouter の /sign_in への割り込みリダイレクトを
+    // 防ぐため、signOut() 実行前にまず公開ルートである Welcome 画面へ遷移する。
+    context.go(AppRoutes.welcome);
     ref.invalidate(courseListProvider);
-    if (context.mounted) {
-      context.go(AppRoutes.welcome);
-    }
+    await supabase.auth.signOut();
   }
 
   @override
@@ -205,7 +199,9 @@ class _HeaderSection extends HookConsumerWidget {
 
     Future<void> saveUsername() async {
       final newName = controller.text.trim();
-      if (newName.isEmpty || newName == displayName) {
+      if (newName.isEmpty ||
+          !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(newName) ||
+          newName == displayName) {
         isEditing.value = false;
         controller.text = displayName;
         return;
@@ -986,7 +982,6 @@ class _SettingsSection extends ConsumerWidget {
                     iconColor: AppColors.universe.textComet,
                     title: l10n.myAccountDisplayLanguageTitle,
                     subtitle: displayLang.nativeName,
-                    isLast: true,
                     onTap: () {
                       showModalBottomSheet<void>(
                         context: context,
@@ -997,6 +992,15 @@ class _SettingsSection extends ConsumerWidget {
                         ),
                       );
                     },
+                  ),
+                  _Divider(),
+                  _SettingsTile(
+                    icon: Icons.shield_outlined,
+                    iconColor: AppColors.universe.textComet,
+                    title: l10n.myAccountPermissionsTitle,
+                    subtitle: l10n.myAccountPermissionsSubtitle,
+                    isLast: true,
+                    onTap: () => context.push(AppRoutes.permissionsSettings),
                   ),
                 ],
               );
@@ -1355,7 +1359,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final passwordController = useTextEditingController();
-    final emailController = useTextEditingController();
+    final usernameController = useTextEditingController();
     final obscurePassword = useState(true);
     final isSubmitting = useState(false);
     final errorMessage = useState<String?>(null);
@@ -1365,7 +1369,8 @@ class _DeleteAccountDialog extends HookConsumerWidget {
     final warmupFuture = useMemoized(() => BackendWarmup.waitUntilReady());
 
     final currentUser = supabase.auth.currentUser;
-    final userEmail = currentUser?.email ?? '';
+    final profileAsync = ref.watch(currentUserProfileProvider);
+    final currentUsername = profileAsync.asData?.value?.username ?? '';
     // appMetadata['provider'] は複数identityを持つユーザーでは不安定なため、
     // identity一覧に email が含まれるかで判定する(_SettingsSectionと同じ理由)。
     final isEmailUser =
@@ -1377,11 +1382,12 @@ class _DeleteAccountDialog extends HookConsumerWidget {
     // Verify if submission is allowed
     final isInputValid = isEmailUser
         ? passwordController.text.isNotEmpty
-        : userEmail.isNotEmpty && emailController.text.trim() == userEmail;
+        : currentUsername.isNotEmpty &&
+            usernameController.text.trim() == currentUsername;
 
     // Rebuild dialog when inputs change
     useListenable(passwordController);
-    useListenable(emailController);
+    useListenable(usernameController);
 
     Future<void> handleDelete() async {
       isSubmitting.value = true;
@@ -1419,9 +1425,10 @@ class _DeleteAccountDialog extends HookConsumerWidget {
           return;
         }
 
-        // 削除完了時点でセッションは既に破棄されているため、ダイアログを閉じる
-        // のではなく、セッション外の完了画面へ直接遷移する。
-        Navigator.of(context).pop(); // Close dialog
+        // 削除完了時点でセッションは既に破棄されており、GoRouter が /sign_in へ
+        // 自動リダイレクトしている可能性がある(その際ダイアログを含むスタックは
+        // 既に破棄済み)。Navigator.pop() を呼ぶとスタックが空の状態でポップされ
+        // 例外になるため、pop() はせず go() でスタックごと置き換える。
         context.go(AppRoutes.accountDeleted);
       } finally {
         statusMessage.value = null;
@@ -1441,11 +1448,13 @@ class _DeleteAccountDialog extends HookConsumerWidget {
             color: AppColors.correctionRed,
           ),
           const SizedBox(width: 10),
-          Text(
-            l10n.deleteAccountDialogTitle,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Text(
+              l10n.deleteAccountDialogTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -1533,7 +1542,7 @@ class _DeleteAccountDialog extends HookConsumerWidget {
               ),
             ] else ...[
               Text(
-                l10n.deleteAccountDialogEmailPrompt(userEmail),
+                l10n.deleteAccountDialogUsernamePrompt(currentUsername),
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 13,
@@ -1542,12 +1551,11 @@ class _DeleteAccountDialog extends HookConsumerWidget {
               ),
               const SizedBox(height: 8),
               TextFormField(
-                controller: emailController,
+                controller: usernameController,
                 style: const TextStyle(color: Colors.white, fontSize: 15),
                 cursorColor: AppColors.starGold,
-                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: l10n.deleteAccountDialogEmailLabel,
+                  labelText: l10n.deleteAccountDialogUsernameLabel,
                   labelStyle: TextStyle(color: AppColors.universe.textComet),
                   filled: true,
                   fillColor: AppColors.universe.glassWhiteLow,

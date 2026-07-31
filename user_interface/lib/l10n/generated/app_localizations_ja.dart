@@ -69,7 +69,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get signUpErrorUsernameEmpty => 'ユーザー名を入力してください';
 
   @override
-  String get signUpErrorUsernameTooShort => 'ユーザー名は3文字以上で入力してください';
+  String get signUpErrorUsernameTooShort => 'ユーザーネームは文字または数字を1文字以上含めてください';
 
   @override
   String get authErrorEmailRequired => 'メールアドレスを入力してください';
@@ -934,6 +934,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get myAccountDisplayLanguageTitle => '表示言語';
 
   @override
+  String get myAccountPermissionsTitle => '許可設定';
+
+  @override
+  String get myAccountPermissionsSubtitle => 'マイク・通知・バックグラウンド';
+
+  @override
+  String get permissionsSettingsPageTitle => '許可設定';
+
+  @override
   String get myAccountPrivacyPolicyTitle => 'プライバシーポリシー';
 
   @override
@@ -990,6 +999,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountDialogEmailLabel => 'メールアドレス';
+
+  @override
+  String deleteAccountDialogUsernamePrompt(String username) {
+    return '確認のためユーザーネーム（$username）を入力してください:';
+  }
+
+  @override
+  String get deleteAccountDialogUsernameLabel => 'ユーザーネーム';
 
   @override
   String get deleteAccountDialogCancelButton => 'キャンセル';
@@ -1991,8 +2008,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonRetryButton => '再試行';
 
   @override
-  String legalDocumentLastUpdated(String date) {
-    return '最終更新日: $date';
+  String legalDocumentEffectiveDate(String date) {
+    return '発効日: $date';
   }
 
   @override
@@ -2102,10 +2119,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPermissionsEyebrow => '初期設定';
 
   @override
-  String get onboardingPermissionsTitle => '2つの許可をお願いします';
+  String get onboardingPermissionsTitle => 'いくつかの許可をお願いします';
 
   @override
-  String get onboardingPermissionsSubtitle => '録音と、ノート完成時のお知らせのために必要です。';
+  String get onboardingPermissionsSubtitle =>
+      'バックグラウンドで録音を安全に維持し、処理状態をお知らせするために必要です。';
 
   @override
   String get onboardingPermissionsMicTitle => 'マイク';
@@ -2118,7 +2136,41 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPermissionsNotifTitle => '通知';
 
   @override
-  String get onboardingPermissionsNotifSubtitle => 'ノートや豆知識の生成が完了したときにお知らせします。';
+  String get onboardingPermissionsNotifSubtitle =>
+      'バックグラウンドでの録音維持や、処理状況を通知するために使います。';
+
+  @override
+  String get onboardingPermissionsBackgroundTitle => 'バックグラウンドでも安定して動作させる';
+
+  @override
+  String get onboardingPermissionsBackgroundSubtitle =>
+      '端末によっては、これを許可しないとバックグラウンドでの録音が停止してしまうことがあります。';
+
+  @override
+  String get onboardingPermissionsNotGrantedLabel => 'タップして許可';
+
+  @override
+  String get onboardingPermissionsOptionalDialogTitle => 'すべての許可なしで続けますか？';
+
+  @override
+  String get onboardingPermissionsOptionalDialogMessage =>
+      'これらはあとでいつでもアカウント設定からオンにできます。';
+
+  @override
+  String get onboardingPermissionsOptionalDialogCancel => '戻る';
+
+  @override
+  String get onboardingPermissionsOptionalDialogContinue => 'このまま続ける';
+
+  @override
+  String get onboardingPermissionsRequiredDialogTitle => 'バックグラウンド権限が必要です';
+
+  @override
+  String get onboardingPermissionsRequiredDialogMessage =>
+      'アプリがバックグラウンドに移っても録音を続けるために必要です。続けるにはこれを許可してください。';
+
+  @override
+  String get onboardingPermissionsRequiredDialogButton => 'わかりました';
 
   @override
   String get onboardingPlanEyebrow => 'もうすぐ完了';
@@ -2139,6 +2191,32 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get onboardingPlanClaimError =>
       '無料プランを有効化できませんでした。後ほどアカウントページから再度お試しください。';
+
+  @override
+  String onboardingProfileStepCounter(int current, int total) {
+    return 'プロフィール · $total問中$current問目';
+  }
+
+  @override
+  String get onboardingProfileInterestsTitle => '何に興味がありますか？';
+
+  @override
+  String get onboardingProfileInterestsSubtitle => '豆知識や例えを、あなた好みに調整するために使います。';
+
+  @override
+  String get onboardingProfileDreamsTitle => '将来、何を目指していますか？';
+
+  @override
+  String get onboardingProfileDreamsSubtitle => '長期的な目標や、なりたい将来の姿など。';
+
+  @override
+  String get onboardingProfileBioTitle => '他にも、あなたらしさを教えてください';
+
+  @override
+  String get onboardingProfileBioSubtitle => '性格や価値観、今頑張っていることなど。';
+
+  @override
+  String get onboardingProfileBioRequiredNote => '必須項目です。あなた専用のコンテンツ作りに欠かせません。';
 
   @override
   String get onboardingDoneTitle => '準備完了です';

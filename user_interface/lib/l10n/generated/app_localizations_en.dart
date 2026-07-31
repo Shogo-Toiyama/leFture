@@ -72,7 +72,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signUpErrorUsernameTooShort =>
-      'Username must be at least 3 characters';
+      'Username must contain at least 1 letter or number';
 
   @override
   String get authErrorEmailRequired => 'Please enter your email';
@@ -984,6 +984,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAccountDisplayLanguageTitle => 'Display Language';
 
   @override
+  String get myAccountPermissionsTitle => 'Permissions';
+
+  @override
+  String get myAccountPermissionsSubtitle =>
+      'Microphone, notifications, background';
+
+  @override
+  String get permissionsSettingsPageTitle => 'Permissions';
+
+  @override
   String get myAccountPrivacyPolicyTitle => 'Privacy Policy';
 
   @override
@@ -1042,6 +1052,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountDialogEmailLabel => 'Email Address';
+
+  @override
+  String deleteAccountDialogUsernamePrompt(String username) {
+    return 'Type your username to confirm ($username):';
+  }
+
+  @override
+  String get deleteAccountDialogUsernameLabel => 'Username';
 
   @override
   String get deleteAccountDialogCancelButton => 'Cancel';
@@ -2079,8 +2097,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRetryButton => 'Retry';
 
   @override
-  String legalDocumentLastUpdated(String date) {
-    return 'Last updated $date';
+  String legalDocumentEffectiveDate(String date) {
+    return 'Effective Date: $date';
   }
 
   @override
@@ -2198,11 +2216,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPermissionsEyebrow => 'Setup';
 
   @override
-  String get onboardingPermissionsTitle => 'Two quick permissions';
+  String get onboardingPermissionsTitle => 'leFture needs a few permissions';
 
   @override
   String get onboardingPermissionsSubtitle =>
-      'leFture needs these to record and to let you know when your notes are ready.';
+      'leFture needs these to record safely in the background and keep you updated on processing status.';
 
   @override
   String get onboardingPermissionsMicTitle => 'Microphone';
@@ -2216,7 +2234,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPermissionsNotifSubtitle =>
-      'Know when notes and fun facts finish processing in the background.';
+      'Required to keep background recording active and show processing status.';
+
+  @override
+  String get onboardingPermissionsBackgroundTitle =>
+      'Run reliably in the background';
+
+  @override
+  String get onboardingPermissionsBackgroundSubtitle =>
+      'Some phones stop recording apps running in the background unless this is allowed.';
+
+  @override
+  String get onboardingPermissionsNotGrantedLabel => 'Tap to allow';
+
+  @override
+  String get onboardingPermissionsOptionalDialogTitle =>
+      'Continue without all permissions?';
+
+  @override
+  String get onboardingPermissionsOptionalDialogMessage =>
+      'You can turn these on anytime later from Account settings.';
+
+  @override
+  String get onboardingPermissionsOptionalDialogCancel => 'Go back';
+
+  @override
+  String get onboardingPermissionsOptionalDialogContinue => 'Continue anyway';
+
+  @override
+  String get onboardingPermissionsRequiredDialogTitle =>
+      'Background permission needed';
+
+  @override
+  String get onboardingPermissionsRequiredDialogMessage =>
+      'leFture needs this to keep recording once the app moves to the background. Please allow it to continue.';
+
+  @override
+  String get onboardingPermissionsRequiredDialogButton => 'Got it';
 
   @override
   String get onboardingPlanEyebrow => 'Almost done';
@@ -2237,6 +2291,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingPlanClaimError =>
       'Couldn\'t activate your free plan. You can try again from your account page later.';
+
+  @override
+  String onboardingProfileStepCounter(int current, int total) {
+    return 'Profile · $current of $total';
+  }
+
+  @override
+  String get onboardingProfileInterestsTitle => 'What are you into?';
+
+  @override
+  String get onboardingProfileInterestsSubtitle =>
+      'Helps leFture tailor your fun facts and examples.';
+
+  @override
+  String get onboardingProfileDreamsTitle => 'Where are you headed?';
+
+  @override
+  String get onboardingProfileDreamsSubtitle =>
+      'Long-term goals, a dream career, anything you\'re working toward.';
+
+  @override
+  String get onboardingProfileBioTitle => 'Anything else that\'s you?';
+
+  @override
+  String get onboardingProfileBioSubtitle =>
+      'Your personality, values, or what you\'re grinding on right now.';
+
+  @override
+  String get onboardingProfileBioRequiredNote =>
+      'Required — this is what makes your content actually personal.';
 
   @override
   String get onboardingDoneTitle => 'You\'re all set';

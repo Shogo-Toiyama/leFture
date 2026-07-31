@@ -8,6 +8,7 @@ __pycache__/
 *.wav
 *.m4a
 supabase/.temp/
+supabase/migrations/*
 contents_generation/test_codes/deberta/labeled_transcripts/
 contents_generation/test_codes/deberta/labeled_transcripts_multilingual/
 contents_generation/test_codes/deberta/version1/

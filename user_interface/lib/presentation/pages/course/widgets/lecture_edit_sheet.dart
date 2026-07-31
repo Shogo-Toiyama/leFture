@@ -109,12 +109,14 @@ class LectureEditSheet extends HookConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    l10n.lectureEditSheetTitle,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      l10n.lectureEditSheetTitle,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   TextButton(

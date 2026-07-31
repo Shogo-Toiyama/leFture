@@ -1,35 +1,101 @@
 // lib/presentation/pages/onboarding/widgets/onboarding_permissions_step.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_step_header.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/permissions_panel.dart';
 
-class OnboardingPermissionsStep extends StatefulWidget {
-  const OnboardingPermissionsStep({super.key, required this.onNext});
+/// Mic + notification are nudged but skippable (a confirm dialog lets the
+/// user continue anyway). Battery-optimization exemption (Android only) is
+/// mandatory — the app can otherwise get killed mid-recording in the
+/// background with no visible error, so that dialog only dismisses, it
+/// never offers a bypass.
+class OnboardingPermissionsStep extends HookConsumerWidget {
+  const OnboardingPermissionsStep({super.key, required this.onNext, required this.onBack});
 
   final VoidCallback onNext;
+  final VoidCallback onBack;
 
   @override
-  State<OnboardingPermissionsStep> createState() => _OnboardingPermissionsStepState();
-}
-
-class _OnboardingPermissionsStepState extends State<OnboardingPermissionsStep> {
-  bool _requesting = false;
-
-  Future<void> _continue() async {
-    setState(() => _requesting = true);
-    // Priming screen only — proceed regardless of grant/deny so onboarding
-    // never gets stuck on an OS permission dialog.
-    await [Permission.microphone, Permission.notification].request();
-    if (!mounted) return;
-    widget.onNext();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final specs = buildPermissionSpecs(l10n, isAndroid: Platform.isAndroid);
+    final permState = usePermissionsStatus(specs.map((s) => s.permission).toList());
+
+    Future<void> handleContinue() async {
+      final missingRequired = specs.where((s) => s.required && !permState.isGranted(s.permission));
+      final missingOptional = specs.where((s) => !s.required && !permState.isGranted(s.permission));
+
+      if (missingRequired.isNotEmpty) {
+        await showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1F29),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              l10n.onboardingPermissionsRequiredDialogTitle,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              l10n.onboardingPermissionsRequiredDialogMessage,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  l10n.onboardingPermissionsRequiredDialogButton,
+                  style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      if (missingOptional.isNotEmpty) {
+        final shouldContinue = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1F29),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              l10n.onboardingPermissionsOptionalDialogTitle,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              l10n.onboardingPermissionsOptionalDialogMessage,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  l10n.onboardingPermissionsOptionalDialogCancel,
+                  style: TextStyle(color: AppColors.universe.textComet),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  l10n.onboardingPermissionsOptionalDialogContinue,
+                  style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (shouldContinue != true) return;
+      }
+
+      onNext();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -37,21 +103,10 @@ class _OnboardingPermissionsStepState extends State<OnboardingPermissionsStep> {
           eyebrow: l10n.onboardingPermissionsEyebrow,
           title: l10n.onboardingPermissionsTitle,
           subtitle: l10n.onboardingPermissionsSubtitle,
+          onBack: onBack,
         ),
         const SizedBox(height: 28),
-        _PermissionRow(
-          icon: Icons.mic_none_rounded,
-          iconColor: AppColors.starGold,
-          title: l10n.onboardingPermissionsMicTitle,
-          subtitle: l10n.onboardingPermissionsMicSubtitle,
-        ),
-        const SizedBox(height: 12),
-        _PermissionRow(
-          icon: Icons.notifications_none_rounded,
-          iconColor: AppColors.cosmicBlue,
-          title: l10n.onboardingPermissionsNotifTitle,
-          subtitle: l10n.onboardingPermissionsNotifSubtitle,
-        ),
+        PermissionsRows(specs: specs, state: permState),
         const Spacer(),
         SizedBox(
           width: double.infinity,
@@ -62,73 +117,11 @@ class _OnboardingPermissionsStepState extends State<OnboardingPermissionsStep> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: _requesting ? null : _continue,
-            child: _requesting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                  )
-                : Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            onPressed: permState.loading ? null : handleContinue,
+            child: Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PermissionRow extends StatelessWidget {
-  const _PermissionRow({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.universe.glassWhiteLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.universe.glassBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: AppColors.universe.textComet, fontSize: 11.5, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

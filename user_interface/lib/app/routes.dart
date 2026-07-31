@@ -31,6 +31,7 @@ class AppRoutes {
   static const account = '/account';
   static const profile = '/profile';
   static const contact = '/contact';
+  static const permissionsSettings = '/account/permissions';
   static const activityDetails = '/account/activity/:type';
   static const creditDetail = '/account/credits';
   static const plans = '/account/plans';

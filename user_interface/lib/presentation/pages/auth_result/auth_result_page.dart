@@ -15,6 +15,18 @@ class AuthResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (kind) {
+      case 'email_signup_pending':
+        return AuthResultView(
+          success: true,
+          icon: Icons.mark_email_unread_rounded,
+          title: 'Check your email',
+          message: (detail != null && detail!.isNotEmpty)
+              ? 'We have sent a verification link to $detail. Please click the link to verify your email address and complete your registration.'
+              : 'We have sent a verification link to your email address. Please click the link to verify your email address and complete your registration.',
+          buttonLabel: 'Back to Sign In',
+          onButtonPressed: () => context.go(AppRoutes.signIn),
+        );
+
       case 'email_changed':
         return AuthResultView(
           success: true,
@@ -107,7 +119,7 @@ class AuthResultPage extends StatelessWidget {
           message: 'Your account and all associated data have been permanently deleted. '
               'Thank you for using leFture.',
           buttonLabel: 'Back to Sign In',
-          onButtonPressed: () => context.go(AppRoutes.signIn),
+          onButtonPressed: () => context.go(AppRoutes.welcome),
         );
 
       default:

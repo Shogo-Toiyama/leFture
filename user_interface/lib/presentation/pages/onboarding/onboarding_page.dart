@@ -9,20 +9,31 @@ import 'package:lefture/infrastructure/supabase/repositories/user_profile_reposi
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_done_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_permissions_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_plan_step.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_profile_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_tutorial_step.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
-const _totalSteps = 4;
+const _totalSteps = 5;
 
-/// Account-creation-directly-after wizard: Tutorial (placeholder) →
-/// Permissions → Plan → Done. Profile setup itself lives on the empty
-/// home screen's Profile → Course → Lecture checklist, not here.
+/// Account-creation-directly-after wizard: Tutorial (placeholder) → Profile
+/// → Permissions → Plan → Done. Each step renders its own back affordance
+/// (via `OnboardingStepHeader`/`OnboardingBackButton`) since the profile
+/// step has its own internal question-level back navigation in addition to
+/// the macro step-level one.
 class OnboardingPage extends HookConsumerWidget {
   const OnboardingPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final step = useState(0);
+
+    // 「準備完了です」の完了ページ(Step 4)が表示された瞬間に自動でオンボーディング完了をマークする
+    useEffect(() {
+      if (step.value == _totalSteps - 1) {
+        ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
+      }
+      return null;
+    }, [step.value]);
 
     Future<void> finish() async {
       await ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
@@ -43,8 +54,9 @@ class OnboardingPage extends HookConsumerWidget {
 
     final steps = <Widget>[
       OnboardingTutorialStep(onNext: next),
-      OnboardingPermissionsStep(onNext: next),
-      OnboardingPlanStep(onNext: next),
+      OnboardingProfileStep(onNext: next, onBack: back),
+      OnboardingPermissionsStep(onNext: next, onBack: back),
+      OnboardingPlanStep(onNext: next, onBack: back),
       OnboardingDoneStep(onFinish: finish),
     ];
 
@@ -53,37 +65,9 @@ class OnboardingPage extends HookConsumerWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 32,
-                child: step.value > 0
-                    ? Align(
-                        alignment: Alignment.centerLeft,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: back,
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              size: 18,
-                              color: AppColors.universe.textComet,
-                            ),
-                          ),
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: KeyedSubtree(key: ValueKey(step.value), child: steps[step.value]),
-                ),
-              ),
-            ],
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: KeyedSubtree(key: ValueKey(step.value), child: steps[step.value]),
           ),
         ),
       ),

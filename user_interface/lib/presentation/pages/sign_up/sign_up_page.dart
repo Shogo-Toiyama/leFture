@@ -8,6 +8,7 @@ import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/presentation/widgets/password_strength_meter.dart';
 import 'package:lefture/presentation/widgets/social_sign_in_button.dart';
@@ -35,13 +36,18 @@ class SignUpPage extends HookConsumerWidget {
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.signUpSuccessSnackbar),
-              backgroundColor: AppColors.starGold,
-            ),
-          );
-          context.go(AppRoutes.onboarding);
+          final session = supabase.auth.currentSession;
+          if (session != null) {
+            // Social ログイン等、既にセッションが確立している場合は直接オンボーディング画面へ直行
+            context.go(AppRoutes.onboarding);
+          } else {
+            // メールアドレス登録等、認証メール送信完了待ち（セッションなし）の場合は案内画面へ遷移
+            final email = emailController.text.trim();
+            final target = email.isNotEmpty
+                ? '${AppRoutes.authResult}?kind=email_signup_pending&detail=${Uri.encodeComponent(email)}'
+                : '${AppRoutes.authResult}?kind=email_signup_pending';
+            context.go(target);
+          }
         },
         error: (error, stackTrace) {
           AppErrorDialog.showSmartNamed(
@@ -226,10 +232,11 @@ class SignUpPage extends HookConsumerWidget {
                                   cursorColor: AppColors.starGold,
                                   decoration: inputDecoration(l10n.usernameLabel, Icons.person_outlined),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty) {
+                                    final trimmed = value?.trim() ?? '';
+                                    if (trimmed.isEmpty) {
                                       return l10n.signUpErrorUsernameEmpty;
                                     }
-                                    if (value.length < 3) {
+                                    if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmed)) {
                                       return l10n.signUpErrorUsernameTooShort;
                                     }
                                     return null;

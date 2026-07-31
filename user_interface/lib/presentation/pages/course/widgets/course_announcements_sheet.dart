@@ -47,12 +47,14 @@ class CourseAnnouncementsSheet extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                 child: Row(
                   children: [
-                    Text(
-                      l10n.lectureViewerAnnouncementsSheetTitle,
-                      style: TextStyle(
-                        color: AppColors.universe.textStarlight,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        l10n.lectureViewerAnnouncementsSheetTitle,
+                        style: TextStyle(
+                          color: AppColors.universe.textStarlight,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],

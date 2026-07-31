@@ -14,6 +14,7 @@ import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/debug/debug_providers.dart';
 import 'package:lefture/application/profile/user_profile_provider.dart';
+import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
@@ -120,6 +121,7 @@ class HomePage extends HookConsumerWidget {
     }, const []);
 
     // 未読のお知らせ（AppTransmission）が存在する場合のみ、宇宙船モーダルを自動ポップアップ
+    // ただし、オンボーディング未完了（ユーザー登録直後など）の場合は表示をスキップしユーザーを圧倒させない
     final unreadTransmissionsAsync = ref.watch(unreadTransmissionsProvider);
     useEffect(() {
       final unreadList = unreadTransmissionsAsync.asData?.value;
@@ -129,6 +131,10 @@ class HomePage extends HookConsumerWidget {
       if (unreadList != null && unreadList.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!context.mounted) return;
+          final hasCompleted =
+              await ref.read(userProfileRepositoryProvider).hasCompletedOnboarding();
+          if (!hasCompleted || !context.mounted) return;
+
           DevLog.add('🏠 [HomePage] Showing Spaceship Announcement Modal...');
           final items = unreadList
               .map((t) => SpaceshipAnnouncementItem.fromTransmission(t))

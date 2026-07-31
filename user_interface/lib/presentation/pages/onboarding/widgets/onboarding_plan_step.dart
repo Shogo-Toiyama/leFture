@@ -13,9 +13,10 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 /// onboarding with an active plan already — instead of showing dummy plan
 /// data and then having `HomePage` force them into a separate claim screen.
 class OnboardingPlanStep extends HookConsumerWidget {
-  const OnboardingPlanStep({super.key, required this.onNext});
+  const OnboardingPlanStep({super.key, required this.onNext, required this.onBack});
 
   final VoidCallback onNext;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,7 +52,7 @@ class OnboardingPlanStep extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        OnboardingStepHeader(eyebrow: l10n.onboardingPlanEyebrow, title: l10n.onboardingPlanTitle),
+        OnboardingStepHeader(eyebrow: l10n.onboardingPlanEyebrow, title: l10n.onboardingPlanTitle, onBack: onBack),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
