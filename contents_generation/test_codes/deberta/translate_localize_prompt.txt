@@ -22,6 +22,8 @@ This is a simulated transcript of SPOKEN audio, later fed through an ASR (speech
 # STRICT STRUCTURAL RULES (do not break these)
 1. The output `results` array MUST have exactly the same number of elements, in the same order, as the input.
 2. The `label` field for each element MUST stay exactly the same as the input at that index. Only rewrite `text`; never change, reorder, split, or merge entries.
+   - **This is the single most common mistake, so read carefully:** when two consecutive input sentences would naturally flow as ONE sentence when spoken aloud in ${LANGUAGE} (e.g. "Sir, could you explain X again?" + "I got lost at the Y part." reads naturally as one flowing question, or two short back-to-back reactions like "Mmm." + "Very sensible." feel like one utterance), you MUST still output them as TWO SEPARATE entries in `results`, one per input sentence — never combine them into a single `text` field, even if splitting feels unnatural or redundant. If it feels awkward as two separate entries, split the natural-sounding combined sentence at the closest reasonable boundary (a comma, a pause) rather than merging them into one entry.
+   - Likewise, never silently drop a short filler/backchannel input sentence (e.g. "Right.", "Mmm.", "Okay.") just because it feels redundant — every single input sentence must produce exactly one output entry, no exceptions.
 3. Also rewrite the top-level `theme` field into natural ${LANGUAGE} (or keep proper nouns as appropriate).
 4. All `text` values must be written entirely in ${LANGUAGE} (aside from loanwords/technical terms that are conventionally kept in their original form, as described above).
 

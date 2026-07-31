@@ -1205,6 +1205,12 @@ async def enqueue_task(payload: EnqueuePayload):
     # チェック(AlreadyExists、しかも完了後 約1時間 再利用不可)でブロックしてしまう。
     task = {
         "name": client.task_path(PROJECT_ID, REGION, QUEUE_NAME, f"task-{payload.task_id}-{uuid.uuid4().hex[:12]}"),
+        # ★ 未指定だとCloud Tasks側のデフォルト(10分)が使われ、TRANSCRIBE_MASTERのような
+        # 長時間タスクだとCloud Run/Modal側がまだ待っている途中でCloud Tasksが先に
+        # 見切りをつけてしまう(呼び出し元切断としてModal側にキャンセルが伝播し得る)。
+        # requests.postのtimeout(1800秒、transcription.py)・Modalのtimeout(1800秒、
+        # whisper_deploy_api.py)と揃える。HTTPターゲットタスクの上限も1800秒(30分)。
+        "dispatch_deadline": timedelta(seconds=1800),
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}{route_path}",  # 割り出された専用の裏口を叩く！

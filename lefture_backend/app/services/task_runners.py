@@ -104,7 +104,22 @@ def _update_task_status_sync(
     if error_msg is not None:
         update_data["error_message"] = str(error_msg)
 
-    supabase.table("processing_tasks").update(update_data).eq("id", task_id).execute()
+    # ★ COMPLETEDは終端状態として扱い、それ以降の書き込みは無視する。
+    # ハングしていた古いリクエストがパトロールの再enqueue後に遅れて結末(主にFAILED)を
+    # 書きに来た場合、既に新しい試行がCOMPLETEDにしていた結果を上書きしてしまう
+    # レースを防ぐため。
+    result = (
+        supabase.table("processing_tasks")
+        .update(update_data)
+        .eq("id", task_id)
+        .neq("status", "COMPLETED")
+        .execute()
+    )
+    if not result.data:
+        print(
+            f"⏭️ Task {task_id} への status={status} 更新をスキップ"
+            "(既にCOMPLETED、または対象行が存在しない)"
+        )
 
     # billing_recordsが乗っているpayloadは、そのタスクが実際にAIコストを
     # 発生させたタスクなので、ここでクレジット消費を確定させる。

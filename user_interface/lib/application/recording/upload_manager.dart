@@ -274,6 +274,8 @@ class UploadManager {
       courseId: lecture.courseId,
       title: lecture.title,
       lectureDateTimeUtc: lecture.lectureDatetime ?? lecture.createdAt,
+      recordingLanguage: lecture.recordingLanguage,
+      displayLanguage: lecture.displayLanguage,
     );
 
     // 3. ジョブの種類に応じてアップロード処理を分岐
