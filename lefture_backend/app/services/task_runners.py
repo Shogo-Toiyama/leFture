@@ -1367,9 +1367,11 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
         classified_data = await _download_from_r2_to_memory((await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION"))["role_classification_path"])
 
         # 検索しやすくするための辞書を作成
+        # 検索しやすくするための辞書を作成
         sid_to_text = {item["sid"]: item["text"] for item in transcript_data if "sid" in item}
         formatted_blocks = []
-        extracted_sids = set()
+        seen_sids = set()
+        duplicate_count = 0
 
         # ==========================================
         # ① CORE_EXTRACTION で丸ごと LOGISTICS と判定されたブロック
@@ -1389,10 +1391,14 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
                     for i in range(start_idx, end_idx + 1):
                         sid = _int_to_sid(i)
                         if sid in sid_to_text:
+                            if sid in seen_sids:
+                                duplicate_count += 1
+                                continue
                             block_lines.append(f"{sid}: {sid_to_text[sid]}")
-                            extracted_sids.add(sid)
+                            seen_sids.add(sid)
 
-                    formatted_blocks.append("\n".join(block_lines))
+                    if len(block_lines) > 1:
+                        formatted_blocks.append("\n".join(block_lines))
 
         # ==========================================
         # ② ROLE_CLASSIFICATION & Safety Net (キーワード抽出)
@@ -1402,7 +1408,7 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
         
         for i, sentence in enumerate(classified_data):
             sid = sentence.get("sid")
-            if sid in extracted_sids:
+            if sid in seen_sids:
                 continue
 
             text = sentence.get("text", "")
@@ -1458,10 +1464,18 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
                 block_lines = [f"[Topic: {topic_title}]"]
                 for i in range(start_idx, end_idx + 1):
                     sid = classified_data[i]["sid"]
+                    if sid in seen_sids:
+                        duplicate_count += 1
+                        continue
+                    seen_sids.add(sid)
                     text = classified_data[i]["text"]
                     block_lines.append(f"{sid}: {text}")
                     
-                formatted_blocks.append("\n".join(block_lines))
+                if len(block_lines) > 1:
+                    formatted_blocks.append("\n".join(block_lines))
+
+        if duplicate_count > 0:
+            logger.log(f"   [Logic] 🧹 Filtered out {duplicate_count} duplicate sentence line(s) before sending to LLM.")
 
         # ==========================================
         # ③ 結合して LLM (職人) を呼ぶ

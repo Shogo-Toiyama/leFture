@@ -710,34 +710,19 @@ class _HistoryTile extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Text(
-                    item.localTimeLabel(l10n.localeName),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '(${item.localDateLabel(l10n.localeName)})',
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
               Text(
-                item.reasonSummary,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                item.localTimeLabel(l10n.localeName),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '(${item.localDateLabel(l10n.localeName, todayLabel: l10n.dateToday, yesterdayLabel: l10n.dateYesterday)})',
                 style: TextStyle(
                   color: AppColors.universe.textComet,
                   fontSize: 12,

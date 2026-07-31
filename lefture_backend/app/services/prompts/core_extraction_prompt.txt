@@ -24,7 +24,7 @@ Before producing any output, internally perform the following stages. Do not sho
 - Stage B: Merge adjacent candidates into exactly 4–6 chapters, guided primarily by major conceptual shifts (problem → solution, principle → implementation, theory → real-world system). Do not split every technical term into its own chapter.
 - Stage C: Where multiple valid merge points exist, prefer the one that keeps topic lengths closer to balanced (see Balance Rule below). Semantic boundaries always take priority over balance — balance is a tie-breaker, not a hard constraint that can override a genuine conceptual shift.
 - Stage D: Classify any non-academic stretch as LOGISTICS, OFF_TOPIC, or filler-to-absorb (see Content Filtering Rule below).
-- Stage E: Validate the full draft against the Coverage Rule, Continuity Rule, and Balance Rule below. Fix any violations before finalizing.
+- Stage E: Validate the full draft against the Coverage Rule, Continuity Rule, Balance Rule, and OUTPUT LANGUAGE instructions. Verify that all `topics[].title`, `summary`, `title`, and `concept_intro_line` are written in the requested output language and NOT left in the transcript language (e.g. English). Fix any violations before finalizing.
 - Stage F: Only after validation passes, produce the final JSON.
 
 ---
@@ -34,6 +34,7 @@ Before producing any output, internally perform the following stages. Do not sho
 - Partition the transcript into 4 to 6 broad, student-friendly learning chapters.
 - For each ACADEMIC topic, extract 3 to 6 core academic concepts (`keywords`).
 - If the professor returns to an earlier concept for a sustained section, create or continue a chapter that reflects that resumed concept rather than forcing it into an unrelated chapter.
+- **Language Rule (CRITICAL):** `topics[].title` MUST be written in the specified output language per `OUTPUT LANGUAGE` above (e.g., in Japanese). Do NOT leave topic titles in English/transcript language. For `keywords`, write them in the output language, and include the original transcript term in parentheses when instructed by the bilingual rule.
 
 **Topic Types:**
 - `ACADEMIC`: substantive lecture content.
@@ -63,17 +64,19 @@ Before producing any output, internally perform the following stages. Do not sho
 - Do NOT include analogies, anecdotal terms, or specific examples used for illustration, even if frequently mentioned.
 
 **Topic Title Examples:**
-- Good (broad learning chapters): "Zero Trust Architecture Fundamentals", "Privacy-Preserving Security Monitoring", "Role-Based Access Control and Trade-offs"
+- Good (broad learning chapters in the requested output language): "Zero Trust Architecture Fundamentals" (or translated into the output language like "ゼロトラストアーキテクチャの基礎"), "Privacy-Preserving Security Monitoring" (or "プライバシー保護型セキュリティ監視")
 - Bad (too narrow): "Micro-segmentation", "False Positives", "RELRO"
 
 ---
 
 **2. SUMMARY (`summary`):**
 - Based on these topics, write exactly 2–3 sentences summarizing the overall lecture.
+- **Language Rule:** Write the summary strictly in the specified output language per `OUTPUT LANGUAGE` above.
 - CRITICAL: Write directly about the concepts like a textbook introduction (e.g., "Virtual memory provides..."). Do NOT use meta-phrases like "This lecture explains..." or "The professor discusses...".
 
 **3. LECTURE TITLE (`title`):**
 - Condense the summary into a concise, highly specific title for the entire lecture (max 10 words).
+- **Language Rule:** Write the lecture title strictly in the specified output language per `OUTPUT LANGUAGE` above.
 
 ---
 
@@ -85,6 +88,7 @@ This is a selection task only. Do not write any explanatory text, angle, or pitc
 - From that topic's `keywords`, select the single existing keyword that is the most concrete, specific anchor point for a future personalized explanation (`concept_focus`). Do not invent a new term — choose one already listed in that topic's keywords.
 - Base this purely on topical fit between the lecture content and the student's interests. Do not attempt to judge how "exciting" a written explanation would be — that judgment happens downstream with more context.
 - Write `concept_intro_line`: exactly ONE sentence, drawn from the actual transcript content around `concept_focus`, describing how the professor introduced or framed this concept in class (e.g., what problem it was motivated by, what definition or analogy was given). This is reference material for a later step that will remind the student what they learned — it is not a summary of the whole topic, just this one concept's introduction. Keep it factual and neutral, matching the textbook tone used in `summary`, not a promotional or exciting tone.
+- **Language Rule:** Write `concept_intro_line` strictly in the specified output language per `OUTPUT LANGUAGE` above. Copy `concept_focus` character-for-character from that topic's `keywords` list.
 
 ---
 

@@ -3391,5 +3391,111 @@
   "introCtaButton": "Start recording your future, free",
   "@introCtaButton": {
     "description": "Primary call-to-action button label on slide 3, leading to the sign-up screen. Should feel inviting and energetic, not a generic 'Sign up' or 'Get started'."
+  },
+
+  "dateToday": "Today",
+  "@dateToday": {
+    "description": "Label for today in history/transaction lists"
+  },
+  "dateYesterday": "Yesterday",
+  "@dateYesterday": {
+    "description": "Label for yesterday in history/transaction lists"
+  },
+
+  "onboardingBackButton": "Back",
+  "@onboardingBackButton": {
+    "description": "Back button label on the post-signup onboarding wizard."
+  },
+  "onboardingSkipButton": "Skip",
+  "@onboardingSkipButton": {
+    "description": "Skip button label on the onboarding tutorial step."
+  },
+  "onboardingNextButton": "Next",
+  "@onboardingNextButton": {
+    "description": "Next button label on the onboarding wizard."
+  },
+  "onboardingContinueButton": "Continue",
+  "@onboardingContinueButton": {
+    "description": "Continue button label on the onboarding wizard."
+  },
+  "onboardingGetStartedButton": "Get started",
+  "@onboardingGetStartedButton": {
+    "description": "Final button label on the last onboarding step."
+  },
+
+  "onboardingTutorialEyebrow": "Welcome",
+  "@onboardingTutorialEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding tutorial step."
+  },
+  "onboardingTutorialTitle": "Tutorial slides — coming soon",
+  "@onboardingTutorialTitle": {
+    "description": "Title on the onboarding tutorial step, currently a placeholder."
+  },
+  "onboardingTutorialSubtitle": "We're still designing this part — for now, let's get you set up.",
+  "@onboardingTutorialSubtitle": {
+    "description": "Subtitle on the onboarding tutorial step, currently a placeholder."
+  },
+
+  "onboardingPermissionsEyebrow": "Setup",
+  "@onboardingPermissionsEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding permissions step."
+  },
+  "onboardingPermissionsTitle": "Two quick permissions",
+  "@onboardingPermissionsTitle": {
+    "description": "Title on the onboarding permissions step."
+  },
+  "onboardingPermissionsSubtitle": "leFture needs these to record and to let you know when your notes are ready.",
+  "@onboardingPermissionsSubtitle": {
+    "description": "Subtitle on the onboarding permissions step."
+  },
+  "onboardingPermissionsMicTitle": "Microphone",
+  "@onboardingPermissionsMicTitle": {
+    "description": "Microphone permission row title on the onboarding permissions step."
+  },
+  "onboardingPermissionsMicSubtitle": "So leFture can hear your lecture and transcribe it live.",
+  "@onboardingPermissionsMicSubtitle": {
+    "description": "Microphone permission row subtitle on the onboarding permissions step."
+  },
+  "onboardingPermissionsNotifTitle": "Notifications",
+  "@onboardingPermissionsNotifTitle": {
+    "description": "Notification permission row title on the onboarding permissions step."
+  },
+  "onboardingPermissionsNotifSubtitle": "Know when notes and fun facts finish processing in the background.",
+  "@onboardingPermissionsNotifSubtitle": {
+    "description": "Notification permission row subtitle on the onboarding permissions step."
+  },
+
+  "onboardingPlanEyebrow": "Almost done",
+  "@onboardingPlanEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding plan step."
+  },
+  "onboardingPlanTitle": "leFture is free right now",
+  "@onboardingPlanTitle": {
+    "description": "Title on the onboarding plan/subscription placeholder step."
+  },
+  "onboardingPlanBadge": "Beta · free plan included",
+  "@onboardingPlanBadge": {
+    "description": "Badge shown on the onboarding plan step indicating the app is free during beta."
+  },
+  "onboardingPlanSubtitle": "Every feature is free while we're testing. Paid plans will live here later.",
+  "@onboardingPlanSubtitle": {
+    "description": "Subtitle on the onboarding plan step."
+  },
+  "onboardingPlanActiveTitle": "You're already on a plan",
+  "@onboardingPlanActiveTitle": {
+    "description": "Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview)."
+  },
+  "onboardingPlanClaimError": "Couldn't activate your free plan. You can try again from your account page later.",
+  "@onboardingPlanClaimError": {
+    "description": "Inline error shown on the onboarding plan step if claiming the free plan fails."
+  },
+
+  "onboardingDoneTitle": "You're all set",
+  "@onboardingDoneTitle": {
+    "description": "Title on the final onboarding step."
+  },
+  "onboardingDoneSubtitle": "Let's create a course and record your first lecture!",
+  "@onboardingDoneSubtitle": {
+    "description": "Subtitle on the final onboarding step, leading into the empty-home Profile → Course → Lecture checklist."
   }
 }

@@ -15,6 +15,10 @@ image = (
     .run_commands(
       "python -c 'from faster_whisper import WhisperModel; WhisperModel(\"deepdml/faster-whisper-large-v3-turbo-ct2\")'"
   )
+    # print()を即座にModalのログへ流すため、標準出力のバッファリングを無効化
+    # (Cloud Run側のDockerfileと同じ理由。キャンセル等でコンテナが強制終了された際、
+    # バッファに溜まったままのログが失われて原因調査ができなくなるのを防ぐ)
+    .env({"PYTHONUNBUFFERED": "1"})
 )
 
 # ==========================================

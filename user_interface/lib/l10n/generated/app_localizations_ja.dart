@@ -2067,4 +2067,82 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get introCtaButton => '無料で、未来を録りはじめる';
+
+  @override
+  String get dateToday => '今日';
+
+  @override
+  String get dateYesterday => '昨日';
+
+  @override
+  String get onboardingBackButton => '戻る';
+
+  @override
+  String get onboardingSkipButton => 'スキップ';
+
+  @override
+  String get onboardingNextButton => '次へ';
+
+  @override
+  String get onboardingContinueButton => '続ける';
+
+  @override
+  String get onboardingGetStartedButton => 'はじめる';
+
+  @override
+  String get onboardingTutorialEyebrow => 'ようこそ';
+
+  @override
+  String get onboardingTutorialTitle => 'チュートリアルは近日公開';
+
+  @override
+  String get onboardingTutorialSubtitle => 'この部分は現在準備中です。まずは初期設定を進めましょう。';
+
+  @override
+  String get onboardingPermissionsEyebrow => '初期設定';
+
+  @override
+  String get onboardingPermissionsTitle => '2つの許可をお願いします';
+
+  @override
+  String get onboardingPermissionsSubtitle => '録音と、ノート完成時のお知らせのために必要です。';
+
+  @override
+  String get onboardingPermissionsMicTitle => 'マイク';
+
+  @override
+  String get onboardingPermissionsMicSubtitle =>
+      '講義の音声を聞き取り、その場で文字起こしするために使います。';
+
+  @override
+  String get onboardingPermissionsNotifTitle => '通知';
+
+  @override
+  String get onboardingPermissionsNotifSubtitle => 'ノートや豆知識の生成が完了したときにお知らせします。';
+
+  @override
+  String get onboardingPlanEyebrow => 'もうすぐ完了';
+
+  @override
+  String get onboardingPlanTitle => 'leFtureは今なら無料です';
+
+  @override
+  String get onboardingPlanBadge => 'Beta中・無料プラン付き';
+
+  @override
+  String get onboardingPlanSubtitle =>
+      'テスト期間中はすべての機能を無料でご利用いただけます。有料プランは今後こちらに追加されます。';
+
+  @override
+  String get onboardingPlanActiveTitle => 'すでにプランが有効です';
+
+  @override
+  String get onboardingPlanClaimError =>
+      '無料プランを有効化できませんでした。後ほどアカウントページから再度お試しください。';
+
+  @override
+  String get onboardingDoneTitle => '準備完了です';
+
+  @override
+  String get onboardingDoneSubtitle => 'さっそくコースを作成して、最初の講義を録音しましょう！';
 }

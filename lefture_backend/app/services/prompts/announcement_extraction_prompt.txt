@@ -20,6 +20,7 @@ This applies to `title` and `description` only. Do NOT translate `location`, `re
 
 ### EXTRACTION RULES (GENERAL)
 - **CRITICAL:** Extract actionable items only. Ignore casual chitchat and events that occur only during the lecture itself (e.g., in-class breaks). The goal is to extract items relevant to review or future action after the lecture.
+- **Deduplication (No Duplicates):** If the professor repeats or reminds students about the exact same topic/action (e.g., mentioning the deadline for "Assignment 3" multiple times across different parts of the lecture), **extract it ONLY ONCE**. Do not create multiple announcement items for the same core task or event. For `start_sid`/`end_sid`, select the range where the information is explained most completely (or where it is first mentioned).
 - title: Keep it concise (max 5 words).
 - description: Write a clear, standalone sentence explaining the item. Resolve pronouns (e.g., "This" -> "Memory Allocation").
 - start_sid / end_sid: The exact `<sid>` values spanning the announcement. They must keep the original format, such as "s000105".

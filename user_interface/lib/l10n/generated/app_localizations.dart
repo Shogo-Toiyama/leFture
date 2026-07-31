@@ -3907,6 +3907,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start recording your future, free'**
   String get introCtaButton;
+
+  /// Label for today in history/transaction lists
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dateToday;
+
+  /// Label for yesterday in history/transaction lists
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get dateYesterday;
+
+  /// Back button label on the post-signup onboarding wizard.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get onboardingBackButton;
+
+  /// Skip button label on the onboarding tutorial step.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkipButton;
+
+  /// Next button label on the onboarding wizard.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNextButton;
+
+  /// Continue button label on the onboarding wizard.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingContinueButton;
+
+  /// Final button label on the last onboarding step.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get onboardingGetStartedButton;
+
+  /// Small eyebrow label above the title on the onboarding tutorial step.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get onboardingTutorialEyebrow;
+
+  /// Title on the onboarding tutorial step, currently a placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial slides — coming soon'**
+  String get onboardingTutorialTitle;
+
+  /// Subtitle on the onboarding tutorial step, currently a placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re still designing this part — for now, let\'s get you set up.'**
+  String get onboardingTutorialSubtitle;
+
+  /// Small eyebrow label above the title on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup'**
+  String get onboardingPermissionsEyebrow;
+
+  /// Title on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'Two quick permissions'**
+  String get onboardingPermissionsTitle;
+
+  /// Subtitle on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture needs these to record and to let you know when your notes are ready.'**
+  String get onboardingPermissionsSubtitle;
+
+  /// Microphone permission row title on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get onboardingPermissionsMicTitle;
+
+  /// Microphone permission row subtitle on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'So leFture can hear your lecture and transcribe it live.'**
+  String get onboardingPermissionsMicSubtitle;
+
+  /// Notification permission row title on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get onboardingPermissionsNotifTitle;
+
+  /// Notification permission row subtitle on the onboarding permissions step.
+  ///
+  /// In en, this message translates to:
+  /// **'Know when notes and fun facts finish processing in the background.'**
+  String get onboardingPermissionsNotifSubtitle;
+
+  /// Small eyebrow label above the title on the onboarding plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost done'**
+  String get onboardingPlanEyebrow;
+
+  /// Title on the onboarding plan/subscription placeholder step.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture is free right now'**
+  String get onboardingPlanTitle;
+
+  /// Badge shown on the onboarding plan step indicating the app is free during beta.
+  ///
+  /// In en, this message translates to:
+  /// **'Beta · free plan included'**
+  String get onboardingPlanBadge;
+
+  /// Subtitle on the onboarding plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Every feature is free while we\'re testing. Paid plans will live here later.'**
+  String get onboardingPlanSubtitle;
+
+  /// Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview).
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already on a plan'**
+  String get onboardingPlanActiveTitle;
+
+  /// Inline error shown on the onboarding plan step if claiming the free plan fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t activate your free plan. You can try again from your account page later.'**
+  String get onboardingPlanClaimError;
+
+  /// Title on the final onboarding step.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set'**
+  String get onboardingDoneTitle;
+
+  /// Subtitle on the final onboarding step, leading into the empty-home Profile → Course → Lecture checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s create a course and record your first lecture!'**
+  String get onboardingDoneSubtitle;
 }
 
 class _AppLocalizationsDelegate

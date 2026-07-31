@@ -2162,4 +2162,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get introCtaButton => 'Start recording your future, free';
+
+  @override
+  String get dateToday => 'Today';
+
+  @override
+  String get dateYesterday => 'Yesterday';
+
+  @override
+  String get onboardingBackButton => 'Back';
+
+  @override
+  String get onboardingSkipButton => 'Skip';
+
+  @override
+  String get onboardingNextButton => 'Next';
+
+  @override
+  String get onboardingContinueButton => 'Continue';
+
+  @override
+  String get onboardingGetStartedButton => 'Get started';
+
+  @override
+  String get onboardingTutorialEyebrow => 'Welcome';
+
+  @override
+  String get onboardingTutorialTitle => 'Tutorial slides — coming soon';
+
+  @override
+  String get onboardingTutorialSubtitle =>
+      'We\'re still designing this part — for now, let\'s get you set up.';
+
+  @override
+  String get onboardingPermissionsEyebrow => 'Setup';
+
+  @override
+  String get onboardingPermissionsTitle => 'Two quick permissions';
+
+  @override
+  String get onboardingPermissionsSubtitle =>
+      'leFture needs these to record and to let you know when your notes are ready.';
+
+  @override
+  String get onboardingPermissionsMicTitle => 'Microphone';
+
+  @override
+  String get onboardingPermissionsMicSubtitle =>
+      'So leFture can hear your lecture and transcribe it live.';
+
+  @override
+  String get onboardingPermissionsNotifTitle => 'Notifications';
+
+  @override
+  String get onboardingPermissionsNotifSubtitle =>
+      'Know when notes and fun facts finish processing in the background.';
+
+  @override
+  String get onboardingPlanEyebrow => 'Almost done';
+
+  @override
+  String get onboardingPlanTitle => 'leFture is free right now';
+
+  @override
+  String get onboardingPlanBadge => 'Beta · free plan included';
+
+  @override
+  String get onboardingPlanSubtitle =>
+      'Every feature is free while we\'re testing. Paid plans will live here later.';
+
+  @override
+  String get onboardingPlanActiveTitle => 'You\'re already on a plan';
+
+  @override
+  String get onboardingPlanClaimError =>
+      'Couldn\'t activate your free plan. You can try again from your account page later.';
+
+  @override
+  String get onboardingDoneTitle => 'You\'re all set';
+
+  @override
+  String get onboardingDoneSubtitle =>
+      'Let\'s create a course and record your first lecture!';
 }

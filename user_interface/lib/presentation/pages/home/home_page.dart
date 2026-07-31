@@ -167,14 +167,14 @@ class HomePage extends HookConsumerWidget {
     final lectures = lecturesAsync.asData?.value;
     final forceEmpty = ref.watch(debugForceEmptyHomeProvider);
 
-    DevLog.add(
-      '🏠 [HomePage] build state: '
-      'coursesAsync(isLoading=${coursesAsync.isLoading}, hasError=${coursesAsync.hasError}, err=${coursesAsync.error}), '
-      'lecturesAsync(isLoading=${lecturesAsync.isLoading}, hasError=${lecturesAsync.hasError}, err=${lecturesAsync.error}), '
-      'coursesCount=${courses?.length}, '
-      'lecturesCount=${lectures?.length}, '
-      'syncAttempted=${syncAttempted.value}',
-    );
+    // DevLog.add(
+    //   '🏠 [HomePage] build state: '
+    //   'coursesAsync(isLoading=${coursesAsync.isLoading}, hasError=${coursesAsync.hasError}, err=${coursesAsync.error}), '
+    //   'lecturesAsync(isLoading=${lecturesAsync.isLoading}, hasError=${lecturesAsync.hasError}, err=${lecturesAsync.error}), '
+    //   'coursesCount=${courses?.length}, '
+    //   'lecturesCount=${lectures?.length}, '
+    //   'syncAttempted=${syncAttempted.value}',
+    // );
 
     // データ読み込み中は、一瞬のチラつきを防ぐためにローディング画面を表示する。
     // lecturesが0件の場合は、上の同期(syncAttempted)が一度終わるまでは

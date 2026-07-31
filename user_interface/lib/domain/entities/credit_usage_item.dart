@@ -23,7 +23,11 @@ class CreditUsageItem {
   final String reasonSummary;
 
   /// スマホ端末の現地時間に合わせた日付ラベル (例: "Today", "Yesterday", "Jul 23")
-  String localDateLabel([String? locale]) {
+  String localDateLabel(
+    String? locale, {
+    String? todayLabel,
+    String? yesterdayLabel,
+  }) {
     final localDt = timestamp.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -31,9 +35,9 @@ class CreditUsageItem {
     final differenceInDays = today.difference(itemDate).inDays;
 
     if (differenceInDays == 0) {
-      return 'Today';
+      return todayLabel ?? 'Today';
     } else if (differenceInDays == 1) {
-      return 'Yesterday';
+      return yesterdayLabel ?? 'Yesterday';
     } else {
       return DateFormat.MMMd(locale).format(localDt);
     }

@@ -1,10 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/galaxy/galaxy_view.dart';
-
-
 import 'package:lefture/application/galaxy/galaxy_state_provider.dart';
 
 class LearningGalaxyPage extends HookConsumerWidget {
@@ -34,7 +34,52 @@ class LearningGalaxyPage extends HookConsumerWidget {
             ),
           ),
 
-          // 2. 前面: SF HUD オーバーレイ (下部に配置)
+          // 2. 左上: SF HUD 戻るボタン ("<")
+          Positioned(
+            top: 0,
+            left: 0,
+            child: SafeArea(
+              bottom: false,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 400),
+                opacity: showOverlay.value ? 1.0 : 0.0,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 12),
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0x990A0E1A),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0x334FA8FF)),
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              context.pop();
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 3. 前面: SF HUD オーバーレイ (下部に配置)
           Positioned.fill(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -88,41 +133,6 @@ class LearningGalaxyPage extends HookConsumerWidget {
             },
           ),
 
-          // 知識ノード (ロードマップ) の起動ボタン
-          GestureDetector(
-            onTap: () => _showRoadmapBottomSheet(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.starGold,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.starGold.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  )
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.bubble_chart, color: Colors.black, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'KNOWLEDGE NODES',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           // カメラリセット
           _HUDButton(
             icon: Icons.center_focus_strong,
@@ -134,152 +144,6 @@ class LearningGalaxyPage extends HookConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  // --- ロードマップのボトムシート起動 ---
-  void _showRoadmapBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.65,
-          decoration: BoxDecoration(
-            color: const Color(0xFA050914), // 高透明度な暗青黒
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
-            ),
-            border: Border.all(
-              color: const Color(0x404FA8FF), // ネオンブルー境界線
-              width: 1.5,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            children: [
-              // ドラッグハンドル
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // タイトル部
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'KNOWLEDGE ROADMAP',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'SECTOR PROGRESS: 2 / 4 COMPLETED',
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Divider(color: Colors.white12, thickness: 1),
-              const SizedBox(height: 16),
-              // ロードマップの内容を表示
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    children: [
-                      _buildGalaxyNode(Icons.school_outlined, 'Introduction to CS', true),
-                      _buildLine(true),
-                      _buildGalaxyNode(Icons.code_outlined, 'Variables & Types', true),
-                      _buildLine(true),
-                      _buildGalaxyNode(Icons.loop_outlined, 'Control Flow & Logic', false),
-                      _buildLine(false),
-                      _buildGalaxyNode(Icons.storage_outlined, 'Arrays & Lists', false),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildGalaxyNode(IconData icon, String label, bool isCompleted) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isCompleted
-                ? AppColors.starGold
-                : AppColors.universe.glassWhiteLow,
-            border: Border.all(
-              color: isCompleted ? Colors.white : AppColors.universe.glassBorder,
-              width: 1.5,
-            ),
-            boxShadow: isCompleted
-                ? [
-                    BoxShadow(
-                      color: AppColors.starGold.withValues(alpha: 0.5),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                    )
-                  ]
-                : [],
-          ),
-          child: Icon(
-            icon,
-            color: isCompleted ? Colors.black : Colors.white70,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLine(bool isCompleted) {
-    return Container(
-      width: 2,
-      height: 35,
-      color: isCompleted ? AppColors.starGold : Colors.white12,
-      margin: const EdgeInsets.symmetric(vertical: 4),
     );
   }
 }

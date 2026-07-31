@@ -766,11 +766,10 @@ class _ApplicationSection extends ConsumerWidget {
             title: l10n.myAccountTutorialTitle,
             subtitle: l10n.myAccountTutorialSubtitle,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.myAccountTutorialComingSoonSnackbar),
-                ),
-              );
+              // TODO: point back at the coming-soon snackbar once the real
+              // tutorial exists — for now this previews the onboarding
+              // wizard (Tutorial → Permissions → Plan → Done).
+              context.push(AppRoutes.onboarding);
             },
           ),
         ],

@@ -679,5 +679,36 @@
 
   "introCtaLead": "体験したことのない、\nワクワクする学びを。",
   "introCtaSub": "さあ、今日から始めよう。\nアカウント作成は無料・30秒。",
-  "introCtaButton": "無料で、未来を録りはじめる"
+  "introCtaButton": "無料で、未来を録りはじめる",
+
+  "dateToday": "今日",
+  "dateYesterday": "昨日",
+
+  "onboardingBackButton": "戻る",
+  "onboardingSkipButton": "スキップ",
+  "onboardingNextButton": "次へ",
+  "onboardingContinueButton": "続ける",
+  "onboardingGetStartedButton": "はじめる",
+
+  "onboardingTutorialEyebrow": "ようこそ",
+  "onboardingTutorialTitle": "チュートリアルは近日公開",
+  "onboardingTutorialSubtitle": "この部分は現在準備中です。まずは初期設定を進めましょう。",
+
+  "onboardingPermissionsEyebrow": "初期設定",
+  "onboardingPermissionsTitle": "2つの許可をお願いします",
+  "onboardingPermissionsSubtitle": "録音と、ノート完成時のお知らせのために必要です。",
+  "onboardingPermissionsMicTitle": "マイク",
+  "onboardingPermissionsMicSubtitle": "講義の音声を聞き取り、その場で文字起こしするために使います。",
+  "onboardingPermissionsNotifTitle": "通知",
+  "onboardingPermissionsNotifSubtitle": "ノートや豆知識の生成が完了したときにお知らせします。",
+
+  "onboardingPlanEyebrow": "もうすぐ完了",
+  "onboardingPlanTitle": "leFtureは今なら無料です",
+  "onboardingPlanBadge": "Beta中・無料プラン付き",
+  "onboardingPlanSubtitle": "テスト期間中はすべての機能を無料でご利用いただけます。有料プランは今後こちらに追加されます。",
+  "onboardingPlanActiveTitle": "すでにプランが有効です",
+  "onboardingPlanClaimError": "無料プランを有効化できませんでした。後ほどアカウントページから再度お試しください。",
+
+  "onboardingDoneTitle": "準備完了です",
+  "onboardingDoneSubtitle": "さっそくコースを作成して、最初の講義を録音しましょう！"
 }
