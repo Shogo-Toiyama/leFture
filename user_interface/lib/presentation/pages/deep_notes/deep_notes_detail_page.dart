@@ -267,7 +267,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           noteId: noteId,
           startIdx: located.startIdx,
           endIdx: located.endIdx,
-          noteText: flattenMarkdownText(stripSidCitations(topic.content)),
+          noteText: flattenMarkdownText(
+            stripSidCitations(stripFigurePlaceholders(topic.content)),
+          ),
         );
       } else {
         await repo.addAnnotation(
@@ -400,7 +402,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   if (located == null) return;
 
                   try {
-                    final rawText = topic.content;
+                    final rawText = stripFigurePlaceholders(topic.content);
 
                     final result = findSourceContextRange(
                       rawText,
@@ -1118,6 +1120,7 @@ class _NoteDetailContent extends HookWidget {
         annotations: noteAnnotations,
         onAnnotationTap: onAnnotationTap,
         codeStyle: codeStyle,
+        codeblockPadding: const EdgeInsets.all(16),
       ),
       [annotationsCacheKeyValue, codeStyle],
     );
@@ -1309,7 +1312,7 @@ class _NoteDetailContent extends HookWidget {
                   MarkdownBody(
                     key: ValueKey(annotationsCacheKeyValue),
                     data: topic.content.isNotEmpty
-                        ? stripSidCitations(topic.content)
+                        ? stripSidCitations(stripFigurePlaceholders(topic.content))
                         : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
                     selectable: false,
                     builders: topic.content.isNotEmpty

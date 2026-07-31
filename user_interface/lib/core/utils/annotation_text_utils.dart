@@ -29,6 +29,24 @@ class TextLocation {
   final int endIdx;
 }
 
+/// Matches the `<!-- FIGURE: type="..." title="..." description="..." -->`
+/// placeholder comments the topic-details generation prompt inserts. These
+/// parse to a bare, tag-less `md.Text` node (see `HtmlBlockSyntax.parse` in
+/// the `markdown` package), which flutter_markdown's own builder silently
+/// discards (`_blocks.last.tag == null` check in `visitText`) -- it's never
+/// rendered and never selectable. [flattenMarkdownText], however, has no tag
+/// filter and would otherwise count its raw text, desyncing the flattened
+/// coordinate space from what's actually on screen. Stripping the
+/// placeholder out of the source before parsing removes the mismatch at the
+/// root instead of relying on that undocumented flutter_markdown behavior.
+final RegExp _figurePlaceholderPattern = RegExp(
+  r'<!--\s*FIGURE:.*?-->\n?',
+  dotAll: true,
+);
+
+String stripFigurePlaceholders(String markdownSource) =>
+    markdownSource.replaceAll(_figurePlaceholderPattern, '');
+
 /// Parses [markdownSource] the same way flutter_markdown does and
 /// concatenates every text leaf in document order (headings, paragraphs,
 /// list items, bold/italic runs, ...), with no separators added between

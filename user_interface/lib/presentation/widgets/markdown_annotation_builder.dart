@@ -2,10 +2,10 @@
 //
 // Injects Annotation (highlight/notes) decorations into flutter_markdown's
 // rendering, by registering a custom MarkdownElementBuilder for every
-// text-bearing block tag ('p', 'li', 'h1'-'h6') plus the inline tags that
-// affect styling ('strong', 'em', 'code'). flutter_markdown only routes
-// text nodes to a custom builder registered against the *enclosing block*
-// tag, and doesn't expose the inline (bold/italic) style it would
+// text-bearing block tag ('p', 'li', 'h1'-'h6', 'pre') plus the inline tags
+// that affect styling ('strong', 'em', 'code'). flutter_markdown only
+// routes text nodes to a custom builder registered against the *enclosing
+// block* tag, and doesn't expose the inline (bold/italic) style it would
 // otherwise apply -- so we track that ourselves via visitElementBefore/
 // After on the inline tags and re-merge it manually, to avoid silently
 // losing **bold**/_em_ formatting wherever this builder is active.
@@ -14,7 +14,17 @@
 // here) would be skipped by this builder entirely and never counted
 // toward the running offset below, desyncing it from
 // annotation_text_utils.dart's flattenMarkdownText (which walks the same
-// document with no tag exclusions).
+// document with no tag exclusions). 'pre' (fenced code blocks) is the tag
+// this bit most often in practice: flutter_markdown renders its text via a
+// special scrollable-code-block path that bypasses custom builders unless
+// 'pre' is registered here, but that text is still fully selectable --
+// leaving it unregistered meant every highlight/note placed after a code
+// block rendered shifted by the code block's length. Registering it means
+// fenced code text (always `pre > code`, per the `markdown` package) now
+// picks up the 'code' inline style automatically via _inlineStyleStack,
+// but we lose flutter_markdown's built-in horizontal-scroll/Scrollbar
+// wrapper and codeblockPadding for 'pre', so both are reproduced by hand
+// below (_inPreBlock / codeblockPadding).
 //
 // Offsets in an [Annotation] are measured against flattenMarkdownText's
 // output (plain, Markdown-syntax-stripped text), reconstructed here by
@@ -46,6 +56,7 @@ Map<String, MarkdownElementBuilder> annotationMarkdownBuilders(
       'h4',
       'h5',
       'h6',
+      'pre',
     ])
       tag: builder,
   };
@@ -111,6 +122,7 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
     TextStyle? codeStyle,
     TextStyle? strongStyle,
     TextStyle? emStyle,
+    this.codeblockPadding = EdgeInsets.zero,
   }) : _annotations = [...annotations]
          ..sort((a, b) => a.startIdx.compareTo(b.startIdx)),
        _inlineStyles = {
@@ -121,6 +133,12 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
 
   final List<Annotation> _annotations;
   final ValueChanged<Annotation>? onAnnotationTap;
+  // 'pre'がbuildersに登録されると、flutter_markdownはコードブロック用の
+  // 横スクロール/パディング処理(_ScrollControllerBuilder+codeblockPadding)を
+  // 一切適用しなくなる(builder.dartのvisitText参照)。オフセット計算を合わせる
+  // ために'pre'を登録する必要がある以上、その見た目はここで手動再現する。
+  final EdgeInsetsGeometry codeblockPadding;
+  bool _inPreBlock = false;
   int _offset = 0;
   final List<TextStyle> _inlineStyleStack = [];
   // visitText()で生成したTapGestureRecognizerを全て保持しておく。InlineSpanは
@@ -149,6 +167,7 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
   void visitElementBefore(md.Element element) {
     final style = _inlineStyles[element.tag];
     if (style != null) _inlineStyleStack.add(style);
+    if (element.tag == 'pre') _inPreBlock = true;
   }
 
   @override
@@ -162,6 +181,7 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
         _inlineStyleStack.isNotEmpty) {
       _inlineStyleStack.removeLast();
     }
+    if (element.tag == 'pre') _inPreBlock = false;
     return null; // let flutter_markdown build the default wrapping widget
   }
 
@@ -240,10 +260,18 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
       );
     }
 
-    if (spans.isEmpty) {
-      return Text.rich(TextSpan(text: content, style: effectiveStyle));
-    }
-    return Text.rich(TextSpan(children: spans));
+    final Widget result = spans.isEmpty
+        ? Text.rich(TextSpan(text: content, style: effectiveStyle))
+        : Text.rich(TextSpan(children: spans));
+
+    if (!_inPreBlock) return result;
+    return Padding(
+      padding: codeblockPadding,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: result,
+      ),
+    );
   }
 
   TextStyle _decoratedStyle(TextStyle? base, Annotation a) {
