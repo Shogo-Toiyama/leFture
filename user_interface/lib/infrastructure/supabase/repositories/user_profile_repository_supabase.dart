@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lefture/domain/entities/user_profile.dart';
@@ -6,6 +7,7 @@ import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'user_profile_repository_supabase.g.dart';
 
@@ -15,8 +17,26 @@ UserProfileRepositorySupabase userProfileRepository(Ref ref) {
 }
 
 class UserProfileRepositorySupabase {
-  UserProfileRepositorySupabase(this._ref);
+  UserProfileRepositorySupabase(this._ref) {
+    // _cachedOnboardingCompletedはこのリポジトリ(keepAlive)のインスタンス
+    // が生きている間ずっと保持される。サインアウト→別アカウントでサイン
+    // インをアプリを再起動せずに行うと、前のユーザーの判定結果が新しい
+    // ユーザーにそのまま漏れてしまう不具合があったため、authのユーザーIDが
+    // 変わるたびにキャッシュを破棄する。
+    _lastUid = supabase.auth.currentUser?.id;
+    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
+      final newUid = data.session?.user.id;
+      if (newUid != _lastUid) {
+        _cachedOnboardingCompleted = null;
+        _lastUid = newUid;
+      }
+    });
+    _ref.onDispose(() => _authSubscription.cancel());
+  }
+
   final Ref _ref;
+  String? _lastUid;
+  late final StreamSubscription<AuthState> _authSubscription;
 
   AppDatabase get _db => _ref.read(appDatabaseProvider);
   static const _table = 'user_profiles';
@@ -28,6 +48,13 @@ class UserProfileRepositorySupabase {
   }
 
   /// ログイン中ユーザーのプロフィールを取得してローカルDBにキャッシュ
+  ///
+  /// まだOutboxにpushされていないローカルの変更(例: markOnboardingCompleted
+  /// が書いたばかりのonboarding_completed_at)がある場合は、サーバーの
+  /// 古い値でローカルを丸ごと上書きしない。このガードが無いと、
+  /// currentUserProfileProvider(Stream)がonboarding中の頻繁な画面遷移で
+  /// 再生成されるたびにこの関数が呼ばれ、pushされる前のローカルの変更が
+  /// 消えてしまう不具合があった。
   Future<UserProfile?> getCurrentProfile() async {
     final uid = _requireUid();
 
@@ -41,6 +68,11 @@ class UserProfileRepositorySupabase {
     if (row == null) return null;
 
     final profile = UserProfile.fromMap(row);
+
+    final pendingIds = await _db.getPendingOutboxEntityIds('user_profile');
+    if (pendingIds.contains(uid)) {
+      return profile;
+    }
 
     // キャッシュを更新
     await _db.upsertUserProfile(
