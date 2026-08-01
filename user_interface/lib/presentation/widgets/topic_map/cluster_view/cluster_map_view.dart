@@ -53,6 +53,7 @@ import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/infrastructure/local_db/repositories/lecture_topic_repository_drift.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/domain/entities/lecture.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 import '../force_layout/graph_force_simulation.dart';
 import '../topic_map_models.dart';
@@ -487,7 +488,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
   String _lectureDisplayTitle(Lecture lecture) {
     if (lecture.title?.trim().isNotEmpty == true) return lecture.title!.trim();
     if (lecture.titleGenerated?.trim().isNotEmpty == true) return lecture.titleGenerated!.trim();
-    return 'Untitled Lecture';
+    return AppLocalizations.of(context).lectureViewerUntitledLecture;
   }
 
   String? _clusterNameFor(String? clusterId) {

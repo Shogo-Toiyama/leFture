@@ -79,6 +79,45 @@ const Map<String, String> processingTaskLabels = {
 String processingTaskLabel(String taskType) =>
     processingTaskLabels[taskType] ?? taskType;
 
+String localizedProcessingTaskLabel(dynamic l10n, String taskType) {
+  try {
+    switch (taskType) {
+      case 'TRANSCRIBE_MASTER':
+        return l10n.pipelineTaskTranscribeMaster as String;
+      case 'CHECK_AND_ASSEMBLE':
+        return l10n.pipelineTaskCheckAndAssemble as String;
+      case 'CORE_EXTRACTION':
+        return l10n.pipelineTaskCoreExtraction as String;
+      case 'ROLE_CLASSIFICATION':
+        return l10n.pipelineTaskRoleClassification as String;
+      case 'ANNOUNCEMENT_GENERATION':
+        return l10n.pipelineTaskAnnouncementGeneration as String;
+      case 'TOPIC_MAPPING':
+        return l10n.pipelineTaskTopicMapping as String;
+      case 'REVIEW_CARD_GENERATION':
+        return l10n.pipelineTaskReviewCardGeneration as String;
+      case 'IMAGE_PROMPT_GENERATION':
+        return l10n.pipelineTaskImagePromptGeneration as String;
+      case 'IMAGE_RENDERING':
+        return l10n.pipelineTaskImageRendering as String;
+      case 'FUN_FACT_BRAINSTORMING':
+        return l10n.pipelineTaskFunFactBrainstorming as String;
+      case 'FUN_FACT_SEARCH':
+        return l10n.pipelineTaskFunFactSearch as String;
+      case 'FUN_FACTS_GENERATION':
+        return l10n.pipelineTaskFunFactsGeneration as String;
+      case 'DETAIL_CONTENTS_GENERATION':
+        return l10n.pipelineTaskDetailContentsGeneration as String;
+      case 'FINALIZE_JOB':
+        return l10n.pipelineTaskFinalizeJob as String;
+      default:
+        return processingTaskLabels[taskType] ?? taskType;
+    }
+  } catch (_) {
+    return processingTaskLabels[taskType] ?? taskType;
+  }
+}
+
 /// main.py の tasks_blueprint と同じ依存関係（表示専用のミラー。実行時の正は
 /// バックエンドが processing_tasks.dependencies から都度計算する）
 /// TRANSCRIBE_MASTER と CHECK_AND_ASSEMBLE は互いに排他的（どちらか一方が最初のタスク）

@@ -189,18 +189,23 @@ class RecordingController extends _$RecordingController {
         await ref.read(liveAsrControllerProvider.notifier).stop();
       }
 
-      final flushed = _chunker?.flush();
-      if (flushed != null && flushed.data.isNotEmpty) {
-        final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
+      if (state.realtimeTranscribe) {
+        final flushed = _chunker?.flush();
+        if (flushed != null && flushed.data.isNotEmpty) {
+          final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
 
-        await _repo.attachAudioAndEnqueueUpload(
-          userId: user.id,
-          lectureId: state.currentLectureId!,
-          localPath: path,
-          sequenceIndex: _currentChunkIndex,
-          startTime: flushed.startTimeSec,
-        );
-        _currentChunkIndex++;
+          await _repo.attachAudioAndEnqueueUpload(
+            userId: user.id,
+            lectureId: state.currentLectureId!,
+            localPath: path,
+            sequenceIndex: _currentChunkIndex,
+            startTime: flushed.startTimeSec,
+          );
+          _currentChunkIndex++;
+        }
+      } else {
+        DevLog.add('[Pause] Realtime Transcribe is OFF, skipping chunk upload');
+        _chunker?.flush(); // メモリ解放のためflushは呼ぶが結果は使わない
       }
 
       state = state.copyWith(phase: RecordingPhase.paused, audioLevel: 0.0);

@@ -493,8 +493,9 @@ class TranscriptModal extends HookConsumerWidget {
         useEffect(
           () {
             if (hasScrolledToHighlight.value) return null;
-            if (rowOffsets.isEmpty || firstHighlightDisplayIndex < 0)
+            if (rowOffsets.isEmpty || firstHighlightDisplayIndex < 0) {
               return null;
+            }
 
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!scrollController.hasClients) return;

@@ -596,6 +596,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statusViewProcessingLabel => '処理しています...';
 
   @override
+  String get statusViewFailedLabel => '失敗';
+
+  @override
   String statusScaffoldErrorPrefix(String error) {
     return 'エラー: $error';
   }
@@ -2223,4 +2226,46 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingDoneSubtitle => 'さっそくコースを作成して、最初の講義を録音しましょう！';
+
+  @override
+  String get pipelineTaskTranscribeMaster => '音声を文字起こし中';
+
+  @override
+  String get pipelineTaskCheckAndAssemble => '文字起こしデータを準備中';
+
+  @override
+  String get pipelineTaskCoreExtraction => '重要トピックを抽出中';
+
+  @override
+  String get pipelineTaskRoleClassification => '話者ロールを分類中';
+
+  @override
+  String get pipelineTaskAnnouncementGeneration => 'お知らせ・要連絡事項を抽出中';
+
+  @override
+  String get pipelineTaskTopicMapping => 'トピックマップを生成中';
+
+  @override
+  String get pipelineTaskReviewCardGeneration => '復習カードを生成中';
+
+  @override
+  String get pipelineTaskImagePromptGeneration => 'トピックアートをデザイン中';
+
+  @override
+  String get pipelineTaskImageRendering => 'トピックアートをレンダリング中';
+
+  @override
+  String get pipelineTaskFunFactBrainstorming => '関連トリビアの構想中';
+
+  @override
+  String get pipelineTaskFunFactSearch => '関連トリビアを検索中';
+
+  @override
+  String get pipelineTaskFunFactsGeneration => '関連トリビアを執筆中';
+
+  @override
+  String get pipelineTaskDetailContentsGeneration => '詳細ノート（Deep Notes）を執筆中';
+
+  @override
+  String get pipelineTaskFinalizeJob => '解析結果の最終処理中';
 }

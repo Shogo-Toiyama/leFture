@@ -634,6 +634,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusViewProcessingLabel => 'Processing...';
 
   @override
+  String get statusViewFailedLabel => 'Failed';
+
+  @override
   String statusScaffoldErrorPrefix(String error) {
     return 'Error: $error';
   }
@@ -2328,4 +2331,46 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingDoneSubtitle =>
       'Let\'s create a course and record your first lecture!';
+
+  @override
+  String get pipelineTaskTranscribeMaster => 'Transcribing audio';
+
+  @override
+  String get pipelineTaskCheckAndAssemble => 'Preparing transcript';
+
+  @override
+  String get pipelineTaskCoreExtraction => 'Extracting key topics';
+
+  @override
+  String get pipelineTaskRoleClassification => 'Classifying speaker roles';
+
+  @override
+  String get pipelineTaskAnnouncementGeneration => 'Finding announcements';
+
+  @override
+  String get pipelineTaskTopicMapping => 'Mapping topics';
+
+  @override
+  String get pipelineTaskReviewCardGeneration => 'Generating review cards';
+
+  @override
+  String get pipelineTaskImagePromptGeneration => 'Designing topic art';
+
+  @override
+  String get pipelineTaskImageRendering => 'Rendering topic arts';
+
+  @override
+  String get pipelineTaskFunFactBrainstorming => 'Brainstorming fun facts';
+
+  @override
+  String get pipelineTaskFunFactSearch => 'Searching fun facts';
+
+  @override
+  String get pipelineTaskFunFactsGeneration => 'Writing fun facts';
+
+  @override
+  String get pipelineTaskDetailContentsGeneration => 'Writing deep notes';
+
+  @override
+  String get pipelineTaskFinalizeJob => 'Finalizing';
 }

@@ -192,6 +192,7 @@
   "processingViewStartOverFromScratchButton": "最初からやり直す",
 
   "statusViewProcessingLabel": "処理しています...",
+  "statusViewFailedLabel": "失敗",
 
   "statusScaffoldErrorPrefix": "エラー: {error}",
   "statusScaffoldSyncingTitle": "音声を同期しています...",
@@ -734,5 +735,20 @@
   "onboardingProfileBioRequiredNote": "必須項目です。あなた専用のコンテンツ作りに欠かせません。",
 
   "onboardingDoneTitle": "準備完了です",
-  "onboardingDoneSubtitle": "さっそくコースを作成して、最初の講義を録音しましょう！"
+  "onboardingDoneSubtitle": "さっそくコースを作成して、最初の講義を録音しましょう！",
+
+  "pipelineTaskTranscribeMaster": "音声を文字起こし中",
+  "pipelineTaskCheckAndAssemble": "文字起こしデータを準備中",
+  "pipelineTaskCoreExtraction": "重要トピックを抽出中",
+  "pipelineTaskRoleClassification": "話者ロールを分類中",
+  "pipelineTaskAnnouncementGeneration": "お知らせ・要連絡事項を抽出中",
+  "pipelineTaskTopicMapping": "トピックマップを生成中",
+  "pipelineTaskReviewCardGeneration": "復習カードを生成中",
+  "pipelineTaskImagePromptGeneration": "トピックアートをデザイン中",
+  "pipelineTaskImageRendering": "トピックアートをレンダリング中",
+  "pipelineTaskFunFactBrainstorming": "関連トリビアの構想中",
+  "pipelineTaskFunFactSearch": "関連トリビアを検索中",
+  "pipelineTaskFunFactsGeneration": "関連トリビアを執筆中",
+  "pipelineTaskDetailContentsGeneration": "詳細ノート（Deep Notes）を執筆中",
+  "pipelineTaskFinalizeJob": "解析結果の最終処理中"
 }

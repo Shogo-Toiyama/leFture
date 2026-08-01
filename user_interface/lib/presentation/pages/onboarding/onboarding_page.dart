@@ -13,6 +13,8 @@ import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_profile
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_tutorial_step.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
+import 'package:lefture/presentation/widgets/language_header_button.dart';
+
 const _totalSteps = 5;
 
 /// Account-creation-directly-after wizard: Tutorial (placeholder) → Profile
@@ -62,19 +64,34 @@ class OnboardingPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 580),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: KeyedSubtree(key: ValueKey(step.value), child: steps[step.value]),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: KeyedSubtree(key: ValueKey(step.value), child: steps[step.value]),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            top: 4,
+            right: 18,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: const LanguageHeaderButton(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

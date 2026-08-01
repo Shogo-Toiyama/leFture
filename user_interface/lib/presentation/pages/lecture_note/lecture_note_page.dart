@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 class LectureNotePage extends StatelessWidget {
   const LectureNotePage({
@@ -32,11 +33,12 @@ class LectureNotePage extends StatelessWidget {
       markdownContent.writeln(_cleanContent(segment.funFact!));
     }
 
+    final l10n = AppLocalizations.of(context);
     final displayTitle = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
         : (lecture.titleGenerated?.trim().isNotEmpty == true
             ? lecture.titleGenerated!
-            : 'Untitled Lecture');
+            : l10n.lectureViewerUntitledLecture);
 
     return Scaffold(
       appBar: AppBar(

@@ -10,6 +10,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/presentation/widgets/language_header_button.dart';
 import 'package:lefture/presentation/widgets/password_strength_meter.dart';
 import 'package:lefture/presentation/widgets/social_sign_in_button.dart';
 
@@ -28,6 +29,7 @@ class SignUpPage extends HookConsumerWidget {
     final obscureConfirmPassword = useState(true);
     final isEmailExpanded = useState(false);
     final formKey = useMemoized(() => GlobalKey<FormState>());
+    final usernameKey = useMemoized(() => GlobalKey<FormFieldState<String>>());
     final inlineError = useState<dynamic>(null);
     final isEmailSubmitting = useState(false);
 
@@ -80,13 +82,14 @@ class SignUpPage extends HookConsumerWidget {
       }
     }
 
-    // Google/Appleでの登録前も、ユーザーネーム・チェックボックスは
-    // Email登録と同じく必須にする。アコーディオンが閉じている間はEmail/Password
-    // のTextFormFieldがツリーに存在しないため、ここでのvalidate()は
-    // ユーザーネーム欄のみを検証する。
+    // Google/Appleでの登録前は、ユーザーネームと利用規約のみを必須チェックする。
+    // メール登録用のアコーディオンが開いていても、メール・パスワードの
+    // TextFormFieldの必須エラーが出ないようにするため、formKey全検証ではなく
+    // usernameKeyとagreedToTermsのみを独立して検証する。
     bool validateUsernameAndTerms() {
       inlineError.value = null;
-      if (!formKey.currentState!.validate()) {
+      final usernameValid = usernameKey.currentState?.validate() ?? false;
+      if (!usernameValid) {
         return false;
       }
       if (!agreedToTerms.value) {
@@ -143,30 +146,33 @@ class SignUpPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.9),
-            radius: 1.4,
-            colors: [
-              AppColors.deepGold.withValues(alpha: 0.16),
-              AppColors.universe.voidBackground,
-            ],
-            stops: const [0, 0.7],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: 440,
-                      minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
-                    ),
-                    child: Form(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.9),
+                  radius: 1.4,
+                  colors: [
+                    AppColors.deepGold.withValues(alpha: 0.16),
+                    AppColors.universe.voidBackground,
+                  ],
+                  stops: const [0, 0.7],
+                ),
+              ),
+              child: SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: 440,
+                            minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
+                          ),
+                          child: Form(
                       key: formKey,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -232,6 +238,7 @@ class SignUpPage extends HookConsumerWidget {
                                 ],
                                 // ユーザーネーム(どのサインアップ方法でも必須)
                                 TextFormField(
+                                  key: usernameKey,
                                   controller: usernameController,
                                   style: TextStyle(color: AppColors.universe.textStarlight),
                                   cursorColor: AppColors.starGold,
@@ -473,6 +480,20 @@ class SignUpPage extends HookConsumerWidget {
             },
           ),
         ),
+      ),
+    ),
+      Positioned(
+        top: 4,
+        right: 18,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: const LanguageHeaderButton(),
+          ),
+        ),
+      ),
+        ],
       ),
     );
   }

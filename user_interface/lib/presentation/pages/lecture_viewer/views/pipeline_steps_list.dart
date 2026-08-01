@@ -67,7 +67,7 @@ class _StepRow extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final label = processingTaskLabel(taskType);
+    final label = localizedProcessingTaskLabel(l10n, taskType);
 
     if (task == null) {
       return _StepTile(
@@ -215,7 +215,7 @@ class _RetryableCompletedStep extends HookConsumerWidget {
       final downstream = downstreamOf(taskType)..remove(taskType);
       final downstreamLabels = processingTaskOrder
           .where(downstream.contains)
-          .map(processingTaskLabel)
+          .map((t) => localizedProcessingTaskLabel(l10n, t))
           .toList();
 
       final message = downstreamLabels.isEmpty

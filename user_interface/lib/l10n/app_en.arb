@@ -1008,6 +1008,10 @@
   "@statusViewProcessingLabel": {
     "description": "Label shown on the shared StatusView widget's action button while its isLoading flag is true, replacing whatever specific buttonLabel the caller passed in (e.g. 'Retry', 'Continue'). Must stay generic enough to fit any caller's button."
   },
+  "statusViewFailedLabel": "Failed",
+  "@statusViewFailedLabel": {
+    "description": "Short status label shown next to a failed lecture."
+  },
 
   "statusScaffoldErrorPrefix": "Error: {error}",
   "@statusScaffoldErrorPrefix": {
@@ -3603,5 +3607,34 @@
   "onboardingDoneSubtitle": "Let's create a course and record your first lecture!",
   "@onboardingDoneSubtitle": {
     "description": "Subtitle on the final onboarding step, leading into the empty-home Profile → Course → Lecture checklist."
-  }
+  },
+
+  "pipelineTaskTranscribeMaster": "Transcribing audio",
+  "@pipelineTaskTranscribeMaster": { "description": "Pipeline task label: Transcribing audio." },
+  "pipelineTaskCheckAndAssemble": "Preparing transcript",
+  "@pipelineTaskCheckAndAssemble": { "description": "Pipeline task label: Preparing transcript." },
+  "pipelineTaskCoreExtraction": "Extracting key topics",
+  "@pipelineTaskCoreExtraction": { "description": "Pipeline task label: Extracting key topics." },
+  "pipelineTaskRoleClassification": "Classifying speaker roles",
+  "@pipelineTaskRoleClassification": { "description": "Pipeline task label: Classifying speaker roles." },
+  "pipelineTaskAnnouncementGeneration": "Finding announcements",
+  "@pipelineTaskAnnouncementGeneration": { "description": "Pipeline task label: Finding announcements." },
+  "pipelineTaskTopicMapping": "Mapping topics",
+  "@pipelineTaskTopicMapping": { "description": "Pipeline task label: Mapping topics." },
+  "pipelineTaskReviewCardGeneration": "Generating review cards",
+  "@pipelineTaskReviewCardGeneration": { "description": "Pipeline task label: Generating review cards." },
+  "pipelineTaskImagePromptGeneration": "Designing topic art",
+  "@pipelineTaskImagePromptGeneration": { "description": "Pipeline task label: Designing topic art." },
+  "pipelineTaskImageRendering": "Rendering topic arts",
+  "@pipelineTaskImageRendering": { "description": "Pipeline task label: Rendering topic arts." },
+  "pipelineTaskFunFactBrainstorming": "Brainstorming fun facts",
+  "@pipelineTaskFunFactBrainstorming": { "description": "Pipeline task label: Brainstorming fun facts." },
+  "pipelineTaskFunFactSearch": "Searching fun facts",
+  "@pipelineTaskFunFactSearch": { "description": "Pipeline task label: Searching fun facts." },
+  "pipelineTaskFunFactsGeneration": "Writing fun facts",
+  "@pipelineTaskFunFactsGeneration": { "description": "Pipeline task label: Writing fun facts." },
+  "pipelineTaskDetailContentsGeneration": "Writing deep notes",
+  "@pipelineTaskDetailContentsGeneration": { "description": "Pipeline task label: Writing deep notes." },
+  "pipelineTaskFinalizeJob": "Finalizing",
+  "@pipelineTaskFinalizeJob": { "description": "Pipeline task label: Finalizing." }
 }

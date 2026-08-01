@@ -304,6 +304,13 @@ class UploadManager {
     }
 
     // 従来のチャンク処理（kind == 'audio_upload' の想定）
+    // Realtime Transcribe が Off の講義では個別チャンクを送信しない
+    // (CheckAndAssemble が expected_chunks=0 のまま誤発火するのを防ぐ二重の安全策)
+    if (lecture.isRealtime == false) {
+      DevLog.add('⏭️ [UploadManager] Realtime Transcribe is OFF, discarding stray chunk job: Chunk ${asset.sequenceIndex}');
+      return;
+    }
+
     final seqStr = asset.sequenceIndex.toString().padLeft(3, '0');
     final fileName = 'chunk_$seqStr.m4a';
     final storagePath = '${lecture.userId}/${lecture.id}/audio_chunks/$fileName';

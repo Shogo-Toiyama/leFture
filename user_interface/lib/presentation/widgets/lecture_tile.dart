@@ -93,7 +93,7 @@ class LectureTile extends ConsumerWidget {
         ? lecture.title!
         : (lecture.titleGenerated?.trim().isNotEmpty == true
               ? lecture.titleGenerated!
-              : 'Untitled Lecture');
+              : l10n.lectureViewerUntitledLecture);
 
     final code = courseCode?.trim();
     final hasCourseCode = code != null && code.isNotEmpty;
@@ -274,9 +274,10 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isFailed = state == LectureUIState.failed;
     final color = isFailed ? AppColors.correctionRed : AppColors.starGold;
-    final label = isFailed ? 'Failed' : 'Processing';
+    final label = isFailed ? l10n.statusViewFailedLabel : l10n.statusViewProcessingLabel;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

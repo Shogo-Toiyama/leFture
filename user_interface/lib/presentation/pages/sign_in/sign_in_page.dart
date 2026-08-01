@@ -11,6 +11,7 @@ import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/presentation/widgets/language_header_button.dart';
 import 'package:lefture/presentation/widgets/social_sign_in_button.dart';
 
 class SignInPage extends HookConsumerWidget {
@@ -102,30 +103,33 @@ class SignInPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0, -0.7),
-            radius: 1.4,
-            colors: [
-              AppColors.deepGold.withValues(alpha: 0.16),
-              AppColors.universe.voidBackground,
-            ],
-            stops: const [0, 0.7],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: 440,
-                      minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
-                    ),
-                    child: Column(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.7),
+                  radius: 1.4,
+                  colors: [
+                    AppColors.deepGold.withValues(alpha: 0.16),
+                    AppColors.universe.voidBackground,
+                  ],
+                  stops: const [0, 0.7],
+                ),
+              ),
+              child: SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: 440,
+                            minHeight: (constraints.maxHeight - 64) > 0 ? (constraints.maxHeight - 64) : 0,
+                          ),
+                          child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -305,6 +309,20 @@ class SignInPage extends HookConsumerWidget {
             },
           ),
         ),
+      ),
+    ),
+          Positioned(
+            top: 4,
+            right: 18,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: const LanguageHeaderButton(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

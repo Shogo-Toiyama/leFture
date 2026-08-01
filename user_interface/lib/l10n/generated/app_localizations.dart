@@ -1193,6 +1193,12 @@ abstract class AppLocalizations {
   /// **'Processing...'**
   String get statusViewProcessingLabel;
 
+  /// Short status label shown next to a failed lecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get statusViewFailedLabel;
+
   /// Fallback error text shown if the lecture's UI-state stream itself fails to load (rare/unexpected). {error} is the raw exception's toString().
   ///
   /// In en, this message translates to:
@@ -4195,6 +4201,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Let\'s create a course and record your first lecture!'**
   String get onboardingDoneSubtitle;
+
+  /// Pipeline task label: Transcribing audio.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing audio'**
+  String get pipelineTaskTranscribeMaster;
+
+  /// Pipeline task label: Preparing transcript.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing transcript'**
+  String get pipelineTaskCheckAndAssemble;
+
+  /// Pipeline task label: Extracting key topics.
+  ///
+  /// In en, this message translates to:
+  /// **'Extracting key topics'**
+  String get pipelineTaskCoreExtraction;
+
+  /// Pipeline task label: Classifying speaker roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Classifying speaker roles'**
+  String get pipelineTaskRoleClassification;
+
+  /// Pipeline task label: Finding announcements.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding announcements'**
+  String get pipelineTaskAnnouncementGeneration;
+
+  /// Pipeline task label: Mapping topics.
+  ///
+  /// In en, this message translates to:
+  /// **'Mapping topics'**
+  String get pipelineTaskTopicMapping;
+
+  /// Pipeline task label: Generating review cards.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating review cards'**
+  String get pipelineTaskReviewCardGeneration;
+
+  /// Pipeline task label: Designing topic art.
+  ///
+  /// In en, this message translates to:
+  /// **'Designing topic art'**
+  String get pipelineTaskImagePromptGeneration;
+
+  /// Pipeline task label: Rendering topic arts.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendering topic arts'**
+  String get pipelineTaskImageRendering;
+
+  /// Pipeline task label: Brainstorming fun facts.
+  ///
+  /// In en, this message translates to:
+  /// **'Brainstorming fun facts'**
+  String get pipelineTaskFunFactBrainstorming;
+
+  /// Pipeline task label: Searching fun facts.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching fun facts'**
+  String get pipelineTaskFunFactSearch;
+
+  /// Pipeline task label: Writing fun facts.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing fun facts'**
+  String get pipelineTaskFunFactsGeneration;
+
+  /// Pipeline task label: Writing deep notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing deep notes'**
+  String get pipelineTaskDetailContentsGeneration;
+
+  /// Pipeline task label: Finalizing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalizing'**
+  String get pipelineTaskFinalizeJob;
 }
 
 class _AppLocalizationsDelegate
