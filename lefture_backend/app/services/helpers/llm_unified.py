@@ -50,7 +50,7 @@ PRICE_MATRIX = {
         }
     },
     "count": {  # $ per unit
-        "tavily/search": 0.008,
+        "brave/llm_context": 0.005,
     }
 }
 

@@ -740,37 +740,37 @@ abstract class AppLocalizations {
   /// **'On-device speech model used for live captions.'**
   String get recordingOnDeviceModelSubtitle;
 
-  /// Label shown on a moment/reaction timeline entry when its type is 'fun' (the student marked this point in the lecture as fun/interesting), next to a star icon.
+  /// Short label for a 'fun / interesting moment' reaction on the Live tab.
   ///
   /// In en, this message translates to:
-  /// **'Fun moment'**
+  /// **'Interesting moment'**
   String get recordingMomentFunLabel;
 
-  /// Label for a moment/reaction timeline entry of type 'difficult' (the student marked this point as hard to understand).
+  /// Short label for a 'difficult moment' reaction on the Live tab.
   ///
   /// In en, this message translates to:
-  /// **'Difficult'**
+  /// **'Difficult moment'**
   String get recordingMomentDifficultLabel;
 
-  /// Label for a moment/reaction timeline entry of type 'revisit', meaning the student wants to come back and review this point later.
+  /// Short label for a 'revisit later' reaction on the Live tab.
   ///
   /// In en, this message translates to:
   /// **'Revisit later'**
   String get recordingMomentRevisitLabel;
 
-  /// Label for a moment/reaction timeline entry of type 'note' (a free-text note the student typed during the lecture).
+  /// Short label for a user text note on the Live tab.
   ///
   /// In en, this message translates to:
   /// **'Note'**
   String get recordingMomentNoteLabel;
 
-  /// Small header above the scrolling live-transcript panel on the Recording page's Live tab. Shown in English as all-caps for visual style with letter-spacing; languages without case distinction (e.g. Japanese) can just use the natural phrase.
+  /// Header title of the live transcript card on the Recording page's Live tab.
   ///
   /// In en, this message translates to:
-  /// **'LIVE TRANSCRIPT'**
+  /// **'LIVE TRANSCRIPTION'**
   String get recordingLiveTranscriptHeader;
 
-  /// Placeholder text shown in the live transcript panel before any speech has been transcribed yet.
+  /// Placeholder text inside the live transcript panel when recording has started but no speech has been transcribed yet.
   ///
   /// In en, this message translates to:
   /// **'Waiting for audio...'**
@@ -782,10 +782,10 @@ abstract class AppLocalizations {
   /// **'Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.'**
   String get recordingRealtimeOffHint;
 
-  /// Short caption under an icon on one of three reaction buttons (Fun / Difficult / Revisit) on the Recording page's Live tab. Must stay very short to fit under the icon.
+  /// Short caption under an icon on one of three reaction buttons (Interesting / Difficult / Revisit) on the Recording page's Live tab. Must stay very short to fit under the icon.
   ///
   /// In en, this message translates to:
-  /// **'Fun'**
+  /// **'Interesting'**
   String get recordingReactionFunLabel;
 
   /// Short caption under the icon on the 'Difficult' reaction button on the Live tab. Must stay very short to fit under the icon.
@@ -931,6 +931,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcript'**
   String get lectureViewerTranscriptButtonLabel;
+
+  /// Snackbar shown when tapping a source-URL chip on a fun-fact card fails to open the link in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the link.'**
+  String get lectureViewerFunFactLinkOpenFailedSnackbar;
 
   /// Snackbar shown if saving a like/dislike reaction on a fun-fact card fails. {error} is the raw exception's toString().
   ///
@@ -3175,6 +3181,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'re offline. Showing cached data.'**
   String get homeOfflineSnackBarMessage;
+
+  /// Headline on the full-screen error state shown on first Home visit when the mandatory initial lecture sync has never succeeded (e.g. offline right after onboarding).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t finish setting up your account'**
+  String get initialSyncErrorTitle;
+
+  /// Body text explaining why the initial sync error screen is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t reach the server to load your data. Please check your internet connection and try again.'**
+  String get initialSyncErrorMessage;
+
+  /// Button label to retry the initial mandatory sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get initialSyncErrorRetryButton;
+
+  /// Button label shown while the retry attempt from the initial sync error screen is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying…'**
+  String get initialSyncErrorRetrying;
 
   /// Floating call-to-action button at the bottom of the home screen to start recording a lecture.
   ///

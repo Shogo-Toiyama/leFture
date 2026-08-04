@@ -13,7 +13,6 @@ pydub
 httpx
 boto3
 litellm
-tavily-python
 tenacity
 resend
 standardwebhooks

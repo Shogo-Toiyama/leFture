@@ -23,6 +23,15 @@ class FunFact {
   final String? reaction;
   final DateTime createdAt;
 
+  // 参照したWeb検索結果のURL一覧(あれば)。metadataの一部として同期される。
+  List<String> get sources {
+    final raw = metadata?['sources'];
+    if (raw is List) {
+      return raw.whereType<String>().toList();
+    }
+    return const [];
+  }
+
   factory FunFact.fromMap(Map<String, dynamic> map) {
     final metadata = map['metadata'] as Map<String, dynamic>?;
     return FunFact(

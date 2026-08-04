@@ -30,6 +30,7 @@ import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
 import 'widgets/combined_header.dart';
 import 'widgets/empty_home_content.dart';
+import 'widgets/initial_sync_error_content.dart';
 
 // 銀河ウィジェットの高さの、画面縦幅に対する割合
 const double _kGalaxyHeightRatio = 0.25;
@@ -76,6 +77,11 @@ class HomePage extends HookConsumerWidget {
     // watchが「ローカルDBは空」を即座に返し、「本当に0件」と誤認して
     // EmptyHomeContentへ飛んでしまう(実際にはクラウドにレクチャーがあっても)。
     final syncAttempted = useState(false);
+    // 'lecture'の全件Pullが過去に一度でも成功した実績があるか。falseのまま
+    // 残るのは、このエフェクトがbootstrapを試みた後もその実績が無い場合のみ
+    // ——「本当に0件」なのか「一度もPullできていないだけ」なのかの区別に使う
+    // (判定不能時はエラー画面を誤って出さないよう安全側のtrueにしておく)。
+    final hasSyncedBefore = useState(true);
     useEffect(() {
       () async {
         DevLog.add('🏠 [HomePage] bootstrapIfNeeded effect START');
@@ -88,8 +94,18 @@ class HomePage extends HookConsumerWidget {
         } catch (e, st) {
           DevLog.add('🏠 [HomePage] bootstrapIfNeeded ERROR: $e\n$st');
         } finally {
+          try {
+            hasSyncedBefore.value = await ref
+                .read(lectureControllerProvider.notifier)
+                .hasEverSyncedLectures();
+          } catch (e, st) {
+            DevLog.add('🏠 [HomePage] hasEverSyncedLectures ERROR: $e\n$st');
+            hasSyncedBefore.value = true;
+          }
           syncAttempted.value = true;
-          DevLog.add('🏠 [HomePage] syncAttempted set to TRUE');
+          DevLog.add(
+            '🏠 [HomePage] syncAttempted=TRUE, hasSyncedBefore=${hasSyncedBefore.value}',
+          );
         }
       }();
       return null;
@@ -177,6 +193,25 @@ class HomePage extends HookConsumerWidget {
     final lectures = lecturesAsync.value;
     final forceEmpty = ref.watch(debugForceEmptyHomeProvider);
 
+    // 初回の必須Pullが失敗した状態(InitialSyncErrorContent)からの再試行。
+    // オフラインなら試みずSnackBarのみ出す(Pull-to-Refreshと同じ方針)。
+    Future<void> handleInitialSyncRetry() async {
+      if (!await isDeviceOnline()) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.homeOfflineSnackBarMessage)),
+          );
+        }
+        return;
+      }
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+      hasSyncedBefore.value = await ref
+          .read(lectureControllerProvider.notifier)
+          .hasEverSyncedLectures();
+      ref.invalidate(courseListProvider);
+      ref.invalidate(currentUserProfileProvider);
+    }
+
     // DevLog.add(
     //   '🏠 [HomePage] build state: '
     //   'coursesAsync(isLoading=${coursesAsync.isLoading}, hasError=${coursesAsync.hasError}, err=${coursesAsync.error}), '
@@ -209,6 +244,14 @@ class HomePage extends HookConsumerWidget {
     }
 
     if (lectures.isEmpty || forceEmpty) {
+      // forceEmptyはQAトグルなので常にEmptyHomeContentを優先する。
+      // hasSyncedBefore==falseは「一度も'lecture'の全件Pullに成功していない」
+      // ことを意味し、この場合の「0件」は本当に0件なのか単に未同期なのか
+      // 区別できないため、紛らわしいEmptyHomeContentではなく明示的な
+      // エラー画面(再試行ボタン付き)を出す。
+      if (!forceEmpty && !hasSyncedBefore.value) {
+        return InitialSyncErrorContent(onRetry: handleInitialSyncRetry);
+      }
       return const EmptyHomeContent();
     }
 

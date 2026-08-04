@@ -128,29 +128,33 @@ class AnnouncementTile extends HookConsumerWidget {
               color: AppColors.universe.voidBackground, // 透過防止用のソリッド背景色
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.universe.glassWhiteLow,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isCompleted
-                      ? AppColors.universe.glassBorder.withValues(alpha: 0.4)
-                      : AppColors.universe.glassBorder,
+            child: Opacity(
+              opacity: isCompleted ? 0.55 : 1.0,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.universe.glassWhiteLow,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isCompleted
+                        ? AppColors.universe.glassBorder.withValues(alpha: 0.4)
+                        : AppColors.universe.glassBorder,
+                  ),
                 ),
-              ),
-              child: Stack(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                isCompleted
-                    ? Icons.check_circle_outline
-                    : iconForAnnouncementType(announcement.type),
-                color: isCompleted ? Colors.green.shade400 : AppColors.starGold,
-                size: 20,
-              ),
+                child: Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isCompleted
+                      ? Icons.check_circle
+                      : iconForAnnouncementType(announcement.type),
+                  color: isCompleted
+                      ? colorForAnnouncementType(announcement.type).withValues(alpha: 0.6)
+                      : colorForAnnouncementType(announcement.type),
+                  size: 20,
+                ),
               const SizedBox(width: 12),
               Expanded(
                 child: Padding(
@@ -291,6 +295,7 @@ class AnnouncementTile extends HookConsumerWidget {
     ),
   ),
 ),
+),
       ],
     );
 
@@ -344,7 +349,7 @@ class AnnouncementTile extends HookConsumerWidget {
     // スワイプDone/Undo機能
     if (onToggleComplete != null) {
       tile = Dismissible(
-        key: ValueKey('announcement_${announcement.id}'),
+        key: ValueKey('announcement_${announcement.id}_$isCompleted'),
         direction: DismissDirection.endToStart,
         // confirmDismiss で false を返すことで物理的には消さず、コールバックのみ実行
         confirmDismiss: (_) async {

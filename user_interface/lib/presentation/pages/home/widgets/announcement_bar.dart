@@ -8,7 +8,7 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
-import 'all_announcements_sheet.dart';
+import 'package:lefture/presentation/widgets/announcements_sheet.dart';
 
 // アナウンスメントが1件も無いときにランダムで表示する言葉たち。
 List<String> emptyAnnouncementMessages(AppLocalizations l10n) => [
@@ -63,7 +63,7 @@ class AnnouncementBar extends HookConsumerWidget {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => const AllAnnouncementsSheet(),
+        builder: (_) => const AnnouncementsSheet(),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -77,7 +77,13 @@ class AnnouncementBar extends HookConsumerWidget {
         child: Row(
           children: [
             // アイコン
-            Icon(icon, color: AppColors.starGold, size: 20),
+            Icon(
+              icon,
+              color: announcement != null
+                  ? colorForAnnouncementType(announcement.type)
+                  : AppColors.starGold,
+              size: 20,
+            ),
             const SizedBox(width: 12),
             // テキスト
             Expanded(

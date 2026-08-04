@@ -22,6 +22,7 @@ import 'package:lefture/presentation/pages/course/widgets/announcement_edit_shee
 import 'package:lefture/presentation/pages/deep_notes/deep_notes_list_page.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcement_tile.dart';
+import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 
 class ActivityRecordsPage extends HookConsumerWidget {
@@ -49,6 +50,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final recordsAsync = ref.watch(activityRecordsProvider(type));
     final selectedFilter = useState('all');
+    final selectedAnnouncementType = useState<AnnouncementType?>(null);
 
     // Records the user has toggled off the current filter (unliked/undisliked/unsaved) since
     // opening this page, keyed by record id. Kept visible with an "undo" affordance until the
@@ -215,16 +217,21 @@ class ActivityRecordsPage extends HookConsumerWidget {
                     data: (freshRecords) {
                       final records = mergeWithPending(freshRecords);
                       final count = records.where((r) {
+                        if (type == ActivityType.announcements) {
+                          final ann = announcementFilterSource(r);
+                          if (selectedFilter.value == 'active' && ann.completedAt != null) return false;
+                          if (selectedFilter.value == 'completed' && ann.completedAt == null) return false;
+                          if (selectedAnnouncementType.value != null) {
+                            final annType = announcementTypeFromString(ann.type);
+                            if (annType != selectedAnnouncementType.value) return false;
+                          }
+                          return true;
+                        }
                         if (selectedFilter.value == 'all') return true;
                         if (type == ActivityType.saved || type == ActivityType.likes || type == ActivityType.dislikes) {
                           if (selectedFilter.value == 'reviewCard') return r.type == ActivityRecordType.reviewCard;
                           if (selectedFilter.value == 'deepNote') return r.type == ActivityRecordType.deepNote;
                           if (selectedFilter.value == 'funFact') return r.type == ActivityRecordType.funFact;
-                        }
-                        if (type == ActivityType.announcements) {
-                          final ann = announcementFilterSource(r);
-                          if (selectedFilter.value == 'active') return ann.completedAt == null;
-                          if (selectedFilter.value == 'completed') return ann.completedAt != null;
                         }
                         if (type == ActivityType.trash) {
                           if (selectedFilter.value == 'course') return r.type == ActivityRecordType.course;
@@ -248,7 +255,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
 
                   const SizedBox(height: 12),
 
-                  // Horizontal Filter Chips
+                  // Horizontal Filter Chips (Status)
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -281,6 +288,46 @@ class ActivityRecordsPage extends HookConsumerWidget {
                       }).toList(),
                     ),
                   ),
+                  if (type == ActivityType.announcements) ...[
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _ActivityTypeChip(
+                            label: l10n.activityRecordsFilterAll,
+                            icon: Icons.apps,
+                            color: AppColors.starGold,
+                            isSelected: selectedAnnouncementType.value == null,
+                            onTap: () => selectedAnnouncementType.value = null,
+                          ),
+                          const SizedBox(width: 8),
+                          ...[
+                            AnnouncementType.todo,
+                            AnnouncementType.event,
+                            AnnouncementType.info,
+                            AnnouncementType.hint,
+                          ].map((annType) {
+                            final color = colorForAnnouncementType(annType);
+                            final icon = iconForAnnouncementType(annType);
+                            final label = annType.name.toUpperCase();
+                            final isSelected = selectedAnnouncementType.value == annType;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _ActivityTypeChip(
+                                label: label,
+                                icon: icon,
+                                color: color,
+                                isSelected: isSelected,
+                                onTap: () => selectedAnnouncementType.value =
+                                    isSelected ? null : annType,
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                 ],
               ),
@@ -292,17 +339,22 @@ class ActivityRecordsPage extends HookConsumerWidget {
             data: (freshRecords) {
               final records = mergeWithPending(freshRecords);
               final filtered = records.where((r) {
+                if (type == ActivityType.announcements) {
+                  final ann = announcementFilterSource(r);
+                  if (selectedFilter.value == 'active' && ann.completedAt != null) return false;
+                  if (selectedFilter.value == 'completed' && ann.completedAt == null) return false;
+                  if (selectedAnnouncementType.value != null) {
+                    final annType = announcementTypeFromString(ann.type);
+                    if (annType != selectedAnnouncementType.value) return false;
+                  }
+                  return true;
+                }
                 if (selectedFilter.value == 'all') return true;
                 if (type == ActivityType.saved || type == ActivityType.likes || type == ActivityType.dislikes) {
                   if (selectedFilter.value == 'reviewCard') return r.type == ActivityRecordType.reviewCard;
                   if (selectedFilter.value == 'deepNote') return r.type == ActivityRecordType.deepNote;
                   if (selectedFilter.value == 'keyword') return r.type == ActivityRecordType.keyword;
                   if (selectedFilter.value == 'funFact') return r.type == ActivityRecordType.funFact;
-                }
-                if (type == ActivityType.announcements) {
-                  final ann = announcementFilterSource(r);
-                  if (selectedFilter.value == 'active') return ann.completedAt == null;
-                  if (selectedFilter.value == 'completed') return ann.completedAt != null;
                 }
                 if (type == ActivityType.trash) {
                   if (selectedFilter.value == 'course') return r.type == ActivityRecordType.course;
@@ -391,7 +443,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
         updatedAt: ann.updatedAt,
       );
       return AnnouncementTile(
-        key: ValueKey(domainAnn.id),
+        key: ValueKey('announcement_${domainAnn.id}_${domainAnn.isCompleted}'),
         announcement: domainAnn,
         onToggleComplete: (a) async {
           final isPending = pendingOverrides.value.containsKey(record.id);
@@ -967,3 +1019,58 @@ class _ActivityContentCard extends ConsumerWidget {
     );
   }
 }
+
+class _ActivityTypeChip extends StatelessWidget {
+  const _ActivityTypeChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? color : Colors.white10,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? color : AppColors.universe.textComet,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? color : AppColors.universe.textComet,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

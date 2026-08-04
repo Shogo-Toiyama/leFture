@@ -193,3 +193,91 @@ final class ActiveAnnouncementsForCourseFamily extends $Family
   @override
   String toString() => r'activeAnnouncementsForCourseProvider';
 }
+
+/// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
+
+@ProviderFor(allAnnouncementsForCourse)
+final allAnnouncementsForCourseProvider = AllAnnouncementsForCourseFamily._();
+
+/// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
+
+final class AllAnnouncementsForCourseProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          Stream<List<Announcement>>
+        >
+    with
+        $FutureModifier<List<Announcement>>,
+        $StreamProvider<List<Announcement>> {
+  /// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
+  AllAnnouncementsForCourseProvider._({
+    required AllAnnouncementsForCourseFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'allAnnouncementsForCourseProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$allAnnouncementsForCourseHash();
+
+  @override
+  String toString() {
+    return r'allAnnouncementsForCourseProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<List<Announcement>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Announcement>> create(Ref ref) {
+    final argument = this.argument as String;
+    return allAnnouncementsForCourse(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AllAnnouncementsForCourseProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$allAnnouncementsForCourseHash() =>
+    r'dcf7b7040cdc19a24c09d4ff422f559adbb77696';
+
+/// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
+
+final class AllAnnouncementsForCourseFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<List<Announcement>>, String> {
+  AllAnnouncementsForCourseFamily._()
+    : super(
+        retry: null,
+        name: r'allAnnouncementsForCourseProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
+
+  AllAnnouncementsForCourseProvider call(String courseId) =>
+      AllAnnouncementsForCourseProvider._(argument: courseId, from: this);
+
+  @override
+  String toString() => r'allAnnouncementsForCourseProvider';
+}

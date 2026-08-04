@@ -60,8 +60,9 @@ Before producing any output, internally perform the following stages. Do not sho
 - If a genuine conceptual boundary makes these ratios impossible to satisfy, the conceptual boundary wins — but flag this only by ensuring Stage E validation is aware balance was relaxed for a stated reason, not by silently ignoring it.
 
 **Keyword Constraints (CRITICAL):**
-- Focus strictly on theoretical and architectural concepts essential for deep understanding.
-- Do NOT include analogies, anecdotal terms, or specific examples used for illustration, even if frequently mentioned.
+- **Technical/Procedural content:** Extract precise theoretical/architectural terms. Exclude analogies, anecdotes, or illustrative examples.
+- **Conceptual/Humanistic content:** Extract BOTH the core theme AND the specific concrete referent (case, artifact, event, argument) the professor used to ground it. Do not extract abstract themes alone if tied to something specific — the concrete anchor is part of the concept here.
+*(Apply the appropriate mode per topic as needed).*
 
 **Topic Title Examples:**
 - Good (broad learning chapters in the requested output language): "Zero Trust Architecture Fundamentals" (or translated into the output language like "ゼロトラストアーキテクチャの基礎"), "Privacy-Preserving Security Monitoring" (or "プライバシー保護型セキュリティ監視")
@@ -85,9 +86,9 @@ Before producing any output, internally perform the following stages. Do not sho
 This is a selection task only. Do not write any explanatory text, angle, or pitch — that happens in a separate step later.
 
 - Review the `<STUDENT_PROFILE>` and identify the ONE topic (by `idx`) from the `topics` list above whose subject matter is most likely to genuinely excite this specific student, based on their stated interests or goals.
-- From that topic's `keywords`, select the single existing keyword that is the most concrete, specific anchor point for a future personalized explanation (`concept_focus`). Do not invent a new term — choose one already listed in that topic's keywords.
-- Base this purely on topical fit between the lecture content and the student's interests. Do not attempt to judge how "exciting" a written explanation would be — that judgment happens downstream with more context.
-- Write `concept_intro_line`: exactly ONE sentence, drawn from the actual transcript content around `concept_focus`, describing how the professor introduced or framed this concept in class (e.g., what problem it was motivated by, what definition or analogy was given). This is reference material for a later step that will remind the student what they learned — it is not a summary of the whole topic, just this one concept's introduction. Keep it factual and neutral, matching the textbook tone used in `summary`, not a promotional or exciting tone.
+- Select `concept_focus` from that topic's `keywords` based on how concretely it was **grounded** in class: choose the keyword for which you can write a `concept_intro_line` naming a specific case, example, artifact, or argument the professor used — regardless of whether the term itself reads as an abstract noun or a technical phrase.
+- If the keyword that would most excite the student cannot be concretely grounded, prefer another keyword from the same topic that is well-anchored by a concrete case in the transcript.
+- Write `concept_intro_line`: exactly ONE sentence describing how the professor framed this concept in class. It MUST name the specific case, example, or artifact used in the transcript, not just restate a generic definition. Keep it factual and neutral, matching the textbook tone used in `summary`.
 - **Language Rule:** Write `concept_intro_line` strictly in the specified output language per `OUTPUT LANGUAGE` above. Copy `concept_focus` character-for-character from that topic's `keywords` list.
 
 ---

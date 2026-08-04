@@ -49,6 +49,8 @@ class PermissionsSettingsPage extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
               PermissionsRows(specs: specs, state: permState),
+              const SizedBox(height: 32),
+              AllowAllPermissionsButton(specs: specs, state: permState),
             ],
           ),
         ),

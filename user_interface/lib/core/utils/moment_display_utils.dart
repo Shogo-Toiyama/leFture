@@ -7,8 +7,8 @@ class MomentDisplayUtils {
   /// momentType ('fun', 'difficult', 'revisit', 'note') に応じたアイコン、カラー、デフォルトラベルを返す。
   static (IconData, Color, String) getMomentDisplay(String momentType) {
     switch (momentType) {
-      case 'fun':
-        return (Icons.star_rounded, AppColors.starGold, 'Fun moment');
+      case 'interesting':
+        return (Icons.star_rounded, AppColors.starGold, 'Interesting moment');
       case 'difficult':
         return (Icons.help_rounded, AppColors.cosmicBlue, 'Difficult');
       case 'revisit':

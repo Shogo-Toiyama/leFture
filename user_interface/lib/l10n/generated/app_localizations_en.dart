@@ -352,10 +352,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'On-device speech model used for live captions.';
 
   @override
-  String get recordingMomentFunLabel => 'Fun moment';
+  String get recordingMomentFunLabel => 'Interesting moment';
 
   @override
-  String get recordingMomentDifficultLabel => 'Difficult';
+  String get recordingMomentDifficultLabel => 'Difficult moment';
 
   @override
   String get recordingMomentRevisitLabel => 'Revisit later';
@@ -364,7 +364,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingMomentNoteLabel => 'Note';
 
   @override
-  String get recordingLiveTranscriptHeader => 'LIVE TRANSCRIPT';
+  String get recordingLiveTranscriptHeader => 'LIVE TRANSCRIPTION';
 
   @override
   String get recordingWaitingForAudio => 'Waiting for audio...';
@@ -374,7 +374,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.';
 
   @override
-  String get recordingReactionFunLabel => 'Fun';
+  String get recordingReactionFunLabel => 'Interesting';
 
   @override
   String get recordingReactionDifficultLabel => 'Difficult';
@@ -478,6 +478,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lectureViewerTranscriptButtonLabel => 'Transcript';
+
+  @override
+  String get lectureViewerFunFactLinkOpenFailedSnackbar =>
+      'Couldn\'t open the link.';
 
   @override
   String lectureViewerReactionUpdateFailedSnackbar(String error) {
@@ -1752,6 +1756,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeOfflineSnackBarMessage =>
       'You\'re offline. Showing cached data.';
+
+  @override
+  String get initialSyncErrorTitle =>
+      'Couldn\'t finish setting up your account';
+
+  @override
+  String get initialSyncErrorMessage =>
+      'We couldn\'t reach the server to load your data. Please check your internet connection and try again.';
+
+  @override
+  String get initialSyncErrorRetryButton => 'Try Again';
+
+  @override
+  String get initialSyncErrorRetrying => 'Retrying…';
 
   @override
   String get homeRecordLectureButton => 'Record Lecture';

@@ -339,7 +339,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recordingOnDeviceModelSubtitle => 'ライブ字幕にはオンデバイスの音声モデルが使われます。';
 
   @override
-  String get recordingMomentFunLabel => '楽しい瞬間';
+  String get recordingMomentFunLabel => '面白い瞬間';
 
   @override
   String get recordingMomentDifficultLabel => '難しい';
@@ -361,7 +361,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'ライブ字幕やAIとの会話を使うには、（Voiceタブの「More Settings」から）リアルタイム文字起こしをオンにしてください。';
 
   @override
-  String get recordingReactionFunLabel => '楽しい';
+  String get recordingReactionFunLabel => '面白い';
 
   @override
   String get recordingReactionDifficultLabel => '難しい';
@@ -445,6 +445,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get lectureViewerTranscriptButtonLabel => '文字起こし';
+
+  @override
+  String get lectureViewerFunFactLinkOpenFailedSnackbar => 'リンクを開けませんでした。';
 
   @override
   String lectureViewerReactionUpdateFailedSnackbar(String error) {
@@ -1679,6 +1682,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeOfflineSnackBarMessage => 'オフライン状態です。キャッシュされたデータを表示しています。';
+
+  @override
+  String get initialSyncErrorTitle => 'アカウントの初期設定を完了できませんでした';
+
+  @override
+  String get initialSyncErrorMessage =>
+      'データを取得するためサーバーに接続できませんでした。インターネット接続をご確認のうえ、もう一度お試しください。';
+
+  @override
+  String get initialSyncErrorRetryButton => '再試行';
+
+  @override
+  String get initialSyncErrorRetrying => '再試行中…';
 
   @override
   String get homeRecordLectureButton => '講義を録音する';

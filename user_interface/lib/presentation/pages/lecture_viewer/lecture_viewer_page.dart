@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
@@ -17,16 +18,14 @@ import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
-import 'package:lefture/presentation/widgets/announcement_tile.dart';
+import 'package:lefture/presentation/widgets/announcements_sheet.dart';
 import 'package:lefture/presentation/widgets/glowing_rainbow_border.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
-import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lefture/infrastructure/local_db/repositories/keyword_repository_drift.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/application/lecture/lecture_state_providers.dart';
-import 'package:lefture/presentation/pages/course/widgets/announcement_edit_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
@@ -565,10 +564,7 @@ class _LectureViewerBody extends HookConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _LectureInfoSheet.announcements(
-        lectureId: lectureId,
-        announcements: announcements,
-      ),
+      builder: (_) => AnnouncementsSheet(lectureId: lectureId),
     );
   }
 
@@ -686,6 +682,17 @@ class _ViewerFunFactCard extends HookConsumerWidget {
                 ),
               ),
             ),
+            if (fact.sources.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(25, 0, 25, 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final url in fact.sources) _ViewerFunFactSourceChip(url: url),
+                  ],
+                ),
+              ),
             Container(
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -709,6 +716,62 @@ class _ViewerFunFactCard extends HookConsumerWidget {
                     currentReaction: currentReaction,
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerFunFactSourceChip extends StatelessWidget {
+  const _ViewerFunFactSourceChip({required this.url});
+
+  final String url;
+
+  String get _label {
+    final host = Uri.tryParse(url)?.host ?? url;
+    return host.startsWith('www.') ? host.substring(4) : host;
+  }
+
+  Future<void> _open(BuildContext context) async {
+    final uri = Uri.tryParse(url);
+    var launched = false;
+    if (uri != null) {
+      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    if (!launched && context.mounted) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.lectureViewerFunFactLinkOpenFailedSnackbar)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _open(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.universe.glassWhiteLow,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.universe.glassBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.link, color: AppColors.deepGold, size: 12),
+            const SizedBox(width: 4),
+            Text(
+              _label,
+              style: const TextStyle(
+                color: AppColors.deepGold,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
               ),
             ),
           ],
@@ -918,56 +981,9 @@ class _LectureInfoSheet extends ConsumerWidget {
   const _LectureInfoSheet._({
     required this.kind,
     required this.itemsBuilder,
-    this.lectureId,
   });
 
-  factory _LectureInfoSheet.announcements({
-    required String lectureId,
-    required List<Announcement> announcements,
-  }) {
-    return _LectureInfoSheet._(
-      kind: _LectureInfoSheetKind.announcements,
-      lectureId: lectureId,
-      itemsBuilder: (context, ref) {
-        // 最新の状態を NotifierProvider から直接取得（スワイプ後の状態変化を反映）
-        final currentAnnouncements =
-            ref
-                .watch(announcementsForLectureProvider(lectureId))
-                .asData
-                ?.value ??
-            announcements;
-        return currentAnnouncements
-            .map(
-              (a) => AnnouncementTile(
-                key: ValueKey(a.id),
-                announcement: a,
-                showTimestamp: false,
-                onToggleComplete: (ann) async {
-                  await ref
-                      .read(announcementRepositoryDriftProvider)
-                      .toggleComplete(id: ann.id, completed: !ann.isCompleted);
-                  ref.read(lectureControllerProvider.notifier).pushOutboxNow();
-                },
-                onEdit: () async {
-                  await showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => AnnouncementEditSheet(announcement: a),
-                  );
-                },
-                onDelete: (Announcement ann) async {
-                  await ref
-                      .read(announcementRepositoryDriftProvider)
-                      .softDeleteAnnouncement(id: ann.id);
-                  ref.read(lectureControllerProvider.notifier).pushOutboxNow();
-                },
-              ),
-            )
-            .toList();
-      },
-    );
-  }
+
 
   factory _LectureInfoSheet.keywords(List<Keyword> keywords) {
     return _LectureInfoSheet._(
@@ -985,7 +1001,6 @@ class _LectureInfoSheet extends ConsumerWidget {
   }
 
   final _LectureInfoSheetKind kind;
-  final String? lectureId;
   final List<Widget> Function(BuildContext context, WidgetRef ref) itemsBuilder;
 
   @override

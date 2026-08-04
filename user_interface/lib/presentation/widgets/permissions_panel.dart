@@ -65,20 +65,21 @@ class PermissionsStatusState {
     required this.loading,
     required this.refresh,
     required this.requestOne,
+    required this.requestAll,
   });
 
   final Map<Permission, PermissionStatus> statuses;
   final bool loading;
   final Future<void> Function() refresh;
   final Future<void> Function(Permission) requestOne;
+  final Future<void> Function(List<OnboardingPermissionSpec>) requestAll;
 
   bool isGranted(Permission permission) => statuses[permission]?.isGranted ?? false;
+  bool isAllGranted(List<OnboardingPermissionSpec> specs) => specs.every((s) => isGranted(s.permission));
 }
 
 /// Custom flutter_hooks hook: checks + exposes live status for a fixed list
-/// of permissions, plus a way to (re-)request a single one. Used both by
-/// the onboarding Permissions step and the standalone settings page so
-/// neither has to duplicate the status-tracking logic.
+/// of permissions, plus a way to (re-)request a single one or all at once.
 PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
   final statuses = useState<Map<Permission, PermissionStatus>>({});
   final loading = useState(true);
@@ -97,12 +98,19 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     await refresh();
   }
 
+  Future<void> requestAll(List<OnboardingPermissionSpec> specs) async {
+    for (final spec in specs) {
+      final isAlreadyGranted = statuses.value[spec.permission]?.isGranted ?? false;
+      if (!isAlreadyGranted) {
+        await spec.permission.request();
+        await refresh();
+      }
+    }
+  }
+
   useEffect(() {
     refresh();
     return null;
-    // ignore: exhaustive_keys — `permissions` is built fresh per build but
-    // stable in content for the lifetime of a single screen visit; only
-    // check once on mount.
   }, const []);
 
   return PermissionsStatusState(
@@ -110,6 +118,7 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     loading: loading.value,
     refresh: refresh,
     requestOne: requestOne,
+    requestAll: requestAll,
   );
 }
 
@@ -160,7 +169,8 @@ class _PermissionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Container(
+
+    final cardContent = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.universe.glassWhiteLow,
@@ -201,30 +211,125 @@ class _PermissionRow extends StatelessWidget {
           if (granted)
             const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 22)
           else
-            InkWell(
-              borderRadius: BorderRadius.circular(100),
-              onTap: onRetry,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.alertAmber.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.alertAmber.withValues(alpha: 0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.priority_high_rounded, color: AppColors.alertAmber, size: 13),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.onboardingPermissionsNotGrantedLabel,
-                      style: const TextStyle(color: AppColors.alertAmber, fontSize: 10.5, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.alertAmber.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: AppColors.alertAmber.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.priority_high_rounded, color: AppColors.alertAmber, size: 13),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.onboardingPermissionsNotGrantedLabel,
+                    style: const TextStyle(color: AppColors.alertAmber, fontSize: 10.5, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
             ),
         ],
+      ),
+    );
+
+    if (granted) return cardContent;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onRetry,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: AppColors.alertAmber.withValues(alpha: 0.15),
+        highlightColor: AppColors.alertAmber.withValues(alpha: 0.08),
+        child: cardContent,
+      ),
+    );
+  }
+}
+
+/// Renders an "Allow All" button that sequentially requests all ungranted permissions.
+class AllowAllPermissionsButton extends HookWidget {
+  const AllowAllPermissionsButton({
+    super.key,
+    required this.specs,
+    required this.state,
+    this.onCompleted,
+  });
+
+  final List<OnboardingPermissionSpec> specs;
+  final PermissionsStatusState state;
+  final VoidCallback? onCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final isRequesting = useState(false);
+    final allGranted = state.isAllGranted(specs);
+
+    Future<void> handleAllowAll() async {
+      if (isRequesting.value || allGranted) return;
+      isRequesting.value = true;
+      try {
+        await state.requestAll(specs);
+        if (state.isAllGranted(specs)) {
+          onCompleted?.call();
+        }
+      } finally {
+        isRequesting.value = false;
+      }
+    }
+
+    if (allGranted) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.growthGreen.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.growthGreen.withValues(alpha: 0.4)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'すべての権限が許可されています',
+              style: TextStyle(
+                color: AppColors.growthGreen,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.starGold,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+        ),
+        onPressed: (state.loading || isRequesting.value) ? null : handleAllowAll,
+        icon: isRequesting.value
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+              )
+            : const Icon(Icons.done_all_rounded, size: 20),
+        label: Text(
+          isRequesting.value ? '権限を要求中...' : 'すべての権限を許可',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
       ),
     );
   }

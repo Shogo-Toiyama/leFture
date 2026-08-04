@@ -1,12 +1,44 @@
 # app/services/logic/review_card_generation.py
-import json
 import time
 import asyncio
 from typing import Any, Dict, List
 
 from app.core.r2_storage import storage_service
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import TaskLogger, _load_prompt, _sid_to_int, _build_bilingual_gloss_instruction
+from app.services.helpers.helpers import (
+    TaskLogger,
+    _load_prompt,
+    _sid_to_int,
+    _build_bilingual_gloss_instruction,
+    _render_conditional_sections,
+    _get_previous_lecture_topics,
+)
+
+
+def _format_topic_context(topic: Dict[str, Any]) -> str:
+    title = topic.get("title", "")
+    keywords = topic.get("keywords") or []
+    keyword_str = ", ".join(keywords) if keywords else "N/A"
+    return f"Title: {title}\nKey Terms: {keyword_str}"
+
+
+def _format_lecture_topics(topics: List[Dict[str, Any]]) -> str:
+    lines = []
+    for t in topics:
+        title = t.get("title", "")
+        keywords = ", ".join(t.get("keywords") or [])
+        lines.append(f"- {title} (Key Terms: {keywords})" if keywords else f"- {title}")
+    return "\n".join(lines)
+
+
+def _format_previous_lecture_topics(topics: List[Dict[str, Any]]) -> str:
+    lines = []
+    for t in topics:
+        title = t.get("topic_title", "")
+        summary = t.get("summary", "")
+        lines.append(f"- {title}: {summary}" if summary else f"- {title}")
+    return "\n".join(lines)
+
 
 class ReviewCardGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -18,7 +50,6 @@ class ReviewCardGenerationService:
         self,
         role_classified_data: List[Dict[str, Any]],
         core_data: Dict[str, Any],
-        mapping_result: Dict[str, Any],
         uid: str,
         lecture_id: str,
         content_language: str = "English",
@@ -39,12 +70,15 @@ class ReviewCardGenerationService:
 
         # 1. ACADEMIC なトピックだけを抽出
         academic_topics = [t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"]
+        last_position = len(academic_topics) - 1
 
         failed_topic_indices = []
 
-        for topic in academic_topics:
+        for position, topic in enumerate(academic_topics):
             topic_idx = topic.get("idx")
             topic_title = topic.get("title")
+            is_final_topic = position == last_position
+            is_first_topic = position == 0
             
             # ① R2キャッシュ確認 (リトライ時はここでスキップ)
             cache_path = f"{uid}/{lecture_id}/pipeline_cache/review_cards_topic_{topic_idx}.json"
@@ -105,11 +139,34 @@ class ReviewCardGenerationService:
 
             self.logger.log(f"   [Logic] Generating cards for Topic {topic_idx}: {topic_title} ({len(trimmed_lines)} valid sentences)")
 
-            # 5. プロンプトの組み立て
-            prompt_text = prompt_template.replace(
-                "${COURSE_TOPIC_MAP}", json.dumps(mapping_result, ensure_ascii=False)
-            ).replace(
-                "${TRANSCRIPT_SEGMENT}", trimmed_transcript
+            # 5. 「最終トピックかどうか」「最初のトピックかどうか」はLLMに推測させず、ここで確定させる
+            if is_final_topic:
+                next_topic_context_text = "This is the final topic of today's lecture. There is no next topic."
+                lecture_topics_text = _format_lecture_topics(academic_topics)
+            else:
+                next_topic_context_text = _format_topic_context(academic_topics[position + 1])
+                lecture_topics_text = ""
+
+            if is_first_topic:
+                prev_topics = await asyncio.to_thread(_get_previous_lecture_topics, lecture_id)
+            else:
+                prev_topics = []
+            show_previous_lecture_hook = bool(prev_topics)
+            previous_lecture_context_text = (
+                _format_previous_lecture_topics(prev_topics) if show_previous_lecture_hook else ""
+            )
+
+            # 6. プロンプトの組み立て (無関係な分岐の指示文を先に間引く)
+            prompt_text = _render_conditional_sections(
+                prompt_template,
+                {"FINAL_TOPIC": is_final_topic, "FIRST_TOPIC": show_previous_lecture_hook},
+            )
+            prompt_text = (
+                prompt_text
+                .replace("${NEXT_TOPIC_CONTEXT}", next_topic_context_text)
+                .replace("${LECTURE_TOPICS}", lecture_topics_text)
+                .replace("${PREVIOUS_LECTURE_CONTEXT}", previous_lecture_context_text)
+                .replace("${TRANSCRIPT_SEGMENT}", trimmed_transcript)
             )
 
             messages = [
@@ -117,7 +174,7 @@ class ReviewCardGenerationService:
                 Message(role="user", content=f"Generate Review Cards for Topic: {topic_title}")
             ]
 
-            # 6. LLM 呼び出し
+            # 7. LLM 呼び出し
             res = await self.llm.generate(
                 model=self.model_alias,
                 messages=messages,

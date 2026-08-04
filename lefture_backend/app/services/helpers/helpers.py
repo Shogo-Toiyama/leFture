@@ -72,8 +72,29 @@ def _load_prompt(filename: str) -> str:
     prompt_path = PROMPTS_DIR / filename
     if not prompt_path.exists():
         raise FileNotFoundError(f"Prompt file not found: {filename}")
-        
+
     return prompt_path.read_text(encoding="utf-8")
+
+
+_COND_BLOCK_RE = re.compile(
+    r"<!--IF:(?P<name>\w+)-->(?P<if_branch>.*?)(?:<!--ELSE-->(?P<else_branch>.*?))?<!--END_IF-->",
+    re.DOTALL,
+)
+
+
+def _render_conditional_sections(template: str, conditions: dict[str, bool]) -> str:
+    """
+    プロンプト内の <!--IF:NAME-->...<!--ELSE-->...<!--END_IF--> ブロックを、
+    conditions[NAME]の真偽で分岐させて片方だけ残す(ELSEは省略可)。名前付きに
+    しているのは、例えば「最終トピックかどうか」と「最初のトピックかどうか」の
+    ように複数の独立した条件が同時に真になり得る(トピックが1個しか無い講義)
+    ケースを、単一のbool引数では表現できないため。各条件はコード側で確定させた
+    事実であり、LLMに無関係な分岐の指示文を読ませてトークンを無駄にしないためのもの。
+    """
+    def _replace(m: "re.Match[str]") -> str:
+        is_true = conditions.get(m.group("name"), False)
+        return m.group("if_branch") if is_true else (m.group("else_branch") or "")
+    return _COND_BLOCK_RE.sub(_replace, template)
 
 
 def _sid_to_int(sid: Optional[str]) -> Optional[int]:
@@ -577,6 +598,52 @@ def _merge_graph_mutation(current_graph: dict, mutations: dict, todays_topics: l
 _UNKNOWN_RECORDING_LANGUAGE_LABEL = "the same language as the original spoken audio (do not translate under any circumstances)"
 
 
+def _find_previous_lecture_id_sync(supabase, course_id: str | None, created_at: str | None) -> str | None:
+    """
+    同じcourse_id内で、created_atより古く・最新の(=直前の)Lecture IDを返す。
+    削除済みLectureは対象外。course_id/created_atが無ければ判定不能としてNone。
+    """
+    if not course_id or not created_at:
+        return None
+    prev_res = supabase.table("lectures")\
+        .select("id")\
+        .eq("course_id", course_id)\
+        .is_("deleted_at", "null")\
+        .lt("created_at", created_at)\
+        .order("created_at", desc=True)\
+        .limit(1)\
+        .execute()
+    return prev_res.data[0]["id"] if prev_res.data else None
+
+
+def _get_previous_lecture_id(lecture_id: str) -> str | None:
+    """lecture_idだけから、直前のLecture IDを引く(course_id/created_atの取得込み)。"""
+    supabase = get_supabase_client()
+    lec_res = supabase.table("lectures").select("course_id, created_at").eq("id", lecture_id).single().execute()
+    if not lec_res.data:
+        return None
+    return _find_previous_lecture_id_sync(supabase, lec_res.data.get("course_id"), lec_res.data.get("created_at"))
+
+
+def _get_previous_lecture_topics(lecture_id: str) -> list[dict]:
+    """
+    直前講義の lecture_topics (ACADEMICのみ、削除済み除く) を index 順で返す。
+    直前講義が無い/まだ lecture_topics が書き込まれていない(DETAIL_CONTENTS_GENERATION
+    未到達)場合は空リスト。呼び出し側はこれを「無理に埋めない」判断に使う。
+    """
+    prev_lecture_id = _get_previous_lecture_id(lecture_id)
+    if not prev_lecture_id:
+        return []
+    supabase = get_supabase_client()
+    res = supabase.table("lecture_topics").select("topic_title, summary")\
+        .eq("lecture_id", prev_lecture_id)\
+        .eq("topic_type", "ACADEMIC")\
+        .is_("deleted_at", "null")\
+        .order("index")\
+        .execute()
+    return res.data or []
+
+
 def _get_sentence_review_context(lecture_id: str) -> tuple[str, str, str]:
     """
     Sentence Review タスク用に、コースタイトル・直前講義のキーワード一覧・
@@ -601,21 +668,10 @@ def _get_sentence_review_context(lecture_id: str) -> tuple[str, str, str]:
         course_res = supabase.table("courses").select("course_title").eq("id", course_id).single().execute()
         if course_res.data and course_res.data.get("course_title"):
             course_title = course_res.data["course_title"]
-            
+
     # 3. 直前の講義（同じ course_id 内で今回の講義より古く、最新のもの）の ID を取得
-    prev_lecture_id = None
-    if course_id and created_at:
-        prev_res = supabase.table("lectures")\
-            .select("id")\
-            .eq("course_id", course_id)\
-            .is_("deleted_at", "null")\
-            .lt("created_at", created_at)\
-            .order("created_at", desc=True)\
-            .limit(1)\
-            .execute()
-        if prev_res.data:
-            prev_lecture_id = prev_res.data[0].get("id")
-            
+    prev_lecture_id = _find_previous_lecture_id_sync(supabase, course_id, created_at)
+
     # 4. 直前講義のキーワード一覧を取得
     keywords_list = ""
     if prev_lecture_id:

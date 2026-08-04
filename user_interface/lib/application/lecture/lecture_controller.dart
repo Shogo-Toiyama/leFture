@@ -150,15 +150,50 @@ class LectureController extends _$LectureController {
     _lastBootstrapAttemptAt = null;
   }
 
+  /// 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
+  /// 待つ。これが無いと、Welcome/Home/AppLifecycleSyncWatcherがほぼ同時に
+  /// bootstrapIfNeeded()を呼んだ場合、後発の呼び出しが「スロットルされたので
+  /// 即return」してしまい、実際のPullがまだSyncCursorを書き込む前に
+  /// hasEverSyncedLectures()を問い合わせて誤判定するレースが起き得る。
+  Future<void>? _inFlightBootstrap;
+
   Future<void> bootstrapIfNeeded({Duration interval = const Duration(minutes: 15)}) async {
     if (supabase.auth.currentUser == null) return;
+
+    final inFlight = _inFlightBootstrap;
+    if (inFlight != null) {
+      await inFlight;
+      return;
+    }
+
     final last = _lastBootstrapAttemptAt;
     final now = DateTime.now().toUtc();
 
     final should = (last == null) || now.difference(last) >= interval;
     if (!should) return;
 
-    await bootstrapLectures();
+    final future = bootstrapLectures();
+    _inFlightBootstrap = future;
+    try {
+      await future;
+    } finally {
+      _inFlightBootstrap = null;
+    }
+  }
+
+  /// このユーザーについて、'lecture'エンティティの全件Pullが過去に一度でも
+  /// 成功しているかどうかを返す。falseの場合、ローカルDBの「レクチャー0件」は
+  /// 「本当に0件」なのか「一度もPullできていないだけ」なのか区別できない
+  /// ため、HomePage側はこれをもってEmptyHomeContentとInitialSyncErrorContent
+  /// を出し分ける。LocalSyncCursors.lastFullPulledAtはpull()が実際に
+  /// ネットワーク呼び出しを完了した時にのみ非nullになる
+  /// (lecture_sync_service.dart)ので、新しい永続フラグを追加する必要はない。
+  Future<bool> hasEverSyncedLectures() async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return false;
+    final db = ref.read(appDatabaseProvider);
+    final cursor = await db.getSyncCursor(uid, 'lecture');
+    return cursor?.lastFullPulledAt != null;
   }
 
   // --- Lecture Actions (Moved from ViewerController) ---

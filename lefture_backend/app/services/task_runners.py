@@ -2083,15 +2083,12 @@ async def run_review_card_task(job_id: str, task_id: str):
     billing = BillingEngine(task_type="REVIEW_CARD_GENERATION")
     
     try:
-        # 1. 依存データの読み込み (Role Classification, Core Extraction, Topic Mapping)
+        # 1. 依存データの読み込み (Role Classification, Core Extraction)
         classified_payload = await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION")
         classified_data = await _download_from_r2_to_memory(classified_payload["role_classification_path"])
         
         core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
         core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
-        
-        mapping_payload = await _get_dependency_payload(job_id, "TOPIC_MAPPING")
-        mapping_result = await _download_from_r2_to_memory(mapping_payload["topic_mapping_path"])
 
         # 2. 職人を呼ぶ
         content_language, transcript_language, is_bilingual = await asyncio.to_thread(
@@ -2104,7 +2101,6 @@ async def run_review_card_task(job_id: str, task_id: str):
         review_cards_results = await generator.run_from_memory(
             role_classified_data=classified_data,
             core_data=core_data,
-            mapping_result=mapping_result,
             uid=uid,
             lecture_id=lecture_id,
             content_language=content_language,
@@ -2263,6 +2259,7 @@ async def run_fun_fact_brainstorming_task(job_id: str, task_id: str):
 
         selected_topic_idx = fun_fact_selection.get("selected_topic_idx")
         concept_focus = fun_fact_selection.get("concept_focus", "")
+        concept_intro_line = fun_fact_selection.get("concept_intro_line", "")
         selected_topic = next(
             (t for t in core_data.get("topics", []) if t.get("idx") == selected_topic_idx),
             {},
@@ -2280,6 +2277,7 @@ async def run_fun_fact_brainstorming_task(job_id: str, task_id: str):
             topic_title=topic_title,
             concept_focus=concept_focus,
             course_title=course_title,
+            concept_intro_line=concept_intro_line,
         )
 
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "fun_fact_brainstorming", brainstorming_result)
@@ -2396,13 +2394,15 @@ async def run_fun_facts_task(job_id: str, task_id: str):
 
         # SupabaseにFun Factを保存
         supabase = get_supabase_client()
+        fun_fact_sources = fun_fact.get("sources") or []
         fact_data = {
             "user_id": uid,
             "lecture_id": lecture_id,
             "title": fun_fact.get("title"),
             "hook": fun_fact.get("hook"),
             "body": fun_fact.get("body"),
-            "metadata": None  # 将来のために今はNullで保存
+            # 参照したWeb検索結果のURLがあればmetadataに残す。無ければ今まで通りNull。
+            "metadata": {"sources": fun_fact_sources} if fun_fact_sources else None,
         }
         # 冪等性のため、書き込み前にこの講義分の既存fun_factを削除しておく
         def _insert_fun_fact_sync():

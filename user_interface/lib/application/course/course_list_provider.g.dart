@@ -14,12 +14,12 @@ part of 'course_list_provider.dart';
 // しまい、Home表示時にもう一度ゼロから読み込み直し(ローディング表示)になって
 // いた。セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
 //
-// keepAliveにした副作用として、サインアウト→別アカウントでサインインしても
-// このProviderは自動では再取得されなくなる(以前はautoDisposeで一度画面から
-// 外れると勝手に消えて次回読み直しになっていた、という偶然の安全策があった)。
-// currentUserProviderを監視しておくことで、ユーザーが変わった時に確実に
-// 再取得されるようにする(値自体はlistCourses()側でSupabaseのRLSにより
-// 自動的にユーザー単位でフィルタされるため使わないが、依存関係としてwatchする)。
+// 以前はここでcurrentUserProviderをwatchして、アカウント切り替え時に自動で
+// 再取得されるようにしていたが、Supabaseの認証イベント(サインイン直後など)を
+// きっかけにHomeのビルド中にこのProviderが再取得されてしまい、Riverpodの
+// 「ビルド中にProviderを変更できない」エラーが発生した。
+// 常時Reactiveに監視するのではなく、サインアウト処理側(my_account_page.dart)で
+// 明示的にref.invalidate(courseListProvider)する方式に変更した。
 
 @ProviderFor(courseList)
 final courseListProvider = CourseListProvider._();
@@ -30,12 +30,12 @@ final courseListProvider = CourseListProvider._();
 // しまい、Home表示時にもう一度ゼロから読み込み直し(ローディング表示)になって
 // いた。セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
 //
-// keepAliveにした副作用として、サインアウト→別アカウントでサインインしても
-// このProviderは自動では再取得されなくなる(以前はautoDisposeで一度画面から
-// 外れると勝手に消えて次回読み直しになっていた、という偶然の安全策があった)。
-// currentUserProviderを監視しておくことで、ユーザーが変わった時に確実に
-// 再取得されるようにする(値自体はlistCourses()側でSupabaseのRLSにより
-// 自動的にユーザー単位でフィルタされるため使わないが、依存関係としてwatchする)。
+// 以前はここでcurrentUserProviderをwatchして、アカウント切り替え時に自動で
+// 再取得されるようにしていたが、Supabaseの認証イベント(サインイン直後など)を
+// きっかけにHomeのビルド中にこのProviderが再取得されてしまい、Riverpodの
+// 「ビルド中にProviderを変更できない」エラーが発生した。
+// 常時Reactiveに監視するのではなく、サインアウト処理側(my_account_page.dart)で
+// 明示的にref.invalidate(courseListProvider)する方式に変更した。
 
 final class CourseListProvider
     extends
@@ -51,12 +51,12 @@ final class CourseListProvider
   // しまい、Home表示時にもう一度ゼロから読み込み直し(ローディング表示)になって
   // いた。セッション中は保持することで、Welcomeでの先読みがHomeまで活きる。
   //
-  // keepAliveにした副作用として、サインアウト→別アカウントでサインインしても
-  // このProviderは自動では再取得されなくなる(以前はautoDisposeで一度画面から
-  // 外れると勝手に消えて次回読み直しになっていた、という偶然の安全策があった)。
-  // currentUserProviderを監視しておくことで、ユーザーが変わった時に確実に
-  // 再取得されるようにする(値自体はlistCourses()側でSupabaseのRLSにより
-  // 自動的にユーザー単位でフィルタされるため使わないが、依存関係としてwatchする)。
+  // 以前はここでcurrentUserProviderをwatchして、アカウント切り替え時に自動で
+  // 再取得されるようにしていたが、Supabaseの認証イベント(サインイン直後など)を
+  // きっかけにHomeのビルド中にこのProviderが再取得されてしまい、Riverpodの
+  // 「ビルド中にProviderを変更できない」エラーが発生した。
+  // 常時Reactiveに監視するのではなく、サインアウト処理側(my_account_page.dart)で
+  // 明示的にref.invalidate(courseListProvider)する方式に変更した。
   CourseListProvider._()
     : super(
         from: null,
@@ -83,7 +83,7 @@ final class CourseListProvider
   }
 }
 
-String _$courseListHash() => r'ad78ee81b9d35581624f3679d03256a928bc9f75';
+String _$courseListHash() => r'1c79c645ae111f7432457b632725d00b92996481';
 
 /// Year アトリビュート一覧（コース作成フォームの候補）
 

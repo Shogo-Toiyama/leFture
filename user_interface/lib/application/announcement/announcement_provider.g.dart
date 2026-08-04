@@ -102,3 +102,49 @@ final class ActiveAnnouncementsProvider
 
 String _$activeAnnouncementsHash() =>
     r'f11edfe148a0819df299e5b5b7c220f75786ac3f';
+
+/// 全アナウンスメント（完了・未完了問わず全件、新しい順）。
+
+@ProviderFor(allAnnouncements)
+final allAnnouncementsProvider = AllAnnouncementsProvider._();
+
+/// 全アナウンスメント（完了・未完了問わず全件、新しい順）。
+
+final class AllAnnouncementsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          Stream<List<Announcement>>
+        >
+    with
+        $FutureModifier<List<Announcement>>,
+        $StreamProvider<List<Announcement>> {
+  /// 全アナウンスメント（完了・未完了問わず全件、新しい順）。
+  AllAnnouncementsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'allAnnouncementsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$allAnnouncementsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<Announcement>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Announcement>> create(Ref ref) {
+    return allAnnouncements(ref);
+  }
+}
+
+String _$allAnnouncementsHash() => r'fa69da6ba084194f72eece5afef09e9977fd4286';

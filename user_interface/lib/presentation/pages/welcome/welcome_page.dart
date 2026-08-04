@@ -20,7 +20,11 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 /// 着弾で星が弾けて金色の「leFture」へ着地するアニメーションを再生してから
 /// ホームへ遷移する（裏でホーム用データをプレロードし、完了してから遷移する）。
 class WelcomePage extends ConsumerStatefulWidget {
-  const WelcomePage({super.key});
+  const WelcomePage({super.key, this.revealTiming = WelcomeRevealTiming.short});
+
+  /// タイトル演出の尺。既定は短縮版([WelcomeRevealTiming.short])。
+  /// じっくり見せたい表示箇所があれば[WelcomeRevealTiming.full]を渡す。
+  final WelcomeRevealTiming revealTiming;
 
   @override
   ConsumerState<WelcomePage> createState() => _WelcomePageState();
@@ -42,7 +46,18 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       //    ここをawaitしないと、下のallLecturesStreamProviderが
       //    「同期前のローカルDBの中身」で即座に解決してしまい、
       //    プリロードの意味がなくなる。
-      await ref.read(lectureControllerProvider.notifier).bootstrapIfNeeded();
+      //    bootstrapIfNeeded()自体は複数エンティティのPullを逐次実行し、
+      //    それぞれ独立してnetworkTimeout(15秒)を持つため、「オフライン」
+      //    ではなく「繋がってはいるが不安定」な回線だと合計で数十秒〜
+      //    それ以上かかりうる。ここに8秒のタイムアウトを設けることで、
+      //    そのケースでもWelcome画面に不定に長く留まらないようにする
+      //    (タイムアウトしても裏側のPull自体は継続し、完了次第ローカルDB/
+      //    SyncCursorへ反映される。ここで打ち切るのは「待つのをやめる」
+      //    だけで、Pullそのものをキャンセルするわけではない)。
+      await ref
+          .read(lectureControllerProvider.notifier)
+          .bootstrapIfNeeded()
+          .timeout(const Duration(seconds: 8), onTimeout: () {});
 
       // 2. コース一覧(Supabase直参照) & レクチャー一覧(ローカルDB参照、
       //    同期後なので最新)の先行ロード完了を待機。
@@ -90,6 +105,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
       body: _TitleRevealAnimation(
+        revealTiming: widget.revealTiming,
         onFinished: () async {
           // アニメーション完了時に、裏でのデータロード完了を待ってからホームへ遷移！
           await _preloadFuture;
@@ -127,24 +143,66 @@ const _kPhraseStyle = TextStyle(
 const _kGapLe = 0.5; // 着地後、le と F の間に残すすき間（詰め気味でバランス最適化）
 const _kGapTure = 0.2; // 着地後、F と ture の間に残すすき間
 
-// フェーズごとの所要時間
-// 動きそのものの速さ(light/rush/impact)は変えず、「止まって読める間」
-// (black/hold/finalHold)だけを長めに取っている。
-const _kBlackMs = 300; // 何も出ない暗転(スタート直前の溜め)
-const _kLightMs = 640; // 光が灯り、フレーズが浮かび上がる
-const _kHoldMs = 650; // 「lecture for the future」を静止して見せる
-const _kRushMs = 260; // le / ture が f へ突進
-const _kImpactMs = 800; // 着弾・星の爆発・金色化・センタリング
-const _kFinalHoldMs = 750; // 「leFture」が完成した状態を見せてから遷移
-const _kTotalMs =
-    _kBlackMs + _kLightMs + _kHoldMs + _kRushMs + _kImpactMs + _kFinalHoldMs;
+/// タイトル演出の各フェーズの所要時間(ms)のプリセット。
+///
+/// [full]が元々の尺（このコード上に定数として書き留めてあるので、将来
+/// 「ここではじっくり見せたい」という表示箇所が出てきたら
+/// `WelcomePage(revealTiming: WelcomeRevealTiming.full)` のように指定
+/// すれば使える）。[short]がWelcomePageの既定値で、現状すべての呼び出し
+/// 箇所（起動時・サインアウト後・アカウント削除後）はこちらを使う。
+class WelcomeRevealTiming {
+  const WelcomeRevealTiming({
+    required this.blackMs,
+    required this.lightMs,
+    required this.holdMs,
+    required this.rushMs,
+    required this.impactMs,
+    required this.finalHoldMs,
+  });
 
-const _kP0 = _kBlackMs / _kTotalMs;
-const _kP1 = (_kBlackMs + _kLightMs) / _kTotalMs;
-const _kP2 = (_kBlackMs + _kLightMs + _kHoldMs) / _kTotalMs;
-const _kP3 = (_kBlackMs + _kLightMs + _kHoldMs + _kRushMs) / _kTotalMs;
-const _kP4 =
-    (_kBlackMs + _kLightMs + _kHoldMs + _kRushMs + _kImpactMs) / _kTotalMs;
+  /// 何も出ない暗転(スタート直前の溜め)
+  final int blackMs;
+  /// 光が灯り、フレーズが浮かび上がる
+  final int lightMs;
+  /// 「lecture for the future」を静止して見せる
+  final int holdMs;
+  /// le / ture が f へ突進
+  final int rushMs;
+  /// 着弾・星の爆発・金色化・センタリング
+  final int impactMs;
+  /// 「leFture」が完成した状態を見せてから遷移
+  final int finalHoldMs;
+
+  int get totalMs =>
+      blackMs + lightMs + holdMs + rushMs + impactMs + finalHoldMs;
+
+  double get p0 => blackMs / totalMs;
+  double get p1 => (blackMs + lightMs) / totalMs;
+  double get p2 => (blackMs + lightMs + holdMs) / totalMs;
+  double get p3 => (blackMs + lightMs + holdMs + rushMs) / totalMs;
+  double get p4 => (blackMs + lightMs + holdMs + rushMs + impactMs) / totalMs;
+
+  /// 元々のフルの尺(合計3,400ms)。
+  static const full = WelcomeRevealTiming(
+    blackMs: 300,
+    lightMs: 640,
+    holdMs: 650,
+    rushMs: 260,
+    impactMs: 800,
+    finalHoldMs: 750,
+  );
+
+  /// 短縮版(合計2,220ms、フルの約35%減)。静止区間(black/hold/finalHold)を
+  /// 大きく削り、動きのある区間(light/rush/impact)も少しだけ詰めている。
+  static const short = WelcomeRevealTiming(
+    blackMs: 150,
+    lightMs: 550,
+    holdMs: 300,
+    rushMs: 220,
+    impactMs: 650,
+    finalHoldMs: 350,
+  );
+}
 
 // 光る演出のうち、最初は光だけ・文字は一切見せない区間の割合。
 // この後、中央に近い文字から外側へ向かって少しずつ浮かび上がる。
@@ -272,7 +330,11 @@ class _Metrics {
 }
 
 class _TitleRevealAnimation extends StatefulWidget {
-  const _TitleRevealAnimation({required this.onFinished});
+  const _TitleRevealAnimation({
+    required this.revealTiming,
+    required this.onFinished,
+  });
+  final WelcomeRevealTiming revealTiming;
   final VoidCallback onFinished;
 
   @override
@@ -287,6 +349,8 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
   bool _burstFired = false;
   bool _reduceMotion = false;
 
+  WelcomeRevealTiming get _timing => widget.revealTiming;
+
   @override
   void initState() {
     super.initState();
@@ -295,7 +359,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: _kTotalMs),
+      duration: Duration(milliseconds: _timing.totalMs),
     )..addListener(_onTick);
 
     _controller.forward();
@@ -316,7 +380,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
   }
 
   void _onTick() {
-    if (!_burstFired && _controller.value >= _kP3) {
+    if (!_burstFired && _controller.value >= _timing.p3) {
       _burstFired = true;
       // 着弾の瞬間の演出はビルド内で controller.value を直接参照するので
       // ここでは再描画のトリガーのみ（副作用なし）。
@@ -380,7 +444,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
           alignment: Alignment.center,
           children: [
             // 着弾エフェクト(フラッシュ・衝撃波・星)は常に画面中央基準
-            if (t >= _kP3)
+            if (t >= _timing.p3)
               Positioned.fill(
                 child: CustomPaint(
                   painter: _BurstPainter(
@@ -397,16 +461,18 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
   }
 
   double _impactLocal(double t) {
-    if (t <= _kP3) return 0;
-    return ((t - _kP3) / (_kP4 - _kP3)).clamp(0.0, 1.0);
+    if (t <= _timing.p3) return 0;
+    return ((t - _timing.p3) / (_timing.p4 - _timing.p3)).clamp(0.0, 1.0);
   }
 
   /// 光る演出の間、中央に近い文字ほど早く・外側の文字ほど遅れて
   /// 浮かび上がるための、文字ごとの不透明度(0..1)。
   /// [distNorm] はその文字のフレーズ中央からの距離(0=中央,1=端)。
   double _charAlpha(double t, double distNorm) {
-    final revealStart = _kP0 + (_kP1 - _kP0) * _kRevealDelayFrac;
-    final revealSpan = _kP1 - revealStart;
+    final p0 = _timing.p0;
+    final p1 = _timing.p1;
+    final revealStart = p0 + (p1 - p0) * _kRevealDelayFrac;
+    final revealSpan = p1 - revealStart;
     final charStart = revealStart + distNorm * _kRevealStagger * revealSpan;
     final duration = revealSpan * (1 - distNorm * _kRevealStagger);
     if (t <= charStart) return 0.0;
@@ -420,7 +486,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
     // --- カメラ演出(拡大+センタリング) ---
     double scale = 1.0;
     double dx = 0.0;
-    if (t > _kP3) {
+    if (t > _timing.p3) {
       final camCurve = Curves.easeOutBack.transform(impactT);
       scale = ui.lerpDouble(1.0, 2.3, camCurve.clamp(0.0, 1.4))!;
       dx = _metrics.finalClusterShiftDx * camCurve.clamp(0.0, 1.0);
@@ -437,8 +503,8 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
     double blurSigma = 0.0;
     double glowStrength = 0.0;
     Color baseTextColor = AppColors.universe.textStarlight;
-    if (t <= _kP1) {
-      final lt = ((t - _kP0) / (_kP1 - _kP0)).clamp(0.0, 1.0);
+    if (t <= _timing.p1) {
+      final lt = ((t - _timing.p0) / (_timing.p1 - _timing.p0)).clamp(0.0, 1.0);
       blurSigma = ui.lerpDouble(9, 0, Curves.easeOut.transform(lt))!;
       glowStrength = ui.lerpDouble(1.25, 0.0, Curves.easeIn.transform(lt))!;
       baseTextColor = Color.lerp(
@@ -449,7 +515,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
     }
 
     // --- 金色化(フェーズD後半) ---
-    final goldT = t > _kP3
+    final goldT = t > _timing.p3
         ? Curves.easeOut.transform(impactT.clamp(0.0, 1.0))
         : 0.0;
     final keepColor = Color.lerp(baseTextColor, AppColors.starGold, goldT)!;
@@ -477,8 +543,11 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
       alignment: Alignment.center,
       clipBehavior: Clip.none,
       children: [
-        if (t <= _kP1)
-          _Glint(progress: ((t - _kP0) / (_kP1 - _kP0)).clamp(0.0, 1.0)),
+        if (t <= _timing.p1)
+          _Glint(
+            progress: ((t - _timing.p0) / (_timing.p1 - _timing.p0))
+                .clamp(0.0, 1.0),
+          ),
         phrase,
       ],
     );
@@ -492,7 +561,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
       final natural = _metrics.naturalLeft[i];
 
       // 光る演出の間は、位置は動かさず文字ごとに中央から浮かび上がらせる。
-      if (t <= _kP1) {
+      if (t <= _timing.p1) {
         final color = chunk.keep ? keepColor : AppColors.universe.textComet;
         widgets.add(
           Positioned(
@@ -515,21 +584,21 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
         double opacity = 1.0;
         double scaleX = 1.0;
 
-        if (t > _kP2) {
+        if (t > _timing.p2) {
           final target = _metrics.targetLeft[i] ?? natural;
-          final rt = ((t - _kP2) / (_kP3 - _kP2)).clamp(0.0, 1.0);
+          final rt = ((t - _timing.p2) / (_timing.p3 - _timing.p2)).clamp(0.0, 1.0);
           final eased = const Cubic(0.55, 0.06, 0.68, 0.19).transform(rt);
           left = ui.lerpDouble(natural, target, eased)!;
         }
 
         final isF = chunk.text == 'f';
-        final displayText = isF && t > _kP3 ? 'F' : chunk.text;
+        final displayText = isF && t > _timing.p3 ? 'F' : chunk.text;
 
         Widget textWidget = Text(
           displayText,
           style: _kPhraseStyle.copyWith(
-            color: isF && t > _kP3 ? AppColors.starGold : keepColor,
-            shadows: isF && t > _kP3
+            color: isF && t > _timing.p3 ? AppColors.starGold : keepColor,
+            shadows: isF && t > _timing.p3
                 ? [
                     Shadow(
                       color: AppColors.starGold.withValues(alpha: 0.85),
@@ -559,11 +628,10 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
           ),
         );
 
-        if (isF && t > _kP3) {
-          final popT = ((t - _kP3) / ((_kImpactMs * 0.4) / _kTotalMs)).clamp(
-            0.0,
-            1.0,
-          );
+        if (isF && t > _timing.p3) {
+          final popT =
+              ((t - _timing.p3) / ((_timing.impactMs * 0.4) / _timing.totalMs))
+                  .clamp(0.0, 1.0);
           final popScale = _fPopScale(popT);
           textWidget = Transform.scale(scale: popScale, child: textWidget);
         }
@@ -588,11 +656,10 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
         double opacity = 1.0;
         double scale = 1.0;
         double blur = 0.0;
-        if (t > _kP2) {
-          final vt = ((t - _kP2) / ((_kRushMs * 0.75) / _kTotalMs)).clamp(
-            0.0,
-            1.0,
-          );
+        if (t > _timing.p2) {
+          final vt =
+              ((t - _timing.p2) / ((_timing.rushMs * 0.75) / _timing.totalMs))
+                  .clamp(0.0, 1.0);
           final eased = Curves.easeIn.transform(vt);
           opacity = 1.0 - eased;
           scale = ui.lerpDouble(1.0, 0.4, eased)!;

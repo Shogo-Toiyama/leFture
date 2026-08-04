@@ -943,64 +943,67 @@ class RecordingPage extends HookConsumerWidget {
                     ),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 500),
-                        child: ElevatedButton(
-                          onPressed: !isBusy && (state.canUpload || selectedAudioFilePath.value != null)
-                              ? () async {
-                                  if (selectedAudioFilePath.value != null) {
-                                    // ファイル選択がある場合
-                                    if (state.courseId == null) {
-                                      // Course が未選択なら警告
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(l10n.recordingSelectCourseBeforeUploadSnackbar),
-                                          ),
-                                        );
+                        constraints: const BoxConstraints(maxWidth: 440),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: !isBusy && (state.canUpload || selectedAudioFilePath.value != null)
+                                ? () async {
+                                    if (selectedAudioFilePath.value != null) {
+                                      // ファイル選択がある場合
+                                      if (state.courseId == null) {
+                                        // Course が未選択なら警告
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(l10n.recordingSelectCourseBeforeUploadSnackbar),
+                                            ),
+                                          );
+                                        }
+                                        return;
                                       }
-                                      return;
-                                    }
-                                    await controller.uploadAudioFile(selectedAudioFilePath.value!);
-                                    selectedAudioFilePath.value = null; // 完了後にリセット
-                                  } else {
-                                    // 通常の録音アップロード
-                                    if (state.canUpload) {
-                                      await controller.upload();
+                                      await controller.uploadAudioFile(selectedAudioFilePath.value!);
+                                      selectedAudioFilePath.value = null; // 完了後にリセット
+                                    } else {
+                                      // 通常の録音アップロード
+                                      if (state.canUpload) {
+                                        await controller.upload();
+                                      }
                                     }
                                   }
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.starGold,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: AppColors.universe.glassWhiteLow,
-                            disabledForegroundColor: AppColors.universe.textComet,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: isBusy
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.starGold,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: AppColors.universe.glassWhiteLow,
+                              disabledForegroundColor: AppColors.universe.textComet,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: isBusy
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      l10n.recordingUploadingStatus,
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                )
-                              : Text(
-                                  l10n.recordingUploadButtonLabel,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        l10n.recordingUploadingStatus,
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    l10n.recordingUploadButtonLabel,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                          ),
                         ),
                       ),
                     ),
@@ -1379,7 +1382,7 @@ class _RecordingLanguageRow extends StatelessWidget {
 
 // リアクション3ボタン用。メモ("note")は自由入力でボタンは無いため、
 // 文字列リテラル("note")として直接扱う(_momentDisplay/RecordingController参照)。
-enum _MomentType { fun, difficult, revisit }
+enum _MomentType { interesting, difficult, revisit }
 
 String _formatMmSs(int sec) {
   final m = (sec ~/ 60).toString().padLeft(2, '0');
@@ -1393,7 +1396,7 @@ String _formatMmSs(int sec) {
 /// 未知の値でも例外を投げず汎用表示にフォールバックする。
 (IconData, Color, String) _momentDisplay(String momentType, AppLocalizations l10n) {
   switch (momentType) {
-    case 'fun':
+    case 'interesting':
       return (Icons.star_rounded, AppColors.starGold, l10n.recordingMomentFunLabel);
     case 'difficult':
       return (Icons.help_rounded, AppColors.cosmicBlue, l10n.recordingMomentDifficultLabel);
@@ -1849,7 +1852,7 @@ class _ReactionRow extends StatelessWidget {
   final bool canInteract;
 
   static const _options = <_MomentType>[
-    _MomentType.fun,
+    _MomentType.interesting,
     _MomentType.difficult,
     _MomentType.revisit,
   ];
@@ -1897,7 +1900,7 @@ class _ReactionRow extends StatelessWidget {
 
 extension on _MomentType {
   String label(AppLocalizations l10n) => switch (this) {
-        _MomentType.fun => l10n.recordingReactionFunLabel,
+        _MomentType.interesting => l10n.recordingReactionFunLabel,
         _MomentType.difficult => l10n.recordingReactionDifficultLabel,
         _MomentType.revisit => l10n.recordingReactionRevisitLabel,
       };

@@ -46,3 +46,13 @@ Stream<List<Announcement>> activeAnnouncementsForCourse(Ref ref, String courseId
       .watch(announcementRepositoryDriftProvider)
       .watchActiveAnnouncementsForLectureIds(lectureIds, completedAfter: cutoff);
 }
+
+/// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
+@riverpod
+Stream<List<Announcement>> allAnnouncementsForCourse(Ref ref, String courseId) async* {
+  final lectures = await ref.watch(lectureListStreamProvider(courseId).future);
+  final lectureIds = lectures.map((l) => l.id).toList();
+  yield* ref
+      .watch(announcementRepositoryDriftProvider)
+      .watchActiveAnnouncementsForLectureIds(lectureIds, completedAfter: DateTime.fromMillisecondsSinceEpoch(0));
+}

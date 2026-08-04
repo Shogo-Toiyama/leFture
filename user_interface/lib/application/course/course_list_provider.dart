@@ -4,6 +4,8 @@ import 'package:lefture/domain/entities/course_attribute.dart';
 import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/repositories/course_attribute_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/core/utils/network_constants.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 
 part 'course_list_provider.g.dart';
 
@@ -23,7 +25,19 @@ part 'course_list_provider.g.dart';
 Future<List<Course>> courseList(Ref ref) async {
   if (supabase.auth.currentUser == null) return [];
   final repo = ref.watch(courseRepositoryProvider);
-  return repo.listCourses();
+  // コース一覧はローカルDBフォールバックを持たずSupabaseへ直接問い合わせる。
+  // タイムアウト/フォールバックが無いと、プロセス内でこのProviderが最初に
+  // ビルドされるタイミング(≒アプリ起動直後)にオフラインだと、直前の値が
+  // 無いままAsyncErrorで確定してしまい、HomePageのローディングガード
+  // (courses == null)を永久に抜けられなくなる不具合があったため、
+  // LectureController.bootstrapLectures()と同じ「ベストエフォートで
+  // 例外を握りつぶし空リストへフォールバックする」方針に合わせる。
+  try {
+    return await repo.listCourses().timeout(networkTimeout);
+  } catch (e, st) {
+    DevLog.add('⚠️ [courseListProvider] listCourses failed (offline?): $e\n$st');
+    return const [];
+  }
 }
 
 /// Year アトリビュート一覧（コース作成フォームの候補）

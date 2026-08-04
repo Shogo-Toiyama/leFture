@@ -107,6 +107,8 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
         ),
         const SizedBox(height: 28),
         PermissionsRows(specs: specs, state: permState),
+        const SizedBox(height: 20),
+        AllowAllPermissionsButton(specs: specs, state: permState),
         const Spacer(),
         SizedBox(
           width: double.infinity,

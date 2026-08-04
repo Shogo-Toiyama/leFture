@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
@@ -126,7 +127,12 @@ class MyAccountPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 _SettingsSection(onSignOut: () => _signOut(context, ref)),
 
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
+
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                // VERSION FOOTER
+                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                const _VersionFooter(),
               ],
             ),
           ),
@@ -834,6 +840,35 @@ class _ActivitySection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _VersionFooter extends StatelessWidget {
+  const _VersionFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final versionText = snapshot.hasData
+            ? 'leFture v${snapshot.data!.version} (${snapshot.data!.buildNumber})'
+            : 'leFture';
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 48),
+            child: Text(
+              versionText,
+              style: TextStyle(
+                color: AppColors.universe.textComet.withValues(alpha: 0.6),
+                fontSize: 12,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

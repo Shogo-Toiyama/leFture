@@ -237,18 +237,17 @@ class _TypeSelector extends StatelessWidget {
   static const _types = [
     AnnouncementType.todo,
     AnnouncementType.event,
-    AnnouncementType.hint,
     AnnouncementType.info,
+    AnnouncementType.hint,
   ];
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final labels = {
-      AnnouncementType.todo: l10n.announcementEditSheetTypeTodo,
-      AnnouncementType.event: l10n.announcementEditSheetTypeEvent,
-      AnnouncementType.hint: l10n.announcementEditSheetTypeHint,
-      AnnouncementType.info: l10n.announcementEditSheetTypeInfo,
+      AnnouncementType.todo: 'Todo',
+      AnnouncementType.event: 'Event',
+      AnnouncementType.info: 'Info',
+      AnnouncementType.hint: 'Hint',
     };
     return Wrap(
       spacing: 8,
@@ -278,13 +277,17 @@ class _TypeSelector extends StatelessWidget {
                 Icon(
                   iconForAnnouncementType(type),
                   size: 16,
-                  color: isSelected ? AppColors.starGold : AppColors.universe.textComet,
+                  color: isSelected
+                      ? colorForAnnouncementType(type)
+                      : AppColors.universe.textComet,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   labels[type] ?? type.name,
                   style: TextStyle(
-                    color: isSelected ? AppColors.starGold : AppColors.universe.textComet,
+                    color: isSelected
+                        ? colorForAnnouncementType(type)
+                        : AppColors.universe.textComet,
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),

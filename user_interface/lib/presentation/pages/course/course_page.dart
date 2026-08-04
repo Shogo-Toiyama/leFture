@@ -15,7 +15,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/lecture.dart';
-import 'package:lefture/presentation/pages/course/widgets/course_announcements_sheet.dart';
+import 'package:lefture/presentation/widgets/announcements_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_details_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
@@ -523,7 +523,11 @@ class _CourseLectureListView extends ConsumerWidget {
                                             announcement.type,
                                           )
                                         : Icons.campaign_outlined,
-                                    color: AppColors.starGold,
+                                    color: announcement != null
+                                        ? colorForAnnouncementType(
+                                            announcement.type,
+                                          )
+                                        : AppColors.starGold,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 12),
@@ -846,7 +850,7 @@ class _CourseLectureListView extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => CourseAnnouncementsSheet(courseId: courseId),
+      builder: (_) => AnnouncementsSheet(courseId: courseId),
     );
   }
 

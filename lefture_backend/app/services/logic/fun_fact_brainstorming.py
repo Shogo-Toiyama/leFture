@@ -18,6 +18,7 @@ class FunFactBrainstormingService:
         topic_title: str,
         concept_focus: str,
         course_title: str,
+        concept_intro_line: str,
     ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Fun Fact Brainstorming with {self.model_alias}")
 
@@ -26,6 +27,7 @@ class FunFactBrainstormingService:
         prompt = prompt.replace("${TOPIC_TITLE}", topic_title)
         prompt = prompt.replace("${CONCEPT_FOCUS}", concept_focus)
         prompt = prompt.replace("${COURSE_TITLE}", course_title)
+        prompt = prompt.replace("${CONCEPT_INTRO_LINE}", concept_intro_line)
 
         options_json = LLMOptions(output_type="json", temperature=0.8)
 

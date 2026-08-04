@@ -47,3 +47,13 @@ Stream<List<Announcement>> activeAnnouncements(Ref ref) {
 
   return stream;
 }
+
+/// 全アナウンスメント（完了・未完了問わず全件、新しい順）。
+@riverpod
+Stream<List<Announcement>> allAnnouncements(Ref ref) {
+  final uid = supabase.auth.currentUser?.id;
+  if (uid == null) return const Stream.empty();
+  return ref
+      .watch(announcementRepositoryDriftProvider)
+      .watchActiveAnnouncements(uid, completedAfter: DateTime.fromMillisecondsSinceEpoch(0));
+}

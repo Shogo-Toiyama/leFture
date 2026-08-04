@@ -554,34 +554,34 @@
     "description": "Subtitle of the 'Recording language' settings row in the normal (non-error) case, explaining what the on-device model is used for."
   },
 
-  "recordingMomentFunLabel": "Fun moment",
+  "recordingMomentFunLabel": "Interesting moment",
   "@recordingMomentFunLabel": {
-    "description": "Label shown on a moment/reaction timeline entry when its type is 'fun' (the student marked this point in the lecture as fun/interesting), next to a star icon."
+    "description": "Short label for a 'fun / interesting moment' reaction on the Live tab."
   },
 
-  "recordingMomentDifficultLabel": "Difficult",
+  "recordingMomentDifficultLabel": "Difficult moment",
   "@recordingMomentDifficultLabel": {
-    "description": "Label for a moment/reaction timeline entry of type 'difficult' (the student marked this point as hard to understand)."
+    "description": "Short label for a 'difficult moment' reaction on the Live tab."
   },
 
   "recordingMomentRevisitLabel": "Revisit later",
   "@recordingMomentRevisitLabel": {
-    "description": "Label for a moment/reaction timeline entry of type 'revisit', meaning the student wants to come back and review this point later."
+    "description": "Short label for a 'revisit later' reaction on the Live tab."
   },
 
   "recordingMomentNoteLabel": "Note",
   "@recordingMomentNoteLabel": {
-    "description": "Label for a moment/reaction timeline entry of type 'note' (a free-text note the student typed during the lecture)."
+    "description": "Short label for a user text note on the Live tab."
   },
 
-  "recordingLiveTranscriptHeader": "LIVE TRANSCRIPT",
+  "recordingLiveTranscriptHeader": "LIVE TRANSCRIPTION",
   "@recordingLiveTranscriptHeader": {
-    "description": "Small header above the scrolling live-transcript panel on the Recording page's Live tab. Shown in English as all-caps for visual style with letter-spacing; languages without case distinction (e.g. Japanese) can just use the natural phrase."
+    "description": "Header title of the live transcript card on the Recording page's Live tab."
   },
 
   "recordingWaitingForAudio": "Waiting for audio...",
   "@recordingWaitingForAudio": {
-    "description": "Placeholder text shown in the live transcript panel before any speech has been transcribed yet."
+    "description": "Placeholder text inside the live transcript panel when recording has started but no speech has been transcribed yet."
   },
 
   "recordingRealtimeOffHint": "Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.",
@@ -589,9 +589,9 @@
     "description": "Hint box shown on the Live tab when Realtime Transcribe is off, telling the user where to go to enable it (references the 'More Settings' section and 'Voice' tab by name — keep those consistent with how they're labeled elsewhere in the app)."
   },
 
-  "recordingReactionFunLabel": "Fun",
+  "recordingReactionFunLabel": "Interesting",
   "@recordingReactionFunLabel": {
-    "description": "Short caption under an icon on one of three reaction buttons (Fun / Difficult / Revisit) on the Recording page's Live tab. Must stay very short to fit under the icon."
+    "description": "Short caption under an icon on one of three reaction buttons (Interesting / Difficult / Revisit) on the Recording page's Live tab. Must stay very short to fit under the icon."
   },
 
   "recordingReactionDifficultLabel": "Difficult",
@@ -742,6 +742,11 @@
   "lectureViewerTranscriptButtonLabel": "Transcript",
   "@lectureViewerTranscriptButtonLabel": {
     "description": "Label on a full-width button/row at the bottom of the Lecture Viewer page that navigates to the full lecture transcript. Short label."
+  },
+
+  "lectureViewerFunFactLinkOpenFailedSnackbar": "Couldn't open the link.",
+  "@lectureViewerFunFactLinkOpenFailedSnackbar": {
+    "description": "Snackbar shown when tapping a source-URL chip on a fun-fact card fails to open the link in the browser."
   },
 
   "lectureViewerReactionUpdateFailedSnackbar": "Failed to update reaction: {error}",
@@ -2884,6 +2889,26 @@
   "homeOfflineSnackBarMessage": "You're offline. Showing cached data.",
   "@homeOfflineSnackBarMessage": {
     "description": "SnackBar message shown when pulling to refresh on the home page while offline."
+  },
+
+  "initialSyncErrorTitle": "Couldn't finish setting up your account",
+  "@initialSyncErrorTitle": {
+    "description": "Headline on the full-screen error state shown on first Home visit when the mandatory initial lecture sync has never succeeded (e.g. offline right after onboarding)."
+  },
+
+  "initialSyncErrorMessage": "We couldn't reach the server to load your data. Please check your internet connection and try again.",
+  "@initialSyncErrorMessage": {
+    "description": "Body text explaining why the initial sync error screen is shown."
+  },
+
+  "initialSyncErrorRetryButton": "Try Again",
+  "@initialSyncErrorRetryButton": {
+    "description": "Button label to retry the initial mandatory sync."
+  },
+
+  "initialSyncErrorRetrying": "Retrying…",
+  "@initialSyncErrorRetrying": {
+    "description": "Button label shown while the retry attempt from the initial sync error screen is in progress."
   },
 
   "homeRecordLectureButton": "Record Lecture",
