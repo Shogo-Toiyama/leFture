@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/application/job/job_providers.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
 
 part 'lecture_state_providers.g.dart';
 
@@ -22,6 +23,16 @@ enum LectureUIState {
 
 @riverpod
 Stream<LectureUIState> lectureState(Ref ref, String lectureId) async* {
+  // 0. チュートリアル講義(ローカルのみ・音声もジョブも存在しない)は、
+  // ジョブの有無に関わらず常に完了扱いにする。これがないと「Jobが存在しない」
+  // ケースに引っかかってnotStarted(Start Analysis待ち)扱いになってしまう。
+  final lectureAsync = ref.watch(lectureProvider(lectureId));
+  final lecture = lectureAsync.asData?.value;
+  if (lecture?.metadata?['is_tutorial'] == true) {
+    yield LectureUIState.complete;
+    return;
+  }
+
   // 1. Jobの状態を監視 (Realtime)
   final jobAsync = ref.watch(jobStreamProvider(lectureId));
 
@@ -41,8 +52,17 @@ Stream<LectureUIState> lectureState(Ref ref, String lectureId) async* {
       yield LectureUIState.complete;
       return;
     }
-    if (job.status == 'FAILED') {
+    // FAILED/ERROR は「もう自力では進まない」終端。ERRORは旧pipeline.pyが書く値で、
+    // これを拾わないと永久に「解析中」の表示のまま止まって見える。
+    if (job.status == 'FAILED' || job.status == 'ERROR') {
       yield LectureUIState.failed;
+      return;
+    }
+    // CANCELLEDは「講義削除時のジョブ停止」または「Start Overによる作り直し」で
+    // 打ち切られたジョブ。バックエンドの/start-analysisもこれを終端(DEAD)として
+    // 扱い、force無しで新しいジョブを作り直せるので、UIも未実施に戻す。
+    if (job.status == 'CANCELLED') {
+      yield LectureUIState.notStarted;
       return;
     }
     // PENDING, RUNNING

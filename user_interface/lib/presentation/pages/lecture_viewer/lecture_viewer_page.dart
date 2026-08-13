@@ -28,12 +28,17 @@ import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/application/lecture/lecture_state_providers.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
-import 'package:lefture/presentation/pages/lecture_viewer/lecture_status_scaffold.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/lecture_hero_collage.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/application/job/job_providers.dart';
+import 'package:lefture/application/lecture_viewer/pipeline_reveal_sync.dart';
+import 'package:lefture/domain/entities/processing_task.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/lecture_overlay_card.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/pipeline_progress_banner.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/reveal.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
   const LectureViewerPage({super.key, required this.lectureId});
@@ -74,7 +79,9 @@ class LectureViewerPage extends HookConsumerWidget {
       );
       return Scaffold(
         backgroundColor: AppColors.universe.voidBackground,
-        body: _LectureViewerBody(lecture: dummyLecture),
+        // dummyデータには実際のprocessing_jobsが存在しないため、reveal機構を
+        // 素通りさせて常にcomplete相当(完成品プレビュー)を描画させる。
+        body: _LectureViewerBody(lecture: dummyLecture, uiState: LectureUIState.complete),
       );
     }
 
@@ -144,7 +151,7 @@ class LectureViewerPage extends HookConsumerWidget {
               // Fallback if current lecture is not found in the list (e.g. database syncing)
               return Scaffold(
                 backgroundColor: AppColors.universe.voidBackground,
-                body: _LectureViewerBody(lecture: lecture),
+                body: _LecturePageContent(lecture: lecture),
               );
             }
 
@@ -200,13 +207,22 @@ class _LecturePageContent extends ConsumerWidget {
       previous,
       next,
     ) {
+      // 「completeである間ずっと」ではなく「completeに“なった瞬間”」だけ拾う。
+      // lectureStateProviderはjob状態だけでなくローカル講義行の更新でも
+      // 再評価されうるため、previousとの比較なしだとcomplete判定のたびに
+      // bootstrapLectures()が無限に呼ばれるループになっていた
+      // (bootstrapLecturesのPullがローカル講義行を書き換え→再評価→再度complete
+      // 判定→bootstrapLectures…という自己増殖ループ)。
+      final wasAlreadyComplete = previous?.value == LectureUIState.complete;
       next.whenData((state) {
-        if (state == LectureUIState.complete) {
+        if (state == LectureUIState.complete && !wasAlreadyComplete) {
           final uid = supabase.auth.currentUser?.id;
           if (uid != null) {
             ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
           }
-          ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+          ref
+              .read(lectureControllerProvider.notifier)
+              .bootstrapLectures(reason: 'lecture_viewer_became_complete');
         }
       });
     });
@@ -221,21 +237,26 @@ class _LecturePageContent extends ConsumerWidget {
           style: const TextStyle(color: AppColors.correctionRed),
         ),
       ),
-      data: (uiState) {
-        if (uiState == LectureUIState.complete) {
-          return _LectureViewerBody(lecture: lecture);
-        }
-
-        return LectureStatusScaffold(lecture: lecture);
-      },
+      // ★ 以前はuiState=='complete'の時だけ_LectureViewerBodyを描画し、それ
+      // 以外(notStarted/processing/failed)は全く別画面(LectureStatusScaffold)
+      // へ丸ごと切り替えていた。今はどのuiStateでも常に_LectureViewerBodyを
+      // 描画する —— 本体側が要素ごとの完成度(RevealState)とjob/tasksを見て、
+      // スケルトン/ブラー/バナーを自分で出し分ける設計に変わったため。
+      data: (uiState) => _LectureViewerBody(lecture: lecture, uiState: uiState),
     );
   }
 }
 
 class _LectureViewerBody extends HookConsumerWidget {
-  const _LectureViewerBody({required this.lecture});
+  const _LectureViewerBody({required this.lecture, required this.uiState});
 
   final Lecture lecture;
+
+  /// 講義全体の粗いステータス(lectureStateProvider由来)。何も生成物が
+  /// まだ無い間([FullScreenRevealBlur]が有効な間)の中央カードの中身選びに
+  /// 使う。complete固定で渡された場合(dummyデータのプレビュー用)は、
+  /// 個々のブロックのreveal判定を全てreadyへ強制する。
+  final LectureUIState uiState;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -259,7 +280,8 @@ class _LectureViewerBody extends HookConsumerWidget {
       (c) => c?.id == lecture.courseId,
       orElse: () => null,
     );
-    final courseCode = course?.courseCode ?? l10n.lectureViewerCourseCodeFallback;
+    final rawCourseCode = course?.courseCode?.trim();
+    final hasCourseCode = rawCourseCode != null && rawCourseCode.isNotEmpty;
 
     final displayTitle = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
@@ -274,23 +296,77 @@ class _LectureViewerBody extends HookConsumerWidget {
       fallback: AppColors.starGold,
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            themeColor.withValues(alpha: 0.3),
-            themeColor.withValues(alpha: 0.08),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.5, 1.0],
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            const CustomAppBar(showHomeButton: true),
+    // --- 「完成した要素から出していく」演出のための状態計算 -----------------
+    //
+    // uiState==completeで呼ばれた場合(dummyプレビュー、または実際に分析が
+    // 完了した講義)は、job/tasksの実態に関わらず全ブロックをreadyへ強制する。
+    // dummyレクチャーにはprocessing_jobs行が存在しないため、これが無いと
+    // プレビューが永久にスケルトンのまま止まってしまう。
+    final forceReady = uiState == LectureUIState.complete;
+
+    final job = ref.watch(jobStreamProvider(lecture.id)).asData?.value;
+    final tasks = job == null
+        ? const <ProcessingTask>[]
+        : ref.watch(jobTasksStreamProvider(job.id)).asData?.value ?? const <ProcessingTask>[];
+    final tasksByType = {for (final t in tasks) t.taskType: t};
+    // ERRORは旧pipeline.py(JobStatus.ERROR)が書く失敗ステータス。FAILEDと同じく
+    // 「もう自力では進まない」終端として扱う(processing_view.dartと同じ判定)。
+    final jobFailed = job?.status == 'FAILED' || job?.status == 'ERROR';
+
+    // タスクがCOMPLETEDになったのを検知するたびに、対応するテーブルだけを
+    // 差分Pullする。フック呼び出しは必ずbuildの毎回・分岐前に行うこと
+    // (Hooksのルール上、呼び出し回数や順序を条件分岐で変えてはいけないため)。
+    usePipelineRevealSync(ref: ref, lectureId: lecture.id, tasks: tasks);
+
+    ElementReveal reveal(List<String> taskTypes) => forceReady
+        ? const ElementReveal(RevealState.ready)
+        : computeReveal(taskTypes: taskTypes, tasksByType: tasksByType, jobFailed: jobFailed);
+
+    final transcriptReveal = reveal(const ['TRANSCRIBE_MASTER', 'CHECK_AND_ASSEMBLE']);
+    final summaryReveal = reveal(const ['CORE_EXTRACTION']);
+    final keywordsReveal = reveal(const ['CORE_EXTRACTION']);
+    final announcementsReveal = reveal(const ['ANNOUNCEMENT_GENERATION']);
+    final topicsReveal = reveal(const ['DETAIL_CONTENTS_GENERATION']);
+    final reviewCardsReveal = reveal(const ['REVIEW_CARD_GENERATION']);
+    final deepNotesReveal = reveal(const ['DETAIL_CONTENTS_GENERATION']);
+    final funFactReveal = reveal(const ['FUN_FACTS_GENERATION']);
+    // Hero Collageの画像パスはFINALIZE_JOB(パイプライン最後の集計タスク)で
+    // 一括してlecture_topicsへ書き込まれるため、他のブロックのように途中で
+    // 段階的に出すことができない仕様。演出上は「最後に登場する要素」として
+    // 割り切る。
+    final heroCollageReveal = reveal(const ['FINALIZE_JOB']);
+
+    final hasAnyReady = [
+      transcriptReveal,
+      summaryReveal,
+      announcementsReveal,
+      topicsReveal,
+      reviewCardsReveal,
+      deepNotesReveal,
+      funFactReveal,
+      heroCollageReveal,
+    ].any((r) => r.isReady);
+
+    // 何かは既に出ているが、ジョブ自体はまだ完了していない(生成中 or 一部失敗)
+    // 間だけ、控えめな進捗/エラーバナーを出す。全部readyになった(=complete)
+    // 瞬間に自然に消える。
+    final showProgressBanner = !forceReady && hasAnyReady && job != null && job.status != 'COMPLETED';
+
+    // ★ ヘッダー(プロフィールアイコン・Homeボタン)はブラーの対象外にする。
+    // FullScreenRevealBlurはchildに渡したもの全部にブラー+暗いオーバーレイを
+    // かけるため、CustomAppBarをその外側(常にシャープ・常に操作可能)に出し、
+    // ブラーの対象は「進捗バナー + スクロール本体」だけに絞る。
+    final blurredBody = Column(
+      children: [
+            if (showProgressBanner)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                child: PipelineProgressBanner(
+                  lectureId: lecture.id,
+                  tasks: tasks,
+                  jobFailed: jobFailed,
+                ),
+              ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -315,29 +391,35 @@ class _LectureViewerBody extends HookConsumerWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        Text(
-                          '  •  ',
-                          style: TextStyle(
-                            color: AppColors.universe.textComet.withValues(
-                              alpha: 0.5,
+                        if (hasCourseCode) ...[
+                          Text(
+                            '  •  ',
+                            style: TextStyle(
+                              color: AppColors.universe.textComet.withValues(
+                                alpha: 0.5,
+                              ),
+                              fontSize: 13,
                             ),
-                            fontSize: 13,
                           ),
-                        ),
-                        Text(
-                          courseCode,
-                          style: const TextStyle(
-                            color: AppColors.starGold,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            rawCourseCode,
+                            style: const TextStyle(
+                              color: AppColors.starGold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 12),
 
                     // Hero Collage View
-                    LectureHeroCollage(lectureId: lecture.id),
+                    RevealSwitcher(
+                      reveal: heroCollageReveal,
+                      locked: const ShimmerBox(height: 180, borderRadius: 20),
+                      ready: LectureHeroCollage(lectureId: lecture.id),
+                    ),
                     const SizedBox(height: 20),
 
                     // Title + Edit Button Row
@@ -376,14 +458,27 @@ class _LectureViewerBody extends HookConsumerWidget {
                     const SizedBox(height: 16),
 
                     // Summary
-                    Text(
-                      (summary != null && summary.isNotEmpty)
-                          ? summary
-                          : l10n.lectureViewerSummaryPlaceholder,
-                      style: TextStyle(
-                        color: AppColors.universe.textStarlight,
-                        fontSize: 14,
-                        height: 1.5,
+                    RevealSwitcher(
+                      reveal: summaryReveal,
+                      locked: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShimmerBox(height: 14, borderRadius: 6),
+                          SizedBox(height: 8),
+                          ShimmerBox(height: 14, borderRadius: 6),
+                          SizedBox(height: 8),
+                          ShimmerBox(width: 180, height: 14, borderRadius: 6),
+                        ],
+                      ),
+                      ready: Text(
+                        (summary != null && summary.isNotEmpty)
+                            ? summary
+                            : l10n.lectureViewerSummaryPlaceholder,
+                        style: TextStyle(
+                          color: AppColors.universe.textStarlight,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -434,34 +529,46 @@ class _LectureViewerBody extends HookConsumerWidget {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _HighlightChip(
-                            icon: Icons.campaign_outlined,
-                            label: l10n.lectureViewerAnnouncementsChip(
-                              announcements.length,
+                          RevealSwitcher(
+                            reveal: announcementsReveal,
+                            locked: const ShimmerBox(width: 118, height: 30, borderRadius: 20),
+                            ready: _HighlightChip(
+                              icon: Icons.campaign_outlined,
+                              label: l10n.lectureViewerAnnouncementsChip(
+                                announcements.length,
+                              ),
+                              onTap: announcements.isNotEmpty
+                                  ? () => _showAnnouncementsSheet(
+                                      context,
+                                      lecture.id,
+                                      announcements,
+                                    )
+                                  : null,
                             ),
-                            onTap: announcements.isNotEmpty
-                                ? () => _showAnnouncementsSheet(
-                                    context,
-                                    lecture.id,
-                                    announcements,
-                                  )
-                                : null,
                           ),
                           const SizedBox(width: 8),
-                          _HighlightChip(
-                            icon: Icons.vpn_key_outlined,
-                            label: l10n.lectureViewerKeywordsChip(
-                              keywords.length,
+                          RevealSwitcher(
+                            reveal: keywordsReveal,
+                            locked: const ShimmerBox(width: 96, height: 30, borderRadius: 20),
+                            ready: _HighlightChip(
+                              icon: Icons.vpn_key_outlined,
+                              label: l10n.lectureViewerKeywordsChip(
+                                keywords.length,
+                              ),
+                              onTap: keywords.isNotEmpty
+                                  ? () => _showKeywordsSheet(context, keywords)
+                                  : null,
                             ),
-                            onTap: keywords.isNotEmpty
-                                ? () => _showKeywordsSheet(context, keywords)
-                                : null,
                           ),
                           const SizedBox(width: 8),
-                          _HighlightChip(
-                            icon: Icons.hub_outlined,
-                            label: l10n.lectureViewerTopicsChip(topics.length),
-                            onTap: null, // Dummy/no-op
+                          RevealSwitcher(
+                            reveal: topicsReveal,
+                            locked: const ShimmerBox(width: 88, height: 30, borderRadius: 20),
+                            ready: _HighlightChip(
+                              icon: Icons.hub_outlined,
+                              label: l10n.lectureViewerTopicsChip(topics.length),
+                              onTap: null, // Dummy/no-op
+                            ),
                           ),
                         ],
                       ),
@@ -472,21 +579,29 @@ class _LectureViewerBody extends HookConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _LargeNavigatorCard(
-                            icon: Icons.style_outlined,
-                            title: l10n.lectureViewerReviewCardsTitle,
-                            onTap: () => context.push(
-                              '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0',
+                          child: RevealSwitcher(
+                            reveal: reviewCardsReveal,
+                            locked: const ShimmerBox(height: 96, borderRadius: 18),
+                            ready: _LargeNavigatorCard(
+                              icon: Icons.style_outlined,
+                              title: l10n.lectureViewerReviewCardsTitle,
+                              onTap: () => context.push(
+                                '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0',
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: _LargeNavigatorCard(
-                            icon: Icons.description_outlined,
-                            title: l10n.lectureViewerDeepNotesTitle,
-                            onTap: () => context.push(
-                              '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0',
+                          child: RevealSwitcher(
+                            reveal: deepNotesReveal,
+                            locked: const ShimmerBox(height: 96, borderRadius: 18),
+                            ready: _LargeNavigatorCard(
+                              icon: Icons.description_outlined,
+                              title: l10n.lectureViewerDeepNotesTitle,
+                              onTap: () => context.push(
+                                '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/dnd/${lecture.id}/0',
+                              ),
                             ),
                           ),
                         ),
@@ -495,53 +610,87 @@ class _LectureViewerBody extends HookConsumerWidget {
                     const SizedBox(height: 28),
 
                     // Fun Fact Section
-                    if (funFacts.isNotEmpty) ...[
-                      Text(
-                        l10n.lectureViewerFunFactHeader,
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _ViewerFunFactCard(fact: funFacts.first),
-                      const SizedBox(height: 28),
-                    ],
-
-                    GestureDetector(
-                      onTap: () => context.push(
-                        '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript',
-                      ),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.universe.glassWhiteLow,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.universe.glassBorder,
+                    // ★ readyでもfunFacts.isEmptyならSizedBox.shrinkへ収束する
+                    // (=タスクは完了したが結果0件、という正常系)。lockedの間は
+                    // ヘッダーごとスケルトンにする(readyになった瞬間にヘッダー+
+                    // カードがセットで出てくる方が、ヘッダーだけ先に出て中身が
+                    // 遅れて来るより落ち着いて見えるため)。
+                    RevealSwitcher(
+                      reveal: funFactReveal,
+                      locked: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.lectureViewerFunFactHeader,
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              fontSize: 12,
+                            ),
                           ),
+                          const SizedBox(height: 8),
+                          const ShimmerBox(height: 120, borderRadius: 16),
+                          const SizedBox(height: 28),
+                        ],
+                      ),
+                      ready: funFacts.isEmpty
+                          ? const SizedBox.shrink()
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.lectureViewerFunFactHeader,
+                                  style: TextStyle(
+                                    color: AppColors.universe.textComet,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _ViewerFunFactCard(fact: funFacts.first),
+                                const SizedBox(height: 28),
+                              ],
+                            ),
+                    ),
+
+                    RevealSwitcher(
+                      reveal: transcriptReveal,
+                      locked: const ShimmerBox(height: 52, borderRadius: 12),
+                      ready: GestureDetector(
+                        onTap: () => context.push(
+                          '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript',
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              color: AppColors.starGold,
-                              size: 20,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.universe.glassWhiteLow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.universe.glassBorder,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.lectureViewerTranscriptButtonLabel,
-                              style: TextStyle(
-                                color: AppColors.universe.textStarlight,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                color: AppColors.starGold,
+                                size: 20,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                l10n.lectureViewerTranscriptButtonLabel,
+                                style: TextStyle(
+                                  color: AppColors.universe.textStarlight,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -550,6 +699,46 @@ class _LectureViewerBody extends HookConsumerWidget {
               ),
             ),
           ],
+    );
+
+    // ★ ヘッダー(CustomAppBar、プロフィールアイコン/Homeボタン)は常にシャープな
+    // まま画面最上部に固定し、ブラー+暗いオーバーレイは進捗バナー〜スクロール
+    // 本体(blurredBody)だけにかける。FullScreenRevealBlurは「まだ何一つready
+    // なブロックが無い」間だけ有効になり、中央にLectureOverlayCard(NotStarted/
+    // Processing/Failedいずれか)を乗せる —— 旧LectureStatusScaffoldが画面ごと
+    // 丸ごと切り替えていたのと同じ体験を、要素単位のスケルトンの上に重ねる形で
+    // 再現している。
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            themeColor.withValues(alpha: 0.3),
+            themeColor.withValues(alpha: 0.08),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 840),
+            child: Column(
+              children: [
+                const CustomAppBar(showHomeButton: true),
+                Expanded(
+                  child: FullScreenRevealBlur(
+                    active: !hasAnyReady,
+                    overlay: LectureOverlayCard(lecture: lecture, uiState: uiState),
+                    child: blurredBody,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -594,6 +783,7 @@ class _LargeNavigatorCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: BoxDecoration(
           color: AppColors.universe.glassWhiteLow,
@@ -614,6 +804,7 @@ class _LargeNavigatorCard extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.universe.textStarlight,
                 fontWeight: FontWeight.bold,

@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/utils/network_constants.dart';
 import '../supabase_client.dart';
 
 part 'lecture_write_service.g.dart';
@@ -41,9 +42,14 @@ class LectureWriteService {
       'display_language': displayLanguage,
     };
 
-    await _client.from('lectures').upsert(
-      payload,
-      onConflict: 'id',
-    );
+    // ★ 以前はここにタイムアウトが無く、応答が返ってこない限りawaitが永久に
+    // 止まり続けるバグがあった。UploadManagerの_processQueueはこのawaitの
+    // 完了を待ってから_isProcessingを戻すため、応答が来ないだけで
+    // アップロードキュー全体(このlecture以外の保留分も含む)が静かに
+    // フリーズしたまま、DevLogにも何も出ないという不具合の原因になっていた。
+    await _client
+        .from('lectures')
+        .upsert(payload, onConflict: 'id')
+        .timeout(networkTimeout);
   }
 }

@@ -204,7 +204,7 @@ class HomePage extends HookConsumerWidget {
         }
         return;
       }
-      await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'home_initial_sync_retry');
       hasSyncedBefore.value = await ref
           .read(lectureControllerProvider.notifier)
           .hasEverSyncedLectures();
@@ -269,7 +269,7 @@ class HomePage extends HookConsumerWidget {
         return;
       }
 
-      await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'home_pull_to_refresh');
       ref.invalidate(courseListProvider);
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(recentFunFactsProvider);

@@ -773,9 +773,18 @@ class AppDatabase extends _$AppDatabase {
   /// 講義詳細ページ用。単一講義をIDで監視する(以前はSupabase Realtimeで
   /// 直接ストリーミングしていたが、Realtimeが有効化されていなかったため
   /// 実質更新を受け取れていなかった。ローカルDB経由でオフライン優先に統一する)。
+  ///
+  /// Driftの.watch()はテーブルへの書き込みがあるたびに(このidの行の値が
+  /// 実際に変わっていなくても)無条件に再emitするため、.distinct()が無いと
+  /// 「無関係な講義への書き込み」だけでこのStreamが再発火し、それをwatchして
+  /// いるlectureStateProviderが無駄にAsyncLoadingへ明滅し、LectureViewerPage
+  /// 側のウィジェット再構築(→usePipelineRevealSyncの既読状態リセット→
+  /// 無限re-pullループ)を引き起こしていた。LocalLectureは自動生成data class
+  /// で値等価な== が実装済みなので、.distinct()だけで安全に抑制できる。
   Stream<LocalLecture?> watchLectureById(String lectureId) {
     return (select(localLectures)..where((t) => t.id.equals(lectureId)))
-        .watchSingleOrNull();
+        .watchSingleOrNull()
+        .distinct();
   }
 
   // --- Outbox ---

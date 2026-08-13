@@ -32,6 +32,22 @@ TASK_DEDUP_WINDOW_SECONDS = 30
 def _dedup_bucket() -> int:
     return int(time.time() // TASK_DEDUP_WINDOW_SECONDS)
 
+# processing_jobs の「もう自力では二度と進まない」終端ステータス。
+# COMPLETED以外を一括で「進行中」とみなしてはいけない —— 一度FAILEDになった
+# ジョブが残っているだけで、その後アップロードが成功して自動発火した
+# /start-analysis が「Analysis already in progress」の冪等no-opを返してしまい、
+# 音声は揃っているのに分析が永久に始まらない状態になっていた(電波の弱い場所で
+# 実際に発生)。ERRORは旧pipeline.py(JobStatus.ERROR)が書く値、CANCELLEDは
+# 講義削除時に /lectures/{id}/cancel-jobs が書く値。
+DEAD_JOB_STATUSES = ("FAILED", "ERROR", "CANCELLED")
+
+# 古いジョブを打ち切る際に CANCELLED へ落とすタスクのステータス。
+# WAITINGを必ず含めること —— CHECK_AND_ASSEMBLEはチャンクが揃うまで通常のDAG
+# 状態機械に含まれないWAITINGで待機するため、ここから漏らすと打ち切ったはずの
+# 古いジョブのタスクがPatrol(_patrol_wake_waiting_check_and_assemble)に叩き
+# 起こされ、新しいジョブの書き込みと衝突する。
+CANCELLABLE_TASK_STATUSES = ["PENDING", "QUEUED", "WAITING", "RUNNING", "FAILED"]
+
 from app.core.supabase import get_supabase_client
 from app.services.helpers.credits import CREDITS_PER_USD
 from app.services.email_service import (
@@ -270,51 +286,91 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
     # 3.6 同じlecture_idの未完了(!=COMPLETED)jobが既にあるか確認する。
     old_jobs_res = await asyncio.to_thread(
-        lambda: admin_client.table("processing_jobs").select("id")
+        lambda: admin_client.table("processing_jobs").select("id, status, expected_chunks")
             .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED")
             .order("created_at", desc=True).execute()
     )
     old_jobs = old_jobs_res.data or []
 
-    # force=False(自動発火)で既に未完了jobがある場合は、新規作成せず既存jobを
-    # 冪等に返す。アップロード完了直後の自動発火は、チャンクのアップロード
+    # force=False(自動発火)で「まだ生きている」jobがある場合は、新規作成せず既存
+    # jobを冪等に返す。アップロード完了直後の自動発火は、チャンクのアップロード
     # リトライ(クライアント側は成功をACKできず再送するが、サーバー側は既に
     # 成功しているケース)によって複数回呼ばれ得るため、ここでガードしないと
     # 同じlectureに対して二重にjob/taskが作られてしまう(過去に実際に発生した)。
+    #
+    # ★ 判定対象は「生きているjob」だけに限る(DEAD_JOB_STATUSESは除外)。
+    # 通信が不安定な環境では「音声のアップロードが終わる前に手動でStart Analysis
+    # → TRANSCRIBE_MASTERがaudio_path無しでFAILED」が起き、その後アップロードが
+    # 成功して自動発火しても、このガードがFAILEDジョブを「進行中」とみなして
+    # no-opを返し続けるため、分析が二度と始まらなくなっていた。
     # 「Start Over」ボタン等、ユーザーが明示的に再実行を選んだ場合はforce=Trueで
-    # 呼ばれ、以下のキャンセル→新規作成を素通りする。
-    if old_jobs and not payload.force:
-        existing_job_id = old_jobs[0]["id"]
+    # 呼ばれ、生きているjobごとキャンセル→新規作成する。
+    active_jobs = [j for j in old_jobs if j.get("status") not in DEAD_JOB_STATUSES]
+    if active_jobs and not payload.force:
+        existing_job_id = active_jobs[0]["id"]
         print(f"⏭️ Active job already exists for lecture {payload.lecture_id} ({existing_job_id}). Returning existing job (idempotent no-op).")
         return {"message": "Analysis already in progress", "job_id": existing_job_id}
 
-    # 3.7 古いjobのタスクを無効化する(force=Trueの場合のみここに到達)。
+    # 3.7 古いjobのタスクを無効化する。
     # R2上のパスは {uid}/{lecture_id}/... のみで組まれておりjob_idを含まないため、
     # 古いjobのタスクが後から（Cloud Tasksの遅延リトライ等で）動き出すと、新しいjobの
     # 書き込みと衝突してデータが壊れる。CANCELLEDは orchestrator/patrol のどちらも
     # 拾わない終端ステータスなので、これだけで再開を防げる。
+    # ★ FAILEDジョブから作り直す場合(上のactive_jobs判定を通過したケース)も必ず
+    # ここを通すこと —— FAILEDなのはジョブ全体であって、個々のタスクにはまだ
+    # QUEUED/WAITINGのまま生き残っているものがあり得る。
     for old_job in old_jobs:
         await asyncio.to_thread(
             lambda old_job=old_job: admin_client.table("processing_tasks").update({
                 "status": "CANCELLED",
                 "updated_at": datetime.now().isoformat(),
             }).eq("job_id", old_job["id"]).in_(
-                "status", ["PENDING", "QUEUED", "RUNNING", "FAILED"]
+                "status", CANCELLABLE_TASK_STATUSES
             ).execute()
         )
-
-    # 3.8 リアルタイムかプレレコーデッドかを判定
-    is_realtime = payload.expected_chunks > 0
-    if not is_realtime:
-        # DBにすでにトランスクリプトがある場合はリアルタイムとして扱う
-        count_res = await asyncio.to_thread(
-            lambda: admin_client.table("lecture_transcripts")
-                .select("id", count="exact")
-                .eq("lecture_id", payload.lecture_id)
-                .execute()
+        # 親ジョブ自体もCANCELLEDにする。これをしないと、Flutter側の
+        # watchJob(最新1件を見る)やPatrol(PENDING/RUNNINGを拾う)から見て
+        # 古いジョブが「まだ生きている」ように見え続ける。
+        await asyncio.to_thread(
+            lambda old_job=old_job: admin_client.table("processing_jobs").update({
+                "status": "CANCELLED",
+                "updated_at": datetime.now().isoformat(),
+            }).eq("id", old_job["id"]).neq("status", "COMPLETED").execute()
         )
-        if (count_res.count or 0) > 0:
-            is_realtime = True
+
+    # 3.8 expected_chunks(＝CHECK_AND_ASSEMBLEが待つチャンク数)を決める。
+    # ★ 絶対に「今アップロード済みの件数」だけで決めてはいけない。電波が弱く
+    # 12個中5個しか届いていない状態で手動起動されると、CHECK_AND_ASSEMBLEが
+    # 「5/5揃った」と誤判定し、講義の前半だけで分析を完了してしまう(エラーに
+    # ならず静かに欠落するため、一番たちが悪い)。
+    # 3つの情報源の最大値を採ることで、expected_chunksが実績より小さくなること
+    # だけは構造的に起こらないようにする:
+    #   1. payload.expected_chunks … クライアントのローカルDBが持つ録音実績。最も信頼できる
+    #   2. 過去jobのexpected_chunks … 別端末からの起動などで1が0のときの引き継ぎ
+    #   3. lecture_transcriptsの実件数 … 上2つが無いときの最終フォールバック
+    # 実際より大きい値になった場合は、CHECK_AND_ASSEMBLEが揃うまで待機し続ける
+    # (＝アップロードの再開を待つ)だけで、詰まったチャンクは_recover_stuck_chunks
+    # が回収するため、小さすぎる方向に倒すよりはるかに安全。
+    count_res = await asyncio.to_thread(
+        lambda: admin_client.table("lecture_transcripts")
+            .select("id", count="exact")
+            .eq("lecture_id", payload.lecture_id)
+            .execute()
+    )
+    transcript_count = count_res.count or 0
+    previous_expected = max(
+        (j.get("expected_chunks") or 0 for j in old_jobs),
+        default=0,
+    )
+    expected_chunks = max(payload.expected_chunks, previous_expected, transcript_count)
+
+    is_realtime = expected_chunks > 0
+    if expected_chunks != payload.expected_chunks:
+        print(
+            f"📐 expected_chunks adjusted for lecture {payload.lecture_id}: "
+            f"payload={payload.expected_chunks}, previous_job={previous_expected}, "
+            f"transcript_rows={transcript_count} → {expected_chunks}"
+        )
 
     first_task = "CHECK_AND_ASSEMBLE" if is_realtime else "TRANSCRIBE_MASTER"
 
@@ -322,7 +378,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     job_data = {
       "lecture_id": payload.lecture_id,
       "user_id": user_id,
-      "expected_chunks": payload.expected_chunks if is_realtime else 0,
+      "expected_chunks": expected_chunks,
       "status": "PENDING"
     }
     job_res = await asyncio.to_thread(
@@ -1915,6 +1971,62 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
     # 6. R2上の {uid}/ 配下を丸ごと削除(講義単位の削除で取りこぼしたファイルの安全網)
     from app.core.r2_storage import storage_service
     await asyncio.to_thread(storage_service.delete_prefix, f"{uid}/")
+
+
+@app.post("/lectures/{lecture_id}/cancel-jobs")
+async def cancel_lecture_jobs_endpoint(lecture_id: str, request: Request):
+    """
+    指定講義の未完了ジョブとそのタスクをすべてCANCELLEDにする。
+    Flutterが講義をゴミ箱に入れた直後にbest-effortで呼ぶ。
+
+    これが無いと、削除した講義のパイプラインがサーバー側で走り続け、削除の
+    カスケード論理削除(削除時点で存在したコンテンツだけが対象)をすり抜けた
+    Review Card / Fun Fact などが deleted_at=null の新規行として後から生成され、
+    「削除したはずの講義に全コンテンツが結びつく」状態になっていた。
+    クレジットも無駄に消費される。
+
+    ハードデリート(_hard_delete_lecture)と違い、行そのものは消さない ——
+    ゴミ箱からの復元後に「Start Analysis」でやり直せるようにするため。
+    CANCELLEDはorchestrator/patrolのどちらも拾わない終端ステータスであり、
+    /start-analysisのDEAD_JOB_STATUSESにも含まれるので、復元後の再実行は
+    force無しでも新規ジョブとして通る。
+    """
+    uid = _authenticate_request(request)
+    admin_client = get_supabase_client()
+
+    lec_res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures")
+            .select("id, user_id")
+            .eq("id", lecture_id)
+            .maybe_single()
+            .execute()
+    )
+    lecture = lec_res.data if lec_res else None
+    if not lecture or lecture["user_id"] != uid:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+
+    jobs_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").select("id")
+            .eq("lecture_id", lecture_id).neq("status", "COMPLETED").execute()
+    )
+    job_ids = [j["id"] for j in (jobs_res.data or [])]
+
+    for job_id in job_ids:
+        await asyncio.to_thread(
+            lambda job_id=job_id: admin_client.table("processing_tasks").update({
+                "status": "CANCELLED",
+                "updated_at": datetime.now().isoformat(),
+            }).eq("job_id", job_id).in_("status", CANCELLABLE_TASK_STATUSES).execute()
+        )
+        await asyncio.to_thread(
+            lambda job_id=job_id: admin_client.table("processing_jobs").update({
+                "status": "CANCELLED",
+                "updated_at": datetime.now().isoformat(),
+            }).eq("id", job_id).neq("status", "COMPLETED").execute()
+        )
+
+    print(f"🛑 Cancelled {len(job_ids)} job(s) for lecture {lecture_id}")
+    return {"success": True, "cancelled_jobs": len(job_ids)}
 
 
 @app.post("/lectures/{lecture_id}/hard-delete")

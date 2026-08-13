@@ -780,6 +780,16 @@
     "description": "Empty-state text shown inside the announcements/keywords bottom sheet when that list has no items."
   },
 
+  "lectureViewerPartialFailureBanner": "Some content couldn't be generated",
+  "@lectureViewerPartialFailureBanner": {
+    "description": "Slim banner shown at the top of the Lecture Viewer once at least one piece of content has already been generated, but the processing job itself has terminally failed (some other piece never made it). Paired with a 'Start Over' button and tapping the banner opens the step-by-step details sheet."
+  },
+
+  "lectureViewerPipelineDetailsSheetTitle": "Analysis progress",
+  "@lectureViewerPipelineDetailsSheetTitle": {
+    "description": "Header title of the bottom sheet (opened from PipelineProgressBanner) that lists every pipeline step and its status via PipelineStepsList."
+  },
+
   "pipelineStepsCancelledLabel": "Cancelled",
   "@pipelineStepsCancelledLabel": {
     "description": "Subtitle shown under a pipeline step's name on the lecture processing screen when that step (task) was cancelled and will not run. Short status word."
@@ -907,6 +917,47 @@
     "description": "Button inside the no-course warning banner that opens the lecture-edit sheet so the user can assign a course."
   },
 
+  "notStartedUploadingWarning": "Still uploading the audio. Analysis will start automatically once the upload finishes.",
+  "@notStartedUploadingWarning": {
+    "description": "Banner shown on the 'Ready to Analyze' screen while chunk/master audio uploads are still queued or retrying. The Start Analysis button is disabled in this state because the backend would fail with a missing-audio error."
+  },
+
+  "notStartedUploadRetryingWarning": "Still uploading the audio — the connection seems unstable, so we're retrying in the background: {error}\nAnalysis will start automatically once the upload finishes.",
+  "@notStartedUploadRetryingWarning": {
+    "description": "Variant of notStartedUploadingWarning shown when an audio upload job has already failed at least once and is waiting to retry. {error} is the last recorded error message.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "TimeoutException: R2 timed out while uploading master audio"
+      }
+    }
+  },
+
+  "notStartedUploadingLabel": "Uploading audio...",
+  "@notStartedUploadingLabel": {
+    "description": "Label on the disabled 'Start Analysis' button while the lecture's audio is still being uploaded."
+  },
+
+  "notStartedCancelUploadButton": "Cancel",
+  "@notStartedCancelUploadButton": {
+    "description": "Small text button inside the 'still uploading' banner that stops the background upload retry loop. Does not delete the local audio file or asset — the upload can be resumed later. Short label."
+  },
+
+  "notStartedUploadStoppedWarning": "Upload stopped. The recording is still on this device — resume anytime.",
+  "@notStartedUploadStoppedWarning": {
+    "description": "Banner shown on the 'Ready to Analyze' screen after the user taps Cancel on an in-progress/retrying audio upload. Reassures them the local file is safe and paired with a Resume button."
+  },
+
+  "notStartedResumeUploadButton": "Resume",
+  "@notStartedResumeUploadButton": {
+    "description": "Button inside the 'upload stopped' banner that re-queues the cancelled upload job so it starts retrying again. Short label."
+  },
+
+  "notStartedUploadStoppedLabel": "Upload stopped",
+  "@notStartedUploadStoppedLabel": {
+    "description": "Label on the disabled 'Start Analysis' button while the lecture's audio upload has been manually stopped by the user (via notStartedCancelUploadButton) and not yet resumed."
+  },
+
   "notStartedStartingLabel": "Starting...",
   "@notStartedStartingLabel": {
     "description": "Label on the 'Start Analysis' button while the start-analysis request is in flight (shown with a spinner)."
@@ -997,6 +1048,42 @@
   "processingViewHoldToRestartHint": "Hold the icon above to start over from scratch.",
   "@processingViewHoldToRestartHint": {
     "description": "Small hint text shown only while analysis is actively running (not failed), telling the user how to trigger a full restart via long-press."
+  },
+
+  "processingViewStopButton": "Stop",
+  "@processingViewStopButton": {
+    "description": "Button shown only while analysis is actively running (not failed), letting the user cancel the in-progress job without starting a new one (unlike Start Over, which cancels and immediately restarts). The job can be resumed manually later via Start Analysis."
+  },
+
+  "processingViewStoppingLabel": "Stopping...",
+  "@processingViewStoppingLabel": {
+    "description": "Label on the Stop button while the cancel request is in flight."
+  },
+
+  "processingViewStopDialogTitle": "Stop analysis?",
+  "@processingViewStopDialogTitle": {
+    "description": "Confirmation dialog title shown when the user taps the Stop button in ProcessingView."
+  },
+
+  "processingViewStopDialogMessage": "This stops the current analysis. Any steps already completed are kept, and you can start it again manually at any time.",
+  "@processingViewStopDialogMessage": {
+    "description": "Confirmation dialog message explaining that Stop (unlike Start Over) is non-destructive and resumable — completed work isn't discarded, it just isn't picked back up until the user restarts manually."
+  },
+
+  "processingViewStopConfirmButton": "Stop",
+  "@processingViewStopConfirmButton": {
+    "description": "Confirm button label on the stop-analysis confirmation dialog."
+  },
+
+  "processingViewStopFailedSnackbar": "Failed to stop: {error}",
+  "@processingViewStopFailedSnackbar": {
+    "description": "Snackbar shown when the Stop action's network call fails. {error} is the raw error object's toString().",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Exception: network error"
+      }
+    }
   },
 
   "processingViewStartingOverLabel": "Starting over...",
@@ -3287,6 +3374,22 @@
     }
   },
 
+  "lectureDeleteDialogTitle": "Delete Lecture?",
+  "@lectureDeleteDialogTitle": {
+    "description": "Dialog title when asking to delete a lecture."
+  },
+
+  "lectureDeleteDialogMessage": "Are you sure you want to delete \"{title}\"? This action will remove the lecture and all its generated contents.",
+  "@lectureDeleteDialogMessage": {
+    "description": "Confirmation message when asking to delete a lecture.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Lecture 1"
+      }
+    }
+  },
+
   "announcementDeleteDialogTitle": "Delete Announcement?",
   "@announcementDeleteDialogTitle": {
     "description": "Dialog title when asking to delete an announcement."
@@ -3661,5 +3764,9 @@
   "pipelineTaskDetailContentsGeneration": "Writing deep notes",
   "@pipelineTaskDetailContentsGeneration": { "description": "Pipeline task label: Writing deep notes." },
   "pipelineTaskFinalizeJob": "Finalizing",
-  "@pipelineTaskFinalizeJob": { "description": "Pipeline task label: Finalizing." }
+  "@pipelineTaskFinalizeJob": { "description": "Pipeline task label: Finalizing." },
+  "homeTutorialCalloutMessage": "Check out this lecture about the app!",
+  "@homeTutorialCalloutMessage": {
+    "description": "One-time callout bubble pointing at the tutorial lecture card on the home screen, shown only until it's opened for the first time."
+  }
 }

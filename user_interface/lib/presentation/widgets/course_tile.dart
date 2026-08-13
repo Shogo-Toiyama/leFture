@@ -31,28 +31,36 @@ class CourseTile extends StatelessWidget {
     final themeColor = CourseStyleHelper.hexToColor(course.color, fallback: AppColors.starGold);
     final iconData = CourseStyleHelper.getIcon(course.icon);
 
+    // 既定コース(チュートリアル講義の置き場所兼メモ用コース)は削除させない。
+    // 削除できてしまうと、非削除のはずのチュートリアル講義まで巻き添えで
+    // 消える(コース削除は配下の講義も一緒に論理削除するカスケード仕様のため)。
+    final isDefaultCourse = course.metadata?['is_default'] == true;
+    final effectiveOnDelete = isDefaultCourse ? null : onDelete;
+
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.coursesRootPath}/c/${course.id}'),
-      onLongPress: (onEdit != null || onDelete != null)
+      onLongPress: (onEdit != null || effectiveOnDelete != null)
           ? () => showTileActionsSheet(
                 context: context,
                 title: course.displayTitle,
                 onEdit: () {
                   if (onEdit != null) onEdit!();
                 },
-                onDelete: () async {
-                  final confirm = await showCustomDialog(
-                    context: context,
-                    title: l10n.courseDeleteDialogTitle,
-                    message: l10n.courseDeleteDialogMessage(course.displayTitle),
-                    confirmLabel: l10n.commonDeleteButton,
-                    icon: Icons.delete_outline,
-                    isDestructive: true,
-                  );
-                  if (confirm == true && onDelete != null) {
-                    onDelete!();
-                  }
-                },
+                onDelete: effectiveOnDelete == null
+                    ? null
+                    : () async {
+                        final confirm = await showCustomDialog(
+                          context: context,
+                          title: l10n.courseDeleteDialogTitle,
+                          message: l10n.courseDeleteDialogMessage(course.displayTitle),
+                          confirmLabel: l10n.commonDeleteButton,
+                          icon: Icons.delete_outline,
+                          isDestructive: true,
+                        );
+                        if (confirm == true) {
+                          effectiveOnDelete();
+                        }
+                      },
               )
           : null,
       child: Container(

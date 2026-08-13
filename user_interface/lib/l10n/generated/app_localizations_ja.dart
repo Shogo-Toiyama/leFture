@@ -467,6 +467,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lectureViewerInfoSheetEmptyState => 'まだ何もありません';
 
   @override
+  String get lectureViewerPartialFailureBanner => '一部のコンテンツを生成できませんでした';
+
+  @override
+  String get lectureViewerPipelineDetailsSheetTitle => '解析の進捗';
+
+  @override
   String get pipelineStepsCancelledLabel => 'キャンセル済み';
 
   @override
@@ -541,6 +547,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notStartedChooseCourseButton => 'コースを選択';
 
   @override
+  String get notStartedUploadingWarning => '音声をアップロード中です。完了すると自動的に解析が始まります。';
+
+  @override
+  String notStartedUploadRetryingWarning(String error) {
+    return '音声をアップロード中です。通信が不安定なため、バックグラウンドで再試行しています: $error\n完了すると自動的に解析が始まります。';
+  }
+
+  @override
+  String get notStartedUploadingLabel => '音声をアップロード中...';
+
+  @override
+  String get notStartedCancelUploadButton => 'キャンセル';
+
+  @override
+  String get notStartedUploadStoppedWarning =>
+      'アップロードを停止しました。録音データは端末に残っています。いつでも再開できます。';
+
+  @override
+  String get notStartedResumeUploadButton => '再開';
+
+  @override
+  String get notStartedUploadStoppedLabel => 'アップロード停止中';
+
+  @override
   String get notStartedStartingLabel => '開始しています...';
 
   @override
@@ -588,6 +618,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get processingViewHoldToRestartHint => '上のアイコンを長押しすると最初からやり直せます。';
+
+  @override
+  String get processingViewStopButton => '停止';
+
+  @override
+  String get processingViewStoppingLabel => '停止しています...';
+
+  @override
+  String get processingViewStopDialogTitle => '解析を停止しますか？';
+
+  @override
+  String get processingViewStopDialogMessage =>
+      '現在の解析を停止します。既に完了しているステップはそのまま残り、いつでも手動で再開できます。';
+
+  @override
+  String get processingViewStopConfirmButton => '停止';
+
+  @override
+  String processingViewStopFailedSnackbar(String error) {
+    return '停止に失敗しました: $error';
+  }
 
   @override
   String get processingViewStartingOverLabel => 'やり直しています...';
@@ -1998,6 +2049,14 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get lectureDeleteDialogTitle => '講義を削除しますか？';
+
+  @override
+  String lectureDeleteDialogMessage(String title) {
+    return '本当に「$title」を削除しますか？この操作により、講義とすべての生成コンテンツが削除されます。';
+  }
+
+  @override
   String get announcementDeleteDialogTitle => 'お知らせを削除しますか？';
 
   @override
@@ -2284,4 +2343,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get pipelineTaskFinalizeJob => '解析結果の最終処理中';
+
+  @override
+  String get homeTutorialCalloutMessage => 'このアプリについての講義を見てみよう!';
 }

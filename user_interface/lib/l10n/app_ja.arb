@@ -151,6 +151,8 @@
   "lectureViewerKeywordsSheetTitle": "キーワード",
   "lectureViewerInfoSheetEmptyState": "まだ何もありません",
 
+  "lectureViewerPartialFailureBanner": "一部のコンテンツを生成できませんでした",
+  "lectureViewerPipelineDetailsSheetTitle": "解析の進捗",
   "pipelineStepsCancelledLabel": "キャンセル済み",
   "pipelineStepsRetryingAutomaticallyLabel": "自動的に再試行しています…",
   "pipelineStepsInProgressLabel": "処理中",
@@ -173,6 +175,13 @@
   "notStartedReadySubtitle": "音声の準備ができています。AIで文字起こし・要約・ノートを生成しましょう。",
   "notStartedNoCourseWarning": "この講義にはまだコースが割り当てられていません。コースを設定するまで解析を開始できません。",
   "notStartedChooseCourseButton": "コースを選択",
+  "notStartedUploadingWarning": "音声をアップロード中です。完了すると自動的に解析が始まります。",
+  "notStartedUploadRetryingWarning": "音声をアップロード中です。通信が不安定なため、バックグラウンドで再試行しています: {error}\n完了すると自動的に解析が始まります。",
+  "notStartedUploadingLabel": "音声をアップロード中...",
+  "notStartedCancelUploadButton": "キャンセル",
+  "notStartedUploadStoppedWarning": "アップロードを停止しました。録音データは端末に残っています。いつでも再開できます。",
+  "notStartedResumeUploadButton": "再開",
+  "notStartedUploadStoppedLabel": "アップロード停止中",
   "notStartedStartingLabel": "開始しています...",
   "notStartedStartAnalysisButton": "解析を開始",
   "notStartedErrorPrefix": "エラー: {error}",
@@ -189,6 +198,12 @@
   "processingViewAnalyzingTitle": "講義を解析しています...",
   "processingViewStepsCompletedLabel": "{completed} / {total} ステップ完了",
   "processingViewHoldToRestartHint": "上のアイコンを長押しすると最初からやり直せます。",
+  "processingViewStopButton": "停止",
+  "processingViewStoppingLabel": "停止しています...",
+  "processingViewStopDialogTitle": "解析を停止しますか？",
+  "processingViewStopDialogMessage": "現在の解析を停止します。既に完了しているステップはそのまま残り、いつでも手動で再開できます。",
+  "processingViewStopConfirmButton": "停止",
+  "processingViewStopFailedSnackbar": "停止に失敗しました: {error}",
   "processingViewStartingOverLabel": "やり直しています...",
   "processingViewStartOverFromScratchButton": "最初からやり直す",
 
@@ -653,6 +668,8 @@
   "aiChatSheetPreviewFallback": "これはプレビューです。実際のAI回答機能は今後実装予定です。",
   "courseDeleteDialogTitle": "コースを削除しますか？",
   "courseDeleteDialogMessage": "本当に「{title}」を削除しますか？このコース内のすべての講義および生成データも削除されます。",
+  "lectureDeleteDialogTitle": "講義を削除しますか？",
+  "lectureDeleteDialogMessage": "本当に「{title}」を削除しますか？この操作により、講義とすべての生成コンテンツが削除されます。",
   "announcementDeleteDialogTitle": "お知らせを削除しますか？",
   "announcementDeleteDialogMessage": "本当に「{title}」を削除しますか？",
   "spaceshipAnnouncementGotIt": "了解",
@@ -755,5 +772,6 @@
   "pipelineTaskFunFactSearch": "関連トリビアを検索中",
   "pipelineTaskFunFactsGeneration": "関連トリビアを執筆中",
   "pipelineTaskDetailContentsGeneration": "詳細ノート（Deep Notes）を執筆中",
-  "pipelineTaskFinalizeJob": "解析結果の最終処理中"
+  "pipelineTaskFinalizeJob": "解析結果の最終処理中",
+  "homeTutorialCalloutMessage": "このアプリについての講義を見てみよう!"
 }

@@ -968,6 +968,18 @@ abstract class AppLocalizations {
   /// **'Nothing here yet'**
   String get lectureViewerInfoSheetEmptyState;
 
+  /// Slim banner shown at the top of the Lecture Viewer once at least one piece of content has already been generated, but the processing job itself has terminally failed (some other piece never made it). Paired with a 'Start Over' button and tapping the banner opens the step-by-step details sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Some content couldn\'t be generated'**
+  String get lectureViewerPartialFailureBanner;
+
+  /// Header title of the bottom sheet (opened from PipelineProgressBanner) that lists every pipeline step and its status via PipelineStepsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis progress'**
+  String get lectureViewerPipelineDetailsSheetTitle;
+
   /// Subtitle shown under a pipeline step's name on the lecture processing screen when that step (task) was cancelled and will not run. Short status word.
   ///
   /// In en, this message translates to:
@@ -1097,6 +1109,48 @@ abstract class AppLocalizations {
   /// **'Choose Course'**
   String get notStartedChooseCourseButton;
 
+  /// Banner shown on the 'Ready to Analyze' screen while chunk/master audio uploads are still queued or retrying. The Start Analysis button is disabled in this state because the backend would fail with a missing-audio error.
+  ///
+  /// In en, this message translates to:
+  /// **'Still uploading the audio. Analysis will start automatically once the upload finishes.'**
+  String get notStartedUploadingWarning;
+
+  /// Variant of notStartedUploadingWarning shown when an audio upload job has already failed at least once and is waiting to retry. {error} is the last recorded error message.
+  ///
+  /// In en, this message translates to:
+  /// **'Still uploading the audio — the connection seems unstable, so we\'re retrying in the background: {error}\nAnalysis will start automatically once the upload finishes.'**
+  String notStartedUploadRetryingWarning(String error);
+
+  /// Label on the disabled 'Start Analysis' button while the lecture's audio is still being uploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading audio...'**
+  String get notStartedUploadingLabel;
+
+  /// Small text button inside the 'still uploading' banner that stops the background upload retry loop. Does not delete the local audio file or asset — the upload can be resumed later. Short label.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get notStartedCancelUploadButton;
+
+  /// Banner shown on the 'Ready to Analyze' screen after the user taps Cancel on an in-progress/retrying audio upload. Reassures them the local file is safe and paired with a Resume button.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload stopped. The recording is still on this device — resume anytime.'**
+  String get notStartedUploadStoppedWarning;
+
+  /// Button inside the 'upload stopped' banner that re-queues the cancelled upload job so it starts retrying again. Short label.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get notStartedResumeUploadButton;
+
+  /// Label on the disabled 'Start Analysis' button while the lecture's audio upload has been manually stopped by the user (via notStartedCancelUploadButton) and not yet resumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload stopped'**
+  String get notStartedUploadStoppedLabel;
+
   /// Label on the 'Start Analysis' button while the start-analysis request is in flight (shown with a spinner).
   ///
   /// In en, this message translates to:
@@ -1180,6 +1234,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hold the icon above to start over from scratch.'**
   String get processingViewHoldToRestartHint;
+
+  /// Button shown only while analysis is actively running (not failed), letting the user cancel the in-progress job without starting a new one (unlike Start Over, which cancels and immediately restarts). The job can be resumed manually later via Start Analysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get processingViewStopButton;
+
+  /// Label on the Stop button while the cancel request is in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping...'**
+  String get processingViewStoppingLabel;
+
+  /// Confirmation dialog title shown when the user taps the Stop button in ProcessingView.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop analysis?'**
+  String get processingViewStopDialogTitle;
+
+  /// Confirmation dialog message explaining that Stop (unlike Start Over) is non-destructive and resumable — completed work isn't discarded, it just isn't picked back up until the user restarts manually.
+  ///
+  /// In en, this message translates to:
+  /// **'This stops the current analysis. Any steps already completed are kept, and you can start it again manually at any time.'**
+  String get processingViewStopDialogMessage;
+
+  /// Confirm button label on the stop-analysis confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get processingViewStopConfirmButton;
+
+  /// Snackbar shown when the Stop action's network call fails. {error} is the raw error object's toString().
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to stop: {error}'**
+  String processingViewStopFailedSnackbar(String error);
 
   /// Label on the 'Start over from scratch' button while the restart request is in flight (shown with a spinner), only in the failed-job state.
   ///
@@ -3770,6 +3860,18 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete \"{title}\"? All lectures inside this course, and everything generated from them, will be deleted too.'**
   String courseDeleteDialogMessage(String title);
 
+  /// Dialog title when asking to delete a lecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Lecture?'**
+  String get lectureDeleteDialogTitle;
+
+  /// Confirmation message when asking to delete a lecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{title}\"? This action will remove the lecture and all its generated contents.'**
+  String lectureDeleteDialogMessage(String title);
+
   /// Dialog title when asking to delete an announcement.
   ///
   /// In en, this message translates to:
@@ -4315,6 +4417,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finalizing'**
   String get pipelineTaskFinalizeJob;
+
+  /// One-time callout bubble pointing at the tutorial lecture card on the home screen, shown only until it's opened for the first time.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out this lecture about the app!'**
+  String get homeTutorialCalloutMessage;
 }
 
 class _AppLocalizationsDelegate

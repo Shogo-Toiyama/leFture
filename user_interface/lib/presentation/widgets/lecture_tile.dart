@@ -98,30 +98,36 @@ class LectureTile extends ConsumerWidget {
     final code = courseCode?.trim();
     final hasCourseCode = code != null && code.isNotEmpty;
 
+    // チュートリアル講義は削除できないため、長押しメニューに削除の選択肢自体を出さない。
+    final isTutorial = lecture.metadata?['is_tutorial'] == true;
+    final effectiveOnDelete = isTutorial ? null : onDelete;
+
     return GestureDetector(
       onTap: () => isActivelyRecording
           ? context.push(AppRoutes.recording)
           : context.go('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
-      onLongPress: (onEdit != null || onDelete != null)
+      onLongPress: (onEdit != null || effectiveOnDelete != null)
           ? () => showTileActionsSheet(
                 context: context,
                 title: titleText,
                 onEdit: () {
                   if (onEdit != null) onEdit!();
                 },
-                onDelete: () async {
-                  final confirm = await showCustomDialog(
-                    context: context,
-                    title: 'Delete Lecture?',
-                    message: 'Are you sure you want to delete "$titleText"? This action will remove the lecture and all its generated contents.',
-                    confirmLabel: 'Delete',
-                    icon: Icons.delete_outline,
-                    isDestructive: true,
-                  );
-                  if (confirm == true && onDelete != null) {
-                    onDelete!();
-                  }
-                },
+                onDelete: effectiveOnDelete == null
+                    ? null
+                    : () async {
+                        final confirm = await showCustomDialog(
+                          context: context,
+                          title: l10n.lectureDeleteDialogTitle,
+                          message: l10n.lectureDeleteDialogMessage(titleText),
+                          confirmLabel: l10n.commonDeleteButton,
+                          icon: Icons.delete_outline,
+                          isDestructive: true,
+                        );
+                        if (confirm == true) {
+                          effectiveOnDelete();
+                        }
+                      },
               )
           : null,
       child: Container(

@@ -6,7 +6,9 @@ Future<void> showTileActionsSheet({
   required BuildContext context,
   required String title,
   required VoidCallback onEdit,
-  required VoidCallback onDelete,
+  /// 削除の選択肢を出すかどうか。null なら「削除」行自体を表示しない
+  /// (例: 削除できないチュートリアル講義)。
+  VoidCallback? onDelete,
   /// 完了/未完了のトグル用コールバック（省略可）。
   VoidCallback? onToggleComplete,
   /// トグルボタンに表示するラベル（例: 'Mark as Done' / 'Mark as Todo'）。
@@ -74,15 +76,17 @@ Future<void> showTileActionsSheet({
                 onEdit();
               },
             ),
-            Divider(color: AppColors.universe.glassBorder, height: 1),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.correctionRed),
-              title: Text(l10n.commonDeleteButton, style: const TextStyle(color: AppColors.correctionRed, fontSize: 14)),
-              onTap: () {
-                Navigator.of(context).pop();
-                onDelete();
-              },
-            ),
+            if (onDelete != null) ...[
+              Divider(color: AppColors.universe.glassBorder, height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: AppColors.correctionRed),
+                title: Text(l10n.commonDeleteButton, style: const TextStyle(color: AppColors.correctionRed, fontSize: 14)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onDelete();
+                },
+              ),
+            ],
           ],
         ),
       );

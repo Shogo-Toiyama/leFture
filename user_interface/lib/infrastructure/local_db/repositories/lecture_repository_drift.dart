@@ -125,6 +125,7 @@ class LectureRepositoryDrift {
       lectureDatetime: row.lectureDatetime ?? row.createdAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      lastAccessedAt: row.lastAccessedAt,
     );
   }
 }

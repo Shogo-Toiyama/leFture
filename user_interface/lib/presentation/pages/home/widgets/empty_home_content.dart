@@ -57,7 +57,7 @@ class EmptyHomeContent extends ConsumerWidget {
         return;
       }
 
-      await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'empty_home_content_retry');
       ref.invalidate(courseListProvider);
       ref.invalidate(currentUserProfileProvider);
     }

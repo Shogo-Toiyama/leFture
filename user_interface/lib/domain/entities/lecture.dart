@@ -24,6 +24,10 @@ class Lecture {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// 講義詳細を最後に開いた時刻。ローカルDB(LocalLectures.lastAccessedAt)由来で
+  /// Supabaseには存在しないため、fromMap/toUpsertMapでは扱わない。
+  final DateTime? lastAccessedAt;
+
   bool get isDeleted => deletedAt != null;
 
   Lecture({
@@ -40,6 +44,7 @@ class Lecture {
     required this.lectureDatetime,
     required this.createdAt,
     required this.updatedAt,
+    this.lastAccessedAt,
   });
 
   factory Lecture.fromMap(Map<String, dynamic> map) {

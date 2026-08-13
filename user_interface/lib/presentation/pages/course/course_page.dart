@@ -236,13 +236,16 @@ class _TermSection extends ConsumerWidget {
                 );
               },
               onDelete: () async {
+                // CourseTile側でボタン自体を隠しているが、最終防波堤として
+                // ここでも既定コースの削除を拒否する。
+                if (course.metadata?['is_default'] == true) return;
                 try {
                   await ref.read(courseRepositoryProvider).deleteCourse(course.id);
                   ref.invalidate(courseListProvider);
                   // カスケードで削除された配下のLectureをローカルにも反映する
                   await ref
                       .read(lectureControllerProvider.notifier)
-                      .bootstrapLectures(forceFullPull: true);
+                      .bootstrapLectures(forceFullPull: true, reason: 'course_page_delete_cascade');
                 } catch (e) {
                   if (context.mounted) {
                     AppErrorDialog.showSmart(context, e, actionName: 'deleting course');
@@ -397,10 +400,14 @@ class _CourseLectureListView extends ConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: RefreshIndicator(
-            color: AppColors.starGold,
-            onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
-            child: CustomScrollView(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 840),
+              child: RefreshIndicator(
+                color: AppColors.starGold,
+                onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
+                child: CustomScrollView(
               slivers: [
                 // 1. AppBar Area
                 const SliverToBoxAdapter(
@@ -824,6 +831,8 @@ class _CourseLectureListView extends ConsumerWidget {
         ),
       ),
     ),
+    ),
+    ),
     floatingActionButton: FloatingActionButton.extended(
       backgroundColor: AppColors.starGold,
       foregroundColor: Colors.white,
@@ -963,7 +972,7 @@ Future<void> _handleRefresh(BuildContext context, WidgetRef ref, {String? course
     return;
   }
 
-  await ref.read(lectureControllerProvider.notifier).bootstrapLectures();
+  await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'course_page_pull_to_refresh');
   ref.invalidate(courseListProvider);
   if (courseId != null) {
     ref.invalidate(lectureListStreamProvider(courseId));

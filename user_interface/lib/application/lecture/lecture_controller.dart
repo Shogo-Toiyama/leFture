@@ -1,8 +1,11 @@
 // lib/application/lecture/lecture_controller.dart
 
+import 'dart:io';
+
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/infrastructure/local_db/repositories/recording_repository_drift.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/application/sync/lecture_sync_service.dart';
 import 'package:lefture/application/sync/fun_fact_sync_service.dart';
@@ -25,6 +28,7 @@ import 'package:lefture/application/sync/user_profile_sync_service.dart';
 import 'package:lefture/application/maintenance/local_retention_service.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/application/job/job_providers.dart'; // jobRepository
+import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/infrastructure/supabase/repositories/announcement_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/repositories/review_card_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/repositories/fun_fact_repository_supabase.dart';
@@ -76,7 +80,33 @@ class LectureController extends _$LectureController {
   /// 起動ごとに1回は必ずbootstrapが走ることも意図している。
   DateTime? _lastBootstrapAttemptAt;
 
-  Future<void> bootstrapLectures({bool forceFullPull = false}) async {
+  /// 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
+  /// 待つ。呼び出し元(bootstrapIfNeeded/LectureViewerPageのref.listen等)が
+  /// ほぼ同時に何度も呼んでも、実際のPullは1回しか走らない。
+  Future<void>? _inFlightBootstrap;
+
+  Future<void> bootstrapLectures({bool forceFullPull = false, String reason = 'unspecified'}) async {
+    // 診断用: どの呼び出し元が何回bootstrapLecturesを起動しているか追跡する
+    // (LectureViewerPageで無限にPullし続けるバグの調査用に追加)。
+    DevLog.add('🔁 [LectureController] bootstrapLectures() called: reason=$reason forceFullPull=$forceFullPull');
+
+    final inFlight = _inFlightBootstrap;
+    if (inFlight != null) {
+      DevLog.add('⏳ [LectureController] bootstrapLectures() already in-flight (reason=$reason) — awaiting existing call');
+      await inFlight;
+      return;
+    }
+
+    final future = _runBootstrapLectures(forceFullPull: forceFullPull);
+    _inFlightBootstrap = future;
+    try {
+      await future;
+    } finally {
+      _inFlightBootstrap = null;
+    }
+  }
+
+  Future<void> _runBootstrapLectures({bool forceFullPull = false}) async {
     // このメソッドはHome画面のuseEffect・バックグラウンド復帰・オンライン復帰など、
     // 誰も画面を見ていない/watchしていないタイミングでも呼ばれる。LectureControllerは
     // autoDisposeなので、keepAliveしないと非同期処理の途中でProviderが破棄され、
@@ -150,19 +180,17 @@ class LectureController extends _$LectureController {
     _lastBootstrapAttemptAt = null;
   }
 
-  /// 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
-  /// 待つ。これが無いと、Welcome/Home/AppLifecycleSyncWatcherがほぼ同時に
-  /// bootstrapIfNeeded()を呼んだ場合、後発の呼び出しが「スロットルされたので
-  /// 即return」してしまい、実際のPullがまだSyncCursorを書き込む前に
-  /// hasEverSyncedLectures()を問い合わせて誤判定するレースが起き得る。
-  Future<void>? _inFlightBootstrap;
-
   Future<void> bootstrapIfNeeded({Duration interval = const Duration(minutes: 15)}) async {
     if (supabase.auth.currentUser == null) return;
 
-    final inFlight = _inFlightBootstrap;
-    if (inFlight != null) {
-      await inFlight;
+    // 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
+    // 待つ(bootstrapLectures()自身がdedupeするので、ここでは素通しでよい)。
+    // これが無いと、Welcome/Home/AppLifecycleSyncWatcherがほぼ同時に
+    // bootstrapIfNeeded()を呼んだ場合、後発の呼び出しが「スロットルされたので
+    // 即return」してしまい、実際のPullがまだSyncCursorを書き込む前に
+    // hasEverSyncedLectures()を問い合わせて誤判定するレースが起き得る。
+    if (_inFlightBootstrap != null) {
+      await bootstrapLectures(reason: 'bootstrapIfNeeded/join-in-flight');
       return;
     }
 
@@ -172,13 +200,7 @@ class LectureController extends _$LectureController {
     final should = (last == null) || now.difference(last) >= interval;
     if (!should) return;
 
-    final future = bootstrapLectures();
-    _inFlightBootstrap = future;
-    try {
-      await future;
-    } finally {
-      _inFlightBootstrap = null;
-    }
+    await bootstrapLectures(reason: 'bootstrapIfNeeded/interval-elapsed');
   }
 
   /// このユーザーについて、'lecture'エンティティの全件Pullが過去に一度でも
@@ -204,10 +226,100 @@ class LectureController extends _$LectureController {
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(jobRepositoryProvider).startAnalysis(lectureId: lectureId, force: force);
+      // expected_chunksは「録音時に実際に切り出したチャンク数」をローカルDBから
+      // 渡す。アップロード済み件数から逆算させると、電波が弱くて一部しか届いて
+      // いない状態で起動されたときに「これで全部」と誤認され、講義の前半だけで
+      // 分析が完了してしまう(エラーにならず静かに欠落する)。
+      // ローカル行が無い場合(別端末で録音した講義など)はnullを渡し、
+      // JobRepository側のフォールバックに委ねる。
+      final local =
+          await ref.read(recordingRepositoryDriftProvider).getLecture(lectureId);
+      final expectedChunks = local == null
+          ? null
+          : (local.isRealtime == true ? (local.expectedChunks ?? 0) : 0);
+
+      await ref.read(jobRepositoryProvider).startAnalysis(
+            lectureId: lectureId,
+            force: force,
+            expectedChunks: expectedChunks,
+          );
     });
 
     link.close();
+  }
+
+  /// 音声アップロードを止める。deleteLectureとは違い、ファイル本体・アセット行
+  /// には一切触れない ―― [resumeUpload]でいつでも再開できるようにするため。
+  ///
+  /// キャンセルを押した瞬間にちょうどアップロードが完了しかけていた場合、その
+  /// 送信自体は止められない(既に投げたHTTPリクエストは取り消せない)ので
+  /// そのまま完走させる。その代わり2つの安全策で「アップロードは残るが解析は
+  /// 始まらない」を保証する:
+  /// 1. ローカル: cancelPendingUploadsForLectureが行を'cancelled'にした後は、
+  ///    UploadManagerの自動発火ガードがこの講義への新規start_analysis発火を
+  ///    スキップする。
+  /// 2. サーバー: 万一(ボタンを押す前に)既に解析が始まってしまっていた場合に
+  ///    備え、cancelJobsForLectureをbest-effortで必ず呼んでおく。ジョブが
+  ///    存在しなくても無害なので、状態を厳密に判定せず常に呼んで良い。
+  Future<void> cancelUpload(String lectureId) async {
+    DevLog.add('🛑 [LectureController] cancelUpload called: $lectureId');
+    final link = ref.keepAlive();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(recordingRepositoryDriftProvider).cancelPendingUploadsForLecture(lectureId);
+      try {
+        await ref.read(jobRepositoryProvider).cancelJobsForLecture(lectureId: lectureId);
+        DevLog.add('🛑 [LectureController] Server-side cancel-jobs call succeeded (upload stop): $lectureId');
+      } catch (e) {
+        DevLog.add('⚠️ [LectureController] Server-side job cancel (upload stop) failed (best-effort): $e');
+      }
+    });
+    link.close();
+  }
+
+  /// [cancelUpload]で止めたアップロードを再開する。ファイルはcancelUpload側で
+  /// 一度も触られていないため、ジョブをqueuedへ戻すだけで通常のリトライ経路に
+  /// 自然に乗る。UploadManagerのDB監視は通常ここで自動的に反応するはずだが、
+  /// 念のため即座にtryProcessQueue()で後押しする。
+  Future<void> resumeUpload(String lectureId) async {
+    DevLog.add('▶️ [LectureController] resumeUpload called: $lectureId');
+    final link = ref.keepAlive();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(recordingRepositoryDriftProvider).resumePendingUploadsForLecture(lectureId);
+      ref.read(uploadManagerProvider).tryProcessQueue();
+    });
+    link.close();
+  }
+
+  /// この講義に紐づく保留中のアップロードジョブ／アセットをローカルDBから消し、
+  /// 実体の一時ファイルも掃除する。削除(ゴミ箱行き)の直前に呼ぶ。
+  ///
+  /// アセット行を消す前にlocalPathを回収しておくこと — 行を消してからでは
+  /// パスを辿れず、圧縮済みM4Aが端末に残り続ける。
+  Future<void> _cancelPendingUploads(String lectureId) async {
+    final repo = ref.read(recordingRepositoryDriftProvider);
+    try {
+      final localPaths = await repo.getLectureAssetLocalPaths(lectureId);
+      await repo.deleteLectureJobsAndAssets(lectureId);
+      DevLog.add('🛑 [LectureController] Local upload jobs cancelled: $lectureId');
+
+      for (final path in localPaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+          DevLog.add('⚠️ [LectureController] Local audio cleanup failed ($path): $e');
+        }
+      }
+    } catch (e, st) {
+      // ここで失敗しても削除自体は続行する。ジョブが残ってしまっても、
+      // UploadManager側がジョブ実行前にlecture.deletedAtを見て畳むので、
+      // 削除済み講義へのアップロード・分析発火は二重に防がれている。
+      DevLog.add('⚠️ [LectureController] Failed to cancel local upload jobs: $e\n$st');
+    }
   }
 
   /// 授業を削除する。関連データ（Announcement/ReviewCard/FunFact/
@@ -221,13 +333,48 @@ class LectureController extends _$LectureController {
   /// (see topic_map_repository_supabase.dart / task_runners.py の設計議論)。
   Future<void> deleteLecture(String lectureId, {String? courseId}) async {
     DevLog.add('🗑️ [LectureController] deleteLecture called: $lectureId');
+
+    // チュートリアル講義は削除UI側で選択肢自体を出さないが、万一この関数が
+    // 別経路から直接呼ばれても、ここで最終的にブロックする。
+    final currentLecture =
+        await ref.read(lectureRepositoryProvider).watchLectureById(lectureId).first;
+    if (currentLecture?.metadata?['is_tutorial'] == true) {
+      DevLog.add('🚫 [LectureController] Refused to delete tutorial lecture: $lectureId');
+      return;
+    }
+
     final link = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      // 0. まずローカルのアップロードキューを止める。
+      // ★ 論理削除より先に行うこと。UploadManagerは_performUpload内で
+      // upsertLectureを呼ぶため、削除済み講義のジョブが残っていると、リトライの
+      // たびにSupabaseのlectures行が書き戻され、さらに完了時にstart_analysisまで
+      // 発火して「削除したはずの講義で分析が始まる」状態になる。
+      // 加えて、同じ音声ファイルを選び直して再アップロードした場合、古いジョブが
+      // 先に走ってローカルの実体ファイルを消してしまい(アップロード成功後に
+      // 削除する仕様)、新しい方が'Local file not found'で永久に失敗していた。
+      await _cancelPendingUploads(lectureId);
+
       // 1. Repository経由で論理削除 + Outbox登録
       // ※ lectureRepositoryProvider は lecture_list_provider.dart で定義されているはずです
       await ref.read(lectureRepositoryProvider).softDeleteLecture(lectureId: lectureId);
       DevLog.add('🗑️ [LectureController] Local soft-delete + outbox enqueue done: $lectureId');
+
+      // 1.5 サーバー側で進行中のパイプラインを止める(best-effort)。
+      // これが無いと、削除後もタスクが走り続け、下のカスケード論理削除
+      // (削除時点で存在したコンテンツだけが対象)をすり抜けたReview Card /
+      // Fun Fact等がdeleted_at=nullの新規行として生成され、削除済み講義に
+      // ぶら下がってしまう。クレジットも無駄に消費される。
+      // オフライン中は失敗するが、その場合サーバー側のジョブはそもそも
+      // 動いていないか、次にオンラインになった時点でユーザーがゴミ箱から
+      // 完全削除(hard-delete)すれば回収される。
+      try {
+        await ref.read(jobRepositoryProvider).cancelJobsForLecture(lectureId: lectureId);
+        DevLog.add('🛑 [LectureController] Server-side jobs cancelled: $lectureId');
+      } catch (e) {
+        DevLog.add('⚠️ [LectureController] Server-side job cancel failed (best-effort): $e');
+      }
 
       // 2. 関連データをカスケードで論理削除する（都度Supabaseへ直接、best-effort）
       // ※ deleteCourse と同様、現時点ではオフラインファースト化していないため、

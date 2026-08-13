@@ -57,4 +57,30 @@ class ProcessingJobs {
       'error_message': errorMessage,
     };
   }
+
+  // job_repository.dartのwatchJob()が.distinct()で「実際に内容が変わった時
+  // だけ」再emitするために必要な値等価。
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ProcessingJobs &&
+        other.id == id &&
+        other.lectureId == lectureId &&
+        other.status == status &&
+        other.currentStep == currentStep &&
+        other.stepNumber == stepNumber &&
+        _mapEquals(other.errorMessage, errorMessage);
+  }
+
+  @override
+  int get hashCode => Object.hash(id, lectureId, status, currentStep, stepNumber);
+
+  static bool _mapEquals(Map<String, dynamic>? a, Map<String, dynamic>? b) {
+    if (a == null || b == null) return a == b;
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (!b.containsKey(key) || b[key] != a[key]) return false;
+    }
+    return true;
+  }
 }

@@ -6,6 +6,8 @@ import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/core/utils/network_constants.dart';
+import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart' show StreamProvider;
@@ -38,6 +40,25 @@ final startAnalysisJobsProvider =
   return ref.watch(recordingRepositoryDriftProvider).watchStartAnalysisJobsForLecture(lectureId);
 });
 
+/// この講義の音声アップロード(チャンク/マスター)がまだ残っているかのwatch。
+/// 空でない間は音声がクラウドに揃っていないため、UIはStart Analysisを
+/// 押させてはいけない(押せてしまうと、audio_path未設定のまま
+/// TRANSCRIBE_MASTERが走って「音声ファイルがありません」で失敗する)。
+final pendingAudioUploadJobsProvider =
+    StreamProvider.family<List<LocalUploadJob>, String>((ref, lectureId) {
+  return ref
+      .watch(recordingRepositoryDriftProvider)
+      .watchPendingAudioUploadJobsForLecture(lectureId);
+});
+
+/// UIが「アップロードをユーザーが自分で止めた」ことを表示するためのwatch。
+final cancelledAudioUploadJobsProvider =
+    StreamProvider.family<List<LocalUploadJob>, String>((ref, lectureId) {
+  return ref
+      .watch(recordingRepositoryDriftProvider)
+      .watchCancelledAudioUploadJobsForLecture(lectureId);
+});
+
 class UploadManager {
   UploadManager({
     required RecordingRepositoryDrift repo,
@@ -50,18 +71,42 @@ class UploadManager {
 
   StreamSubscription? _jobSubscription;
   StreamSubscription? _connectivitySubscription;
+  Timer? _periodicRetryTimer;
   bool _isProcessing = false;
 
   void initialize() {
+    // 診断用: initialize()自体が本当に呼ばれているかを切り分けるためのログ。
+    // ここが1行も出ない場合、uploadManagerProviderがまだどこからもwatch/read
+    // されていない(Providerが生成されていない)ことを意味する。
+    DevLog.add('🚀 [UploadManager] initialize() called');
+
     // 1. ネットワーク復帰監視
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((event) {
+      DevLog.add('📶 [UploadManager] Connectivity changed: $event');
       if (!isConnectivityOffline(event)) {
         _processQueue(); // ネットが戻ったら処理開始
       }
     });
 
+    // 1.5 定期的な再チェック(接続変化・新規ジョブ追加のどちらも起きない間、
+    // retry_wait中のジョブを永久に起こす手段が無かった)。
+    // ★ 実際に発生したバグ: あるジョブが失敗してnextRetryAtを未来に設定した後、
+    // その時刻を過ぎても「起こしてくれる外部イベント」(接続変化 or 新規ジョブ)が
+    // 一切来なければ、_processQueue()は二度と呼ばれず、そのジョブは無期限に
+    // retry_wait状態のまま放置されていた。バックオフの最短間隔(30秒)より
+    // 極端に粗くならない程度の間隔でポーリングする。
+    _periodicRetryTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (!_isProcessing) {
+        _processQueue();
+      }
+    });
+
     // 2. DB監視 (Jobが追加されたり、リトライ待ちが解けたりしたら反応)
     _jobSubscription = _repo.watchPendingJobs().listen((jobs) {
+      // 診断用: DB監視ストリーム自体が発火しているか、その時点で何件
+      // 保留ジョブがあるかを確認する(initialize()直後に1回、購読開始時点の
+      // スナップショットが必ず流れてくるはず)。
+      DevLog.add('👀 [UploadManager] watchPendingJobs emitted ${jobs.length} job(s)');
       // 未処理のジョブがあり、かつ今処理中でなければ開始
       if (jobs.isNotEmpty && !_isProcessing) {
         _processQueue();
@@ -72,6 +117,7 @@ class UploadManager {
   void dispose() {
     _jobSubscription?.cancel();
     _connectivitySubscription?.cancel();
+    _periodicRetryTimer?.cancel();
   }
 
   /// 外部から手動で呼び出す用（Refreshボタンなど）
@@ -79,7 +125,14 @@ class UploadManager {
 
   Future<void> _processQueue() async {
     // 二重実行防止
-    if (_isProcessing) return;
+    // ★ ここで無言でreturnしていると、万一どこかのawaitが詰まって
+    // _isProcessingがtrueのまま戻らなくなった場合、以降のトリガー
+    // (接続復帰・DB変化)が全部無反応になってもDevLogに何の手がかりも
+    // 残らない。診断のため一度だけ経緯をログする。
+    if (_isProcessing) {
+      DevLog.add('⏭️ [UploadManager] _processQueue already running, skip.');
+      return;
+    }
     _isProcessing = true;
 
     try {
@@ -89,7 +142,7 @@ class UploadManager {
       // (誤検知含む)が起きただけでアップロードが永久に止まってしまうバグになる。
       final connectivity = await Connectivity().checkConnectivity();
       if (isConnectivityOffline(connectivity)) {
-        DevLog.add('📡 [UploadManager] Offline detected, skipping this round.');
+        DevLog.add('📡 [UploadManager] Offline detected (raw: $connectivity), skipping this round.');
         return;
       }
 
@@ -111,17 +164,27 @@ class UploadManager {
         }).toList();
 
         if (readyJobs.isEmpty) {
-          // やることなし
+          // やることなし。allJobsに何か残っているのに全部readyでない場合は、
+          // nextRetryAtがまだ先(バックオフ待ち)ということなので、それも
+          // 診断のためログに残す(「何も起きていないように見える」原因が
+          // 「本当に何もしていない」のか「待たされているだけ」なのか区別するため)。
+          if (allJobs.isNotEmpty) {
+            final waiting = allJobs
+                .map((j) => '${j.kind}#${j.id.substring(0, 8)}(next=${j.nextRetryAt?.toLocal()}, attempt=${j.attemptCount})')
+                .join(', ');
+            DevLog.add('⏳ [UploadManager] ${allJobs.length} job(s) queued but none ready yet: $waiting');
+          }
           break;
         }
 
         // 先頭の1件を取り出す
         final job = readyJobs.first;
+        DevLog.add('🔄 [UploadManager] Attempting ${job.kind}#${job.id.substring(0, 8)} (lecture ${job.lectureId}, attempt ${job.attemptCount + 1})');
 
         try {
           // ステータスを「処理中」に変えてもいいが、
           // シンプルにするため「失敗したらリトライ時刻更新」「成功したら削除orDone」の2択で進める
-          
+
           await _performUpload(job);
 
           // 成功！ -> Jobを完了にする
@@ -162,8 +225,28 @@ class UploadManager {
             DevLog.add('Lecture not found (maybe discarded?)');
             continue;
           }
+          // 削除済み講義では分析を発火させない。削除処理(LectureController.
+          // deleteLecture)はこの講義のジョブを消してから論理削除するが、
+          // ちょうどこのジョブが実行中だった場合だけはすり抜けるため、
+          // 発火の直前でもう一度確認する。
+          if (lecture.deletedAt != null) {
+            DevLog.add('🗑️ [UploadManager] Lecture is deleted, skipping start-analysis trigger.');
+            continue;
+          }
           final expectedChunks = lecture.expectedChunks;
-          
+
+          // ★ ユーザーが「アップロードを止める」を押した講義では、たとえ
+          // (ボタンを押した瞬間に送信中だった)このジョブが今まさに成功しても
+          // 自動発火してはいけない。cancelPendingUploadsForLectureは対象ジョブを
+          // 'cancelled'にするだけでファイルは消さないため、この講義に他の
+          // 'cancelled'な音声ジョブが残っているかどうかで「止めた意思表示が
+          // あったか」を判定できる(再開すればqueuedに戻るので自然に消える)。
+          final cancelled = await _repo.hasCancelledUploadJobsForLecture(job.lectureId);
+          if (cancelled) {
+            DevLog.add('⏸️ [UploadManager] Upload was cancelled for this lecture, skipping auto-start trigger.');
+            continue;
+          }
+
           // リアルタイム時の自動発火判定
           // ★ job.kindを'audio_upload'に限定する: これが無いと、後段でstart_analysis
           // ジョブ自体が完了した時にもこの条件(remainingJobs.isEmpty等)を満たしてしまい、
@@ -210,15 +293,43 @@ class UploadManager {
             );
           }
         } catch (e) {
-          // 失敗...
+          final nextAttempt = job.attemptCount + 1;
+
+          if (e is InsufficientCreditsException) {
+            // クレジット不足は「待てば直る」類の失敗ではないため、指数バックオフで
+            // 延々とリトライしても無意味(かつCloud Runへの無駄なリクエストが
+            // 積み重なる)。nextRetryAtを事実上「無期限」に設定して自動リトライを
+            // 止める一方、statusは'retry_wait'のまま・lastErrorも残すことで、
+            // startAnalysisJobsProvider(NotStartedViewが監視)には引き続き見える
+            // ようにする——UI側はこのlastErrorを見てクレジット不足ダイアログを出す。
+            // ユーザーがクレジットを追加した後は、手動の「Start Analysis」ボタン
+            // (別経路のJobRepository.startAnalysis)で再開できる。
+            DevLog.add('💳 [UploadManager] ${job.kind}#${job.id.substring(0, 8)} failed: insufficient credits, will not auto-retry: $e');
+            await _repo.updateJobStatus(
+              jobId: job.id,
+              status: 'retry_wait',
+              lastError: e.toString(),
+              nextRetryAt: DateTime.now().toUtc().add(const Duration(days: 3650)),
+              attemptCount: nextAttempt,
+            );
+            continue;
+          }
+
           // リトライ回数を増やし、次のリトライ時刻を設定
           // ★ attemptCountを実際にDBへ書き戻す（以前はここが抜けていて常に0のまま
           // だったため、指数バックオフのつもりが実質「常に30秒固定」になっていた）
-          final nextAttempt = job.attemptCount + 1;
           // 指数バックオフ: 30秒, 60秒, 120秒 ... 上限5分(300秒)でそれ以上は伸ばさない
           const maxBackoffSeconds = 5 * 60;
           final delaySeconds = min(30 * pow(2, nextAttempt - 1).toInt(), maxBackoffSeconds);
           final nextRetry = DateTime.now().toUtc().add(Duration(seconds: delaySeconds));
+
+          // ★ _performUpload内の個別catchブロックに頼らず、ここで必ず1回
+          // ログを出す。以前は_performUploadの入り口付近(Lecture not found/
+          // Asset not found/Local file not found)にログの無いthrowがあり、
+          // それらの失敗が完全に無音でDBのlastErrorにだけ記録されていた
+          // (=DevLogからは「何も起きていない」ように見える不具合の原因)。
+          // ここに集約しておけば、今後どこで例外が投げられても必ず可視化される。
+          DevLog.add('❌ [UploadManager] ${job.kind}#${job.id.substring(0, 8)} failed (attempt $nextAttempt, next retry in ${delaySeconds}s): $e');
 
           await _repo.updateJobStatus(
             jobId: job.id,
@@ -227,7 +338,7 @@ class UploadManager {
             nextRetryAt: nextRetry,
             attemptCount: nextAttempt,
           );
-          
+
           // エラーが出たので、一旦ループを抜けるか、次のジョブへ行くか。
           // ここでは「次のジョブ」へ行くために continue する（並列処理っぽく見える）
         }
@@ -244,6 +355,15 @@ class UploadManager {
     // データがない場合（ユーザーが途中でDiscardして消した等）
     if (lecture == null) {
       throw Exception('Lecture not found (maybe discarded?)');
+    }
+
+    // 削除済み(ゴミ箱行き)の講義に対しては、何も送らずジョブを畳む。
+    // ★ 例外ではなくreturnで「成功」扱いにするのが重要 —— 投げるとリトライ待ちの
+    // ジョブとして残り続け、そのたびにupsertLectureで削除済みlectures行を
+    // Supabaseへ書き戻してしまう。
+    if (lecture.deletedAt != null) {
+      DevLog.add('🗑️ [UploadManager] Lecture is deleted, dropping ${job.kind} job.');
+      return;
     }
 
     // start_analysisジョブはファイルを送るわけではなく、Cloud Runの
@@ -268,15 +388,25 @@ class UploadManager {
     }
 
     // 2. Supabaseへの書き込み (Lecturesテーブル)
-    await _lectureWriter.upsertLecture(
-      lectureId: lecture.id,
-      userId: lecture.userId,
-      courseId: lecture.courseId,
-      title: lecture.title,
-      lectureDateTimeUtc: lecture.lectureDatetime ?? lecture.createdAt,
-      recordingLanguage: lecture.recordingLanguage,
-      displayLanguage: lecture.displayLanguage,
-    );
+    // ★ 以前はここだけtry/catchもDevLogも無く、失敗してもDBのlastErrorに
+    // 静かに記録されるだけで誰にも気づかれなかった(マスター音声/チャンク送信の
+    // 通信処理には全部❌ログがあるのに、ここだけ抜けていた)。結果、実際には
+    // 毎回リトライして毎回失敗しているのに、ユーザーからもDevLogからも
+    // 「何も起きていない」ように見えるバグになっていた。
+    try {
+      await _lectureWriter.upsertLecture(
+        lectureId: lecture.id,
+        userId: lecture.userId,
+        courseId: lecture.courseId,
+        title: lecture.title,
+        lectureDateTimeUtc: lecture.lectureDatetime ?? lecture.createdAt,
+        recordingLanguage: lecture.recordingLanguage,
+        displayLanguage: lecture.displayLanguage,
+      );
+    } catch (e) {
+      DevLog.add('❌ [UploadManager] Lecture upsert失敗、後でリトライします: $e');
+      rethrow;
+    }
 
     // 3. ジョブの種類に応じてアップロード処理を分岐
     if (job.kind == 'master_audio_upload') {
@@ -317,13 +447,19 @@ class UploadManager {
 
     // 4. lecture_transcripts テーブルに「PROCESSING」を登録
     try {
-      await supabase.from('lecture_transcripts').upsert({
-        'lecture_id': lecture.id,
-        'chunk_index': asset.sequenceIndex,
-        'storage_path': storagePath, // 予測されるパスを先に入れておく
-        'status': 'PROCESSING',
-        'start_time': asset.startTime,
-      }, onConflict: 'lecture_id,chunk_index');
+      // ★ 他のSupabase呼び出し(lectures upsert)と同じく、これもタイムアウトが
+      // 無いと応答が返ってこない限り永久に待ち続け、アップロードキュー全体を
+      // 静かにフリーズさせてしまう。
+      await supabase
+          .from('lecture_transcripts')
+          .upsert({
+            'lecture_id': lecture.id,
+            'chunk_index': asset.sequenceIndex,
+            'storage_path': storagePath, // 予測されるパスを先に入れておく
+            'status': 'PROCESSING',
+            'start_time': asset.startTime,
+          }, onConflict: 'lecture_id,chunk_index')
+          .timeout(networkTimeout);
       DevLog.add('📝 [UploadManager] 処理開始(PROCESSING)をDBに登録しました: Chunk ${asset.sequenceIndex}');
     } catch (e) {
       DevLog.add('❌ [UploadManager] DBへの受付票登録に失敗: $e');
@@ -447,6 +583,7 @@ class UploadManager {
     final completeUri = Uri.parse(
       'https://lefture-511705914929.us-west1.run.app/worker/complete-master-audio-upload',
     );
+
     final completeResponse = await http
         .post(
           completeUri,
@@ -501,8 +638,30 @@ class UploadManager {
 
     if (response.statusCode == 200 || response.statusCode == 202) {
       DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
-    } else {
-      throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
+      return;
     }
+
+    if (response.statusCode == 402) {
+      // job_repository.dart(手動Start Analysisボタン側)と同じパース処理。
+      // ここでも型付きの例外を投げないと、_processQueue側で「クレジット不足は
+      // 待っても解決しない」ことを判定できず、無限に指数バックオフでリトライ
+      // し続けてしまう。
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final detail = body['detail'] as Map<String, dynamic>?;
+        if (detail != null && detail['error_code'] != null) {
+          throw InsufficientCreditsException(
+            errorCode: detail['error_code'] as String,
+            message: detail['message'] as String? ?? 'Insufficient credits.',
+          );
+        }
+      } on InsufficientCreditsException {
+        rethrow;
+      } catch (_) {
+        // パース失敗時は下の汎用Exceptionにフォールスルーする
+      }
+    }
+
+    throw Exception('Cloud Runエラー (${response.statusCode}): ${response.body}');
   }
 }

@@ -10,18 +10,22 @@ import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_done_st
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_permissions_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_plan_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_profile_step.dart';
-import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_tutorial_step.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
 import 'package:lefture/presentation/widgets/language_header_button.dart';
 
-const _totalSteps = 5;
+const _totalSteps = 4;
 
-/// Account-creation-directly-after wizard: Tutorial (placeholder) → Profile
-/// → Permissions → Plan → Done. Each step renders its own back affordance
-/// (via `OnboardingStepHeader`/`OnboardingBackButton`) since the profile
-/// step has its own internal question-level back navigation in addition to
-/// the macro step-level one.
+/// Account-creation-directly-after wizard: Profile → Permissions → Plan →
+/// Done. Each step renders its own back affordance (via
+/// `OnboardingStepHeader`/`OnboardingBackButton`) since the profile step has
+/// its own internal question-level back navigation in addition to the macro
+/// step-level one.
+///
+/// 以前はこの前に「Tutorial」ステップ(プレースホルダーのスライド1枚)が
+/// あったが、常設チュートリアル講義に置き換えたため削除した。設定が全部
+/// 終わってからHomePageを見せ、そこに最初から並んでいるチュートリアル講義を
+/// ユーザー自身が開く形にする(自動遷移はしない)。
 class OnboardingPage extends HookConsumerWidget {
   const OnboardingPage({super.key});
 
@@ -55,7 +59,6 @@ class OnboardingPage extends HookConsumerWidget {
     }
 
     final steps = <Widget>[
-      OnboardingTutorialStep(onNext: next),
       OnboardingProfileStep(onNext: next, onBack: back),
       OnboardingPermissionsStep(onNext: next, onBack: back),
       OnboardingPlanStep(onNext: next, onBack: back),

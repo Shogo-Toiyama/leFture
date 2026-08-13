@@ -4,6 +4,7 @@ import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/presentation/widgets/lecture_tile.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
+import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 
 class RecentLecturesList extends ConsumerWidget {
@@ -21,27 +22,35 @@ class RecentLecturesList extends ConsumerWidget {
       delegate: SliverChildBuilderDelegate((context, index) {
         final lecture = recent[index];
         final courseCode = courseCodeMap[lecture.courseId];
+
+        // 未開封のチュートリアル講義だけ、軽い誘導装飾を付ける。
+        // 「開封済みか」は lastAccessedAt の有無で判定(専用フラグ不要)。
+        final isUnopenedTutorial =
+            lecture.metadata?['is_tutorial'] == true && lecture.lastAccessedAt == null;
+
+        final tile = LectureTile(
+          lecture: lecture,
+          courseCode: courseCode,
+          useRelativeTime: true,
+          showChevron: true,
+          onEdit: () async {
+            await showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => LectureEditSheet(lecture: lecture),
+            );
+          },
+          onDelete: () async {
+            await ref
+                .read(lectureControllerProvider.notifier)
+                .deleteLecture(lecture.id, courseId: lecture.courseId);
+          },
+        );
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: LectureTile(
-            lecture: lecture,
-            courseCode: courseCode,
-            useRelativeTime: true,
-            showChevron: true,
-            onEdit: () async {
-              await showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => LectureEditSheet(lecture: lecture),
-              );
-            },
-            onDelete: () async {
-              await ref
-                  .read(lectureControllerProvider.notifier)
-                  .deleteLecture(lecture.id, courseId: lecture.courseId);
-            },
-          ),
+          child: isUnopenedTutorial ? TutorialLectureCallout(child: tile) : tile,
         );
       }, childCount: recent.length),
     );

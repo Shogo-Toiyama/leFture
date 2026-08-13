@@ -38,6 +38,23 @@ class ProcessingTask {
       errorMessage: map['error_message'] as String?,
     );
   }
+
+  // job_repository.dartのwatchTasksForJob()が.distinct()で「実際に内容が
+  // 変わった時だけ」再emitするために必要な値等価。
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ProcessingTask &&
+        other.id == id &&
+        other.jobId == jobId &&
+        other.taskType == taskType &&
+        other.status == status &&
+        other.updatedAt == updatedAt &&
+        other.errorMessage == errorMessage;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, jobId, taskType, status, updatedAt, errorMessage);
 }
 
 /// main.py の tasks_blueprint と同じ並び順（表示・進捗計算の基準に使う）

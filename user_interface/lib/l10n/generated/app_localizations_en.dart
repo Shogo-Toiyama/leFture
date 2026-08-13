@@ -501,6 +501,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lectureViewerInfoSheetEmptyState => 'Nothing here yet';
 
   @override
+  String get lectureViewerPartialFailureBanner =>
+      'Some content couldn\'t be generated';
+
+  @override
+  String get lectureViewerPipelineDetailsSheetTitle => 'Analysis progress';
+
+  @override
   String get pipelineStepsCancelledLabel => 'Cancelled';
 
   @override
@@ -578,6 +585,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notStartedChooseCourseButton => 'Choose Course';
 
   @override
+  String get notStartedUploadingWarning =>
+      'Still uploading the audio. Analysis will start automatically once the upload finishes.';
+
+  @override
+  String notStartedUploadRetryingWarning(String error) {
+    return 'Still uploading the audio — the connection seems unstable, so we\'re retrying in the background: $error\nAnalysis will start automatically once the upload finishes.';
+  }
+
+  @override
+  String get notStartedUploadingLabel => 'Uploading audio...';
+
+  @override
+  String get notStartedCancelUploadButton => 'Cancel';
+
+  @override
+  String get notStartedUploadStoppedWarning =>
+      'Upload stopped. The recording is still on this device — resume anytime.';
+
+  @override
+  String get notStartedResumeUploadButton => 'Resume';
+
+  @override
+  String get notStartedUploadStoppedLabel => 'Upload stopped';
+
+  @override
   String get notStartedStartingLabel => 'Starting...';
 
   @override
@@ -626,6 +658,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get processingViewHoldToRestartHint =>
       'Hold the icon above to start over from scratch.';
+
+  @override
+  String get processingViewStopButton => 'Stop';
+
+  @override
+  String get processingViewStoppingLabel => 'Stopping...';
+
+  @override
+  String get processingViewStopDialogTitle => 'Stop analysis?';
+
+  @override
+  String get processingViewStopDialogMessage =>
+      'This stops the current analysis. Any steps already completed are kept, and you can start it again manually at any time.';
+
+  @override
+  String get processingViewStopConfirmButton => 'Stop';
+
+  @override
+  String processingViewStopFailedSnackbar(String error) {
+    return 'Failed to stop: $error';
+  }
 
   @override
   String get processingViewStartingOverLabel => 'Starting over...';
@@ -2088,6 +2141,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get lectureDeleteDialogTitle => 'Delete Lecture?';
+
+  @override
+  String lectureDeleteDialogMessage(String title) {
+    return 'Are you sure you want to delete \"$title\"? This action will remove the lecture and all its generated contents.';
+  }
+
+  @override
   String get announcementDeleteDialogTitle => 'Delete Announcement?';
 
   @override
@@ -2391,4 +2452,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pipelineTaskFinalizeJob => 'Finalizing';
+
+  @override
+  String get homeTutorialCalloutMessage =>
+      'Check out this lecture about the app!';
 }

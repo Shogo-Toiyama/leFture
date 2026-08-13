@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -211,6 +212,19 @@ class RecordingRepositoryDrift {
     });
   }
 
+  /// [deleteLectureJobsAndAssets]でアセット行を消す前に、実体ファイルを掃除する
+  /// ための一覧。行を消してしまうとlocalPathが辿れなくなり、圧縮済みM4Aが
+  /// 端末に残り続けてしまう。
+  Future<List<String>> getLectureAssetLocalPaths(String lectureId) async {
+    final assets = await (db.select(db.localLectureAssets)
+          ..where((t) => t.lectureId.equals(lectureId)))
+        .get();
+    return assets
+        .map((a) => a.localPath)
+        .whereType<String>()
+        .toList();
+  }
+
   // ついでに UploadManager が使う「ジョブ取得」機能もここに定義しておくと綺麗です
   Stream<List<LocalUploadJob>> watchPendingJobs() {
     return (db.select(db.localUploadJobs)
@@ -396,6 +410,99 @@ class RecordingRepositoryDrift {
         );
 
     return jobId;
+  }
+
+  // UI側(NotStartedView)が「まだ音声のアップロードが終わっていないので
+  // Start Analysisを押させてはいけない」を判定するためのwatch。
+  // start_analysisジョブ(実ファイルを持たない号砲)は対象外 —— これ自体は
+  // 音声の到達とは無関係で、含めるとボタンが永久に押せなくなる。
+  Stream<List<LocalUploadJob>> watchPendingAudioUploadJobsForLecture(String lectureId) {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
+          ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+        .watch();
+  }
+
+  // UI側(NotStartedView)が「アップロードをユーザーが自分で止めた」ことを
+  // 表示するためのwatch。cancelPendingUploadsForLectureで'cancelled'に
+  // なったジョブがここに現れる。
+  Stream<List<LocalUploadJob>> watchCancelledAudioUploadJobsForLecture(String lectureId) {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
+          ..where((t) => t.status.equals('cancelled')))
+        .watch();
+  }
+
+  // UploadManager用: 自動Start Analysis発火の直前ガード。この講義に
+  // 'cancelled'な音声アップロードジョブが1件でも残っている間は、たとえ
+  // 別のジョブ(例: 既に送信済みのチャンク)が今まさに成功しても、自動発火
+  // すべきではない(ユーザーが明示的に「止めた」意思表示をしているため)。
+  Future<bool> hasCancelledUploadJobsForLecture(String lectureId) async {
+    final rows = await (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
+          ..where((t) => t.status.equals('cancelled'))
+          ..limit(1))
+        .get();
+    return rows.isNotEmpty;
+  }
+
+  // 音声アップロードを「止める」。★ ファイル本体・アセット行には一切触れない
+  // (deleteLectureJobsAndAssetsとの決定的な違い) —— ユーザーが後で再開したい
+  // 場合に備え、いつでもresumePendingUploadsForLectureで元に戻せるようにする。
+  // 対象は未完了(queued/retry_wait)のチャンク/マスター音声ジョブと、
+  // それに連動して待機しているstart_analysisジョブ(アップロードを止めたのに
+  // 解析だけ勝手に始まっては困るため)。
+  Future<void> cancelPendingUploadsForLecture(String lectureId) async {
+    final now = DateTime.now().toUtc();
+    await db.transaction(() async {
+      final cancelledUploads = await (db.update(db.localUploadJobs)
+            ..where((t) => t.lectureId.equals(lectureId))
+            ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
+            ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+          .write(LocalUploadJobsCompanion(
+        status: const Value('cancelled'),
+        updatedAt: Value(now),
+      ));
+
+      final cancelledStartAnalysis = await (db.update(db.localUploadJobs)
+            ..where((t) => t.lectureId.equals(lectureId))
+            ..where((t) => t.kind.equals('start_analysis'))
+            ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+          .write(LocalUploadJobsCompanion(
+        status: const Value('cancelled'),
+        updatedAt: Value(now),
+      ));
+
+      // 検証用: 行数が両方0だと「押したのに何も変わっていない」バグの
+      // 可能性が高い(例: 既に'done'になっていた、lectureIdが違う等)ので、
+      // 押した側にすぐ気づけるようにログを残す。
+      DevLog.add(
+        '🛑 [RecordingRepo] cancelPendingUploadsForLecture($lectureId): '
+        '$cancelledUploads upload job(s), $cancelledStartAnalysis start_analysis job(s) → cancelled',
+      );
+    });
+  }
+
+  // 止めていたアップロードを再開する。ファイルはcancelPendingUploadsForLecture
+  // が一度も触っていないのでそのまま残っており、ステータスをqueuedへ戻すだけで
+  // UploadManagerの通常のリトライ経路に自然に乗る。attemptCount等は0から
+  // やり直す(止めていた理由は「失敗し続けていたから」とは限らないため)。
+  Future<void> resumePendingUploadsForLecture(String lectureId) async {
+    final resumed = await (db.update(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
+          ..where((t) => t.status.equals('cancelled')))
+        .write(LocalUploadJobsCompanion(
+      status: const Value('queued'),
+      attemptCount: const Value(0),
+      nextRetryAt: const Value(null),
+      lastError: const Value(null),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
+    DevLog.add('▶️ [RecordingRepo] resumePendingUploadsForLecture($lectureId): $resumed job(s) → queued');
   }
 
   // UI側(NotStartedView等)がstart_analysisジョブの失敗状況を表示するためのwatch。

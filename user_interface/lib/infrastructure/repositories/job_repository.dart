@@ -24,7 +24,20 @@ class JobRepository {
 
   /// 指定講義の最新ジョブをポーリング監視する。ジョブがCOMPLETEDになったら
   /// 最後の値をyieldしてポーリングを終了する(それ以上変化しないため)。
-  Stream<ProcessingJobs?> watchJob(String lectureId) async* {
+  ///
+  /// ★ .distinct()が無いと、ジョブがまだ存在しない間(job==nullの間、breakの
+  /// 条件に一度も触れないため)3秒ごとに同じnullを永久にyieldし続ける。
+  /// これをwatchしているlectureStateProvider(async*)が毎回最初から再実行
+  /// されてAsyncLoadingへ明滅し、それを見ているLectureViewerPage側のWidget
+  /// (NotStartedView等)が3秒おきに丸ごと作り直される不具合になっていた
+  /// (フックの状態がリセットされ、例えば「1回だけ出すはずのダイアログ」が
+  /// 再度発火する)。ProcessingJobsに==/hashCodeを実装したので、内容が
+  /// 実際に変わった時だけ再emitされる。
+  Stream<ProcessingJobs?> watchJob(String lectureId) {
+    return _watchJobRaw(lectureId).distinct();
+  }
+
+  Stream<ProcessingJobs?> _watchJobRaw(String lectureId) async* {
     while (true) {
       ProcessingJobs? job;
       try {
@@ -64,8 +77,21 @@ class JobRepository {
 
   /// 指定ジョブに紐づく全タスク（進捗・エラー表示用）をポーリング監視する。
   /// 全タスクが終端状態(COMPLETED/FAILED/CANCELLED)になったらポーリングを
-  /// 終了する。
-  Stream<List<ProcessingTask>> watchTasksForJob(String jobId) async* {
+  /// 終了する。watchJob()と同じ理由で、内容が変わった時だけ再emitする
+  /// (Listはデフォルトで内容比較の==を持たないため、要素ごとに比較する)。
+  Stream<List<ProcessingTask>> watchTasksForJob(String jobId) {
+    return _watchTasksForJobRaw(jobId).distinct(_tasksListEquals);
+  }
+
+  bool _tasksListEquals(List<ProcessingTask> a, List<ProcessingTask> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  Stream<List<ProcessingTask>> _watchTasksForJobRaw(String jobId) async* {
     const terminalStatuses = {'COMPLETED', 'FAILED', 'CANCELLED'};
 
     while (true) {
@@ -94,18 +120,32 @@ class JobRepository {
 
   /// 分析を開始する（Cloud RunのDAGパイプラインを起動）。
   /// アップロード完了後の自動発火(upload_manager.dart)と同じエンドポイントを叩く。
-  /// expected_chunksは、既にアップロード済みのチャンク数(lecture_transcripts)から
-  /// 算出する — この呼び出しはNotStartedView（音声アップロード済み）からのみ行われるため。
+  ///
+  /// [expectedChunks] にはローカルDBが持つ「録音時に実際に切り出したチャンク数」
+  /// を渡すこと。★ ここを lecture_transcripts の件数から算出してはいけない ——
+  /// 電波が弱く12個中5個しか届いていない状態で手動起動されると「5個で全部」と
+  /// 誤認され、講義の前半だけで分析が完了してしまう(エラーにならず静かに欠落する)。
+  /// nullの場合のみ、別端末からの起動などを想定してアップロード済み件数へ
+  /// フォールバックする。いずれにせよサーバー側(/start-analysis)が過去ジョブの
+  /// expected_chunksとも突き合わせて最大値を採るため、実績より小さい値で
+  /// 走り出すことはない。
+  ///
   /// [force] は「Start Over」など、ユーザーが明示的に再実行を選んだ場合のみ
   /// trueにする。既存の未完了Jobをキャンセルして新しいJobを作り直す。
-  /// false(既定)の場合、既に未完了Jobがあればサーバー側が新規作成せず既存
-  /// Jobを返す(冪等)。
-  Future<void> startAnalysis({required String lectureId, bool force = false}) async {
-    final expectedChunks = await _supabase
-        .from('lecture_transcripts')
-        .count()
-        .eq('lecture_id', lectureId)
-        .timeout(networkTimeout);
+  /// false(既定)の場合、既に「生きている」Jobがあればサーバー側が新規作成せず
+  /// 既存Jobを返す(冪等)。FAILED/CANCELLEDのJobは生きていない扱いなので、
+  /// 失敗後に音声が揃った場合はforce無しでも新しいJobが作られる。
+  Future<void> startAnalysis({
+    required String lectureId,
+    bool force = false,
+    int? expectedChunks,
+  }) async {
+    final resolvedExpectedChunks = expectedChunks ??
+        await _supabase
+            .from('lecture_transcripts')
+            .count()
+            .eq('lecture_id', lectureId)
+            .timeout(networkTimeout);
 
     final jwt = _supabase.auth.currentSession?.accessToken;
     if (jwt == null) {
@@ -120,7 +160,7 @@ class JobRepository {
       },
       body: jsonEncode({
         'lecture_id': lectureId,
-        'expected_chunks': expectedChunks,
+        'expected_chunks': resolvedExpectedChunks,
         'force': force,
       }),
     ).timeout(networkTimeout);
@@ -147,6 +187,35 @@ class JobRepository {
 
     if (response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Failed to start analysis (${response.statusCode}): ${response.body}');
+    }
+  }
+
+  /// 指定講義の未完了ジョブ・タスクをサーバー側でCANCELLEDにする。
+  /// 講義をゴミ箱に入れた直後にbest-effortで呼ぶ — これをしないと削除済み講義の
+  /// パイプラインが走り続け、削除のカスケードをすり抜けたコンテンツが後から
+  /// 生成されて「削除したはずの講義に全部ぶら下がる」状態になる。
+  /// ジョブの行自体は消さないので、ゴミ箱から復元すればStart Analysisでやり直せる。
+  Future<void> cancelJobsForLecture({required String lectureId}) async {
+    final jwt = _supabase.auth.currentSession?.accessToken;
+    if (jwt == null) {
+      throw Exception('Not logged in. Cannot cancel jobs.');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_cloudRunBaseUrl/lectures/$lectureId/cancel-jobs'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $jwt',
+      },
+    ).timeout(networkTimeout);
+
+    // 404はSupabase側にまだlectures行が無い(＝サーバー側にジョブも存在し得ない)
+    // ケース。オフライン録音を一度もアップロードせずに削除した場合に起きるので、
+    // エラーとして扱わない。
+    if (response.statusCode == 404) return;
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cancel jobs (${response.statusCode}): ${response.body}');
     }
   }
 

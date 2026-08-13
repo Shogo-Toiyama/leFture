@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:lefture/core/services/audio_record/audio_chunker.dart';
@@ -10,6 +11,8 @@ import 'package:lefture/infrastructure/local_db/repositories/lecture_moment_repo
 import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/application/asr/live_asr_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -606,7 +609,7 @@ class RecordingController extends _$RecordingController {
     );
   }
 
-  Future<void> uploadAudioFile(String localFilePath) async {
+  Future<void> uploadAudioFile(String pickedFilePath) async {
     final user = supabase.auth.currentUser;
     if (user == null) {
       state = state.copyWith(
@@ -627,6 +630,19 @@ class RecordingController extends _$RecordingController {
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
 
     try {
+      // ★ file_pickerが返すpathは、Androidでは(content://のような直接開けない
+      // URIを扱えるファイルパスに変換するため)アプリのキャッシュディレクトリ
+      // (.../cache/file_picker/...)を指している。キャッシュはOSが低ストレージ
+      // 時などに予告無く消去できる領域で、実際にアップロードのリトライが何日も
+      // 詰まっている間に消えて「二度と成功しないアップロード」になった事故が
+      // あった。録音した音声(audio_recorder_service.dart)は最初から
+      // getApplicationDocumentsDirectory(永続領域)に保存しているのに、
+      // ファイル選択インポートだけこの一時領域に依存していたのが原因。
+      // アップロードジョブに載せる前に、ここで確実に永続領域へコピーする。
+      DevLog.add('[UploadAudioFile] 0/4 copying picked file to persistent storage...');
+      final localFilePath = await _copyPickedFileToPersistentStorage(pickedFilePath);
+      DevLog.add('[UploadAudioFile] 0/4 copied to $localFilePath');
+
       DevLog.add('[UploadAudioFile] 1/4 creating draft lecture...');
       final lectureId = await _repo.createDraftLecture(
         userId: user.id,
@@ -670,6 +686,28 @@ class RecordingController extends _$RecordingController {
         errorMessage: 'Upload failed: $e'
       );
     }
+  }
+
+  /// file_pickerが返したpath(Androidではアプリのキャッシュ領域を指す)を、
+  /// OSに予告無く消去されない永続領域(getApplicationDocumentsDirectory)へ
+  /// コピーし、コピー後のpathを返す。ファイル名の衝突を避けるため
+  /// タイムスタンプ+元のファイル名でリネームする。
+  Future<String> _copyPickedFileToPersistentStorage(String pickedFilePath) async {
+    final source = File(pickedFilePath);
+    if (!await source.exists()) {
+      throw Exception('Picked file not found at $pickedFilePath');
+    }
+
+    final docsDir = await getApplicationDocumentsDirectory();
+    final importsDir = Directory(p.join(docsDir.path, 'imported_audio'));
+    await importsDir.create(recursive: true);
+
+    final destPath = p.join(
+      importsDir.path,
+      '${DateTime.now().millisecondsSinceEpoch}_${p.basename(pickedFilePath)}',
+    );
+    final copied = await source.copy(destPath);
+    return copied.path;
   }
 
   Future<void> openSettingsIfNeeded() async {

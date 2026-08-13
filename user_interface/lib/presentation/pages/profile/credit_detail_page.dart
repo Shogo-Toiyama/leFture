@@ -279,7 +279,11 @@ class _MonthlyCreditCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(children: [
                     TextSpan(
-                      text: '${isDepleted ? 0 : (summary.creditBalanceDisplay ?? 0)}',
+                      // ★ 以前はisDepletedの時に実際の値を無視して0を表示していたが、
+                      // このアプリはオーバードラフト(残高がマイナスに大きく振れること)を
+                      // 許容する設計のため、0に丸めると「実際どれだけマイナスか」が
+                      // 分からなくなってしまう。実際の値をそのまま表示する。
+                      text: '${summary.creditBalanceDisplay ?? 0}',
                       style: const TextStyle(color: AppColors.starGold, fontSize: 18, fontWeight: FontWeight.w700),
                     ),
                     TextSpan(
