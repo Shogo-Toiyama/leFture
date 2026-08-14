@@ -143,6 +143,13 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
                   ),
                 ),
 
+                // --- Cosmic Toybox: タイトル文字の背面に配置 ---
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: _ToyboxPopBurst(visible: _toyboxVisible),
+                  ),
+                ),
+
                 // --- タイトル文章ブロック ---
                 Padding(
                   padding: EdgeInsets.fromLTRB(
@@ -243,13 +250,6 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
                       constraints: const BoxConstraints(maxWidth: 440),
                       child: _RecordingStyleWaveform(grown: _barsGrown),
                     ),
-                  ),
-                ),
-
-                // --- Cosmic Toybox: 最前面に配置（タイトルより手前）---
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: _ToyboxPopBurst(visible: _toyboxVisible),
                   ),
                 ),
               ],

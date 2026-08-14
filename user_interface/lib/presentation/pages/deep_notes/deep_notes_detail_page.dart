@@ -1397,8 +1397,20 @@ class _NoteDetailContent extends HookWidget {
                 ),
                 const SizedBox(height: 32),
 
+                // ── AI Disclaimer ──────────────────────────────────────────
+                Center(
+                  child: Text(
+                    AppLocalizations.of(context).aiDisclaimerText,
+                    style: TextStyle(
+                      color: AppColors.paper.textPencil.withValues(alpha: 0.7),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+
                 // ── Next arrow ─────────────────────────────────────────────
-                if (topicIndex < totalTopics - 1)
+                if (topicIndex < totalTopics - 1) ...[
+                  const SizedBox(height: 16),
                   Center(
                     child: Column(
                       children: [
@@ -1419,17 +1431,7 @@ class _NoteDetailContent extends HookWidget {
                       ],
                     ),
                   ),
-
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    AppLocalizations.of(context).aiDisclaimerText,
-                    style: TextStyle(
-                      color: AppColors.paper.textPencil.withValues(alpha: 0.7),
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
+                ],
                 const SizedBox(height: 32),
               ],
             ),

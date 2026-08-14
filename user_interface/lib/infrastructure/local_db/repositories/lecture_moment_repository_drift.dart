@@ -54,6 +54,10 @@ class LectureMomentRepositoryDrift {
             ),
           );
 
+      if (await _db.isTutorialLecture(lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
+
       await _db.enqueueOutbox(
         entityType: 'lecture_moment',
         entityId: id,
@@ -67,12 +71,18 @@ class LectureMomentRepositoryDrift {
     final now = DateTime.now().toUtc();
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localLectureMoments)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localLectureMoments)..where((t) => t.id.equals(id))).write(
         LocalLectureMomentsCompanion(
           deletedAt: Value(now),
           updatedAt: Value(now),
         ),
       );
+
+      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
 
       await _db.enqueueOutbox(
         entityType: 'lecture_moment',

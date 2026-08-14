@@ -65,12 +65,18 @@ class AnnouncementRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localAnnouncements)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localAnnouncements)..where((t) => t.id.equals(id))).write(
         LocalAnnouncementsCompanion(
           completedAt: Value(completed ? now : null),
           updatedAt: Value(now),
         ),
       );
+
+      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
 
       await _db.enqueueOutbox(
         entityType: 'announcement',
@@ -88,6 +94,8 @@ class AnnouncementRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localAnnouncements)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localAnnouncements)..where((t) => t.id.equals(id))).write(
         LocalAnnouncementsCompanion(
           deletedAt: Value(now),
@@ -95,6 +103,10 @@ class AnnouncementRepositoryDrift {
           updatedAt: Value(now),
         ),
       );
+
+      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
 
       await _db.enqueueOutbox(
         entityType: 'announcement',
@@ -117,6 +129,8 @@ class AnnouncementRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localAnnouncements)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localAnnouncements)..where((t) => t.id.equals(id))).write(
         LocalAnnouncementsCompanion(
           title: Value(title),
@@ -126,6 +140,10 @@ class AnnouncementRepositoryDrift {
           updatedAt: Value(now),
         ),
       );
+
+      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
 
       await _db.enqueueOutbox(
         entityType: 'announcement',

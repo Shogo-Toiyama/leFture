@@ -7,6 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_done_step.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_intro_step.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_language_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_permissions_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_plan_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_profile_step.dart';
@@ -14,18 +16,19 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 
 import 'package:lefture/presentation/widgets/language_header_button.dart';
 
-const _totalSteps = 4;
+const _totalSteps = 6;
 
-/// Account-creation-directly-after wizard: Profile → Permissions → Plan →
-/// Done. Each step renders its own back affordance (via
+/// Account-creation-directly-after wizard: Intro → Language → Profile →
+/// Permissions → Plan → Done. Each step renders its own back affordance (via
 /// `OnboardingStepHeader`/`OnboardingBackButton`) since the profile step has
 /// its own internal question-level back navigation in addition to the macro
 /// step-level one.
 ///
-/// 以前はこの前に「Tutorial」ステップ(プレースホルダーのスライド1枚)が
-/// あったが、常設チュートリアル講義に置き換えたため削除した。設定が全部
-/// 終わってからHomePageを見せ、そこに最初から並んでいるチュートリアル講義を
-/// ユーザー自身が開く形にする(自動遷移はしない)。
+/// 以前はここに「Tutorial」ステップ(プレースホルダーのスライド1枚)があったが、
+/// 常設チュートリアル講義に置き換えたため一度削除した。その後、サインアップ
+/// 直後にいきなりプロフィール入力が始まるのが急すぎたため、これから何をする
+/// のか見せる導入スライド(Intro)と、言語設定ステップ(Language)を新たに
+/// 先頭2ステップとして追加している。
 class OnboardingPage extends HookConsumerWidget {
   const OnboardingPage({super.key});
 
@@ -33,7 +36,7 @@ class OnboardingPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final step = useState(0);
 
-    // 「準備完了です」の完了ページ(Step 4)が表示された瞬間に自動でオンボーディング完了をマークする
+    // 「準備完了です」の完了ページ(Step 6)が表示された瞬間に自動でオンボーディング完了をマークする
     useEffect(() {
       if (step.value == _totalSteps - 1) {
         ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
@@ -59,6 +62,8 @@ class OnboardingPage extends HookConsumerWidget {
     }
 
     final steps = <Widget>[
+      OnboardingIntroStep(onNext: next),
+      OnboardingLanguageStep(onNext: next, onBack: back),
       OnboardingProfileStep(onNext: next, onBack: back),
       OnboardingPermissionsStep(onNext: next, onBack: back),
       OnboardingPlanStep(onNext: next, onBack: back),

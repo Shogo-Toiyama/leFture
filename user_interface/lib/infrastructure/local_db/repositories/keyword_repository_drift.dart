@@ -56,6 +56,11 @@ class KeywordRepositoryDrift {
       metadataJson: newMetadataJson,
     );
 
+    final current = await (_db.select(_db.localKeywords)..where((t) => t.id.equals(keywordId))).getSingleOrNull();
+    if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+      return; // チュートリアル講義のデータはOutboxに入れない
+    }
+
     // Queue outbox for background sync to Supabase
     await _db.enqueueOutbox(
       entityType: 'keyword',
@@ -76,6 +81,11 @@ class KeywordRepositoryDrift {
       keyword: keyword,
       definition: definition,
     );
+
+    final current = await (_db.select(_db.localKeywords)..where((t) => t.id.equals(keywordId))).getSingleOrNull();
+    if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+      return; // チュートリアル講義のデータはOutboxに入れない
+    }
 
     await _db.enqueueOutbox(
       entityType: 'keyword',

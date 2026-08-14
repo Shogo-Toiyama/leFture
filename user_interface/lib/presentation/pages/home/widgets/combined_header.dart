@@ -21,7 +21,7 @@ class CoursesHeaderWidget extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 6),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   l10n.homeCoursesSectionTitle,
@@ -31,6 +31,7 @@ class CoursesHeaderWidget extends StatelessWidget {
                     fontSize: 20,
                   ),
                 ),
+                const SizedBox(width: 4),
                 Icon(
                   Icons.chevron_right,
                   color: AppColors.starGold,

@@ -4145,13 +4145,13 @@ abstract class AppLocalizations {
   /// Supporting subtext on slide 3, under the lead headline. The \n marks the line break.
   ///
   /// In en, this message translates to:
-  /// **'Start today.\nCreating an account is free and takes 30 seconds.'**
+  /// **'Start today\nto truly enjoy every single lecture.'**
   String get introCtaSub;
 
   /// Primary call-to-action button label on slide 3, leading to the sign-up screen. Should feel inviting and energetic, not a generic 'Sign up' or 'Get started'.
   ///
   /// In en, this message translates to:
-  /// **'Start recording your future, free'**
+  /// **'Get started with leFture'**
   String get introCtaButton;
 
   /// Label for today in history/transaction lists
@@ -4196,23 +4196,119 @@ abstract class AppLocalizations {
   /// **'Get started'**
   String get onboardingGetStartedButton;
 
-  /// Small eyebrow label above the title on the onboarding tutorial step.
+  /// Small eyebrow label above the title on the onboarding intro/bridge step.
   ///
   /// In en, this message translates to:
   /// **'Welcome'**
-  String get onboardingTutorialEyebrow;
+  String get onboardingIntroEyebrow;
 
-  /// Title on the onboarding tutorial step, currently a placeholder.
+  /// Title on the onboarding intro/bridge step shown right after sign-up, before the setup steps begin.
   ///
   /// In en, this message translates to:
-  /// **'Tutorial slides — coming soon'**
-  String get onboardingTutorialTitle;
+  /// **'Let\'s set up your leFture'**
+  String get onboardingIntroTitle;
 
-  /// Subtitle on the onboarding tutorial step, currently a placeholder.
+  /// Subtitle on the onboarding intro/bridge step.
   ///
   /// In en, this message translates to:
-  /// **'We\'re still designing this part — for now, let\'s get you set up.'**
-  String get onboardingTutorialSubtitle;
+  /// **'A few quick steps and you\'ll be ready to record your first lecture.'**
+  String get onboardingIntroSubtitle;
+
+  /// Small hint under the primary button on the onboarding intro/bridge step.
+  ///
+  /// In en, this message translates to:
+  /// **'Takes about 2 minutes'**
+  String get onboardingIntroHint;
+
+  /// Title of waypoint 1 (Language) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get onboardingIntroStep1Title;
+
+  /// Description of waypoint 1 (Language) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your display and recording language'**
+  String get onboardingIntroStep1Desc;
+
+  /// Title of waypoint 2 (Profile) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get onboardingIntroStep2Title;
+
+  /// Description of waypoint 2 (Profile) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us your major, interests, and goals'**
+  String get onboardingIntroStep2Desc;
+
+  /// Title of waypoint 3 (Permissions) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get onboardingIntroStep3Title;
+
+  /// Description of waypoint 3 (Permissions) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow recording and notifications'**
+  String get onboardingIntroStep3Desc;
+
+  /// Title of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get onboardingIntroStep4Title;
+
+  /// Description of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the plan that fits you'**
+  String get onboardingIntroStep4Desc;
+
+  /// Small eyebrow label above the title on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get onboardingLanguageEyebrow;
+
+  /// Title on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your languages'**
+  String get onboardingLanguageTitle;
+
+  /// Subtitle on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the language leFture shows, and the language you\'ll be recording in.'**
+  String get onboardingLanguageSubtitle;
+
+  /// Row title for the display-language picker on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Language'**
+  String get onboardingLanguageDisplayLabel;
+
+  /// Row description for the display-language picker on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets the language of app text'**
+  String get onboardingLanguageDisplayDesc;
+
+  /// Row title for the recording-language picker on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording Language'**
+  String get onboardingLanguageRecordingLabel;
+
+  /// Row description for the recording-language picker on the onboarding language step.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for on-device transcription'**
+  String get onboardingLanguageRecordingDesc;
 
   /// Small eyebrow label above the title on the onboarding permissions step.
   ///

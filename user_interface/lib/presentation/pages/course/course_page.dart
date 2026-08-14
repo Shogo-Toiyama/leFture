@@ -24,6 +24,7 @@ import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
 import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_map_view.dart';
 import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_selection.dart';
@@ -60,6 +61,8 @@ class _CourseTreeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final coursesAsync = ref.watch(courseListProvider);
+    final lecturesAsync = ref.watch(allLecturesStreamProvider);
+    final lectures = lecturesAsync.value ?? const <Lecture>[];
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
@@ -94,7 +97,7 @@ class _CourseTreeView extends ConsumerWidget {
                       onCreateTap: () => _openCreateSheet(context, ref),
                     );
                   }
-                  final grouped = _groupCourses(courses, l10n);
+                  final grouped = _groupCourses(courses, lectures, l10n);
                   return RefreshIndicator(
                     color: AppColors.starGold,
                     onRefresh: () => _handleRefresh(context, ref),
@@ -127,13 +130,63 @@ class _CourseTreeView extends ConsumerWidget {
   }
 
   /// courses → { yearName → { termName → [Course] } }
-  /// Year/Term 未設定は l10n.coursePageNoYearLabel / l10n.coursePageNoTermLabel に分類
+  /// コースごとに所属する最新レクチャーの lectureDatetime を基に、
+  /// 1. 直近でレクチャーがあるコースを最上部に配置（レクチャーなしのコースより優先）
+  /// 2. 各学期（Term）グループ内のコースを最新 lectureDatetime 順に並べ替え
+  /// 3. 学期（Term）グループを代表最新 lectureDatetime 順に並べ替え
+  /// 4. 年度（Year）グループを代表最新 lectureDatetime 順に並べ替え
   Map<String, Map<String, List<Course>>> _groupCourses(
     List<Course> courses,
+    List<Lecture> lectures,
     AppLocalizations l10n,
   ) {
     final noYearLabel = l10n.coursePageNoYearLabel;
     final noTermLabel = l10n.coursePageNoTermLabel;
+
+    // コースID -> レクチャー有無
+    final Map<String, bool> courseHasLecturesMap = {};
+    // コースID -> 代表日時 (レクチャーあり: 最新の lectureDatetime / レクチャーなし: course.createdAt)
+    final Map<String, DateTime> courseLatestMap = {};
+
+    for (final course in courses) {
+      final courseLectures =
+          lectures.where((l) => l.courseId == course.id && !l.isDeleted);
+      if (courseLectures.isNotEmpty) {
+        courseHasLecturesMap[course.id] = true;
+        DateTime latest = DateTime.fromMillisecondsSinceEpoch(0);
+        for (final l in courseLectures) {
+          if (l.lectureDatetime.isAfter(latest)) {
+            latest = l.lectureDatetime;
+          }
+        }
+        courseLatestMap[course.id] = latest;
+      } else {
+        courseHasLecturesMap[course.id] = false;
+        courseLatestMap[course.id] = course.createdAt;
+      }
+    }
+
+    DevLog.add(
+        '📊 [_groupCourses] Grouping ${courses.length} courses with ${lectures.length} lectures using lectureDatetime');
+
+    int compareCourses(Course a, Course b) {
+      final hasLecturesA = courseHasLecturesMap[a.id] ?? false;
+      final hasLecturesB = courseHasLecturesMap[b.id] ?? false;
+
+      // 1. レクチャーありのコースをレクチャーなしのコースより優先
+      if (hasLecturesA && !hasLecturesB) return -1;
+      if (!hasLecturesA && hasLecturesB) return 1;
+
+      // 2. 最新日時（lectureDatetime / course.createdAt）の降順
+      final dtA = courseLatestMap[a.id] ?? a.createdAt;
+      final dtB = courseLatestMap[b.id] ?? b.createdAt;
+      final cmp = dtB.compareTo(dtA);
+      if (cmp != 0) return cmp;
+
+      // 3. 同時の場合はタイトルのアルファベット順
+      return a.displayTitle.compareTo(b.displayTitle);
+    }
+
     final result = <String, Map<String, List<Course>>>{};
     for (final course in courses) {
       final yearName = course.year?.attributeName ?? noYearLabel;
@@ -142,23 +195,100 @@ class _CourseTreeView extends ConsumerWidget {
       result[yearName]!.putIfAbsent(termName, () => []);
       result[yearName]![termName]!.add(course);
     }
-    // Year を降順（新しい年が上）、No Year は末尾
-    final sorted = Map.fromEntries(
-      result.entries.toList()..sort((a, b) {
+
+    // 1. 各学期内のコースを compareCourses 基準でソート
+    for (final yearEntry in result.entries) {
+      for (final termEntry in yearEntry.value.entries) {
+        termEntry.value.sort(compareCourses);
+      }
+    }
+
+    // 2. 学期（Term）グループを代表コースのランク順にソート（同ランク時のみ No Term を末尾に落とす）
+    final sortedResult = <String, Map<String, List<Course>>>{};
+    for (final yearEntry in result.entries) {
+      final terms = yearEntry.value.entries.toList();
+      terms.sort((a, b) {
+        if (a.value.isEmpty && b.value.isEmpty) {
+          if (a.key == noTermLabel && b.key == noTermLabel) return 0;
+          if (a.key == noTermLabel) return 1;
+          if (b.key == noTermLabel) return -1;
+          return b.key.compareTo(a.key);
+        }
+        if (a.value.isEmpty) return 1;
+        if (b.value.isEmpty) return -1;
+
+        // 代表コース（先頭コース）のレクチャー最新度で比較
+        final cmp = compareCourses(a.value.first, b.value.first);
+        if (cmp != 0) return cmp;
+
+        // 最新度が同一の場合のみ No Term を末尾へ
+        if (a.key == noTermLabel && b.key == noTermLabel) return 0;
+        if (a.key == noTermLabel) return 1;
+        if (b.key == noTermLabel) return -1;
+        return b.key.compareTo(a.key);
+      });
+      sortedResult[yearEntry.key] = Map.fromEntries(terms);
+    }
+
+    // 3. 年度（Year）グループを代表コースのランク順にソート（同ランク時のみ No Year を末尾に落とす）
+    final sortedYearEntries = sortedResult.entries.toList()
+      ..sort((a, b) {
+        Course? topCourseA;
+        for (final termCourses in a.value.values) {
+          if (termCourses.isNotEmpty) {
+            if (topCourseA == null ||
+                compareCourses(termCourses.first, topCourseA) < 0) {
+              topCourseA = termCourses.first;
+            }
+          }
+        }
+
+        Course? topCourseB;
+        for (final termCourses in b.value.values) {
+          if (termCourses.isNotEmpty) {
+            if (topCourseB == null ||
+                compareCourses(termCourses.first, topCourseB) < 0) {
+              topCourseB = termCourses.first;
+            }
+          }
+        }
+
+        if (topCourseA == null && topCourseB == null) {
+          if (a.key == noYearLabel && b.key == noYearLabel) return 0;
+          if (a.key == noYearLabel) return 1;
+          if (b.key == noYearLabel) return -1;
+          return b.key.compareTo(a.key);
+        }
+        if (topCourseA == null) return 1;
+        if (topCourseB == null) return -1;
+
+        // 代表コースのレクチャー最新度で比較
+        final cmp = compareCourses(topCourseA, topCourseB);
+        if (cmp != 0) return cmp;
+
+        // 最新度が同一の場合のみ No Year を末尾へ
+        if (a.key == noYearLabel && b.key == noYearLabel) return 0;
         if (a.key == noYearLabel) return 1;
         if (b.key == noYearLabel) return -1;
         return b.key.compareTo(a.key);
-      }),
-    );
-    return sorted;
+      });
+
+    return Map.fromEntries(sortedYearEntries);
   }
 }
 
-class _YearSection extends StatelessWidget {
+class _YearSection extends StatefulWidget {
   const _YearSection({required this.yearName, required this.termMap});
 
   final String yearName;
   final Map<String, List<Course>> termMap;
+
+  @override
+  State<_YearSection> createState() => _YearSectionState();
+}
+
+class _YearSectionState extends State<_YearSection> {
+  bool _isExpanded = true;
 
   @override
   Widget build(BuildContext context) {
@@ -166,95 +296,148 @@ class _YearSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-          child: Row(
-            children: [
-              Icon(Icons.folder, color: AppColors.starGold, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                yearName,
-                style: TextStyle(
-                  color: AppColors.universe.textStarlight,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isExpanded ? Icons.folder_open : Icons.folder,
+                    color: AppColors.starGold,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.yearName,
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _isExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_right,
+                    color: AppColors.universe.textComet,
+                    size: 20,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-        ...termMap.entries.map(
-          (termEntry) =>
-              _TermSection(termName: termEntry.key, courses: termEntry.value),
-        ),
+        if (_isExpanded)
+          ...widget.termMap.entries.map(
+            (termEntry) => _TermSection(
+              termName: termEntry.key,
+              courses: termEntry.value,
+            ),
+          ),
       ],
     );
   }
 }
 
-class _TermSection extends ConsumerWidget {
+class _TermSection extends ConsumerStatefulWidget {
   const _TermSection({required this.termName, required this.courses});
 
   final String termName;
   final List<Course> courses;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TermSection> createState() => _TermSectionState();
+}
+
+class _TermSectionState extends ConsumerState<_TermSection> {
+  bool _isExpanded = true;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 16),
+      padding: const EdgeInsets.only(left: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.folder_open,
-                  color: AppColors.universe.textComet,
-                  size: 16,
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: InkWell(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isExpanded ? Icons.folder_open : Icons.folder,
+                      color: AppColors.universe.textComet,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.termName,
+                      style: TextStyle(
+                        color: AppColors.universe.textComet,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _isExpanded
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_right,
+                      color: AppColors.universe.textComet.withValues(alpha: 0.7),
+                      size: 18,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  termName,
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          ...courses.map(
-            (course) => CourseTile(
-              course: course,
-              onEdit: () async {
-                await showModalBottomSheet<Course>(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => CourseCreateSheet(existingCourse: course),
-                );
-              },
-              onDelete: () async {
-                // CourseTile側でボタン自体を隠しているが、最終防波堤として
-                // ここでも既定コースの削除を拒否する。
-                if (course.metadata?['is_default'] == true) return;
-                try {
-                  await ref.read(courseRepositoryProvider).deleteCourse(course.id);
-                  ref.invalidate(courseListProvider);
-                  // カスケードで削除された配下のLectureをローカルにも反映する
-                  await ref
-                      .read(lectureControllerProvider.notifier)
-                      .bootstrapLectures(forceFullPull: true, reason: 'course_page_delete_cascade');
-                } catch (e) {
-                  if (context.mounted) {
-                    AppErrorDialog.showSmart(context, e, actionName: 'deleting course');
+          if (_isExpanded)
+            ...widget.courses.map(
+              (course) => CourseTile(
+                course: course,
+                onEdit: () async {
+                  await showModalBottomSheet<Course>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => CourseCreateSheet(existingCourse: course),
+                  );
+                },
+                onDelete: () async {
+                  if (course.metadata?['is_default'] == true) return;
+                  try {
+                    await ref
+                        .read(courseRepositoryProvider)
+                        .deleteCourse(course.id);
+                    ref.invalidate(courseListProvider);
+                    await ref
+                        .read(lectureControllerProvider.notifier)
+                        .bootstrapLectures(
+                          forceFullPull: true,
+                          reason: 'course_page_delete_cascade',
+                        );
+                  } catch (e) {
+                    if (context.mounted) {
+                      AppErrorDialog.showSmart(
+                        context,
+                        e,
+                        actionName: 'deleting course',
+                      );
+                    }
                   }
-                }
-              },
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
         ],
       ),
     );
@@ -974,6 +1157,7 @@ Future<void> _handleRefresh(BuildContext context, WidgetRef ref, {String? course
 
   await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'course_page_pull_to_refresh');
   ref.invalidate(courseListProvider);
+  ref.invalidate(allLecturesStreamProvider);
   if (courseId != null) {
     ref.invalidate(lectureListStreamProvider(courseId));
     ref.invalidate(latestAnnouncementForCourseProvider(courseId));

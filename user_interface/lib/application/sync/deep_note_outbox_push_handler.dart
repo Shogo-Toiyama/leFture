@@ -19,6 +19,9 @@ class DeepNoteOutboxPushHandler implements OutboxPushHandler {
         .getSingleOrNull();
     if (existing == null) return;
 
+    // チュートリアル講義配下のノートはローカル完結のためpushしない
+    if (await db.isTutorialLecture(existing.lectureId)) return;
+
     final metadata = existing.metadataJson != null
         ? Map<String, dynamic>.from(jsonDecode(existing.metadataJson!) as Map)
         : <String, dynamic>{};

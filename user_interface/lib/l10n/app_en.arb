@@ -3610,11 +3610,11 @@
   "@introCtaLead": {
     "description": "Large bold headline on slide 3 (the final CTA slide), right under the animated logo. The \\n marks the line break between the two short lines."
   },
-  "introCtaSub": "Start today.\nCreating an account is free and takes 30 seconds.",
+  "introCtaSub": "Start today\nto truly enjoy every single lecture.",
   "@introCtaSub": {
     "description": "Supporting subtext on slide 3, under the lead headline. The \\n marks the line break."
   },
-  "introCtaButton": "Start recording your future, free",
+  "introCtaButton": "Get started with leFture",
   "@introCtaButton": {
     "description": "Primary call-to-action button label on slide 3, leading to the sign-up screen. Should feel inviting and energetic, not a generic 'Sign up' or 'Get started'."
   },
@@ -3649,17 +3649,82 @@
     "description": "Final button label on the last onboarding step."
   },
 
-  "onboardingTutorialEyebrow": "Welcome",
-  "@onboardingTutorialEyebrow": {
-    "description": "Small eyebrow label above the title on the onboarding tutorial step."
+  "onboardingIntroEyebrow": "Welcome",
+  "@onboardingIntroEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding intro/bridge step."
   },
-  "onboardingTutorialTitle": "Tutorial slides — coming soon",
-  "@onboardingTutorialTitle": {
-    "description": "Title on the onboarding tutorial step, currently a placeholder."
+  "onboardingIntroTitle": "Let's set up your leFture",
+  "@onboardingIntroTitle": {
+    "description": "Title on the onboarding intro/bridge step shown right after sign-up, before the setup steps begin."
   },
-  "onboardingTutorialSubtitle": "We're still designing this part — for now, let's get you set up.",
-  "@onboardingTutorialSubtitle": {
-    "description": "Subtitle on the onboarding tutorial step, currently a placeholder."
+  "onboardingIntroSubtitle": "A few quick steps and you'll be ready to record your first lecture.",
+  "@onboardingIntroSubtitle": {
+    "description": "Subtitle on the onboarding intro/bridge step."
+  },
+  "onboardingIntroHint": "Takes about 2 minutes",
+  "@onboardingIntroHint": {
+    "description": "Small hint under the primary button on the onboarding intro/bridge step."
+  },
+  "onboardingIntroStep1Title": "Language",
+  "@onboardingIntroStep1Title": {
+    "description": "Title of waypoint 1 (Language) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep1Desc": "Choose your display and recording language",
+  "@onboardingIntroStep1Desc": {
+    "description": "Description of waypoint 1 (Language) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep2Title": "Profile",
+  "@onboardingIntroStep2Title": {
+    "description": "Title of waypoint 2 (Profile) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep2Desc": "Tell us your major, interests, and goals",
+  "@onboardingIntroStep2Desc": {
+    "description": "Description of waypoint 2 (Profile) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep3Title": "Permissions",
+  "@onboardingIntroStep3Title": {
+    "description": "Title of waypoint 3 (Permissions) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep3Desc": "Allow recording and notifications",
+  "@onboardingIntroStep3Desc": {
+    "description": "Description of waypoint 3 (Permissions) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep4Title": "Plan",
+  "@onboardingIntroStep4Title": {
+    "description": "Title of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap."
+  },
+  "onboardingIntroStep4Desc": "Pick the plan that fits you",
+  "@onboardingIntroStep4Desc": {
+    "description": "Description of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap."
+  },
+
+  "onboardingLanguageEyebrow": "Language",
+  "@onboardingLanguageEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding language step."
+  },
+  "onboardingLanguageTitle": "Set your languages",
+  "@onboardingLanguageTitle": {
+    "description": "Title on the onboarding language step."
+  },
+  "onboardingLanguageSubtitle": "Choose the language leFture shows, and the language you'll be recording in.",
+  "@onboardingLanguageSubtitle": {
+    "description": "Subtitle on the onboarding language step."
+  },
+  "onboardingLanguageDisplayLabel": "Display Language",
+  "@onboardingLanguageDisplayLabel": {
+    "description": "Row title for the display-language picker on the onboarding language step."
+  },
+  "onboardingLanguageDisplayDesc": "Sets the language of app text",
+  "@onboardingLanguageDisplayDesc": {
+    "description": "Row description for the display-language picker on the onboarding language step."
+  },
+  "onboardingLanguageRecordingLabel": "Recording Language",
+  "@onboardingLanguageRecordingLabel": {
+    "description": "Row title for the recording-language picker on the onboarding language step."
+  },
+  "onboardingLanguageRecordingDesc": "Used for on-device transcription",
+  "@onboardingLanguageRecordingDesc": {
+    "description": "Row description for the recording-language picker on the onboarding language step."
   },
 
   "onboardingPermissionsEyebrow": "Setup",

@@ -367,7 +367,9 @@ class TrashController {
           updatedAt: Value(DateTime.now()),
         ),
       );
-      await db.enqueueOutbox(entityType: 'lecture', entityId: record.id, op: 'update');
+      if (!await db.isTutorialLecture(record.id)) {
+        await db.enqueueOutbox(entityType: 'lecture', entityId: record.id, op: 'update');
+      }
     } else if (record.type == ActivityRecordType.announcement) {
       await (db.update(db.localAnnouncements)..where((t) => t.id.equals(record.id))).write(
         LocalAnnouncementsCompanion(
@@ -375,7 +377,10 @@ class TrashController {
           updatedAt: Value(DateTime.now()),
         ),
       );
-      await db.enqueueOutbox(entityType: 'announcement', entityId: record.id, op: 'update');
+      final ann = await (db.select(db.localAnnouncements)..where((t) => t.id.equals(record.id))).getSingleOrNull();
+      if (ann == null || !await db.isTutorialLecture(ann.lectureId)) {
+        await db.enqueueOutbox(entityType: 'announcement', entityId: record.id, op: 'update');
+      }
     }
 
     ref.invalidate(deletedCoursesFutureProvider);

@@ -20,6 +20,9 @@ class LectureMomentOutboxPushHandler implements OutboxPushHandler {
     // ローカルにもう存在しない -> 送るものが無い
     if (existing == null) return;
 
+    // チュートリアル講義配下のモーメントはローカル完結のためpushしない
+    if (await db.isTutorialLecture(existing.lectureId)) return;
+
     final payload = {
       'id': existing.id,
       'user_id': existing.userId,

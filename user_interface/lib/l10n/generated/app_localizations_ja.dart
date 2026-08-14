@@ -2197,10 +2197,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get introCtaLead => '体験したことのない、\nワクワクする学びを。';
 
   @override
-  String get introCtaSub => 'さあ、今日から始めよう。\nアカウント作成は無料・30秒。';
+  String get introCtaSub => 'さあ、今日から始めよう。\n毎日の授業を心から楽しむために。';
 
   @override
-  String get introCtaButton => '無料で、未来を録りはじめる';
+  String get introCtaButton => 'leFtureをはじめる';
 
   @override
   String get dateToday => '今日';
@@ -2224,13 +2224,62 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingGetStartedButton => 'はじめる';
 
   @override
-  String get onboardingTutorialEyebrow => 'ようこそ';
+  String get onboardingIntroEyebrow => 'ようこそ';
 
   @override
-  String get onboardingTutorialTitle => 'チュートリアルは近日公開';
+  String get onboardingIntroTitle => 'さあ、あなただけの学びを始めましょう';
 
   @override
-  String get onboardingTutorialSubtitle => 'この部分は現在準備中です。まずは初期設定を進めましょう。';
+  String get onboardingIntroSubtitle =>
+      'あと少しだけ準備をさせてください。この4つのステップで、あなた専用のleFtureが整います。';
+
+  @override
+  String get onboardingIntroHint => '約2分で完了します';
+
+  @override
+  String get onboardingIntroStep1Title => '言語設定';
+
+  @override
+  String get onboardingIntroStep1Desc => '表示言語と録音言語を選びます';
+
+  @override
+  String get onboardingIntroStep2Title => 'プロフィール';
+
+  @override
+  String get onboardingIntroStep2Desc => '専攻・興味・将来の夢を教えてください';
+
+  @override
+  String get onboardingIntroStep3Title => '権限許可';
+
+  @override
+  String get onboardingIntroStep3Desc => '録音とお知らせの権限を確認します';
+
+  @override
+  String get onboardingIntroStep4Title => 'プラン選択';
+
+  @override
+  String get onboardingIntroStep4Desc => 'あなたに合ったプランを選んでください';
+
+  @override
+  String get onboardingLanguageEyebrow => '言語';
+
+  @override
+  String get onboardingLanguageTitle => '言語を設定しましょう';
+
+  @override
+  String get onboardingLanguageSubtitle => 'アプリの表示言語と、録音する授業の言語を選んでください。';
+
+  @override
+  String get onboardingLanguageDisplayLabel => '表示言語';
+
+  @override
+  String get onboardingLanguageDisplayDesc => 'アプリ内の表示言語です';
+
+  @override
+  String get onboardingLanguageRecordingLabel => '録音言語';
+
+  @override
+  String get onboardingLanguageRecordingDesc => '端末上での文字起こしに使われます';
 
   @override
   String get onboardingPermissionsEyebrow => '初期設定';

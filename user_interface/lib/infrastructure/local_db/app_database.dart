@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:drift/drift.dart';
@@ -804,6 +805,20 @@ class AppDatabase extends _$AppDatabase {
     return (select(localLectures)..where((t) => t.id.equals(lectureId)))
         .watchSingleOrNull()
         .distinct();
+  }
+
+  /// 指定された [lectureId] がローカル専用のチュートリアル講義であるかを判定する。
+  /// 講義行の metadataJson 内に `{"is_tutorial": true}` が含まれる場合は true を返す。
+  Future<bool> isTutorialLecture(String? lectureId) async {
+    if (lectureId == null || lectureId.isEmpty) return false;
+    final lecture = await (select(localLectures)..where((t) => t.id.equals(lectureId))).getSingleOrNull();
+    if (lecture == null || lecture.metadataJson == null) return false;
+    try {
+      final decoded = jsonDecode(lecture.metadataJson!);
+      return decoded is Map && decoded['is_tutorial'] == true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // --- Outbox ---

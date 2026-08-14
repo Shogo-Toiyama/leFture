@@ -2297,11 +2297,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Learning excitement\nlike you\'ve never felt before.';
 
   @override
-  String get introCtaSub =>
-      'Start today.\nCreating an account is free and takes 30 seconds.';
+  String get introCtaSub => 'Start today\nto truly enjoy every single lecture.';
 
   @override
-  String get introCtaButton => 'Start recording your future, free';
+  String get introCtaButton => 'Get started with leFture';
 
   @override
   String get dateToday => 'Today';
@@ -2325,14 +2324,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingGetStartedButton => 'Get started';
 
   @override
-  String get onboardingTutorialEyebrow => 'Welcome';
+  String get onboardingIntroEyebrow => 'Welcome';
 
   @override
-  String get onboardingTutorialTitle => 'Tutorial slides — coming soon';
+  String get onboardingIntroTitle => 'Let\'s set up your leFture';
 
   @override
-  String get onboardingTutorialSubtitle =>
-      'We\'re still designing this part — for now, let\'s get you set up.';
+  String get onboardingIntroSubtitle =>
+      'A few quick steps and you\'ll be ready to record your first lecture.';
+
+  @override
+  String get onboardingIntroHint => 'Takes about 2 minutes';
+
+  @override
+  String get onboardingIntroStep1Title => 'Language';
+
+  @override
+  String get onboardingIntroStep1Desc =>
+      'Choose your display and recording language';
+
+  @override
+  String get onboardingIntroStep2Title => 'Profile';
+
+  @override
+  String get onboardingIntroStep2Desc =>
+      'Tell us your major, interests, and goals';
+
+  @override
+  String get onboardingIntroStep3Title => 'Permissions';
+
+  @override
+  String get onboardingIntroStep3Desc => 'Allow recording and notifications';
+
+  @override
+  String get onboardingIntroStep4Title => 'Plan';
+
+  @override
+  String get onboardingIntroStep4Desc => 'Pick the plan that fits you';
+
+  @override
+  String get onboardingLanguageEyebrow => 'Language';
+
+  @override
+  String get onboardingLanguageTitle => 'Set your languages';
+
+  @override
+  String get onboardingLanguageSubtitle =>
+      'Choose the language leFture shows, and the language you\'ll be recording in.';
+
+  @override
+  String get onboardingLanguageDisplayLabel => 'Display Language';
+
+  @override
+  String get onboardingLanguageDisplayDesc => 'Sets the language of app text';
+
+  @override
+  String get onboardingLanguageRecordingLabel => 'Recording Language';
+
+  @override
+  String get onboardingLanguageRecordingDesc =>
+      'Used for on-device transcription';
 
   @override
   String get onboardingPermissionsEyebrow => 'Setup';

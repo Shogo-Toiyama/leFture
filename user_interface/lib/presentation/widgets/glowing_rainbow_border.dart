@@ -138,12 +138,6 @@ class _RainbowGlowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
-
-    if (innerGlow) {
-      canvas.save();
-      canvas.clipRRect(rrect);
-    }
 
     // Red-based glowing palette
     final colors = [
@@ -172,10 +166,25 @@ class _RainbowGlowPainter extends CustomPainter {
       paint.maskFilter = MaskFilter.blur(BlurStyle.normal, blurSigma);
     }
 
-    canvas.drawRRect(rrect, paint);
-
-    if (innerGlow) {
-      canvas.restore();
+    if (borderRadius <= 0) {
+      if (innerGlow) {
+        canvas.save();
+        canvas.clipRect(rect);
+      }
+      canvas.drawRect(rect, paint);
+      if (innerGlow) {
+        canvas.restore();
+      }
+    } else {
+      final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
+      if (innerGlow) {
+        canvas.save();
+        canvas.clipRRect(rrect);
+      }
+      canvas.drawRRect(rrect, paint);
+      if (innerGlow) {
+        canvas.restore();
+      }
     }
   }
 

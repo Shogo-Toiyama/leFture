@@ -55,6 +55,10 @@ class LectureRepositoryDrift {
       ));
 
       // 2. Outboxに登録
+      if (await _db.isTutorialLecture(lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
+
       await _db.enqueueOutbox(
         entityType: 'lecture',
         entityId: lectureId,
@@ -100,6 +104,10 @@ class LectureRepositoryDrift {
       ));
 
       // 2. Outboxに登録(softDeleteLectureと同様、entityIdのみでよい)
+      if (await _db.isTutorialLecture(lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
+
       await _db.enqueueOutbox(
         entityType: 'lecture',
         entityId: lectureId,

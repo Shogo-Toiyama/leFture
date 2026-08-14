@@ -30,7 +30,7 @@ class TutorialLectureSeedService {
   final AppDatabase _db;
 
   static const _uuid = Uuid();
-  static const int kTutorialVersion = 4;
+  static const int kTutorialVersion = 5;
 
   /// 既定コース(DefaultCourseServiceが確保する、チュートリアル講義兼メモ用の
   /// 常設コース)のタイトル。チュートリアル文言と同じ言語マップから引くことで

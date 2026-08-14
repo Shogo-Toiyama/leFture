@@ -42,9 +42,15 @@ class FunFactRepositoryDrift {
     if (uid == null) return;
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localFunFacts)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localFunFacts)..where((t) => t.id.equals(id))).write(
         LocalFunFactsCompanion(reaction: Value(reaction)),
       );
+
+      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
+        return; // チュートリアル講義のデータはOutboxに入れない
+      }
 
       await _db.enqueueOutbox(
         entityType: 'fun_fact',
