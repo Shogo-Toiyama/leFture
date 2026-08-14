@@ -284,7 +284,7 @@ class AllowAllPermissionsButton extends HookWidget {
     if (allGranted) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.growthGreen.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
@@ -296,12 +296,15 @@ class AllowAllPermissionsButton extends HookWidget {
           children: [
             const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 18),
             const SizedBox(width: 8),
-            Text(
-              l10n.onboardingPermissionsAllGranted,
-              style: const TextStyle(
-                color: AppColors.growthGreen,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                l10n.onboardingPermissionsAllGranted,
+                style: const TextStyle(
+                  color: AppColors.growthGreen,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
@@ -315,7 +318,7 @@ class AllowAllPermissionsButton extends HookWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.starGold,
           foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
@@ -332,6 +335,7 @@ class AllowAllPermissionsButton extends HookWidget {
               ? l10n.onboardingPermissionsRequesting
               : l10n.onboardingPermissionsAllowAll,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          textAlign: TextAlign.center,
         ),
       ),
     );

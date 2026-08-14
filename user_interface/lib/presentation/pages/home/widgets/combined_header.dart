@@ -19,16 +19,20 @@ class CoursesHeaderWidget extends StatelessWidget {
         InkWell(
           onTap: () => context.push(AppRoutes.coursesRootPath),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 6),
+            padding: const EdgeInsets.fromLTRB(24, 10, 24, 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  l10n.homeCoursesSectionTitle,
-                  style: TextStyle(
-                    color: AppColors.starGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                Flexible(
+                  child: Text(
+                    l10n.homeCoursesSectionTitle,
+                    style: TextStyle(
+                      color: AppColors.starGold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -43,7 +47,7 @@ class CoursesHeaderWidget extends StatelessWidget {
         ),
         // Recent Lectures
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+          padding: const EdgeInsets.fromLTRB(24, 2, 24, 6),
           child: Text(
             l10n.homeRecentLecturesSectionTitle,
             style: TextStyle(
@@ -52,6 +56,8 @@ class CoursesHeaderWidget extends StatelessWidget {
               letterSpacing: 1.2,
               fontSize: 12,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

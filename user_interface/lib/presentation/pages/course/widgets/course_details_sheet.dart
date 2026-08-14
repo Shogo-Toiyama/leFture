@@ -71,14 +71,16 @@ class CourseDetailsSheet extends StatelessWidget {
                   children: [
                     Icon(row.$1, color: AppColors.starGold, size: 18),
                     const SizedBox(width: 12),
-                    SizedBox(
-                      width: 100,
+                    Expanded(
+                      flex: 2,
                       child: Text(
                         row.$2,
                         style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Expanded(
+                      flex: 3,
                       child: Text(
                         row.$3,
                         style: TextStyle(

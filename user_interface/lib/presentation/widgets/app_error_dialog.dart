@@ -175,6 +175,9 @@ class AppErrorDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: AppColors.universe.glassBorder),
       ),
+      actionsOverflowButtonSpacing: 8,
+      actionsOverflowDirection: VerticalDirection.down,
+      actionsAlignment: MainAxisAlignment.end,
       title: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

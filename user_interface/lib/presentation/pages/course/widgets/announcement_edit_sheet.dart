@@ -95,14 +95,19 @@ class AnnouncementEditSheet extends HookConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    l10n.announcementEditSheetTitle,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      l10n.announcementEditSheetTitle,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   TextButton(
                     onPressed: isSubmitting.value ? null : submit,
                     style: TextButton.styleFrom(

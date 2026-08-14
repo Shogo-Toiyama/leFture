@@ -718,7 +718,9 @@ class _HistoryTile extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 item.localTimeLabel(l10n.localeName),
@@ -727,14 +729,18 @@ class _HistoryTile extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(height: 2),
               Text(
-                '(${item.localDateLabel(l10n.localeName, todayLabel: l10n.dateToday, yesterdayLabel: l10n.dateYesterday)})',
+                item.localDateLabel(l10n.localeName, todayLabel: l10n.dateToday, yesterdayLabel: l10n.dateYesterday),
                 style: TextStyle(
                   color: AppColors.universe.textComet,
                   fontSize: 12,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

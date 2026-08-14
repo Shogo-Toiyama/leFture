@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/domain/entities/avatar_preset_helper.dart';
 import 'package:lefture/domain/entities/user_profile.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
@@ -144,6 +145,14 @@ class ChangeAvatarSheet extends HookConsumerWidget {
     final viewingBgStyleIndex = useState<int>(initialParsed.bgStyleIndex ?? 0);
     final isSaving = useState<bool>(false);
 
+    // 現在のアバターがソーシャル画像/アップロード写真 (プリセットのアイコン+背景の
+    // 組み合わせで表現できない) 場合、ユーザーが明示的にプリセットを選ぶまでは
+    // その実画像をプレビューに出す。そうしないと「プリセット未選択」がindex 0
+    // (イニシャル+デフォルト赤背景) に見えてしまい、まるでアバターが赤イニシャルに
+    // 勝手に変わったかのように見えてしまう。
+    final showingCurrentCustomAvatar =
+        useState<bool>(initialParsed.type != ParsedAvatarType.preset);
+
     final currentGradients = selectedBgStyleIndex.value == 0
         ? kVividGradients
         : (selectedBgStyleIndex.value == 1 ? kPastelGradients : kDarkGradients);
@@ -162,8 +171,18 @@ class ChangeAvatarSheet extends HookConsumerWidget {
 
     final userMetadata = supabase.auth.currentUser?.userMetadata;
     final socialAvatarUrl = (userMetadata?['avatar_url'] ?? userMetadata?['picture']) as String?;
+    // 現在のアバターが既にソーシャル画像そのものなら、Restoreボタンを出す意味がない。
+    final isAlreadyUsingSocialAvatar =
+        socialAvatarUrl != null && profile?.avatarUrl?.trim() == socialAvatarUrl.trim();
 
     Future<void> savePresetAvatar() async {
+      if (showingCurrentCustomAvatar.value) {
+        // ユーザーがプリセットを何も選んでいない (元がソーシャル/アップロード画像の
+        // まま) ので、保存扱いにせずそのまま閉じる。ここでプリセットとして保存すると
+        // 元のソーシャル/アップロード画像がindex 0 (イニシャル+赤背景) で上書きされてしまう。
+        Navigator.of(context).pop();
+        return;
+      }
       isSaving.value = true;
       try {
         final serialized = AvatarPresetHelper.serialize(
@@ -174,14 +193,13 @@ class ChangeAvatarSheet extends HookConsumerWidget {
         );
         final repo = ref.read(userProfileRepositoryProvider);
         await repo.updateProfile(avatarUrl: serialized);
+        if (!context.mounted) return;
         ref.read(lectureControllerProvider.notifier).pushOutboxNow();
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.changeAvatarSavedSuccess)),
-          );
-          Navigator.of(context).pop();
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.changeAvatarSavedSuccess)),
+        );
+        Navigator.of(context).pop();
       } catch (e) {
         if (context.mounted) {
           AppErrorDialog.show(
@@ -214,14 +232,13 @@ class ChangeAvatarSheet extends HookConsumerWidget {
         final repo = ref.read(userProfileRepositoryProvider);
         final remotePath = await repo.uploadAvatarImage(file);
         await repo.updateProfile(avatarUrl: remotePath);
+        if (!context.mounted) return;
         ref.read(lectureControllerProvider.notifier).pushOutboxNow();
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.changeAvatarSavedSuccess)),
-          );
-          Navigator.of(context).pop();
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.changeAvatarSavedSuccess)),
+        );
+        Navigator.of(context).pop();
       } catch (e) {
         if (context.mounted) {
           AppErrorDialog.show(
@@ -241,14 +258,13 @@ class ChangeAvatarSheet extends HookConsumerWidget {
       try {
         final repo = ref.read(userProfileRepositoryProvider);
         await repo.updateProfile(avatarUrl: socialAvatarUrl);
+        if (!context.mounted) return;
         ref.read(lectureControllerProvider.notifier).pushOutboxNow();
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.changeAvatarSavedSuccess)),
-          );
-          Navigator.of(context).pop();
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.changeAvatarSavedSuccess)),
+        );
+        Navigator.of(context).pop();
       } catch (e) {
         if (context.mounted) {
           AppErrorDialog.show(
@@ -304,16 +320,20 @@ class ChangeAvatarSheet extends HookConsumerWidget {
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Text(
-                    l10n.changeAvatarSheetTitle,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n.changeAvatarSheetTitle,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   if (isSaving.value)
                     const SizedBox(
                       width: 20,
@@ -326,6 +346,11 @@ class ChangeAvatarSheet extends HookConsumerWidget {
                   else
                     TextButton(
                       onPressed: savePresetAvatar,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       child: Text(
                         l10n.changeAvatarSave,
                         style: const TextStyle(
@@ -341,6 +366,8 @@ class ChangeAvatarSheet extends HookConsumerWidget {
                       color: AppColors.universe.textComet,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -349,48 +376,50 @@ class ChangeAvatarSheet extends HookConsumerWidget {
 
             // ── 上部プレビュー (現在選択中のアバター + 背景) ────────
             Center(
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: selectedGradient,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: selectedIconIndex.value == 0
-                    ? Center(
-                        child: Text(
-                          initials,
-                          style: TextStyle(
-                            color: initialsTextColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 34,
-                            shadows: isPastel
-                                ? [
-                                    Shadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ]
-                                : null,
+              child: showingCurrentCustomAvatar.value
+                  ? _CurrentAvatarPreview(parsed: initialParsed, size: 100)
+                  : Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: selectedGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Image.asset(
-                          kPresetAvatarAssets[selectedIconIndex.value - 1],
-                          fit: BoxFit.contain,
-                        ),
+                        ],
                       ),
-              ),
+                      child: selectedIconIndex.value == 0
+                          ? Center(
+                              child: Text(
+                                initials,
+                                style: TextStyle(
+                                  color: initialsTextColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 34,
+                                  shadows: isPastel
+                                      ? [
+                                          Shadow(
+                                            color: Colors.black.withValues(alpha: 0.15),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                              ),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                kPresetAvatarAssets[selectedIconIndex.value - 1],
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                    ),
             ),
             const SizedBox(height: 24),
 
@@ -427,7 +456,9 @@ class ChangeAvatarSheet extends HookConsumerWidget {
                       ),
                     ),
                   ),
-                  if (socialAvatarUrl != null && socialAvatarUrl.isNotEmpty) ...[
+                  if (socialAvatarUrl != null &&
+                      socialAvatarUrl.isNotEmpty &&
+                      !isAlreadyUsingSocialAvatar) ...[
                     const SizedBox(height: 8),
                     TextButton.icon(
                       onPressed: isSaving.value ? null : restoreSocialAvatar,
@@ -500,9 +531,13 @@ class ChangeAvatarSheet extends HookConsumerWidget {
                             ),
                             itemCount: 21,
                             itemBuilder: (context, index) {
-                              final isSelected = selectedIconIndex.value == index;
+                              final isSelected = !showingCurrentCustomAvatar.value &&
+                                  selectedIconIndex.value == index;
                               return GestureDetector(
-                                onTap: () => selectedIconIndex.value = index,
+                                onTap: () {
+                                  selectedIconIndex.value = index;
+                                  showingCurrentCustomAvatar.value = false;
+                                },
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.04),
@@ -632,14 +667,15 @@ class ChangeAvatarSheet extends HookConsumerWidget {
                                   itemCount: viewingGradients.length,
                                   itemBuilder: (context, index) {
                                     final gradient = viewingGradients[index];
-                                    final isSelected =
+                                    final isSelected = !showingCurrentCustomAvatar.value &&
                                         viewingBgStyleIndex.value == selectedBgStyleIndex.value &&
-                                            selectedBgIndex.value == index;
+                                        selectedBgIndex.value == index;
 
                                     return GestureDetector(
                                       onTap: () {
                                         selectedBgStyleIndex.value = viewingBgStyleIndex.value;
                                         selectedBgIndex.value = index;
+                                        showingCurrentCustomAvatar.value = false;
                                       },
                                       child: Container(
                                         decoration: BoxDecoration(
@@ -701,6 +737,92 @@ class ChangeAvatarSheet extends HookConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// シートを開いた時点でのアバター (ソーシャル画像 or アップロード写真) を
+/// プリセットに変換せずそのまま表示するプレビュー Widget。
+class _CurrentAvatarPreview extends ConsumerWidget {
+  const _CurrentAvatarPreview({required this.parsed, required this.size});
+
+  final ParsedAvatar parsed;
+  final double size;
+
+  Widget _fallback() {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.1),
+      ),
+      child: Icon(
+        Icons.person_rounded,
+        color: Colors.white54,
+        size: size * 0.5,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (parsed.type == ParsedAvatarType.network && parsed.url != null) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(shape: BoxShape.circle),
+        clipBehavior: Clip.antiAlias,
+        child: Image.network(
+          parsed.url!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _fallback(),
+        ),
+      );
+    }
+
+    if (parsed.type == ParsedAvatarType.r2Path && parsed.url != null) {
+      final fileAsync = ref.watch(artifactFileProvider(parsed.url!));
+      return fileAsync.when(
+        data: (file) {
+          if (!file.existsSync() || file.lengthSync() == 0) {
+            return _fallback();
+          }
+          return Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(shape: BoxShape.circle),
+            clipBehavior: Clip.antiAlias,
+            child: Image.file(
+              file,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => _fallback(),
+            ),
+          );
+        },
+        loading: () => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+            ),
+          ),
+        ),
+        error: (error, stackTrace) => _fallback(),
+      );
+    }
+
+    return _fallback();
   }
 }
 

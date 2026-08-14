@@ -249,14 +249,27 @@ class ContactPage extends HookConsumerWidget {
                         // Category Dropdown
                         DropdownButtonFormField<String>(
                           initialValue: selectedCategory.value,
+                          isExpanded: true,
                           dropdownColor: const Color(0xFF13131C),
                           style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 15),
                           decoration: inputDecoration(l10n.contactCategoryLabel),
                           items: [
-                            DropdownMenuItem(value: 'bug', child: Text(l10n.contactCategoryBug)),
-                            DropdownMenuItem(value: 'feature_request', child: Text(l10n.contactCategoryFeedback)),
-                            DropdownMenuItem(value: 'account', child: Text(l10n.contactCategoryAccount)),
-                            DropdownMenuItem(value: 'other', child: Text(l10n.contactCategoryOther)),
+                            DropdownMenuItem(
+                              value: 'bug',
+                              child: Text(l10n.contactCategoryBug, overflow: TextOverflow.ellipsis),
+                            ),
+                            DropdownMenuItem(
+                              value: 'feature_request',
+                              child: Text(l10n.contactCategoryFeedback, overflow: TextOverflow.ellipsis),
+                            ),
+                            DropdownMenuItem(
+                              value: 'account',
+                              child: Text(l10n.contactCategoryAccount, overflow: TextOverflow.ellipsis),
+                            ),
+                            DropdownMenuItem(
+                              value: 'other',
+                              child: Text(l10n.contactCategoryOther, overflow: TextOverflow.ellipsis),
+                            ),
                           ],
                           onChanged: (val) {
                             if (val != null) selectedCategory.value = val;

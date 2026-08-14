@@ -115,109 +115,122 @@ class OnboardingProfileStep extends HookConsumerWidget {
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OnboardingBackButton(onTap: handleBack),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            for (var i = 0; i < questions.length; i++) ...[
-              if (i > 0) const SizedBox(width: 5),
-              Expanded(
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: i <= qIndex.value ? AppColors.starGold : AppColors.universe.glassWhiteLow,
-                    borderRadius: BorderRadius.circular(2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OnboardingBackButton(onTap: handleBack),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      for (var i = 0; i < questions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 5),
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: i <= qIndex.value ? AppColors.starGold : AppColors.universe.glassWhiteLow,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.onboardingProfileStepCounter(qIndex.value + 1, questions.length),
-          style: TextStyle(
-            color: AppColors.universe.textComet,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          q.title,
-          style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(q.subtitle, style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.4)),
-        const SizedBox(height: 20),
-        TextField(
-          key: ValueKey(qIndex.value),
-          controller: q.controller,
-          maxLines: q.maxLines,
-          style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14),
-          decoration: InputDecoration(
-            hintText: q.hint,
-            hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.55)),
-            filled: true,
-            fillColor: AppColors.universe.glassWhiteLow,
-            contentPadding: const EdgeInsets.all(14),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.universe.glassBorder),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: AppColors.starGold),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        if (q.required) ...[
-          const SizedBox(height: 8),
-          Text(
-            l10n.onboardingProfileBioRequiredNote,
-            style: TextStyle(color: AppColors.universe.textComet, fontSize: 11.5),
-          ),
-        ],
-        const Spacer(),
-        if (!q.required)
-          Center(
-            child: TextButton(
-              onPressed: isSubmitting.value ? null : handlePrimary,
-              child: Text(
-                l10n.onboardingSkipButton,
-                style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.starGold,
-              foregroundColor: Colors.black,
-              disabledBackgroundColor: AppColors.universe.glassWhiteLow,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: isSubmitting.value ? null : (canAdvance ? handlePrimary : null),
-            child: isSubmitting.value
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                  )
-                : Text(
-                    isLast ? l10n.onboardingContinueButton : l10n.onboardingNextButton,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.onboardingProfileStepCounter(qIndex.value + 1, questions.length),
+                    style: TextStyle(
+                      color: AppColors.universe.textComet,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    q.title,
+                    style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(q.subtitle, style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.4)),
+                  const SizedBox(height: 20),
+                  TextField(
+                    key: ValueKey(qIndex.value),
+                    controller: q.controller,
+                    maxLines: q.maxLines,
+                    style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: q.hint,
+                      hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.55)),
+                      filled: true,
+                      fillColor: AppColors.universe.glassWhiteLow,
+                      contentPadding: const EdgeInsets.all(14),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: AppColors.universe.glassBorder),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: AppColors.starGold),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  if (q.required) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.onboardingProfileBioRequiredNote,
+                      style: TextStyle(color: AppColors.universe.textComet, fontSize: 11.5),
+                    ),
+                  ],
+                  const Spacer(),
+                  const SizedBox(height: 16),
+                  if (!q.required)
+                    Center(
+                      child: TextButton(
+                        onPressed: isSubmitting.value ? null : handlePrimary,
+                        child: Text(
+                          l10n.onboardingSkipButton,
+                          style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.starGold,
+                        foregroundColor: Colors.black,
+                        disabledBackgroundColor: AppColors.universe.glassWhiteLow,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: isSubmitting.value ? null : (canAdvance ? handlePrimary : null),
+                      child: isSubmitting.value
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                            )
+                          : Text(
+                              isLast ? l10n.onboardingContinueButton : l10n.onboardingNextButton,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

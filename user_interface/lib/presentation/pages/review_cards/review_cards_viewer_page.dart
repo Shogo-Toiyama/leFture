@@ -1264,11 +1264,14 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                           size: 20,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          l10n.reviewCardsViewerNavigationHint,
-                          style: TextStyle(
-                            color: AppColors.paper.textPencil,
-                            fontSize: 12,
+                        Flexible(
+                          child: Text(
+                            l10n.reviewCardsViewerNavigationHint,
+                            style: TextStyle(
+                              color: AppColors.paper.textPencil,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -1286,6 +1289,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         color: AppColors.paper.textPencil.withValues(alpha: 0.7),
                         fontSize: 11,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

@@ -433,8 +433,9 @@ class SignUpPage extends HookConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
                                 l10n.signUpHasAccountPrompt,
@@ -442,6 +443,7 @@ class SignUpPage extends HookConsumerWidget {
                                   color: AppColors.universe.textComet,
                                   fontSize: 15,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
                               TextButton(
                                 onPressed: () {
@@ -456,7 +458,7 @@ class SignUpPage extends HookConsumerWidget {
                                   }
                                 },
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                                   minimumSize: Size.zero,
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),

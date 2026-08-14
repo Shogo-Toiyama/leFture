@@ -580,14 +580,18 @@ class _CreditCardSkeleton extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          isError
-              ? l10n.myAccountCreditsUnavailable
-              : l10n.myAccountLoadingCredits,
-          style: TextStyle(
-            color: isError ? Colors.white38 : const Color(0xFFF2F2F2),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: Text(
+            isError
+                ? l10n.myAccountCreditsUnavailable
+                : l10n.myAccountLoadingCredits,
+            style: TextStyle(
+              color: isError ? Colors.white38 : const Color(0xFFF2F2F2),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -624,33 +628,42 @@ class _CreditCardContent extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.starGold.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.starGold.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      color: AppColors.starGold,
+                      size: 16,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.bolt_rounded,
-                    color: AppColors.starGold,
-                    size: 16,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      l10n.creditDetailTitle,
+                      style: const TextStyle(
+                        color: Color(0xFFF2F2F2),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.creditDetailTitle,
-                  style: const TextStyle(
-                    color: Color(0xFFF2F2F2),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 RichText(
                   text: TextSpan(

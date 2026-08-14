@@ -311,12 +311,16 @@ class _YearSectionState extends State<_YearSection> {
                     size: 18,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    widget.yearName,
-                    style: TextStyle(
-                      color: AppColors.universe.textStarlight,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      widget.yearName,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -380,11 +384,15 @@ class _TermSectionState extends ConsumerState<_TermSection> {
                       size: 16,
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      widget.termName,
-                      style: TextStyle(
-                        color: AppColors.universe.textComet,
-                        fontSize: 14,
+                    Flexible(
+                      child: Text(
+                        widget.termName,
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -608,34 +616,48 @@ class _CourseLectureListView extends ConsumerWidget {
                     // Row 1: Course Metadata
                     Row(
                       children: [
-                        if (course.courseCode?.trim().isNotEmpty == true) ...[
-                          Text(
-                            course.courseCode!.trim(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (course.courseCode?.trim().isNotEmpty == true) ...[
+                                Text(
+                                  course.courseCode!.trim(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              if (course.professor != null)
+                                Flexible(
+                                  child: Text(
+                                    course.professor!.attributeName.trim(),
+                                    style: TextStyle(
+                                      color: AppColors.universe.textComet,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
                           ),
+                        ),
+                        if (termYearLabel.isNotEmpty) ...[
                           const SizedBox(width: 12),
-                        ],
-                        if (course.professor != null)
-                          Text(
-                            course.professor!.attributeName.trim(),
-                            style: TextStyle(
-                              color: AppColors.universe.textComet,
-                              fontSize: 14,
-                            ),
-                          ),
-                        const Spacer(),
-                        if (termYearLabel.isNotEmpty)
                           Text(
                             termYearLabel,
                             style: TextStyle(
                               color: AppColors.universe.textComet,
                               fontSize: 14,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 8),

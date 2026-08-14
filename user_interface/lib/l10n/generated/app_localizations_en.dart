@@ -269,6 +269,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingDiscardConfirmButton => 'Discard';
 
   @override
+  String get recordingConsentDialogTitle => 'Get Consent Before Recording';
+
+  @override
+  String get recordingConsentDialogMessage =>
+      'Please make sure to get consent from the people around you before you start recording.';
+
+  @override
+  String get recordingConsentDialogCheckboxLabel => 'Don\'t show this again';
+
+  @override
+  String get recordingConsentDialogConfirmButton => 'OK';
+
+  @override
+  String get recordingConsentInfoTooltip => 'About recording consent laws';
+
+  @override
+  String get recordingConsentInfoDialogTitle => 'About Recording Consent Laws';
+
+  @override
+  String get recordingConsentInfoDialogBody =>
+      'Rules about recording consent vary by country and region. The following is general information, not legal advice. Please check the law that applies where you are recording.\n\nUnited States\nThese 12 states require consent from everyone present (\"all-party consent\"): California, Connecticut, Delaware, Florida, Illinois, Maryland, Massachusetts, Montana, New Hampshire, Oregon, Pennsylvania, and Washington.\nOther states and DC use \"one-party consent\", meaning it\'s legal if one participant in the conversation consents.\n\nOutside the United States\nMany countries, including Germany, France, Canada, the Netherlands, and Italy, also require consent from everyone present, or require that the person recording be a participant in the conversation.\n\nEven for lectures, recording without the consent of the instructor or other students may violate laws like these. Always get consent from the people around you before recording.';
+
+  @override
+  String get recordingConsentInfoDialogCloseButton => 'Close';
+
+  @override
   String get recordingDiscardButtonLabel => 'Discard Recording';
 
   @override

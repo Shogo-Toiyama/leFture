@@ -58,12 +58,12 @@ class SocialSignInButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 52,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: icon,
         label: Text(
           label,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: AppColors.universe.textStarlight,
             fontWeight: FontWeight.w600,
@@ -72,7 +72,10 @@ class SocialSignInButton extends StatelessWidget {
         ),
         style: OutlinedButton.styleFrom(
           backgroundColor: AppColors.universe.glassWhiteLow,
+          foregroundColor: AppColors.universe.textStarlight,
           side: BorderSide(color: AppColors.universe.glassBorder),
+          minimumSize: const Size(double.infinity, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),

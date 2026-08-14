@@ -150,6 +150,20 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
                   ),
                 ),
 
+                // --- 音の波形（イコライザー）: タイトルテキストより下のレイヤーに配置 ---
+                Positioned(
+                  top: constraints.maxHeight * 0.67 - 32,
+                  left: 26,
+                  right: 26,
+                  height: 64,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: _RecordingStyleWaveform(grown: _barsGrown),
+                    ),
+                  ),
+                ),
+
                 // --- タイトル文章ブロック ---
                 Padding(
                   padding: EdgeInsets.fromLTRB(
@@ -173,13 +187,17 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
                             children: [
                               Container(width: 20, height: 1.5, color: AppColors.starGold),
                               const SizedBox(width: 8),
-                              Text(
-                                l10n.introHeroEyebrow.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 2.2,
-                                  color: AppColors.starGold,
+                              Flexible(
+                                child: Text(
+                                  l10n.introHeroEyebrow.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 2.2,
+                                    color: AppColors.starGold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -238,22 +256,8 @@ class _IntroHeroSlideState extends State<IntroHeroSlide>
                   ),
                 ),
               ),
-
-                // --- 全端末・OS（iOS/Android）で完全同一パーセンテージ（77-80%位置）に固定配置されるイコライザー ---
-                Positioned(
-                  top: constraints.maxHeight * 0.67 - 32,
-                  left: 26,
-                  right: 26,
-                  height: 64,
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: _RecordingStyleWaveform(grown: _barsGrown),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            ],
+          ),
           ),
         );
       },

@@ -60,44 +60,57 @@ class _OnboardingDoneStepState extends State<OnboardingDoneStep> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Column(
-      children: [
-        const Spacer(),
-        _CheckmarkImpact(visible: _mark),
-        const SizedBox(height: 24),
-        RiseIn(
-          visible: _title,
-          duration: const Duration(milliseconds: 600),
-          child: Text(
-            l10n.onboardingDoneTitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.universe.textStarlight,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  const Spacer(),
+                  _CheckmarkImpact(visible: _mark),
+                  const SizedBox(height: 24),
+                  RiseIn(
+                    visible: _title,
+                    duration: const Duration(milliseconds: 600),
+                    child: Text(
+                      l10n.onboardingDoneTitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  RiseIn(
+                    visible: _subtitle,
+                    duration: const Duration(milliseconds: 600),
+                    child: Text(
+                      l10n.onboardingDoneSubtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, height: 1.4),
+                    ),
+                  ),
+                  const Spacer(),
+                  const SizedBox(height: 24),
+                  RiseIn(
+                    visible: _button,
+                    duration: const Duration(milliseconds: 650),
+                    child: _PulsingGoldButton(
+                      label: l10n.onboardingGetStartedButton,
+                      onPressed: widget.onFinish,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        RiseIn(
-          visible: _subtitle,
-          duration: const Duration(milliseconds: 600),
-          child: Text(
-            l10n.onboardingDoneSubtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, height: 1.4),
-          ),
-        ),
-        const Spacer(),
-        RiseIn(
-          visible: _button,
-          duration: const Duration(milliseconds: 650),
-          child: _PulsingGoldButton(
-            label: l10n.onboardingGetStartedButton,
-            onPressed: widget.onFinish,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

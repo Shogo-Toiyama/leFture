@@ -13,6 +13,8 @@ import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
+import 'package:lefture/application/sync/sync_progress.dart';
+
 /// サインアウト直後・起動直後の一瞬だけ表示するタイトル画面。
 ///
 /// 「lecture for the future」というタグラインが光とともに浮かび上がり、
@@ -32,12 +34,31 @@ class WelcomePage extends ConsumerStatefulWidget {
 
 class _WelcomePageState extends ConsumerState<WelcomePage> {
   late final Future<void> _preloadFuture;
+  Timer? _progressDisplayTimer;
+  bool _showProgressBar = false;
 
   @override
   void initState() {
     super.initState();
     // WelcomePage 表示（アニメーション再生）と同時に、裏でホーム画面用データを先行取得
     _preloadFuture = _startPreload();
+
+    // インパクト演出が終わり「leFture」が着弾完了してから約1秒後に、
+    // まだデータ同期中だった場合のみプログレスバーをフェードイン表示する。
+    _progressDisplayTimer = Timer(
+      Duration(milliseconds: widget.revealTiming.impactEndMs + 1000),
+      () {
+        if (mounted) {
+          setState(() => _showProgressBar = true);
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _progressDisplayTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _startPreload() async {
@@ -102,16 +123,32 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.universe.voidBackground,
-      body: _TitleRevealAnimation(
-        revealTiming: widget.revealTiming,
-        onFinished: () async {
-          // アニメーション完了時に、裏でのデータロード完了を待ってからホームへ遷移！
-          await _preloadFuture;
-          if (!context.mounted) return;
-          context.go(AppRoutes.home);
-        },
+    return MediaQuery.withNoTextScaling(
+      child: Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: Stack(
+          children: [
+            _TitleRevealAnimation(
+              revealTiming: widget.revealTiming,
+              onFinished: () async {
+                // アニメーション完了時に、裏でのデータロード完了を待ってからホームへ遷移！
+                await _preloadFuture;
+                if (!context.mounted) return;
+                context.go(AppRoutes.home);
+              },
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.paddingOf(context).bottom + 36,
+              child: AnimatedOpacity(
+                opacity: _showProgressBar ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 600),
+                child: StardustProgressBar(visible: _showProgressBar),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -175,6 +212,9 @@ class WelcomeRevealTiming {
 
   int get totalMs =>
       blackMs + lightMs + holdMs + rushMs + impactMs + finalHoldMs;
+
+  /// インパクト（着弾・星の爆発）が完了する時点までの総ミリ秒数
+  int get impactEndMs => blackMs + lightMs + holdMs + rushMs + impactMs;
 
   double get p0 => blackMs / totalMs;
   double get p1 => (blackMs + lightMs) / totalMs;
@@ -1011,4 +1051,92 @@ class _BurstPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BurstPainter oldDelegate) =>
       oldDelegate.progress != progress;
+}
+
+/// 宇宙のゴールドグラデーションと先端の光粒（グロー）で滑らかに進捗を描画する極細スリムバー
+class StardustProgressBar extends ConsumerWidget {
+  const StardustProgressBar({super.key, required this.visible});
+
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncProgress = ref.watch(syncProgressProvider);
+    // 出現前（visible == false）は常に0.0。出現した瞬間に0.0から現在の進捗値へスムーズにアニメーション開始
+    final targetFraction = visible ? syncProgress.fraction : 0.0;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 240),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.0, end: targetFraction),
+          duration: const Duration(milliseconds: 650),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final barWidth = constraints.maxWidth;
+                final fillWidth = (barWidth * value).clamp(0.0, barWidth);
+
+                return Container(
+                  height: 3,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // 進行ゴールドグラデーションバー
+                      Container(
+                        width: fillWidth,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFE5A93C),
+                              AppColors.starGold,
+                              Color(0xFFFFE8B0),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // 先端のグロー（輝く星の光粒）
+                      if (fillWidth > 2)
+                        Positioned(
+                          left: fillWidth - 3,
+                          top: -1.5,
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFFFF6D6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.starGold.withValues(alpha: 0.9),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                                BoxShadow(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
 }

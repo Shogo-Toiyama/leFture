@@ -260,6 +260,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recordingDiscardConfirmButton => '破棄';
 
   @override
+  String get recordingConsentDialogTitle => '録音前に同意を得てください';
+
+  @override
+  String get recordingConsentDialogMessage => '録音を開始する前に、必ず周りの人の同意を得てください。';
+
+  @override
+  String get recordingConsentDialogCheckboxLabel => '次回以降表示しない';
+
+  @override
+  String get recordingConsentDialogConfirmButton => 'OK';
+
+  @override
+  String get recordingConsentInfoTooltip => '録音の同意に関する法律について';
+
+  @override
+  String get recordingConsentInfoDialogTitle => '録音同意に関する法律について';
+
+  @override
+  String get recordingConsentInfoDialogBody =>
+      '録音の同意に関するルールは国や地域によって異なります。以下は一般的な情報であり、法的助言ではありません。実際に録音する場所の法律を必ずご自身で確認してください。\n\n■ アメリカ合衆国\n以下の12州は、その場にいる全員の同意が必要な「全員同意」州です。\nカリフォルニア、コネチカット、デラウェア、フロリダ、イリノイ、メリーランド、マサチューセッツ、モンタナ、ニューハンプシャー、オレゴン、ペンシルベニア、ワシントン\nそれ以外の州・DCは、会話の参加者の1人が同意していれば録音できる「一部同意」です。\n\n■ アメリカ以外の国\nドイツ、フランス、カナダ、オランダ、イタリアなど、多くの国でも参加者全員の同意、または録音者自身がその会話の当事者であることが求められます。\n\n講義であっても、教授や他の学生の同意なく録音すると、上記のような法律に抵触する可能性があります。必ず周囲の同意を得てから録音してください。';
+
+  @override
+  String get recordingConsentInfoDialogCloseButton => '閉じる';
+
+  @override
   String get recordingDiscardButtonLabel => '録音を破棄';
 
   @override

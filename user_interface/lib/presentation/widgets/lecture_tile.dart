@@ -205,17 +205,21 @@ class LectureTile extends ConsumerWidget {
                         color: AppColors.universe.textComet,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        useRelativeTime
-                            ? _relativeTime(lecture.lectureDatetime)
-                            : DateFormat.yMMMd(l10n.localeName).format(lecture.lectureDatetime.toLocal()),
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          useRelativeTime
+                              ? _relativeTime(lecture.lectureDatetime)
+                              : DateFormat.yMMMd(l10n.localeName).format(lecture.lectureDatetime.toLocal()),
+                          style: TextStyle(
+                            color: AppColors.universe.textComet,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (hasCourseCode) ...[
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Text(
                           code,
                           style: TextStyle(
@@ -223,6 +227,8 @@ class LectureTile extends ConsumerWidget {
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],

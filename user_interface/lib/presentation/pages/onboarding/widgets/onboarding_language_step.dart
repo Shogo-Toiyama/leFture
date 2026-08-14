@@ -39,49 +39,62 @@ class OnboardingLanguageStep extends HookConsumerWidget {
     final displayLanguage = displayLanguageFromCode(displayCode);
     final recordingLanguage = recordingLanguageFromCode(recordingCode);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OnboardingStepHeader(
-          eyebrow: l10n.onboardingLanguageEyebrow,
-          title: l10n.onboardingLanguageTitle,
-          subtitle: l10n.onboardingLanguageSubtitle,
-          onBack: onBack,
-        ),
-        const SizedBox(height: 28),
-        _LanguageRow(
-          icon: Icons.language_rounded,
-          label: l10n.onboardingLanguageDisplayLabel,
-          description: l10n.onboardingLanguageDisplayDesc,
-          selected: displayLanguage,
-          onTap: () => _openSheet(context, LanguageSheetMode.display),
-        ),
-        const SizedBox(height: 12),
-        _LanguageRow(
-          icon: Icons.record_voice_over_outlined,
-          label: l10n.onboardingLanguageRecordingLabel,
-          description: l10n.onboardingLanguageRecordingDesc,
-          selected: recordingLanguage,
-          onTap: () => _openSheet(context, LanguageSheetMode.recording),
-        ),
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.starGold,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: onNext,
-            child: Text(
-              l10n.onboardingContinueButton,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OnboardingStepHeader(
+                    eyebrow: l10n.onboardingLanguageEyebrow,
+                    title: l10n.onboardingLanguageTitle,
+                    subtitle: l10n.onboardingLanguageSubtitle,
+                    onBack: onBack,
+                  ),
+                  const SizedBox(height: 28),
+                  _LanguageRow(
+                    icon: Icons.language_rounded,
+                    label: l10n.onboardingLanguageDisplayLabel,
+                    description: l10n.onboardingLanguageDisplayDesc,
+                    selected: displayLanguage,
+                    onTap: () => _openSheet(context, LanguageSheetMode.display),
+                  ),
+                  const SizedBox(height: 12),
+                  _LanguageRow(
+                    icon: Icons.record_voice_over_outlined,
+                    label: l10n.onboardingLanguageRecordingLabel,
+                    description: l10n.onboardingLanguageRecordingDesc,
+                    selected: recordingLanguage,
+                    onTap: () => _openSheet(context, LanguageSheetMode.recording),
+                  ),
+                  const Spacer(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.starGold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: onNext,
+                      child: Text(
+                        l10n.onboardingContinueButton,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -148,12 +161,16 @@ class _LanguageRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                selected.nativeName,
-                style: const TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+              Flexible(
+                child: Text(
+                  selected.nativeName,
+                  style: const TextStyle(
+                    color: AppColors.starGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),

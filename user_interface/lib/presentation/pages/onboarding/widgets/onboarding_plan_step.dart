@@ -49,100 +49,117 @@ class OnboardingPlanStep extends HookConsumerWidget {
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OnboardingStepHeader(eyebrow: l10n.onboardingPlanEyebrow, title: l10n.onboardingPlanTitle, onBack: onBack),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.growthGreen.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(color: AppColors.growthGreen.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 14),
-              const SizedBox(width: 6),
-              Text(
-                l10n.onboardingPlanBadge,
-                style: const TextStyle(color: AppColors.growthGreen, fontSize: 11.5, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        Text(
-          l10n.onboardingPlanSubtitle,
-          style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.45),
-        ),
-        const SizedBox(height: 22),
-        if (hasActivePlan)
-          _PlanCard(
-            title: l10n.onboardingPlanActiveTitle,
-            subtitle: summaryAsync.asData?.value.monthlyAllocationDisplay != null
-                ? l10n.creditDetailPlanSubtitle(summaryAsync.value!.monthlyAllocationDisplay!, 1)
-                : null,
-          )
-        else
-          plansAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Center(child: CircularProgressIndicator(color: AppColors.starGold, strokeWidth: 2.5)),
-            ),
-            error: (err, _) => Text(
-              l10n.creditDetailPlansLoadError,
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5),
-            ),
-            data: (_) => plan == null
-                ? const SizedBox.shrink()
-                : _PlanCard(
-                    title: plan.name,
-                    subtitle: l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),
-                    priceLabel: (plan.priceUsd == null || plan.priceUsd == 0)
-                        ? l10n.creditDetailPriceFree
-                        : '\$${plan.priceUsd!.toStringAsFixed(2)}',
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OnboardingStepHeader(eyebrow: l10n.onboardingPlanEyebrow, title: l10n.onboardingPlanTitle, onBack: onBack),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.growthGreen.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: AppColors.growthGreen.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 14),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            l10n.onboardingPlanBadge,
+                            style: const TextStyle(color: AppColors.growthGreen, fontSize: 11.5, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-          ),
-        if (claimError.value != null) ...[
-          const SizedBox(height: 12),
-          Text(claimError.value!, style: const TextStyle(color: AppColors.correctionRed, fontSize: 12.5)),
-          const SizedBox(height: 6),
-          // Never trap the user here — HomePage already redirects anyone
-          // without an active plan to the claim screen, so this is a safe
-          // way out if claiming keeps failing (e.g. offline).
-          TextButton(
-            onPressed: onNext,
-            style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
-            child: Text(
-              l10n.onboardingSkipButton,
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5, fontWeight: FontWeight.w600),
+                  const SizedBox(height: 14),
+                  Text(
+                    l10n.onboardingPlanSubtitle,
+                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.45),
+                  ),
+                  const SizedBox(height: 22),
+                  if (hasActivePlan)
+                    _PlanCard(
+                      title: l10n.onboardingPlanActiveTitle,
+                      subtitle: summaryAsync.asData?.value.monthlyAllocationDisplay != null
+                          ? l10n.creditDetailPlanSubtitle(summaryAsync.value!.monthlyAllocationDisplay!, 1)
+                          : null,
+                    )
+                  else
+                    plansAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.starGold, strokeWidth: 2.5)),
+                      ),
+                      error: (err, _) => Text(
+                        l10n.creditDetailPlansLoadError,
+                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5),
+                      ),
+                      data: (_) => plan == null
+                          ? const SizedBox.shrink()
+                          : _PlanCard(
+                              title: plan.name,
+                              subtitle: l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),
+                              priceLabel: (plan.priceUsd == null || plan.priceUsd == 0)
+                                  ? l10n.creditDetailPriceFree
+                                  : '\$${plan.priceUsd!.toStringAsFixed(2)}',
+                            ),
+                    ),
+                  if (claimError.value != null) ...[
+                    const SizedBox(height: 12),
+                    Text(claimError.value!, style: const TextStyle(color: AppColors.correctionRed, fontSize: 12.5)),
+                    const SizedBox(height: 6),
+                    // Never trap the user here — HomePage already redirects anyone
+                    // without an active plan to the claim screen, so this is a safe
+                    // way out if claiming keeps failing (e.g. offline).
+                    TextButton(
+                      onPressed: onNext,
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
+                      child: Text(
+                        l10n.onboardingSkipButton,
+                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.starGold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: claiming.value ? null : handleContinue,
+                      child: claiming.value
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                            )
+                          : Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.starGold,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: claiming.value ? null : handleContinue,
-            child: claiming.value
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                  )
-                : Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

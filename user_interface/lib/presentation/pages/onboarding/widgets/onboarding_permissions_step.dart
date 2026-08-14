@@ -96,34 +96,47 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
       onNext();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        OnboardingStepHeader(
-          eyebrow: l10n.onboardingPermissionsEyebrow,
-          title: l10n.onboardingPermissionsTitle,
-          subtitle: l10n.onboardingPermissionsSubtitle,
-          onBack: onBack,
-        ),
-        const SizedBox(height: 28),
-        PermissionsRows(specs: specs, state: permState),
-        const SizedBox(height: 20),
-        AllowAllPermissionsButton(specs: specs, state: permState),
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.starGold,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OnboardingStepHeader(
+                    eyebrow: l10n.onboardingPermissionsEyebrow,
+                    title: l10n.onboardingPermissionsTitle,
+                    subtitle: l10n.onboardingPermissionsSubtitle,
+                    onBack: onBack,
+                  ),
+                  const SizedBox(height: 28),
+                  PermissionsRows(specs: specs, state: permState),
+                  const SizedBox(height: 20),
+                  AllowAllPermissionsButton(specs: specs, state: permState),
+                  const Spacer(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.starGold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: permState.loading ? null : handleContinue,
+                      child: Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            onPressed: permState.loading ? null : handleContinue,
-            child: Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

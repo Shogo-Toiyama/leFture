@@ -25,6 +25,7 @@ import 'package:lefture/application/sync/deep_note_outbox_push_handler.dart';
 import 'package:lefture/application/sync/user_profile_outbox_push_handler.dart';
 import 'package:lefture/application/sync/keyword_outbox_push_handler.dart';
 import 'package:lefture/application/sync/user_profile_sync_service.dart';
+import 'package:lefture/application/sync/sync_progress.dart';
 import 'package:lefture/application/maintenance/local_retention_service.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/application/job/job_providers.dart'; // jobRepository
@@ -142,11 +143,20 @@ class LectureController extends _$LectureController {
           'user_profile': () => UserProfileSyncService(db).pull(),
         };
 
+        ref.read(syncProgressProvider.notifier).update(SyncProgress(completed: 0, total: pulls.length));
+        var completedCount = 0;
+
         for (final entry in pulls.entries) {
           try {
             await entry.value();
           } catch (e, st) {
             DevLog.add('⚠️ [LectureController] ${entry.key} pull skipped: $e\n$st');
+          } finally {
+            completedCount++;
+            ref.read(syncProgressProvider.notifier).update(SyncProgress(
+              completed: completedCount,
+              total: pulls.length,
+            ));
           }
         }
       } else {

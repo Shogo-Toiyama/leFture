@@ -224,8 +224,11 @@ class CourseCreateSheet extends HookConsumerWidget {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: isSubmitting.value ? null : submit,
                   style: TextButton.styleFrom(

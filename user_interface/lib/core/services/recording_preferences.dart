@@ -10,6 +10,7 @@ class RecordingPreferences {
   static const String _keyDisplayLanguage = 'display_language';
   static const String _keyAutoPausedAsrGroupKeys = 'asr_auto_paused_group_keys';
   static const String _keyHasSeenIntroduction = 'has_seen_introduction';
+  static const String _keyHasSeenRecordingConsentNotice = 'has_seen_recording_consent_notice';
 
   late final SharedPreferences _prefs;
 
@@ -97,5 +98,15 @@ class RecordingPreferences {
 
   Future<void> setHasSeenIntroduction(bool value) async {
     await _prefs.setBool(_keyHasSeenIntroduction, value);
+  }
+
+  /// 録音画面に入る際の「周囲の同意を得てください」注意ダイアログを、
+  /// ユーザーが「次回以降表示しない」にチェックして確認済みかどうか。
+  bool getHasSeenRecordingConsentNotice() {
+    return _prefs.getBool(_keyHasSeenRecordingConsentNotice) ?? false;
+  }
+
+  Future<void> setHasSeenRecordingConsentNotice(bool value) async {
+    await _prefs.setBool(_keyHasSeenRecordingConsentNotice, value);
   }
 }

@@ -476,13 +476,20 @@ class HomePage extends HookConsumerWidget {
                       ),
                     ),
                     // FunFacts + Courses ヘッダー (銀河エリアを超えたら上端にSticky)
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: CombinedHeaderDelegate(
-                        funFactsHeight: _kFunFactsHeight,
-                        coursesHeaderHeight: _kCoursesHeaderHeight,
-                        scrollOffset: scrollOffset.value,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final textScaler = MediaQuery.textScalerOf(context);
+                        final dynamicCoursesHeight = (textScaler.scale(20) + textScaler.scale(12) + 48.0).clamp(_kCoursesHeaderHeight, 150.0);
+                        final dynamicFunFactsHeight = (textScaler.scale(160) + 30.0).clamp(_kFunFactsHeight, 260.0);
+                        return SliverPersistentHeader(
+                          pinned: true,
+                          delegate: CombinedHeaderDelegate(
+                            funFactsHeight: dynamicFunFactsHeight,
+                            coursesHeaderHeight: dynamicCoursesHeight,
+                            scrollOffset: scrollOffset.value,
+                          ),
+                        );
+                      },
                     ),
                     // 最近の講義リスト
                     const RecentLecturesList(),

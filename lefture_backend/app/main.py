@@ -3,6 +3,7 @@ import json
 import time
 import uuid
 import asyncio
+import logging
 from typing import Optional
 from urllib.parse import urlencode
 from concurrent.futures import ThreadPoolExecutor
@@ -83,6 +84,7 @@ from app.services.task_runners import (
 # FastAPI アプリケーションの初期化
 # ---------------------------------------------------------
 app = FastAPI(title="leFture Backend Worker", version="2.0.0")
+logger = logging.getLogger(__name__)
 
 
 @app.get("/health")
@@ -527,12 +529,18 @@ async def billing_plans(request: Request):
     # disabled_atの絞り込みはPostgRESTのor=フィルタ文字列に頼らず、ここで
     # 判定する(タイムゾーンオフセット付きISO文字列の'+'がURLエンコード時に
     # 空白と誤解釈されるリスクを避けるため。プラン数は少ないので問題ない)。
-    plans_res = await asyncio.to_thread(
-        lambda: admin_client.table("subscription_plans")
-            .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, disabled_at")
-            .eq("claim_mode", "self_serve")
-            .execute()
-    )
+    try:
+        plans_res = await asyncio.to_thread(
+            lambda: admin_client.table("subscription_plans")
+                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, disabled_at")
+                .eq("claim_mode", "self_serve")
+                .execute()
+        )
+    except Exception as e:
+        # Supabaseが非JSON(例: ゲートウェイの503テキスト)を返すとpostgrest-py側の
+        # エラーパースが失敗し例外になるため、ここで捕まえて503として返す。
+        logger.error(f"Error fetching billing plans: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
 
     now = datetime.now(timezone.utc)
     claimable = []
@@ -573,9 +581,15 @@ async def billing_summary(request: Request):
 
     admin_client = get_supabase_client()
 
-    summary_res = await asyncio.to_thread(
-        lambda: admin_client.rpc("get_credit_summary", {"p_user_id": user_id}).execute()
-    )
+    try:
+        summary_res = await asyncio.to_thread(
+            lambda: admin_client.rpc("get_credit_summary", {"p_user_id": user_id}).execute()
+        )
+    except Exception as e:
+        # Supabaseが非JSON(例: ゲートウェイの503テキスト)を返すとpostgrest-py側の
+        # エラーパースが失敗し例外になるため、ここで捕まえて503として返す。
+        logger.error(f"Error fetching billing summary: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
     row = (summary_res.data or [{}])[0] if summary_res.data else {}
 
     return {

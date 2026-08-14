@@ -82,101 +82,108 @@ class OnboardingIntroStep extends HookWidget {
             enableShootingStars: true,
           ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RiseIn(
-              visible: headerVisible.value,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(width: 18, height: 1.5, color: AppColors.starGold),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.onboardingIntroEyebrow.toUpperCase(),
-                    style: const TextStyle(
-                      color: AppColors.starGold,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            RiseIn(
-              visible: headerVisible.value,
-              duration: const Duration(milliseconds: 700),
-              child: Text(
-                l10n.onboardingIntroTitle,
-                style: TextStyle(
-                  color: AppColors.universe.textStarlight,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  height: 1.28,
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            RiseIn(
-              visible: headerVisible.value,
-              duration: const Duration(milliseconds: 750),
-              child: Text(
-                l10n.onboardingIntroSubtitle,
-                style: TextStyle(
-                  color: AppColors.universe.textComet,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-            for (var i = 0; i < steps.length; i++)
-              _Waypoint(
-                visible: nodesVisible.value,
-                spec: steps[i],
-                nextColor: i < steps.length - 1 ? steps[i + 1].color : steps[i].color,
-                stepNumber: i + 1,
-                showConnector: i < steps.length - 1,
-              ),
-            const SizedBox(height: 26),
-            RiseIn(
-              visible: ctaVisible.value,
-              duration: const Duration(milliseconds: 700),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.starGold,
-                        foregroundColor: const Color(0xFF221A00),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
-                      ),
-                      onPressed: onNext,
+        SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RiseIn(
+                visible: headerVisible.value,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 18, height: 1.5, color: AppColors.starGold),
+                    const SizedBox(width: 8),
+                    Flexible(
                       child: Text(
-                        l10n.onboardingGetStartedButton,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        l10n.onboardingIntroEyebrow.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.starGold,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.6,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    l10n.onboardingIntroHint,
-                    style: TextStyle(
-                      color: AppColors.universe.textComet.withValues(alpha: 0.8),
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              RiseIn(
+                visible: headerVisible.value,
+                duration: const Duration(milliseconds: 700),
+                child: Text(
+                  l10n.onboardingIntroTitle,
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    height: 1.28,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              RiseIn(
+                visible: headerVisible.value,
+                duration: const Duration(milliseconds: 750),
+                child: Text(
+                  l10n.onboardingIntroSubtitle,
+                  style: TextStyle(
+                    color: AppColors.universe.textComet,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              for (var i = 0; i < steps.length; i++)
+                _Waypoint(
+                  visible: nodesVisible.value,
+                  spec: steps[i],
+                  nextColor: i < steps.length - 1 ? steps[i + 1].color : steps[i].color,
+                  stepNumber: i + 1,
+                  showConnector: i < steps.length - 1,
+                ),
+              const SizedBox(height: 26),
+              RiseIn(
+                visible: ctaVisible.value,
+                duration: const Duration(milliseconds: 700),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.starGold,
+                          foregroundColor: const Color(0xFF221A00),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        onPressed: onNext,
+                        child: Text(
+                          l10n.onboardingGetStartedButton,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      l10n.onboardingIntroHint,
+                      style: TextStyle(
+                        color: AppColors.universe.textComet.withValues(alpha: 0.8),
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

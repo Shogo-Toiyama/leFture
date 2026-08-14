@@ -117,8 +117,11 @@ class LectureEditSheet extends HookConsumerWidget {
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   TextButton(
                     onPressed: isSubmitting.value ? null : submit,
                     style: TextButton.styleFrom(
@@ -280,10 +283,15 @@ class LectureEditSheet extends HookConsumerWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        DateFormat.yMMMd(l10n.localeName).add_jm().format(selectedDateTime.value),
-                        style: TextStyle(color: AppColors.universe.textStarlight),
+                      Expanded(
+                        child: Text(
+                          DateFormat.yMMMd(l10n.localeName).add_jm().format(selectedDateTime.value),
+                          style: TextStyle(color: AppColors.universe.textStarlight),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Icon(Icons.calendar_today, color: AppColors.universe.textComet, size: 18),
                     ],
                   ),

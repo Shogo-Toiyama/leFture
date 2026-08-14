@@ -590,6 +590,54 @@ abstract class AppLocalizations {
   /// **'Discard'**
   String get recordingDiscardConfirmButton;
 
+  /// Title of the dialog shown when the user enters the Recording page, reminding them to get consent from people around them before recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Consent Before Recording'**
+  String get recordingConsentDialogTitle;
+
+  /// Body text of the recording-consent reminder dialog shown when the user enters the Recording page.
+  ///
+  /// In en, this message translates to:
+  /// **'Please make sure to get consent from the people around you before you start recording.'**
+  String get recordingConsentDialogMessage;
+
+  /// Checkbox label in the recording-consent reminder dialog. When checked and the user confirms, the dialog won't be shown on future visits to the Recording page.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show this again'**
+  String get recordingConsentDialogCheckboxLabel;
+
+  /// Confirm button label on the recording-consent reminder dialog, the only way to dismiss it.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get recordingConsentDialogConfirmButton;
+
+  /// Tooltip/accessibility label for the info icon button next to the recording-consent reminder message, which opens more detail about consent laws.
+  ///
+  /// In en, this message translates to:
+  /// **'About recording consent laws'**
+  String get recordingConsentInfoTooltip;
+
+  /// Title of the secondary dialog shown when the user taps the info icon in the recording-consent reminder dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'About Recording Consent Laws'**
+  String get recordingConsentInfoDialogTitle;
+
+  /// Body text of the secondary informational dialog about recording consent laws, listing all-party consent US states and noting similar rules in other countries. General educational information, not legal advice.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules about recording consent vary by country and region. The following is general information, not legal advice. Please check the law that applies where you are recording.\n\nUnited States\nThese 12 states require consent from everyone present (\"all-party consent\"): California, Connecticut, Delaware, Florida, Illinois, Maryland, Massachusetts, Montana, New Hampshire, Oregon, Pennsylvania, and Washington.\nOther states and DC use \"one-party consent\", meaning it\'s legal if one participant in the conversation consents.\n\nOutside the United States\nMany countries, including Germany, France, Canada, the Netherlands, and Italy, also require consent from everyone present, or require that the person recording be a participant in the conversation.\n\nEven for lectures, recording without the consent of the instructor or other students may violate laws like these. Always get consent from the people around you before recording.'**
+  String get recordingConsentInfoDialogBody;
+
+  /// Close button label on the recording-consent-laws informational dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get recordingConsentInfoDialogCloseButton;
+
   /// Text button (with a trash icon) below the recording controls that opens the discard-recording confirmation dialog. Different from recordingDiscardConfirmButton, which is the dialog's own confirm action.
   ///
   /// In en, this message translates to:
