@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
@@ -296,6 +297,7 @@ class _ChatBubble extends StatelessWidget {
         Expanded(
           child: MarkdownBody(
             data: message.text,
+            inlineSyntaxes: cjkSafeInlineSyntaxes,
             styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
               p: TextStyle(color: AppColors.universe.textStarlight, fontSize: 13.5, height: 1.5),
               pPadding: const EdgeInsets.only(bottom: 6),

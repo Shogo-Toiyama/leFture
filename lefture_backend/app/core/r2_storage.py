@@ -207,5 +207,29 @@ class R2StorageService:
         )
         return url, path
 
+    def generate_presigned_avatar_url(
+        self,
+        uid: str,
+        file_name: str,
+        content_type: str = "image/png",
+        expires_in: int = 3600,
+    ) -> Tuple[str, str]:
+        """ユーザーカスタムアバター画像を R2 へアップロードするための署名付きURLを発行"""
+        import uuid
+        ext = file_name.split(".")[-1].lower() if "." in file_name else "png"
+        unique_file_name = f"avatar_{uuid.uuid4().hex[:8]}.{ext}"
+        path = f"{uid}/avatars/{unique_file_name}"
+        url = self.s3.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": self.bucket_name,
+                "Key": path,
+                "ContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+        return url, path
+
 # シングルトンとしてインスタンス化
 storage_service = R2StorageService()

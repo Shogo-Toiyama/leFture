@@ -24,7 +24,12 @@ class KeywordOutboxPushHandler implements OutboxPushHandler {
 
     await supabase
         .from('keywords')
-        .update({'metadata': metadata})
+        .update({
+          'metadata': metadata,
+          'keyword': existing.keyword,
+          'definition': existing.definition,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
         .eq('id', entityId)
         .timeout(networkTimeout);
   }

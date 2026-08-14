@@ -770,6 +770,25 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  /// キーワードの名称および説明を更新する
+  Future<void> updateKeywordContent({
+    required String id,
+    required String userId,
+    required String keyword,
+    String? definition,
+  }) async {
+    final now = DateTime.now().toUtc();
+    await (update(localKeywords)
+          ..where((t) => t.id.equals(id) & t.userId.equals(userId)))
+        .write(
+      LocalKeywordsCompanion(
+        keyword: Value(keyword),
+        definition: Value(definition ?? ''),
+        updatedAt: Value(now),
+      ),
+    );
+  }
+
   /// 講義詳細ページ用。単一講義をIDで監視する(以前はSupabase Realtimeで
   /// 直接ストリーミングしていたが、Realtimeが有効化されていなかったため
   /// 実質更新を受け取れていなかった。ローカルDB経由でオフライン優先に統一する)。

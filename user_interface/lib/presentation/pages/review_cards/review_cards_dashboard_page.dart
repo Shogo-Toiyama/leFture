@@ -177,12 +177,11 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
         // ── Topic row ────────────────────────────────────────────────────
         final group = groups[idx];
         final groupStart = groupStartIndex[idx];
-        final imageFile = group.imagePath == null
+        final path = group.imagePath;
+        final isAsset = path != null && path.startsWith('assets/');
+        final imageFile = (path == null || isAsset)
             ? null
-            : ref
-                .watch(artifactFileProvider(group.imagePath!))
-                .asData
-                ?.value;
+            : ref.watch(artifactFileProvider(path)).asData?.value;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,8 +208,11 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                       onTap: () => context.push('${AppRoutes.coursesRootPath}/c/$courseId/rcv/$lectureId?index=$groupStart'),
                       child: SizedBox(
                         width: 115,
-                        child:
-                            _CoverCardTile(title: group.title, imageFile: imageFile),
+                        child: _CoverCardTile(
+                          title: group.title,
+                          imageFile: imageFile,
+                          imagePath: path,
+                        ),
                       ),
                     );
                   }
@@ -259,7 +261,8 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                             style: TextStyle(
                               color: AppColors.paper.textInk,
                               fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 4,
@@ -283,19 +286,28 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
 // Cover card thumbnail
 // ---------------------------------------------------------------------------
 class _CoverCardTile extends StatelessWidget {
-  const _CoverCardTile({required this.title, required this.imageFile});
+  const _CoverCardTile({
+    required this.title,
+    required this.imageFile,
+    this.imagePath,
+  });
 
   final String title;
   final File? imageFile;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
+    final bool isAsset = imagePath != null && imagePath!.startsWith('assets/');
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (imageFile != null)
+          if (isAsset)
+            Image.asset(imagePath!, fit: BoxFit.cover)
+          else if (imageFile != null)
             Image.file(imageFile!, fit: BoxFit.cover)
           else
             Container(

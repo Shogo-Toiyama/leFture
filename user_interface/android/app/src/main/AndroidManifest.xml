@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <!-- Lets us ask the user to exempt leFture from battery optimization, so
          background recording survives on OEMs (Xiaomi, Samsung, etc.) that
          kill foreground services despite FOREGROUND_SERVICE_MICROPHONE. -->

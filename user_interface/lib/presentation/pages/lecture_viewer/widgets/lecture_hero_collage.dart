@@ -132,29 +132,36 @@ class _SlantedImageSlot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fileAsync = ref.watch(artifactFileProvider(imagePath));
-    final File? file = fileAsync.asData?.value;
-
     final Widget child;
-    if (file == null) {
-      child = Container(
-        color: Colors.white.withValues(alpha: 0.05),
-        child: const Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white24,
-            ),
-          ),
-        ),
-      );
-    } else {
-      child = Image.file(
-        file,
+    if (imagePath.startsWith('assets/')) {
+      child = Image.asset(
+        imagePath,
         fit: BoxFit.cover,
       );
+    } else {
+      final fileAsync = ref.watch(artifactFileProvider(imagePath));
+      final File? file = fileAsync.asData?.value;
+
+      if (file == null) {
+        child = Container(
+          color: Colors.white.withValues(alpha: 0.05),
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white24,
+              ),
+            ),
+          ),
+        );
+      } else {
+        child = Image.file(
+          file,
+          fit: BoxFit.cover,
+        );
+      }
     }
 
     return ClipPath(

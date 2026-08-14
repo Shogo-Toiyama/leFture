@@ -3194,6 +3194,84 @@ abstract class AppLocalizations {
   /// **'Tap left / right  •  Swipe to change topic'**
   String get reviewCardsViewerNavigationHint;
 
+  /// Disclaimer text displayed at the bottom of AI-generated content (transcript, review cards, deep notes) noting that AI-generated content may contain inaccuracies.
+  ///
+  /// In en, this message translates to:
+  /// **'* AI-generated content may contain inaccuracies'**
+  String get aiDisclaimerText;
+
+  /// Title of the bottom sheet where users change their avatar icon and background.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Avatar'**
+  String get changeAvatarSheetTitle;
+
+  /// Full-width button label to open device photo library.
+  ///
+  /// In en, this message translates to:
+  /// **'Select from Library'**
+  String get changeAvatarSelectFromLibrary;
+
+  /// Tab title for selecting preset avatars / icons.
+  ///
+  /// In en, this message translates to:
+  /// **'Icons'**
+  String get changeAvatarTabIcons;
+
+  /// Tab title for selecting background gradient colors.
+  ///
+  /// In en, this message translates to:
+  /// **'Backgrounds'**
+  String get changeAvatarTabBackgrounds;
+
+  /// Label for the initials avatar option.
+  ///
+  /// In en, this message translates to:
+  /// **'Initials'**
+  String get changeAvatarInitialsLabel;
+
+  /// Filter button for vivid bright background gradients.
+  ///
+  /// In en, this message translates to:
+  /// **'Vivid'**
+  String get changeAvatarBgStyleVivid;
+
+  /// Filter button for soft pastel background gradients.
+  ///
+  /// In en, this message translates to:
+  /// **'Pastel'**
+  String get changeAvatarBgStylePastel;
+
+  /// Filter button for deep dark background gradients.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get changeAvatarBgStyleDark;
+
+  /// Save button label in change avatar sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get changeAvatarSave;
+
+  /// Button to restore the original avatar picture from Google/Apple social login.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Social Account Photo'**
+  String get changeAvatarRestoreSocialAccount;
+
+  /// Snackbar message shown when avatar is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar updated successfully'**
+  String get changeAvatarSavedSuccess;
+
+  /// Snackbar or indicator message while uploading custom avatar image.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading image...'**
+  String get changeAvatarUploading;
+
   /// Empty-state message on the Review Cards dashboard (topic overview grid for a lecture) shown while no review card topics/groups exist yet because generation hasn't produced any. Ellipsis conveys an in-progress background process.
   ///
   /// In en, this message translates to:
@@ -4238,6 +4316,24 @@ abstract class AppLocalizations {
   /// **'Got it'**
   String get onboardingPermissionsRequiredDialogButton;
 
+  /// Message shown when all permissions are granted.
+  ///
+  /// In en, this message translates to:
+  /// **'All permissions granted'**
+  String get onboardingPermissionsAllGranted;
+
+  /// Button label while permissions request is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Requesting permissions...'**
+  String get onboardingPermissionsRequesting;
+
+  /// Button label to request all permissions at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow All Permissions'**
+  String get onboardingPermissionsAllowAll;
+
   /// Small eyebrow label above the title on the onboarding plan step.
   ///
   /// In en, this message translates to:
@@ -4423,6 +4519,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check out this lecture about the app!'**
   String get homeTutorialCalloutMessage;
+
+  /// Title of the dialog for editing a keyword and definition
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Keyword'**
+  String get editKeywordDialogTitle;
+
+  /// Label for the keyword term field
+  ///
+  /// In en, this message translates to:
+  /// **'Term'**
+  String get editKeywordTermLabel;
+
+  /// Hint text for the keyword term field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter term...'**
+  String get editKeywordTermHint;
+
+  /// Label for the keyword definition field
+  ///
+  /// In en, this message translates to:
+  /// **'Definition / Notes'**
+  String get editKeywordDefinitionLabel;
+
+  /// Hint text for the keyword definition field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter definition or notes...'**
+  String get editKeywordDefinitionHint;
+
+  /// Save button text in the keyword edit dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get editKeywordSaveButton;
+
+  /// Cancel button text in the keyword edit dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get editKeywordCancelButton;
 }
 
 class _AppLocalizationsDelegate

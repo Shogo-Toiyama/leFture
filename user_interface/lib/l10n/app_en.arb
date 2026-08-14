@@ -2897,6 +2897,71 @@
     "description": "Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, swiping moves between whole topics. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator."
   },
 
+  "aiDisclaimerText": "* AI-generated content may contain inaccuracies",
+  "@aiDisclaimerText": {
+    "description": "Disclaimer text displayed at the bottom of AI-generated content (transcript, review cards, deep notes) noting that AI-generated content may contain inaccuracies."
+  },
+
+  "changeAvatarSheetTitle": "Change Avatar",
+  "@changeAvatarSheetTitle": {
+    "description": "Title of the bottom sheet where users change their avatar icon and background."
+  },
+
+  "changeAvatarSelectFromLibrary": "Select from Library",
+  "@changeAvatarSelectFromLibrary": {
+    "description": "Full-width button label to open device photo library."
+  },
+
+  "changeAvatarTabIcons": "Icons",
+  "@changeAvatarTabIcons": {
+    "description": "Tab title for selecting preset avatars / icons."
+  },
+
+  "changeAvatarTabBackgrounds": "Backgrounds",
+  "@changeAvatarTabBackgrounds": {
+    "description": "Tab title for selecting background gradient colors."
+  },
+
+  "changeAvatarInitialsLabel": "Initials",
+  "@changeAvatarInitialsLabel": {
+    "description": "Label for the initials avatar option."
+  },
+
+  "changeAvatarBgStyleVivid": "Vivid",
+  "@changeAvatarBgStyleVivid": {
+    "description": "Filter button for vivid bright background gradients."
+  },
+
+  "changeAvatarBgStylePastel": "Pastel",
+  "@changeAvatarBgStylePastel": {
+    "description": "Filter button for soft pastel background gradients."
+  },
+
+  "changeAvatarBgStyleDark": "Dark",
+  "@changeAvatarBgStyleDark": {
+    "description": "Filter button for deep dark background gradients."
+  },
+
+  "changeAvatarSave": "Save",
+  "@changeAvatarSave": {
+    "description": "Save button label in change avatar sheet."
+  },
+
+  "changeAvatarRestoreSocialAccount": "Restore Social Account Photo",
+  "@changeAvatarRestoreSocialAccount": {
+    "description": "Button to restore the original avatar picture from Google/Apple social login."
+  },
+
+  "changeAvatarSavedSuccess": "Avatar updated successfully",
+  "@changeAvatarSavedSuccess": {
+    "description": "Snackbar message shown when avatar is saved."
+  },
+
+  "changeAvatarUploading": "Uploading image...",
+  "@changeAvatarUploading": {
+    "description": "Snackbar or indicator message while uploading custom avatar image."
+  },
+
   "reviewCardsDashboardGeneratingMessage": "Review cards are being generated…",
   "@reviewCardsDashboardGeneratingMessage": {
     "description": "Empty-state message on the Review Cards dashboard (topic overview grid for a lecture) shown while no review card topics/groups exist yet because generation hasn't produced any. Ellipsis conveys an in-progress background process."
@@ -3666,6 +3731,21 @@
     "description": "Sole dismiss button on the blocking required-permission dialog — no bypass option, matches the row's own retry chip being the only way forward."
   },
 
+  "onboardingPermissionsAllGranted": "All permissions granted",
+  "@onboardingPermissionsAllGranted": {
+    "description": "Message shown when all permissions are granted."
+  },
+
+  "onboardingPermissionsRequesting": "Requesting permissions...",
+  "@onboardingPermissionsRequesting": {
+    "description": "Button label while permissions request is in progress."
+  },
+
+  "onboardingPermissionsAllowAll": "Allow All Permissions",
+  "@onboardingPermissionsAllowAll": {
+    "description": "Button label to request all permissions at once."
+  },
+
   "onboardingPlanEyebrow": "Almost done",
   "@onboardingPlanEyebrow": {
     "description": "Small eyebrow label above the title on the onboarding plan step."
@@ -3768,5 +3848,33 @@
   "homeTutorialCalloutMessage": "Check out this lecture about the app!",
   "@homeTutorialCalloutMessage": {
     "description": "One-time callout bubble pointing at the tutorial lecture card on the home screen, shown only until it's opened for the first time."
+  },
+  "editKeywordDialogTitle": "Edit Keyword",
+  "@editKeywordDialogTitle": {
+    "description": "Title of the dialog for editing a keyword and definition"
+  },
+  "editKeywordTermLabel": "Term",
+  "@editKeywordTermLabel": {
+    "description": "Label for the keyword term field"
+  },
+  "editKeywordTermHint": "Enter term...",
+  "@editKeywordTermHint": {
+    "description": "Hint text for the keyword term field"
+  },
+  "editKeywordDefinitionLabel": "Definition / Notes",
+  "@editKeywordDefinitionLabel": {
+    "description": "Label for the keyword definition field"
+  },
+  "editKeywordDefinitionHint": "Enter definition or notes...",
+  "@editKeywordDefinitionHint": {
+    "description": "Hint text for the keyword definition field"
+  },
+  "editKeywordSaveButton": "Save",
+  "@editKeywordSaveButton": {
+    "description": "Save button text in the keyword edit dialog"
+  },
+  "editKeywordCancelButton": "Cancel",
+  "@editKeywordCancelButton": {
+    "description": "Cancel button text in the keyword edit dialog"
   }
 }

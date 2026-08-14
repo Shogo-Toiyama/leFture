@@ -18,6 +18,7 @@ import 'package:lefture/presentation/pages/profile/widgets/change_email_sheet.da
 import 'package:lefture/presentation/pages/profile/widgets/change_password_sheet.dart';
 import 'package:lefture/presentation/pages/profile/widgets/change_auth_provider_sheet.dart';
 import 'package:lefture/presentation/pages/profile/widgets/change_account_sheet.dart';
+import 'package:lefture/presentation/pages/profile/widgets/change_avatar_sheet.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
 import 'package:lefture/domain/entities/app_language.dart';
@@ -244,8 +245,42 @@ class _HeaderSection extends HookConsumerWidget {
               // ── Avatar + Name Row ──────────────────────────────────
               Row(
                 children: [
-                  // Avatar
-                  UserAvatar(profile: profile, size: 72),
+                  // Avatar (Tapping opens ChangeAvatarSheet)
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => ChangeAvatarSheet(profile: profile),
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        UserAvatar(profile: profile, size: 72),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.starGold,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.universe.voidBackground,
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.edit_rounded,
+                              size: 12,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   // Name (Inline Editing)
                   Expanded(

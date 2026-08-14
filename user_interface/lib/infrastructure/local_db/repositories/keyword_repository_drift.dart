@@ -64,6 +64,26 @@ class KeywordRepositoryDrift {
     );
   }
 
+  Future<void> updateKeyword({
+    required String keywordId,
+    required String userId,
+    required String keyword,
+    String? definition,
+  }) async {
+    await _db.updateKeywordContent(
+      id: keywordId,
+      userId: userId,
+      keyword: keyword,
+      definition: definition,
+    );
+
+    await _db.enqueueOutbox(
+      entityType: 'keyword',
+      entityId: keywordId,
+      op: 'update',
+    );
+  }
+
   Keyword _toDomain(LocalKeyword row) {
     return Keyword(
       id: row.id,

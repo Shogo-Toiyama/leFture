@@ -303,10 +303,15 @@ final activityRecordsProvider = FutureProvider.family<List<ActivityRecord>, Acti
       final list = <ActivityRecord>[];
 
       for (final row in lectures) {
+        final displayTitle = (row.title?.trim().isNotEmpty == true)
+            ? row.title!.trim()
+            : ((row.titleGenerated?.trim().isNotEmpty == true)
+                ? row.titleGenerated!.trim()
+                : 'Untitled Lecture');
         list.add(ActivityRecord(
           id: row.id,
           type: ActivityRecordType.lecture,
-          title: row.title ?? row.titleGenerated ?? 'Untitled Lecture',
+          title: displayTitle,
           content: 'Lecture',
           dateTime: row.deletedAt ?? row.updatedAt,
           lectureId: row.id,

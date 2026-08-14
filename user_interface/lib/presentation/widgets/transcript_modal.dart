@@ -829,10 +829,11 @@ class TranscriptModal extends HookConsumerWidget {
 
         final isPlaying = playerState.value == PlayerState.playing;
 
-        final displayTitle =
-            lecture.title ??
-            lecture.titleGenerated ??
-            l10n.announcementTranscriptModalLectureFallbackTitle;
+        final displayTitle = (lecture.title?.trim().isNotEmpty == true)
+            ? lecture.title!.trim()
+            : ((lecture.titleGenerated?.trim().isNotEmpty == true)
+                ? lecture.titleGenerated!.trim()
+                : l10n.announcementTranscriptModalLectureFallbackTitle);
         final displayDate = lecture.lectureDatetime
             .toIso8601String()
             .split('T')

@@ -30,6 +30,16 @@ class Lecture {
 
   bool get isDeleted => deletedAt != null;
 
+  String get displayTitle {
+    if (title != null && title!.trim().isNotEmpty) {
+      return title!.trim();
+    }
+    if (titleGenerated != null && titleGenerated!.trim().isNotEmpty) {
+      return titleGenerated!.trim();
+    }
+    return 'Untitled Lecture';
+  }
+
   Lecture({
     required this.id,
     required this.userId,

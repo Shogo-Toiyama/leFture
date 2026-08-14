@@ -264,6 +264,7 @@ class AllowAllPermissionsButton extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isRequesting = useState(false);
     final allGranted = state.isAllGranted(specs);
 
@@ -289,15 +290,15 @@ class AllowAllPermissionsButton extends HookWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.growthGreen.withValues(alpha: 0.4)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 18),
-            SizedBox(width: 8),
+            const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 18),
+            const SizedBox(width: 8),
             Text(
-              'すべての権限が許可されています',
-              style: TextStyle(
+              l10n.onboardingPermissionsAllGranted,
+              style: const TextStyle(
                 color: AppColors.growthGreen,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -327,7 +328,9 @@ class AllowAllPermissionsButton extends HookWidget {
               )
             : const Icon(Icons.done_all_rounded, size: 20),
         label: Text(
-          isRequesting.value ? '権限を要求中...' : 'すべての権限を許可',
+          isRequesting.value
+              ? l10n.onboardingPermissionsRequesting
+              : l10n.onboardingPermissionsAllowAll,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
       ),

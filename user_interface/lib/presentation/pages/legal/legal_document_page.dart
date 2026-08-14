@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lefture/application/legal/legal_content_provider.dart';
+import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
@@ -72,6 +73,7 @@ class LegalDocumentPage extends ConsumerWidget {
                   MarkdownBody(
                     data: document.contentMarkdown,
                     selectable: true,
+                    inlineSyntaxes: cjkSafeInlineSyntaxes,
                     styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                       p: TextStyle(color: AppColors.paper.textInk, fontSize: 16, height: 1.6),
                       h1: TextStyle(color: AppColors.paper.textInk, fontSize: 24, fontWeight: FontWeight.bold),

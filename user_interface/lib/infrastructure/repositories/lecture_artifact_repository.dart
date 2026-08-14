@@ -66,6 +66,10 @@ class LectureArtifactRepository {
   /// (呼び出し元のProviderが失敗結果をキャッシュに残さず再取得できるように
   /// するため。詳しくは [artifactFileProvider] を参照)。
   Future<File> getArtifactFile(String storagePath) async {
+    if (storagePath.startsWith('assets/')) {
+      throw ArtifactFetchException('Local asset path should not be fetched from remote worker', storagePath: storagePath);
+    }
+
     final localFile = await _localCacheFile(storagePath);
     if (localFile.existsSync() && localFile.lengthSync() > 0) {
       await _registerCacheEntry(storagePath, localFile);

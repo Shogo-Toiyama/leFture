@@ -3,17 +3,30 @@ import 'package:lefture/domain/entities/annotation.dart';
 /// review_cards.card_content (jsonb) の1ブロック分。
 /// 例: {"type": "paragraph", "text": "..."} / {"type": "list", "items": ["...", "..."]}
 class ReviewCardBlock {
-  const ReviewCardBlock({required this.type, this.text, this.items});
+  const ReviewCardBlock({
+    required this.type,
+    this.text,
+    this.items,
+    this.alertType,
+    this.codeString,
+    this.explanation,
+  });
 
-  final String type; // "paragraph" | "quote" | "list"
+  final String type; // "paragraph" | "quote" | "callout" | "code" | "list"
   final String? text;
   final List<String>? items;
+  final String? alertType; // callout: "info" | "warning" | "error"
+  final String? codeString; // code
+  final String? explanation; // code (optional)
 
   factory ReviewCardBlock.fromMap(Map<String, dynamic> map) {
     return ReviewCardBlock(
       type: map['type'] as String? ?? 'paragraph',
       text: map['text'] as String?,
       items: (map['items'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+      alertType: map['alert_type'] as String?,
+      codeString: map['code_string'] as String?,
+      explanation: map['explanation'] as String?,
     );
   }
 }

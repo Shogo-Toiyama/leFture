@@ -54,7 +54,7 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>We use speech recognition to convert your recorded lectures into real-time transcripts.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We access your photo library to allow you to select and attach screenshots when submitting feedback or support inquiries.</string>
+	<string>We access your photo library to allow you to select photos for your profile avatar and attach screenshots when submitting feedback or support inquiries.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleURLTypes</key>

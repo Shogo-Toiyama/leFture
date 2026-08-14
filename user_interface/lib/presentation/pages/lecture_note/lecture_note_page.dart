@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -75,6 +76,7 @@ class LectureNotePage extends StatelessWidget {
             MarkdownBody(
               data: markdownContent.toString(),
               selectable: true,
+              inlineSyntaxes: cjkSafeInlineSyntaxes,
               styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                 h1: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 h2: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),

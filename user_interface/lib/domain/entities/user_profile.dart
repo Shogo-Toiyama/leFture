@@ -1,3 +1,5 @@
+import 'avatar_preset_helper.dart';
+
 class UserProfile {
   const UserProfile({
     required this.id,
@@ -20,6 +22,8 @@ class UserProfile {
   final Map<String, dynamic>? metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  ParsedAvatar get parsedAvatar => AvatarPresetHelper.parse(avatarUrl);
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     return UserProfile(

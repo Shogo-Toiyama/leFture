@@ -14,6 +14,7 @@ import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/core/utils/annotation_text_utils.dart';
+import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/core/utils/text_preview.dart';
 import 'package:lefture/domain/entities/annotation.dart';
@@ -303,7 +304,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     final imageFiles = <int, File?>{};
     for (var gi = 0; gi < groups.length; gi++) {
       final path = groups[gi].imagePath;
-      imageFiles[gi] = path == null
+      final isAsset = path != null && path.startsWith('assets/');
+      imageFiles[gi] = (path == null || isAsset)
           ? null
           : widgetRef.watch(artifactFileProvider(path)).asData?.value;
     }
@@ -345,16 +347,19 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     Widget buildCard(int cardIdx) {
       final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
       final imageFile = imageFiles[item.groupIndex];
+      final imagePath = groups[item.groupIndex].imagePath;
       if (item.isCover) {
         return _CoverCard(
           title: groups[item.groupIndex].title,
           imageFile: imageFile,
+          imagePath: imagePath,
           borderRadius: 24,
         );
       }
       return _ContentCard(
         card: item.card!,
         imageFile: imageFile,
+        imagePath: imagePath,
         themeColor: textThemeColor,
         // Only the settled (non-animating) current card gets the live
         // notifier. During a swipe transition this same card is *also*
@@ -1245,30 +1250,42 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                 ),
               ),
 
-              // ── Bottom nav hint ──────────────────────────────────────────
+              // ── Bottom nav hint & AI disclaimer ──────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.chevron_left,
-                      color: AppColors.paper.textPencil,
-                      size: 20,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chevron_left,
+                          color: AppColors.paper.textPencil,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          l10n.reviewCardsViewerNavigationHint,
+                          style: TextStyle(
+                            color: AppColors.paper.textPencil,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          color: AppColors.paper.textPencil,
+                          size: 20,
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(height: 6),
                     Text(
-                      l10n.reviewCardsViewerNavigationHint,
+                      l10n.aiDisclaimerText,
                       style: TextStyle(
-                        color: AppColors.paper.textPencil,
-                        fontSize: 12,
+                        color: AppColors.paper.textPencil.withValues(alpha: 0.7),
+                        fontSize: 11,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right,
-                      color: AppColors.paper.textPencil,
-                      size: 20,
                     ),
                   ],
                 ),
@@ -1388,6 +1405,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                         child: _CoverCardTile(
                                           title: group.title,
                                           imageFile: imageFile,
+                                          imagePath: group.imagePath,
                                         ),
                                       ),
                                     );
@@ -1495,15 +1513,18 @@ class _CoverCard extends StatelessWidget {
   const _CoverCard({
     required this.title,
     required this.imageFile,
+    this.imagePath,
     required this.borderRadius,
   });
 
   final String title;
   final File? imageFile;
+  final String? imagePath;
   final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
+    final bool isAsset = imagePath != null && imagePath!.startsWith('assets/');
     final titleStyle = TextStyle(
       color: Colors.black,
       fontSize: 22,
@@ -1522,7 +1543,9 @@ class _CoverCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (imageFile != null)
+            if (isAsset)
+              Image.asset(imagePath!, fit: BoxFit.cover)
+            else if (imageFile != null)
               Image.file(imageFile!, fit: BoxFit.cover)
             else
               Container(
@@ -1566,6 +1589,7 @@ class _ContentCard extends StatelessWidget {
   const _ContentCard({
     required this.card,
     required this.imageFile,
+    this.imagePath,
     required this.themeColor,
     this.selectionListenerNotifier,
     this.temporaryHighlight,
@@ -1575,6 +1599,7 @@ class _ContentCard extends StatelessWidget {
 
   final ReviewCard card;
   final File? imageFile;
+  final String? imagePath;
   final Color themeColor;
   final SelectionListenerNotifier? selectionListenerNotifier;
   final Annotation? temporaryHighlight;
@@ -1583,7 +1608,11 @@ class _ContentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = imageFile != null;
+    final isAsset = imagePath != null && imagePath!.startsWith('assets/');
+    final hasImage = isAsset || imageFile != null;
+    final ImageProvider? imageProvider = isAsset
+        ? AssetImage(imagePath!)
+        : (imageFile != null ? FileImage(imageFile!) : null);
 
     final blocks = Column(
       children: card.cardContent
@@ -1688,7 +1717,7 @@ class _ContentCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover),
+        image: DecorationImage(image: imageProvider!, fit: BoxFit.cover),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -1711,6 +1740,28 @@ class _ContentCard extends StatelessWidget {
         child: content,
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Callout block styling (info/warning/error)
+// ---------------------------------------------------------------------------
+class _CalloutStyle {
+  const _CalloutStyle(this.color, this.icon);
+
+  final Color color;
+  final IconData icon;
+
+  static _CalloutStyle fromAlertType(String? alertType, Color infoColor) {
+    switch (alertType) {
+      case 'warning':
+        return const _CalloutStyle(Color(0xFFE0A100), Icons.warning_amber_rounded);
+      case 'error':
+        return const _CalloutStyle(Color(0xFFE5484D), Icons.error_outline_rounded);
+      case 'info':
+      default:
+        return _CalloutStyle(infoColor, Icons.lightbulb_outline_rounded);
+    }
   }
 }
 
@@ -1752,6 +1803,13 @@ class _ReviewCardBlockView extends HookWidget {
       ),
       listBullet: style.copyWith(color: themeColor),
       textAlign: WrapAlignment.center,
+      blockquote: style.copyWith(fontStyle: FontStyle.italic),
+      blockquotePadding: const EdgeInsets.all(12),
+      blockquoteDecoration: BoxDecoration(
+        color: themeColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: themeColor, width: 3)),
+      ),
     );
   }
 
@@ -1788,6 +1846,7 @@ class _ReviewCardBlockView extends HookWidget {
             key: annotationsKey,
             data: stripSidCitations(block.text ?? ''),
             builders: builders,
+            inlineSyntaxes: cjkSafeInlineSyntaxes,
             styleSheet: _styleSheet(
               context,
               italic: true,
@@ -1803,6 +1862,7 @@ class _ReviewCardBlockView extends HookWidget {
           key: annotationsKey,
           data: markdown,
           builders: builders,
+          inlineSyntaxes: cjkSafeInlineSyntaxes,
           bulletBuilder: annotationBulletBuilder(
             _styleSheet(context).listBullet,
           ),
@@ -1810,12 +1870,78 @@ class _ReviewCardBlockView extends HookWidget {
             context,
           ).copyWith(textAlign: WrapAlignment.start),
         );
+      case 'callout':
+        final alert = _CalloutStyle.fromAlertType(block.alertType, themeColor);
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: alert.color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: alert.color.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(alert.icon, color: alert.color, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MarkdownBody(
+                  key: annotationsKey,
+                  data: stripSidCitations(block.text ?? ''),
+                  builders: builders,
+                  inlineSyntaxes: cjkSafeInlineSyntaxes,
+                  styleSheet: _styleSheet(
+                    context,
+                  ).copyWith(textAlign: WrapAlignment.start),
+                ),
+              ),
+            ],
+          ),
+        );
+      case 'code':
+        final baseStyle = _styleSheet(context);
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Text(
+                  block.codeString ?? '',
+                  style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+                ),
+              ),
+              if ((block.explanation ?? '').isNotEmpty) ...[
+                const SizedBox(height: 10),
+                MarkdownBody(
+                  data: stripSidCitations(block.explanation!),
+                  builders: builders,
+                  inlineSyntaxes: cjkSafeInlineSyntaxes,
+                  styleSheet: baseStyle.copyWith(
+                    textAlign: WrapAlignment.start,
+                    p: baseStyle.p?.copyWith(fontStyle: FontStyle.italic) ??
+                        const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
       case 'paragraph':
       default:
         return MarkdownBody(
           key: annotationsKey,
           data: stripSidCitations(block.text ?? ''),
           builders: builders,
+          inlineSyntaxes: cjkSafeInlineSyntaxes,
           styleSheet: _styleSheet(context),
         );
     }
@@ -1823,20 +1949,29 @@ class _ReviewCardBlockView extends HookWidget {
 }
 
 class _CoverCardTile extends StatelessWidget {
-  const _CoverCardTile({required this.title, required this.imageFile});
+  const _CoverCardTile({
+    required this.title,
+    required this.imageFile,
+    this.imagePath,
+  });
 
   final String title;
   final File? imageFile;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
+    final bool isAsset = imagePath != null && imagePath!.startsWith('assets/');
+
     return SelectionContainer.disabled(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (imageFile != null)
+            if (isAsset)
+              Image.asset(imagePath!, fit: BoxFit.cover)
+            else if (imageFile != null)
               Image.file(imageFile!, fit: BoxFit.cover)
             else
               Container(

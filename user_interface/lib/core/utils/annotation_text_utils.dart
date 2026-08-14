@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:flutter/rendering.dart';
 import 'package:markdown/markdown.dart' as md;
 
+import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/domain/entities/review_card.dart';
 
@@ -53,7 +54,11 @@ String stripFigurePlaceholders(String markdownSource) =>
 /// blocks -- matching MarkdownAnnotationBuilder's running-offset
 /// reconstruction exactly.
 String flattenMarkdownText(String markdownSource) {
-  final document = md.Document(extensionSet: md.ExtensionSet.gitHubFlavored, encodeHtml: false);
+  final document = md.Document(
+    inlineSyntaxes: cjkSafeInlineSyntaxes,
+    extensionSet: md.ExtensionSet.gitHubFlavored,
+    encodeHtml: false,
+  );
   final nodes = document.parseLines(const LineSplitter().convert(markdownSource));
   final buffer = StringBuffer();
 
@@ -142,7 +147,11 @@ FlattenedTextMap buildFlattenedTextMap(String rawMarkdownSource) {
   // Flatten citationStripped the same way flutter_markdown/MarkdownAnnotationBuilder
   // do, while recording -- for every char written to the flattened output --
   // which index in citationStripped it came from.
-  final document = md.Document(extensionSet: md.ExtensionSet.gitHubFlavored, encodeHtml: false);
+  final document = md.Document(
+    inlineSyntaxes: cjkSafeInlineSyntaxes,
+    extensionSet: md.ExtensionSet.gitHubFlavored,
+    encodeHtml: false,
+  );
   final nodes = document.parseLines(const LineSplitter().convert(citationStripped));
   final buffer = StringBuffer();
   final flatToCitationStripped = <int>[];

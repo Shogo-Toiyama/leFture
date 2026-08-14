@@ -1691,6 +1691,45 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reviewCardsViewerNavigationHint => '左右をタップ  •  スワイプでトピック切替';
 
   @override
+  String get aiDisclaimerText => '※ AI生成コンテンツのため誤りが含まれる場合があります';
+
+  @override
+  String get changeAvatarSheetTitle => 'アバターを変更';
+
+  @override
+  String get changeAvatarSelectFromLibrary => 'ライブラリから選択';
+
+  @override
+  String get changeAvatarTabIcons => 'アイコン';
+
+  @override
+  String get changeAvatarTabBackgrounds => '背景';
+
+  @override
+  String get changeAvatarInitialsLabel => 'イニシャル';
+
+  @override
+  String get changeAvatarBgStyleVivid => 'ビビッド';
+
+  @override
+  String get changeAvatarBgStylePastel => 'パステル';
+
+  @override
+  String get changeAvatarBgStyleDark => 'ダーク';
+
+  @override
+  String get changeAvatarSave => '保存';
+
+  @override
+  String get changeAvatarRestoreSocialAccount => 'ソーシャルアカウントの画像に戻す';
+
+  @override
+  String get changeAvatarSavedSuccess => 'アバターを変更しました';
+
+  @override
+  String get changeAvatarUploading => '画像をアップロード中...';
+
+  @override
   String get reviewCardsDashboardGeneratingMessage => '復習カードを生成中…';
 
   @override
@@ -2251,6 +2290,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPermissionsRequiredDialogButton => 'わかりました';
 
   @override
+  String get onboardingPermissionsAllGranted => 'すべての権限が許可されています';
+
+  @override
+  String get onboardingPermissionsRequesting => '権限を要求中...';
+
+  @override
+  String get onboardingPermissionsAllowAll => 'すべての権限を許可';
+
+  @override
   String get onboardingPlanEyebrow => 'もうすぐ完了';
 
   @override
@@ -2346,4 +2394,25 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get homeTutorialCalloutMessage => 'このアプリについての講義を見てみよう!';
+
+  @override
+  String get editKeywordDialogTitle => 'キーワードの編集';
+
+  @override
+  String get editKeywordTermLabel => '用語名';
+
+  @override
+  String get editKeywordTermHint => '用語名を入力';
+
+  @override
+  String get editKeywordDefinitionLabel => '説明 / 解釈';
+
+  @override
+  String get editKeywordDefinitionHint => 'キーワードの説明やメモを入力...';
+
+  @override
+  String get editKeywordSaveButton => '保存';
+
+  @override
+  String get editKeywordCancelButton => 'キャンセル';
 }

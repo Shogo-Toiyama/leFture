@@ -79,7 +79,8 @@ class LectureTile extends ConsumerWidget {
         : AppColors.starGold;
 
     final imagePath = ref.watch(firstTopicImagePathProvider(lecture.id)).asData?.value;
-    final imageFile = imagePath == null ? null : ref.watch(artifactFileProvider(imagePath)).asData?.value;
+    final isAsset = imagePath != null && imagePath.startsWith('assets/');
+    final imageFile = (imagePath == null || isAsset) ? null : ref.watch(artifactFileProvider(imagePath)).asData?.value;
     final uiState = ref.watch(lectureStateProvider(lecture.id)).asData?.value;
 
     final recordingState = ref.watch(recordingControllerProvider);
@@ -101,6 +102,10 @@ class LectureTile extends ConsumerWidget {
     // チュートリアル講義は削除できないため、長押しメニューに削除の選択肢自体を出さない。
     final isTutorial = lecture.metadata?['is_tutorial'] == true;
     final effectiveOnDelete = isTutorial ? null : onDelete;
+
+    final ImageProvider? imageProvider = isAsset
+        ? AssetImage(imagePath)
+        : (imageFile != null ? FileImage(imageFile) : null);
 
     return GestureDetector(
       onTap: () => isActivelyRecording
@@ -150,11 +155,11 @@ class LectureTile extends ConsumerWidget {
                 border: Border.all(
                   color: themeColor.withValues(alpha: 0.3),
                 ),
-                image: imageFile != null
-                    ? DecorationImage(image: FileImage(imageFile), fit: BoxFit.cover)
+                image: imageProvider != null
+                    ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
                     : null,
               ),
-              child: imageFile == null
+              child: imageProvider == null
                   ? Icon(
                       Icons.description_outlined,
                       color: themeColor,

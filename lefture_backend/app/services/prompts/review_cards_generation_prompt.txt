@@ -107,7 +107,7 @@ Use these specific block types to make the UI rich and engaging. To explain deep
 - `callout`: A colored warning/info box (Perfect for Gotchas, strict rules, or Professor's tips).
   - Required fields: `"type": "callout"`, `"alert_type": "<info|warning|error>"`, `"text": "<string>"`
 - `code`: Syntactically correct code or math.
-  - Required fields: `"type": "code"`, `"language": "<string>"`, `"code_string": "<string>"`
+  - Required fields: `"type": "code"`, `"code_string": "<string>"`
   - Optional field: `"explanation": "<string>"`
 - `list`: Bullet points. Perfect for breaking down multi-step processes or algorithms chronologically.
   - Required fields: `"type": "list"`, `"items": ["<string>", "<string>"]` (Array of strings)
@@ -196,7 +196,6 @@ EXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topi
         },
         {
           "type": "code",
-          "language": "cpp",
           "code_string": "PC = BTB.get_predicted_target(); // Go fast, ask questions later!",
           "explanation": "We literally force the PC to our best guess and keep fetching. ⟦s000309⟧"
         }

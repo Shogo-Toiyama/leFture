@@ -14,6 +14,7 @@ import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/domain/entities/deep_note.dart';
 import 'package:lefture/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
 import 'package:lefture/core/utils/annotation_text_utils.dart';
+import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
@@ -1268,6 +1269,7 @@ class _NoteDetailContent extends HookWidget {
                     child: MarkdownBody(
                       data: stripSidCitations(topic.summary),
                       selectable: false,
+                      inlineSyntaxes: cjkSafeInlineSyntaxes,
                       styleSheet:
                           MarkdownStyleSheet.fromTheme(
                             Theme.of(context),
@@ -1300,6 +1302,22 @@ class _NoteDetailContent extends HookWidget {
                                 color: Colors.black.withValues(alpha: 0.1),
                               ),
                             ),
+                            blockquote: TextStyle(
+                              color: AppColors.paper.textPencil,
+                              fontSize: 15,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            blockquotePadding: const EdgeInsets.all(14),
+                            blockquoteDecoration: BoxDecoration(
+                              color: textThemeColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border(
+                                left: BorderSide(
+                                  color: textThemeColor,
+                                  width: 3,
+                                ),
+                              ),
+                            ),
                           ),
                     ),
                   ),
@@ -1315,6 +1333,7 @@ class _NoteDetailContent extends HookWidget {
                         ? stripSidCitations(stripFigurePlaceholders(topic.content))
                         : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
                     selectable: false,
+                    inlineSyntaxes: cjkSafeInlineSyntaxes,
                     builders: topic.content.isNotEmpty
                         ? annotationMarkdownBuilders(annotationBuilder)
                         : const {},
@@ -1356,6 +1375,23 @@ class _NoteDetailContent extends HookWidget {
                               color: Colors.black.withValues(alpha: 0.1),
                             ),
                           ),
+                          blockquote: TextStyle(
+                            color: AppColors.paper.textPencil,
+                            fontSize: 16,
+                            height: 1.6,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          blockquotePadding: const EdgeInsets.all(16),
+                          blockquoteDecoration: BoxDecoration(
+                            color: textThemeColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border(
+                              left: BorderSide(
+                                color: textThemeColor,
+                                width: 3,
+                              ),
+                            ),
+                          ),
                         ),
                   ),
                 ),
@@ -1384,6 +1420,16 @@ class _NoteDetailContent extends HookWidget {
                     ),
                   ),
 
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    AppLocalizations.of(context).aiDisclaimerText,
+                    style: TextStyle(
+                      color: AppColors.paper.textPencil.withValues(alpha: 0.7),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 32),
               ],
             ),

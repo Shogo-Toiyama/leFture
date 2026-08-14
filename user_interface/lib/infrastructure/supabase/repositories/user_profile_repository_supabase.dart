@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:drift/drift.dart';
 import 'package:lefture/domain/entities/user_profile.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
@@ -94,9 +96,80 @@ class UserProfileRepositorySupabase {
     return profile;
   }
 
+  /// アバター画像を Cloudflare R2 (lefture-assets バケット) へ直接アップロードし、ストレージパスを返す
+  Future<String> uploadAvatarImage(dynamic fileInput) async {
+    final file = fileInput is File ? fileInput : File(fileInput.path as String);
+    final fileName = file.path.split('/').last;
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'png';
+
+    final String contentType;
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        contentType = 'image/jpeg';
+        break;
+      case 'png':
+        contentType = 'image/png';
+        break;
+      case 'webp':
+        contentType = 'image/webp';
+        break;
+      case 'heic':
+      case 'heif':
+        contentType = 'image/heic';
+        break;
+      case 'gif':
+        contentType = 'image/gif';
+        break;
+      default:
+        contentType = 'image/jpeg';
+    }
+
+    final token = supabase.auth.currentSession?.accessToken;
+    if (token == null) throw StateError('Not authenticated');
+
+    // 1. R2 署名付きアップロードURLを取得
+    final presignedRes = await http.post(
+      Uri.parse('https://lefture-511705914929.us-west1.run.app/profile/request-avatar-upload-url'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'file_name': fileName,
+        'content_type': contentType,
+      }),
+    ).timeout(const Duration(seconds: 20));
+
+    if (presignedRes.statusCode != 200) {
+      throw StateError('Failed to request avatar upload URL: HTTP ${presignedRes.statusCode}');
+    }
+
+    final data = jsonDecode(presignedRes.body);
+    final uploadUrl = data['upload_url'] as String;
+    final storagePath = data['storage_path'] as String;
+
+    final fileBytes = await file.readAsBytes();
+
+    // 2. Cloudflare R2 へ直接 PUT
+    final putRes = await http.put(
+      Uri.parse(uploadUrl),
+      headers: {'Content-Type': contentType},
+      body: fileBytes,
+    ).timeout(const Duration(seconds: 40));
+
+    if (putRes.statusCode != 200) {
+      throw StateError('Failed to upload avatar to R2: HTTP ${putRes.statusCode}');
+    }
+
+    DevLog.add('🚀 [UserProfileRepo] Avatar photo uploaded directly to R2: $storagePath');
+    return storagePath;
+  }
+
   /// ログイン中ユーザーのプロフィールをローカルファーストで更新し、Outboxに登録してサーバー送信
   Future<UserProfile> updateProfile({
     String? username,
+    String? avatarUrl,
     String? bio,
     String? interests,
     String? futureGoals,
@@ -107,6 +180,7 @@ class UserProfileRepositorySupabase {
     final existing = await _db.getUserProfile(uid);
 
     final newUsername = username ?? existing?.username;
+    final newAvatarUrl = avatarUrl ?? existing?.avatarUrl;
     final newBio = bio ?? existing?.bio;
     final newInterests = interests ?? existing?.interests;
     final newFutureGoals = futureGoals ?? existing?.futureGoals;
@@ -117,6 +191,7 @@ class UserProfileRepositorySupabase {
       LocalUserProfilesCompanion(
         id: Value(uid),
         username: Value(newUsername),
+        avatarUrl: Value(newAvatarUrl),
         bio: Value(newBio),
         interests: Value(newInterests),
         futureGoals: Value(newFutureGoals),
@@ -135,7 +210,7 @@ class UserProfileRepositorySupabase {
     final updatedProfile = UserProfile(
       id: uid,
       username: newUsername,
-      avatarUrl: existing?.avatarUrl,
+      avatarUrl: newAvatarUrl,
       bio: newBio,
       interests: newInterests,
       futureGoals: newFutureGoals,

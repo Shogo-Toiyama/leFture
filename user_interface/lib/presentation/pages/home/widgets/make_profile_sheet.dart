@@ -4,7 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/profile/user_profile_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
+import 'package:lefture/presentation/pages/profile/widgets/change_avatar_sheet.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/user_avatar.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 /// プロフィール作成/編集用ボトムシート。
@@ -17,7 +19,7 @@ class MakeProfileSheet extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final existing = ref.read(currentUserProfileProvider).asData?.value;
+    final existing = ref.watch(currentUserProfileProvider).asData?.value;
 
     final usernameCtl = useTextEditingController(text: existing?.username ?? '');
     final bioCtl = useTextEditingController(text: existing?.bio ?? '');
@@ -25,19 +27,6 @@ class MakeProfileSheet extends HookConsumerWidget {
     final futureGoalsCtl = useTextEditingController(text: existing?.futureGoals ?? '');
     final isSubmitting = useState(false);
     final errorMsg = useState<String?>(null);
-
-    // テキスト入力に応じてアバター内のイニシャルを動的に更新するためのフック
-    useListenable(usernameCtl);
-
-    final currentUsername = usernameCtl.text.trim();
-    final avatarInitials = currentUsername.isEmpty
-        ? 'EX'
-        : currentUsername
-            .split(' ')
-            .where((e) => e.isNotEmpty)
-            .map((e) => e[0].toUpperCase())
-            .take(2)
-            .join('');
 
     Future<void> submit() async {
       final bio = bioCtl.text.trim();
@@ -110,58 +99,41 @@ class MakeProfileSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // ── Avatar Edit Placeholder ────────────────────────
+              // ── Avatar Edit ────────────────────────────────────
               Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF7C83FD), Color(0xFFFFB300)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          avatarInitials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 26,
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ChangeAvatarSheet(profile: existing),
+                    );
+                  },
+                  child: Stack(
+                    children: [
+                      UserAvatar(profile: existing, size: 80),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: AppColors.starGold,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF1A1C2E),
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 14,
+                            color: Colors.black,
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.starGold,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_outlined,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              Center(
-                child: Text(
-                  l10n.makeProfileChangeAvatarComingSoon,
-                  style: const TextStyle(
-                    color: Colors.white30,
-                    fontSize: 11,
+                    ],
                   ),
                 ),
               ),

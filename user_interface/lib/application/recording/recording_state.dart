@@ -43,8 +43,16 @@ class RecordingState {
   final String? transientNotice;
   final double audioLevel;
 
-  // LocalLecture.courseId は build_runner 実行後に使用可能になる
-  String get title => lecture?.title ?? draftTitle ?? '';
+  String get title {
+    if (lecture != null) {
+      final t = lecture!.title?.trim();
+      if (t != null && t.isNotEmpty) return t;
+      final tg = lecture!.titleGenerated?.trim();
+      if (tg != null && tg.isNotEmpty) return tg;
+    }
+    if (draftTitle != null && draftTitle!.trim().isNotEmpty) return draftTitle!.trim();
+    return '';
+  }
   String? get courseId => draftCourseId;
   String? get lectureId => currentLectureId;
 

@@ -2567,6 +2567,45 @@ async def support_request_upload_url(
     return {"upload_url": upload_url, "storage_path": storage_path}
 
 
+class AvatarUploadUrlRequest(BaseModel):
+    file_name: str
+    content_type: str = "image/png"
+
+
+@app.post("/profile/request-avatar-upload-url")
+async def profile_request_avatar_upload_url(
+    payload: AvatarUploadUrlRequest,
+    request: Request,
+):
+    """ユーザーカスタムアバター画像用の R2 署名付きアップロードURLを発行する"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    token = auth_header.replace("Bearer ", "").strip()
+
+    try:
+        user_client = create_client(
+            SUPABASE_URL, 
+            SUPABASE_PUBLISHABLE_KEY, 
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    from app.services.task_runners import storage_service
+    upload_url, storage_path = await asyncio.to_thread(
+        storage_service.generate_presigned_avatar_url,
+        uid=uid,
+        file_name=payload.file_name,
+        content_type=payload.content_type,
+    )
+    return {"upload_url": upload_url, "storage_path": storage_path}
+
+
 @app.post("/support/submit")
 async def support_submit(
     payload: SupportSubmitRequest,

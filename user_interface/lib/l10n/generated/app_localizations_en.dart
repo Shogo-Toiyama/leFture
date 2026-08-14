@@ -1764,6 +1764,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap left / right  •  Swipe to change topic';
 
   @override
+  String get aiDisclaimerText =>
+      '* AI-generated content may contain inaccuracies';
+
+  @override
+  String get changeAvatarSheetTitle => 'Change Avatar';
+
+  @override
+  String get changeAvatarSelectFromLibrary => 'Select from Library';
+
+  @override
+  String get changeAvatarTabIcons => 'Icons';
+
+  @override
+  String get changeAvatarTabBackgrounds => 'Backgrounds';
+
+  @override
+  String get changeAvatarInitialsLabel => 'Initials';
+
+  @override
+  String get changeAvatarBgStyleVivid => 'Vivid';
+
+  @override
+  String get changeAvatarBgStylePastel => 'Pastel';
+
+  @override
+  String get changeAvatarBgStyleDark => 'Dark';
+
+  @override
+  String get changeAvatarSave => 'Save';
+
+  @override
+  String get changeAvatarRestoreSocialAccount => 'Restore Social Account Photo';
+
+  @override
+  String get changeAvatarSavedSuccess => 'Avatar updated successfully';
+
+  @override
+  String get changeAvatarUploading => 'Uploading image...';
+
+  @override
   String get reviewCardsDashboardGeneratingMessage =>
       'Review cards are being generated…';
 
@@ -2355,6 +2395,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPermissionsRequiredDialogButton => 'Got it';
 
   @override
+  String get onboardingPermissionsAllGranted => 'All permissions granted';
+
+  @override
+  String get onboardingPermissionsRequesting => 'Requesting permissions...';
+
+  @override
+  String get onboardingPermissionsAllowAll => 'Allow All Permissions';
+
+  @override
   String get onboardingPlanEyebrow => 'Almost done';
 
   @override
@@ -2456,4 +2505,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeTutorialCalloutMessage =>
       'Check out this lecture about the app!';
+
+  @override
+  String get editKeywordDialogTitle => 'Edit Keyword';
+
+  @override
+  String get editKeywordTermLabel => 'Term';
+
+  @override
+  String get editKeywordTermHint => 'Enter term...';
+
+  @override
+  String get editKeywordDefinitionLabel => 'Definition / Notes';
+
+  @override
+  String get editKeywordDefinitionHint => 'Enter definition or notes...';
+
+  @override
+  String get editKeywordSaveButton => 'Save';
+
+  @override
+  String get editKeywordCancelButton => 'Cancel';
 }
