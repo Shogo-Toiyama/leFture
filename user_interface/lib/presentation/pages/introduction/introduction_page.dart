@@ -157,7 +157,8 @@ class _IntroductionPageState extends ConsumerState<IntroductionPage> {
             curve: Curves.easeOutBack,
             builder: (context, t, child) {
               return GlowingRainbowBorder(
-                borderRadius: 0,
+                borderRadius: 60,
+                softEdges: true,
                 borderWidth: 1.0 + 1.5 * t,
                 // LectureViewerPage(glowRadius: 6.0, glowOpacity: 0.4)より
                 // 少し強め。

@@ -13,7 +13,8 @@ class JobRepository {
 
   JobRepository(this._supabase);
 
-  static const _cloudRunBaseUrl = 'https://lefture-511705914929.us-west1.run.app';
+  static const _cloudRunBaseUrl =
+      'https://lefture-511705914929.us-west1.run.app';
 
   // 分析進捗の表示は12ステップ中どこまで進んだかという粗い比率のみで、
   // 秒単位の追従は不要(講義全体の分析は数分〜十数分規模)。以前はSupabase
@@ -38,8 +39,14 @@ class JobRepository {
   }
 
   Stream<ProcessingJobs?> _watchJobRaw(String lectureId) async* {
+    // ループの外で保持する — 通信エラー時に前回値を消さずに済ませるため。
+    // (以前はループの中で毎回`ProcessingJobs? job;`を宣言し直しており、
+    // ポーリングが1回でも失敗すると「ジョブが存在しない」と誤って
+    // yieldしてしまっていた。分析が完了した講義を開いた瞬間に通信が悪いと、
+    // 一瞬「Start Analysis」状態(未分析)に見えてしまうバグの原因だった)
+    ProcessingJobs? job;
     while (true) {
-      ProcessingJobs? job;
+      var fetchSucceeded = false;
       try {
         final maps = await _supabase
             .from('processing_jobs')
@@ -49,28 +56,37 @@ class JobRepository {
 
         if (maps.isNotEmpty) {
           // 日付で並べ替え
-          final sorted = [...maps]..sort((a, b) {
-            final aTime = a['created_at'] as String? ?? '';
-            final bTime = b['created_at'] as String? ?? '';
-            return bTime.compareTo(aTime);
-          });
+          final sorted = [...maps]
+            ..sort((a, b) {
+              final aTime = a['created_at'] as String? ?? '';
+              final bTime = b['created_at'] as String? ?? '';
+              return bTime.compareTo(aTime);
+            });
 
           try {
             job = ProcessingJobs.fromJson(sorted.first);
+            fetchSucceeded = true;
           } catch (e, s) {
             dev.log('🚨 Parse Error: $e'); // エラー内容を表示
             dev.log('Stack trace: $s');
           }
+        } else {
+          // サーバーに問い合わせて「本当にジョブが存在しない」と確認できた
+          // 場合のみnullにする。
+          job = null;
+          fetchSucceeded = true;
         }
       } catch (e, s) {
-        // 通信エラー等。落とさずに次回のポーリングでリトライする。
+        // 通信エラー等。前回値(job)は変更せず、今回のyieldはスキップして
+        // 次回のポーリングでリトライする。
         dev.log('🚨 watchJob poll error: $e');
         dev.log('Stack trace: $s');
       }
 
-      yield job;
-
-      if (job != null && job.status == 'COMPLETED') break;
+      if (fetchSucceeded) {
+        yield job;
+        if (job != null && job.status == 'COMPLETED') break;
+      }
       await Future.delayed(_pollInterval);
     }
   }
@@ -94,8 +110,11 @@ class JobRepository {
   Stream<List<ProcessingTask>> _watchTasksForJobRaw(String jobId) async* {
     const terminalStatuses = {'COMPLETED', 'FAILED', 'CANCELLED'};
 
+    // ループの外で保持する(watchJobと同じ理由 — 通信エラー時に前回値を
+    // 空リストで潰さないため)。
+    List<ProcessingTask> tasks = const [];
     while (true) {
-      List<ProcessingTask> tasks = const [];
+      var fetchSucceeded = false;
       try {
         final rows = await _supabase
             .from('processing_tasks')
@@ -103,17 +122,22 @@ class JobRepository {
             .eq('job_id', jobId)
             .timeout(networkTimeout);
         tasks = rows.map((e) => ProcessingTask.fromMap(e)).toList();
+        fetchSucceeded = true;
       } catch (e, s) {
-        // 通信エラー等。落とさずに次回のポーリングでリトライする。
+        // 通信エラー等。前回値(tasks)は変更せず、今回のyieldはスキップして
+        // 次回のポーリングでリトライする。
         dev.log('🚨 watchTasksForJob poll error: $e');
         dev.log('Stack trace: $s');
       }
 
-      yield tasks;
+      if (fetchSucceeded) {
+        yield tasks;
 
-      final allTerminal =
-          tasks.isNotEmpty && tasks.every((t) => terminalStatuses.contains(t.status));
-      if (allTerminal) break;
+        final allTerminal =
+            tasks.isNotEmpty &&
+            tasks.every((t) => terminalStatuses.contains(t.status));
+        if (allTerminal) break;
+      }
       await Future.delayed(_pollInterval);
     }
   }
@@ -140,7 +164,8 @@ class JobRepository {
     bool force = false,
     int? expectedChunks,
   }) async {
-    final resolvedExpectedChunks = expectedChunks ??
+    final resolvedExpectedChunks =
+        expectedChunks ??
         await _supabase
             .from('lecture_transcripts')
             .count()
@@ -152,18 +177,20 @@ class JobRepository {
       throw Exception('Not logged in. Cannot start analysis.');
     }
 
-    final response = await http.post(
-      Uri.parse('$_cloudRunBaseUrl/start-analysis'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwt',
-      },
-      body: jsonEncode({
-        'lecture_id': lectureId,
-        'expected_chunks': resolvedExpectedChunks,
-        'force': force,
-      }),
-    ).timeout(networkTimeout);
+    final response = await http
+        .post(
+          Uri.parse('$_cloudRunBaseUrl/start-analysis'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jwt',
+          },
+          body: jsonEncode({
+            'lecture_id': lectureId,
+            'expected_chunks': resolvedExpectedChunks,
+            'force': force,
+          }),
+        )
+        .timeout(networkTimeout);
 
     if (response.statusCode == 402) {
       // バックエンドの/start-analysisは{"error_code": ..., "message": ...}を
@@ -186,7 +213,9 @@ class JobRepository {
     }
 
     if (response.statusCode != 200 && response.statusCode != 202) {
-      throw Exception('Failed to start analysis (${response.statusCode}): ${response.body}');
+      throw Exception(
+        'Failed to start analysis (${response.statusCode}): ${response.body}',
+      );
     }
   }
 
@@ -201,13 +230,15 @@ class JobRepository {
       throw Exception('Not logged in. Cannot cancel jobs.');
     }
 
-    final response = await http.post(
-      Uri.parse('$_cloudRunBaseUrl/lectures/$lectureId/cancel-jobs'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwt',
-      },
-    ).timeout(networkTimeout);
+    final response = await http
+        .post(
+          Uri.parse('$_cloudRunBaseUrl/lectures/$lectureId/cancel-jobs'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jwt',
+          },
+        )
+        .timeout(networkTimeout);
 
     // 404はSupabase側にまだlectures行が無い(＝サーバー側にジョブも存在し得ない)
     // ケース。オフライン録音を一度もアップロードせずに削除した場合に起きるので、
@@ -215,7 +246,9 @@ class JobRepository {
     if (response.statusCode == 404) return;
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to cancel jobs (${response.statusCode}): ${response.body}');
+      throw Exception(
+        'Failed to cancel jobs (${response.statusCode}): ${response.body}',
+      );
     }
   }
 
@@ -229,17 +262,21 @@ class JobRepository {
       throw Exception('Not logged in. Cannot retry task.');
     }
 
-    final response = await http.post(
-      Uri.parse('$_cloudRunBaseUrl/retry-task'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwt',
-      },
-      body: jsonEncode({'task_id': taskId}),
-    ).timeout(networkTimeout);
+    final response = await http
+        .post(
+          Uri.parse('$_cloudRunBaseUrl/retry-task'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jwt',
+          },
+          body: jsonEncode({'task_id': taskId}),
+        )
+        .timeout(networkTimeout);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to retry task (${response.statusCode}): ${response.body}');
+      throw Exception(
+        'Failed to retry task (${response.statusCode}): ${response.body}',
+      );
     }
   }
 }

@@ -69,4 +69,4 @@ final class TutorialLectureSeedProvider
 }
 
 String _$tutorialLectureSeedHash() =>
-    r'4d47e98386d0e1b54bde78a026d130126aba39c3';
+    r'd07e9dc5daa624a97b2e39869593f8c266fcb3df';

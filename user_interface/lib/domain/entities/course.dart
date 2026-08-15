@@ -70,14 +70,17 @@ class Course {
       termId: map['term_id'] as String?,
       subjectId: map['subject_id'] as String?,
       // professorカラム自体はuuid。埋め込みJOINは "professor_attr" 別名で取得する
-      professorId: map['professor'] is String ? map['professor'] as String : null,
+      professorId: map['professor'] is String
+          ? map['professor'] as String
+          : null,
       metadata: map['metadata'] as Map<String, dynamic>?,
       deletedAt: map['deleted_at'] == null
           ? null
           : DateTime.parse(map['deleted_at'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(
-          (map['updated_at'] ?? map['created_at']) as String),
+        (map['updated_at'] ?? map['created_at']) as String,
+      ),
       year: parseAttr(map['year']),
       term: parseAttr(map['term']),
       subject: parseAttr(map['subject']),

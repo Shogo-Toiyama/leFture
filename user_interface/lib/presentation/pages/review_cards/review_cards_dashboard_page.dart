@@ -252,21 +252,25 @@ class ReviewCardsDashboardPage extends HookConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (card.heroEmoji?.trim().isNotEmpty == true) ...[
-                            Text(card.heroEmoji!.trim(),
-                                style: const TextStyle(fontSize: 26)),
-                            const SizedBox(height: 6),
-                          ],
-                          Text(
-                            preview,
-                            style: TextStyle(
-                              color: AppColors.paper.textInk,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
+                            Text(
+                              card.heroEmoji!.trim(),
+                              style: const TextStyle(fontSize: 24),
                             ),
-                            textAlign: TextAlign.center,
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 4),
+                          ],
+                          Flexible(
+                            child: Text(
+                              preview,
+                              style: TextStyle(
+                                color: AppColors.paper.textInk,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                height: 1.25,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: card.heroEmoji?.trim().isNotEmpty == true ? 3 : 4,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),

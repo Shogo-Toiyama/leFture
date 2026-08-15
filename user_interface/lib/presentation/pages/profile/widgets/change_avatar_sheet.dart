@@ -141,7 +141,7 @@ class ChangeAvatarSheet extends HookConsumerWidget {
     }());
 
     final selectedBgStyleIndex = useState<int>(initialParsed.bgStyleIndex ?? 0);
-    final selectedBgIndex = useState<int>(initialParsed.bgIndex ?? 0);
+    final selectedBgIndex = useState<int>(initialParsed.bgIndex ?? 2);
     final viewingBgStyleIndex = useState<int>(initialParsed.bgStyleIndex ?? 0);
     final isSaving = useState<bool>(false);
 

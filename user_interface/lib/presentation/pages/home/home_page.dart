@@ -442,35 +442,37 @@ class HomePage extends HookConsumerWidget {
                               galaxyKey.currentState?.handleScaleUpdate(d),
                           onScaleEnd: (d) =>
                               galaxyKey.currentState?.handleScaleEnd(d),
-                          onTap: isTransitioning.value
-                              ? null
-                              : () async {
-                                  showGradients.value = false; // 遷移開始時に一瞬で非表示
-                                  isTransitioning.value = true;
-
-                                  // アニメーション時間 (600ms) を待ってからページ遷移
-                                  await Future.delayed(
-                                    const Duration(milliseconds: 600),
-                                  );
-                                  if (context.mounted &&
-                                      isTransitioning.value) {
-                                    // 戻り値を待って、戻ってきたら縮小アニメーションを開始する
-                                    await context.push(
-                                      AppRoutes.learningGalaxy,
-                                    );
-                                    if (context.mounted) {
-                                      isTransitioning.value = false;
-                                      // 縮小アニメーション完了 (600ms) を待ってからパッと表示
-                                      await Future.delayed(
-                                        const Duration(milliseconds: 600),
-                                      );
-                                      if (context.mounted &&
-                                          !isTransitioning.value) {
-                                        showGradients.value = true;
-                                      }
-                                    }
-                                  }
-                                },
+                          // 銀河ページ未完成のため一時的にタップ遷移をコメントアウト（回転・ズーム操作は可能）
+                          onTap: null,
+                          // onTap: isTransitioning.value
+                          //     ? null
+                          //     : () async {
+                          //         showGradients.value = false; // 遷移開始時に一瞬で非表示
+                          //         isTransitioning.value = true;
+                          //
+                          //         // アニメーション時間 (600ms) を待ってからページ遷移
+                          //         await Future.delayed(
+                          //           const Duration(milliseconds: 600),
+                          //         );
+                          //         if (context.mounted &&
+                          //             isTransitioning.value) {
+                          //           // 戻り値を待って、戻ってきたら縮小アニメーションを開始する
+                          //           await context.push(
+                          //             AppRoutes.learningGalaxy,
+                          //           );
+                          //           if (context.mounted) {
+                          //             isTransitioning.value = false;
+                          //             // 縮小アニメーション完了 (600ms) を待ってからパッと表示
+                          //             await Future.delayed(
+                          //               const Duration(milliseconds: 600),
+                          //             );
+                          //             if (context.mounted &&
+                          //                 !isTransitioning.value) {
+                          //               showGradients.value = true;
+                          //             }
+                          //           }
+                          //         }
+                          //       },
                           child: SizedBox(height: galaxyHeight),
                         ),
                       ),
@@ -479,7 +481,7 @@ class HomePage extends HookConsumerWidget {
                     Builder(
                       builder: (context) {
                         final textScaler = MediaQuery.textScalerOf(context);
-                        final dynamicCoursesHeight = (textScaler.scale(20) + textScaler.scale(12) + 48.0).clamp(_kCoursesHeaderHeight, 150.0);
+                        final dynamicCoursesHeight = (textScaler.scale(22) + textScaler.scale(14) + 60.0).clamp(_kCoursesHeaderHeight, 180.0);
                         final dynamicFunFactsHeight = (textScaler.scale(160) + 30.0).clamp(_kFunFactsHeight, 260.0);
                         return SliverPersistentHeader(
                           pinned: true,
@@ -537,48 +539,55 @@ class HomePage extends HookConsumerWidget {
                 duration: const Duration(milliseconds: 400),
                 opacity: isTransitioning.value ? 0.0 : 1.0,
                 child: Center(
-                  child: GestureDetector(
-                    onTap: () => context.push(AppRoutes.recording),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: GestureDetector(
+                      onTap: () => context.push(AppRoutes.recording),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
                         ),
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.starGold.withValues(alpha: 0.4),
-                            blurRadius: 18,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 4),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.auto_awesome,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.homeRecordLectureButton,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.starGold.withValues(alpha: 0.4),
+                              blurRadius: 18,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                l10n.homeRecordLectureButton,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -121,13 +121,17 @@ class _ProfileDetailItem extends StatelessWidget {
                 color: AppColors.starGold,
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.starGold,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

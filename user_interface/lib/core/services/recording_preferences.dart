@@ -109,4 +109,16 @@ class RecordingPreferences {
   Future<void> setHasSeenRecordingConsentNotice(bool value) async {
     await _prefs.setBool(_keyHasSeenRecordingConsentNotice, value);
   }
+
+  static const String _keyDeviceSetupPrefix = 'device_setup_completed_';
+
+  /// 既存ユーザーが新しい端末でログインした際、この端末で言語設定やマイク・通知の
+  /// 権限設定（新端末セットアップ）を完了したかどうか。
+  bool getHasCompletedDeviceSetup(String userId) {
+    return _prefs.getBool('$_keyDeviceSetupPrefix$userId') ?? false;
+  }
+
+  Future<void> setHasCompletedDeviceSetup(String userId, bool value) async {
+    await _prefs.setBool('$_keyDeviceSetupPrefix$userId', value);
+  }
 }

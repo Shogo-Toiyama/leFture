@@ -1034,6 +1034,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAccountIntroductionSubtitle => 'Replay introduction slides';
 
   @override
+  String get myAccountOnboardingTitle => 'Onboarding';
+
+  @override
+  String get myAccountOnboardingSubtitle => 'Revisit initial setup';
+
+  @override
   String get myAccountTutorialTitle => 'Tutorial';
 
   @override
@@ -1728,8 +1734,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get transcriptPageGeneratingMessage =>
-      'Transcript is being generated…';
+  String get transcriptPageGeneratingMessage => 'No transcript available.';
 
   @override
   String transcriptPageTopicLabel(int index) {
@@ -2584,6 +2589,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check out this lecture about the app!';
 
   @override
+  String get lectureViewerTutorialReviewCardsCallout =>
+      'Check out the Review Cards!';
+
+  @override
   String get editKeywordDialogTitle => 'Edit Keyword';
 
   @override
@@ -2603,4 +2612,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editKeywordCancelButton => 'Cancel';
+
+  @override
+  String get appGateMaintenanceTitle => 'Under Maintenance';
+
+  @override
+  String get appGateMaintenanceDefaultMessage =>
+      'We\'re currently performing server maintenance. Please try again in a little while.';
+
+  @override
+  String get appGateContinueButton => 'Continue';
+
+  @override
+  String get appGatePartialFeaturesUnavailableDisclaimer =>
+      'Some features may be unavailable';
+
+  @override
+  String get appGateUpdateTitle => 'Update Required';
+
+  @override
+  String get appGateUpdateDefaultMessage =>
+      'You\'re using an older version of the app. Some features may not work correctly. Please update to the latest version.';
+
+  @override
+  String get appGateUpdateButton => 'Update Now';
+
+  @override
+  String get appGateUpdateLaterButton => 'Later';
+
+  @override
+  String get appGateOpenStoreFailedSnackbar =>
+      'Couldn\'t open the App Store. Please update from the App Store app directly.';
+
+  @override
+  String get maintenanceBannerMessage =>
+      'Under maintenance — some features unavailable';
 }

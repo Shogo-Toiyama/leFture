@@ -53,23 +53,33 @@ class CoursePickerSheet extends HookConsumerWidget {
 
           // ヘッダー
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.coursePickerTitle,
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    l10n.coursePickerTitle,
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(
                     const CoursePickerResult(confirmed: false),
                   ),
-                  child: Text(l10n.coursePickerCancelButton, style: TextStyle(color: AppColors.universe.textComet)),
+                  child: Text(
+                    l10n.coursePickerCancelButton,
+                    style: TextStyle(
+                      color: AppColors.universe.textComet,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ],
             ),

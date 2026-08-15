@@ -586,14 +586,19 @@ class _HistorySection extends HookConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.creditDetailUsageHistoryTitle,
-                  style: const TextStyle(
-                    color: Color(0xFFF2F2F2),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    l10n.creditDetailUsageHistoryTitle,
+                    style: const TextStyle(
+                      color: Color(0xFFF2F2F2),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   l10n.creditDetailHourlySummaryLabel,
                   style: TextStyle(

@@ -16,7 +16,8 @@ class _ProfileQuestion {
     required this.subtitle,
     required this.hint,
     required this.controller,
-    required this.maxLines,
+    this.minLines = 4,
+    this.maxLines = 8,
     required this.required,
   });
 
@@ -24,6 +25,7 @@ class _ProfileQuestion {
   final String subtitle;
   final String hint;
   final TextEditingController controller;
+  final int minLines;
   final int maxLines;
   final bool required;
 }
@@ -59,7 +61,8 @@ class OnboardingProfileStep extends HookConsumerWidget {
         subtitle: l10n.onboardingProfileInterestsSubtitle,
         hint: l10n.makeProfileInterestsHint,
         controller: interestsCtl,
-        maxLines: 2,
+        minLines: 4,
+        maxLines: 8,
         required: false,
       ),
       _ProfileQuestion(
@@ -67,7 +70,8 @@ class OnboardingProfileStep extends HookConsumerWidget {
         subtitle: l10n.onboardingProfileDreamsSubtitle,
         hint: l10n.makeProfileFutureDreamsHint,
         controller: dreamsCtl,
-        maxLines: 2,
+        minLines: 4,
+        maxLines: 8,
         required: false,
       ),
       _ProfileQuestion(
@@ -75,7 +79,8 @@ class OnboardingProfileStep extends HookConsumerWidget {
         subtitle: l10n.onboardingProfileBioSubtitle,
         hint: l10n.makeProfileAboutYouHint,
         controller: bioCtl,
-        maxLines: 4,
+        minLines: 4,
+        maxLines: 8,
         required: true,
       ),
     ];
@@ -164,6 +169,7 @@ class OnboardingProfileStep extends HookConsumerWidget {
                   TextField(
                     key: ValueKey(qIndex.value),
                     controller: q.controller,
+                    minLines: q.minLines,
                     maxLines: q.maxLines,
                     style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14),
                     decoration: InputDecoration(

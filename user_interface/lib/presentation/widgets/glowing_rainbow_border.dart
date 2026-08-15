@@ -12,6 +12,7 @@ class GlowingRainbowBorder extends StatefulWidget {
     this.duration = const Duration(seconds: 10),
     this.innerGlow = true,
     this.glowOpacity = 0.4,
+    this.softEdges = false,
   });
 
   final Widget child;
@@ -22,6 +23,7 @@ class GlowingRainbowBorder extends StatefulWidget {
   final Duration duration;
   final bool innerGlow;
   final double glowOpacity;
+  final bool softEdges;
 
   @override
   State<GlowingRainbowBorder> createState() => _GlowingRainbowBorderState();
@@ -76,7 +78,7 @@ class _GlowingRainbowBorderState extends State<GlowingRainbowBorder>
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            // Glow layer (Outer or Inner depending on innerGlow config)
+            // Glow layer
             if (widget.glowRadius > 0)
               Positioned.fill(
                 child: CustomPaint(
@@ -90,11 +92,12 @@ class _GlowingRainbowBorderState extends State<GlowingRainbowBorder>
                     blurSigma: widget.glowRadius,
                     innerGlow: widget.innerGlow,
                     opacity: widget.glowOpacity,
+                    softEdges: widget.softEdges,
                   ),
                 ),
               ),
-            // Sharp border layer (Only painted when NOT in innerGlow mode)
-            if (!widget.innerGlow)
+            // Sharp border layer (Only painted when NOT in innerGlow mode AND NOT in softEdges mode)
+            if (!widget.innerGlow && !widget.softEdges)
               Positioned.fill(
                 child: CustomPaint(
                   painter: _RainbowGlowPainter(
@@ -104,6 +107,7 @@ class _GlowingRainbowBorderState extends State<GlowingRainbowBorder>
                     isGlow: false,
                     innerGlow: false,
                     opacity: 1.0,
+                    softEdges: false,
                   ),
                 ),
               ),
@@ -125,6 +129,7 @@ class _RainbowGlowPainter extends CustomPainter {
     this.blurSigma = 0.0,
     required this.innerGlow,
     required this.opacity,
+    this.softEdges = false,
   });
 
   final double animationValue;
@@ -134,6 +139,7 @@ class _RainbowGlowPainter extends CustomPainter {
   final double blurSigma;
   final bool innerGlow;
   final double opacity;
+  final bool softEdges;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -166,23 +172,25 @@ class _RainbowGlowPainter extends CustomPainter {
       paint.maskFilter = MaskFilter.blur(BlurStyle.normal, blurSigma);
     }
 
+    final shouldClip = innerGlow && !softEdges;
+
     if (borderRadius <= 0) {
-      if (innerGlow) {
+      if (shouldClip) {
         canvas.save();
         canvas.clipRect(rect);
       }
       canvas.drawRect(rect, paint);
-      if (innerGlow) {
+      if (shouldClip) {
         canvas.restore();
       }
     } else {
       final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
-      if (innerGlow) {
+      if (shouldClip) {
         canvas.save();
         canvas.clipRRect(rrect);
       }
       canvas.drawRRect(rrect, paint);
-      if (innerGlow) {
+      if (shouldClip) {
         canvas.restore();
       }
     }
@@ -196,6 +204,7 @@ class _RainbowGlowPainter extends CustomPainter {
         oldDelegate.isGlow != isGlow ||
         oldDelegate.blurSigma != blurSigma ||
         oldDelegate.innerGlow != innerGlow ||
-        oldDelegate.opacity != opacity;
+        oldDelegate.opacity != opacity ||
+        oldDelegate.softEdges != softEdges;
   }
 }

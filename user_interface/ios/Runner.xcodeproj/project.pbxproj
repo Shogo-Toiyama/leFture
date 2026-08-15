@@ -203,6 +203,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				A7525D762CE29EAE47BAADB5 /* [CP] Embed Pods Frameworks */,
 				D19FED1803DD3F3589FED6F2 /* [CP] Copy Pods Resources */,
+				BA66E94E03384EFFB12AB119 /* Set Build Number From Git Commit Count */,
 			);
 			buildRules = (
 			);
@@ -326,6 +327,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		BA66E94E03384EFFB12AB119 /* Set Build Number From Git Commit Count */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}",
+			);
+			name = "Set Build Number From Git Commit Count";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "COMMIT_COUNT=$(git -C \"${SRCROOT}\" rev-list --count HEAD 2>/dev/null)\nif [ -n \"$COMMIT_COUNT\" ]; then\n  PLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n  /usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $COMMIT_COUNT\" \"$PLIST\"\nfi\n";
 		};
 		A7525D762CE29EAE47BAADB5 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;

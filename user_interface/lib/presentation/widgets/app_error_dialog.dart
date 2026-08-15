@@ -1,6 +1,9 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
@@ -248,9 +251,32 @@ class AppErrorDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () {
+          onPressed: () async {
             Navigator.of(context).pop();
-            context.push(AppRoutes.contact);
+
+            final session = supabase.auth.currentSession;
+            if (session != null) {
+              context.push(AppRoutes.contact);
+            } else {
+              final subject = Uri.encodeComponent('[leFture Support] App Inquiry');
+              final body = Uri.encodeComponent(
+                'Hi leFture Support Team,\n\n'
+                '[Please describe your issue or inquiry here]\n\n'
+                '-----------------------------------------\n'
+                'Technical Details (for support team):\n'
+                '• Action: $actionName\n'
+                '• Error: $formattedError\n'
+                '• OS: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}\n'
+                '• Locale: ${Platform.localeName}\n'
+                '-----------------------------------------\n',
+              );
+              final mailUri = Uri.parse('mailto:support@lefture.com?subject=$subject&body=$body');
+              try {
+                await launchUrl(mailUri, mode: LaunchMode.externalApplication);
+              } catch (_) {
+                // メーラーが起動できない環境（シミュレータ等）でのフォールバック
+              }
+            }
           },
           child: Text(
             l10n.appErrorDialogContactSupport,

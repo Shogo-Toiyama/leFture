@@ -2,11 +2,14 @@
 
 import 'dart:io';
 
+import 'package:lefture/application/app_config/app_config_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/infrastructure/local_db/repositories/recording_repository_drift.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/application/sync/course_sync_service.dart';
+import 'package:lefture/application/sync/course_attribute_sync_service.dart';
 import 'package:lefture/application/sync/lecture_sync_service.dart';
 import 'package:lefture/application/sync/fun_fact_sync_service.dart';
 import 'package:lefture/application/sync/announcement_sync_service.dart';
@@ -47,6 +50,15 @@ part 'lecture_controller.g.dart';
 // 再度Pullし直してしまっていた。セッション中は保持し続けることでこれを防ぐ。
 @Riverpod(keepAlive: true)
 class LectureController extends _$LectureController {
+  /// [_runBootstrapLectures]内でPullするエンティティの数(下の`pulls`マップの
+  /// エントリ数と一致させる)。syncProgressProviderの母数をWelcomePage側からも
+  /// 参照できるよう、外に見える定数として切り出している。
+  static const int bootstrapPullCount = 12;
+
+  /// Pull(12件) + ローカル保守処理(1件)を合わせたbootstrap全体のステップ数。
+  /// WelcomePageはこれに自分自身の後続ステップ数を足して進捗バーの母数を作る。
+  static const int bootstrapStepCount = bootstrapPullCount + 1;
+
   @override
   FutureOr<void> build() {
     return null;
@@ -61,6 +73,7 @@ class LectureController extends _$LectureController {
   /// フェーズ2/3でFunFact/Announcement用のハンドラもここに追加していく。
   OutboxSyncService _outbox() {
     final db = ref.read(appDatabaseProvider);
+    final appConfig = ref.read(appConfigControllerProvider);
     return OutboxSyncService(db, {
       'lecture': LectureOutboxPushHandler(),
       'lecture_moment': LectureMomentOutboxPushHandler(),
@@ -70,7 +83,21 @@ class LectureController extends _$LectureController {
       'deep_note': DeepNoteOutboxPushHandler(),
       'keyword': KeywordOutboxPushHandler(),
       'user_profile': UserProfileOutboxPushHandler(),
-    });
+    }, syncBlocked: appConfig.isSyncBlocked);
+  }
+
+  /// コース一覧はローカルDB(Drift)のStreamをそのまま表示に使っているため、
+  /// オンラインでコースを作成/更新/削除/復元した直後は、次回の定期Pullを
+  /// 待たずにこれを呼んで即座にローカルへ反映させる(コース作成・編集・削除・
+  /// ゴミ箱からの復元の各画面から呼ぶ想定)。
+  Future<void> pullCoursesNow() async {
+    final db = ref.read(appDatabaseProvider);
+    try {
+      await CourseSyncService(db).pull();
+      await CourseAttributeSyncService(db).pull();
+    } catch (e, st) {
+      DevLog.add('⚠️ [LectureController] pullCoursesNow failed: $e\n$st');
+    }
   }
 
   // --- Sync / Bootstrap Logic ---
@@ -86,14 +113,21 @@ class LectureController extends _$LectureController {
   /// ほぼ同時に何度も呼んでも、実際のPullは1回しか走らない。
   Future<void>? _inFlightBootstrap;
 
-  Future<void> bootstrapLectures({bool forceFullPull = false, String reason = 'unspecified'}) async {
+  Future<void> bootstrapLectures({
+    bool forceFullPull = false,
+    String reason = 'unspecified',
+  }) async {
     // 診断用: どの呼び出し元が何回bootstrapLecturesを起動しているか追跡する
     // (LectureViewerPageで無限にPullし続けるバグの調査用に追加)。
-    DevLog.add('🔁 [LectureController] bootstrapLectures() called: reason=$reason forceFullPull=$forceFullPull');
+    DevLog.add(
+      '🔁 [LectureController] bootstrapLectures() called: reason=$reason forceFullPull=$forceFullPull',
+    );
 
     final inFlight = _inFlightBootstrap;
     if (inFlight != null) {
-      DevLog.add('⏳ [LectureController] bootstrapLectures() already in-flight (reason=$reason) — awaiting existing call');
+      DevLog.add(
+        '⏳ [LectureController] bootstrapLectures() already in-flight (reason=$reason) — awaiting existing call',
+      );
       await inFlight;
       return;
     }
@@ -115,8 +149,27 @@ class LectureController extends _$LectureController {
     // 失敗する(実際に発生していたバグ)。
     final link = ref.keepAlive();
     try {
+      // 呼び出し元(WelcomePage.initStateなど)がbootstrapIfNeeded()を
+      // awaitせず同期的に呼んだ場合、最初のawaitに到達するまでこの関数は
+      // 呼び出し元の同期呼び出しスタック(=ウィジェットのビルド中)の中で
+      // 実行され続けてしまう。その状態で下のProvider書き込み
+      // (syncProgressProvider.update等)を行うと、Riverpodの
+      // 「ビルド中にProviderを変更できない」エラーで即座に失敗し、
+      // 1件もPullしないまま_lastBootstrapAttemptAtだけ記録されてしまう
+      // (実際に発生していたバグ)。ここで一度イベントループへ制御を返し、
+      // 呼び出し元のビルドフェーズを確実に抜けてから処理を続ける。
+      await Future<void>.delayed(Duration.zero);
+
       _lastBootstrapAttemptAt = DateTime.now().toUtc();
       final db = ref.read(appDatabaseProvider);
+
+      // bootstrap全体(Pull分=bootstrapPullCount件+ローカル保守処理1件)を
+      // 通して母数を固定しておく。Pullループの途中で母数を変えると、保守処理に
+      // 入った瞬間にバーが後退して見えてしまうため、最初に一度だけ設定する。
+      ref
+          .read(syncProgressProvider.notifier)
+          .update(const SyncProgress(completed: 0, total: bootstrapStepCount));
+      var completedCount = 0;
 
       // オフライン時はネットワーク処理を試みない。ここでチェックせずに
       // 各Push/Pullをawaitすると、タイムアウトが発火するまで
@@ -132,35 +185,91 @@ class LectureController extends _$LectureController {
         // Pull対象のエンティティ一覧。1つの失敗が他を止めないよう、
         // それぞれ独立してtry/catchする。
         final pulls = <String, Future<void> Function()>{
+          'course': () =>
+              CourseSyncService(db).pull(forceFullPull: forceFullPull),
+          'course_attribute': () =>
+              CourseAttributeSyncService(db).pull(forceFullPull: forceFullPull),
           'lecture': () => _sync().pull(forceFullPull: forceFullPull),
-          'fun_fact': () => FunFactSyncService(db).pull(forceFullPull: forceFullPull),
-          'announcement': () => AnnouncementSyncService(db).pull(forceFullPull: forceFullPull),
-          'keyword': () => KeywordSyncService(db).pull(forceFullPull: forceFullPull),
-          'lecture_topic': () => LectureTopicSyncService(db).pull(forceFullPull: forceFullPull),
-          'review_card': () => ReviewCardSyncService(db).pull(forceFullPull: forceFullPull),
-          'deep_note': () => DeepNoteSyncService(db).pull(forceFullPull: forceFullPull),
-          'topic_map': () => TopicMapSyncService(db).pull(forceFullPull: forceFullPull),
+          'fun_fact': () =>
+              FunFactSyncService(db).pull(forceFullPull: forceFullPull),
+          'announcement': () =>
+              AnnouncementSyncService(db).pull(forceFullPull: forceFullPull),
+          'keyword': () =>
+              KeywordSyncService(db).pull(forceFullPull: forceFullPull),
+          'lecture_topic': () =>
+              LectureTopicSyncService(db).pull(forceFullPull: forceFullPull),
+          'review_card': () =>
+              ReviewCardSyncService(db).pull(forceFullPull: forceFullPull),
+          'deep_note': () =>
+              DeepNoteSyncService(db).pull(forceFullPull: forceFullPull),
+          'topic_map': () =>
+              TopicMapSyncService(db).pull(forceFullPull: forceFullPull),
           'user_profile': () => UserProfileSyncService(db).pull(),
+          // メンテナンス/強制アップデート状態も、どうせ通信しているこの
+          // タイミングに相乗りして確認する。新しいネットワーク往復を増やさずに
+          // 鮮度を上げるため — [AppLifecycleSyncWatcher]による起動時/バック
+          // グラウンド復帰時のチェックに加えて、Pull-to-Refreshのたびにも
+          // 反映されるようになる。
+          'app_config': () =>
+              ref.read(appConfigControllerProvider.notifier).refresh(),
         };
 
-        ref.read(syncProgressProvider.notifier).update(SyncProgress(completed: 0, total: pulls.length));
-        var completedCount = 0;
+        // pullsマップにエントリを足し引きしたのにbootstrapPullCountの更新を
+        // 忘れると、プログレスバーが100%未満で頭打ちになったり(実件数>定数)
+        // 逆に100%到達が早すぎたりする(実件数<定数)。デバッグビルドで検知する。
+        assert(
+          pulls.length == bootstrapPullCount,
+          'bootstrapPullCount ($bootstrapPullCount) はpullsマップの件数 '
+          '(${pulls.length}) と一致させてください。',
+        );
 
-        for (final entry in pulls.entries) {
-          try {
-            await entry.value();
-          } catch (e, st) {
-            DevLog.add('⚠️ [LectureController] ${entry.key} pull skipped: $e\n$st');
-          } finally {
-            completedCount++;
-            ref.read(syncProgressProvider.notifier).update(SyncProgress(
-              completed: completedCount,
-              total: pulls.length,
-            ));
-          }
-        }
+        // 各Pullはエンティティごとに別テーブル/別SyncCursor行にしか
+        // 書き込まず、互いの結果を読まないため並列実行しても安全
+        // (DriftはNativeDatabase側で全クエリを内部シリアライズするので、
+        // 同時にbatch()を呼んでも競合・デッドロックしない)。逐次awaitだと
+        // ネットワーク往復(12回)がそのまま合計待ち時間になっていたため、
+        // Future.waitで同時に走らせて最も遅い1回分の時間に短縮する。
+        await Future.wait(
+          pulls.entries.map((entry) async {
+            try {
+              await entry.value();
+            } catch (e, st) {
+              DevLog.add(
+                '⚠️ [LectureController] ${entry.key} pull skipped: $e\n$st',
+              );
+            } finally {
+              completedCount++;
+              ref
+                  .read(syncProgressProvider.notifier)
+                  .update(
+                    SyncProgress(
+                      completed: completedCount,
+                      total: bootstrapStepCount,
+                    ),
+                  );
+              DevLog.add(
+                '📊 [SyncProgress] ${entry.key} done: '
+                '$completedCount/$bootstrapStepCount '
+                '(${(completedCount / bootstrapStepCount * 100).toStringAsFixed(1)}%)',
+              );
+            }
+          }),
+        );
       } else {
-        DevLog.add('📴 [LectureController] Offline — skipping outbox push/pull.');
+        DevLog.add(
+          '📴 [LectureController] Offline — skipping outbox push/pull.',
+        );
+        // Pullを一切試みないので、Pull分(bootstrapPullCount件)は
+        // まとめて完了扱いにして保守処理のステップへ進む。
+        completedCount = bootstrapPullCount;
+        ref
+            .read(syncProgressProvider.notifier)
+            .update(
+              SyncProgress(
+                completed: completedCount,
+                total: bootstrapStepCount,
+              ),
+            );
       }
 
       // ローカル保守処理(30日超の論理削除の物理削除・キャッシュ容量のLRU剥がし)。
@@ -172,7 +281,24 @@ class LectureController extends _$LectureController {
           await LocalRetentionService(db).runMaintenance(uid);
         }
       } catch (e, st) {
-        DevLog.add('⚠️ [LectureController] Local retention maintenance skipped: $e\n$st');
+        DevLog.add(
+          '⚠️ [LectureController] Local retention maintenance skipped: $e\n$st',
+        );
+      } finally {
+        completedCount++;
+        ref
+            .read(syncProgressProvider.notifier)
+            .update(
+              SyncProgress(
+                completed: completedCount,
+                total: bootstrapStepCount,
+              ),
+            );
+        DevLog.add(
+          '📊 [SyncProgress] retention_maintenance done: '
+          '$completedCount/$bootstrapStepCount '
+          '(${(completedCount / bootstrapStepCount * 100).toStringAsFixed(1)}%)',
+        );
       }
     } finally {
       link.close();
@@ -190,7 +316,9 @@ class LectureController extends _$LectureController {
     _lastBootstrapAttemptAt = null;
   }
 
-  Future<void> bootstrapIfNeeded({Duration interval = const Duration(minutes: 15)}) async {
+  Future<void> bootstrapIfNeeded({
+    Duration interval = const Duration(minutes: 15),
+  }) async {
     if (supabase.auth.currentUser == null) return;
 
     // 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
@@ -242,13 +370,16 @@ class LectureController extends _$LectureController {
       // 分析が完了してしまう(エラーにならず静かに欠落する)。
       // ローカル行が無い場合(別端末で録音した講義など)はnullを渡し、
       // JobRepository側のフォールバックに委ねる。
-      final local =
-          await ref.read(recordingRepositoryDriftProvider).getLecture(lectureId);
+      final local = await ref
+          .read(recordingRepositoryDriftProvider)
+          .getLecture(lectureId);
       final expectedChunks = local == null
           ? null
           : (local.isRealtime == true ? (local.expectedChunks ?? 0) : 0);
 
-      await ref.read(jobRepositoryProvider).startAnalysis(
+      await ref
+          .read(jobRepositoryProvider)
+          .startAnalysis(
             lectureId: lectureId,
             force: force,
             expectedChunks: expectedChunks,
@@ -276,12 +407,20 @@ class LectureController extends _$LectureController {
     final link = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(recordingRepositoryDriftProvider).cancelPendingUploadsForLecture(lectureId);
+      await ref
+          .read(recordingRepositoryDriftProvider)
+          .cancelPendingUploadsForLecture(lectureId);
       try {
-        await ref.read(jobRepositoryProvider).cancelJobsForLecture(lectureId: lectureId);
-        DevLog.add('🛑 [LectureController] Server-side cancel-jobs call succeeded (upload stop): $lectureId');
+        await ref
+            .read(jobRepositoryProvider)
+            .cancelJobsForLecture(lectureId: lectureId);
+        DevLog.add(
+          '🛑 [LectureController] Server-side cancel-jobs call succeeded (upload stop): $lectureId',
+        );
       } catch (e) {
-        DevLog.add('⚠️ [LectureController] Server-side job cancel (upload stop) failed (best-effort): $e');
+        DevLog.add(
+          '⚠️ [LectureController] Server-side job cancel (upload stop) failed (best-effort): $e',
+        );
       }
     });
     link.close();
@@ -296,7 +435,9 @@ class LectureController extends _$LectureController {
     final link = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(recordingRepositoryDriftProvider).resumePendingUploadsForLecture(lectureId);
+      await ref
+          .read(recordingRepositoryDriftProvider)
+          .resumePendingUploadsForLecture(lectureId);
       ref.read(uploadManagerProvider).tryProcessQueue();
     });
     link.close();
@@ -312,7 +453,9 @@ class LectureController extends _$LectureController {
     try {
       final localPaths = await repo.getLectureAssetLocalPaths(lectureId);
       await repo.deleteLectureJobsAndAssets(lectureId);
-      DevLog.add('🛑 [LectureController] Local upload jobs cancelled: $lectureId');
+      DevLog.add(
+        '🛑 [LectureController] Local upload jobs cancelled: $lectureId',
+      );
 
       for (final path in localPaths) {
         try {
@@ -321,14 +464,18 @@ class LectureController extends _$LectureController {
             await file.delete();
           }
         } catch (e) {
-          DevLog.add('⚠️ [LectureController] Local audio cleanup failed ($path): $e');
+          DevLog.add(
+            '⚠️ [LectureController] Local audio cleanup failed ($path): $e',
+          );
         }
       }
     } catch (e, st) {
       // ここで失敗しても削除自体は続行する。ジョブが残ってしまっても、
       // UploadManager側がジョブ実行前にlecture.deletedAtを見て畳むので、
       // 削除済み講義へのアップロード・分析発火は二重に防がれている。
-      DevLog.add('⚠️ [LectureController] Failed to cancel local upload jobs: $e\n$st');
+      DevLog.add(
+        '⚠️ [LectureController] Failed to cancel local upload jobs: $e\n$st',
+      );
     }
   }
 
@@ -346,10 +493,14 @@ class LectureController extends _$LectureController {
 
     // チュートリアル講義は削除UI側で選択肢自体を出さないが、万一この関数が
     // 別経路から直接呼ばれても、ここで最終的にブロックする。
-    final currentLecture =
-        await ref.read(lectureRepositoryProvider).watchLectureById(lectureId).first;
+    final currentLecture = await ref
+        .read(lectureRepositoryProvider)
+        .watchLectureById(lectureId)
+        .first;
     if (currentLecture?.metadata?['is_tutorial'] == true) {
-      DevLog.add('🚫 [LectureController] Refused to delete tutorial lecture: $lectureId');
+      DevLog.add(
+        '🚫 [LectureController] Refused to delete tutorial lecture: $lectureId',
+      );
       return;
     }
 
@@ -368,8 +519,12 @@ class LectureController extends _$LectureController {
 
       // 1. Repository経由で論理削除 + Outbox登録
       // ※ lectureRepositoryProvider は lecture_list_provider.dart で定義されているはずです
-      await ref.read(lectureRepositoryProvider).softDeleteLecture(lectureId: lectureId);
-      DevLog.add('🗑️ [LectureController] Local soft-delete + outbox enqueue done: $lectureId');
+      await ref
+          .read(lectureRepositoryProvider)
+          .softDeleteLecture(lectureId: lectureId);
+      DevLog.add(
+        '🗑️ [LectureController] Local soft-delete + outbox enqueue done: $lectureId',
+      );
 
       // 1.5 サーバー側で進行中のパイプラインを止める(best-effort)。
       // これが無いと、削除後もタスクが走り続け、下のカスケード論理削除
@@ -380,10 +535,16 @@ class LectureController extends _$LectureController {
       // 動いていないか、次にオンラインになった時点でユーザーがゴミ箱から
       // 完全削除(hard-delete)すれば回収される。
       try {
-        await ref.read(jobRepositoryProvider).cancelJobsForLecture(lectureId: lectureId);
-        DevLog.add('🛑 [LectureController] Server-side jobs cancelled: $lectureId');
+        await ref
+            .read(jobRepositoryProvider)
+            .cancelJobsForLecture(lectureId: lectureId);
+        DevLog.add(
+          '🛑 [LectureController] Server-side jobs cancelled: $lectureId',
+        );
       } catch (e) {
-        DevLog.add('⚠️ [LectureController] Server-side job cancel failed (best-effort): $e');
+        DevLog.add(
+          '⚠️ [LectureController] Server-side job cancel failed (best-effort): $e',
+        );
       }
 
       // 2. 関連データをカスケードで論理削除する（都度Supabaseへ直接、best-effort）
@@ -392,23 +553,35 @@ class LectureController extends _$LectureController {
       //   後から同期されるので問題ないが、関連データの掃除は取りこぼれる)。
       try {
         await Future.wait([
-          ref.read(announcementRepositoryProvider).softDeleteForLecture(lectureId),
-          ref.read(reviewCardRepositoryProvider).softDeleteForLecture(lectureId),
+          ref
+              .read(announcementRepositoryProvider)
+              .softDeleteForLecture(lectureId),
+          ref
+              .read(reviewCardRepositoryProvider)
+              .softDeleteForLecture(lectureId),
           ref.read(funFactRepositoryProvider).softDeleteForLecture(lectureId),
-          ref.read(lectureTopicRepositoryProvider).softDeleteForLecture(lectureId),
+          ref
+              .read(lectureTopicRepositoryProvider)
+              .softDeleteForLecture(lectureId),
           ref.read(deepNoteRepositoryProvider).softDeleteForLecture(lectureId),
           ref.read(keywordRepositoryProvider).softDeleteForLecture(lectureId),
         ]);
       } catch (e, st) {
-        DevLog.add('⚠️ [LectureController] Cascade soft-delete of related data failed: $e\n$st');
+        DevLog.add(
+          '⚠️ [LectureController] Cascade soft-delete of related data failed: $e\n$st',
+        );
       }
 
       // 3. 即座に同期を試みる (失敗してもOutboxにあるのでOK)
       try {
         await _outbox().pushAll();
-        DevLog.add('🗑️ [LectureController] Outbox push after delete completed: $lectureId');
+        DevLog.add(
+          '🗑️ [LectureController] Outbox push after delete completed: $lectureId',
+        );
       } catch (e) {
-        DevLog.add('⚠️ [LectureController] Background push failed (queued in outbox): $e');
+        DevLog.add(
+          '⚠️ [LectureController] Background push failed (queued in outbox): $e',
+        );
       }
     });
     link.close();
@@ -430,7 +603,9 @@ class LectureController extends _$LectureController {
     final link = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await ref.read(lectureRepositoryProvider).updateLectureTitleAndCourse(
+      await ref
+          .read(lectureRepositoryProvider)
+          .updateLectureTitleAndCourse(
             lectureId: lectureId,
             title: title,
             courseId: courseId,
@@ -441,7 +616,9 @@ class LectureController extends _$LectureController {
       try {
         await _outbox().pushAll();
       } catch (e) {
-        DevLog.add('⚠️ [LectureController] Background push failed (queued in outbox): $e');
+        DevLog.add(
+          '⚠️ [LectureController] Background push failed (queued in outbox): $e',
+        );
       }
     });
     link.close();
@@ -455,7 +632,9 @@ class LectureController extends _$LectureController {
     try {
       await _outbox().pushAll();
     } catch (e) {
-      DevLog.add('⚠️ [LectureController] Background push failed (queued in outbox): $e');
+      DevLog.add(
+        '⚠️ [LectureController] Background push failed (queued in outbox): $e',
+      );
     } finally {
       link.close();
     }

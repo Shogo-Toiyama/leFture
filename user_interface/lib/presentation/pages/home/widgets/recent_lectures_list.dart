@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/application/profile/user_profile_provider.dart';
 import 'package:lefture/presentation/widgets/lecture_tile.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout.dart';
@@ -15,6 +16,9 @@ class RecentLecturesList extends ConsumerWidget {
     final lectures =
         ref.watch(allLecturesStreamProvider).asData?.value ?? const [];
     final courses = ref.watch(courseListProvider).asData?.value ?? const [];
+    final userProfile = ref.watch(currentUserProfileProvider).asData?.value;
+    final isTutorialCompleted =
+        userProfile?.metadata?['tutorial_completed_at'] != null;
     final courseCodeMap = {for (final c in courses) c.id: c.courseCode};
     final recent = lectures.take(10).toList();
 
@@ -23,10 +27,9 @@ class RecentLecturesList extends ConsumerWidget {
         final lecture = recent[index];
         final courseCode = courseCodeMap[lecture.courseId];
 
-        // 未開封のチュートリアル講義だけ、軽い誘導装飾を付ける。
-        // 「開封済みか」は lastAccessedAt の有無で判定(専用フラグ不要)。
-        final isUnopenedTutorial =
-            lecture.metadata?['is_tutorial'] == true && lecture.lastAccessedAt == null;
+        // チュートリアル未完了のチュートリアル講義だけ、軽い誘導装飾を付ける。
+        final isUncompletedTutorial =
+            lecture.metadata?['is_tutorial'] == true && !isTutorialCompleted;
 
         final tile = LectureTile(
           lecture: lecture,
@@ -50,7 +53,7 @@ class RecentLecturesList extends ConsumerWidget {
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: isUnopenedTutorial ? TutorialLectureCallout(child: tile) : tile,
+          child: isUncompletedTutorial ? TutorialLectureCallout(child: tile) : tile,
         );
       }, childCount: recent.length),
     );

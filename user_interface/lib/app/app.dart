@@ -9,7 +9,8 @@ import 'package:lefture/application/tutorial/tutorial_lecture_seed_provider.dart
 import 'package:lefture/presentation/pages/dev_tools/dev_log_overlay.dart';
 import 'package:lefture/presentation/pages/dev_tools/test_mode_flag.dart';
 import 'package:lefture/presentation/themes/app_theme.dart';
-import 'package:lefture/presentation/widgets/offline_banner.dart';
+import 'package:lefture/presentation/widgets/app_gate_overlay.dart';
+import 'package:lefture/presentation/widgets/status_banner.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
@@ -61,7 +62,9 @@ class MyApp extends ConsumerWidget {
           child: child,
         );
 
-        final wrapped = OfflineBanner(child: unfocusedChild);
+        final wrapped = AppGateOverlay(
+          child: StatusBanner(child: unfocusedChild),
+        );
         return isTestMode ? DevLogOverlay(child: wrapped) : wrapped;
       },
     );

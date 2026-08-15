@@ -9,21 +9,27 @@ part of 'app_lifecycle_sync_watcher.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// バックグラウンド復帰・オフライン→オンライン復帰を検知し、
-/// LectureControllerのdifferential pullを再発火させるウォッチャー。
+/// LectureControllerのdifferential pullと、AppConfig(メンテナンス/
+/// 強制アップデート状態)の再取得を再発火させるウォッチャー。
 ///
 /// これが無いと、Pull同期はUIイベント(Home画面表示・Pull-to-Refresh等)
 /// にしか駆動されず、アプリを開かないユーザーに対してサーバー側の変更が
-/// 届かない期間が任意に長くなってしまう。
+/// 届かない期間が任意に長くなってしまう。AppConfigについても同様に、
+/// Realtime購読のような常時接続を持たない代わりに、このタイミングで
+/// 定期的に最新状態を確認する。
 
 @ProviderFor(appLifecycleSyncWatcher)
 final appLifecycleSyncWatcherProvider = AppLifecycleSyncWatcherProvider._();
 
 /// バックグラウンド復帰・オフライン→オンライン復帰を検知し、
-/// LectureControllerのdifferential pullを再発火させるウォッチャー。
+/// LectureControllerのdifferential pullと、AppConfig(メンテナンス/
+/// 強制アップデート状態)の再取得を再発火させるウォッチャー。
 ///
 /// これが無いと、Pull同期はUIイベント(Home画面表示・Pull-to-Refresh等)
 /// にしか駆動されず、アプリを開かないユーザーに対してサーバー側の変更が
-/// 届かない期間が任意に長くなってしまう。
+/// 届かない期間が任意に長くなってしまう。AppConfigについても同様に、
+/// Realtime購読のような常時接続を持たない代わりに、このタイミングで
+/// 定期的に最新状態を確認する。
 
 final class AppLifecycleSyncWatcherProvider
     extends
@@ -34,11 +40,14 @@ final class AppLifecycleSyncWatcherProvider
         >
     with $Provider<AppLifecycleSyncWatcher> {
   /// バックグラウンド復帰・オフライン→オンライン復帰を検知し、
-  /// LectureControllerのdifferential pullを再発火させるウォッチャー。
+  /// LectureControllerのdifferential pullと、AppConfig(メンテナンス/
+  /// 強制アップデート状態)の再取得を再発火させるウォッチャー。
   ///
   /// これが無いと、Pull同期はUIイベント(Home画面表示・Pull-to-Refresh等)
   /// にしか駆動されず、アプリを開かないユーザーに対してサーバー側の変更が
-  /// 届かない期間が任意に長くなってしまう。
+  /// 届かない期間が任意に長くなってしまう。AppConfigについても同様に、
+  /// Realtime購読のような常時接続を持たない代わりに、このタイミングで
+  /// 定期的に最新状態を確認する。
   AppLifecycleSyncWatcherProvider._()
     : super(
         from: null,

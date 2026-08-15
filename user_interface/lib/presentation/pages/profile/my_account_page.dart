@@ -13,6 +13,7 @@ import 'package:lefture/application/debug/debug_providers.dart';
 import 'package:lefture/domain/entities/user_profile.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/profile/user_profile_provider.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/profile/widgets/change_email_sheet.dart';
 import 'package:lefture/presentation/pages/profile/widgets/change_password_sheet.dart';
@@ -486,13 +487,17 @@ class _ProfilePreviewTile extends StatelessWidget {
                       children: [
                         Icon(icon, size: 15, color: AppColors.starGold),
                         const SizedBox(width: 6),
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            color: AppColors.starGold,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.4,
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              color: AppColors.starGold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -799,27 +804,49 @@ class _ApplicationSection extends ConsumerWidget {
               }
             },
           ),
+          _Divider(),
           _ActivityTile(
             icon: Icons.auto_awesome_rounded,
             iconColor: AppColors.starGold,
-            iconBgColor: AppColors.starGold.withValues(alpha: 0.18),
+            iconBgColor: const Color(0xFFFFA000),
             title: l10n.myAccountIntroductionTitle,
             subtitle: l10n.myAccountIntroductionSubtitle,
             onTap: () {
               context.push(AppRoutes.introduction);
             },
           ),
+          _Divider(),
+          _ActivityTile(
+            icon: Icons.rocket_launch_rounded,
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFF03A9F4),
+            title: l10n.myAccountOnboardingTitle,
+            subtitle: l10n.myAccountOnboardingSubtitle,
+            onTap: () {
+              context.push(AppRoutes.onboarding);
+            },
+          ),
+          _Divider(),
           _ActivityTile(
             icon: Icons.school_rounded,
-            iconColor: const Color(0xFFB98BFF),
-            iconBgColor: const Color(0xFFB98BFF).withValues(alpha: 0.18),
+            iconColor: AppColors.starGold,
+            iconBgColor: const Color(0xFF9C27B0),
             title: l10n.myAccountTutorialTitle,
             subtitle: l10n.myAccountTutorialSubtitle,
-            onTap: () {
-              // TODO: point back at the coming-soon snackbar once the real
-              // tutorial exists — for now this previews the onboarding
-              // wizard (Tutorial → Permissions → Plan → Done).
-              context.push(AppRoutes.onboarding);
+            onTap: () async {
+              final uid = supabase.auth.currentUser?.id;
+              if (uid == null) return;
+              final db = ref.read(appDatabaseProvider);
+              final tut = await db.findTutorialLecture(uid);
+              if (tut != null && context.mounted) {
+                context.push('${AppRoutes.coursesRootPath}/c/${tut.courseId}/v/${tut.id}');
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.myAccountTutorialComingSoonSnackbar),
+                  ),
+                );
+              }
             },
           ),
         ],

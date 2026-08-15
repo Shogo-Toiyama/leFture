@@ -82,7 +82,8 @@ class LocalLectures extends Table {
   // 区別できるよう、courseIdとは別にこのフラグを持つ。
   // 削除の場合はcourseId自体がdeletedAt付きで残るので、このフラグは使わない
   // (courseIdとdeletedAtを見てremoveすればよい)。
-  BoolColumn get topicMapMovePending => boolean().withDefault(const Constant(false))();
+  BoolColumn get topicMapMovePending =>
+      boolean().withDefault(const Constant(false))();
   // 移動直前(上書きされる前)のcourseId。移動元が「コース未設定」だった場合はnull。
   TextColumn get pendingTopicMapStaleCourseId => text().nullable()();
 
@@ -91,8 +92,7 @@ class LocalLectures extends Table {
       boolean().withDefault(const Constant(true))();
 
   // リアルタイム文字起こしを行うかどうかの設定フラグ
-  BoolColumn get isRealtime =>
-      boolean().withDefault(const Constant(true))();
+  BoolColumn get isRealtime => boolean().withDefault(const Constant(true))();
 
   // 録音言語(ASRに明示的に渡す言語コード)。null = Whisperの自動言語判定に任せる。
   TextColumn get recordingLanguage => text().nullable()();
@@ -122,8 +122,7 @@ class LocalLectureAssets extends Table {
   TextColumn get storagePath => text().nullable()();
 
   // queued / uploading / uploaded / failed
-  TextColumn get uploadStatus =>
-      text().withDefault(const Constant('queued'))();
+  TextColumn get uploadStatus => text().withDefault(const Constant('queued'))();
 
   IntColumn get attemptCount => integer().withDefault(const Constant(0))();
   DateTimeColumn get nextRetryAt => dateTime().nullable()();
@@ -708,13 +707,15 @@ class AppDatabase extends _$AppDatabase {
   // --- User Profiles ---
 
   Stream<LocalUserProfile?> watchUserProfile(String id) {
-    return (select(localUserProfiles)..where((t) => t.id.equals(id)))
-        .watchSingleOrNull();
+    return (select(
+      localUserProfiles,
+    )..where((t) => t.id.equals(id))).watchSingleOrNull();
   }
 
   Future<LocalUserProfile?> getUserProfile(String id) {
-    return (select(localUserProfiles)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      localUserProfiles,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> upsertUserProfile(LocalUserProfilesCompanion companion) async {
@@ -726,7 +727,12 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<LocalLecture>> watchLectures(String userId, String? courseId) {
     final query = select(localLectures)
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
-      ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.lectureDatetime,
+          mode: OrderingMode.desc,
+        ),
+      ]);
 
     if (courseId == null) {
       query.where((t) => t.courseId.isNull());
@@ -742,7 +748,47 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<LocalLecture>> watchAllLectures(String userId) {
     final query = select(localLectures)
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
-      ..orderBy([(t) => OrderingTerm(expression: t.lectureDatetime, mode: OrderingMode.desc)]);
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.lectureDatetime,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    return query.watch();
+  }
+
+  /// ユーザーの全コースを監視する
+  Stream<List<LocalCourse>> watchCourses(String userId) {
+    final query = select(localCourses)
+      ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
+  /// コース紐付け用のアトリビュート(年度/学期/科目/学校/担当教員)を
+  /// タイプを問わず横断して監視する。呼び出し側でattributeTypeごとに
+  /// フィルタする(Course一覧表示側でid→表示名を引く用途と、
+  /// 作成フォームの候補一覧表示の両方から使うため)。
+  Future<List<LocalCourseAttribute>> getAllCourseAttributes(String userId) {
+    return (select(
+      localCourseAttributes,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())).get();
+  }
+
+  Stream<List<LocalCourseAttribute>> watchCourseAttributesByType(
+    String userId,
+    String attributeType,
+  ) {
+    final query = select(localCourseAttributes)
+      ..where(
+        (t) =>
+            t.userId.equals(userId) &
+            t.attributeType.equals(attributeType) &
+            t.deletedAt.isNull(),
+      )
+      ..orderBy([(t) => OrderingTerm(expression: t.attributeName)]);
     return query.watch();
   }
 
@@ -750,7 +796,9 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<LocalKeyword>> watchAllKeywords(String userId) {
     final query = select(localKeywords)
       ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())
-      ..orderBy([(t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc)]);
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+      ]);
     return query.watch();
   }
 
@@ -761,9 +809,9 @@ class AppDatabase extends _$AppDatabase {
     String? metadataJson,
   }) async {
     final now = DateTime.now().toUtc();
-    await (update(localKeywords)
-          ..where((t) => t.id.equals(id) & t.userId.equals(userId)))
-        .write(
+    await (update(
+      localKeywords,
+    )..where((t) => t.id.equals(id) & t.userId.equals(userId))).write(
       LocalKeywordsCompanion(
         metadataJson: Value(metadataJson),
         updatedAt: Value(now),
@@ -779,9 +827,9 @@ class AppDatabase extends _$AppDatabase {
     String? definition,
   }) async {
     final now = DateTime.now().toUtc();
-    await (update(localKeywords)
-          ..where((t) => t.id.equals(id) & t.userId.equals(userId)))
-        .write(
+    await (update(
+      localKeywords,
+    )..where((t) => t.id.equals(id) & t.userId.equals(userId))).write(
       LocalKeywordsCompanion(
         keyword: Value(keyword),
         definition: Value(definition ?? ''),
@@ -802,16 +850,18 @@ class AppDatabase extends _$AppDatabase {
   /// 無限re-pullループ)を引き起こしていた。LocalLectureは自動生成data class
   /// で値等価な== が実装済みなので、.distinct()だけで安全に抑制できる。
   Stream<LocalLecture?> watchLectureById(String lectureId) {
-    return (select(localLectures)..where((t) => t.id.equals(lectureId)))
-        .watchSingleOrNull()
-        .distinct();
+    return (select(
+      localLectures,
+    )..where((t) => t.id.equals(lectureId))).watchSingleOrNull().distinct();
   }
 
   /// 指定された [lectureId] がローカル専用のチュートリアル講義であるかを判定する。
   /// 講義行の metadataJson 内に `{"is_tutorial": true}` が含まれる場合は true を返す。
   Future<bool> isTutorialLecture(String? lectureId) async {
     if (lectureId == null || lectureId.isEmpty) return false;
-    final lecture = await (select(localLectures)..where((t) => t.id.equals(lectureId))).getSingleOrNull();
+    final lecture = await (select(
+      localLectures,
+    )..where((t) => t.id.equals(lectureId))).getSingleOrNull();
     if (lecture == null || lecture.metadataJson == null) return false;
     try {
       final decoded = jsonDecode(lecture.metadataJson!);
@@ -819,6 +869,22 @@ class AppDatabase extends _$AppDatabase {
     } catch (_) {
       return false;
     }
+  }
+
+  /// 指定された [userId] に属するチュートリアル講義行を取得する。
+  Future<LocalLecture?> findTutorialLecture(String userId) async {
+    final rows = await (select(
+      localLectures,
+    )..where((t) => t.userId.equals(userId))).get();
+
+    for (final row in rows) {
+      if (row.metadataJson == null) continue;
+      try {
+        final decoded = jsonDecode(row.metadataJson!);
+        if (decoded is Map && decoded['is_tutorial'] == true) return row;
+      } catch (_) {}
+    }
+    return null;
   }
 
   // --- Outbox ---
@@ -831,17 +897,21 @@ class AppDatabase extends _$AppDatabase {
     required String op,
     String? payloadJson,
   }) async {
-    await into(localOutbox).insert(LocalOutboxCompanion.insert(
-      entityType: entityType,
-      entityId: entityId,
-      op: op,
-      payloadJson: Value(payloadJson),
-    ));
+    await into(localOutbox).insert(
+      LocalOutboxCompanion.insert(
+        entityType: entityType,
+        entityId: entityId,
+        op: op,
+        payloadJson: Value(payloadJson),
+      ),
+    );
   }
 
   Future<List<LocalOutboxData>> dequeueBatch({int limit = 50}) async {
     return (select(localOutbox)
-          ..orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc)])
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc),
+          ])
           ..limit(limit))
         .get();
   }
@@ -851,10 +921,15 @@ class AppDatabase extends _$AppDatabase {
   Future<List<LocalOutboxData>> dequeuePendingOutbox({int limit = 50}) async {
     final now = DateTime.now().toUtc();
     return (select(localOutbox)
-          ..where((t) =>
-              t.givenUp.equals(false) &
-              (t.nextRetryAt.isNull() | t.nextRetryAt.isSmallerThanValue(now)))
-          ..orderBy([(t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc)])
+          ..where(
+            (t) =>
+                t.givenUp.equals(false) &
+                (t.nextRetryAt.isNull() |
+                    t.nextRetryAt.isSmallerThanValue(now)),
+          )
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.id, mode: OrderingMode.asc),
+          ])
           ..limit(limit))
         .get();
   }
@@ -867,7 +942,9 @@ class AppDatabase extends _$AppDatabase {
     String error, {
     int maxAttempts = 10,
   }) async {
-    final row = await (select(localOutbox)..where((t) => t.id.equals(id))).getSingleOrNull();
+    final row = await (select(
+      localOutbox,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return;
 
     final nextAttempt = row.attemptCount + 1;
@@ -884,8 +961,13 @@ class AppDatabase extends _$AppDatabase {
     }
 
     const maxBackoffSeconds = 5 * 60;
-    final delaySeconds = min(30 * pow(2, nextAttempt - 1).toInt(), maxBackoffSeconds);
-    final nextRetryAt = DateTime.now().toUtc().add(Duration(seconds: delaySeconds));
+    final delaySeconds = min(
+      30 * pow(2, nextAttempt - 1).toInt(),
+      maxBackoffSeconds,
+    );
+    final nextRetryAt = DateTime.now().toUtc().add(
+      Duration(seconds: delaySeconds),
+    );
 
     await (update(localOutbox)..where((t) => t.id.equals(id))).write(
       LocalOutboxCompanion(
@@ -922,17 +1004,20 @@ class AppDatabase extends _$AppDatabase {
   /// Pull処理が、まだPushできていないローカルの変更をサーバーの古い値で
   /// 上書きしてしまわないようにするためのガード用。
   Future<Set<String>> getPendingOutboxEntityIds(String entityType) async {
-    final rows = await (select(localOutbox)
-          ..where((t) => t.entityType.equals(entityType) & t.givenUp.equals(false)))
-        .get();
+    final rows =
+        await (select(localOutbox)..where(
+              (t) => t.entityType.equals(entityType) & t.givenUp.equals(false),
+            ))
+            .get();
     return rows.map((r) => r.entityId).toSet();
   }
 
   // --- Sync Cursors ---
 
   Future<LocalSyncCursor?> getSyncCursor(String userId, String entityType) {
-    return (select(localSyncCursors)
-          ..where((t) => t.userId.equals(userId) & t.entityType.equals(entityType)))
+    return (select(localSyncCursors)..where(
+          (t) => t.userId.equals(userId) & t.entityType.equals(entityType),
+        ))
         .getSingleOrNull();
   }
 
@@ -972,8 +1057,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> setLecturePinned(String lectureId, bool pinned) async {
-    await (update(localLectures)..where((t) => t.id.equals(lectureId)))
-        .write(LocalLecturesCompanion(isPinned: Value(pinned)));
+    await (update(localLectures)..where((t) => t.id.equals(lectureId))).write(
+      LocalLecturesCompanion(isPinned: Value(pinned)),
+    );
   }
 
   // --- ASR model usage (LRU退避判定用) ---
@@ -981,27 +1067,31 @@ class AppDatabase extends _$AppDatabase {
   /// 指定groupKeyのASRモデルで実際にエンジンが起動成功したタイミングで呼ぶ。
   /// 行が存在しない(退避等で既に削除済み)場合は何もしない。
   Future<void> touchAsrModelUsed(String groupKey) async {
-    await (update(localAsrModels)..where((t) => t.groupKey.equals(groupKey))).write(
+    await (update(
+      localAsrModels,
+    )..where((t) => t.groupKey.equals(groupKey))).write(
       LocalAsrModelsCompanion(lastUsedAt: Value(DateTime.now().toUtc())),
     );
   }
 
   Future<List<String>> getPinnedLectureIds(String userId) async {
-    final rows = await (select(localLectures)
-          ..where((t) => t.userId.equals(userId) & t.isPinned.equals(true)))
-        .get();
+    final rows = await (select(
+      localLectures,
+    )..where((t) => t.userId.equals(userId) & t.isPinned.equals(true))).get();
     return rows.map((r) => r.id).toList();
   }
 
   Future<List<LocalLecture>> getLecturesByIds(String userId, List<String> ids) {
     if (ids.isEmpty) return Future.value(const []);
-    return (select(localLectures)
-          ..where((t) => t.userId.equals(userId) & t.id.isIn(ids)))
-        .get();
+    return (select(
+      localLectures,
+    )..where((t) => t.userId.equals(userId) & t.id.isIn(ids))).get();
   }
 
   Future<List<LocalLectureAsset>> getAssetsForLecture(String lectureId) {
-    return (select(localLectureAssets)..where((t) => t.lectureId.equals(lectureId))).get();
+    return (select(
+      localLectureAssets,
+    )..where((t) => t.lectureId.equals(lectureId))).get();
   }
 
   // --- 30日ハードデリート ---
@@ -1010,12 +1100,13 @@ class AppDatabase extends _$AppDatabase {
     required String userId,
     required DateTime olderThan,
   }) {
-    return (select(localLectures)
-          ..where((t) =>
+    return (select(localLectures)..where(
+          (t) =>
               t.userId.equals(userId) &
               t.deletedAt.isNotNull() &
               t.deletedAt.isSmallerThanValue(olderThan) &
-              t.syncStatus.equals('synced')))
+              t.syncStatus.equals('synced'),
+        ))
         .get();
   }
 
@@ -1024,16 +1115,36 @@ class AppDatabase extends _$AppDatabase {
   /// メソッドの呼び出し側(LocalRetentionService)で事前に削除しておくこと。
   Future<void> hardDeleteLectureCascade(String lectureId) async {
     await transaction(() async {
-      await (delete(localLectureAssets)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localUploadJobs)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localCacheEntries)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localLectureMoments)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localFunFacts)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localReviewCards)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localDeepNotes)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localKeywords)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localLectureTopics)..where((t) => t.lectureId.equals(lectureId))).go();
-      await (delete(localAnnouncements)..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localLectureAssets,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localUploadJobs,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localCacheEntries,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localLectureMoments,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localFunFacts,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localReviewCards,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localDeepNotes,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localKeywords,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localLectureTopics,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
+      await (delete(
+        localAnnouncements,
+      )..where((t) => t.lectureId.equals(lectureId))).go();
       await (delete(localLectures)..where((t) => t.id.equals(lectureId))).go();
     });
   }
@@ -1058,19 +1169,28 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  Future<void> deleteCacheEntry({required String id, required String userId}) async {
-    await (delete(localCacheEntries)
-          ..where((t) => t.id.equals(id) & t.userId.equals(userId)))
-        .go();
+  Future<void> deleteCacheEntry({
+    required String id,
+    required String userId,
+  }) async {
+    await (delete(
+      localCacheEntries,
+    )..where((t) => t.id.equals(id) & t.userId.equals(userId))).go();
   }
 
   Future<List<LocalCacheEntry>> getAllCacheEntries(String userId) {
-    return (select(localCacheEntries)..where((t) => t.userId.equals(userId))).get();
+    return (select(
+      localCacheEntries,
+    )..where((t) => t.userId.equals(userId))).get();
   }
 
-  Future<List<LocalCacheEntry>> getCacheEntriesForLecture(String userId, String lectureId) {
-    return (select(localCacheEntries)
-          ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+  Future<List<LocalCacheEntry>> getCacheEntriesForLecture(
+    String userId,
+    String lectureId,
+  ) {
+    return (select(localCacheEntries)..where(
+          (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+        ))
         .get();
   }
 
@@ -1082,23 +1202,29 @@ class AppDatabase extends _$AppDatabase {
     required String lectureId,
   }) async {
     await transaction(() async {
-      await (delete(localCacheEntries)
-            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+      await (delete(localCacheEntries)..where(
+            (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
           .go();
-      await (delete(localFunFacts)
-            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+      await (delete(localFunFacts)..where(
+            (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
           .go();
-      await (delete(localReviewCards)
-            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+      await (delete(localReviewCards)..where(
+            (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
           .go();
-      await (delete(localDeepNotes)
-            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+      await (delete(localDeepNotes)..where(
+            (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
           .go();
-      await (delete(localKeywords)
-            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+      await (delete(localKeywords)..where(
+            (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
           .go();
-      await (delete(localLectureTopics)
-            ..where((t) => t.userId.equals(userId) & t.lectureId.equals(lectureId)))
+      await (delete(localLectureTopics)..where(
+            (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
           .go();
     });
   }
@@ -1106,49 +1232,55 @@ class AppDatabase extends _$AppDatabase {
   // --- Activity Records & Trash Helper Methods ---
 
   Stream<List<LocalReviewCard>> watchAllReviewCards(String userId) {
-    return (select(localReviewCards)
-          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
-        .watch();
+    return (select(
+      localReviewCards,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())).watch();
   }
 
   Stream<List<LocalDeepNote>> watchAllDeepNotes(String userId) {
-    return (select(localDeepNotes)
-          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
-        .watch();
+    return (select(
+      localDeepNotes,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())).watch();
   }
 
   Stream<List<LocalFunFact>> watchAllFunFacts(String userId) {
-    return (select(localFunFacts)
-          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
-        .watch();
+    return (select(
+      localFunFacts,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())).watch();
   }
 
   Stream<List<LocalAnnouncement>> watchAllAnnouncements(String userId) {
-    return (select(localAnnouncements)
-          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
-        .watch();
+    return (select(
+      localAnnouncements,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())).watch();
   }
 
   Stream<List<LocalLecture>> watchTrashLectures(String userId) {
     return (select(localLectures)
           ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull())
-          ..orderBy([(t) => OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc)]))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc),
+          ]))
         .watch();
   }
 
   Stream<List<LocalAnnouncement>> watchTrashAnnouncements(String userId) {
     return (select(localAnnouncements)
           ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull())
-          ..orderBy([(t) => OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc)]))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc),
+          ]))
         .watch();
   }
 
   Future<void> hardDeleteTrashLectures(String userId) async {
     await transaction(() async {
       // Find all lecture IDs in trash to cascade delete assets/caches
-      final trashLectures = await (select(localLectures)
-            ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull()))
-          .get();
+      final trashLectures = await (select(
+        localLectures,
+      )..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull())).get();
 
       for (final lecture in trashLectures) {
         await hardDeleteLectureCascade(lecture.id);
@@ -1159,9 +1291,9 @@ class AppDatabase extends _$AppDatabase {
   Future<void> hardDeleteCourseCascade(String courseId) async {
     await transaction(() async {
       // 配下の講義IDを取得してカスケード削除
-      final lectures = await (select(localLectures)
-            ..where((t) => t.courseId.equals(courseId)))
-          .get();
+      final lectures = await (select(
+        localLectures,
+      )..where((t) => t.courseId.equals(courseId))).get();
       for (final lecture in lectures) {
         await hardDeleteLectureCascade(lecture.id);
       }
@@ -1171,15 +1303,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> hardDeleteTrashAnnouncements(String userId) async {
-    await (delete(localAnnouncements)
-          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull()))
-        .go();
+    await (delete(
+      localAnnouncements,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNotNull())).go();
   }
 
   Stream<List<LocalLectureTopic>> watchAllLectureTopics(String userId) {
-    return (select(localLectureTopics)
-          ..where((t) => t.userId.equals(userId) & t.deletedAt.isNull()))
-        .watch();
+    return (select(
+      localLectureTopics,
+    )..where((t) => t.userId.equals(userId) & t.deletedAt.isNull())).watch();
   }
 }
 

@@ -591,14 +591,10 @@ class _CourseLectureListView extends ConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 840),
-              child: RefreshIndicator(
-                color: AppColors.starGold,
-                onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
-                child: CustomScrollView(
+          child: RefreshIndicator(
+            color: AppColors.starGold,
+            onRefresh: () => _handleRefresh(context, ref, courseId: courseId),
+            child: CustomScrollView(
               slivers: [
                 // 1. AppBar Area
                 const SliverToBoxAdapter(
@@ -1035,8 +1031,6 @@ class _CourseLectureListView extends ConsumerWidget {
           ),
         ),
       ),
-    ),
-    ),
     ),
     floatingActionButton: FloatingActionButton.extended(
       backgroundColor: AppColors.starGold,

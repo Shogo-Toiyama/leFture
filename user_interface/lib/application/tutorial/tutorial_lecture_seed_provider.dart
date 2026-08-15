@@ -8,6 +8,8 @@ import 'package:lefture/application/tutorial/tutorial_lecture_seed_service.dart'
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
 
+import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
+
 part 'tutorial_lecture_seed_provider.g.dart';
 
 /// ログイン中ユーザーに、既定コース(本物のSupabase同期コース)とチュートリアル
@@ -26,6 +28,7 @@ Future<void> tutorialLectureSeed(Ref ref) async {
 
   final languageCode = ref.watch(displayLanguageControllerProvider);
   final courseRepo = ref.watch(courseRepositoryProvider);
+  final userProfileRepo = ref.watch(userProfileRepositoryProvider);
 
   final courseId = await DefaultCourseService(courseRepo).ensureDefaultCourse(
     defaultCourseTitle: TutorialLectureSeedService.defaultCourseTitle(languageCode),
@@ -33,10 +36,13 @@ Future<void> tutorialLectureSeed(Ref ref) async {
   );
   if (courseId == null) return;
 
+  final hasCompletedTutorial = await userProfileRepo.hasCompletedTutorial();
+
   final db = ref.watch(appDatabaseProvider);
   await TutorialLectureSeedService(db).seedIfNeeded(
     userId: user.id,
     displayLanguageCode: languageCode,
     courseId: courseId,
+    hasCompletedTutorial: hasCompletedTutorial,
   );
 }

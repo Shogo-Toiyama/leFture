@@ -37,6 +37,9 @@ import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/application/lecture_viewer/pipeline_reveal_sync.dart';
 import 'package:lefture/domain/entities/processing_task.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/lecture_overlay_card.dart';
+import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
+import 'package:lefture/application/profile/user_profile_provider.dart';
+import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/pipeline_progress_banner.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/reveal.dart';
 
@@ -295,6 +298,11 @@ class _LectureViewerBody extends HookConsumerWidget {
       course?.color,
       fallback: AppColors.starGold,
     );
+
+    final userProfile = ref.watch(currentUserProfileProvider).asData?.value;
+    final isTutorialCompleted = userProfile?.metadata?['tutorial_completed_at'] != null;
+    final isTutorial = lecture.metadata?['is_tutorial'] == true;
+    final showReviewCardsTutorialCallout = isTutorial && !isTutorialCompleted;
 
     // --- 「完成した要素から出していく」演出のための状態計算 -----------------
     //
@@ -582,13 +590,30 @@ class _LectureViewerBody extends HookConsumerWidget {
                           child: RevealSwitcher(
                             reveal: reviewCardsReveal,
                             locked: const ShimmerBox(height: 96, borderRadius: 18),
-                            ready: _LargeNavigatorCard(
-                              icon: Icons.style_outlined,
-                              title: l10n.lectureViewerReviewCardsTitle,
-                              onTap: () => context.push(
-                                '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0',
-                              ),
-                            ),
+                            ready: () {
+                              final card = _LargeNavigatorCard(
+                                icon: Icons.style_outlined,
+                                title: l10n.lectureViewerReviewCardsTitle,
+                                onTap: () {
+                                  if (isTutorial && !isTutorialCompleted) {
+                                    ref.read(userProfileRepositoryProvider).markTutorialCompleted();
+                                  }
+                                  context.push(
+                                    '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/rcv/${lecture.id}?index=0',
+                                  );
+                                },
+                              );
+                              if (showReviewCardsTutorialCallout) {
+                                return TutorialLectureCallout(
+                                  message: l10n.lectureViewerTutorialReviewCardsCallout,
+                                  borderRadius: 16,
+                                  badgeTop: -14,
+                                  badgeRight: 8,
+                                  child: card,
+                                );
+                              }
+                              return card;
+                            }(),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -732,23 +757,17 @@ class _LectureViewerBody extends HookConsumerWidget {
         ),
       ),
       child: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 840),
-            child: Column(
-              children: [
-                const CustomAppBar(showHomeButton: true),
-                Expanded(
-                  child: FullScreenRevealBlur(
-                    active: !hasAnyReady,
-                    overlay: LectureOverlayCard(lecture: lecture, uiState: uiState),
-                    child: blurredBody,
-                  ),
-                ),
-              ],
+        child: Column(
+          children: [
+            const CustomAppBar(showHomeButton: true),
+            Expanded(
+              child: FullScreenRevealBlur(
+                active: !hasAnyReady,
+                overlay: LectureOverlayCard(lecture: lecture, uiState: uiState),
+                child: blurredBody,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1249,12 +1268,16 @@ class _EditKeywordSheet extends HookConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.editKeywordDialogTitle,
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    l10n.editKeywordDialogTitle,
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(

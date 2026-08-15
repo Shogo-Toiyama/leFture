@@ -421,32 +421,51 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       return locateFromReviewCardRange(card, range);
     }
 
+    // 選択範囲が複数ブロックにまたがっていても良い版のlocateSelection()。
+    // AnnotationはblockIdxを1つしか持てないため、またぐ選択はブロックごとに
+    // 分割し、それぞれ独立したAnnotationとして保存/消去する(見た目上は
+    // 1つの範囲として繋がって見える)。
+    List<TextLocation> locateSelectionBlocks() {
+      final card = flatItems[index].card;
+      if (card == null || !selectionListenerNotifier.registered) return const [];
+      final range = selectionListenerNotifier.selection.range;
+      if (range == null) return const [];
+      return locateBlocksFromReviewCardRange(card, range);
+    }
+
     Future<void> commitHighlight(String mode) async {
       final card = flatItems[index].card;
-      final located = locateSelection();
-      if (card == null || located == null) return;
+      final locatedBlocks = locateSelectionBlocks();
+      if (card == null || locatedBlocks.isEmpty) return;
       final repo = widgetRef.read(reviewCardRepositoryDriftProvider);
       if (mode == 'eraser') {
-        final blockText = reviewCardBlockPlainText(
-          card.cardContent[located.blockIdx!],
-        );
-        await repo.eraseHighlightRange(
-          cardId: card.id,
-          blockIdx: located.blockIdx,
-          startIdx: located.startIdx,
-          endIdx: located.endIdx,
-          blockText: blockText,
-        );
+        for (final located in locatedBlocks) {
+          final blockText = reviewCardBlockPlainText(
+            card.cardContent[located.blockIdx!],
+          );
+          await repo.eraseHighlightRange(
+            cardId: card.id,
+            blockIdx: located.blockIdx,
+            startIdx: located.startIdx,
+            endIdx: located.endIdx,
+            blockText: blockText,
+          );
+        }
       } else {
-        await repo.addAnnotation(
-          cardId: card.id,
-          blockIdx: located.blockIdx,
-          startIdx: located.startIdx,
-          endIdx: located.endIdx,
-          annotationType: 'highlight',
-          annotatedWords: selectedText.value!,
-          contents: {'type': mode, 'color': colorToHex(highlightColor.value)},
-        );
+        for (final located in locatedBlocks) {
+          final blockText = reviewCardBlockPlainText(
+            card.cardContent[located.blockIdx!],
+          );
+          await repo.addAnnotation(
+            cardId: card.id,
+            blockIdx: located.blockIdx,
+            startIdx: located.startIdx,
+            endIdx: located.endIdx,
+            annotationType: 'highlight',
+            annotatedWords: blockText.substring(located.startIdx, located.endIdx),
+            contents: {'type': mode, 'color': colorToHex(highlightColor.value)},
+          );
+        }
       }
       widgetRef.read(lectureControllerProvider.notifier).pushOutboxNow();
       selectionAreaKey.currentState?.selectableRegion.clearSelection();
@@ -1348,12 +1367,16 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          AppLocalizations.of(context).reviewCardsViewerListSheetTitle,
-                          style: TextStyle(
-                            color: AppColors.paper.textInk,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            AppLocalizations.of(context).reviewCardsViewerListSheetTitle,
+                            style: TextStyle(
+                              color: AppColors.paper.textInk,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         IconButton(
@@ -1465,28 +1488,26 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          if (card.heroEmoji
-                                                  ?.trim()
-                                                  .isNotEmpty ==
-                                              true) ...[
+                                          if (card.heroEmoji?.trim().isNotEmpty == true) ...[
                                             Text(
                                               card.heroEmoji!.trim(),
-                                              style: const TextStyle(
-                                                fontSize: 26,
-                                              ),
+                                              style: const TextStyle(fontSize: 24),
                                             ),
-                                            const SizedBox(height: 6),
+                                            const SizedBox(height: 4),
                                           ],
-                                          Text(
-                                            preview,
-                                            style: TextStyle(
-                                              color: AppColors.paper.textInk,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
+                                          Flexible(
+                                            child: Text(
+                                              preview,
+                                              style: TextStyle(
+                                                color: AppColors.paper.textInk,
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w500,
+                                                height: 1.25,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              maxLines: card.heroEmoji?.trim().isNotEmpty == true ? 3 : 4,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 4,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ),

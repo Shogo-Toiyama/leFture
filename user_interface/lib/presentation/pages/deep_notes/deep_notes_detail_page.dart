@@ -896,12 +896,16 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          AppLocalizations.of(context).deepNotesDetailListSheetTitle,
-                          style: TextStyle(
-                            color: AppColors.paper.textInk,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            AppLocalizations.of(context).deepNotesDetailListSheetTitle,
+                            style: TextStyle(
+                              color: AppColors.paper.textInk,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         IconButton(

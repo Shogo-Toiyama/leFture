@@ -23,6 +23,7 @@ import 'package:lefture/presentation/pages/reset_password/reset_password_page.da
 import 'package:lefture/presentation/pages/legal/legal_document_page.dart';
 import 'package:lefture/presentation/pages/welcome/welcome_page.dart';
 import 'package:lefture/presentation/pages/onboarding/onboarding_page.dart';
+import 'package:lefture/presentation/pages/onboarding/device_setup_page.dart';
 import 'package:lefture/presentation/pages/home/home_page.dart';
 import 'package:lefture/presentation/pages/recording/recording_page.dart';
 import 'package:lefture/presentation/pages/learning_galaxy/learning_galaxy_page.dart';
@@ -271,6 +272,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           DevLog.add('[Router] redirecting to AppRoutes.onboarding');
           return AppRoutes.onboarding;
         }
+
+        // 4. オンボーディング完了済みだが、この端末でのセットアップ（言語設定・権限）が
+        //    未完了の新端末の場合、セットアップ画面へ誘導する。
+        //    （WelcomePageはアニメーションを楽しむため素通しする）
+        final uid = session.user.id;
+        final deviceSetupCompleted =
+            RecordingPreferences().getHasCompletedDeviceSetup(uid);
+        if (!deviceSetupCompleted &&
+            path != AppRoutes.deviceSetup &&
+            path != AppRoutes.welcome) {
+          DevLog.add('[Router] redirecting to AppRoutes.deviceSetup');
+          return AppRoutes.deviceSetup;
+        }
       }
 
       // ★ 保存ロジックも削除しました。シンプル！
@@ -367,6 +381,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboarding,
         pageBuilder: (context, state) =>
             _fadePage(state, const OnboardingPage()),
+      ),
+      GoRoute(
+        path: AppRoutes.deviceSetup,
+        pageBuilder: (context, state) =>
+            _fadePage(state, const DeviceSetupPage()),
       ),
 
       // =================================================================

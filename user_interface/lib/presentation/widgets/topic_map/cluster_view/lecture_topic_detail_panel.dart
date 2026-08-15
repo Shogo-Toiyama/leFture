@@ -180,7 +180,8 @@ class LectureTopicDetailPanel extends StatelessWidget {
                     GestureDetector(
                       onTap: onGoToLecture,
                       child: Container(
-                        height: 46,
+                        constraints: const BoxConstraints(minHeight: 46),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(colors: [AppColors.starGold, Color(0xFFFFD700)]),
                           borderRadius: BorderRadius.circular(23),
@@ -197,12 +198,16 @@ class LectureTopicDetailPanel extends StatelessWidget {
                           children: [
                             Icon(Icons.play_circle_fill, color: AppColors.universe.voidBackground, size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              'Go to this Lecture',
-                              style: TextStyle(
-                                color: AppColors.universe.voidBackground,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                'Go to this Lecture',
+                                style: TextStyle(
+                                  color: AppColors.universe.voidBackground,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

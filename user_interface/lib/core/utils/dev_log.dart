@@ -20,14 +20,18 @@ class DevLog {
   static final ValueNotifier<List<String>> lines = ValueNotifier<List<String>>([]);
 
   static void add(String message) {
-    developer.log(message);
-
     final now = DateTime.now();
     String two(int n) => n.toString().padLeft(2, '0');
     final timestamp = '${two(now.hour)}:${two(now.minute)}:${two(now.second)}';
     final line = '$timestamp $message';
 
-    debugPrint('[DevLog] $line');
+    // debugPrint()は名前に反してRelease/Profileビルドでも出力されてしまう
+    // (assertで保護された処理ではないため)。端末の実ログ(adb logcat /
+    // Xcode Console)にuidなどの内部情報が残らないよう、Debugビルドに限定する。
+    if (kDebugMode) {
+      developer.log(message);
+      debugPrint('[DevLog] $line');
+    }
 
     final updated = [...lines.value, line];
     if (updated.length > maxLines) {

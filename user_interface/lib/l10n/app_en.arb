@@ -1679,6 +1679,16 @@
     "description": "Subtitle under the App Introduction tile on the My Account page."
   },
 
+  "myAccountOnboardingTitle": "Onboarding",
+  "@myAccountOnboardingTitle": {
+    "description": "Tile title on the My Account page to revisit onboarding flow."
+  },
+
+  "myAccountOnboardingSubtitle": "Revisit initial setup",
+  "@myAccountOnboardingSubtitle": {
+    "description": "Subtitle under the Onboarding tile on the My Account page."
+  },
+
   "myAccountTutorialTitle": "Tutorial",
   "@myAccountTutorialTitle": {
     "description": "Tile title on the My Account page for interactive app tutorial."
@@ -2831,9 +2841,9 @@
     }
   },
 
-  "transcriptPageGeneratingMessage": "Transcript is being generated…",
+  "transcriptPageGeneratingMessage": "No transcript available.",
   "@transcriptPageGeneratingMessage": {
-    "description": "Message shown in place of the transcript list on the Transcript page when the transcript request succeeded but returned no sentences yet, meaning generation is still in progress."
+    "description": "Message shown in place of the transcript list on the Transcript page when no transcript sentences are available."
   },
 
   "transcriptPageTopicLabel": "Topic {index}",
@@ -3954,6 +3964,10 @@
   "@homeTutorialCalloutMessage": {
     "description": "One-time callout bubble pointing at the tutorial lecture card on the home screen, shown only until it's opened for the first time."
   },
+  "lectureViewerTutorialReviewCardsCallout": "Check out the Review Cards!",
+  "@lectureViewerTutorialReviewCardsCallout": {
+    "description": "One-time callout bubble pointing at the Review Cards button in the tutorial lecture viewer, shown until review cards are opened."
+  },
   "editKeywordDialogTitle": "Edit Keyword",
   "@editKeywordDialogTitle": {
     "description": "Title of the dialog for editing a keyword and definition"
@@ -3981,5 +3995,55 @@
   "editKeywordCancelButton": "Cancel",
   "@editKeywordCancelButton": {
     "description": "Cancel button text in the keyword edit dialog"
+  },
+
+  "appGateMaintenanceTitle": "Under Maintenance",
+  "@appGateMaintenanceTitle": {
+    "description": "Title of the full-screen overlay shown when the app is in maintenance mode (server-side kill switch)."
+  },
+
+  "appGateMaintenanceDefaultMessage": "We're currently performing server maintenance. Please try again in a little while.",
+  "@appGateMaintenanceDefaultMessage": {
+    "description": "Fallback body text for the maintenance overlay, used when no custom message is configured on the backend."
+  },
+
+  "appGateContinueButton": "Continue",
+  "@appGateContinueButton": {
+    "description": "Button on the maintenance/update-required overlay that dismisses it for the rest of this session."
+  },
+
+  "appGatePartialFeaturesUnavailableDisclaimer": "Some features may be unavailable",
+  "@appGatePartialFeaturesUnavailableDisclaimer": {
+    "description": "Small disclaimer line below the Continue/Later button indicating that some features might not be available."
+  },
+
+  "appGateUpdateTitle": "Update Required",
+  "@appGateUpdateTitle": {
+    "description": "Title of the full-screen overlay shown when the installed app version is older than the backend's minimum supported version."
+  },
+
+  "appGateUpdateDefaultMessage": "You're using an older version of the app. Some features may not work correctly. Please update to the latest version.",
+  "@appGateUpdateDefaultMessage": {
+    "description": "Fallback body text for the update-required overlay, used when no custom message is configured on the backend."
+  },
+
+  "appGateUpdateButton": "Update Now",
+  "@appGateUpdateButton": {
+    "description": "Primary button on the update-required overlay, opens the App Store listing."
+  },
+
+  "appGateUpdateLaterButton": "Later",
+  "@appGateUpdateLaterButton": {
+    "description": "Secondary button on the update-required overlay, dismisses it for the rest of this session without updating."
+  },
+
+  "appGateOpenStoreFailedSnackbar": "Couldn't open the App Store. Please update from the App Store app directly.",
+  "@appGateOpenStoreFailedSnackbar": {
+    "description": "Snackbar shown when tapping the update-required overlay's Update button fails to launch the App Store URL."
+  },
+
+  "maintenanceBannerMessage": "Under maintenance — some features unavailable",
+  "@maintenanceBannerMessage": {
+    "description": "Persistent top banner shown (in place of the offline banner) while the device is online but the app is in maintenance mode and the user has dismissed the full-screen maintenance overlay to keep browsing. Reminds them why some features aren't working, without falsely claiming they're offline."
   }
 }

@@ -10,6 +10,8 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
@@ -32,10 +34,18 @@ class WelcomePage extends ConsumerStatefulWidget {
   ConsumerState<WelcomePage> createState() => _WelcomePageState();
 }
 
+/// WelcomePage自身が追加で待つステップ数(コース一覧の初回ロード・
+/// 講義一覧の初回ロードの2件)。LectureController.bootstrapStepCount
+/// (Pull+ローカル保守処理)と合わせて、プログレスバーの母数にする。
+const _kExtraPreloadSteps = 2;
+const _kTotalPreloadSteps =
+    LectureController.bootstrapStepCount + _kExtraPreloadSteps;
+
 class _WelcomePageState extends ConsumerState<WelcomePage> {
   late final Future<void> _preloadFuture;
   Timer? _progressDisplayTimer;
   bool _showProgressBar = false;
+  int _extraCompleted = 0;
 
   @override
   void initState() {
@@ -49,6 +59,12 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       Duration(milliseconds: widget.revealTiming.impactEndMs + 1000),
       () {
         if (mounted) {
+          DevLog.add(
+            '📊 [WelcomePage] progress bar shown. '
+            'syncProgress=${ref.read(syncProgressProvider).completed}'
+            '/${ref.read(syncProgressProvider).total} '
+            'extraCompleted=$_extraCompleted/$_kExtraPreloadSteps',
+          );
           setState(() => _showProgressBar = true);
         }
       },
@@ -89,6 +105,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       //    タイムアウトを設け、万が一今後また同様の問題が起きても
       //    ホームへの遷移自体は止めない。
       final lecturesCompleter = Completer<void>();
+      final coursesCompleter = Completer<void>();
       // fireImmediately:true の場合、Providerに既に値がキャッシュされていると
       // (keepAlive化後の2回目以降のWelcome表示など)、コールバックは
       // listenManual呼び出しの「最中」に同期的に発火する。そのためlate final
@@ -112,17 +129,62 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       );
       if (lecturesReady) lecturesSubscription.close();
 
+      // courseListProviderも同じくkeepAlive化したStreamProviderなので、
+      // ref.read(provider.future)ではなくlecturesと同じlistenManual方式で
+      // 確実に購読を開始する(以前はref.read(.future)のままで、Homeが
+      // ref.watchするまで購読が始まらず初回値が8秒のタイムアウトいっぱいまで
+      // 来ない、という不具合が実際に起きていた)。
+      ProviderSubscription<AsyncValue<List<Course>>>? coursesSubscription;
+      var coursesReady = false;
+      void onCoursesValue() {
+        if (!coursesCompleter.isCompleted) coursesCompleter.complete();
+        coursesReady = true;
+        coursesSubscription?.close();
+      }
+
+      coursesSubscription = ref.listenManual<AsyncValue<List<Course>>>(
+        courseListProvider,
+        (previous, next) {
+          if (next.hasValue || next.hasError) onCoursesValue();
+        },
+        fireImmediately: true,
+      );
+      if (coursesReady) coursesSubscription.close();
+
       await Future.wait<void>([
-        ref.read(courseListProvider.future).then((_) {}),
-        lecturesCompleter.future,
+        coursesCompleter.future.then((_) => _bumpExtraProgress()),
+        lecturesCompleter.future.then((_) => _bumpExtraProgress()),
       ]).timeout(const Duration(seconds: 8), onTimeout: () => const []);
     } catch (_) {
       // 万が一のネットワークエラー時でもアニメーション完了後の遷移を阻害しない
     }
   }
 
+  /// コース一覧/講義一覧の初回ロードが1つ終わるたびに呼ぶ。
+  /// LectureController側のbootstrapステップと合わせて、プログレスバーの
+  /// 進捗が実際の待ち時間の終わり(=ホームへの遷移直前)でちょうど100%に
+  /// なるようにする。
+  void _bumpExtraProgress() {
+    if (!mounted) return;
+    setState(() => _extraCompleted++);
+    DevLog.add(
+      '📊 [WelcomePage] extra step done: $_extraCompleted/$_kExtraPreloadSteps',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bootstrapProgress = ref.watch(syncProgressProvider);
+    final overallCompleted = bootstrapProgress.completed + _extraCompleted;
+    final overallFraction =
+        (overallCompleted / _kTotalPreloadSteps).clamp(0.0, 1.0);
+    DevLog.add(
+      '📊 [WelcomePage] build: bootstrap=${bootstrapProgress.completed}'
+      '/${bootstrapProgress.total} extra=$_extraCompleted'
+      '/$_kExtraPreloadSteps overall=$overallCompleted'
+      '/$_kTotalPreloadSteps fraction=${(overallFraction * 100).toStringAsFixed(1)}%',
+    );
+
     return MediaQuery.withNoTextScaling(
       child: Scaffold(
         backgroundColor: AppColors.universe.voidBackground,
@@ -144,7 +206,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
               child: AnimatedOpacity(
                 opacity: _showProgressBar ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 600),
-                child: StardustProgressBar(visible: _showProgressBar),
+                child: StardustProgressBar(
+                  visible: _showProgressBar,
+                  fraction: overallFraction,
+                ),
               ),
             ),
           ],
@@ -1054,16 +1119,22 @@ class _BurstPainter extends CustomPainter {
 }
 
 /// 宇宙のゴールドグラデーションと先端の光粒（グロー）で滑らかに進捗を描画する極細スリムバー
-class StardustProgressBar extends ConsumerWidget {
-  const StardustProgressBar({super.key, required this.visible});
+class StardustProgressBar extends StatelessWidget {
+  const StardustProgressBar({
+    super.key,
+    required this.visible,
+    required this.fraction,
+  });
 
   final bool visible;
 
+  /// 呼び出し元(WelcomePage)が算出した、プリロード全体に対する進捗(0.0〜1.0)。
+  final double fraction;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final syncProgress = ref.watch(syncProgressProvider);
+  Widget build(BuildContext context) {
     // 出現前（visible == false）は常に0.0。出現した瞬間に0.0から現在の進捗値へスムーズにアニメーション開始
-    final targetFraction = visible ? syncProgress.fraction : 0.0;
+    final targetFraction = visible ? fraction : 0.0;
 
     return Center(
       child: ConstrainedBox(

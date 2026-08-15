@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_done_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_intro_step.dart';
@@ -40,12 +42,20 @@ class OnboardingPage extends HookConsumerWidget {
     useEffect(() {
       if (step.value == _totalSteps - 1) {
         ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
+        final uid = supabase.auth.currentUser?.id;
+        if (uid != null) {
+          RecordingPreferences().setHasCompletedDeviceSetup(uid, true);
+        }
       }
       return null;
     }, [step.value]);
 
     Future<void> finish() async {
       await ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
+      final uid = supabase.auth.currentUser?.id;
+      if (uid != null) {
+        await RecordingPreferences().setHasCompletedDeviceSetup(uid, true);
+      }
       if (context.mounted) context.go(AppRoutes.home);
     }
 

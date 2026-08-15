@@ -349,7 +349,7 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
 
     if (widget.isLoading) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -362,11 +362,15 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              l10n.audioPlayerBarDownloadingMessage,
-              style: TextStyle(
-                color: AppColors.paper.textPencil,
-                fontSize: 13,
+            Flexible(
+              child: Text(
+                l10n.audioPlayerBarDownloadingMessage,
+                style: TextStyle(
+                  color: AppColors.paper.textPencil,
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

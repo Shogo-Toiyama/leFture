@@ -227,7 +227,9 @@ class UserProfileRepositorySupabase {
   }
 
   static const _onboardingCompletedMetadataKey = 'onboarding_completed_at';
+  static const _tutorialCompletedMetadataKey = 'tutorial_completed_at';
   bool? _cachedOnboardingCompleted;
+  bool? _cachedTutorialCompleted;
 
   /// 初回オンボーディング(プロフィール設定・Recording Language・Realtime
   /// Recording ON/OFF)を完了済みかどうか。ローカルにプロフィール行が
@@ -275,6 +277,37 @@ class UserProfileRepositorySupabase {
     return completed;
   }
 
+  /// チュートリアル講義を完了（閲覧済み）かどうか。
+  Future<bool> hasCompletedTutorial() async {
+    if (_cachedTutorialCompleted == true) {
+      return true;
+    }
+
+    final uid = _requireUid();
+    var existing = await _db.getUserProfile(uid);
+    if (existing?.metadataJson == null) {
+      try {
+        await getCurrentProfile().timeout(const Duration(seconds: 6));
+      } catch (_) {}
+      existing = await _db.getUserProfile(uid);
+    }
+    if (existing?.metadataJson == null) {
+      return false;
+    }
+    try {
+      final metadata = Map<String, dynamic>.from(
+        jsonDecode(existing!.metadataJson!) as Map,
+      );
+      final completed = metadata[_tutorialCompletedMetadataKey] != null;
+      if (completed) {
+        _cachedTutorialCompleted = true;
+      }
+      return completed;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// オンボーディング完了をmetadataにマージして記録し、サーバーにも同期する。
   Future<void> markOnboardingCompleted() async {
     _cachedOnboardingCompleted = true;
@@ -319,5 +352,43 @@ class UserProfileRepositorySupabase {
       entityId: uid,
       op: 'update',
     );
+  }
+
+  /// チュートリアル閲覧完了をmetadataにマージして記録し、サーバーにも同期する。
+  Future<void> markTutorialCompleted() async {
+    _cachedTutorialCompleted = true;
+    final uid = _requireUid();
+
+    try {
+      await getCurrentProfile();
+    } catch (_) {}
+
+    final existing = await _db.getUserProfile(uid);
+    final metadata = existing?.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
+        : <String, dynamic>{};
+    
+    // 既に記録済みの場合は余計なOutbox登録をスキップ
+    if (metadata[_tutorialCompletedMetadataKey] != null) return;
+
+    metadata[_tutorialCompletedMetadataKey] = DateTime.now()
+        .toUtc()
+        .toIso8601String();
+
+    // 既存のオンボーディング情報やユーザープロフィール各カラムを保護しつつ、metadataJsonのみをマージ更新
+    await _db.upsertUserProfile(
+      LocalUserProfilesCompanion(
+        id: Value(uid),
+        metadataJson: Value(jsonEncode(metadata)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.enqueueOutbox(
+      entityType: 'user_profile',
+      entityId: uid,
+      op: 'update',
+    );
+    DevLog.add('🎓 [UserProfileRepo] Marked tutorial_completed_at and enqueued to outbox');
   }
 }

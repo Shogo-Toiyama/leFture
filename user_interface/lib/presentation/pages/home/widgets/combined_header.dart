@@ -11,56 +11,59 @@ class CoursesHeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Courses >
-        InkWell(
-          onTap: () => context.push(AppRoutes.coursesRootPath),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 10, 24, 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    l10n.homeCoursesSectionTitle,
-                    style: TextStyle(
-                      color: AppColors.starGold,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Courses >
+          InkWell(
+            onTap: () => context.push(AppRoutes.coursesRootPath),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      l10n.homeCoursesSectionTitle,
+                      style: TextStyle(
+                        color: AppColors.starGold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right,
-                  color: AppColors.starGold,
-                  size: 24,
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    color: AppColors.starGold,
+                    size: 24,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        // Recent Lectures
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 2, 24, 6),
-          child: Text(
-            l10n.homeRecentLecturesSectionTitle,
-            style: TextStyle(
-              color: AppColors.universe.textComet,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-              fontSize: 12,
+          // Recent Lectures
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 2, 24, 4),
+            child: Text(
+              l10n.homeRecentLecturesSectionTitle,
+              style: TextStyle(
+                color: AppColors.universe.textComet,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

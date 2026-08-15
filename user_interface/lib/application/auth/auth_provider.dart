@@ -289,9 +289,25 @@ class AuthController extends _$AuthController {
     } on SignInWithAppleAuthorizationException catch (e) {
       if (!ref.mounted) return;
       // ユーザーによる明示的なキャンセルはエラー扱いにしない
-      state = e.code == AuthorizationErrorCode.canceled
+      // ※ iOSの ASAuthorizationError.canceled (code 1000) がプラグイン側で
+      // AuthorizationErrorCode.unknown として返されることがあるため、
+      // エラーコードおよびメッセージ内容の両方でキャンセル判定を行う。
+      final isCanceled = e.code == AuthorizationErrorCode.canceled ||
+          e.message.contains('1000') ||
+          e.message.toLowerCase().contains('canceled') ||
+          e.message.toLowerCase().contains('cancelled');
+      state = isCanceled
           ? const AsyncData(null)
           : AsyncError(e, StackTrace.current);
+    } catch (e, st) {
+      if (!ref.mounted) return;
+      final msg = e.toString().toLowerCase();
+      final isCanceled = msg.contains('1000') ||
+          msg.contains('canceled') ||
+          msg.contains('cancelled');
+      state = isCanceled
+          ? const AsyncData(null)
+          : AsyncError(e, st);
     }
   }
 

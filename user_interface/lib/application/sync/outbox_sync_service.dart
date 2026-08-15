@@ -16,12 +16,24 @@ abstract class OutboxPushHandler {
 /// entityTypeごとに登録された[OutboxPushHandler]へディスパッチする、
 /// 汎用的なOutbox送信処理。
 class OutboxSyncService {
-  OutboxSyncService(this._db, this._handlers);
+  OutboxSyncService(this._db, this._handlers, {this.syncBlocked = false});
 
   final AppDatabase _db;
   final Map<String, OutboxPushHandler> _handlers;
 
+  /// メンテナンス中・強制アップデートが必要な間は、サーバーの
+  /// データ契約(スキーマ)が信頼できないため、書き込み同期を止める。
+  /// ローカル閲覧自体は妨げない([AppConfig.isSyncBlocked]を参照)。
+  final bool syncBlocked;
+
   Future<void> pushAll() async {
+    if (syncBlocked) {
+      DevLog.add(
+        '⏸️ [Outbox] Skipped push: sync is currently blocked (maintenance or update required)',
+      );
+      return;
+    }
+
     final rows = await _db.dequeuePendingOutbox();
     if (rows.isEmpty) return;
 
@@ -30,18 +42,27 @@ class OutboxSyncService {
     for (final row in rows) {
       final handler = _handlers[row.entityType];
       if (handler == null) {
-        DevLog.add('⚠️ [Outbox] No handler registered for entityType=${row.entityType} (outbox #${row.id})');
-        await _db.recordOutboxFailure(row.id, 'No handler registered for entityType ${row.entityType}');
+        DevLog.add(
+          '⚠️ [Outbox] No handler registered for entityType=${row.entityType} (outbox #${row.id})',
+        );
+        await _db.recordOutboxFailure(
+          row.id,
+          'No handler registered for entityType ${row.entityType}',
+        );
         continue;
       }
 
       try {
         await handler.push(_db, row.entityId);
         await _db.deleteOutboxIds([row.id]);
-        DevLog.add('✅ [Outbox] Pushed #${row.id} (entityType=${row.entityType}, entity=${row.entityId})');
+        DevLog.add(
+          '✅ [Outbox] Pushed #${row.id} (entityType=${row.entityType}, entity=${row.entityId})',
+        );
       } catch (e) {
         await _db.recordOutboxFailure(row.id, e.toString());
-        DevLog.add('❌ [Outbox] Failed to push #${row.id} (entityType=${row.entityType}, entity=${row.entityId}): $e');
+        DevLog.add(
+          '❌ [Outbox] Failed to push #${row.id} (entityType=${row.entityType}, entity=${row.entityId}): $e',
+        );
       }
     }
   }

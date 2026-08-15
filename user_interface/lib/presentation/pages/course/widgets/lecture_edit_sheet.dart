@@ -24,6 +24,7 @@ class LectureEditSheet extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final isTutorial = lecture.metadata?['is_tutorial'] == true;
     final titleCtl = useTextEditingController(
       text: lecture.title ?? '',
     );
@@ -39,7 +40,7 @@ class LectureEditSheet extends HookConsumerWidget {
       final title = titleCtl.text.trim();
       final courseId = selectedCourseId.value;
 
-      if (courseId != lecture.courseId) {
+      if (!isTutorial && courseId != lecture.courseId) {
         // 所属コースの変更を警告する
         final confirm = await showCustomDialog(
           context: context,
@@ -57,8 +58,8 @@ class LectureEditSheet extends HookConsumerWidget {
       try {
         await ref.read(lectureControllerProvider.notifier).updateLecture(
               lectureId: lecture.id,
-              title: title.isEmpty ? null : title,
-              courseId: courseId,
+              title: isTutorial ? lecture.title : (title.isEmpty ? null : title),
+              courseId: isTutorial ? lecture.courseId : courseId,
               previousCourseId: lecture.courseId,
               lectureDatetime: selectedDateTime.value,
             );
@@ -164,23 +165,27 @@ class LectureEditSheet extends HookConsumerWidget {
               ),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () async {
-                  final result = await showModalBottomSheet<CoursePickerResult>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => CoursePickerSheet(
-                      initialSelectedCourseId: selectedCourseId.value,
-                    ),
-                  );
-                  if (result != null && result.confirmed) {
-                    selectedCourseId.value = result.courseId;
-                  }
-                },
+                onTap: isTutorial
+                    ? null
+                    : () async {
+                        final result = await showModalBottomSheet<CoursePickerResult>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => CoursePickerSheet(
+                            initialSelectedCourseId: selectedCourseId.value,
+                          ),
+                        );
+                        if (result != null && result.confirmed) {
+                          selectedCourseId.value = result.courseId;
+                        }
+                      },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.universe.glassWhiteLow,
+                    color: isTutorial
+                        ? AppColors.universe.glassWhiteLow.withValues(alpha: 0.03)
+                        : AppColors.universe.glassWhiteLow,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.universe.glassBorder),
                   ),
@@ -222,7 +227,11 @@ class LectureEditSheet extends HookConsumerWidget {
                                 Expanded(
                                   child: Text(
                                     selectedCourse.displayTitle,
-                                    style: TextStyle(color: AppColors.universe.textStarlight),
+                                    style: TextStyle(
+                                      color: isTutorial
+                                          ? AppColors.universe.textStarlight.withValues(alpha: 0.7)
+                                          : AppColors.universe.textStarlight,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -232,7 +241,11 @@ class LectureEditSheet extends HookConsumerWidget {
                           },
                         ),
                       ),
-                      Icon(Icons.arrow_drop_down, color: AppColors.universe.textComet),
+                      Icon(
+                        isTutorial ? Icons.lock_outline_rounded : Icons.arrow_drop_down,
+                        color: AppColors.universe.textComet.withValues(alpha: isTutorial ? 0.6 : 1.0),
+                        size: isTutorial ? 18 : 24,
+                      ),
                     ],
                   ),
                 ),
@@ -302,7 +315,12 @@ class LectureEditSheet extends HookConsumerWidget {
               // 3. Title Field
               TextField(
                 controller: titleCtl,
-                style: TextStyle(color: AppColors.universe.textStarlight),
+                readOnly: isTutorial,
+                style: TextStyle(
+                  color: isTutorial
+                      ? AppColors.universe.textStarlight.withValues(alpha: 0.7)
+                      : AppColors.universe.textStarlight,
+                ),
                 decoration: InputDecoration(
                   labelText: l10n.lectureEditSheetTitleFieldLabel,
                   hintText: lecture.titleGenerated?.trim().isNotEmpty == true
@@ -312,15 +330,23 @@ class LectureEditSheet extends HookConsumerWidget {
                   hintStyle: TextStyle(
                     color: AppColors.universe.textComet.withValues(alpha: 0.5),
                   ),
-                  prefixIcon: Icon(Icons.title, color: AppColors.universe.textComet),
+                  prefixIcon: Icon(
+                    isTutorial ? Icons.lock_outline_rounded : Icons.title,
+                    color: AppColors.universe.textComet.withValues(alpha: isTutorial ? 0.6 : 1.0),
+                    size: isTutorial ? 18 : 22,
+                  ),
                   filled: true,
-                  fillColor: AppColors.universe.glassWhiteLow,
+                  fillColor: isTutorial
+                      ? AppColors.universe.glassWhiteLow.withValues(alpha: 0.03)
+                      : AppColors.universe.glassWhiteLow,
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: AppColors.universe.glassBorder),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: AppColors.starGold),
+                    borderSide: BorderSide(
+                      color: isTutorial ? AppColors.universe.glassBorder : AppColors.starGold,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),

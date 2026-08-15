@@ -9,9 +9,22 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
 class TutorialLectureCallout extends StatefulWidget {
-  const TutorialLectureCallout({super.key, required this.child});
+  const TutorialLectureCallout({
+    super.key,
+    required this.child,
+    this.message,
+    this.borderRadius = 18,
+    this.badgeTop = -14,
+    this.badgeRight = 16,
+    this.badgeLeft,
+  });
 
   final Widget child;
+  final String? message;
+  final double borderRadius;
+  final double badgeTop;
+  final double? badgeRight;
+  final double? badgeLeft;
 
   @override
   State<TutorialLectureCallout> createState() => _TutorialLectureCalloutState();
@@ -43,7 +56,7 @@ class _TutorialLectureCalloutState extends State<TutorialLectureCallout>
             final glow = 0.3 + (_controller.value * 0.5);
             return Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(widget.borderRadius),
                 border: Border.all(
                   color: AppColors.starGold.withValues(alpha: glow),
                   width: 2,
@@ -62,8 +75,9 @@ class _TutorialLectureCalloutState extends State<TutorialLectureCallout>
           child: widget.child,
         ),
         Positioned(
-          top: -14,
-          right: 16,
+          top: widget.badgeTop,
+          right: widget.badgeRight,
+          left: widget.badgeLeft,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -74,7 +88,7 @@ class _TutorialLectureCalloutState extends State<TutorialLectureCallout>
               ],
             ),
             child: Text(
-              l10n.homeTutorialCalloutMessage,
+              widget.message ?? l10n.homeTutorialCalloutMessage,
               style: const TextStyle(
                 color: Colors.black,
                 fontSize: 11,

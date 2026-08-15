@@ -18,6 +18,8 @@ class AppRoutes {
   // Onboarding (初回サインアップ直後、プロフィール・Recording Language・
   // Realtime Recording設定を必須で行わせる画面)
   static const onboarding = '/onboarding';
+  // 新端末セットアップ (既存ユーザーが新端末でログインした際の言語設定・権限許可)
+  static const deviceSetup = '/device_setup';
 
   // Main
   static const home = '/home'; // Dashboard (宇宙のコックピット)

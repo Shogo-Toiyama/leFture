@@ -79,6 +79,7 @@ class TutorialLectureSeedService {
     required String userId,
     required String displayLanguageCode,
     required String courseId,
+    bool hasCompletedTutorial = false,
   }) async {
     try {
       await _cleanupOrphanedLocalTutorialCourses(userId);
@@ -101,6 +102,7 @@ class TutorialLectureSeedService {
         final needsCourseBackfill = existing.courseId != courseId;
         final needsLanguageUpdate = existing.displayLanguage != displayLanguageCode;
         final needsVersionUpdate = existingVersion < kTutorialVersion;
+        final needsAccessedBackfill = hasCompletedTutorial && existing.lastAccessedAt == null;
 
         if (needsLanguageUpdate || needsVersionUpdate) {
           DevLog.add(
@@ -119,6 +121,7 @@ class TutorialLectureSeedService {
                 summary: Value(content.lectureSummary),
                 displayLanguage: Value(displayLanguageCode),
                 courseId: Value(courseId),
+                lastAccessedAt: needsAccessedBackfill ? Value(now) : const Value.absent(),
                 metadataJson: Value(
                   jsonEncode({
                     'is_tutorial': true,
@@ -148,11 +151,14 @@ class TutorialLectureSeedService {
           return;
         }
 
-        if (needsCourseBackfill) {
+        if (needsCourseBackfill || needsAccessedBackfill) {
           await (_db.update(_db.localLectures)
                 ..where((t) => t.id.equals(existing.id) & t.userId.equals(userId)))
-              .write(LocalLecturesCompanion(courseId: Value(courseId)));
-          DevLog.add('🎓 [TutorialSeed] Backfilled tutorial lecture courseId -> $courseId');
+              .write(LocalLecturesCompanion(
+            courseId: needsCourseBackfill ? Value(courseId) : const Value.absent(),
+            lastAccessedAt: needsAccessedBackfill ? Value(now) : const Value.absent(),
+          ));
+          DevLog.add('🎓 [TutorialSeed] Backfilled tutorial lecture (courseId: $courseId, accessed: $needsAccessedBackfill)');
         }
         return;
       }
@@ -171,6 +177,7 @@ class TutorialLectureSeedService {
         summary: Value(content.lectureSummary),
         metadataJson: Value(tutorialMetadata),
         lectureDatetime: Value(now),
+        lastAccessedAt: hasCompletedTutorial ? Value(now) : const Value.absent(),
         createdAt: Value(now),
         updatedAt: Value(now),
         autoStartAnalysis: const Value(false),

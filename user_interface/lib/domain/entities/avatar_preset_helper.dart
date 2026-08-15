@@ -111,7 +111,7 @@ class AvatarPresetHelper {
         return const ParsedAvatar.preset(
           iconAsset: 'initials',
           bgStyleIndex: 0,
-          bgIndex: 0,
+          bgIndex: 2,
         );
       }
     }

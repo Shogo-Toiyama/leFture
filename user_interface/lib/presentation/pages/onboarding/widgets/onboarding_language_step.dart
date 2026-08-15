@@ -160,21 +160,22 @@ class _LanguageRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  selected.nativeName,
-                  style: const TextStyle(
-                    color: AppColors.starGold,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    selected.nativeName,
+                    style: const TextStyle(
+                      color: AppColors.starGold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.universe.textComet, size: 20),
+                ],
               ),
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded, color: AppColors.universe.textComet, size: 20),
             ],
           ),
         ),

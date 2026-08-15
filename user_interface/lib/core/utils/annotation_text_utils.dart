@@ -233,6 +233,35 @@ TextLocation? locateFromReviewCardRange(ReviewCard card, SelectedContentRange ra
   return null;
 }
 
+/// Same coordinate mapping as [locateFromReviewCardRange], but instead of
+/// rejecting a range that crosses a block boundary, splits it into one
+/// [TextLocation] per block it overlaps. The `Annotation` schema only stores
+/// a single blockIdx per row, so a selection spanning multiple blocks is
+/// represented as multiple independent Annotation rows (one per block) that
+/// happen to render contiguously -- there's no cross-block grouping concept,
+/// which is fine for highlighting/erasing but not for anything that needs to
+/// treat the selection as one logical span.
+///
+/// Returns an empty list if the range is empty/invalid.
+List<TextLocation> locateBlocksFromReviewCardRange(ReviewCard card, SelectedContentRange range) {
+  final start = range.startOffset <= range.endOffset ? range.startOffset : range.endOffset;
+  final end = range.startOffset <= range.endOffset ? range.endOffset : range.startOffset;
+  if (start >= end) return const [];
+
+  final result = <TextLocation>[];
+  var base = 0;
+  for (var i = 0; i < card.cardContent.length; i++) {
+    final blockEnd = base + reviewCardBlockPlainText(card.cardContent[i]).length;
+    final overlapStart = start > base ? start : base;
+    final overlapEnd = end < blockEnd ? end : blockEnd;
+    if (overlapStart < overlapEnd) {
+      result.add(TextLocation(blockIdx: i, startIdx: overlapStart - base, endIdx: overlapEnd - base));
+    }
+    base = blockEnd;
+  }
+  return result;
+}
+
 /// Same idea as [locateFromReviewCardRange], but for Deep Notes' single flat
 /// body (no block structure -- blockIdx is always null). The SelectionArea
 /// must be scoped to contain ONLY the note's MarkdownBody (title/summary/

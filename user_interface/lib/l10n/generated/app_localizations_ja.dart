@@ -983,6 +983,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get myAccountIntroductionSubtitle => '導入スライドを見返す';
 
   @override
+  String get myAccountOnboardingTitle => 'オンボーディング';
+
+  @override
+  String get myAccountOnboardingSubtitle => '初期設定のやり直し';
+
+  @override
   String get myAccountTutorialTitle => 'チュートリアル';
 
   @override
@@ -1657,7 +1663,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get transcriptPageGeneratingMessage => '文字起こしを生成中…';
+  String get transcriptPageGeneratingMessage => '文字起こしがありません。';
 
   @override
   String transcriptPageTopicLabel(int index) {
@@ -2470,6 +2476,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeTutorialCalloutMessage => 'このアプリについての講義を見てみよう!';
 
   @override
+  String get lectureViewerTutorialReviewCardsCallout => '復習カードを見てみよう!';
+
+  @override
   String get editKeywordDialogTitle => 'キーワードの編集';
 
   @override
@@ -2489,4 +2498,38 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get editKeywordCancelButton => 'キャンセル';
+
+  @override
+  String get appGateMaintenanceTitle => 'ただいまメンテナンス中です';
+
+  @override
+  String get appGateMaintenanceDefaultMessage =>
+      '現在サーバーのメンテナンスを行っています。しばらく経ってからもう一度お試しください。';
+
+  @override
+  String get appGateContinueButton => 'このまま使う';
+
+  @override
+  String get appGatePartialFeaturesUnavailableDisclaimer =>
+      '一部機能は利用できない場合があります';
+
+  @override
+  String get appGateUpdateTitle => 'アップデートが必要です';
+
+  @override
+  String get appGateUpdateDefaultMessage =>
+      'ご利用のバージョンは古いため、一部機能が正しく動作しない可能性があります。最新版へのアップデートをお願いします。';
+
+  @override
+  String get appGateUpdateButton => 'アップデートする';
+
+  @override
+  String get appGateUpdateLaterButton => '後で';
+
+  @override
+  String get appGateOpenStoreFailedSnackbar =>
+      'App Storeを開けませんでした。App Storeアプリから直接アップデートしてください。';
+
+  @override
+  String get maintenanceBannerMessage => 'メンテナンス中：一部機能が利用できません';
 }

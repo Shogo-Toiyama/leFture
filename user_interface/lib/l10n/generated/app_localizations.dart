@@ -1886,6 +1886,18 @@ abstract class AppLocalizations {
   /// **'Replay introduction slides'**
   String get myAccountIntroductionSubtitle;
 
+  /// Tile title on the My Account page to revisit onboarding flow.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding'**
+  String get myAccountOnboardingTitle;
+
+  /// Subtitle under the Onboarding tile on the My Account page.
+  ///
+  /// In en, this message translates to:
+  /// **'Revisit initial setup'**
+  String get myAccountOnboardingSubtitle;
+
   /// Tile title on the My Account page for interactive app tutorial.
   ///
   /// In en, this message translates to:
@@ -3134,10 +3146,10 @@ abstract class AppLocalizations {
   /// **'Transcript unavailable: {error}'**
   String transcriptPageUnavailableError(String error);
 
-  /// Message shown in place of the transcript list on the Transcript page when the transcript request succeeded but returned no sentences yet, meaning generation is still in progress.
+  /// Message shown in place of the transcript list on the Transcript page when no transcript sentences are available.
   ///
   /// In en, this message translates to:
-  /// **'Transcript is being generated…'**
+  /// **'No transcript available.'**
   String get transcriptPageGeneratingMessage;
 
   /// Small badge label identifying a topic by its 1-based index number, shown on the standalone topic-header tile inside the Transcript page's scrolling transcript list. Must stay very short — rendered inline next to a color bar and the topic's title.
@@ -4664,6 +4676,12 @@ abstract class AppLocalizations {
   /// **'Check out this lecture about the app!'**
   String get homeTutorialCalloutMessage;
 
+  /// One-time callout bubble pointing at the Review Cards button in the tutorial lecture viewer, shown until review cards are opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out the Review Cards!'**
+  String get lectureViewerTutorialReviewCardsCallout;
+
   /// Title of the dialog for editing a keyword and definition
   ///
   /// In en, this message translates to:
@@ -4705,6 +4723,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get editKeywordCancelButton;
+
+  /// Title of the full-screen overlay shown when the app is in maintenance mode (server-side kill switch).
+  ///
+  /// In en, this message translates to:
+  /// **'Under Maintenance'**
+  String get appGateMaintenanceTitle;
+
+  /// Fallback body text for the maintenance overlay, used when no custom message is configured on the backend.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re currently performing server maintenance. Please try again in a little while.'**
+  String get appGateMaintenanceDefaultMessage;
+
+  /// Button on the maintenance/update-required overlay that dismisses it for the rest of this session.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get appGateContinueButton;
+
+  /// Small disclaimer line below the Continue/Later button indicating that some features might not be available.
+  ///
+  /// In en, this message translates to:
+  /// **'Some features may be unavailable'**
+  String get appGatePartialFeaturesUnavailableDisclaimer;
+
+  /// Title of the full-screen overlay shown when the installed app version is older than the backend's minimum supported version.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Required'**
+  String get appGateUpdateTitle;
+
+  /// Fallback body text for the update-required overlay, used when no custom message is configured on the backend.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using an older version of the app. Some features may not work correctly. Please update to the latest version.'**
+  String get appGateUpdateDefaultMessage;
+
+  /// Primary button on the update-required overlay, opens the App Store listing.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get appGateUpdateButton;
+
+  /// Secondary button on the update-required overlay, dismisses it for the rest of this session without updating.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get appGateUpdateLaterButton;
+
+  /// Snackbar shown when tapping the update-required overlay's Update button fails to launch the App Store URL.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the App Store. Please update from the App Store app directly.'**
+  String get appGateOpenStoreFailedSnackbar;
+
+  /// Persistent top banner shown (in place of the offline banner) while the device is online but the app is in maintenance mode and the user has dismissed the full-screen maintenance overlay to keep browsing. Reminds them why some features aren't working, without falsely claiming they're offline.
+  ///
+  /// In en, this message translates to:
+  /// **'Under maintenance — some features unavailable'**
+  String get maintenanceBannerMessage;
 }
 
 class _AppLocalizationsDelegate

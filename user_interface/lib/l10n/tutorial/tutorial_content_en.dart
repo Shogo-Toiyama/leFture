@@ -150,7 +150,7 @@ On the bus ride home or relaxing on your couch, you can review in a stress-free 
             {
               'type': 'paragraph',
               'text':
-                  'During those 10 minutes, several AI tasks run one after another — sometimes in parallel: transcription, topic segmentation, summarization, review card generation, and trivia generation. You\'ll get a **push notification** the moment it\'s ready, so your review materials are waiting before you even think to check.',
+                  'During those 10 minutes, several AI tasks run one after another — sometimes in parallel: transcription, topic segmentation, summarization, review card generation, and trivia generation. Your review materials will be ready before you even think to check.',
             },
           ],
         ),

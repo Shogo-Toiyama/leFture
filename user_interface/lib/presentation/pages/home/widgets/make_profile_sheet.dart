@@ -152,7 +152,8 @@ class MakeProfileSheet extends HookConsumerWidget {
                 label: l10n.makeProfileAboutYouLabel,
                 hint: l10n.makeProfileAboutYouHint,
                 icon: Icons.person_outline,
-                maxLines: 4,
+                minLines: 4,
+                maxLines: 8,
               ),
               const SizedBox(height: 12),
 
@@ -161,7 +162,8 @@ class MakeProfileSheet extends HookConsumerWidget {
                 label: l10n.makeProfileInterestsLabel,
                 hint: l10n.makeProfileInterestsHint,
                 icon: Icons.auto_awesome_outlined,
-                maxLines: 2,
+                minLines: 4,
+                maxLines: 8,
               ),
               const SizedBox(height: 12),
 
@@ -170,7 +172,8 @@ class MakeProfileSheet extends HookConsumerWidget {
                 label: l10n.makeProfileFutureDreamsLabel,
                 hint: l10n.makeProfileFutureDreamsHint,
                 icon: Icons.flag_outlined,
-                maxLines: 2,
+                minLines: 4,
+                maxLines: 8,
               ),
 
               if (errorMsg.value != null) ...[
@@ -225,6 +228,7 @@ class _ProfileTextField extends StatelessWidget {
     required this.label,
     required this.hint,
     required this.icon,
+    this.minLines = 1,
     this.maxLines = 1,
   });
 
@@ -232,12 +236,14 @@ class _ProfileTextField extends StatelessWidget {
   final String label;
   final String hint;
   final IconData icon;
+  final int minLines;
   final int maxLines;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      minLines: minLines,
       maxLines: maxLines,
       style: TextStyle(color: AppColors.universe.textStarlight),
       decoration: InputDecoration(
