@@ -222,8 +222,9 @@ function buildBgStars(count: number, seed = 123): BgStars {
   for (let i = 0; i < count; i++) {
     x01[i] = rnd();
     y01[i] = rnd();
-    r[i] = 0.3 + Math.pow(rnd(), 3.4) * 1.0;
-    alpha[i] = 0.22 + Math.pow(rnd(), 2.8) * 0.55;
+    // Larger and more distinct background stars
+    r[i] = 0.5 + Math.pow(rnd(), 2.5) * 1.6;
+    alpha[i] = 0.35 + Math.pow(rnd(), 2.0) * 0.65;
     phase[i] = rnd() * Math.PI * 2;
   }
 
@@ -300,17 +301,6 @@ export const GalaxyCanvas: React.FC = () => {
     const nebulaSprites = NEBULA_PALETTE.map((c) => makeSprite(c, 96));
     const whiteSprite = starSprites[0];
 
-    function resize() {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas!.width = Math.round(width * dpr);
-      canvas!.height = Math.round(height * dpr);
-      canvas!.style.width = `${width}px`;
-      canvas!.style.height = `${height}px`;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
     // --- Live camera state ---------------------------------------------------
     let yaw = 0.6;
     let scrollProgress = 0; // 0 at the top of the page, 1 once the hero is gone
@@ -329,6 +319,35 @@ export const GalaxyCanvas: React.FC = () => {
 
     const shooting: ShootingStar[] = [];
     let shootingCooldown = 1.2;
+    let elapsed = 0;
+
+    // Setting canvas.width/height clears the bitmap to black immediately
+    // (ctx has alpha: false), but the redraw only lands on the next
+    // throttled animation frame. On mobile that gap is visible as a flash
+    // every time the browser chrome shows/hides and fires `resize` — and
+    // on desktop, every intermediate frame while dragging the window edge.
+    // Repainting synchronously right after the resize closes that gap.
+    // (Must come after the camera state above: it calls render(), which
+    // reads scrollProgress/pointerX/pointerY.)
+    let resizeRaf = 0;
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const nextW = Math.round(width * dpr);
+      const nextH = Math.round(height * dpr);
+      if (canvas!.width === nextW && canvas!.height === nextH) return;
+      canvas!.width = nextW;
+      canvas!.height = nextH;
+      canvas!.style.width = `${width}px`;
+      canvas!.style.height = `${height}px`;
+      render(0);
+    }
+    function onResize() {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(resize);
+    }
+    resize();
+    window.addEventListener('resize', onResize);
 
     function spawnShootingStar() {
       const rightToLeft = Math.random() < 0.75;
@@ -352,8 +371,6 @@ export const GalaxyCanvas: React.FC = () => {
     }
 
     // --- Render --------------------------------------------------------------
-    let elapsed = 0;
-
     function render(dt: number) {
       elapsed += dt;
 
@@ -403,7 +420,7 @@ export const GalaxyCanvas: React.FC = () => {
 
       // 1. Distant background stars (inverted parallax shift)
       const avoidR = screenMin * 0.14;
-      const bgScale = Math.min(1.3, Math.max(0.9, screenMin / 420));
+      const bgScale = Math.min(1.4, Math.max(1.0, screenMin / 400));
       const bgShiftX = -pointerX * 32;
       const bgShiftY = -pointerY * 26 - p * 40;
       for (let i = 0; i < bgStars.count; i++) {
@@ -412,10 +429,10 @@ export const GalaxyCanvas: React.FC = () => {
         const dx = x - centerX;
         const dy = y - centerY;
         const avoid = Math.min(1, Math.max(0.55, (dx * dx + dy * dy) / (avoidR * avoidR)));
-        const twinkle = reduced ? 1 : 0.62 + 0.38 * Math.sin(elapsed * 1.6 + bgStars.phase[i]);
-        const a = Math.min(0.42, bgStars.alpha[i] * avoid * twinkle);
+        const twinkle = reduced ? 1 : 0.55 + 0.45 * Math.sin(elapsed * 1.8 + bgStars.phase[i]);
+        const a = Math.min(0.68, bgStars.alpha[i] * avoid * twinkle);
         if (a < 0.02) continue;
-        const r = bgStars.r[i] * 1.15 * bgScale;
+        const r = bgStars.r[i] * 1.45 * bgScale;
         ctx!.globalAlpha = a;
         ctx!.drawImage(whiteSprite, x - r, y - r, r * 2, r * 2);
       }
@@ -605,7 +622,8 @@ export const GalaxyCanvas: React.FC = () => {
     if (reduced) {
       render(0);
       return () => {
-        window.removeEventListener('resize', resize);
+        cancelAnimationFrame(resizeRaf);
+        window.removeEventListener('resize', onResize);
         unsubscribeMouse();
         unsubscribeScroll();
       };
@@ -641,8 +659,9 @@ export const GalaxyCanvas: React.FC = () => {
 
     return () => {
       cancelAnimationFrame(rafId);
+      cancelAnimationFrame(resizeRaf);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', onResize);
       unsubscribeMouse();
       unsubscribeScroll();
     };
