@@ -1,0 +1,282 @@
+:root {
+  /* Brand Colors (from leFture Flutter App) */
+  --color-star-gold: #FFB300;
+  --color-deep-gold: #CC8D00;
+  --color-cosmic-blue: #42A5F5;
+  --color-growth-green: #4CAF50;
+  --color-alert-amber: #FFA000;
+  --color-correction-red: #E53935;
+
+  /* Universe Theme */
+  --bg-void: #0d101d;
+  --bg-surface: #151928;
+  --bg-surface-elevated: #1e2338;
+  
+  /* Text Colors */
+  --text-starlight: #F2F4F8;
+  --text-comet: #94A3B8;
+  --text-dim: #7E8CA3;
+
+  /* Glassmorphism & Borders */
+  --glass-bg-low: rgba(255, 255, 255, 0.04);
+  --glass-bg-mid: rgba(255, 255, 255, 0.08);
+  --glass-bg-high: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-hover: rgba(255, 179, 0, 0.4);
+
+  /* Gradients */
+  --gradient-gold: linear-gradient(135deg, #FFB300 0%, #FF8F00 100%);
+  --gradient-cosmic: linear-gradient(135deg, #42A5F5 0%, #7E57C2 100%);
+  --gradient-glow: radial-gradient(circle at 50% 0%, rgba(255, 179, 0, 0.15) 0%, rgba(66, 165, 245, 0.05) 50%, transparent 80%);
+
+  /* Typography */
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Layout */
+  --max-width: 1120px;
+  --header-height: 68px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  min-height: 100%;
+  background-color: var(--bg-void);
+  color: var(--text-starlight);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* `clip`, not `hidden`: `overflow-x: hidden` makes html/body scroll
+     containers, which silently kills `position: sticky` on the header and on
+     the home page's pinned sections. `clip` suppresses the same horizontal
+     overflow without creating a scroll container. */
+  overflow-x: clip;
+}
+
+/* Background Atmosphere */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: 
+    radial-gradient(circle at 20% 15%, rgba(255, 179, 0, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(66, 165, 245, 0.08) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+/* Keyboard focus must stay visible. `outline: none` on button used to strip it
+   site-wide, leaving keyboard users with no indication of where they were. */
+:focus-visible {
+  outline: 2px solid var(--color-star-gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Typography styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-starlight);
+}
+
+/* Page shell. Content sits above the fixed galaxy layer the home page paints. */
+.site-main {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  padding: 40px 0 80px;
+}
+
+.site-main--flush {
+  padding: 0;
+}
+
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Layout helper */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 24px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Glass Card */
+.glass-card {
+  background: var(--glass-bg-low);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (hover: hover) {
+  .glass-card:hover {
+    border-color: var(--glass-border-hover);
+  }
+}
+
+/* Form Inputs (Mobile optimized: min 16px to prevent iOS auto-zoom) */
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--glass-bg-mid);
+  border: 1px solid var(--glass-border);
+  color: var(--text-starlight);
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: var(--color-star-gold);
+  box-shadow: 0 0 0 3px rgba(255, 179, 0, 0.18);
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--gradient-gold);
+  color: #111422;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(255, 179, 0, 0.3);
+  touch-action: manipulation;
+  min-height: 48px;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(255, 179, 0, 0.45);
+  }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--glass-bg-mid);
+  color: var(--text-starlight);
+  border: 1px solid var(--glass-border);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  min-height: 48px;
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .btn-secondary:hover {
+    background: var(--glass-bg-high);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+  }
+}
+
+/* Header actions must never wrap — at ~390px the language label is the first
+   thing to go, which keeps the App Store CTA on one line. */
+.btn-primary,
+.btn-secondary {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .lang-label {
+    display: none;
+  }
+}
+
+/* Glow Badge */
+.badge-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 179, 0, 0.12);
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  border-radius: 9999px;
+  color: var(--color-star-gold);
+  font-size: 0.825rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive Navigation Breakpoints */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .mobile-actions {
+    display: flex !important;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

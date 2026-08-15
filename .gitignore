@@ -20,3 +20,10 @@ contents_generation/test_codes/core_extraction_test/simple_transcript.txt
 contents_generation/test_codes/faster_whisper/lecture_audio.m4a
 contents_generation/test_codes/faster-whisper/transcript_result.json
 docs/*
+
+# Web / Node
+node_modules/
+dist/
+.vite/
+*.local
+.env.example

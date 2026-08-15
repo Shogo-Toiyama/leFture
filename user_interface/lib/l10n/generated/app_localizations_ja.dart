@@ -466,7 +466,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lectureViewerDeepNotesTitle => '詳細ノート';
 
   @override
-  String get lectureViewerFunFactHeader => '雑学';
+  String get lectureViewerFunFactHeader => 'ファンファクト';
 
   @override
   String get lectureViewerTranscriptButtonLabel => '文字起こし';
@@ -815,7 +815,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get activityRecordsFilterKeywords => 'キーワード';
 
   @override
-  String get activityRecordsFilterFunFacts => '雑学';
+  String get activityRecordsFilterFunFacts => 'ファンファクト';
 
   @override
   String get activityRecordsFilterActive => '未完了';
@@ -914,7 +914,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get activityRecordsContentTypeKeyword => 'キーワード';
 
   @override
-  String get activityRecordsContentTypeFunFact => '雑学';
+  String get activityRecordsContentTypeFunFact => 'ファンファクト';
 
   @override
   String get activityRecordsContentTypeDefault => 'コンテンツ';
@@ -1007,7 +1007,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get myAccountSavedSubtitle => '復習カード・詳細ノート・キーワード';
 
   @override
-  String get myAccountLikesDislikesSubtitle => '復習カード・詳細ノート・雑学';
+  String get myAccountLikesDislikesSubtitle => '復習カード・詳細ノート・ファンファクト';
 
   @override
   String get myAccountAnnouncementsSubtitle => '完了済みのものを含む';
@@ -1767,7 +1767,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reviewCardsDashboardTitle => '復習カード';
 
   @override
-  String get deepNotesListTitle => 'ディープノート';
+  String get deepNotesListTitle => '詳細ノート';
 
   @override
   String get deepNotesDetailNoNotesAvailable => '利用可能なノートがありません';

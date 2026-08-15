@@ -258,9 +258,7 @@ class AppErrorDialog extends StatelessWidget {
             if (session != null) {
               context.push(AppRoutes.contact);
             } else {
-              final subject = Uri.encodeComponent('[leFture Support] App Inquiry');
-              final body = Uri.encodeComponent(
-                'Hi leFture Support Team,\n\n'
+              final initialMessage =
                 '[Please describe your issue or inquiry here]\n\n'
                 '-----------------------------------------\n'
                 'Technical Details (for support team):\n'
@@ -268,13 +266,16 @@ class AppErrorDialog extends StatelessWidget {
                 '• Error: $formattedError\n'
                 '• OS: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}\n'
                 '• Locale: ${Platform.localeName}\n'
-                '-----------------------------------------\n',
-              );
-              final mailUri = Uri.parse('mailto:support@lefture.com?subject=$subject&body=$body');
+                '-----------------------------------------';
+
+              final contactUri = Uri.https('lefture.com', '/contact', {
+                'message': initialMessage,
+              });
+
               try {
-                await launchUrl(mailUri, mode: LaunchMode.externalApplication);
+                await launchUrl(contactUri, mode: LaunchMode.externalApplication);
               } catch (_) {
-                // メーラーが起動できない環境（シミュレータ等）でのフォールバック
+                // ブラウザ起動フォールバック
               }
             }
           },

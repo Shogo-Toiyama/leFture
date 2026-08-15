@@ -336,7 +336,7 @@ class _DeepNotesIcon extends StatelessWidget {
   }
 }
 
-/// Card 3: 雑学・ライトバルブアイコン
+/// Card 3: ファンファクト・ライトバルブアイコン
 class _FunFactsIcon extends StatelessWidget {
   const _FunFactsIcon({required this.play});
   final bool play;

@@ -21,7 +21,7 @@ const kTutorialContentEn = TutorialContent(
       id: 'ann_1',
       type: 'TODO',
       content:
-          'Fill in your profile (major, interests, future goals) to experience personalized trivia tailored just for you!',
+          'Fill in your profile (major, interests, future goals) to experience personalized Fun Facts tailored just for you!',
     ),
     TutorialAnnouncement(
       id: 'ann_2',
@@ -75,10 +75,10 @@ Naturally, reviewing right away would solve this, but I've always struggled with
 ## 💡 2. Failing to see the connection to your own interests and goals
 Even if you understand everything, learning something that feels irrelevant to you is naturally unexciting. Conversely, discovering that seemingly unrelated knowledge connects directly to your own passions creates a mind-blowing **"AHA Moment"**.
 
-Nothing taught in university lectures is useless. Most students choose a major aligned with their interests, meaning lecture topics are likely relevant to everyday life or your ambitions. However, professors can't tailor lectures to every single individual. That’s why I thought: if AI could generate personalized, fascinating trivia connecting lecture concepts to your unique interests, wouldn't lectures become infinitely more engaging?
+Nothing taught in university lectures is useless. Most students choose a major aligned with their interests, meaning lecture topics are likely relevant to everyday life or your ambitions. However, professors can't tailor lectures to every single individual. That’s why I thought: if AI could generate personalized, fascinating Fun Facts connecting lecture concepts to your unique interests, wouldn't lectures become infinitely more engaging?
 
 ## ⚙️ The Solution: A Positive Learning Routine
-To solve these challenges, I built an app that uses AI to analyze lecture content, generating easy-to-digest review materials and personalized trivia. Using it is effortless:
+To solve these challenges, I built an app that uses AI to analyze lecture content, generating easy-to-digest review materials and personalized Fun Facts. Using it is effortless:
 
 - **Before class**: Tap the record button once
 - **During class**: Put your phone down and just focus
@@ -139,7 +139,7 @@ On the bus ride home or relaxing on your couch, you can review in a stress-free 
             {
               'type': 'paragraph',
               'text':
-                  'In about 10 minutes, AI analyzes the audio, removes background noise, and automatically generates high-quality review cards and trivia.',
+                  'In about 10 minutes, AI analyzes the audio, removes background noise, and automatically generates high-quality review cards and Fun Facts.',
             },
             {
               'type': 'callout',
@@ -150,7 +150,7 @@ On the bus ride home or relaxing on your couch, you can review in a stress-free 
             {
               'type': 'paragraph',
               'text':
-                  'During those 10 minutes, several AI tasks run one after another — sometimes in parallel: transcription, topic segmentation, summarization, review card generation, and trivia generation. Your review materials will be ready before you even think to check.',
+                  'During those 10 minutes, several AI tasks run one after another — sometimes in parallel: transcription, topic segmentation, summarization, review card generation, and Fun Fact generation. Your review materials will be ready before you even think to check.',
             },
           ],
         ),
@@ -298,7 +298,7 @@ Having crystal-clear study materials ready right after class removes the frictio
             {
               'type': 'paragraph',
               'text':
-                  'Next up: discover the secret behind our personalized "Fun Fact" trivia section!',
+                  'Next up: discover the secret behind our personalized "Fun Fact" section!',
             },
           ],
         ),
@@ -324,7 +324,7 @@ We built the "**Fun Fact**" section to bring that engaging feeling to every sing
 - **Today's lecture**: The specific topics and keywords covered
 - **Real-time web search**: Live data showing how the theory is actively used in modern industries and breaking news
 
-When a seemingly dry concept suddenly connects to something you love, you experience an illuminating **"AHA Moment"**. We deliver personalized trivia that makes you genuinely look forward to your next class!''',
+When a seemingly dry concept suddenly connects to something you love, you experience an illuminating **"AHA Moment"**. We deliver personalized Fun Facts that make you genuinely look forward to your next class!''',
       reviewCards: [
         TutorialReviewCard(
           cardType: 'hook',
@@ -390,7 +390,7 @@ When a seemingly dry concept suddenly connects to something you love, you experi
             {
               'type': 'paragraph',
               'text':
-                  'It doesn\'t stop at trivia — it goes as far as showing exactly where in today\'s world that concept shows up, so it sticks with you as **knowledge you\'ll actually use**, not just something to memorize for a test.',
+                  'It doesn\'t stop at Fun Facts — it goes as far as showing exactly where in today\'s world that concept shows up, so it sticks with you as **knowledge you\'ll actually use**, not just something to memorize for a test.',
             },
           ],
         ),
@@ -402,13 +402,13 @@ When a seemingly dry concept suddenly connects to something you love, you experi
             {
               'type': 'paragraph',
               'text':
-                  'Keep your profile updated to enjoy personalized trivia generated just for you.',
+                  'Keep your profile updated to enjoy personalized Fun Facts generated just for you.',
             },
             {
               'type': 'list',
               'items': [
                 'Add your major, hobbies, and dreams in Profile',
-                'Enjoy unique trivia tailored for every lecture',
+                'Enjoy unique Fun Facts tailored for every lecture',
                 'Check out the latest topics surfaced by real-time web search',
               ],
             },
