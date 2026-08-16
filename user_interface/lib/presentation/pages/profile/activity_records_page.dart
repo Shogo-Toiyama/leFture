@@ -57,6 +57,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
     // user either undoes the action or the fresh data catches up (e.g. they re-liked it).
     final pendingOverrides = useState<Map<String, ActivityRecord>>(const {});
     final removedRecordIds = useState<Set<String>>(const {});
+    final deletingRecordIds = useState<Set<String>>(const {});
 
     // Converged means the live data now matches whatever the user would get by hitting "undo",
     // so the pending override is no longer needed.
@@ -383,7 +384,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                       final record = filtered[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildRecordCard(context, ref, record, pendingOverrides, removedRecordIds),
+                        child: _buildRecordCard(context, ref, record, pendingOverrides, removedRecordIds, deletingRecordIds),
                       );
                     },
                     childCount: filtered.length,
@@ -417,6 +418,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
     ActivityRecord record,
     ValueNotifier<Map<String, ActivityRecord>> pendingOverrides,
     ValueNotifier<Set<String>> removedRecordIds,
+    ValueNotifier<Set<String>> deletingRecordIds,
   ) {
     if (record.type == ActivityRecordType.announcement && type != ActivityType.trash) {
       final ann = record.rawData as LocalAnnouncement;
@@ -476,7 +478,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
     }
 
     if (type == ActivityType.trash) {
-      return _buildTrashCard(context, ref, record, removedRecordIds);
+      return _buildTrashCard(context, ref, record, removedRecordIds, deletingRecordIds);
     }
 
     final isPending = pendingOverrides.value.containsKey(record.id);
@@ -517,8 +519,10 @@ class ActivityRecordsPage extends HookConsumerWidget {
     WidgetRef ref,
     ActivityRecord record,
     ValueNotifier<Set<String>> removedRecordIds,
+    ValueNotifier<Set<String>> deletingRecordIds,
   ) {
     final l10n = AppLocalizations.of(context);
+    final isDeleting = deletingRecordIds.value.contains(record.id);
     final IconData icon;
     final String typeLabel;
 
@@ -540,81 +544,99 @@ class ActivityRecordsPage extends HookConsumerWidget {
         typeLabel = l10n.activityRecordsTypeLabelItem;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          // Left Icon Circle
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(10),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: isDeleting ? 0.6 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: Row(
+          children: [
+            // Left Icon Circle
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColors.universe.textComet, size: 20),
             ),
-            child: Icon(icon, color: AppColors.universe.textComet, size: 20),
-          ),
-          const SizedBox(width: 14),
+            const SizedBox(width: 14),
 
-          // Texts
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  record.title,
-                  style: const TextStyle(
-                    color: Color(0xFFF2F2F2),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+            // Texts
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    record.title,
+                    style: const TextStyle(
+                      color: Color(0xFFF2F2F2),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.activityRecordsDeletedOnLabel(DateFormat.yMMMd(l10n.localeName).format(record.dateTime), typeLabel),
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 12,
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.activityRecordsDeletedOnLabel(DateFormat.yMMMd(l10n.localeName).format(record.dateTime), typeLabel),
+                    style: TextStyle(
+                      color: AppColors.universe.textComet,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // Compact Action Buttons
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _restoreTrashItem(context, ref, record, removedRecordIds),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-              child: Icon(
-                Icons.settings_backup_restore_rounded,
-                color: AppColors.starGold,
-                size: 20,
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _confirmDeleteSingleTrashItem(context, ref, record, removedRecordIds),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-              child: Icon(
-                Icons.delete_forever_rounded,
-                color: AppColors.correctionRed,
-                size: 20,
+
+            if (isDeleting)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.correctionRed,
+                  ),
+                ),
+              )
+            else ...[
+              // Compact Action Buttons
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _restoreTrashItem(context, ref, record, removedRecordIds),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                  child: Icon(
+                    Icons.settings_backup_restore_rounded,
+                    color: AppColors.starGold,
+                    size: 20,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+              const SizedBox(width: 8),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _confirmDeleteSingleTrashItem(context, ref, record, removedRecordIds, deletingRecordIds),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                  child: Icon(
+                    Icons.delete_forever_rounded,
+                    color: AppColors.correctionRed,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -667,7 +689,13 @@ class ActivityRecordsPage extends HookConsumerWidget {
     }
   }
 
-  void _confirmDeleteSingleTrashItem(BuildContext context, WidgetRef ref, ActivityRecord record, ValueNotifier<Set<String>> removedRecordIds) {
+  void _confirmDeleteSingleTrashItem(
+    BuildContext context,
+    WidgetRef ref,
+    ActivityRecord record,
+    ValueNotifier<Set<String>> removedRecordIds,
+    ValueNotifier<Set<String>> deletingRecordIds,
+  ) {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
@@ -690,6 +718,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
             TextButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
+                deletingRecordIds.value = {...deletingRecordIds.value, record.id};
                 // ダイアログを閉じた直後にunmountされる dialogContext ではなく、
                 // await後もこのページが表示され続ける限り有効な外側の context を
                 // 使う(そうしないと、非同期処理の完了時にcontext.mountedが常に
@@ -708,6 +737,8 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   if (context.mounted) {
                     AppErrorDialog.showSmart(context, e, actionName: 'deleting trash item');
                   }
+                } finally {
+                  deletingRecordIds.value = deletingRecordIds.value.where((id) => id != record.id).toSet();
                 }
               },
               child: Text(l10n.activityRecordsDeleteButton, style: const TextStyle(color: AppColors.correctionRed)),

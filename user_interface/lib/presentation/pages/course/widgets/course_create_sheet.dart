@@ -80,6 +80,7 @@ class CourseCreateSheet extends HookConsumerWidget {
 
     final isSubmitting = useState(false);
     final errorMsg = useState<String?>(null);
+    final scrollController = useScrollController();
 
     final existingYears = ref.watch(yearAttributesProvider).asData?.value ?? [];
     final existingTerms = ref.watch(termAttributesProvider).asData?.value ?? [];
@@ -94,6 +95,13 @@ class CourseCreateSheet extends HookConsumerWidget {
       final title = titleCtl.text.trim();
       if (title.isEmpty) {
         errorMsg.value = l10n.courseCreateSheetTitleRequiredError;
+        if (scrollController.hasClients) {
+          scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        }
         return;
       }
       isSubmitting.value = true;
@@ -177,8 +185,6 @@ class CourseCreateSheet extends HookConsumerWidget {
         isSubmitting.value = false;
       }
     }
-
-    final scrollController = useScrollController();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -264,6 +270,45 @@ class CourseCreateSheet extends HookConsumerWidget {
                 ),
               ],
             ),
+
+            if (errorMsg.value != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.correctionRed.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.correctionRed.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.correctionRed,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        errorMsg.value!,
+                        style: const TextStyle(
+                          color: AppColors.correctionRed,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
             Container(
               height: 1,
@@ -334,17 +379,27 @@ class CourseCreateSheet extends HookConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  titleCtl.text.isEmpty
-                                      ? l10n.courseCreateSheetPreviewTitlePlaceholder
-                                      : titleCtl.text,
+                                TextField(
+                                  controller: titleCtl,
+                                  maxLines: 1,
                                   style: TextStyle(
                                     color: AppColors.universe.textStarlight,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    isCollapsed: true,
+                                    border: InputBorder.none,
+                                    hintText: l10n
+                                        .courseCreateSheetPreviewTitlePlaceholder,
+                                    hintStyle: TextStyle(
+                                      color: AppColors.universe.textStarlight
+                                          .withValues(alpha: 0.4),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -356,6 +411,13 @@ class CourseCreateSheet extends HookConsumerWidget {
                                 ),
                               ],
                             ),
+                          ),
+                          Icon(
+                            Icons.edit_outlined,
+                            color: AppColors.universe.textComet.withValues(
+                              alpha: 0.5,
+                            ),
+                            size: 16,
                           ),
                         ],
                       ),
@@ -662,15 +724,6 @@ class CourseCreateSheet extends HookConsumerWidget {
                           .map((a) => a.attributeName)
                           .toList(),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Course Title
-                    _GlassTextField(
-                      controller: titleCtl,
-                      label: l10n.courseCreateSheetTitleLabel,
-                      hint: l10n.courseCreateSheetTitleHint,
-                      icon: Icons.school_outlined,
-                    ),
                     const SizedBox(height: 16),
 
                     // More Info アコーディオン
@@ -804,17 +857,6 @@ class CourseCreateSheet extends HookConsumerWidget {
                       ),
                       secondChild: const SizedBox(width: double.infinity),
                     ),
-
-                    if (errorMsg.value != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        errorMsg.value!,
-                        style: const TextStyle(
-                          color: AppColors.correctionRed,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

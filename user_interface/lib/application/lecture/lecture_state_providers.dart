@@ -15,6 +15,7 @@ enum LectureUIState {
   failed,       // 分析失敗
   notStarted,   // 音声はあるが分析未実施
   syncing,      // ローカルに音声はあるがクラウドにない（アップロード待ち）
+  error,        // ジョブ状態の取得に失敗し、本当に未実施かどうか判定できない
 }
 
 // -----------------------------------------------------------------------------
@@ -39,6 +40,15 @@ Stream<LectureUIState> lectureState(Ref ref, String lectureId) async* {
   // Jobのロード中は 'loading' を返す
   if (jobAsync is AsyncLoading) {
     yield LectureUIState.loading;
+    return;
+  }
+
+  // 取得エラーで前回値も無い場合、jobAsync.valueはnullを返すため、これを
+  // 素通りさせると「本当にJobが存在しない(未実施)」と区別が付かず、
+  // Start Analysisボタンを誤って表示してしまう。前回値があればそれを使って
+  // 通常判定を続け、無ければ「判定不能」として明示的にerror扱いにする。
+  if (jobAsync is AsyncError && !jobAsync.hasValue) {
+    yield LectureUIState.error;
     return;
   }
 

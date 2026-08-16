@@ -87,6 +87,7 @@ class LectureTopicDetailPanel extends StatelessWidget {
     final hasSummary = summary?.trim().isNotEmpty == true;
 
     return Container(
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         color: const Color(0xFF1A1C2E),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),

@@ -266,11 +266,28 @@ class UploadManager {
               continue;
             }
 
+            // 二重発火ガード。保存時(RecordingController._maybeEnqueueStartAnalysis)
+            // も号砲を鳴らしうるため、既にジョブがあるなら何もしない。
+            if (await _repo.hasStartAnalysisJobForLecture(lecture.id)) {
+              DevLog.add('⏭️ [UploadManager] start_analysisジョブが既に存在するため、二重発火を回避します。');
+              continue;
+            }
+
             DevLog.add('🎉 全てのチャンクの送信完了！分析開始の号砲を鳴らします！');
             await _repo.enqueueStartAnalysis(
               userId: lecture.userId,
               lectureId: lecture.id,
               assetId: job.assetId,
+            );
+          } else if (job.kind == 'audio_upload' &&
+              lecture.isRealtime == true &&
+              remainingJobs.isEmpty &&
+              expectedChunks == null) {
+            // 録音中(まだ保存を押していない)にチャンクを送り終えた場合は
+            // 必ずここに来る —— expectedChunksは保存時にしか書かれないため。
+            // 異常ではなく、保存時にRecordingController側が号砲を鳴らす。
+            DevLog.add(
+              'ℹ️ [UploadManager] チャンク送信完了時点ではまだ録音が保存されていません(expectedChunks未確定)。分析開始は保存時に予約されます。',
             );
           }
 

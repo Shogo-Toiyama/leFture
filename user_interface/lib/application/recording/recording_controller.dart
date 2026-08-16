@@ -51,8 +51,9 @@ double _calculatePcmAudioLevel(Uint8List data) {
 
   if (count == 0) return 0.0;
   final rms = math.sqrt(sumSquares / count);
-  if (rms <= 0.0001) return 0.0;
-  // 講義室の離れた小さな教授の声でも波形が大きくアクティブに跳ねるよう感度ブースト
+  if (rms <= 0.0003) return 0.0;
+
+  // 講義室の声に自然に反応する適度な感度ブースト
   final boosted = math.sqrt(rms) * 2.8;
   return boosted.clamp(0.0, 1.0);
 }
@@ -530,49 +531,125 @@ class RecordingController extends _$RecordingController {
       // 1. マスター生PCMデータをAAC (M4A) に圧縮エンコード
       final masterM4aPath = await _recorder.encodeMasterRawToM4a(lecture.id);
 
-      // 2. 最後のチャンクをフラッシュして登録（Realtime Transcribe が On の場合のみ）
+      // 2. 最後のチャンクをフラッシュ（Realtime Transcribe が On の場合のみ）。
+      // ここではまだDBに書き込まない — expectedChunksが確定してから
+      // ジョブを登録する必要があるため(下記3を参照)。
+      String? finalChunkPath;
+      double? finalChunkStartTime;
       if (state.realtimeTranscribe) {
         final finalFlushed = _chunker?.flush();
         if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
           DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
-
-          final path = await _recorder.savePcmAsM4a(finalFlushed.data, lecture.id);
-
-          await _repo.attachAudioAndEnqueueUpload(
-            userId: lecture.userId,
-            lectureId: lecture.id,
-            localPath: path,
-            sequenceIndex: _currentChunkIndex,
-            startTime: finalFlushed.startTimeSec,
-          );
-          _currentChunkIndex++;
+          finalChunkPath = await _recorder.savePcmAsM4a(finalFlushed.data, lecture.id);
+          finalChunkStartTime = finalFlushed.startTimeSec;
         }
       } else {
         DevLog.add('[Upload] Realtime Transcribe is OFF, skipping final chunk upload');
         _chunker?.flush(); // メモリ解放のためflushは呼ぶが結果は使わない
       }
+      final totalChunks = finalChunkPath != null ? _currentChunkIndex + 1 : _currentChunkIndex;
 
-      // 3. マスターオーディオのアップロードジョブを登録
+      // 3. expectedChunksを、最終チャンクのアップロードジョブを登録するより先に確定させる。
+      // ★ 以前はこれを最後(ジョブ登録の後)に書いていたため、最終チャンクの
+      // ジョブ挿入(→UploadManagerがDB監視で即座に処理を開始)がexpectedChunksの
+      // コミットより先に完了してしまうことがあった。その場合UploadManagerは
+      // expectedChunks==nullのまま自動分析発火の判定をスキップし、以降二度と
+      // 再判定されない(=自動分析が永久に発火しない)バグがあった。
+      await _repo.finishLectureRecording(
+        lectureId: lecture.id,
+        expectedChunks: totalChunks,
+      );
+
+      // 4. 最後のチャンクのアップロードジョブを登録
+      if (finalChunkPath != null) {
+        await _repo.attachAudioAndEnqueueUpload(
+          userId: lecture.userId,
+          lectureId: lecture.id,
+          localPath: finalChunkPath,
+          sequenceIndex: _currentChunkIndex,
+          startTime: finalChunkStartTime!,
+        );
+        _currentChunkIndex++;
+      }
+
+      // 5. マスターオーディオのアップロードジョブを登録
       await _repo.enqueueMasterAudioUpload(
         userId: lecture.userId,
         lectureId: lecture.id,
         localPath: masterM4aPath,
       );
 
-      await _repo.finishLectureRecording(
-        lectureId: lecture.id,
-        expectedChunks: _currentChunkIndex,
-      );
+      // 6. リアルタイム収録の自動分析を、保存したこの瞬間に予約する。
+      // ★ ここが無いと自動分析が永久に発火しないケースがある:
+      // 最後のチャンクは「一時停止した瞬間」(toggleStartStopResumeのpause分岐)に
+      // エンキューされ、多くの場合そのまま数秒で送信完了してしまう。ところが
+      // expectedChunksが書かれるのはユーザーが保存を押したこの時点なので、
+      // UploadManager側の「最後のチャンク完了時に発火」判定は
+      // expectedChunks==nullのまま素通りし、以降その講義では二度と
+      // audio_uploadジョブが完了しないため再判定される機会が無かった。
+      // (保存画面で数分悩んでから保存した場合は必ずこれに該当する)
+      await _maybeEnqueueStartAnalysis(lecture.id);
 
       state = state.copyWith(phase: RecordingPhase.queued);
       _uploadMgr.tryProcessQueue();
 
     } catch (e) {
       state = state.copyWith(
-        phase: RecordingPhase.error, 
+        phase: RecordingPhase.error,
         errorMessage: 'Save failed: $e'
       );
     }
+  }
+
+  /// 保存時に、リアルタイム収録の自動分析(start_analysis号砲)を予約する。
+  /// 未送信チャンクが残っている場合はここでは鳴らさず、UploadManagerが
+  /// 最後のチャンク完了時に鳴らす方に任せる(この時点でexpectedChunksは
+  /// 既に確定済みなので、そちらの判定も正しく通るようになっている)。
+  Future<void> _maybeEnqueueStartAnalysis(String lectureId) async {
+    // state.lectureはwatch経由で古い可能性があるため、DBから読み直す。
+    final fresh = await _repo.getLecture(lectureId);
+    if (fresh == null) return;
+
+    if (fresh.isRealtime != true) {
+      // プレレコーデッドはマスター音声の送信完了時にUploadManagerが発火する。
+      return;
+    }
+    if (fresh.autoStartAnalysis == false) {
+      DevLog.add('⏸️ [Upload] 自動分析がOFFのため、号砲は鳴らしません（手動でStart Analysisが必要）。');
+      return;
+    }
+    if (fresh.courseId == null) {
+      DevLog.add('⏸️ [Upload] コース未選択のため、自動分析はスキップします（手動でStart Analysisが必要）。');
+      return;
+    }
+
+    // 二重発火ガード。保存時(ここ)と最終チャンク完了時(UploadManager)の
+    // 両方が候補になるため、既に号砲があるなら何もしない。
+    if (await _repo.hasStartAnalysisJobForLecture(lectureId)) {
+      DevLog.add('⏭️ [Upload] start_analysisジョブが既に存在するため、二重発火を回避します。');
+      return;
+    }
+
+    final pendingChunks = await _repo.getPendingChunkJobsForLecture(lectureId);
+    if (pendingChunks.isNotEmpty) {
+      DevLog.add(
+        '⏳ [Upload] 未送信チャンクが${pendingChunks.length}件残っています。全て完了した時点でUploadManagerが分析を開始します。',
+      );
+      return;
+    }
+
+    final assetId = await _repo.getAnyAssetIdForLecture(lectureId);
+    if (assetId == null) {
+      DevLog.add('⚠️ [Upload] アセットが1件も見つからないため、号砲を鳴らせませんでした。');
+      return;
+    }
+
+    DevLog.add('🎉 [Upload] 全チャンク送信済み。保存と同時に分析開始の号砲を鳴らします！');
+    await _repo.enqueueStartAnalysis(
+      userId: fresh.userId,
+      lectureId: lectureId,
+      assetId: assetId,
+    );
   }
 
   Future<void> cancelAndDiscard() async {

@@ -11,6 +11,9 @@
 // 中身を選ぶことだけに専念する。
 
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/application/job/job_providers.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture/lecture_state_providers.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -18,14 +21,14 @@ import 'package:lefture/presentation/pages/lecture_viewer/views/not_started_view
 import 'package:lefture/presentation/pages/lecture_viewer/views/processing_view.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
-class LectureOverlayCard extends StatelessWidget {
+class LectureOverlayCard extends ConsumerWidget {
   const LectureOverlayCard({super.key, required this.lecture, required this.uiState});
 
   final Lecture lecture;
   final LectureUIState uiState;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     switch (uiState) {
       case LectureUIState.notStarted:
         return NotStartedView(lecture: lecture);
@@ -43,7 +46,29 @@ class LectureOverlayCard extends StatelessWidget {
           message: AppLocalizations.of(context).statusScaffoldSyncingMessage,
         );
 
+      case LectureUIState.error:
+        // ジョブ状態が本当に取得できていないだけかもしれず、Start Analysis
+        // ボタンを誤って出すと二重にジョブを作りかねない。判定できるまでは
+        // 再試行だけを促す。
+        return _MiniStatusCard(
+          icon: Icons.error_outline,
+          title: AppLocalizations.of(context).statusScaffoldErrorTitle,
+          message: AppLocalizations.of(context).statusScaffoldErrorMessage,
+          isError: true,
+          onRetry: () {
+            ref.invalidate(jobStreamProvider(lecture.id));
+            ref.invalidate(lectureProvider(lecture.id));
+          },
+          retryLabel: AppLocalizations.of(context).statusScaffoldErrorRetryButton,
+        );
+
       case LectureUIState.loading:
+        // 判定中は何も出さないと「止まっている」ように見えるため、
+        // ページを開いた直後と同じスピナーを出す。
+        return const Center(
+          child: CircularProgressIndicator(color: AppColors.starGold),
+        );
+
       case LectureUIState.complete:
         // completeはFINALIZE_JOB完了(=heroCollageブロックready)を意味するため、
         // 呼び出し元のhasAnyReady判定と矛盾するはずが無い。念のための安全策。
@@ -53,14 +78,25 @@ class LectureOverlayCard extends StatelessWidget {
 }
 
 class _MiniStatusCard extends StatelessWidget {
-  const _MiniStatusCard({required this.icon, required this.title, this.message});
+  const _MiniStatusCard({
+    required this.icon,
+    required this.title,
+    this.message,
+    this.isError = false,
+    this.onRetry,
+    this.retryLabel,
+  });
 
   final IconData icon;
   final String title;
   final String? message;
+  final bool isError;
+  final VoidCallback? onRetry;
+  final String? retryLabel;
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = isError ? AppColors.correctionRed : AppColors.starGold;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 420),
       child: Container(
@@ -84,11 +120,11 @@ class _MiniStatusCard extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppColors.starGold.withValues(alpha: 0.12),
+                color: accentColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.starGold.withValues(alpha: 0.35)),
+                border: Border.all(color: accentColor.withValues(alpha: 0.35)),
               ),
-              child: Icon(icon, size: 32, color: AppColors.starGold),
+              child: Icon(icon, size: 32, color: accentColor),
             ),
             const SizedBox(height: 20),
             Text(
@@ -106,6 +142,15 @@ class _MiniStatusCard extends StatelessWidget {
                 message!,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
+              ),
+            ],
+            if (onRetry != null) ...[
+              const SizedBox(height: 18),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text(retryLabel ?? ''),
+                style: TextButton.styleFrom(foregroundColor: AppColors.universe.textComet),
               ),
             ],
           ],

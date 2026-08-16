@@ -321,6 +321,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Transcribe audio stream in realtime as you record.';
 
   @override
+  String get recordingCourseRequiredDialogTitle => 'Select a course first';
+
+  @override
+  String get recordingCourseRequiredDialogMessage =>
+      'Please choose a course for this lecture. Without one, analysis can\'t start and your notes won\'t be generated.';
+
+  @override
+  String get recordingCourseRequiredSelectButton => 'Select course';
+
+  @override
+  String get recordingRealtimeLockedDialogTitle =>
+      'Can\'t change while recording';
+
+  @override
+  String get recordingRealtimeLockedDialogMessage =>
+      'Realtime transcribe can only be turned on or off before you start recording. Stop and start a new recording to change this setting.';
+
+  @override
   String get recordingSpeechModelDialogTitle => 'Speech model required';
 
   @override
@@ -367,6 +385,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recordingLanguageRowTitle => 'Recording language';
+
+  @override
+  String get recordingLanguageRowSubtitle =>
+      'Language used for transcription and analysis.';
 
   @override
   String recordingAsrModelErrorPrefix(String message) {
@@ -522,6 +544,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lectureViewerKeywordsSheetTitle => 'Keywords';
+
+  @override
+  String get lectureViewerTopicsSheetTitle => 'Topics';
+
+  @override
+  String get lectureViewerTopicCardReviewCards => 'Review Cards';
+
+  @override
+  String get lectureViewerTopicCardDeepNotes => 'Deep Notes';
+
+  @override
+  String get lectureViewerTopicEmptyState => 'No topics available yet';
 
   @override
   String get lectureViewerInfoSheetEmptyState => 'Nothing here yet';
@@ -730,6 +764,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get statusScaffoldSyncingMessage =>
       'Please wait for the upload to complete.';
+
+  @override
+  String get statusScaffoldErrorTitle => 'Couldn\'t Load Status';
+
+  @override
+  String get statusScaffoldErrorMessage =>
+      'We couldn\'t confirm whether analysis has started. Please check your connection and try again.';
+
+  @override
+  String get statusScaffoldErrorRetryButton => 'Retry';
 
   @override
   String get creditDetailTitle => 'Credits';

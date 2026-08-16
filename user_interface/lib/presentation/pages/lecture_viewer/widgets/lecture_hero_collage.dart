@@ -10,10 +10,12 @@ class LectureHeroCollage extends ConsumerWidget {
     super.key,
     required this.lectureId,
     this.slantWidth = 24.0,
+    this.onTap,
   });
 
   final String lectureId;
   final double slantWidth;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,7 +44,7 @@ class LectureHeroCollage extends ConsumerWidget {
         final displayPaths = imagePaths.take(6).toList();
         final count = displayPaths.length;
 
-        return Container(
+        final collageWidget = Container(
           height: 180.0,
           width: double.infinity,
           decoration: BoxDecoration(
@@ -106,6 +108,16 @@ class LectureHeroCollage extends ConsumerWidget {
             },
           ),
         );
+
+        if (onTap != null) {
+          return GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: collageWidget,
+          );
+        }
+
+        return collageWidget;
       },
     );
   }

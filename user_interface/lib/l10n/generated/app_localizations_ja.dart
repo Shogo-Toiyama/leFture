@@ -309,6 +309,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recordingRealtimeTranscribeSubtitle => '録音中の音声をリアルタイムで文字起こしします。';
 
   @override
+  String get recordingCourseRequiredDialogTitle => '先にコースを選択してください';
+
+  @override
+  String get recordingCourseRequiredDialogMessage =>
+      'この講義のコースを選択してください。コースが設定されていないと解析が開始されず、ノートが生成されません。';
+
+  @override
+  String get recordingCourseRequiredSelectButton => 'コースを選択';
+
+  @override
+  String get recordingRealtimeLockedDialogTitle => '録音中は変更できません';
+
+  @override
+  String get recordingRealtimeLockedDialogMessage =>
+      'リアルタイム文字起こしのON/OFFは録音を開始する前にのみ変更できます。この設定を変えるには、録音を止めて新しく録音を開始してください。';
+
+  @override
   String get recordingSpeechModelDialogTitle => '音声モデルが必要です';
 
   @override
@@ -354,6 +371,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get recordingLanguageRowTitle => '録音言語';
+
+  @override
+  String get recordingLanguageRowSubtitle => '文字起こしや分析に使われる言語です。';
 
   @override
   String recordingAsrModelErrorPrefix(String message) {
@@ -487,6 +507,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get lectureViewerKeywordsSheetTitle => 'キーワード';
+
+  @override
+  String get lectureViewerTopicsSheetTitle => 'トピック';
+
+  @override
+  String get lectureViewerTopicCardReviewCards => '復習カード';
+
+  @override
+  String get lectureViewerTopicCardDeepNotes => '詳細ノート';
+
+  @override
+  String get lectureViewerTopicEmptyState => '利用可能なトピックがまだありません';
 
   @override
   String get lectureViewerInfoSheetEmptyState => 'まだ何もありません';
@@ -687,6 +719,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get statusScaffoldSyncingMessage => 'アップロードが完了するまでお待ちください。';
+
+  @override
+  String get statusScaffoldErrorTitle => '状態を取得できませんでした';
+
+  @override
+  String get statusScaffoldErrorMessage =>
+      '分析が開始済みかどうか確認できませんでした。通信状態を確認して、もう一度お試しください。';
+
+  @override
+  String get statusScaffoldErrorRetryButton => '再試行';
 
   @override
   String get creditDetailTitle => 'クレジット';

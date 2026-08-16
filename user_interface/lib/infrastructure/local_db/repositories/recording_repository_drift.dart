@@ -412,6 +412,34 @@ class RecordingRepositoryDrift {
     return jobId;
   }
 
+  // start_analysisジョブはassetIdカラムが必須だが、実体ファイルは一切参照しない
+  // (UploadManager._performUploadはkind=='start_analysis'ならasset取得より前に
+  // 分岐して抜ける)。号砲を鳴らす側がassetIdを持っていない場合に、この講義の
+  // 任意のアセットIDを流用するためのヘルパー。
+  Future<String?> getAnyAssetIdForLecture(String lectureId) async {
+    final row = await (db.select(db.localLectureAssets)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.id;
+  }
+
+  // 自動発火の二重登録ガード。保存時(RecordingController.upload)と
+  // 最終チャンク完了時(UploadManager)の両方が号砲を鳴らしうるため、
+  // 既に号砲ジョブがあるかを発火前に確認する。完了済み('done')も含めて
+  // 見るのが重要 —— 完了済みを除外すると、一度analysisを開始した後に
+  // もう一度発火してしまう。
+  Future<bool> hasStartAnalysisJobForLecture(String lectureId) async {
+    final rows = await (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.equals('start_analysis'))
+          ..where((t) => t.status.isNotValue('cancelled'))
+          ..limit(1))
+        .get();
+    return rows.isNotEmpty;
+  }
+
   // UI側(NotStartedView)が「まだ音声のアップロードが終わっていないので
   // Start Analysisを押させてはいけない」を判定するためのwatch。
   // start_analysisジョブ(実ファイルを持たない号砲)は対象外 —— これ自体は

@@ -40,6 +40,16 @@ Do not invent a different story, concept, or real-world example. Write up the gi
    - Body: Reveal what actually happened, the hidden conflict, or the ingenious mechanism.
    - Ending: Close with a memorable, grounded punchline that leaves the student looking forward to the next lecture.
 
+5. **Anchor Minor Proper Nouns with Context (Crucial for Readability):**
+   Unless a proper noun is globally famous (e.g., Apple, NASA, Google), never drop unfamiliar company names, video games, historical figures, or specific tools without a short 2–4 word tag providing immediate context so the reader never feels lost.
+   - ❌ Bad: `When id Software developed the Quake engine, John Carmack faced a problem...`
+   - ⭕️ Good: `When the developers behind the legendary 90s video game Quake (id Software) tried to render 3D lighting, their lead programmer John Carmack hit a wall...`
+   - ❌ Bad: `The Danziger 2011 study examined...`
+   - ⭕️ Good: `A landmark judicial psychology study analyzing over 1,000 Israeli parole decisions discovered...`
+
+6. **Eliminate Niche Jargon & In-Group Slang:**
+   Do not clutter the narrative with unnecessary technical API names or gamer/in-group slang (e.g., avoid `OpenGL rendering pipeline`, `frag`, `zero-overhead abstraction`) unless strictly required. Translate them into universally relatable, vivid language (e.g., `real-time 3D lighting`, `smooth motion`, `hyper-realistic explosions`).
+
 ---
 
 ### CONTENT & FORMATTING GUIDELINES

@@ -85,6 +85,7 @@ Identify the single most pivotal academic concept taught in today's lecture to s
   - **Future Importance:** Prioritize the concept that is most essential for understanding subsequent topics or future lectures in this course/field — the foundational idea where understanding it deeply today pays the highest dividends in upcoming classes.
   - **Avoid Generic Prerequisites:** Do NOT choose baseline, background, or recurring prerequisite terms that appear in every lecture (e.g., in a Computer Systems class, do not pick generic "Memory" or "Variables" if today's actual focus was "Virtual Memory Page Tables").
   - **Avoid Minor Tangents:** Do NOT choose minor illustrative examples, side remarks, or isolated trivia mentioned in passing.
+  - **You only select from `ACADEMIC` topics.** `selected_topic_idx` MUST be that topic's own `idx` number as you numbered it in the `topics` list above (the sequential count among `ACADEMIC` topics only — `LOGISTICS`/`OFF_TOPIC` topics have no `idx` and can never be selected). Do NOT use that topic's position within the full `topics` array (which also counts `LOGISTICS`/`OFF_TOPIC` entries).
 
 - **Write `concept_intro_line`:**
   - Write 2–3 concise sentences describing:

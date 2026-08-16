@@ -8,6 +8,7 @@
 // 軽量なリングバッファも維持する。中身自体はテスト機能に依存しない汎用
 // ユーティリティなので dev_tools/ には置かない(見た目のオーバーレイ表示だけが
 // isTestMode限定)。
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
@@ -33,10 +34,15 @@ class DevLog {
       debugPrint('[DevLog] $line');
     }
 
-    final updated = [...lines.value, line];
-    if (updated.length > maxLines) {
-      updated.removeRange(0, updated.length - maxLines);
-    }
-    lines.value = updated;
+    // Widgetツリーのbuildフェーズ中にDevLog.addが呼ばれても
+    // setState() or markNeedsBuild() during build例外が起きないよう、
+    // ValueNotifierのUI更新はmicrotaskで遅延通知する。
+    scheduleMicrotask(() {
+      final updated = [...lines.value, line];
+      if (updated.length > maxLines) {
+        updated.removeRange(0, updated.length - maxLines);
+      }
+      lines.value = updated;
+    });
   }
 }

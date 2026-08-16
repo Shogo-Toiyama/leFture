@@ -454,40 +454,158 @@ class RecordingPage extends HookConsumerWidget {
       required String subtitle,
       required bool value,
       required ValueChanged<bool>? onChanged,
+      bool dimmed = false,
+      Widget? titleTrailing,
+      Color? subtitleColor,
     }) {
-      return Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1C2E).withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.universe.glassBorder),
-        ),
-        child: SwitchListTile(
-          tileColor: Colors.transparent,
-          secondary: Icon(icon, color: AppColors.universe.textComet),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: AppColors.universe.textStarlight,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+      return Opacity(
+        opacity: dimmed ? 0.5 : 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1C2E).withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.universe.glassBorder),
+          ),
+          child: SwitchListTile(
+            tileColor: Colors.transparent,
+            secondary: Icon(icon, color: AppColors.universe.textComet),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.universe.textStarlight,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (titleTrailing != null) ...[
+                  const SizedBox(width: 8),
+                  titleTrailing,
+                ],
+              ],
             ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(color: AppColors.universe.textComet, fontSize: 11),
-          ),
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.starGold,
-          activeTrackColor: AppColors.starGold.withValues(alpha: 0.3),
-          inactiveThumbColor: AppColors.universe.textComet,
-          inactiveTrackColor: AppColors.universe.glassWhiteLow,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
+            subtitle: Text(
+              subtitle,
+              style: TextStyle(
+                color: subtitleColor ?? AppColors.universe.textComet,
+                fontSize: 11,
+              ),
+            ),
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.starGold,
+            activeTrackColor: AppColors.starGold.withValues(alpha: 0.3),
+            inactiveThumbColor: AppColors.universe.textComet,
+            inactiveTrackColor: AppColors.universe.glassWhiteLow,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
           ),
         ),
       );
+    }
+
+    // 以前は言語ごとに別々のASRモデルがあったため、言語選択タイルに
+    // ダウンロード状況を出していた。今は全言語共通でWhisperを使うため、
+    // モデル状態はRealtime Transcribeタイル側に表示する。
+    Widget buildAsrStatusIndicator({
+      required AsrLanguageModelState modelState,
+      required VoidCallback onDownloadTap,
+      required VoidCallback onPauseTap,
+      required VoidCallback onResumeTap,
+    }) {
+      switch (modelState.status) {
+        case AsrModelStatus.checking:
+          return SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.universe.textComet,
+            ),
+          );
+        case AsrModelStatus.downloading:
+          final progress = modelState.progress;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: progress,
+                      color: AppColors.starGold,
+                    ),
+                    if (progress != null)
+                      Text(
+                        '${(progress * 100).round()}',
+                        style: TextStyle(
+                          fontSize: 7,
+                          color: AppColors.universe.textComet,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onPauseTap,
+                child: Icon(
+                  Icons.pause_circle_outline,
+                  color: AppColors.universe.textComet,
+                  size: 20,
+                ),
+              ),
+            ],
+          );
+        case AsrModelStatus.paused:
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onResumeTap,
+            child: Icon(
+              Icons.play_circle_outline,
+              color: AppColors.starGold,
+              size: 22,
+            ),
+          );
+        case AsrModelStatus.ready:
+          return const Icon(
+            Icons.check_circle,
+            color: AppColors.growthGreen,
+            size: 18,
+          );
+        case AsrModelStatus.failed:
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onDownloadTap,
+            child: const Icon(
+              Icons.download_rounded,
+              color: AppColors.correctionRed,
+              size: 20,
+            ),
+          );
+        case AsrModelStatus.unknown:
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onDownloadTap,
+            child: Icon(
+              Icons.download_rounded,
+              color: AppColors.universe.textComet,
+              size: 20,
+            ),
+          );
+      }
     }
 
     // コース選択ロジック
@@ -503,6 +621,31 @@ class RecordingPage extends HookConsumerWidget {
       if (result != null && result.confirmed) {
         controller.setCourseId(result.courseId);
       }
+    }
+
+    /// アップロード前のコース必須チェック。コース未選択のまま保存すると
+    /// バックエンドの自動分析が始まらず(UploadManager/RecordingController
+    /// どちらの発火判定もcourseId != nullを要求する)、ユーザーからは
+    /// 「アップロードしたのに何も起きない」ようにしか見えないため、
+    /// ここで明示的に止めてコース選択へ誘導する。
+    /// コースが選ばれた(または元から選ばれていた)場合のみtrueを返す。
+    Future<bool> ensureCourseSelected() async {
+      if (state.courseId != null) return true;
+
+      final goToPicker = await showCustomDialog(
+        context: context,
+        title: l10n.recordingCourseRequiredDialogTitle,
+        message: l10n.recordingCourseRequiredDialogMessage,
+        icon: Icons.school_outlined,
+        confirmLabel: l10n.recordingCourseRequiredSelectButton,
+        cancelLabel: l10n.recordingCancelButton,
+      );
+      if (goToPicker != true) return false;
+
+      await openCoursePicker();
+      // ピッカーで「コースなしで続ける」を選ぶこともできるため、
+      // 戻ってきた時点の最新状態で再確認する。
+      return ref.read(recordingControllerProvider).courseId != null;
     }
 
     final isBusy = state.isBusy;
@@ -1353,46 +1496,91 @@ class RecordingPage extends HookConsumerWidget {
                                         icon: Icons.chat_bubble_outline,
                                         title: l10n
                                             .recordingRealtimeTranscribeTitle,
-                                        subtitle: l10n
-                                            .recordingRealtimeTranscribeSubtitle,
-                                        value: state.realtimeTranscribe,
-                                        onChanged:
-                                            state.phase == RecordingPhase.idle
-                                            ? (val) async {
-                                                if (val &&
-                                                    asrModelState.status !=
-                                                        AsrModelStatus.ready) {
-                                                  final confirmed = await showCustomDialog(
-                                                    context: context,
-                                                    title: l10n
-                                                        .recordingSpeechModelDialogTitle,
-                                                    message: l10n
-                                                        .recordingSpeechModelDialogMessage,
-                                                    icon:
-                                                        Icons.download_rounded,
-                                                    confirmLabel: l10n
-                                                        .recordingSpeechModelDownloadConfirm,
-                                                    cancelLabel: l10n
-                                                        .recordingCancelButton,
-                                                  );
-                                                  if (confirmed != true) return;
-                                                  controller
-                                                      .setRealtimeTranscribe(
-                                                        true,
-                                                      );
-                                                  if (context.mounted) {
-                                                    await ensureAsrModelWithErrorDialog(
-                                                      context,
-                                                      ref,
-                                                      recordingLanguage,
-                                                    );
-                                                  }
-                                                  return;
-                                                }
-                                                controller
-                                                    .setRealtimeTranscribe(val);
-                                              }
+                                        subtitle:
+                                            asrModelState.status ==
+                                                AsrModelStatus.failed
+                                            ? l10n.recordingAsrModelErrorPrefix(
+                                                friendlyAsrModelErrorMessage,
+                                              )
+                                            : l10n
+                                                  .recordingRealtimeTranscribeSubtitle,
+                                        subtitleColor:
+                                            asrModelState.status ==
+                                                AsrModelStatus.failed
+                                            ? AppColors.correctionRed
                                             : null,
+                                        titleTrailing: buildAsrStatusIndicator(
+                                          modelState: asrModelState,
+                                          onDownloadTap: () =>
+                                              ensureAsrModelWithErrorDialog(
+                                                context,
+                                                ref,
+                                                recordingLanguage,
+                                              ),
+                                          onPauseTap: () => ref
+                                              .read(
+                                                asrModelManagerProvider
+                                                    .notifier,
+                                              )
+                                              .pauseDownload(recordingLanguage),
+                                          onResumeTap: () =>
+                                              resumeAsrModelWithErrorDialog(
+                                                context,
+                                                ref,
+                                                recordingLanguage,
+                                              ),
+                                        ),
+                                        value: state.realtimeTranscribe,
+                                        dimmed:
+                                            state.phase != RecordingPhase.idle,
+                                        onChanged: (val) async {
+                                          if (state.phase !=
+                                              RecordingPhase.idle) {
+                                            await showCustomDialog(
+                                              context: context,
+                                              title: l10n
+                                                  .recordingRealtimeLockedDialogTitle,
+                                              message: l10n
+                                                  .recordingRealtimeLockedDialogMessage,
+                                              icon: Icons.lock_outline,
+                                              confirmLabel:
+                                                  l10n.coursePageOkButton,
+                                              cancelLabel: null,
+                                            );
+                                            return;
+                                          }
+                                          if (val &&
+                                              asrModelState.status !=
+                                                  AsrModelStatus.ready) {
+                                            final confirmed = await showCustomDialog(
+                                              context: context,
+                                              title: l10n
+                                                  .recordingSpeechModelDialogTitle,
+                                              message: l10n
+                                                  .recordingSpeechModelDialogMessage,
+                                              icon: Icons.download_rounded,
+                                              confirmLabel: l10n
+                                                  .recordingSpeechModelDownloadConfirm,
+                                              cancelLabel:
+                                                  l10n.recordingCancelButton,
+                                            );
+                                            if (confirmed != true) return;
+                                            controller.setRealtimeTranscribe(
+                                              true,
+                                            );
+                                            if (context.mounted) {
+                                              await ensureAsrModelWithErrorDialog(
+                                                context,
+                                                ref,
+                                                recordingLanguage,
+                                              );
+                                            }
+                                            return;
+                                          }
+                                          controller.setRealtimeTranscribe(
+                                            val,
+                                          );
+                                        },
                                       ),
                                       const SizedBox(height: 12),
                                       _RecordingLanguageRow(
@@ -1400,24 +1588,6 @@ class RecordingPage extends HookConsumerWidget {
                                             recordingLanguageFromCode(
                                               recordingLanguage,
                                             ).englishName,
-                                        modelState: asrModelState,
-                                        onDownloadTap: () =>
-                                            ensureAsrModelWithErrorDialog(
-                                              context,
-                                              ref,
-                                              recordingLanguage,
-                                            ),
-                                        onPauseTap: () => ref
-                                            .read(
-                                              asrModelManagerProvider.notifier,
-                                            )
-                                            .pauseDownload(recordingLanguage),
-                                        onResumeTap: () =>
-                                            resumeAsrModelWithErrorDialog(
-                                              context,
-                                              ref,
-                                              recordingLanguage,
-                                            ),
                                         onTap: isBusy
                                             ? null
                                             : () => showModalBottomSheet(
@@ -1466,26 +1636,17 @@ class RecordingPage extends HookConsumerWidget {
                           child: ElevatedButton(
                             onPressed:
                                 !isBusy &&
-                                    (state.canUpload ||
-                                        selectedAudioFilePath.value != null)
-                                ? () async {
+                                        !state.isRecording &&
+                                        (state.canUpload ||
+                                            selectedAudioFilePath.value != null)
+                                    ? () async {
+                                    // ファイル選択・録音アップロードのどちらも、
+                                    // コース未選択のままでは自動分析が始まらないので
+                                    // 先に必ずコースを確定させる。
+                                    if (!await ensureCourseSelected()) return;
+
                                     if (selectedAudioFilePath.value != null) {
                                       // ファイル選択がある場合
-                                      if (state.courseId == null) {
-                                        // Course が未選択なら警告
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                l10n.recordingSelectCourseBeforeUploadSnackbar,
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        return;
-                                      }
                                       await controller.uploadAudioFile(
                                         selectedAudioFilePath.value!,
                                       );
@@ -1827,120 +1988,19 @@ class _StatusPill extends StatelessWidget {
 }
 
 /// 「Recording Language」設定行。タップするとLanguageSelectionSheetが開き、
-/// オンデバイスASRモデルのダウンロード状況(ダウンロード中/準備完了/失敗)と
-/// 併せて言語を選べる。
+/// 言語を選べる。以前は言語ごとに別々のASRモデルがあったため、ここに
+/// ダウンロード状況を表示していたが、今は全言語共通でWhisperを使うため、
+/// モデル状態はRealtime Transcribeタイル側([buildAsrStatusIndicator])に
+/// 表示するようになった。
 class _RecordingLanguageRow extends StatelessWidget {
-  const _RecordingLanguageRow({
-    required this.languageLabel,
-    required this.modelState,
-    required this.onTap,
-    this.onDownloadTap,
-    this.onPauseTap,
-    this.onResumeTap,
-  });
+  const _RecordingLanguageRow({required this.languageLabel, required this.onTap});
 
   final String languageLabel;
-  final AsrLanguageModelState modelState;
   final VoidCallback? onTap;
-  // failed/unknown状態でタップするとダウンロード/リトライ。
-  final VoidCallback? onDownloadTap;
-  final VoidCallback? onPauseTap;
-  final VoidCallback? onResumeTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    Widget statusIndicator;
-    switch (modelState.status) {
-      case AsrModelStatus.checking:
-        statusIndicator = SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.universe.textComet,
-          ),
-        );
-      case AsrModelStatus.downloading:
-        final progress = modelState.progress;
-        statusIndicator = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: progress,
-                    color: AppColors.starGold,
-                  ),
-                  if (progress != null)
-                    Text(
-                      '${(progress * 100).round()}',
-                      style: TextStyle(
-                        fontSize: 7,
-                        color: AppColors.universe.textComet,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (onPauseTap != null) ...[
-              const SizedBox(width: 4),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onPauseTap,
-                child: Icon(
-                  Icons.pause_circle_outline,
-                  color: AppColors.universe.textComet,
-                  size: 20,
-                ),
-              ),
-            ],
-          ],
-        );
-      case AsrModelStatus.paused:
-        statusIndicator = GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onResumeTap,
-          child: Icon(
-            Icons.play_circle_outline,
-            color: AppColors.starGold,
-            size: 22,
-          ),
-        );
-      case AsrModelStatus.ready:
-        statusIndicator = const Icon(
-          Icons.check_circle,
-          color: AppColors.growthGreen,
-          size: 18,
-        );
-      case AsrModelStatus.failed:
-        statusIndicator = GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onDownloadTap,
-          child: const Icon(
-            Icons.download_rounded,
-            color: AppColors.correctionRed,
-            size: 20,
-          ),
-        );
-      case AsrModelStatus.unknown:
-        statusIndicator = onDownloadTap == null
-            ? const SizedBox.shrink()
-            : GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onDownloadTap,
-                child: Icon(
-                  Icons.download_rounded,
-                  color: AppColors.universe.textComet,
-                  size: 20,
-                ),
-              );
-    }
 
     return Container(
       decoration: BoxDecoration(
@@ -1962,16 +2022,9 @@ class _RecordingLanguageRow extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          modelState.status == AsrModelStatus.failed
-              ? l10n.recordingAsrModelErrorPrefix(friendlyAsrModelErrorMessage)
-              : l10n.recordingOnDeviceModelSubtitle,
+          l10n.recordingLanguageRowSubtitle,
           maxLines: 3,
-          style: TextStyle(
-            color: modelState.status == AsrModelStatus.failed
-                ? AppColors.correctionRed
-                : AppColors.universe.textComet,
-            fontSize: 11,
-          ),
+          style: TextStyle(color: AppColors.universe.textComet, fontSize: 11),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1983,8 +2036,6 @@ class _RecordingLanguageRow extends StatelessWidget {
                 fontSize: 13,
               ),
             ),
-            const SizedBox(width: 8),
-            statusIndicator,
             const SizedBox(width: 4),
             Icon(
               Icons.chevron_right_rounded,

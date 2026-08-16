@@ -821,35 +821,45 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
                 // Expanded/SingleChildScrollView against.
                 child: _panelData == null
                     ? const SizedBox(width: double.infinity)
-                    : LectureTopicDetailPanel(
-                        courseTitle: widget.data.courseTitle,
-                        lectureNum: _panelData!.lectureNum,
-                        topicNum: _panelData!.topicNum,
-                        title: _panelData!.title,
-                        summary: _panelData!.summary,
-                        clusterName: _panelData!.clusterName,
-                        relatedTopics: _panelData!.relatedTopics,
-                        onDragUpdate: _onPanelDragUpdate,
-                        onDragEnd: _onPanelDragEnd,
-                        // Only hides the panel -- keeps the Lecture/Topic
-                        // View selection (and its highlight/glow) intact,
-                        // unlike tapping the background/a cluster, which
-                        // clears both. Tapping a different node/lecture
-                        // still opens a fresh panel as usual.
-                        onClose: () => setState(() {
-                          _panelData = null;
-                          _panelExtent = 0;
-                        }),
-                        onGoToLecture: () {
-                          final lecture = _panelData!.lecture;
-                          final courseId = widget.courseId;
-                          setState(() {
-                            _selection = null;
-                            _panelData = null;
-                            _panelExtent = 0;
-                          });
-                          context.push('${AppRoutes.coursesRootPath}/c/$courseId/v/${lecture.id}');
-                        },
+                    : ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.topCenter,
+                          minHeight: 0,
+                          maxHeight: _panelMaxExtent,
+                          child: SizedBox(
+                            height: max(_panelExtent, _panelMinExtent),
+                            child: LectureTopicDetailPanel(
+                              courseTitle: widget.data.courseTitle,
+                              lectureNum: _panelData!.lectureNum,
+                              topicNum: _panelData!.topicNum,
+                              title: _panelData!.title,
+                              summary: _panelData!.summary,
+                              clusterName: _panelData!.clusterName,
+                              relatedTopics: _panelData!.relatedTopics,
+                              onDragUpdate: _onPanelDragUpdate,
+                              onDragEnd: _onPanelDragEnd,
+                              // Only hides the panel -- keeps the Lecture/Topic
+                              // View selection (and its highlight/glow) intact,
+                              // unlike tapping the background/a cluster, which
+                              // clears both. Tapping a different node/lecture
+                              // still opens a fresh panel as usual.
+                              onClose: () => setState(() {
+                                _panelData = null;
+                                _panelExtent = 0;
+                              }),
+                              onGoToLecture: () {
+                                final lecture = _panelData!.lecture;
+                                final courseId = widget.courseId;
+                                setState(() {
+                                  _selection = null;
+                                  _panelData = null;
+                                  _panelExtent = 0;
+                                });
+                                context.push('${AppRoutes.coursesRootPath}/c/$courseId/v/${lecture.id}');
+                              },
+                            ),
+                          ),
+                        ),
                       ),
               ),
             ),

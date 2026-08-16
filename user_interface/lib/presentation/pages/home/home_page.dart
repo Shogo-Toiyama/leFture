@@ -130,8 +130,10 @@ class HomePage extends HookConsumerWidget {
     // アイコンで分かるようにする)。
     useEffect(() {
       if (RecordingPreferences().getRealtimeTranscribe()) {
-        final lang = ref.read(recordingLanguageControllerProvider);
-        ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final lang = ref.read(recordingLanguageControllerProvider);
+          ref.read(asrModelManagerProvider.notifier).ensureModelReady(lang);
+        });
       }
       return null;
     }, const []);

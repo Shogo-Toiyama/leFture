@@ -686,6 +686,36 @@ abstract class AppLocalizations {
   /// **'Transcribe audio stream in realtime as you record.'**
   String get recordingRealtimeTranscribeSubtitle;
 
+  /// Title of the dialog shown when the user taps Upload without having picked a course. A course is required before the recording can be uploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a course first'**
+  String get recordingCourseRequiredDialogTitle;
+
+  /// Body text explaining that a course must be selected before uploading, because automatic analysis will not run without it.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a course for this lecture. Without one, analysis can\'t start and your notes won\'t be generated.'**
+  String get recordingCourseRequiredDialogMessage;
+
+  /// Confirm button on the 'select a course first' dialog. Tapping it opens the course picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Select course'**
+  String get recordingCourseRequiredSelectButton;
+
+  /// Title of a dialog shown when the user taps the Realtime Transcribe toggle while a recording is already in progress, explaining the setting is locked.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t change while recording'**
+  String get recordingRealtimeLockedDialogTitle;
+
+  /// Body text of the dialog explaining why the Realtime Transcribe toggle can't be changed mid-recording, and what to do instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcribe can only be turned on or off before you start recording. Stop and start a new recording to change this setting.'**
+  String get recordingRealtimeLockedDialogMessage;
+
   /// Title of the dialog shown when the user turns on Realtime transcribe but the on-device speech model for the current recording language hasn't been downloaded yet.
   ///
   /// In en, this message translates to:
@@ -775,6 +805,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recording language'**
   String get recordingLanguageRowTitle;
+
+  /// Subtitle of the 'Recording language' settings row. Kept generic and unrelated to speech-model download status, since model status is now shown on the Realtime Transcribe toggle instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Language used for transcription and analysis.'**
+  String get recordingLanguageRowSubtitle;
 
   /// Subtitle of the 'Recording language' settings row when the on-device speech model failed to prepare. {message} is an already-localized, human-readable error string produced elsewhere in the app; this key only supplies the warning-emoji prefix and placement. Keep the ⚠️ emoji.
   ///
@@ -1009,6 +1045,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keywords'**
   String get lectureViewerKeywordsSheetTitle;
+
+  /// Header title of the bottom sheet opened by tapping the hero image collage or topics chip, listing all topics for this lecture.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get lectureViewerTopicsSheetTitle;
+
+  /// Button label on a topic card inside the topics bottom sheet to jump to the review cards for that topic.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Cards'**
+  String get lectureViewerTopicCardReviewCards;
+
+  /// Button label on a topic card inside the topics bottom sheet to jump to the deep notes for that topic.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Notes'**
+  String get lectureViewerTopicCardDeepNotes;
+
+  /// Empty-state text shown inside the topics bottom sheet when no topics are available.
+  ///
+  /// In en, this message translates to:
+  /// **'No topics available yet'**
+  String get lectureViewerTopicEmptyState;
 
   /// Empty-state text shown inside the announcements/keywords bottom sheet when that list has no items.
   ///
@@ -1360,6 +1420,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please wait for the upload to complete.'**
   String get statusScaffoldSyncingMessage;
+
+  /// Headline shown when the app fails to fetch the lecture's analysis job status and cannot determine whether analysis has started yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t Load Status'**
+  String get statusScaffoldErrorTitle;
+
+  /// Subtitle explaining that the true analysis status is unknown due to a data fetch failure, so the Start Analysis button is intentionally withheld.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm whether analysis has started. Please check your connection and try again.'**
+  String get statusScaffoldErrorMessage;
+
+  /// Button label to re-attempt fetching the lecture's analysis job status after a failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get statusScaffoldErrorRetryButton;
 
   /// AppBar title on the Credit Detail page, reached by tapping the credit card on My Account. Also reused as the 'Credits' label inside that credit card widget itself. Short label.
   ///

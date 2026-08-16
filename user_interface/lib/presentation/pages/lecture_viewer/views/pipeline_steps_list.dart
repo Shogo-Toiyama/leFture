@@ -23,9 +23,23 @@ class PipelineStepsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final byType = {for (final t in tasks) t.taskType: t};
 
+    // TRANSCRIBE_MASTERとCHECK_AND_ASSEMBLEは互いに排他的で、バックエンドは
+    // ジョブ作成時にどちらか一方のタスク行しかINSERTしない(realtime収録か
+    // どうかで選択)。tasksが空の間(取得直後の一瞬)はどちらか判別できないため
+    // 両方見せておき、実際のタスク一覧が届いたら「存在しない方」を除外する。
+    // これ以外のタスク種別は常に全ジョブでINSERTされるため対象外。
+    final visibleTaskOrder = tasks.isEmpty
+        ? processingTaskOrder
+        : processingTaskOrder.where((type) {
+            if (type == 'TRANSCRIBE_MASTER' || type == 'CHECK_AND_ASSEMBLE') {
+              return byType.containsKey(type);
+            }
+            return true;
+          }).toList();
+
     // 順番的に「最初の未完了ステップ」を実行中として扱う
     String? currentType;
-    for (final type in processingTaskOrder) {
+    for (final type in visibleTaskOrder) {
       final t = byType[type];
       if (t == null || (!t.isCompleted && !t.isCancelled)) {
         currentType = type;
@@ -36,7 +50,7 @@ class PipelineStepsList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final type in processingTaskOrder)
+        for (final type in visibleTaskOrder)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: _StepRow(
@@ -70,6 +84,20 @@ class _StepRow extends HookConsumerWidget {
     final label = localizedProcessingTaskLabel(l10n, taskType);
 
     if (task == null) {
+      // タスク行自体はバックエンドがジョブ作成時に一括INSERTするため、
+      // 「現在の番のはずなのにtaskがまだ無い」のはjobStreamProviderと
+      // jobTasksStreamProviderの取得タイミングがずれているだけ(実行中は確定)。
+      // ここでも「未着手」表示にしてしまうと、RUNNING中なのにスピナーが
+      // 出ない瞬間ができてしまうため、isCurrentならスピナー表示を優先する。
+      if (isCurrent) {
+        return _StepTile(
+          icon: null,
+          iconColor: AppColors.starGold,
+          label: label,
+          showSpinner: true,
+          subtitle: Text(l10n.pipelineStepsInProgressLabel),
+        );
+      }
       return _StepTile(
         icon: Icons.circle_outlined,
         iconColor: AppColors.universe.textComet.withValues(alpha: 0.4),
@@ -238,6 +266,12 @@ class _RetryableCompletedStep extends HookConsumerWidget {
       isRetrying.value = true;
       try {
         await ref.read(jobRepositoryProvider).retryTask(taskId: task.id);
+        // watchTasksForJobは全タスクが終端状態(FAILED/CANCELLED込み)になると
+        // ポーリングを永久停止する。リトライはジョブを作り直さず同じジョブ内で
+        // タスクをRUNNING/QUEUEDに戻すだけなので、invalidateして明示的に
+        // ポーリングを再起動しないと、以後永久に古いスナップショットのまま
+        // 更新されなくなる(スピナーが二度と出ない不具合の原因)。
+        ref.invalidate(jobTasksStreamProvider(task.jobId));
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -287,6 +321,10 @@ class _StuckStepCard extends HookConsumerWidget {
       error.value = null;
       try {
         await ref.read(jobRepositoryProvider).retryTask(taskId: task.id);
+        // 理由は_RetryableCompletedStep.retryFromHereと同じ:
+        // watchTasksForJobは全タスク終端状態でポーリングを永久停止するため、
+        // 同じジョブ内でのリトライ後は明示的に再起動する必要がある。
+        ref.invalidate(jobTasksStreamProvider(task.jobId));
       } catch (e) {
         error.value = e.toString();
       } finally {

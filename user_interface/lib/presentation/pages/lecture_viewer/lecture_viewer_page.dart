@@ -42,6 +42,7 @@ import 'package:lefture/application/profile/user_profile_provider.dart';
 import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/pipeline_progress_banner.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/reveal.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/topics_sheet.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
   const LectureViewerPage({super.key, required this.lectureId});
@@ -426,7 +427,17 @@ class _LectureViewerBody extends HookConsumerWidget {
                     RevealSwitcher(
                       reveal: heroCollageReveal,
                       locked: const ShimmerBox(height: 180, borderRadius: 20),
-                      ready: LectureHeroCollage(lectureId: lecture.id),
+                      ready: LectureHeroCollage(
+                        lectureId: lecture.id,
+                        onTap: topics.isNotEmpty
+                            ? () => _showTopicsSheet(
+                                context,
+                                lecture.id,
+                                lecture.courseId,
+                                topics,
+                              )
+                            : null,
+                      ),
                     ),
                     const SizedBox(height: 20),
 
@@ -575,7 +586,14 @@ class _LectureViewerBody extends HookConsumerWidget {
                             ready: _HighlightChip(
                               icon: Icons.hub_outlined,
                               label: l10n.lectureViewerTopicsChip(topics.length),
-                              onTap: null, // Dummy/no-op
+                              onTap: topics.isNotEmpty
+                                  ? () => _showTopicsSheet(
+                                      context,
+                                      lecture.id,
+                                      lecture.courseId,
+                                      topics,
+                                    )
+                                  : null,
                             ),
                           ),
                         ],
@@ -796,6 +814,20 @@ class _LectureViewerBody extends HookConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _LectureInfoSheet.keywords(keywords, topics),
+    );
+  }
+
+  void _showTopicsSheet(
+    BuildContext context,
+    String lectureId,
+    String? courseId,
+    List<LectureTopic> topics,
+  ) {
+    showTopicsSheet(
+      context: context,
+      lectureId: lectureId,
+      courseId: courseId,
+      initialTopics: topics,
     );
   }
 }

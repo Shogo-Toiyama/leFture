@@ -20,19 +20,8 @@ class AudioWaveformVisualizer extends StatefulWidget {
   State<AudioWaveformVisualizer> createState() => _AudioWaveformVisualizerState();
 }
 
-class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _animController;
-  final List<double> _waveformHistory = List.generate(25, (_) => 0.05);
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat();
-  }
+class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer> {
+  final List<double> _waveformHistory = List.generate(25, (_) => 0.0);
 
   @override
   void didUpdateWidget(covariant AudioWaveformVisualizer oldWidget) {
@@ -40,41 +29,37 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer>
     if (widget.isRecording && !widget.isPaused) {
       // 最新の音量レベルをキューに追加
       _waveformHistory.removeAt(0);
-      // 小さな教授の声でもしっかり視覚化されるよう感度ブースト
-      final boostedLevel = math.pow(widget.audioLevel, 0.65) * 1.25;
-      final clampedLevel = math.max(0.08, boostedLevel.clamp(0.0, 1.0));
-      _waveformHistory.add(clampedLevel);
+      
+      // 小さな声でも自然に見やすく立ち上がる適度な感度カーブ（直前の約1.3倍）
+      final boostedLevel = (math.pow(widget.audioLevel, 0.6) * 1.1).toDouble();
+      _waveformHistory.add(boostedLevel.clamp(0.0, 1.0));
+      setState(() {});
     } else {
-      // 静止時の低水準レベル
+      // 静止・停止時は完全フラット
+      bool needsUpdate = false;
       for (int i = 0; i < _waveformHistory.length; i++) {
-        _waveformHistory[i] = 0.05;
+        if (_waveformHistory[i] != 0.0) {
+          _waveformHistory[i] = 0.0;
+          needsUpdate = true;
+        }
+      }
+      if (needsUpdate) {
+        setState(() {});
       }
     }
   }
 
   @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, child) {
-        return SizedBox(
-          height: 44,
-          width: double.infinity,
-          child: CustomPaint(
-            painter: _WaveformPainter(
-              levels: _waveformHistory,
-              isRecording: widget.isRecording && !widget.isPaused,
-              animValue: _animController.value,
-            ),
-          ),
-        );
-      },
+    return SizedBox(
+      height: 44,
+      width: double.infinity,
+      child: CustomPaint(
+        painter: _WaveformPainter(
+          levels: _waveformHistory,
+          isRecording: widget.isRecording && !widget.isPaused,
+        ),
+      ),
     );
   }
 }
@@ -82,12 +67,10 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer>
 class _WaveformPainter extends CustomPainter {
   final List<double> levels;
   final bool isRecording;
-  final double animValue;
 
   _WaveformPainter({
     required this.levels,
     required this.isRecording,
-    required this.animValue,
   });
 
   @override
@@ -104,6 +87,10 @@ class _WaveformPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = barWidth;
 
+    // マイクActive(録音中)時はベースの高さを少し上げて(7.0px)待機状態を明示、
+    // 非Active(停止/Pause)時は細いドット(3.5px)にする
+    final minBarHeight = isRecording ? 7.0 : 3.5;
+
     for (int i = 0; i < count; i++) {
       final x = i * (barWidth + spacing) + (barWidth / 2);
       
@@ -111,27 +98,29 @@ class _WaveformPainter extends CustomPainter {
       final normalizedIndex = (i - count / 2).abs() / (count / 2);
       final envelope = math.sin((1.0 - normalizedIndex) * math.pi / 2);
 
-      double level = levels[i];
-      if (isRecording) {
-        // 微小なサイン波揺らぎを加えて活き活きとした動きを演出
-        final waveModifier = math.sin(animValue * 2 * math.pi + i * 0.4) * 0.12;
-        level = (level + waveModifier).clamp(0.06, 1.0);
-      }
+      final level = levels[i];
 
-      final barHeight = math.max(6.0, size.height * level * envelope);
+      // 音量に応じた高さの計算（擬似的な揺らぎは一切足さず、本物のマイク入力のみで動く）
+      final barHeight = minBarHeight + (size.height - minBarHeight) * level * envelope;
 
       // 色とグラデーションの設定
-      Color barColor;
+      final Color barColor;
       if (isRecording) {
-        final hue = 42.0 + (level * 10); // ゴールド〜ウォームイエロー
-        barColor = HSLColor.fromAHSL(
-          (0.4 + level * 0.6).clamp(0.0, 1.0),
-          hue,
-          0.9,
-          0.6,
-        ).toColor();
+        if (level > 0.04) {
+          final hue = 42.0 + (level * 10); // ゴールド〜ウォームイエロー
+          barColor = HSLColor.fromAHSL(
+            (0.5 + level * 0.5).clamp(0.0, 1.0),
+            hue,
+            0.9,
+            0.6,
+          ).toColor();
+        } else {
+          // マイクON・静音時はベースのゴールド待機色
+          barColor = AppColors.starGold.withValues(alpha: 0.35);
+        }
       } else {
-        barColor = AppColors.universe.textComet.withValues(alpha: 0.3);
+        // マイクOFF・一時停止時は静かなスレートグレー
+        barColor = AppColors.universe.textComet.withValues(alpha: 0.25);
       }
 
       paint.color = barColor;

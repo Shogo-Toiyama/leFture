@@ -503,6 +503,31 @@
     "description": "Subtitle/description text under the 'Realtime transcribe' toggle row, explaining what the toggle does."
   },
 
+  "recordingCourseRequiredDialogTitle": "Select a course first",
+  "@recordingCourseRequiredDialogTitle": {
+    "description": "Title of the dialog shown when the user taps Upload without having picked a course. A course is required before the recording can be uploaded."
+  },
+
+  "recordingCourseRequiredDialogMessage": "Please choose a course for this lecture. Without one, analysis can't start and your notes won't be generated.",
+  "@recordingCourseRequiredDialogMessage": {
+    "description": "Body text explaining that a course must be selected before uploading, because automatic analysis will not run without it."
+  },
+
+  "recordingCourseRequiredSelectButton": "Select course",
+  "@recordingCourseRequiredSelectButton": {
+    "description": "Confirm button on the 'select a course first' dialog. Tapping it opens the course picker."
+  },
+
+  "recordingRealtimeLockedDialogTitle": "Can't change while recording",
+  "@recordingRealtimeLockedDialogTitle": {
+    "description": "Title of a dialog shown when the user taps the Realtime Transcribe toggle while a recording is already in progress, explaining the setting is locked."
+  },
+
+  "recordingRealtimeLockedDialogMessage": "Realtime transcribe can only be turned on or off before you start recording. Stop and start a new recording to change this setting.",
+  "@recordingRealtimeLockedDialogMessage": {
+    "description": "Body text of the dialog explaining why the Realtime Transcribe toggle can't be changed mid-recording, and what to do instead."
+  },
+
   "recordingSpeechModelDialogTitle": "Speech model required",
   "@recordingSpeechModelDialogTitle": {
     "description": "Title of the dialog shown when the user turns on Realtime transcribe but the on-device speech model for the current recording language hasn't been downloaded yet."
@@ -576,6 +601,11 @@
   "recordingLanguageRowTitle": "Recording language",
   "@recordingLanguageRowTitle": {
     "description": "Title of the settings row that lets the user pick which language is used for on-device live transcription while recording."
+  },
+
+  "recordingLanguageRowSubtitle": "Language used for transcription and analysis.",
+  "@recordingLanguageRowSubtitle": {
+    "description": "Subtitle of the 'Recording language' settings row. Kept generic and unrelated to speech-model download status, since model status is now shown on the Realtime Transcribe toggle instead."
   },
 
   "recordingAsrModelErrorPrefix": "⚠️ {message}",
@@ -813,6 +843,26 @@
   "lectureViewerKeywordsSheetTitle": "Keywords",
   "@lectureViewerKeywordsSheetTitle": {
     "description": "Header title of the bottom sheet opened by tapping the keywords chip, listing all keyword/term cards for this lecture."
+  },
+
+  "lectureViewerTopicsSheetTitle": "Topics",
+  "@lectureViewerTopicsSheetTitle": {
+    "description": "Header title of the bottom sheet opened by tapping the hero image collage or topics chip, listing all topics for this lecture."
+  },
+
+  "lectureViewerTopicCardReviewCards": "Review Cards",
+  "@lectureViewerTopicCardReviewCards": {
+    "description": "Button label on a topic card inside the topics bottom sheet to jump to the review cards for that topic."
+  },
+
+  "lectureViewerTopicCardDeepNotes": "Deep Notes",
+  "@lectureViewerTopicCardDeepNotes": {
+    "description": "Button label on a topic card inside the topics bottom sheet to jump to the deep notes for that topic."
+  },
+
+  "lectureViewerTopicEmptyState": "No topics available yet",
+  "@lectureViewerTopicEmptyState": {
+    "description": "Empty-state text shown inside the topics bottom sheet when no topics are available."
   },
 
   "lectureViewerInfoSheetEmptyState": "Nothing here yet",
@@ -1164,6 +1214,21 @@
   "statusScaffoldSyncingMessage": "Please wait for the upload to complete.",
   "@statusScaffoldSyncingMessage": {
     "description": "Subtitle under the syncing headline, asking the user to wait for the upload to finish."
+  },
+
+  "statusScaffoldErrorTitle": "Couldn't Load Status",
+  "@statusScaffoldErrorTitle": {
+    "description": "Headline shown when the app fails to fetch the lecture's analysis job status and cannot determine whether analysis has started yet."
+  },
+
+  "statusScaffoldErrorMessage": "We couldn't confirm whether analysis has started. Please check your connection and try again.",
+  "@statusScaffoldErrorMessage": {
+    "description": "Subtitle explaining that the true analysis status is unknown due to a data fetch failure, so the Start Analysis button is intentionally withheld."
+  },
+
+  "statusScaffoldErrorRetryButton": "Retry",
+  "@statusScaffoldErrorRetryButton": {
+    "description": "Button label to re-attempt fetching the lecture's analysis job status after a failure."
   },
 
   "creditDetailTitle": "Credits",

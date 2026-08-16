@@ -43,7 +43,7 @@ Future<void> resumeAsrModelWithErrorDialog(
   }
 }
 
-/// [_RecordingLanguageRow]等でユーザーに見せる、失敗時のユーザーフレンドリーな
+/// Realtime Transcribeトグル等でユーザーに見せる、失敗時のユーザーフレンドリーな
 /// 一言メッセージ。生の例外文言(スタックトレース由来の技術的な文字列)は
 /// [AppErrorDialog]の「Technical Details」でのみ見せ、常時表示するインライン
 /// テキストはここで固定文言に丸める。

@@ -66,12 +66,13 @@ class AsrModelManager extends _$AsrModelManager {
 
     // アプリがバックグラウンドで(resumedイベントを受け取れないまま)killされた
     // 場合に備え、起動直後にも一度だけ自動一時停止の残骸を確認して再開する。
-    _handleAppForegrounded();
-
-    // マニフェスト取得(ネットワーク)を待たずに、ディスク+DBだけで分かる
-    // 範囲を先に`ready`として反映しておく(マニフェスト取得が完了すれば
-    // 通常通りその結果で上書きされる)。
-    unawaited(_reconcileFromDiskAtStartup());
+    // またマニフェスト取得(ネットワーク)を待たずに、ディスク+DBだけで分かる
+    // 範囲を先に`ready`として反映しておく。
+    // build()実行中のstate変更によるRiverpod例外を防ぐため、microtaskで非同期実行する。
+    Future.microtask(() {
+      _handleAppForegrounded();
+      unawaited(_reconcileFromDiskAtStartup());
+    });
 
     return {};
   }
@@ -101,7 +102,9 @@ class AsrModelManager extends _$AsrModelManager {
   AsrLanguageModelState statusForLanguage(String languageCode) => statusFor(kWhisperPseudoLanguageCode);
 
   void _update(String key, AsrLanguageModelState value) {
-    state = {...state, key: value};
+    Future.microtask(() {
+      state = {...state, key: value};
+    });
   }
 
   /// 共有Whisper + 共有VADの2アセットを揃える。[languageCode]は呼び出し側

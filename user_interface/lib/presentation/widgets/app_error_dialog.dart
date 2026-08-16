@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -258,12 +259,14 @@ class AppErrorDialog extends StatelessWidget {
             if (session != null) {
               context.push(AppRoutes.contact);
             } else {
+              final packageInfo = await PackageInfo.fromPlatform();
               final initialMessage =
                 '[Please describe your issue or inquiry here]\n\n'
                 '-----------------------------------------\n'
                 'Technical Details (for support team):\n'
                 '• Action: $actionName\n'
                 '• Error: $formattedError\n'
+                '• App Version: ${packageInfo.version} (${packageInfo.buildNumber})\n'
                 '• OS: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}\n'
                 '• Locale: ${Platform.localeName}\n'
                 '-----------------------------------------';
