@@ -27,7 +27,7 @@ class CoreExtractionService:
     async def run_from_memory(
         self,
         transcript_data: list[dict],
-        student_profile: str,
+        student_profile: str = "",
         content_language: str = "English",
         transcript_language: str = "English",
         is_bilingual: bool = False,
@@ -35,7 +35,6 @@ class CoreExtractionService:
         self.logger.log(f"   [Logic] Starting Core Extraction with {self.model_alias}")
 
         prompt = _load_prompt("core_extraction_prompt.txt")
-        prompt = prompt.replace("${STUDENT_PROFILE}", student_profile)
         prompt = prompt.replace(
             "${LANGUAGE_INSTRUCTIONS}",
             _build_bilingual_gloss_instruction(content_language, transcript_language, is_bilingual),

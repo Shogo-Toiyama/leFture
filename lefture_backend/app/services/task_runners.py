@@ -1198,9 +1198,6 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         prev_payload = await _get_dependency_payload(job_id, first_task_type)
         transcript_data = await _download_from_r2_to_memory(prev_payload["transcript_json_path"])
 
-        # 学生プロフィールの取得
-        student_profile = await asyncio.to_thread(_get_student_profile, uid)
-
         # 出力言語の解決 (表示言語/録音言語)
         content_language, transcript_language, is_bilingual = await asyncio.to_thread(
             _get_content_language_context, lecture_id
@@ -1213,7 +1210,6 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         # メモリ上で処理
         extraction_result = await extractor.run_from_memory(
             transcript_data,
-            student_profile,
             content_language=content_language,
             transcript_language=transcript_language,
             is_bilingual=is_bilingual,
@@ -2291,11 +2287,12 @@ async def run_fun_fact_brainstorming_task(job_id: str, task_id: str):
         logger.log(f"✅ FUN_FACT_BRAINSTORMING Completed!")
         logger.save_to_r2(storage_service)
     except Exception as e:
-        # 後続(FUN_FACT_SEARCH/FUN_FACTS_GENERATION)を止めないよう、
-        # 種が無いまま完了させる(各サービス側で空シードにフォールバックする)。
-        logger.log(f"❌ FUN_FACT_BRAINSTORMING Fatal Error: {e}. Proceeding with empty seed.")
-        await _update_task_status(task_id, "COMPLETED", payload={"fun_fact_brainstorming_path": None, "billing_records": []}, user_id=uid, job_id=job_id)
+        import traceback
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        logger.log(f"❌ FUN_FACT_BRAINSTORMING Failed: {error_msg}")
+        await _update_task_status(task_id, "FAILED", error_msg=error_msg)
         logger.save_to_r2(storage_service)
+        raise e
 
 # ---------------------------------------------------------
 # Phase 6-B-1: FUN_FACT_SEARCH

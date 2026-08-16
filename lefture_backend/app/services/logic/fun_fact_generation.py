@@ -36,7 +36,6 @@ class FunFactGenerationService:
             "seed_fun_fact_idea": seed_data.get("seed_fun_fact_idea", ""),
             "named_instance": seed_data.get("named_instance", ""),
             "concrete_detail": seed_data.get("concrete_detail", ""),
-            "domain": seed_data.get("domain", ""),
         }
 
         search_text = ""
@@ -62,7 +61,24 @@ class FunFactGenerationService:
             self.logger.log(f"❌ Fun Fact JSON parse failed. Raw output:\n{res.output_text}")
             raise ValueError(f"Fun Fact JSON parse failed: {res.json_parse_error}")
 
-        if not isinstance(res.output_json, dict):
+        return self._validate_and_normalize_output(res.output_json)
+
+    def _validate_and_normalize_output(self, output: Any) -> Dict[str, Any]:
+        if not isinstance(output, dict):
             raise ValueError("Fun Fact output must be a JSON object.")
 
-        return res.output_json
+        required_keys = ["title", "hook", "body", "sources"]
+        missing_keys = [key for key in required_keys if key not in output]
+        if missing_keys:
+            raise ValueError(f"Fun Fact output is missing keys: {missing_keys}")
+
+        for key in ("title", "hook", "body"):
+            value = output.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"Fun Fact field '{key}' must be a non-empty string.")
+
+        sources = output.get("sources")
+        if not isinstance(sources, list) or not all(isinstance(s, str) for s in sources):
+            raise ValueError("Fun Fact field 'sources' must be a list of strings.")
+
+        return output

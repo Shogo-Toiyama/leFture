@@ -61,7 +61,6 @@ class FunFactBrainstormingService:
             "seed_fun_fact_idea",
             "named_instance",
             "concrete_detail",
-            "domain",
             "needs_web_search",
             "search_queries",
             "search_reasoning",
@@ -70,7 +69,7 @@ class FunFactBrainstormingService:
         if missing_keys:
             raise ValueError(f"Fun Fact Brainstorming output is missing keys: {missing_keys}")
 
-        for key in ("seed_fun_fact_idea", "named_instance", "concrete_detail", "domain"):
+        for key in ("seed_fun_fact_idea", "named_instance", "concrete_detail"):
             value = output.get(key)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"Fun Fact Brainstorming field '{key}' must be a non-empty string.")
@@ -92,6 +91,10 @@ class FunFactBrainstormingService:
                 raise ValueError(
                     "Fun Fact Brainstorming field 'search_queries' must be non-empty when "
                     "needs_web_search is true."
+                )
+            if any(not q.strip() for q in search_queries):
+                raise ValueError(
+                    "Fun Fact Brainstorming field 'search_queries' must not contain empty strings."
                 )
             if not search_reasoning.strip():
                 raise ValueError(
