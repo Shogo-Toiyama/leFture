@@ -326,6 +326,16 @@ class AppLocalizationsJa extends AppLocalizations {
       'リアルタイム文字起こしのON/OFFは録音を開始する前にのみ変更できます。この設定を変えるには、録音を止めて新しく録音を開始してください。';
 
   @override
+  String get recordingRealtimeCreditsDialogTitle => 'クレジットが不足しています';
+
+  @override
+  String get recordingRealtimeCreditsDialogMessage =>
+      'リアルタイム文字起こしを利用するには、クレジット残高が必要です。';
+
+  @override
+  String get recordingRealtimeCreditsDialogConfirm => 'クレジットを確認';
+
+  @override
   String get recordingSpeechModelDialogTitle => '音声モデルが必要です';
 
   @override
@@ -334,6 +344,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get recordingSpeechModelDownloadConfirm => 'ダウンロード';
+
+  @override
+  String get recordingSpeechModelDownloadTooltip => '音声モデルをダウンロード';
+
+  @override
+  String get recordingSpeechModelPauseTooltip => 'ダウンロードを一時停止';
+
+  @override
+  String get recordingSpeechModelResumeTooltip => 'ダウンロードを再開';
+
+  @override
+  String get recordingSpeechModelRetryTooltip => 'ダウンロードを再試行';
 
   @override
   String get recordingSelectCourseBeforeUploadSnackbar =>
@@ -1377,6 +1399,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coursePageTitle => 'コース';
 
   @override
+  String get coursePageBackToCoursesLabel => 'コース一覧';
+
+  @override
   String get coursePageNewCourseButton => '新規コース';
 
   @override
@@ -1443,7 +1468,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseCreateSheetEditTitle => 'コースを編集';
 
   @override
-  String get courseCreateSheetNewTitle => '新規コース';
+  String get courseCreateSheetNewTitle => 'コースを作成';
 
   @override
   String get courseCreateSheetDesignPreviewLabel => 'デザインプレビュー';
@@ -2346,13 +2371,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingLanguageDisplayLabel => '表示言語';
 
   @override
-  String get onboardingLanguageDisplayDesc => 'アプリ内の表示言語です';
+  String get onboardingLanguageDisplayDesc => 'アプリの中身と生成コンテンツの表示言語';
 
   @override
   String get onboardingLanguageRecordingLabel => '録音言語';
 
   @override
-  String get onboardingLanguageRecordingDesc => '端末上での文字起こしに使われます';
+  String get onboardingLanguageRecordingDesc => '録音する授業・講義の言語';
+
+  @override
+  String get onboardingLanguageFooterNote => '※ 後からアカウントページの「設定」よりいつでも変更できます。';
 
   @override
   String get onboardingPermissionsEyebrow => '初期設定';
@@ -2361,8 +2389,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPermissionsTitle => 'いくつかの許可をお願いします';
 
   @override
-  String get onboardingPermissionsSubtitle =>
-      'バックグラウンドで録音を安全に維持し、処理状態をお知らせするために必要です。';
+  String get onboardingPermissionsSubtitle => 'バックグラウンドで録音を安全に維持するために必要です。';
 
   @override
   String get onboardingPermissionsMicTitle => 'マイク';
@@ -2376,7 +2403,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingPermissionsNotifSubtitle =>
-      'バックグラウンドでの録音維持や、処理状況を通知するために使います。';
+      'バックグラウンドでの録音状態を維持するために使います。';
 
   @override
   String get onboardingPermissionsBackgroundTitle => 'バックグラウンドでも安定して動作させる';
@@ -2424,21 +2451,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPlanEyebrow => 'もうすぐ完了';
 
   @override
-  String get onboardingPlanTitle => 'leFtureは今なら無料です';
+  String get onboardingPlanTitle => 'leFtureを体験する';
 
   @override
-  String get onboardingPlanBadge => 'Beta中・無料プラン付き';
+  String get onboardingPlanBadge => '初回特典：1,500クレジット付き';
 
   @override
   String get onboardingPlanSubtitle =>
-      'テスト期間中はすべての機能を無料でご利用いただけます。有料プランは今後こちらに追加されます。';
+      'まずは1,500クレジットでleFtureのすべての機能をお試しいただけます。定期プランは今後こちらに追加されます。';
 
   @override
   String get onboardingPlanActiveTitle => 'すでにプランが有効です';
 
   @override
   String get onboardingPlanClaimError =>
-      '無料プランを有効化できませんでした。後ほどアカウントページから再度お試しください。';
+      'プランを有効化できませんでした。後ほどアカウントページから再度お試しください。';
 
   @override
   String onboardingProfileStepCounter(int current, int total) {
@@ -2574,4 +2601,56 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get maintenanceBannerMessage => 'メンテナンス中：一部機能が利用できません';
+
+  @override
+  String get signOutBlockedByRecordingTitle => '録音中です';
+
+  @override
+  String get signOutBlockedByRecordingMessage => 'サインアウトする前に、録音を停止して保存してください。';
+
+  @override
+  String get signOutBlockedByRecordingConfirmButton => 'OK';
+
+  @override
+  String get signOutSyncingMessage => '未送信の変更を送信しています…';
+
+  @override
+  String get signOutPendingTitle => '未同期のデータが削除されます';
+
+  @override
+  String get signOutPendingIntro =>
+      'サインアウトすると、このアカウントのデータはこの端末から削除されます。以下はまだサーバーに送信できていません:';
+
+  @override
+  String signOutPendingChangesLine(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '未送信の変更 $count 件',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String signOutPendingRecordingsLine(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '音声のアップロードが完了していない録音 $count 件。この音声はこの端末にしか存在せず、復元できません。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get signOutOfflineTitle => 'オフラインのままサインアウトしますか？';
+
+  @override
+  String get signOutOfflineLine =>
+      'オフラインのため、今は同期できません。また、再びサインインするにはネット接続が必要です。';
+
+  @override
+  String get signOutDiscardConfirmButton => '削除してサインアウト';
+
+  @override
+  String get signOutStayCancelButton => 'サインアウトしない';
 }

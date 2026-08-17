@@ -23,12 +23,28 @@ part 'asr_model_manager.g.dart';
 enum AsrModelStatus { unknown, checking, downloading, ready, failed, paused }
 
 class AsrLanguageModelState {
-  const AsrLanguageModelState({required this.status, this.progress, this.errorMessage});
+  const AsrLanguageModelState({
+    required this.status,
+    this.progress,
+    this.errorMessage,
+    this.installed = false,
+  });
 
   final AsrModelStatus status;
   // 0.0〜1.0。Content-Lengthが取れない場合はnull(不定進捗)。
   final double? progress;
   final String? errorMessage;
+
+  /// 実際に使えるモデルがディスク上にあるかどうか。[status]が「今この瞬間の
+  /// 確認/ダウンロード処理がどこまで進んでいるか」という一時的な進行状況で
+  /// あるのに対し、こちらは「機能が使えるか」という永続的な事実を表す。
+  ///
+  /// 例えばマニフェスト取得のためにページを開くたび[status]は一度
+  /// [AsrModelStatus.checking]へ落ちるし、オフラインなら[AsrModelStatus.failed]
+  /// にもなるが、その間もモデル自体は手元にあり使える。UI側の「ON/OFF
+  /// トグルを出してよいか」「Realtimeを自動でOFFに戻すべきか」といった判断は
+  /// [status]ではなく必ずこちらを見ること。
+  final bool installed;
 
   static const initial = AsrLanguageModelState(status: AsrModelStatus.unknown);
 }
@@ -95,16 +111,77 @@ class AsrModelManager extends _$AsrModelManager {
   // 同時に同じグループを触ろうとするのを防ぐ。
   final Set<String> _ensureAssetInFlight = {};
 
+  // ディスク上に実際に使えるモデルがあるgroupKeyの集合。stateの反映は
+  // microtask経由で遅れるため、`installed`の真偽はここで同期的に管理し、
+  // stateへは常にこの集合から反映する(_update直前に_markInstalledを呼ぶ)。
+  final Set<String> _installedKeys = {};
+
   AsrLanguageModelState statusFor(String key) => state[key] ?? AsrLanguageModelState.initial;
 
-  /// 全言語が共有Whisperモデルを使うため、[languageCode]は無視して共有
-  /// Whisperグループの状態を返す。
-  AsrLanguageModelState statusForLanguage(String languageCode) => statusFor(kWhisperPseudoLanguageCode);
+  /// Realtime Transcribeに必要な共有アセット(Whisper + VAD)をまとめた状態を返す。
+  /// 全言語が同じ2アセットを使うため[languageCode]は無視する。
+  ///
+  /// `installed`は両方が揃って初めてtrue(片方でも欠けていればRealtimeは
+  /// 動かせない)。`status`は「ユーザーに見せるべき最も重要な進行状況」を
+  /// failed > downloading > paused > checking の優先順で拾う。
+  AsrLanguageModelState statusForLanguage(String languageCode) {
+    final whisper = statusFor(kWhisperPseudoLanguageCode);
+    final vad = statusFor(kVadPseudoLanguageCode);
+    final installed = whisper.installed && vad.installed;
+
+    AsrLanguageModelState? pick(AsrModelStatus status) {
+      for (final s in [whisper, vad]) {
+        if (s.status == status) return s;
+      }
+      return null;
+    }
+
+    for (final status in [
+      AsrModelStatus.failed,
+      AsrModelStatus.downloading,
+      AsrModelStatus.paused,
+      AsrModelStatus.checking,
+    ]) {
+      final match = pick(status);
+      if (match != null) {
+        return AsrLanguageModelState(
+          status: status,
+          progress: match.progress,
+          errorMessage: match.errorMessage,
+          installed: installed,
+        );
+      }
+    }
+
+    return AsrLanguageModelState(
+      status: installed ? AsrModelStatus.ready : AsrModelStatus.unknown,
+      installed: installed,
+    );
+  }
 
   void _update(String key, AsrLanguageModelState value) {
+    final installed = _installedKeys.contains(key);
     Future.microtask(() {
-      state = {...state, key: value};
+      state = {
+        ...state,
+        key: AsrLanguageModelState(
+          status: value.status,
+          progress: value.progress,
+          errorMessage: value.errorMessage,
+          installed: installed,
+        ),
+      };
     });
+  }
+
+  /// [key]のモデル実体がディスク上に揃っているかを記録する。必ず対応する
+  /// [_update]より前に呼ぶこと(_updateはこの集合を見て`installed`を決める)。
+  void _markInstalled(String key, bool installed) {
+    if (installed) {
+      _installedKeys.add(key);
+    } else {
+      _installedKeys.remove(key);
+    }
   }
 
   /// 共有Whisper + 共有VADの2アセットを揃える。[languageCode]は呼び出し側
@@ -175,11 +252,16 @@ class AsrModelManager extends _$AsrModelManager {
       final existing =
           await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();
 
-      if (existing != null &&
+      // バージョンが古くても、実体が残っていれば「今は使えるモデルがある」
+      // 状態(installed)として扱う。新しいバージョンのダウンロードが終わるまで
+      // 古いモデルで機能を使い続けられるようにするため。
+      final usable =
+          existing != null && existing.status == 'ready' && await Directory(existing.localPath).exists();
+      _markInstalled(key, usable);
+
+      if (usable &&
           existing.engineCompatVersion == engineCompatVersion &&
-          existing.modelVersion == info.modelVersion &&
-          existing.status == 'ready' &&
-          await Directory(existing.localPath).exists()) {
+          existing.modelVersion == info.modelVersion) {
         _update(key, const AsrLanguageModelState(status: AsrModelStatus.ready));
         return;
       }
@@ -220,8 +302,12 @@ class AsrModelManager extends _$AsrModelManager {
         throw Exception('Downloaded ASR asset failed checksum verification: $key');
       }
 
-      // 展開先はキーごとの専用ディレクトリ(既存があれば作り直す)。
+      // 展開先はキーごとの専用ディレクトリ(既存があれば作り直す)。ここで
+      // 古いモデルの実体が消えるため、展開が終わるまでは「使えるモデルなし」
+      // として扱い、進捗も不定(展開中)に切り替える。
       final extractDir = Directory(p.join(modelsDir.path, key));
+      _markInstalled(key, false);
+      _update(key, const AsrLanguageModelState(status: AsrModelStatus.downloading));
       if (await extractDir.exists()) {
         await extractDir.delete(recursive: true);
       }
@@ -254,6 +340,7 @@ class AsrModelManager extends _$AsrModelManager {
             ),
           );
 
+      _markInstalled(key, true);
       _update(key, const AsrLanguageModelState(status: AsrModelStatus.ready));
     } on AsrDownloadPausedException {
       // pauseDownloadが既にstateをpausedへ更新済み。部分ファイルはディスクに
@@ -376,6 +463,7 @@ class AsrModelManager extends _$AsrModelManager {
             await (_db.select(_db.localAsrModels)..where((t) => t.groupKey.equals(key))).getSingleOrNull();
         if (row == null || row.status != 'ready') continue;
         if (!await Directory(row.localPath).exists()) continue;
+        _markInstalled(key, true);
         _update(key, const AsrLanguageModelState(status: AsrModelStatus.ready));
       } catch (e, st) {
         dev.log('🚨 [AsrModelManager] disk reconcile failed for "$key"', error: e, stackTrace: st);

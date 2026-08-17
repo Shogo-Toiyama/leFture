@@ -339,6 +339,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Realtime transcribe can only be turned on or off before you start recording. Stop and start a new recording to change this setting.';
 
   @override
+  String get recordingRealtimeCreditsDialogTitle => 'Not enough credits';
+
+  @override
+  String get recordingRealtimeCreditsDialogMessage =>
+      'Realtime transcription requires remaining credits.';
+
+  @override
+  String get recordingRealtimeCreditsDialogConfirm => 'View Credits';
+
+  @override
   String get recordingSpeechModelDialogTitle => 'Speech model required';
 
   @override
@@ -347,6 +357,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recordingSpeechModelDownloadConfirm => 'Download';
+
+  @override
+  String get recordingSpeechModelDownloadTooltip => 'Download speech model';
+
+  @override
+  String get recordingSpeechModelPauseTooltip => 'Pause download';
+
+  @override
+  String get recordingSpeechModelResumeTooltip => 'Resume download';
+
+  @override
+  String get recordingSpeechModelRetryTooltip => 'Retry download';
 
   @override
   String get recordingSelectCourseBeforeUploadSnackbar =>
@@ -1440,6 +1462,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coursePageTitle => 'Courses';
 
   @override
+  String get coursePageBackToCoursesLabel => 'Courses';
+
+  @override
   String get coursePageNewCourseButton => 'New Course';
 
   @override
@@ -1508,7 +1533,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseCreateSheetEditTitle => 'Edit Course';
 
   @override
-  String get courseCreateSheetNewTitle => 'New Course';
+  String get courseCreateSheetNewTitle => 'Create Course';
 
   @override
   String get courseCreateSheetDesignPreviewLabel => 'Design Preview';
@@ -2451,14 +2476,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingLanguageDisplayLabel => 'Display Language';
 
   @override
-  String get onboardingLanguageDisplayDesc => 'Sets the language of app text';
+  String get onboardingLanguageDisplayDesc =>
+      'Language for the app UI and generated content';
 
   @override
   String get onboardingLanguageRecordingLabel => 'Recording Language';
 
   @override
   String get onboardingLanguageRecordingDesc =>
-      'Used for on-device transcription';
+      'Language of the lectures you record';
+
+  @override
+  String get onboardingLanguageFooterNote =>
+      'You can change these anytime later from Settings in your Account page.';
 
   @override
   String get onboardingPermissionsEyebrow => 'Setup';
@@ -2468,7 +2498,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPermissionsSubtitle =>
-      'leFture needs these to record safely in the background and keep you updated on processing status.';
+      'leFture needs these to record safely in the background.';
 
   @override
   String get onboardingPermissionsMicTitle => 'Microphone';
@@ -2482,7 +2512,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPermissionsNotifSubtitle =>
-      'Required to keep background recording active and show processing status.';
+      'Required to keep background recording active.';
 
   @override
   String get onboardingPermissionsBackgroundTitle =>
@@ -2533,21 +2563,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPlanEyebrow => 'Almost done';
 
   @override
-  String get onboardingPlanTitle => 'leFture is free right now';
+  String get onboardingPlanTitle => 'Get started with leFture';
 
   @override
-  String get onboardingPlanBadge => 'Beta · free plan included';
+  String get onboardingPlanBadge => 'Welcome Gift: 1,500 credits included';
 
   @override
   String get onboardingPlanSubtitle =>
-      'Every feature is free while we\'re testing. Paid plans will live here later.';
+      'Explore all features with 1,500 welcome credits. Subscription plans will be available here later.';
 
   @override
   String get onboardingPlanActiveTitle => 'You\'re already on a plan';
 
   @override
   String get onboardingPlanClaimError =>
-      'Couldn\'t activate your free plan. You can try again from your account page later.';
+      'Couldn\'t activate your plan. You can try again from your account page later.';
 
   @override
   String onboardingProfileStepCounter(int current, int total) {
@@ -2691,4 +2721,61 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get maintenanceBannerMessage =>
       'Under maintenance — some features unavailable';
+
+  @override
+  String get signOutBlockedByRecordingTitle => 'Recording in progress';
+
+  @override
+  String get signOutBlockedByRecordingMessage =>
+      'Please stop and save the current recording before signing out.';
+
+  @override
+  String get signOutBlockedByRecordingConfirmButton => 'OK';
+
+  @override
+  String get signOutSyncingMessage => 'Sending your unsynced changes…';
+
+  @override
+  String get signOutPendingTitle => 'Unsynced data will be deleted';
+
+  @override
+  String get signOutPendingIntro =>
+      'Signing out deletes this account\'s data from this device. The following could not be sent to the server yet:';
+
+  @override
+  String signOutPendingChangesLine(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unsynced changes',
+      one: '$count unsynced change',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String signOutPendingRecordingsLine(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count recordings whose audio has not finished uploading. The audio exists only on this device and cannot be recovered.',
+      one:
+          '$count recording whose audio has not finished uploading. The audio exists only on this device and cannot be recovered.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get signOutOfflineTitle => 'Sign out while offline?';
+
+  @override
+  String get signOutOfflineLine =>
+      'You\'re offline, so nothing can be synced right now, and you won\'t be able to sign back in until you have a connection again.';
+
+  @override
+  String get signOutDiscardConfirmButton => 'Delete and sign out';
+
+  @override
+  String get signOutStayCancelButton => 'Stay signed in';
 }

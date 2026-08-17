@@ -12,6 +12,7 @@ import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 
+import 'package:lefture/app/navigation_utils.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/lecture.dart';
@@ -603,12 +604,47 @@ class _CourseLectureListView extends ConsumerWidget {
 
               // 2. Main content area padding
               SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // コース一覧へのリンク (例: "Courses ›")。
+                    // 「戻る」ではなく所属先を示す導線なので、末尾の右シェブロンに
+                    // している(左シェブロンは端末の戻る操作と競合して見える)。
+                    // 実際の遷移方向はnavigateUpToがpop/pushを出し分ける。
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: InkWell(
+                        onTap: () => navigateUpTo(context, AppRoutes.coursesRootPath),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  l10n.coursePageBackToCoursesLabel,
+                                  style: TextStyle(
+                                    color: themeColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                color: themeColor,
+                                size: 22,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
                     // Row 1: Course Metadata
                     Row(
                       children: [

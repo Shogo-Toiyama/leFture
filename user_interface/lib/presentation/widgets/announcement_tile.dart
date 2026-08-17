@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/domain/entities/announcement.dart';
 import 'package:lefture/domain/entities/datetime_parameters_formatter.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
@@ -66,6 +67,26 @@ class AnnouncementTile extends HookConsumerWidget {
       ),
     );
 
+    // タップ時の「スワイプで完了できるよ」というチラ見せ（Peek）アニメーション用
+    final peekController = useAnimationController(
+      duration: const Duration(milliseconds: 450),
+    );
+
+    final peekOffset = useAnimation(
+      TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.0, end: -75.0).chain(CurveTween(curve: Curves.easeOutCubic)),
+          weight: 35,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: -75.0, end: 0.0).chain(CurveTween(curve: Curves.easeInOutCubic)),
+          weight: 65,
+        ),
+      ]).animate(peekController),
+    );
+
+    final currentOffset = slideOffset != 0.0 ? slideOffset : peekOffset;
+
     final prevCompletedRef = useRef<bool>(isCompleted);
     final prevCompleted = prevCompletedRef.value;
     prevCompletedRef.value = isCompleted;
@@ -91,27 +112,27 @@ class AnnouncementTile extends HookConsumerWidget {
 
     final tileContent = Stack(
       children: [
-        if (slideOffset != 0.0)
+        if (currentOffset != 0.0)
           Positioned.fill(
             child: Container(
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
               decoration: BoxDecoration(
-                color: Colors.green.shade700,
+                color: isCompleted ? Colors.blueGrey.shade700 : Colors.green.shade700,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.check,
+                    isCompleted ? Icons.undo : Icons.check,
                     color: Colors.white,
                     size: 24,
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Done',
-                    style: TextStyle(
+                    isCompleted ? 'Undo' : 'Done',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -122,7 +143,7 @@ class AnnouncementTile extends HookConsumerWidget {
             ),
           ),
         Transform.translate(
-          offset: Offset(slideOffset, 0),
+          offset: Offset(currentOffset, 0),
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.universe.voidBackground, // 透過防止用のソリッド背景色
@@ -339,12 +360,20 @@ class AnnouncementTile extends HookConsumerWidget {
     }
 
     // 未完了かつ onTap があるときのみタップ遷移を有効化
-    if (onTap != null && !isCompleted) {
-      tile = GestureDetector(
-        onTap: onTap,
-        child: tile,
-      );
-    }
+    // onTap がない場合（LectureViewerPage / AnnouncementsSheet 等）はタップ時にスワイプのチラ見せ（Peek）アニメーションを実行
+    tile = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (onTap != null && !isCompleted) {
+          onTap!();
+        } else if (onToggleComplete != null) {
+          if (!peekController.isAnimating && !animationController.isAnimating) {
+            peekController.forward(from: 0.0);
+          }
+        }
+      },
+      child: tile,
+    );
 
     // スワイプDone/Undo機能
     if (onToggleComplete != null) {
@@ -352,9 +381,20 @@ class AnnouncementTile extends HookConsumerWidget {
         key: ValueKey('announcement_${announcement.id}_$isCompleted'),
         direction: DismissDirection.endToStart,
         // confirmDismiss で false を返すことで物理的には消さず、コールバックのみ実行
+        //
+        // ここから例外を投げてはいけない。Dismissibleは confirmDismiss が例外で
+        // 終わると元の位置へ戻す reverse() に到達しないため(Flutter SDKの
+        // dismissible.dart `_handleMoveCompleted`)、タイルがスワイプしきった
+        // 位置=背景の「Done」が見えたまま固まり、状態も変わらない。
+        // 失敗しても必ず false を返して元に戻す。
         confirmDismiss: (_) async {
           hasSwiped.value = true;
-          await onToggleComplete!(announcement);
+          try {
+            await onToggleComplete!(announcement);
+          } catch (e, stack) {
+            hasSwiped.value = false;
+            DevLog.add('⚠️ [AnnouncementTile] Toggle complete failed: $e\n$stack');
+          }
           return false;
         },
         background: Container(

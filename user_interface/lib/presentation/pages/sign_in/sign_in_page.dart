@@ -1,5 +1,6 @@
 // lib/presentation/pages/sign_in/sign_in_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -30,6 +31,8 @@ class SignInPage extends HookConsumerWidget {
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          SystemChannels.textInput.invokeMethod('TextInput.hide');
           final session = supabase.auth.currentSession;
           if (session != null) {
             ref.read(lectureControllerProvider.notifier).resetThrottle();
@@ -51,6 +54,8 @@ class SignInPage extends HookConsumerWidget {
     });
 
     void signIn() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       inlineError.value = null;
       final email = emailController.text.trim();
       final password = passwordController.text;
@@ -71,10 +76,14 @@ class SignInPage extends HookConsumerWidget {
     }
 
     void signInWithGoogle() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       ref.read(authControllerProvider.notifier).signInWithGoogle();
     }
 
     void signInWithApple() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       ref.read(authControllerProvider.notifier).signInWithApple();
     }
 

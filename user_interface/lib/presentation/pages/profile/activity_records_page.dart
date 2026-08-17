@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/profile/activity_records_provider.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/domain/entities/announcement.dart';
@@ -447,6 +448,11 @@ class ActivityRecordsPage extends HookConsumerWidget {
       return AnnouncementTile(
         key: ValueKey('announcement_${domainAnn.id}_${domainAnn.isCompleted}'),
         announcement: domainAnn,
+        onTap: (record.lectureId != null && record.courseId != null)
+            ? () => context.push(
+                  '${AppRoutes.coursesRootPath}/c/${record.courseId}/v/${record.lectureId}?openAnnouncementId=${domainAnn.id}',
+                )
+            : null,
         onToggleComplete: (a) async {
           final isPending = pendingOverrides.value.containsKey(record.id);
           final next = Map<String, ActivityRecord>.of(pendingOverrides.value);

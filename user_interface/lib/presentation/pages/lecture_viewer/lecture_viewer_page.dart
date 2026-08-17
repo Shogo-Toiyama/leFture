@@ -20,6 +20,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcements_sheet.dart';
 import 'package:lefture/presentation/widgets/glowing_rainbow_border.dart';
+import 'package:lefture/app/navigation_utils.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/infrastructure/local_db/repositories/fun_fact_repository_drift.dart';
@@ -43,11 +44,26 @@ import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/pipeline_progress_banner.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/reveal.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/topics_sheet.dart';
+import 'package:lefture/core/utils/connectivity_utils.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/application/sync/announcement_sync_service.dart';
+import 'package:lefture/application/sync/deep_note_sync_service.dart';
+import 'package:lefture/application/sync/fun_fact_sync_service.dart';
+import 'package:lefture/application/sync/keyword_sync_service.dart';
+import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
+import 'package:lefture/application/sync/review_card_sync_service.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
-  const LectureViewerPage({super.key, required this.lectureId});
+  const LectureViewerPage({
+    super.key,
+    required this.lectureId,
+    this.initialOpenAnnouncementId,
+    this.initialScrollTo,
+  });
 
   final String lectureId;
+  final String? initialOpenAnnouncementId;
+  final String? initialScrollTo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -185,7 +201,11 @@ class LectureViewerPage extends HookConsumerWidget {
                   itemCount: sortedLectures.length,
                   itemBuilder: (context, index) {
                     final lectureItem = sortedLectures[index];
-                    return _LecturePageContent(lecture: lectureItem);
+                    return _LecturePageContent(
+                      lecture: lectureItem,
+                      initialOpenAnnouncementId: lectureItem.id == lectureId ? initialOpenAnnouncementId : null,
+                      initialScrollTo: lectureItem.id == lectureId ? initialScrollTo : null,
+                    );
                   },
                 ),
               ),
@@ -198,9 +218,15 @@ class LectureViewerPage extends HookConsumerWidget {
 }
 
 class _LecturePageContent extends ConsumerWidget {
-  const _LecturePageContent({required this.lecture});
+  const _LecturePageContent({
+    required this.lecture,
+    this.initialOpenAnnouncementId,
+    this.initialScrollTo,
+  });
 
   final Lecture lecture;
+  final String? initialOpenAnnouncementId;
+  final String? initialScrollTo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -246,13 +272,23 @@ class _LecturePageContent extends ConsumerWidget {
       // へ丸ごと切り替えていた。今はどのuiStateでも常に_LectureViewerBodyを
       // 描画する —— 本体側が要素ごとの完成度(RevealState)とjob/tasksを見て、
       // スケルトン/ブラー/バナーを自分で出し分ける設計に変わったため。
-      data: (uiState) => _LectureViewerBody(lecture: lecture, uiState: uiState),
+      data: (uiState) => _LectureViewerBody(
+        lecture: lecture,
+        uiState: uiState,
+        initialOpenAnnouncementId: initialOpenAnnouncementId,
+        initialScrollTo: initialScrollTo,
+      ),
     );
   }
 }
 
 class _LectureViewerBody extends HookConsumerWidget {
-  const _LectureViewerBody({required this.lecture, required this.uiState});
+  const _LectureViewerBody({
+    required this.lecture,
+    required this.uiState,
+    this.initialOpenAnnouncementId,
+    this.initialScrollTo,
+  });
 
   final Lecture lecture;
 
@@ -261,6 +297,8 @@ class _LectureViewerBody extends HookConsumerWidget {
   /// 使う。complete固定で渡された場合(dummyデータのプレビュー用)は、
   /// 個々のブロックのreveal判定を全てreadyへ強制する。
   final LectureUIState uiState;
+  final String? initialOpenAnnouncementId;
+  final String? initialScrollTo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -284,8 +322,6 @@ class _LectureViewerBody extends HookConsumerWidget {
       (c) => c?.id == lecture.courseId,
       orElse: () => null,
     );
-    final rawCourseCode = course?.courseCode?.trim();
-    final hasCourseCode = rawCourseCode != null && rawCourseCode.isNotEmpty;
 
     final displayTitle = lecture.title?.trim().isNotEmpty == true
         ? lecture.title!
@@ -356,6 +392,43 @@ class _LectureViewerBody extends HookConsumerWidget {
       heroCollageReveal,
     ].any((r) => r.isReady);
 
+    final funFactKey = useMemoized(() => GlobalKey());
+    final hasScrolledToFunFact = useRef(false);
+    final hasOpenedAnnouncement = useRef(false);
+
+    useEffect(() {
+      if (initialScrollTo == 'fun_fact' && !hasScrolledToFunFact.value && funFacts.isNotEmpty) {
+        hasScrolledToFunFact.value = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = funFactKey.currentContext;
+          if (ctx != null) {
+            Scrollable.ensureVisible(
+              ctx,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOutCubic,
+              alignment: 0.1,
+            );
+          }
+        });
+      }
+      return null;
+    }, [initialScrollTo, funFacts]);
+
+    useEffect(() {
+      if (initialOpenAnnouncementId != null && !hasOpenedAnnouncement.value && announcements.isNotEmpty) {
+        hasOpenedAnnouncement.value = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showAnnouncementsSheet(
+            context,
+            lecture.id,
+            announcements,
+            targetAnnouncementId: initialOpenAnnouncementId,
+          );
+        });
+      }
+      return null;
+    }, [initialOpenAnnouncementId, announcements]);
+
     // 何かは既に出ているが、ジョブ自体はまだ完了していない(生成中 or 一部失敗)
     // 間だけ、控えめな進捗/エラーバナーを出す。全部readyになった(=complete)
     // 瞬間に自然に消える。
@@ -377,51 +450,74 @@ class _LectureViewerBody extends HookConsumerWidget {
                 ),
               ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-
-                    // Date & Course Code (left-aligned) - Moved above collage
-                    Row(
-                      children: [
-                        Text(
-                          DateFormat.yMMMd(l10n.localeName).format(
-                            lecture.lectureDatetime.toLocal(),
+              child: RefreshIndicator(
+                color: AppColors.starGold,
+                onRefresh: () => _handleRefresh(context, ref, lecture: lecture),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 所属コースへのリンク (例: "物理学I ›")。
+                      // 「戻る」ではなく「この講義が所属している場所」を示す導線なので、
+                      // 左シェブロン(=端末の戻る操作と競合して見える)ではなく末尾の
+                      // 右シェブロンにしている。実際の遷移方向はnavigateUpToが
+                      // pop/pushを出し分け、アニメーションが自然に表現する。
+                      if (course != null || lecture.courseId != null) ...[
+                        InkWell(
+                          onTap: () => navigateUpTo(
+                            context,
+                            lecture.courseId != null
+                                ? '${AppRoutes.coursesRootPath}/c/${lecture.courseId}'
+                                : AppRoutes.coursesRootPath,
                           ),
-                          style: TextStyle(
-                            color: AppColors.universe.textComet,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    course?.displayTitle ?? l10n.coursePageTitle,
+                                    style: TextStyle(
+                                      color: themeColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: themeColor,
+                                  size: 22,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        if (hasCourseCode) ...[
-                          Text(
-                            '  •  ',
-                            style: TextStyle(
-                              color: AppColors.universe.textComet.withValues(
-                                alpha: 0.5,
-                              ),
-                              fontSize: 13,
-                            ),
-                          ),
-                          Text(
-                            rawCourseCode,
-                            style: const TextStyle(
-                              color: AppColors.starGold,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                        const SizedBox(height: 8),
                       ],
-                    ),
-                    const SizedBox(height: 12),
+
+                      // Date (left-aligned) - Moved above collage
+                      Text(
+                        DateFormat.yMMMd(l10n.localeName).format(
+                          lecture.lectureDatetime.toLocal(),
+                        ),
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 12),
 
                     // Hero Collage View
                     RevealSwitcher(
@@ -692,7 +788,10 @@ class _LectureViewerBody extends HookConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                _ViewerFunFactCard(fact: funFacts.first),
+                                KeyedSubtree(
+                                  key: funFactKey,
+                                  child: _ViewerFunFactCard(fact: funFacts.first),
+                                ),
                                 const SizedBox(height: 28),
                               ],
                             ),
@@ -751,7 +850,8 @@ class _LectureViewerBody extends HookConsumerWidget {
                 ),
               ),
             ),
-          ],
+          ),
+        ],
     );
 
     // ★ ヘッダー(CustomAppBar、プロフィールアイコン/Homeボタン)は常にシャープな
@@ -794,13 +894,17 @@ class _LectureViewerBody extends HookConsumerWidget {
   void _showAnnouncementsSheet(
     BuildContext context,
     String lectureId,
-    List<Announcement> announcements,
-  ) {
+    List<Announcement> announcements, {
+    String? targetAnnouncementId,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AnnouncementsSheet(lectureId: lectureId),
+      builder: (_) => AnnouncementsSheet(
+        lectureId: lectureId,
+        targetAnnouncementId: targetAnnouncementId,
+      ),
     );
   }
 
@@ -1108,7 +1212,7 @@ class _HighlightChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: AppColors.universe.glassWhiteLow,
           borderRadius: BorderRadius.circular(20),
@@ -1127,6 +1231,14 @@ class _HighlightChip extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (onTap != null) ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.universe.textComet,
+                size: 14,
+              ),
+            ],
           ],
         ),
       ),
@@ -1668,3 +1780,56 @@ class _TopicSectionHeader extends StatelessWidget {
     );
   }
 }
+
+Future<void> _handleRefresh(
+  BuildContext context,
+  WidgetRef ref, {
+  required Lecture lecture,
+}) async {
+  if (!await isDeviceOnline()) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).coursePageOfflineSnackbar,
+          ),
+        ),
+      );
+    }
+    return;
+  }
+
+  // 1. 最新の講義・ジョブ状態を同期
+  await ref.read(lectureControllerProvider.notifier).bootstrapLectures(
+        reason: 'lecture_viewer_pull_to_refresh',
+      );
+
+  // 2. 講義配下の各コンテンツを最新化
+  final db = ref.read(appDatabaseProvider);
+  try {
+    await Future.wait([
+      LectureTopicSyncService(db).pullForLecture(lecture.id),
+      ReviewCardSyncService(db).pullForLecture(lecture.id),
+      DeepNoteSyncService(db).pullForLecture(lecture.id),
+      FunFactSyncService(db).pullForLecture(lecture.id),
+      KeywordSyncService(db).pullForLecture(lecture.id),
+      AnnouncementSyncService(db).pull(forceFullPull: true),
+    ]);
+  } catch (e, st) {
+    DevLog.add('⚠️ [LectureViewerPage] Pull-to-refresh content sync error: $e\n$st');
+  }
+
+  // 3. 各種Stream/Providerを再読込
+  ref.invalidate(lectureTopicsProvider(lecture.id));
+  ref.invalidate(lectureKeywordsProvider(lecture.id));
+  ref.invalidate(funFactsForLectureProvider(lecture.id));
+  ref.invalidate(announcementsForLectureProvider(lecture.id));
+  ref.invalidate(reviewCardsProvider(lecture.id));
+  ref.invalidate(deepNotesProvider(lecture.id));
+  ref.invalidate(jobStreamProvider(lecture.id));
+  ref.invalidate(allLecturesStreamProvider);
+  if (lecture.courseId != null) {
+    ref.invalidate(courseListProvider);
+  }
+}
+

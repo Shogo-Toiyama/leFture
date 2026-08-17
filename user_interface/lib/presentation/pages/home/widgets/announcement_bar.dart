@@ -58,12 +58,14 @@ class AnnouncementBar extends HookConsumerWidget {
     }
 
     return GestureDetector(
-      // タップで全アナウンス一覧シートを開く
+      // タップで全アナウンス一覧シートを開く（表示中のアナウンスがあればそこへ自動スクロール）
       onTap: () => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => const AnnouncementsSheet(),
+        builder: (_) => AnnouncementsSheet(
+          targetAnnouncementId: announcement?.id,
+        ),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

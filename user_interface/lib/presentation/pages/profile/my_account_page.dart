@@ -6,7 +6,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
-import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/domain/entities/credit_summary.dart';
 import 'package:lefture/application/debug/debug_providers.dart';
@@ -20,6 +19,7 @@ import 'package:lefture/presentation/pages/profile/widgets/change_password_sheet
 import 'package:lefture/presentation/pages/profile/widgets/change_auth_provider_sheet.dart';
 import 'package:lefture/presentation/pages/profile/widgets/change_account_sheet.dart';
 import 'package:lefture/presentation/pages/profile/widgets/change_avatar_sheet.dart';
+import 'package:lefture/presentation/pages/profile/widgets/sign_out_flow.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
 import 'package:lefture/domain/entities/app_language.dart';
@@ -36,12 +36,11 @@ import 'package:lefture/application/transmission/transmission_provider.dart';
 class MyAccountPage extends ConsumerWidget {
   const MyAccountPage({super.key});
 
+  /// サインアウトは「未送信データの送信 → 破棄の同意 → ローカルデータのwipe →
+  /// signOut」という手順を踏む(sign_out_flow.dart)。ローカルDBはサインアウトでも
+  /// 消えないままだと複数アカウントの行が同居して壊れるため、ここで消し切る。
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
-    // onAuthStateChange による GoRouter の /sign_in への割り込みリダイレクトを
-    // 防ぐため、signOut() 実行前にまず公開ルートである Welcome 画面へ遷移する。
-    context.go(AppRoutes.welcome);
-    ref.invalidate(courseListProvider);
-    await supabase.auth.signOut();
+    await runSignOutFlow(context, ref);
   }
 
   @override

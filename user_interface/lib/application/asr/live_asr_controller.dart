@@ -177,8 +177,8 @@ class LiveAsrController extends _$LiveAsrController {
     final languageCode = _pendingRetryLanguage;
     if (languageCode == null || _engine != null || _starting) return;
 
-    final status = ref.read(asrModelManagerProvider.notifier).statusForLanguage(languageCode).status;
-    if (status != AsrModelStatus.ready) return;
+    final modelState = ref.read(asrModelManagerProvider.notifier).statusForLanguage(languageCode);
+    if (!modelState.installed) return;
 
     DevLog.add(
       '🎙️ [LiveAsrController] model for "$languageCode" finished downloading — retrying start()',

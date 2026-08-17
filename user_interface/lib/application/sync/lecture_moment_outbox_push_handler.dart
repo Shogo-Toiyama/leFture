@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import 'package:lefture/application/sync/outbox_sync_service.dart';
 import 'package:lefture/core/utils/network_constants.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
@@ -20,8 +22,30 @@ class LectureMomentOutboxPushHandler implements OutboxPushHandler {
     // ローカルにもう存在しない -> 送るものが無い
     if (existing == null) return;
 
+    // Outboxはユーザー単位に分かれていない一方、ローカルDBはサインアウトでも
+    // 消えないため、アカウントを切り替えると「前のアカウントの行」を今の
+    // セッションでpushしようとしてしまう(RLS違反や、前のアカウントごと削除
+    // されている場合はFK違反になる)。現在のユーザーの行だけを送る。
+    // ※uidがnull(トークン更新中など)のときは判定せず、通常の失敗→リトライに任せる。
+    final uid = supabase.auth.currentUser?.id;
+    if (uid != null && existing.userId != uid) return;
+
     // チュートリアル講義配下のモーメントはローカル完結のためpushしない
     if (await db.isTutorialLecture(existing.lectureId)) return;
+
+    // 親講義がローカルから消えている/論理削除済みなら、pushしても
+    // `lecture_moments_lecture_id_fkey`のFK違反(23503)になるだけなので送らない。
+    //
+    // 録音をDiscardした(=一度もSupabaseに登録されないまま削除された)講義では、
+    // 講義側のpushは「Supabase側に無いなら送るものが無い」と判断して成功扱いで
+    // Outboxから消える(lecture_outbox_push_handler.dart参照)。一方その録音中に
+    // 押されたリアクション/メモのOutbox行はそのまま残るため、この判定が無いと
+    // 存在しない親を参照し続け、givenUpになるまで(最大10回)毎回の同期で
+    // FK違反を出し続けていた。
+    final lecture = await (db.select(db.localLectures)
+          ..where((t) => t.id.equals(existing.lectureId) & t.userId.equals(existing.userId)))
+        .getSingleOrNull();
+    if (lecture == null || lecture.deletedAt != null) return;
 
     final payload = {
       'id': existing.id,

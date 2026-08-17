@@ -1,5 +1,6 @@
 // lib/presentation/pages/onboarding/device_setup_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -33,6 +34,8 @@ class DeviceSetupPage extends HookConsumerWidget {
     }
 
     void next() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       if (step.value < _totalSteps - 1) {
         step.value++;
       } else {
@@ -41,6 +44,8 @@ class DeviceSetupPage extends HookConsumerWidget {
     }
 
     void back() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       if (step.value > 0) step.value--;
     }
 

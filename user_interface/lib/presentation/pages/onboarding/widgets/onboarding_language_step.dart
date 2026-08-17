@@ -71,6 +71,15 @@ class OnboardingLanguageStep extends HookConsumerWidget {
                     selected: recordingLanguage,
                     onTap: () => _openSheet(context, LanguageSheetMode.recording),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.onboardingLanguageFooterNote,
+                    style: TextStyle(
+                      color: AppColors.universe.textComet.withValues(alpha: 0.8),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
                   const Spacer(),
                   const SizedBox(height: 24),
                   SizedBox(

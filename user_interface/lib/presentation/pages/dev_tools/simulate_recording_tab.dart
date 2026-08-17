@@ -286,7 +286,8 @@ class _SimulationRunnerState extends ConsumerState<_SimulationRunner> {
 
       await controller.setCourseId(widget.selectedCourseId);
       // Recording Page での realtimeTranscribe 設定を保持
-      controller.setRealtimeTranscribe(currentState.realtimeTranscribe);
+      // (クレジット残高の確認で待つ場合があるため、録音開始前に必ず待ち切る)
+      await controller.setRealtimeTranscribe(currentState.realtimeTranscribe);
       await controller.toggleStartStopResume();
     });
 

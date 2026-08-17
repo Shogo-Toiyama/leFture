@@ -504,6 +504,9 @@ class LocalUserProfiles extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// テスト用。`NativeDatabase.memory()`などを渡してファイルを作らずに使う。
+  AppDatabase.forTesting(super.executor);
+
   @override
   int get schemaVersion => 23;
 
@@ -980,6 +983,26 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteOutboxIds(List<int> ids) async {
     await (delete(localOutbox)..where((t) => t.id.isIn(ids))).go();
+  }
+
+  /// 全Outbox行のリトライ状態(バックオフ待ち・ギブアップ)を解除し、次のpushで
+  /// 必ず1回試行されるようにする。
+  ///
+  /// [dequeuePendingOutbox]は`givenUp`と「nextRetryAtが未来」の行を除外するため、
+  /// それらは放置すると二度と送信されない。サインアウト直前のように「これが
+  /// 最後の送信機会」という場面ではリトライ枠を無視して全部試したい。
+  /// 送り先が既に無い行(参照先のローカル行が消えている等)は各Pushハンドラが
+  /// 「送るものが無い」と畳んでOutboxから消えるため、この解除はゴミ行の掃除も兼ねる。
+  Future<int> resetOutboxRetryState() async {
+    return (update(localOutbox)..where(
+          (t) => t.givenUp.equals(true) | t.nextRetryAt.isNotNull(),
+        ))
+        .write(
+          const LocalOutboxCompanion(
+            givenUp: Value(false),
+            nextRetryAt: Value(null),
+          ),
+        );
   }
 
   Future<void> deleteAllOutbox() async {

@@ -716,6 +716,24 @@ abstract class AppLocalizations {
   /// **'Realtime transcribe can only be turned on or off before you start recording. Stop and start a new recording to change this setting.'**
   String get recordingRealtimeLockedDialogMessage;
 
+  /// Title of the dialog shown when the user tries to turn on Realtime transcribe but their credit balance is below the minimum required.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough credits'**
+  String get recordingRealtimeCreditsDialogTitle;
+
+  /// Body text of the not-enough-credits dialog informing the user that credits are required.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription requires remaining credits.'**
+  String get recordingRealtimeCreditsDialogMessage;
+
+  /// Button label to navigate to the credits page.
+  ///
+  /// In en, this message translates to:
+  /// **'View Credits'**
+  String get recordingRealtimeCreditsDialogConfirm;
+
   /// Title of the dialog shown when the user turns on Realtime transcribe but the on-device speech model for the current recording language hasn't been downloaded yet.
   ///
   /// In en, this message translates to:
@@ -733,6 +751,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download'**
   String get recordingSpeechModelDownloadConfirm;
+
+  /// Tooltip for the download button shown on the Realtime transcribe tile while the on-device speech model hasn't been downloaded yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Download speech model'**
+  String get recordingSpeechModelDownloadTooltip;
+
+  /// Tooltip for the button that pauses an in-progress speech model download on the Realtime transcribe tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause download'**
+  String get recordingSpeechModelPauseTooltip;
+
+  /// Tooltip for the button that resumes a paused speech model download on the Realtime transcribe tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume download'**
+  String get recordingSpeechModelResumeTooltip;
+
+  /// Tooltip for the button that retries a failed speech model download on the Realtime transcribe tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry download'**
+  String get recordingSpeechModelRetryTooltip;
 
   /// Snackbar shown when the user tries to upload a picked local audio file without first selecting a course.
   ///
@@ -2618,6 +2660,12 @@ abstract class AppLocalizations {
   /// **'Courses'**
   String get coursePageTitle;
 
+  /// Label of the link shown above the course metadata on a single course's page, followed by a right chevron. It names where this course lives rather than acting as a back button, and tapping it opens the top-level Course list page. Keep it a short place name (the destination page's own title), not a sentence like 'Back to Courses'.
+  ///
+  /// In en, this message translates to:
+  /// **'Courses'**
+  String get coursePageBackToCoursesLabel;
+
   /// Label reused on two buttons that both open the course-creation sheet on the Course list page: the floating action button, and the call-to-action button shown in the empty-courses state. Short label, fits next to a '+' icon.
   ///
   /// In en, this message translates to:
@@ -2747,7 +2795,7 @@ abstract class AppLocalizations {
   /// Header title of the Course Create/Edit bottom sheet when creating a brand-new course (no existingCourse passed in). Distinct from coursePageNewCourseButton, which is a button label elsewhere, even though the English text happens to match.
   ///
   /// In en, this message translates to:
-  /// **'New Course'**
+  /// **'Create Course'**
   String get courseCreateSheetNewTitle;
 
   /// Small all-caps-style section label above the live preview card showing the course's chosen icon/color combination on the Course Create/Edit sheet.
@@ -4433,7 +4481,7 @@ abstract class AppLocalizations {
   /// Row description for the display-language picker on the onboarding language step.
   ///
   /// In en, this message translates to:
-  /// **'Sets the language of app text'**
+  /// **'Language for the app UI and generated content'**
   String get onboardingLanguageDisplayDesc;
 
   /// Row title for the recording-language picker on the onboarding language step.
@@ -4445,8 +4493,14 @@ abstract class AppLocalizations {
   /// Row description for the recording-language picker on the onboarding language step.
   ///
   /// In en, this message translates to:
-  /// **'Used for on-device transcription'**
+  /// **'Language of the lectures you record'**
   String get onboardingLanguageRecordingDesc;
+
+  /// Footer note on the onboarding language step informing users they can change language settings later.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change these anytime later from Settings in your Account page.'**
+  String get onboardingLanguageFooterNote;
 
   /// Small eyebrow label above the title on the onboarding permissions step.
   ///
@@ -4463,7 +4517,7 @@ abstract class AppLocalizations {
   /// Subtitle on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'leFture needs these to record safely in the background and keep you updated on processing status.'**
+  /// **'leFture needs these to record safely in the background.'**
   String get onboardingPermissionsSubtitle;
 
   /// Microphone permission row title on the onboarding permissions step.
@@ -4487,7 +4541,7 @@ abstract class AppLocalizations {
   /// Notification permission row subtitle on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'Required to keep background recording active and show processing status.'**
+  /// **'Required to keep background recording active.'**
   String get onboardingPermissionsNotifSubtitle;
 
   /// Battery-optimization-exemption permission row title on the onboarding permissions step. Android only.
@@ -4574,22 +4628,22 @@ abstract class AppLocalizations {
   /// **'Almost done'**
   String get onboardingPlanEyebrow;
 
-  /// Title on the onboarding plan/subscription placeholder step.
+  /// Title on the onboarding plan step.
   ///
   /// In en, this message translates to:
-  /// **'leFture is free right now'**
+  /// **'Get started with leFture'**
   String get onboardingPlanTitle;
 
-  /// Badge shown on the onboarding plan step indicating the app is free during beta.
+  /// Badge shown on the onboarding plan step indicating the initial welcome credit gift.
   ///
   /// In en, this message translates to:
-  /// **'Beta · free plan included'**
+  /// **'Welcome Gift: 1,500 credits included'**
   String get onboardingPlanBadge;
 
   /// Subtitle on the onboarding plan step.
   ///
   /// In en, this message translates to:
-  /// **'Every feature is free while we\'re testing. Paid plans will live here later.'**
+  /// **'Explore all features with 1,500 welcome credits. Subscription plans will be available here later.'**
   String get onboardingPlanSubtitle;
 
   /// Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview).
@@ -4601,7 +4655,7 @@ abstract class AppLocalizations {
   /// Inline error shown on the onboarding plan step if claiming the free plan fails.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t activate your free plan. You can try again from your account page later.'**
+  /// **'Couldn\'t activate your plan. You can try again from your account page later.'**
   String get onboardingPlanClaimError;
 
   /// Small progress counter above each question on the onboarding profile step, e.g. 'Profile · 1 of 3'.
@@ -4861,6 +4915,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Under maintenance — some features unavailable'**
   String get maintenanceBannerMessage;
+
+  /// Title of the dialog shown when the user taps Sign Out while a recording is active or paused. Signing out wipes this device's local data, so it must not happen mid-recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording in progress'**
+  String get signOutBlockedByRecordingTitle;
+
+  /// Body of the dialog shown when the user taps Sign Out during a recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Please stop and save the current recording before signing out.'**
+  String get signOutBlockedByRecordingMessage;
+
+  /// Only button of the dialog shown when signing out is blocked because a recording is in progress. Just dismisses the dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get signOutBlockedByRecordingConfirmButton;
+
+  /// Text of the non-dismissible progress dialog shown while the app pushes pending changes to the server before signing out.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your unsynced changes…'**
+  String get signOutSyncingMessage;
+
+  /// Title of the confirmation dialog shown before signing out when some local changes could not be sent to the server. Signing out deletes this account's local data from the device.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsynced data will be deleted'**
+  String get signOutPendingTitle;
+
+  /// First paragraph of the sign-out confirmation dialog, followed by one or both of the lines counting what is still unsynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing out deletes this account\'s data from this device. The following could not be sent to the server yet:'**
+  String get signOutPendingIntro;
+
+  /// Line in the sign-out confirmation dialog counting queued edits (completion toggles, edits, deletions) that have not reached the server.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} unsynced change} other{{count} unsynced changes}}'**
+  String signOutPendingChangesLine(int count);
+
+  /// Line in the sign-out confirmation dialog counting lectures whose recorded audio is still not uploaded. Emphasises that this audio is unrecoverable once deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} recording whose audio has not finished uploading. The audio exists only on this device and cannot be recovered.} other{{count} recordings whose audio has not finished uploading. The audio exists only on this device and cannot be recovered.}}'**
+  String signOutPendingRecordingsLine(int count);
+
+  /// Title of the confirmation dialog shown when the user signs out with no network connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out while offline?'**
+  String get signOutOfflineTitle;
+
+  /// Paragraph added to the sign-out confirmation dialog when the device is offline. Signing in requires the network, so an offline sign-out locks the user out until they reconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline, so nothing can be synced right now, and you won\'t be able to sign back in until you have a connection again.'**
+  String get signOutOfflineLine;
+
+  /// Destructive confirm button of the sign-out confirmation dialog. Deletes the local data (including anything unsynced) and signs the user out.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete and sign out'**
+  String get signOutDiscardConfirmButton;
+
+  /// Cancel button of the sign-out confirmation dialog. Keeps the user signed in so pending data can finish syncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay signed in'**
+  String get signOutStayCancelButton;
 }
 
 class _AppLocalizationsDelegate

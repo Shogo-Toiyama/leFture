@@ -1,6 +1,7 @@
 // lib/presentation/pages/sign_up/sign_up_page.dart
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,6 +40,8 @@ class SignUpPage extends HookConsumerWidget {
     ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
       next.whenOrNull(
         data: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          SystemChannels.textInput.invokeMethod('TextInput.hide');
           final session = supabase.auth.currentSession;
           if (session != null) {
             // Social ログイン等、既にセッションが確立している場合は直接オンボーディング画面へ直行
@@ -69,6 +72,8 @@ class SignUpPage extends HookConsumerWidget {
     });
 
     void signUp() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       inlineError.value = null;
       if (formKey.currentState!.validate() && agreedToTerms.value) {
         isEmailSubmitting.value = true;
@@ -87,6 +92,8 @@ class SignUpPage extends HookConsumerWidget {
     // TextFormFieldの必須エラーが出ないようにするため、formKey全検証ではなく
     // usernameKeyとagreedToTermsのみを独立して検証する。
     bool validateUsernameAndTerms() {
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       inlineError.value = null;
       final usernameValid = usernameKey.currentState?.validate() ?? false;
       if (!usernameValid) {

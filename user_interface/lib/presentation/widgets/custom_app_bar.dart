@@ -15,12 +15,14 @@ class CustomAppBar extends ConsumerWidget {
   const CustomAppBar({
     super.key,
     this.showHomeButton = false,
+    this.onHomeTap,
     this.title,
     this.isLightBg = false,
     this.actions,
   });
 
   final bool showHomeButton;
+  final VoidCallback? onHomeTap;
   final String? title;
   final bool isLightBg;
   final List<Widget>? actions;
@@ -254,7 +256,7 @@ class CustomAppBar extends ConsumerWidget {
                 children: [
                   if (showHomeButton) ...[
                     GestureDetector(
-                      onTap: () => context.go(AppRoutes.home),
+                      onTap: onHomeTap ?? () => context.go(AppRoutes.home),
                       onLongPress: () => _showNavigationStack(context, ref),
                       child: MouseRegion(
                         cursor: SystemMouseCursors.click,

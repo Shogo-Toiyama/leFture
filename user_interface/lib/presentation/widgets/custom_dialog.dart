@@ -12,6 +12,7 @@ class CustomDialog extends StatelessWidget {
     this.iconColor,
     this.isDestructive = false,
     this.customActions,
+    this.maxWidth = 400.0,
   });
 
   final String title;
@@ -22,6 +23,7 @@ class CustomDialog extends StatelessWidget {
   final Color? iconColor;
   final bool isDestructive;
   final List<Widget>? customActions;
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -30,20 +32,22 @@ class CustomDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF161829),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.universe.glassBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161829),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.universe.glassBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
@@ -135,8 +139,9 @@ class CustomDialog extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 Future<bool?> showCustomDialog({
@@ -148,6 +153,7 @@ Future<bool?> showCustomDialog({
   IconData? icon,
   Color? iconColor,
   bool isDestructive = false,
+  double maxWidth = 400.0,
 }) {
   return showDialog<bool>(
     context: context,
@@ -159,6 +165,7 @@ Future<bool?> showCustomDialog({
       icon: icon,
       iconColor: iconColor,
       isDestructive: isDestructive,
+      maxWidth: maxWidth,
     ),
   );
 }

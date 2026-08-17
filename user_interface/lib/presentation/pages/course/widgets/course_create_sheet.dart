@@ -376,48 +376,52 @@ class CourseCreateSheet extends HookConsumerWidget {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextField(
-                                  controller: titleCtl,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    color: AppColors.universe.textStarlight,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    isCollapsed: true,
-                                    border: InputBorder.none,
-                                    hintText: l10n
-                                        .courseCreateSheetPreviewTitlePlaceholder,
-                                    hintStyle: TextStyle(
-                                      color: AppColors.universe.textStarlight
-                                          .withValues(alpha: 0.4),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            child: TextField(
+                              controller: titleCtl,
+                              maxLines: 1,
+                              style: TextStyle(
+                                color: AppColors.universe.textStarlight,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                contentPadding: const EdgeInsets.only(bottom: 6),
+                                border: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: AppColors.universe.glassBorder,
+                                    width: 1.0,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.courseCreateSheetPreviewSubtitle,
-                                  style: TextStyle(
-                                    color: AppColors.universe.textComet,
-                                    fontSize: 12,
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: AppColors.universe.glassBorder
+                                        .withValues(alpha: 0.6),
+                                    width: 1.0,
                                   ),
                                 ),
-                              ],
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: selectedColor.value,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                hintText: l10n
+                                    .courseCreateSheetPreviewTitlePlaceholder,
+                                hintStyle: TextStyle(
+                                  color: AppColors.universe.textStarlight
+                                      .withValues(alpha: 0.4),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 10),
                           Icon(
                             Icons.edit_outlined,
-                            color: AppColors.universe.textComet.withValues(
-                              alpha: 0.5,
-                            ),
-                            size: 16,
+                            color: AppColors.universe.textComet,
+                            size: 20,
                           ),
                         ],
                       ),

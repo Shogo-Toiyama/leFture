@@ -36,8 +36,8 @@ import 'widgets/initial_sync_error_content.dart';
 const double _kGalaxyHeightRatio = 0.25;
 // FunFactsの高さ（固定）。
 const double _kFunFactsHeight = 190.0;
-// Coursesヘッダーの高さ（固定）。
-const double _kCoursesHeaderHeight = 84.0;
+// Coursesヘッダーの高さ（基準値）。
+const double _kCoursesHeaderHeight = 64.0;
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
@@ -419,7 +419,9 @@ class HomePage extends HookConsumerWidget {
                   controller: scrollController,
                   physics: isGalaxyPointerDown.value
                       ? const NeverScrollableScrollPhysics()
-                      : const BouncingScrollPhysics(),
+                      : const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
                   slivers: [
                     // Pull-to-refresh: スクロールが一番上（銀河が全部見えている状態）の時だけ、
                     // さらに下に引っ張るとこのControlがオーバースクロールを検知してリロードする。
@@ -483,7 +485,7 @@ class HomePage extends HookConsumerWidget {
                     Builder(
                       builder: (context) {
                         final textScaler = MediaQuery.textScalerOf(context);
-                        final dynamicCoursesHeight = (textScaler.scale(22) + textScaler.scale(14) + 60.0).clamp(_kCoursesHeaderHeight, 180.0);
+                        final dynamicCoursesHeight = (textScaler.scale(22) + textScaler.scale(14) + 28.0).clamp(_kCoursesHeaderHeight, 150.0);
                         final dynamicFunFactsHeight = (textScaler.scale(160) + 30.0).clamp(_kFunFactsHeight, 260.0);
                         return SliverPersistentHeader(
                           pinned: true,
@@ -520,7 +522,19 @@ class HomePage extends HookConsumerWidget {
                   bottom: false,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [const CustomAppBar(), const AnnouncementBar()],
+                    children: [
+                      CustomAppBar(
+                        showHomeButton: scrollOffset.value > 10.0,
+                        onHomeTap: () {
+                          scrollController.animateTo(
+                            0.0,
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeInOutCubic,
+                          );
+                        },
+                      ),
+                      const AnnouncementBar(),
+                    ],
                   ),
                 ),
               ),

@@ -9,6 +9,7 @@ import 'package:lefture/domain/entities/app_language.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 
 enum LanguageSheetMode { recording, display }
 
@@ -22,6 +23,7 @@ class LanguageSelectionSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isRecording = mode == LanguageSheetMode.recording;
 
     final currentCode = isRecording
@@ -30,10 +32,12 @@ class LanguageSelectionSheet extends ConsumerWidget {
 
     final languages = isRecording ? kRecordingLanguages : kDisplayLanguages;
 
-    final title = isRecording ? 'Recording Language' : 'Display Language';
+    final title = isRecording
+        ? l10n.onboardingLanguageRecordingLabel
+        : l10n.onboardingLanguageDisplayLabel;
     final subtitle = isRecording
-        ? 'Used for on-device transcription'
-        : 'Sets the language of app text';
+        ? l10n.onboardingLanguageRecordingDesc
+        : l10n.onboardingLanguageDisplayDesc;
 
     return Container(
       decoration: BoxDecoration(
@@ -106,13 +110,6 @@ class LanguageSelectionSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            if (isRecording) ...[
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _SharedSpeechModelStatus(),
-              ),
-            ],
             const SizedBox(height: 16),
             Divider(color: AppColors.universe.glassBorder, height: 1),
 
@@ -180,11 +177,11 @@ Future<void> _maybeDownloadForNewLanguage(
 ) async {
   if (!RecordingPreferences().getRealtimeTranscribe()) return;
 
-  final status = ref.read(asrModelManagerProvider.notifier).statusForLanguage(lang.code).status;
-  // 既に準備済み/進行中なら何もしなくてよい。
-  if (status == AsrModelStatus.ready ||
-      status == AsrModelStatus.downloading ||
-      status == AsrModelStatus.checking) {
+  final modelState = ref.read(asrModelManagerProvider.notifier).statusForLanguage(lang.code);
+  // 既に手元にある/取得が進行中なら何もしなくてよい。
+  if (modelState.installed ||
+      modelState.status == AsrModelStatus.downloading ||
+      modelState.status == AsrModelStatus.checking) {
     return;
   }
 
@@ -266,71 +263,3 @@ class _LanguageTile extends StatelessWidget {
   }
 }
 
-/// 全言語が共有する1つのWhisperモデルのダウンロード状況を、言語ごとにではなく
-/// ここ1箇所だけで表示する。
-class _SharedSpeechModelStatus extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(asrModelManagerProvider);
-    final recordingLanguage = ref.read(recordingLanguageControllerProvider);
-    final modelState = ref.read(asrModelManagerProvider.notifier).statusForLanguage(recordingLanguage);
-
-    final (icon, iconColor, label, onTap) = switch (modelState.status) {
-      AsrModelStatus.checking => (
-          Icons.hourglass_top_rounded,
-          AppColors.universe.textComet,
-          'Checking speech model…',
-          null,
-        ),
-      AsrModelStatus.downloading => (
-          Icons.downloading_rounded,
-          AppColors.starGold,
-          modelState.progress != null
-              ? 'Downloading speech model… ${(modelState.progress! * 100).round()}%'
-              : 'Downloading speech model…',
-          () => ref.read(asrModelManagerProvider.notifier).pauseDownload(recordingLanguage),
-        ),
-      AsrModelStatus.paused => (
-          Icons.play_circle_outline,
-          AppColors.starGold,
-          'Speech model download paused — tap to resume',
-          () => resumeAsrModelWithErrorDialog(context, ref, recordingLanguage),
-        ),
-      AsrModelStatus.ready => (
-          Icons.check_circle,
-          AppColors.growthGreen,
-          'Speech model ready',
-          null,
-        ),
-      AsrModelStatus.failed => (
-          Icons.error_outline,
-          AppColors.correctionRed,
-          friendlyAsrModelErrorMessage,
-          () => ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
-        ),
-      AsrModelStatus.unknown => (
-          Icons.download_rounded,
-          AppColors.universe.textComet,
-          'Speech model not downloaded — tap to download',
-          () => ensureAsrModelWithErrorDialog(context, ref, recordingLanguage),
-        ),
-    };
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

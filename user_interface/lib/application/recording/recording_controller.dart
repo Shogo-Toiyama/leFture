@@ -31,6 +31,21 @@ part 'recording_controller.g.dart';
 /// 続ける処理)にのみ適用する。
 const double kRealtimeMinCreditUsd = 0.1;
 
+/// [RecordingController.setRealtimeTranscribe]の結果。失敗した理由を呼び出し側
+/// (UI)へ返し、必ずユーザーに見える形で伝えられるようにするためのもの。
+/// 以前は理由を`errorMessage`へ書き込んでいたが、あれは`phase == error`の
+/// ときしか描画されず、トグル操作時(idle)には何も出ないまま設定だけが
+/// 元に戻る——という無言の失敗になっていた。
+enum RealtimeToggleResult {
+  ok,
+
+  /// 録音中は変更できない。
+  lockedWhileRecording,
+
+  /// クレジット残高が[kRealtimeMinCreditUsd]に満たない。
+  insufficientCredits,
+}
+
 /// PCM16bitデータから音量振幅 (0.0 〜 1.0) を算出する
 double _calculatePcmAudioLevel(Uint8List data) {
   if (data.length < 2) return 0.0;
@@ -352,8 +367,11 @@ class RecordingController extends _$RecordingController {
       // トグルまでは触らない。明確に`failed`(この言語用のモデルが結局
       // 用意できなかった)の場合のみ、実体の無い設定として自動的にOffへ戻す。
       final modelManager = ref.read(asrModelManagerProvider.notifier);
-      final modelUnavailable =
-          modelManager.statusForLanguage(recordingLanguage).status == AsrModelStatus.failed;
+      final modelState = modelManager.statusForLanguage(recordingLanguage);
+      // 手元にモデルが無く、かつ取得にも失敗している場合だけ「実体の無い設定」
+      // と見なす。オフラインでマニフェスト取得に失敗しただけ(モデルはある)なら
+      // そのまま使える。
+      final modelUnavailable = modelState.status == AsrModelStatus.failed && !modelState.installed;
       if (state.realtimeTranscribe && modelUnavailable) {
         DevLog.add('[StartSession] Realtime Transcribe disabled: no model available for "$recordingLanguage".');
         state = state.copyWith(realtimeTranscribe: false);
@@ -363,7 +381,7 @@ class RecordingController extends _$RecordingController {
         // (LiveAsrController側がダウンロード完了を検知して自動的に
         // 再試行してくれるが、それまでは字幕が出ないことをここで一言
         // 知らせておく)。
-        if (modelManager.statusForLanguage(recordingLanguage).status != AsrModelStatus.ready) {
+        if (!modelManager.statusForLanguage(recordingLanguage).installed) {
           DevLog.add('[StartSession] ASR model still downloading for "$recordingLanguage" — captions will start once ready.');
           state = state.copyWith(
             transientNotice: 'Speech model is still downloading — live captions will start once it\'s ready.',
@@ -437,26 +455,49 @@ class RecordingController extends _$RecordingController {
 
   /// クレジット残高が$kRealtimeMinCreditUsd以上あるか。未取得(ロード中/
   /// オフライン等)の場合は安全側に倒してfalseを返す。
+  ///
+  /// 実際にサーバーへ送り始める(＝課金が発生しうる)録音開始・再開の判定用。
+  /// 設定トグルの可否は[_canEnableRealtime]の方を使うこと。
   bool _hasEnoughCreditsForRealtime() {
     final summary = ref.read(creditSummaryProvider).asData?.value;
     if (summary == null) return false;
     return summary.hasAtLeastUsd(kRealtimeMinCreditUsd);
   }
 
-  Future<void> setRealtimeTranscribe(bool value) async {
-    if (state.phase != RecordingPhase.idle) return;
+  /// 設定変更のためのクレジット判定。[_hasEnoughCreditsForRealtime]と違い、
+  /// 残高が未取得ならここで取得を待ち、それでも分からない(オフライン/API失敗)
+  /// 場合は許可する。
+  ///
+  /// 「分からない=拒否」にすると、残高は足りているのに通信が済んでいないだけで
+  /// トグルがONにできず、しかもユーザーには理由が分からない、という状態に
+  /// なってしまうため。実際に足りない状態で録音を始めた場合は
+  /// [_startRecordingSession]が改めて判定してRealtimeだけ無効化する。
+  Future<bool> _canEnableRealtime() async {
+    final cached = ref.read(creditSummaryProvider).asData?.value;
+    if (cached != null) return cached.hasAtLeastUsd(kRealtimeMinCreditUsd);
+    try {
+      final summary = await ref.read(creditSummaryProvider.future);
+      return summary.hasAtLeastUsd(kRealtimeMinCreditUsd);
+    } catch (e, st) {
+      DevLog.add('⚠️ [Realtime] credit summary unavailable, allowing the toggle anyway: $e\n$st');
+      return true;
+    }
+  }
 
-    if (value && !_hasEnoughCreditsForRealtime()) {
-      // 録音自体は常に可能なので、ここでブロックするのはRealtimeのON操作のみ。
-      state = state.copyWith(
-        errorMessage: 'Not enough credits for Realtime Transcribe. Recording will still work without it.',
-      );
-      return;
+  Future<RealtimeToggleResult> setRealtimeTranscribe(bool value) async {
+    if (state.phase != RecordingPhase.idle) {
+      return RealtimeToggleResult.lockedWhileRecording;
+    }
+
+    // 録音自体は常に可能なので、ここでブロックするのはRealtimeのON操作のみ。
+    if (value && !await _canEnableRealtime()) {
+      return RealtimeToggleResult.insufficientCredits;
     }
 
     state = state.copyWith(realtimeTranscribe: value, clearErrorMessage: true);
     // Preferences に保存
     await RecordingPreferences().setRealtimeTranscribe(value);
+    return RealtimeToggleResult.ok;
   }
 
   Future<void> addReaction(String momentType) async {

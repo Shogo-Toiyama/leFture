@@ -57,6 +57,25 @@ class AnnouncementRepositoryDrift {
     return query.watch().map((rows) => rows.map(_toDomain).toList());
   }
 
+  /// 書き込み系で使う「自分の1行」の絞り込み条件。
+  ///
+  /// LocalAnnouncementsの主キーは{id, userId}の複合キーなので、idだけで
+  /// 絞り込むと同じidの行が複数ユーザー分ヒットしうる(同じ端末で複数
+  /// アカウントにログインした場合)。チュートリアルのアナウンスメントは
+  /// 全ユーザー共通の固定id(`ann_1`等)を使うため、これが現実に起きて
+  /// getSingleOrNull()が`Bad state: Too many elements`を投げていた。
+  /// また、userIdを付けないUPDATEは他ユーザーの行まで巻き添えで書き換える。
+  Expression<bool> Function($LocalAnnouncementsTable) _ownRow(String id, String uid) {
+    return (t) => t.id.equals(id) & t.userId.equals(uid);
+  }
+
+  SimpleSelectStatement<$LocalAnnouncementsTable, LocalAnnouncement> _selectOwn(
+    String id,
+    String uid,
+  ) {
+    return _db.select(_db.localAnnouncements)..where(_ownRow(id, uid));
+  }
+
   /// 完了/未完了を即時ローカル更新(楽観的UI)し、Outboxに登録する。
   Future<void> toggleComplete({required String id, required bool completed}) async {
     final uid = supabase.auth.currentUser?.id;
@@ -65,17 +84,19 @@ class AnnouncementRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
-      final current = await (_db.select(_db.localAnnouncements)..where((t) => t.id.equals(id))).getSingleOrNull();
+      final current = await _selectOwn(id, uid).getSingleOrNull();
 
-      await (_db.update(_db.localAnnouncements)..where((t) => t.id.equals(id))).write(
+      await (_db.update(_db.localAnnouncements)..where(_ownRow(id, uid))).write(
         LocalAnnouncementsCompanion(
           completedAt: Value(completed ? now : null),
           updatedAt: Value(now),
         ),
       );
 
-      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
-        return; // チュートリアル講義のデータはOutboxに入れない
+      // 自分の行が無い(=上のUPDATEも0件)場合と、チュートリアル講義
+      // (ローカル完結)のデータはOutboxに入れない。
+      if (current == null || await _db.isTutorialLecture(current.lectureId)) {
+        return;
       }
 
       await _db.enqueueOutbox(
@@ -94,9 +115,9 @@ class AnnouncementRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
-      final current = await (_db.select(_db.localAnnouncements)..where((t) => t.id.equals(id))).getSingleOrNull();
+      final current = await _selectOwn(id, uid).getSingleOrNull();
 
-      await (_db.update(_db.localAnnouncements)..where((t) => t.id.equals(id))).write(
+      await (_db.update(_db.localAnnouncements)..where(_ownRow(id, uid))).write(
         LocalAnnouncementsCompanion(
           deletedAt: Value(now),
           syncStatus: const Value('needs_sync'),
@@ -104,8 +125,10 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
-        return; // チュートリアル講義のデータはOutboxに入れない
+      // 自分の行が無い(=上のUPDATEも0件)場合と、チュートリアル講義
+      // (ローカル完結)のデータはOutboxに入れない。
+      if (current == null || await _db.isTutorialLecture(current.lectureId)) {
+        return;
       }
 
       await _db.enqueueOutbox(
@@ -129,9 +152,9 @@ class AnnouncementRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
-      final current = await (_db.select(_db.localAnnouncements)..where((t) => t.id.equals(id))).getSingleOrNull();
+      final current = await _selectOwn(id, uid).getSingleOrNull();
 
-      await (_db.update(_db.localAnnouncements)..where((t) => t.id.equals(id))).write(
+      await (_db.update(_db.localAnnouncements)..where(_ownRow(id, uid))).write(
         LocalAnnouncementsCompanion(
           title: Value(title),
           description: Value(description),
@@ -141,8 +164,10 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      if (current != null && await _db.isTutorialLecture(current.lectureId)) {
-        return; // チュートリアル講義のデータはOutboxに入れない
+      // 自分の行が無い(=上のUPDATEも0件)場合と、チュートリアル講義
+      // (ローカル完結)のデータはOutboxに入れない。
+      if (current == null || await _db.isTutorialLecture(current.lectureId)) {
+        return;
       }
 
       await _db.enqueueOutbox(

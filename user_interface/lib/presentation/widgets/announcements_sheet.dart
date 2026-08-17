@@ -27,11 +27,13 @@ class AnnouncementsSheet extends HookConsumerWidget {
     this.courseId,
     this.lectureId,
     this.title,
+    this.targetAnnouncementId,
   });
 
   final String? courseId;
   final String? lectureId;
   final String? title;
+  final String? targetAnnouncementId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,6 +43,9 @@ class AnnouncementsSheet extends HookConsumerWidget {
     final statusFilter = useState<String>('active'); // 'active', 'completed', 'all'
     final selectedType = useState<AnnouncementType?>(null); // null = すべて
     final recentlyCompletedIds = useState<Set<String>>({}); // 直近スワイプ完了したアナウンスID
+
+    final targetItemKey = useMemoized(() => GlobalKey());
+    final hasScrolledToTarget = useRef(false);
 
     // タブが切り替わったら一時保持リストをクリア
     useEffect(() {
@@ -57,6 +62,60 @@ class AnnouncementsSheet extends HookConsumerWidget {
     } else {
       announcementsAsync = ref.watch(allAnnouncementsProvider);
     }
+
+    final sheetScrollControllerRef = useRef<ScrollController?>(null);
+
+    // targetAnnouncementId が指定されている場合、完了済みならタブを切り替え、ターゲット位置へスクロール
+    useEffect(() {
+      if (targetAnnouncementId != null && !hasScrolledToTarget.value) {
+        final list = announcementsAsync.asData?.value;
+        if (list != null && list.any((a) => a.id == targetAnnouncementId)) {
+          final target = list.firstWhere((a) => a.id == targetAnnouncementId);
+          if (target.isCompleted && statusFilter.value == 'active') {
+            statusFilter.value = 'all';
+          }
+          if (selectedType.value != null && selectedType.value != target.type) {
+            selectedType.value = null;
+          }
+
+          hasScrolledToTarget.value = true;
+
+          // BottomSheetの展開アニメーション完了(約350ms)を待ってからスクロールを実行
+          Future.delayed(const Duration(milliseconds: 350), () async {
+            if (!context.mounted) return;
+            final sc = sheetScrollControllerRef.value;
+            final targetIndex = list.indexWhere((a) => a.id == targetAnnouncementId);
+
+            if (targetIndex >= 0 && sc != null && sc.hasClients) {
+              const estimatedItemHeight = 110.0;
+              final maxScroll = sc.position.maxScrollExtent;
+              final targetOffset = (targetIndex * estimatedItemHeight).clamp(0.0, maxScroll);
+              if (targetOffset > 0) {
+                await sc.animateTo(
+                  targetOffset,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                );
+              }
+            }
+
+            if (!context.mounted) return;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final ctx = targetItemKey.currentContext;
+              if (ctx != null) {
+                Scrollable.ensureVisible(
+                  ctx,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOutCubic,
+                  alignment: 0.15,
+                );
+              }
+            });
+          });
+        }
+      }
+      return null;
+    }, [announcementsAsync, targetAnnouncementId]);
 
     // タイトルの決定
     final sheetTitle = title ??
@@ -85,6 +144,7 @@ class AnnouncementsSheet extends HookConsumerWidget {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
+        sheetScrollControllerRef.value = scrollController;
         return Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1A1C2E),
@@ -237,28 +297,38 @@ class AnnouncementsSheet extends HookConsumerWidget {
                     }
                     return ListView.separated(
                       controller: scrollController,
+                      cacheExtent: 2000,
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                       itemCount: filteredList.length,
                       separatorBuilder: (context, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final announcement = filteredList[index];
+                        final isTarget = announcement.id == targetAnnouncementId;
                         final targetCourseId = isGlobalScope
                             ? (announcement.lectureId == null
                                 ? null
                                 : courseIdByLectureId[announcement.lectureId])
-                            : null;
-                        return AnnouncementTile(
+                            : courseId;
+
+                        final tileWidget = AnnouncementTile(
                           key: ValueKey('announcement_${announcement.id}_${announcement.isCompleted}'),
                           announcement: announcement,
                           courseName: targetCourseId == null
                               ? null
                               : courseTitleById[targetCourseId],
-                          onTap: targetCourseId == null
-                              ? null
-                              : () {
+                          onTap: (announcement.lectureId != null && targetCourseId != null)
+                              ? () {
                                   Navigator.of(context).pop();
-                                  context.push('${AppRoutes.coursesRootPath}/c/$targetCourseId');
-                                },
+                                  context.push(
+                                    '${AppRoutes.coursesRootPath}/c/$targetCourseId/v/${announcement.lectureId}?openAnnouncementId=${announcement.id}',
+                                  );
+                                }
+                              : (targetCourseId != null
+                                  ? () {
+                                      Navigator.of(context).pop();
+                                      context.push('${AppRoutes.coursesRootPath}/c/$targetCourseId');
+                                    }
+                                  : null),
                           onToggleComplete: (a) async {
                             final nextState = !a.isCompleted;
                             if (nextState) {
@@ -287,6 +357,14 @@ class AnnouncementsSheet extends HookConsumerWidget {
                             ref.read(lectureControllerProvider.notifier).pushOutboxNow();
                           },
                         );
+
+                        if (isTarget) {
+                          return KeyedSubtree(
+                            key: targetItemKey,
+                            child: tileWidget,
+                          );
+                        }
+                        return tileWidget;
                       },
                     );
                   },

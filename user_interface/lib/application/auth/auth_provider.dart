@@ -13,8 +13,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/utils/dev_log.dart';
+import '../lecture/lecture_controller.dart';
+import '../../infrastructure/local_db/app_database_provider.dart';
 import '../../infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import '../../infrastructure/supabase/supabase_client.dart';
+import 'local_data_wipe_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -121,7 +124,12 @@ class AuthController extends _$AuthController {
     state = result;
   }
 
-  /// サインアウト
+  /// サインアウト(Supabaseのセッションを破棄するだけ)。
+  ///
+  /// ⚠️ UIからのサインアウトはこれを直接呼ばず、`runSignOutFlow()`
+  /// (sign_out_flow.dart)を経由すること。ローカルDBはサインアウトでは消えない
+  /// ため、未同期データの救済とローカルデータのwipeを飛ばすと、同じ端末で別
+  /// アカウントを使った時に行が混在して壊れる([LocalDataWipeService]のヘッダ参照)。
   Future<void> signOut() async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
@@ -357,6 +365,11 @@ class AuthController extends _$AuthController {
   /// 成否を呼び出し元が判定できるよう、結果の [AsyncValue] を返す。
   Future<AsyncValue<void>> deleteAccount({String? password}) async {
     state = const AsyncLoading();
+    // 非同期処理の途中でこのProviderが破棄されてもwipeを実行できるよう、
+    // DBへの参照は最初に取っておく。LectureController(keepAlive)も同様に
+    // 先に掴んでおき、wipe後のキャッシュ無効化に使う。
+    final wipeService = LocalDataWipeService(ref.read(appDatabaseProvider));
+    final lectureController = ref.read(lectureControllerProvider.notifier);
     final result = await AsyncValue.guard(() async {
       final currentUser = supabase.auth.currentUser;
       if (currentUser == null) throw Exception('No active user.');
@@ -390,6 +403,27 @@ class AuthController extends _$AuthController {
       // redirect がこのフラグを参照できるよう必ず呼び出し前にセットする。
       isAccountBeingDeleted = true;
       await supabase.auth.signOut();
+
+      // 4. ローカルデータの削除
+      // アカウント自体がサーバーから消えているため、この端末に残ったデータは
+      // 二度と同期先が無い(Outbox行はFK/RLS違反を出し続ける)。サインアウトと
+      // 同じ基準で、ASRモデルと端末設定以外を消し切る。
+      //
+      // ここは「アカウント削除が既に成功した後」の後片付けなので、失敗しても
+      // guardの外へ例外を出さない。出すと呼び出し元(UI)が「削除に失敗しました」
+      // を表示し、/account_deletedへの遷移まで止まってしまう。取りこぼした
+      // 残骸は次のサインイン時にwipeOtherUsersが回収する。
+      try {
+        await wipeService.wipeAll();
+        // キャッシュ済みのFileパスを保持しているProviderも捨てる(実ファイルが
+        // 消えたパスをImage.fileが読もうとしてPathNotFoundExceptionになる)。
+        lectureController.invalidateArtifactFileCache();
+      } catch (e, st) {
+        DevLog.add(
+          '⚠️ [AuthController] Local wipe after account deletion failed '
+          '(account itself is already deleted): $e\n$st',
+        );
+      }
     });
     if (ref.mounted) state = result;
     return result;

@@ -528,6 +528,21 @@
     "description": "Body text of the dialog explaining why the Realtime Transcribe toggle can't be changed mid-recording, and what to do instead."
   },
 
+  "recordingRealtimeCreditsDialogTitle": "Not enough credits",
+  "@recordingRealtimeCreditsDialogTitle": {
+    "description": "Title of the dialog shown when the user tries to turn on Realtime transcribe but their credit balance is below the minimum required."
+  },
+
+  "recordingRealtimeCreditsDialogMessage": "Realtime transcription requires remaining credits.",
+  "@recordingRealtimeCreditsDialogMessage": {
+    "description": "Body text of the not-enough-credits dialog informing the user that credits are required."
+  },
+
+  "recordingRealtimeCreditsDialogConfirm": "View Credits",
+  "@recordingRealtimeCreditsDialogConfirm": {
+    "description": "Button label to navigate to the credits page."
+  },
+
   "recordingSpeechModelDialogTitle": "Speech model required",
   "@recordingSpeechModelDialogTitle": {
     "description": "Title of the dialog shown when the user turns on Realtime transcribe but the on-device speech model for the current recording language hasn't been downloaded yet."
@@ -541,6 +556,26 @@
   "recordingSpeechModelDownloadConfirm": "Download",
   "@recordingSpeechModelDownloadConfirm": {
     "description": "Confirm button label on the speech-model-required dialog; starts downloading the on-device speech model."
+  },
+
+  "recordingSpeechModelDownloadTooltip": "Download speech model",
+  "@recordingSpeechModelDownloadTooltip": {
+    "description": "Tooltip for the download button shown on the Realtime transcribe tile while the on-device speech model hasn't been downloaded yet."
+  },
+
+  "recordingSpeechModelPauseTooltip": "Pause download",
+  "@recordingSpeechModelPauseTooltip": {
+    "description": "Tooltip for the button that pauses an in-progress speech model download on the Realtime transcribe tile."
+  },
+
+  "recordingSpeechModelResumeTooltip": "Resume download",
+  "@recordingSpeechModelResumeTooltip": {
+    "description": "Tooltip for the button that resumes a paused speech model download on the Realtime transcribe tile."
+  },
+
+  "recordingSpeechModelRetryTooltip": "Retry download",
+  "@recordingSpeechModelRetryTooltip": {
+    "description": "Tooltip for the button that retries a failed speech model download on the Realtime transcribe tile."
   },
 
   "recordingSelectCourseBeforeUploadSnackbar": "Please select a course before uploading",
@@ -2341,6 +2376,11 @@
     "description": "AppBar title on the top-level Course list page (shown when no specific course is selected, displaying all courses grouped by year/term)."
   },
 
+  "coursePageBackToCoursesLabel": "Courses",
+  "@coursePageBackToCoursesLabel": {
+    "description": "Label of the link shown above the course metadata on a single course's page, followed by a right chevron. It names where this course lives rather than acting as a back button, and tapping it opens the top-level Course list page. Keep it a short place name (the destination page's own title), not a sentence like 'Back to Courses'."
+  },
+
   "coursePageNewCourseButton": "New Course",
   "@coursePageNewCourseButton": {
     "description": "Label reused on two buttons that both open the course-creation sheet on the Course list page: the floating action button, and the call-to-action button shown in the empty-courses state. Short label, fits next to a '+' icon."
@@ -2452,7 +2492,7 @@
     "description": "Header title of the Course Create/Edit bottom sheet when editing an existing course (an existingCourse was passed in)."
   },
 
-  "courseCreateSheetNewTitle": "New Course",
+  "courseCreateSheetNewTitle": "Create Course",
   "@courseCreateSheetNewTitle": {
     "description": "Header title of the Course Create/Edit bottom sheet when creating a brand-new course (no existingCourse passed in). Distinct from coursePageNewCourseButton, which is a button label elsewhere, even though the English text happens to match."
   },
@@ -3829,7 +3869,7 @@
   "@onboardingLanguageDisplayLabel": {
     "description": "Row title for the display-language picker on the onboarding language step."
   },
-  "onboardingLanguageDisplayDesc": "Sets the language of app text",
+  "onboardingLanguageDisplayDesc": "Language for the app UI and generated content",
   "@onboardingLanguageDisplayDesc": {
     "description": "Row description for the display-language picker on the onboarding language step."
   },
@@ -3837,9 +3877,13 @@
   "@onboardingLanguageRecordingLabel": {
     "description": "Row title for the recording-language picker on the onboarding language step."
   },
-  "onboardingLanguageRecordingDesc": "Used for on-device transcription",
+  "onboardingLanguageRecordingDesc": "Language of the lectures you record",
   "@onboardingLanguageRecordingDesc": {
     "description": "Row description for the recording-language picker on the onboarding language step."
+  },
+  "onboardingLanguageFooterNote": "You can change these anytime later from Settings in your Account page.",
+  "@onboardingLanguageFooterNote": {
+    "description": "Footer note on the onboarding language step informing users they can change language settings later."
   },
 
   "onboardingPermissionsEyebrow": "Setup",
@@ -3850,7 +3894,7 @@
   "@onboardingPermissionsTitle": {
     "description": "Title on the onboarding permissions step. Deliberately vague about the count since it differs by platform (2 on iOS, 3 on Android)."
   },
-  "onboardingPermissionsSubtitle": "leFture needs these to record safely in the background and keep you updated on processing status.",
+  "onboardingPermissionsSubtitle": "leFture needs these to record safely in the background.",
   "@onboardingPermissionsSubtitle": {
     "description": "Subtitle on the onboarding permissions step."
   },
@@ -3866,7 +3910,7 @@
   "@onboardingPermissionsNotifTitle": {
     "description": "Notification permission row title on the onboarding permissions step."
   },
-  "onboardingPermissionsNotifSubtitle": "Required to keep background recording active and show processing status.",
+  "onboardingPermissionsNotifSubtitle": "Required to keep background recording active.",
   "@onboardingPermissionsNotifSubtitle": {
     "description": "Notification permission row subtitle on the onboarding permissions step."
   },
@@ -3930,15 +3974,15 @@
   "@onboardingPlanEyebrow": {
     "description": "Small eyebrow label above the title on the onboarding plan step."
   },
-  "onboardingPlanTitle": "leFture is free right now",
+  "onboardingPlanTitle": "Get started with leFture",
   "@onboardingPlanTitle": {
-    "description": "Title on the onboarding plan/subscription placeholder step."
+    "description": "Title on the onboarding plan step."
   },
-  "onboardingPlanBadge": "Beta · free plan included",
+  "onboardingPlanBadge": "Welcome Gift: 1,500 credits included",
   "@onboardingPlanBadge": {
-    "description": "Badge shown on the onboarding plan step indicating the app is free during beta."
+    "description": "Badge shown on the onboarding plan step indicating the initial welcome credit gift."
   },
-  "onboardingPlanSubtitle": "Every feature is free while we're testing. Paid plans will live here later.",
+  "onboardingPlanSubtitle": "Explore all features with 1,500 welcome credits. Subscription plans will be available here later.",
   "@onboardingPlanSubtitle": {
     "description": "Subtitle on the onboarding plan step."
   },
@@ -3946,7 +3990,7 @@
   "@onboardingPlanActiveTitle": {
     "description": "Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview)."
   },
-  "onboardingPlanClaimError": "Couldn't activate your free plan. You can try again from your account page later.",
+  "onboardingPlanClaimError": "Couldn't activate your plan. You can try again from your account page later.",
   "@onboardingPlanClaimError": {
     "description": "Inline error shown on the onboarding plan step if claiming the free plan fails."
   },
@@ -4110,5 +4154,77 @@
   "maintenanceBannerMessage": "Under maintenance — some features unavailable",
   "@maintenanceBannerMessage": {
     "description": "Persistent top banner shown (in place of the offline banner) while the device is online but the app is in maintenance mode and the user has dismissed the full-screen maintenance overlay to keep browsing. Reminds them why some features aren't working, without falsely claiming they're offline."
+  },
+
+  "signOutBlockedByRecordingTitle": "Recording in progress",
+  "@signOutBlockedByRecordingTitle": {
+    "description": "Title of the dialog shown when the user taps Sign Out while a recording is active or paused. Signing out wipes this device's local data, so it must not happen mid-recording."
+  },
+
+  "signOutBlockedByRecordingMessage": "Please stop and save the current recording before signing out.",
+  "@signOutBlockedByRecordingMessage": {
+    "description": "Body of the dialog shown when the user taps Sign Out during a recording."
+  },
+
+  "signOutBlockedByRecordingConfirmButton": "OK",
+  "@signOutBlockedByRecordingConfirmButton": {
+    "description": "Only button of the dialog shown when signing out is blocked because a recording is in progress. Just dismisses the dialog."
+  },
+
+  "signOutSyncingMessage": "Sending your unsynced changes…",
+  "@signOutSyncingMessage": {
+    "description": "Text of the non-dismissible progress dialog shown while the app pushes pending changes to the server before signing out."
+  },
+
+  "signOutPendingTitle": "Unsynced data will be deleted",
+  "@signOutPendingTitle": {
+    "description": "Title of the confirmation dialog shown before signing out when some local changes could not be sent to the server. Signing out deletes this account's local data from the device."
+  },
+
+  "signOutPendingIntro": "Signing out deletes this account's data from this device. The following could not be sent to the server yet:",
+  "@signOutPendingIntro": {
+    "description": "First paragraph of the sign-out confirmation dialog, followed by one or both of the lines counting what is still unsynced."
+  },
+
+  "signOutPendingChangesLine": "{count, plural, one{{count} unsynced change} other{{count} unsynced changes}}",
+  "@signOutPendingChangesLine": {
+    "description": "Line in the sign-out confirmation dialog counting queued edits (completion toggles, edits, deletions) that have not reached the server.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "signOutPendingRecordingsLine": "{count, plural, one{{count} recording whose audio has not finished uploading. The audio exists only on this device and cannot be recovered.} other{{count} recordings whose audio has not finished uploading. The audio exists only on this device and cannot be recovered.}}",
+  "@signOutPendingRecordingsLine": {
+    "description": "Line in the sign-out confirmation dialog counting lectures whose recorded audio is still not uploaded. Emphasises that this audio is unrecoverable once deleted.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+
+  "signOutOfflineTitle": "Sign out while offline?",
+  "@signOutOfflineTitle": {
+    "description": "Title of the confirmation dialog shown when the user signs out with no network connection."
+  },
+
+  "signOutOfflineLine": "You're offline, so nothing can be synced right now, and you won't be able to sign back in until you have a connection again.",
+  "@signOutOfflineLine": {
+    "description": "Paragraph added to the sign-out confirmation dialog when the device is offline. Signing in requires the network, so an offline sign-out locks the user out until they reconnect."
+  },
+
+  "signOutDiscardConfirmButton": "Delete and sign out",
+  "@signOutDiscardConfirmButton": {
+    "description": "Destructive confirm button of the sign-out confirmation dialog. Deletes the local data (including anything unsynced) and signs the user out."
+  },
+
+  "signOutStayCancelButton": "Stay signed in",
+  "@signOutStayCancelButton": {
+    "description": "Cancel button of the sign-out confirmation dialog. Keeps the user signed in so pending data can finish syncing."
   }
 }

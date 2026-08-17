@@ -16,7 +16,7 @@ Future<void> ensureAsrModelWithErrorDialog(
 ) async {
   await ref.read(asrModelManagerProvider.notifier).ensureModelReady(languageCode);
   final result = ref.read(asrModelManagerProvider.notifier).statusForLanguage(languageCode);
-  if (result.status == AsrModelStatus.failed && context.mounted) {
+  if (result.status == AsrModelStatus.failed && !result.installed && context.mounted) {
     AppErrorDialog.show(
       context,
       actionName: 'downloading the speech model',
@@ -34,7 +34,7 @@ Future<void> resumeAsrModelWithErrorDialog(
 ) async {
   await ref.read(asrModelManagerProvider.notifier).resumeDownload(languageCode);
   final result = ref.read(asrModelManagerProvider.notifier).statusForLanguage(languageCode);
-  if (result.status == AsrModelStatus.failed && context.mounted) {
+  if (result.status == AsrModelStatus.failed && !result.installed && context.mounted) {
     AppErrorDialog.show(
       context,
       actionName: 'downloading the speech model',

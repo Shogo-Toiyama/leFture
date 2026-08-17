@@ -4,10 +4,12 @@ import 'dart:io';
 
 import 'package:lefture/application/app_config/app_config_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/infrastructure/local_db/repositories/recording_repository_drift.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/application/auth/local_data_wipe_service.dart';
 import 'package:lefture/application/sync/course_sync_service.dart';
 import 'package:lefture/application/sync/course_attribute_sync_service.dart';
 import 'package:lefture/application/sync/lecture_sync_service.dart';
@@ -108,6 +110,16 @@ class LectureController extends _$LectureController {
   /// 起動ごとに1回は必ずbootstrapが走ることも意図している。
   DateTime? _lastBootstrapAttemptAt;
 
+  /// [_lastBootstrapAttemptAt]がどのユーザーについての記録なのか。
+  ///
+  /// このControllerはkeepAliveなので、サインアウト→別アカウントでサインイン
+  /// してもプロセス内に生き残る。uidを見ずにスロットルすると、直前のアカウント
+  /// で15分以内にbootstrapしていた場合、新しいアカウントの初回Pullが丸ごと
+  /// スキップされる。サインアウト時にローカルDBを消すようになったため、これが
+  /// 「Homeに何も表示されず、Pullも走らない」という形で表面化していた
+  /// (以前は前のアカウントのデータが残っていたので気付きにくかった)。
+  String? _lastBootstrapUserId;
+
   /// 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
   /// 待つ。呼び出し元(bootstrapIfNeeded/LectureViewerPageのref.listen等)が
   /// ほぼ同時に何度も呼んでも、実際のPullは1回しか走らない。
@@ -161,7 +173,24 @@ class LectureController extends _$LectureController {
       await Future<void>.delayed(Duration.zero);
 
       _lastBootstrapAttemptAt = DateTime.now().toUtc();
+      _lastBootstrapUserId = supabase.auth.currentUser?.id;
       final db = ref.read(appDatabaseProvider);
+
+      // サインイン後の保険: 前のアカウントのローカルデータが残っていたら消す。
+      // 必ずpushAll()より前に行うこと — 残骸のOutbox行を今のセッションで
+      // pushしようとすると、RLS違反や(前のアカウントごと削除されていた場合は)
+      // FK違反を延々と出し続ける。通常はサインアウト時のwipeで空になっている
+      // ため、ここは何もせず即座に抜ける。
+      try {
+        final uid = supabase.auth.currentUser?.id;
+        if (uid != null) {
+          await LocalDataWipeService(db).wipeOtherUsers(currentUserId: uid);
+        }
+      } catch (e, st) {
+        DevLog.add(
+          '⚠️ [LectureController] Foreign account data cleanup skipped: $e\n$st',
+        );
+      }
 
       // bootstrap全体(Pull分=bootstrapPullCount件+ローカル保守処理1件)を
       // 通して母数を固定しておく。Pullループの途中で母数を変えると、保守処理に
@@ -259,6 +288,12 @@ class LectureController extends _$LectureController {
         DevLog.add(
           '📴 [LectureController] Offline — skipping outbox push/pull.',
         );
+        // 1件もPull出来ていないので、スロットルを armed のままにしない。
+        // ここを残すと「オフラインで一瞬空振りした」だけで15分間リトライが
+        // 封じられ、オンラインに戻ってもHomeが空のままになる
+        // (接続復帰イベントを取りこぼした場合に復帰手段が無くなる)。
+        _lastBootstrapAttemptAt = null;
+        _lastBootstrapUserId = null;
         // Pullを一切試みないので、Pull分(bootstrapPullCount件)は
         // まとめて完了扱いにして保守処理のステップへ進む。
         completedCount = bootstrapPullCount;
@@ -314,12 +349,30 @@ class LectureController extends _$LectureController {
 
   void resetThrottle() {
     _lastBootstrapAttemptAt = null;
+    _lastBootstrapUserId = null;
+  }
+
+  /// R2から取得した成果物ファイル(トピック画像など)のローカルキャッシュを
+  /// 実ファイルごと捨てた後に呼ぶ。
+  ///
+  /// [artifactFileProvider]は取得成功時にkeepAliveするため、返した`File`(パス)を
+  /// プロセスが終わるまで保持し続ける。ファイルの実体だけが消えた場合
+  /// (サインアウト時のwipe、キャッシュ容量のLRU剥がし)、Providerは再実行されず
+  /// 存在しないパスを配り続け、`Image.file`が`PathNotFoundException`を投げる。
+  /// familyごと無効化して、次に必要になった時に再ダウンロードさせる。
+  ///
+  /// ここで使う`ref`はProvider自身のRef(BuildContext非依存)なので、呼び出し元の
+  /// ウィジェットが既に破棄されていても安全に呼べる。
+  void invalidateArtifactFileCache() {
+    ref.invalidate(artifactFileProvider);
+    DevLog.add('🧽 [LectureController] Invalidated artifact file cache (paths may be gone)');
   }
 
   Future<void> bootstrapIfNeeded({
     Duration interval = const Duration(minutes: 15),
   }) async {
-    if (supabase.auth.currentUser == null) return;
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
 
     // 進行中のbootstrapLectures()があれば、新規に開始せずその完了を共有して
     // 待つ(bootstrapLectures()自身がdedupeするので、ここでは素通しでよい)。
@@ -332,11 +385,29 @@ class LectureController extends _$LectureController {
       return;
     }
 
+    // ユーザーが変わったらスロットルは無効。UI側(SignInPage)のresetThrottle()
+    // にだけ頼ると、OAuth(Google/Apple)のようにGoRouterのリダイレクトが先に
+    // 走ってSignInPageのref.listenが発火しない経路で取りこぼす。
+    if (_lastBootstrapUserId != null && _lastBootstrapUserId != uid) {
+      DevLog.add(
+        '🔁 [LectureController] Signed-in user changed '
+        '($_lastBootstrapUserId -> $uid) — ignoring the bootstrap throttle',
+      );
+      await bootstrapLectures(reason: 'bootstrapIfNeeded/user-changed');
+      return;
+    }
+
     final last = _lastBootstrapAttemptAt;
     final now = DateTime.now().toUtc();
 
     final should = (last == null) || now.difference(last) >= interval;
-    if (!should) return;
+    if (!should) {
+      DevLog.add(
+        '⏭️ [LectureController] bootstrapIfNeeded throttled '
+        '(last attempt ${now.difference(last).inSeconds}s ago, interval=${interval.inMinutes}min)',
+      );
+      return;
+    }
 
     await bootstrapLectures(reason: 'bootstrapIfNeeded/interval-elapsed');
   }

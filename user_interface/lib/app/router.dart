@@ -279,6 +279,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         final uid = session.user.id;
         final deviceSetupCompleted =
             RecordingPreferences().getHasCompletedDeviceSetup(uid);
+        // 「言語・権限のスライドが再表示された」系の切り分け用。この値はSharedPreferences
+        // (端末ローカル・uidごと)なので、サインアウトのローカルデータwipeでは消えない。
+        // ここがtrueなのにスライドが出た場合は、DeviceSetupではなく上の
+        // オンボーディング判定(=プロフィールのmetadata)側が原因。
+        DevLog.add(
+          '[Router] deviceSetupCompleted=$deviceSetupCompleted (uid=$uid, path=$path)',
+        );
         if (!deviceSetupCompleted &&
             path != AppRoutes.deviceSetup &&
             path != AppRoutes.welcome) {
@@ -418,7 +425,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                         .noteViewer, // 'v/:lectureId' -> /home/notes/c/:courseId/v/:lectureId
                     builder: (context, state) {
                       final id = state.pathParameters['lectureId'];
-                      return LectureViewerPage(lectureId: id!);
+                      final openAnnouncementId =
+                          state.uri.queryParameters['openAnnouncementId'];
+                      final scrollTo = state.uri.queryParameters['scrollTo'];
+                      return LectureViewerPage(
+                        lectureId: id!,
+                        initialOpenAnnouncementId: openAnnouncementId,
+                        initialScrollTo: scrollTo,
+                      );
                     },
                     routes: [
                       // Transcript: /home/notes/c/:courseId/v/:lectureId/transcript

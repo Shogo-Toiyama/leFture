@@ -175,7 +175,9 @@ class _FunFactCard extends ConsumerWidget {
     return GestureDetector(
       // FunFactの元になった講義のビューワーへ飛ぶ (講義が特定できない場合はコース一覧へ)
       onTap: () => fact.lectureId != null
-          ? context.go('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${fact.lectureId}')
+          ? context.push(
+              '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${fact.lectureId}?scrollTo=fun_fact',
+            )
           : context.push(AppRoutes.coursesRootPath),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),

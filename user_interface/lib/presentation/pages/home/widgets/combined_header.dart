@@ -49,7 +49,7 @@ class CoursesHeaderWidget extends StatelessWidget {
           ),
           // Recent Lectures
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 2, 24, 4),
+            padding: const EdgeInsets.fromLTRB(24, 2, 24, 8),
             child: Text(
               l10n.homeRecentLecturesSectionTitle,
               style: TextStyle(
@@ -75,7 +75,7 @@ class CombinedHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   CombinedHeaderDelegate({
     this.funFactsHeight = 190.0,
-    this.coursesHeaderHeight = 84.0,
+    this.coursesHeaderHeight = 64.0,
     required this.scrollOffset,
   });
 

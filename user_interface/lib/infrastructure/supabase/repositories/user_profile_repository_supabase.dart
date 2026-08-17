@@ -250,20 +250,38 @@ class UserProfileRepositorySupabase {
     final uid = _requireUid();
     DevLog.add('[ProfileRepo] hasCompletedOnboarding called for uid=$uid');
     var existing = await _db.getUserProfile(uid);
-    DevLog.add('[ProfileRepo] local existing metadataJson=${existing?.metadataJson}');
+    // 行そのものが無いのか、行はあるがmetadataが空なのかを区別する。
+    // サインアウト時のローカルデータwipeでLocalUserProfilesも消えるため、
+    // サインイン直後は必ず「row MISSING」から始まり、下のサーバー取得が
+    // 成功するかどうかにオンボーディング判定が完全に依存する。
+    DevLog.add(
+      '[ProfileRepo] local profile row: '
+      '${existing == null ? "MISSING (not pulled yet, or removed by sign-out wipe)" : "present, metadataJson=${existing.metadataJson}"}',
+    );
     if (existing?.metadataJson == null) {
       DevLog.add('[ProfileRepo] local metadata is null -> fetching getCurrentProfile from Supabase...');
+      final startedAt = DateTime.now();
       try {
         final profile = await getCurrentProfile().timeout(const Duration(seconds: 6));
-        DevLog.add('[ProfileRepo] getCurrentProfile OK: metadata=${profile?.metadata}');
+        DevLog.add(
+          '[ProfileRepo] getCurrentProfile OK in '
+          '${DateTime.now().difference(startedAt).inMilliseconds}ms: metadata=${profile?.metadata}',
+        );
       } catch (e, st) {
-        DevLog.add('[ProfileRepo] getCurrentProfile ERROR: $e\n$st');
+        DevLog.add(
+          '[ProfileRepo] getCurrentProfile FAILED after '
+          '${DateTime.now().difference(startedAt).inMilliseconds}ms — the onboarding gate '
+          'will fall back to "not completed" and send the user to /onboarding: $e\n$st',
+        );
       }
       existing = await _db.getUserProfile(uid);
       DevLog.add('[ProfileRepo] refetched local existing metadataJson=${existing?.metadataJson}');
     }
     if (existing?.metadataJson == null) {
-      DevLog.add('[ProfileRepo] metadataJson still null -> returning false');
+      DevLog.add(
+        '[ProfileRepo] metadataJson still null -> returning false '
+        '(=> /onboarding redirect. 既にオンボーディング済みのアカウントなら誤判定)',
+      );
       return false;
     }
     final metadata = Map<String, dynamic>.from(
