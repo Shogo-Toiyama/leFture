@@ -4,6 +4,7 @@ from typing import Optional
 
 import resend
 
+from app.services.email_content import get_email_content
 from app.services.email_template import (
     build_email_change_email,
     build_password_reset_email,
@@ -53,30 +54,36 @@ async def send_verification_email(
     to: str,
     verification_link: str,
     display_name: str = "",
+    lang: str = "en",
 ) -> dict:
     """ユーザー登録確認メール"""
-    html = build_signup_email(display_name, verification_link)
-    return await send_email(to, "leFture - Verify Email Address", html)
+    c = get_email_content(lang)
+    html = build_signup_email(display_name, verification_link, lang=lang)
+    return await send_email(to, c.SIGNUP_SUBJECT, html)
 
 
 async def send_password_reset_email(
     to: str,
     reset_link: str,
     display_name: str = "",
+    lang: str = "en",
 ) -> dict:
     """パスワードリセットメール"""
-    html = build_password_reset_email(display_name, reset_link)
-    return await send_email(to, "leFture - Reset Your Password", html)
+    c = get_email_content(lang)
+    html = build_password_reset_email(display_name, reset_link, lang=lang)
+    return await send_email(to, c.PASSWORD_RESET_SUBJECT, html)
 
 
 async def send_email_change_email(
     to: str,
     confirmation_link: str,
     new_email: str = "",
+    lang: str = "en",
 ) -> dict:
     """メールアドレス変更確認メール"""
-    html = build_email_change_email(new_email, confirmation_link)
-    return await send_email(to, "leFture - Confirm Email Address Change", html)
+    c = get_email_content(lang)
+    html = build_email_change_email(new_email, confirmation_link, lang=lang)
+    return await send_email(to, c.EMAIL_CHANGE_SUBJECT, html)
 
 
 async def send_important_notification(

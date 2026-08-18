@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/application/course/default_course_service.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
+import 'package:lefture/application/sync/course_sync_service.dart';
 import 'package:lefture/application/tutorial/tutorial_lecture_seed_service.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
@@ -36,13 +37,21 @@ Future<void> tutorialLectureSeed(Ref ref) async {
   );
   if (courseId == null) return;
 
+  final db = ref.watch(appDatabaseProvider);
+
+  // Supabase上で確保/新規作成した既定コースをローカルDB(Drift)へ即座に同期。
+  // これにより初回起動直後にRecordingPage等を開いても、ローカルDBの
+  // courseListProviderから既定コースが正しく取得・表示される。
+  await CourseSyncService(db).pull();
+
+  final tutorialCreatedAt = await userProfileRepo.ensureTutorialCreatedAt();
   final hasCompletedTutorial = await userProfileRepo.hasCompletedTutorial();
 
-  final db = ref.watch(appDatabaseProvider);
   await TutorialLectureSeedService(db).seedIfNeeded(
     userId: user.id,
     displayLanguageCode: languageCode,
     courseId: courseId,
+    tutorialCreatedAt: tutorialCreatedAt,
     hasCompletedTutorial: hasCompletedTutorial,
   );
 }

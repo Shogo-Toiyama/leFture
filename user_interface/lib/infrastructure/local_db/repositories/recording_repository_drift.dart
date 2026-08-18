@@ -262,15 +262,17 @@ class RecordingRepositoryDrift {
     ));
   }
   
-  // Assetの状態更新用 (Upload完了時に storagePath を入れるため)
+  // Assetの状態更新用 (Upload完了時に storagePath を入れ、
+  // 既に削除済みのローカルファイルへの参照(localPath)もクリアするため)
   Future<void> updateAssetUploaded({
     required String assetId,
     required String remotePath,
   }) async {
     await (db.update(db.localLectureAssets)..where((t) => t.id.equals(assetId)))
         .write(LocalLectureAssetsCompanion(
-       uploadStatus: const Value('uploaded'), // 定義済みなら
+       uploadStatus: const Value('uploaded'),
        storagePath: Value(remotePath),
+       localPath: const Value(null),
        updatedAt: Value(DateTime.now().toUtc()),
     ));
   }

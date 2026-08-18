@@ -79,6 +79,20 @@ class TutorialLectureSeedService {
     required String userId,
     required String displayLanguageCode,
     required String courseId,
+
+    /// チュートリアル講義が「本当はいつ作られたか」を表す、ユーザーごとに
+    /// 一度だけ確定する日時(UserProfileRepositorySupabase.ensureTutorialCreatedAt
+    /// が発行・保持する)。
+    ///
+    /// ★ サインアウトはローカル限定のチュートリアル講義行を消してしまう
+    /// (Supabaseにコピーが無いため)一方、この日時はuser_profilesの
+    /// metadataとしてSupabase同期され生き残る。そのため再シード時、
+    /// 「たった今作られた新規講義」に見えてしまわないよう、講義の日時を
+    /// 常にこの日時に固定する。
+    required DateTime tutorialCreatedAt,
+
+    /// チュートリアルを完了(閲覧済み)済みかどうか。lastAccessedAtの
+    /// バックフィル判定にのみ使う(講義の日時には関与しない)。
     bool hasCompletedTutorial = false,
   }) async {
     try {
@@ -87,6 +101,7 @@ class TutorialLectureSeedService {
       final existing = await _findTutorialLecture(userId);
       final content = getTutorialContent(displayLanguageCode);
       final now = DateTime.now().toUtc();
+      final effectiveCreatedAt = tutorialCreatedAt;
 
       if (existing != null) {
         int existingVersion = 0;
@@ -183,9 +198,9 @@ class TutorialLectureSeedService {
         title: Value(content.lectureTitle),
         summary: Value(content.lectureSummary),
         metadataJson: Value(tutorialMetadata),
-        lectureDatetime: Value(now),
+        lectureDatetime: Value(effectiveCreatedAt),
         lastAccessedAt: hasCompletedTutorial ? Value(now) : const Value.absent(),
-        createdAt: Value(now),
+        createdAt: Value(effectiveCreatedAt),
         updatedAt: Value(now),
         autoStartAnalysis: const Value(false),
         isRealtime: const Value(false),
@@ -199,7 +214,7 @@ class TutorialLectureSeedService {
           lectureId: lectureId,
           content: content,
           now: now,
-          announcementBaseAt: now, // 講義のcreatedAtと同じ
+          announcementBaseAt: effectiveCreatedAt, // 講義のcreatedAtと同じ
         );
       });
 

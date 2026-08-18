@@ -112,9 +112,16 @@ class AudioChunker {
 
     _silenceBytesCount = 0;
     _isWaitingForTail = false;
-    _mainChunkStartIndex = 0; 
-    _absoluteBufferStartOffset = 0;
-    
+    _mainChunkStartIndex = 0;
+    // ★ ここを0にリセットしていたのが一時停止(pause)を挟むたびに録音全体の
+    // 絶対時刻の基準が失われるバグの原因だった。flush()は一時停止のたびに
+    // 同じAudioChunkerインスタンスに対して呼ばれる(録音開始時に1回しか
+    // 生成されないため)。allBytesは(保持分も含めて)すべてこのチャンクとして
+    // 消費されバッファには何も残らないので、次にバッファへ積まれるバイトの
+    // 絶対位置は「これまでの絶対オフセット + 今回消費した全バイト数」になる
+    // (_extractAndEmitChunkの `+= keepStart` と同じ考え方)。
+    _absoluteBufferStartOffset += allBytes.length;
+
     return (data: chunk, startTimeSec: absoluteStartTimeSec);
   }
 }

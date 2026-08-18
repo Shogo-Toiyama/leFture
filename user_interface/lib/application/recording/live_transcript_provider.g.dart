@@ -63,13 +63,13 @@ final liveTranscriptProvider = LiveTranscriptFamily._();
 final class LiveTranscriptProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<LiveTranscriptSentence>>,
-          List<LiveTranscriptSentence>,
-          Stream<List<LiveTranscriptSentence>>
+          AsyncValue<LiveTranscriptSnapshot>,
+          LiveTranscriptSnapshot,
+          Stream<LiveTranscriptSnapshot>
         >
     with
-        $FutureModifier<List<LiveTranscriptSentence>>,
-        $StreamProvider<List<LiveTranscriptSentence>> {
+        $FutureModifier<LiveTranscriptSnapshot>,
+        $StreamProvider<LiveTranscriptSnapshot> {
   LiveTranscriptProvider._({
     required LiveTranscriptFamily super.from,
     required String super.argument,
@@ -93,12 +93,12 @@ final class LiveTranscriptProvider
 
   @$internal
   @override
-  $StreamProviderElement<List<LiveTranscriptSentence>> $createElement(
+  $StreamProviderElement<LiveTranscriptSnapshot> $createElement(
     $ProviderPointer pointer,
   ) => $StreamProviderElement(pointer);
 
   @override
-  Stream<List<LiveTranscriptSentence>> create(Ref ref) {
+  Stream<LiveTranscriptSnapshot> create(Ref ref) {
     final argument = this.argument as String;
     return liveTranscript(ref, argument);
   }
@@ -114,14 +114,10 @@ final class LiveTranscriptProvider
   }
 }
 
-String _$liveTranscriptHash() => r'9b8ae8bb5cd9383db9de712a5ef064a1bb28690e';
+String _$liveTranscriptHash() => r'a1970594cfd9dc8af327bb4704da917210f237de';
 
 final class LiveTranscriptFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          Stream<List<LiveTranscriptSentence>>,
-          String
-        > {
+    with $FunctionalFamilyOverride<Stream<LiveTranscriptSnapshot>, String> {
   LiveTranscriptFamily._()
     : super(
         retry: null,

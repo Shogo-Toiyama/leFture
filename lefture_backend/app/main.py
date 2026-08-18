@@ -2453,6 +2453,7 @@ async def supabase_email_hook(request: Request):
 
     user_email    = payload.user.email
     display_name  = payload.user.user_metadata.get("display_name", "")
+    display_lang  = payload.user.user_metadata.get("display_language", "en")
     email_data    = payload.email_data
     action_type   = email_data.email_action_type
     redirect_to   = email_data.redirect_to or email_data.site_url or ""
@@ -2470,13 +2471,13 @@ async def supabase_email_hook(request: Request):
     try:
         if action_type == "signup":
             link = _verify_link(email_data.token_hash, "signup")
-            await send_verification_email(user_email, link, display_name)
-            print(f"✅ Sent {action_type} email to {user_email}")
+            await send_verification_email(user_email, link, display_name, lang=display_lang)
+            print(f"✅ Sent {action_type} email to {user_email} (lang: {display_lang})")
 
         elif action_type == "recovery":
             link = _verify_link(email_data.token_hash, "recovery")
-            await send_password_reset_email(user_email, link, display_name)
-            print(f"✅ Sent {action_type} email to {user_email}")
+            await send_password_reset_email(user_email, link, display_name, lang=display_lang)
+            print(f"✅ Sent {action_type} email to {user_email} (lang: {display_lang})")
 
         elif action_type == "email_change":
             new_email = payload.user.new_email
@@ -2488,12 +2489,12 @@ async def supabase_email_hook(request: Request):
             send_tasks = []
             if email_data.token_hash_new:
                 current_link = _verify_link(email_data.token_hash_new, "email_change")
-                send_tasks.append(send_email_change_email(user_email, current_link, new_email or ""))
+                send_tasks.append(send_email_change_email(user_email, current_link, new_email or "", lang=display_lang))
                 recipients_notified.append(user_email)
 
             if new_email and email_data.token_hash:
                 new_link = _verify_link(email_data.token_hash, "email_change")
-                send_tasks.append(send_email_change_email(new_email, new_link, new_email))
+                send_tasks.append(send_email_change_email(new_email, new_link, new_email, lang=display_lang))
                 recipients_notified.append(new_email)
 
             if send_tasks:
@@ -2667,6 +2668,17 @@ async def support_submit(
         print(f"❌ Failed to insert support ticket in Supabase: {e}")
         raise HTTPException(status_code=500, detail="Failed to save support ticket to database")
 
+    # ユーザーの表示言語(display_language)を取得
+    display_lang = "en"
+    try:
+        user_prof_res = await asyncio.to_thread(
+            lambda: admin_client.table("user_profiles").select("metadata").eq("id", uid).maybe_single().execute()
+        )
+        if user_prof_res and user_prof_res.data and isinstance(user_prof_res.data.get("metadata"), dict):
+            display_lang = user_prof_res.data["metadata"].get("display_language", "en")
+    except Exception as e:
+        print(f"⚠️ Failed to fetch display_language for support email: {e}")
+
     # 3. ユーザーへ自動確認メールを送信 (From: support@lefture.com)
     try:
         from app.services.email_service import send_email
@@ -2674,19 +2686,22 @@ async def support_submit(
             build_support_user_ack_email,
             build_support_admin_notification_email,
         )
+        from app.services.email_content import get_email_content
 
+        user_content = get_email_content(display_lang)
         user_html = build_support_user_ack_email(
             display_name=display_name,
             ticket_code=ticket_code,
             category=payload.category,
             message=payload.message,
+            lang=display_lang,
         )
         await send_email(
             to=user_email,
-            subject=f"leFture Support - Inquiry Received [{ticket_code}]",
+            subject=user_content.SUPPORT_ACK_SUBJECT.format(ticket_code=ticket_code),
             html=user_html,
             from_address="support@lefture.com",
-            from_name="leFture Support",
+            from_name=user_content.SUPPORT_APP_NAME,
         )
     except Exception as e:
         print(f"⚠️ Failed to send auto-reply email to user: {e}")

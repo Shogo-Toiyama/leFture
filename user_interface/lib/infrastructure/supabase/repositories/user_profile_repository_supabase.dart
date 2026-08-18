@@ -228,6 +228,8 @@ class UserProfileRepositorySupabase {
 
   static const _onboardingCompletedMetadataKey = 'onboarding_completed_at';
   static const _tutorialCompletedMetadataKey = 'tutorial_completed_at';
+  static const _tutorialCreatedMetadataKey = 'tutorial_created_at';
+  static const _displayLanguageMetadataKey = 'display_language';
   bool? _cachedOnboardingCompleted;
   bool? _cachedTutorialCompleted;
 
@@ -295,12 +297,8 @@ class UserProfileRepositorySupabase {
     return completed;
   }
 
-  /// チュートリアル講義を完了（閲覧済み）かどうか。
-  Future<bool> hasCompletedTutorial() async {
-    if (_cachedTutorialCompleted == true) {
-      return true;
-    }
-
+  /// チュートリアル講義を完了（閲覧済み）した日時。未完了ならnull。
+  Future<DateTime?> tutorialCompletedAt() async {
     final uid = _requireUid();
     var existing = await _db.getUserProfile(uid);
     if (existing?.metadataJson == null) {
@@ -310,20 +308,83 @@ class UserProfileRepositorySupabase {
       existing = await _db.getUserProfile(uid);
     }
     if (existing?.metadataJson == null) {
-      return false;
+      return null;
     }
     try {
       final metadata = Map<String, dynamic>.from(
         jsonDecode(existing!.metadataJson!) as Map,
       );
-      final completed = metadata[_tutorialCompletedMetadataKey] != null;
-      if (completed) {
+      final raw = metadata[_tutorialCompletedMetadataKey] as String?;
+      if (raw == null) return null;
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) {
         _cachedTutorialCompleted = true;
       }
-      return completed;
+      return parsed;
     } catch (_) {
-      return false;
+      return null;
     }
+  }
+
+  /// チュートリアル講義を完了（閲覧済み）かどうか。
+  Future<bool> hasCompletedTutorial() async {
+    if (_cachedTutorialCompleted == true) {
+      return true;
+    }
+    return (await tutorialCompletedAt()) != null;
+  }
+
+  /// チュートリアル講義が「本当はいつ作られたか」を表す、ユーザーごとに
+  /// 一度だけ確定する日時。値がまだ無ければ今この瞬間を採番し、metadataへ
+  /// 記録してサーバーにも同期したうえで返す(初回シード時に一度だけ書き込みが
+  /// 走り、以降は既存値を読むだけになる)。
+  ///
+  /// ★ tutorial_completed_at(閲覧完了日時)とは別の概念。チュートリアル講義
+  /// 自体はローカル限定でSupabaseに書き込まれないため、サインアウトの
+  /// ローカルデータwipeでlocal_lectures行ごと消えてしまう。再シード時に
+  /// 「今日できたばかりの新規講義」に見えてしまわないよう、真の作成日を
+  /// このmetadata(user_profiles、サインアウトでも生き残る)に固定し、
+  /// TutorialLectureSeedServiceはここから読んだ日時を講義のcreatedAtとして
+  /// 使う。
+  Future<DateTime> ensureTutorialCreatedAt() async {
+    final uid = _requireUid();
+    var existing = await _db.getUserProfile(uid);
+    if (existing?.metadataJson == null) {
+      // ローカルにまだ何も無い(新規端末での初回サインイン等)場合のみ、
+      // 他デバイスで既に確定済みの値が無いかサーバーに確認する。
+      try {
+        await getCurrentProfile().timeout(const Duration(seconds: 6));
+      } catch (_) {}
+      existing = await _db.getUserProfile(uid);
+    }
+
+    final metadata = existing?.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
+        : <String, dynamic>{};
+
+    final raw = metadata[_tutorialCreatedMetadataKey] as String?;
+    final parsed = raw != null ? DateTime.tryParse(raw) : null;
+    if (parsed != null) return parsed;
+
+    final now = DateTime.now().toUtc();
+    metadata[_tutorialCreatedMetadataKey] = now.toIso8601String();
+
+    await _db.upsertUserProfile(
+      LocalUserProfilesCompanion(
+        id: Value(uid),
+        metadataJson: Value(jsonEncode(metadata)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.enqueueOutbox(
+      entityType: 'user_profile',
+      entityId: uid,
+      op: 'update',
+    );
+    DevLog.add('🎓 [UserProfileRepo] Recorded tutorial_created_at=$now and enqueued to outbox');
+
+    return now;
   }
 
   /// オンボーディング完了をmetadataにマージして記録し、サーバーにも同期する。
@@ -408,5 +469,52 @@ class UserProfileRepositorySupabase {
       op: 'update',
     );
     DevLog.add('🎓 [UserProfileRepo] Marked tutorial_completed_at and enqueued to outbox');
+  }
+
+  /// 表示言語（display_language: 'ja', 'en'等）をuser_profilesのmetadataに保存・マージし、
+  /// サーバー(Supabase user_profilesテーブル & Supabase Auth user_metadata)へ同期する。
+  Future<void> setDisplayLanguage(String languageCode) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    try {
+      await getCurrentProfile();
+    } catch (_) {}
+
+    final existing = await _db.getUserProfile(uid);
+    final metadata = existing?.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
+        : <String, dynamic>{};
+
+    if (metadata[_displayLanguageMetadataKey] == languageCode) return;
+
+    metadata[_displayLanguageMetadataKey] = languageCode;
+
+    await _db.upsertUserProfile(
+      LocalUserProfilesCompanion(
+        id: Value(uid),
+        metadataJson: Value(jsonEncode(metadata)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.enqueueOutbox(
+      entityType: 'user_profile',
+      entityId: uid,
+      op: 'update',
+    );
+
+    // Supabase Auth 側の user_metadata にも同期（メールフック等で参照できるように）
+    try {
+      await supabase.auth.updateUser(
+        UserAttributes(
+          data: {'display_language': languageCode},
+        ),
+      );
+    } catch (e) {
+      DevLog.add('⚠️ [UserProfileRepo] Failed to update Auth user_metadata: $e');
+    }
+
+    DevLog.add('🌐 [UserProfileRepo] Saved display_language=$languageCode to metadata and enqueued to outbox');
   }
 }

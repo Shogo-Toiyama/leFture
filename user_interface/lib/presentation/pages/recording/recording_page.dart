@@ -2515,22 +2515,26 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
     final isFollowing = useState(true);
 
     final lectureId = this.lectureId;
-    final sentences = lectureId != null
-        ? (ref.watch(liveTranscriptProvider(lectureId)).value ??
-              const <LiveTranscriptSentence>[])
-        : const <LiveTranscriptSentence>[];
+    final snapshot = lectureId != null
+        ? ref.watch(liveTranscriptProvider(lectureId)).value
+        : null;
+    final sentences = snapshot?.sentences ?? const <LiveTranscriptSentence>[];
 
     // サーバー版(lecture_transcripts)とオンデバイス版(LiveAsrController)を
     // 時刻順に連結する。サーバー版は常に確定済みなのでisFinal:true固定。
     //
     // サーバー版が既に文字起こし済みの区間をオンデバイス版が二重に表示
-    // しないよう、サーバー側から取れている最新のstart_time(watermark)より
-    // 前のオンデバイスセグメントは表示から除外する。サーバー版はいずれ
-    // その区間を追い越して確定させるので、それより前のオンデバイス分は
-    // 「もう不要な下書き」として捨ててよい。
-    final serverWatermark = sentences.isEmpty
-        ? null
-        : sentences.map((s) => s.startSec).reduce((a, b) => a > b ? a : b);
+    // しないよう、サーバー側が実際に文字起こしを終えている範囲の終端
+    // (coverageEndSec、chunkのstart_time + audio_durationから算出、
+    // 無音チャンクも含む)より前のオンデバイスセグメントは表示から除外する。
+    // サーバー版はいずれその区間を追い越して確定させるので、それより前の
+    // オンデバイス分は「もう不要な下書き」として捨ててよい。
+    //
+    // ★ 以前は「サーバー側の文の開始時刻の最大値」をwatermarkとして
+    // 使っていたが、これだと最後の文の"開始"より後ろ(=その文がカバーして
+    // いる区間)がまだ未カバー扱いになってしまい、節電ラベルが本物の
+    // テキストの間に挟まって残る不具合があった。
+    final serverWatermark = snapshot?.coverageEndSec;
     final onDeviceSegments = ref.watch(liveAsrControllerProvider);
     final visibleOnDeviceSegments = serverWatermark == null
         ? onDeviceSegments

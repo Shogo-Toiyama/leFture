@@ -15,6 +15,6 @@ LiveTranscriptRepository liveTranscriptRepository(Ref ref) {
 // @riverpod(既定でautoDispose)にすることで、Liveタブを離れる/Realtimeを
 // offにするとポーリングが止まる(UploadManagerのようなapp全体スコープにはしない)。
 @riverpod
-Stream<List<LiveTranscriptSentence>> liveTranscript(Ref ref, String lectureId) {
+Stream<LiveTranscriptSnapshot> liveTranscript(Ref ref, String lectureId) {
   return ref.watch(liveTranscriptRepositoryProvider).watchLiveTranscript(lectureId);
 }

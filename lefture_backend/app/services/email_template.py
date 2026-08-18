@@ -37,6 +37,9 @@ FONT_SIZE_HEADING = "22px"
 EMAIL_MAX_WIDTH = "600px"
 
 
+import datetime
+from app.services.email_content import get_email_content, EmailContentEN
+
 # ---------------------------------------------------------------------------
 # 共通コンポーネント関数
 # ---------------------------------------------------------------------------
@@ -127,8 +130,10 @@ def email_divider() -> str:
     """
 
 
-def email_fallback_link(url: str) -> str:
+def email_fallback_link(url: str, lang: str = "en") -> str:
     """ボタンが機能しない場合のフォールバックリンクテキスト"""
+    c = get_email_content(lang)
+    note = getattr(c, "SIGNUP_FALLBACK_NOTE", EmailContentEN.SIGNUP_FALLBACK_NOTE)
     return f"""
     <p style="
       margin:0 0 8px 0;
@@ -137,7 +142,7 @@ def email_fallback_link(url: str) -> str:
       font-family:{FONT_STACK};
       line-height:1.5;
     ">
-      If the button doesn't work, copy and paste the link below into your browser:
+      {note}
     </p>
     <p style="
       margin:0 0 16px 0;
@@ -151,8 +156,12 @@ def email_fallback_link(url: str) -> str:
     """
 
 
-def email_footer() -> str:
+def email_footer(lang: str = "en") -> str:
     """フッター（免責・著作権）"""
+    c = get_email_content(lang)
+    current_year = datetime.datetime.now().year
+    ignore_note = getattr(c, "FOOTER_IGNORE_NOTE", EmailContentEN.FOOTER_IGNORE_NOTE)
+    copyright_text = getattr(c, "FOOTER_COPYRIGHT", EmailContentEN.FOOTER_COPYRIGHT).format(year=current_year)
     return f"""
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
       <tr>
@@ -167,7 +176,7 @@ def email_footer() -> str:
             color:{COLOR_TEXT_MUTED};
             font-family:{FONT_STACK};
           ">
-            If you did not request this email, you can safely ignore it.
+            {ignore_note}
           </p>
           <p style="
             margin:0;
@@ -175,7 +184,7 @@ def email_footer() -> str:
             color:{COLOR_TEXT_MUTED};
             font-family:{FONT_STACK};
           ">
-            &copy; 2025 leFture. All rights reserved.
+            {copyright_text}
           </p>
         </td>
       </tr>
@@ -187,37 +196,69 @@ def email_wrapper(body_html: str) -> str:
     """
     全体のレイアウトラッパー。
     DOCTYPE + meta + 背景 + カードコンテナを提供する。
-    body_html にはコンポーネントを組み合わせた HTML を渡す。
+    メールクライアント（Gmail/Apple Mail等）の自動色反転を防止し、
+    ダークモード・ライトモード環境にかかわらず黒背景・白文字を強制固定する。
     """
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="supported-color-schemes" content="light dark"/>
   <title>leFture</title>
   <style>
-    body {{
-      margin: 0;
-      padding: 0;
-      background-color: {COLOR_BACKGROUND};
+    :root {{
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }}
+    html, body {{
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: {COLOR_BACKGROUND} !important;
+      color: {COLOR_TEXT_MAIN} !important;
       font-family: {FONT_STACK};
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }}
+    /* メールクライアントの自動色反転オーバーライド */
+    @media (prefers-color-scheme: dark) {{
+      body, table, td, div, p, span, h1, h2, h3 {{
+        background-color: {COLOR_BACKGROUND} !important;
+        color: {COLOR_TEXT_MAIN} !important;
+      }}
+      .email-card-td {{
+        background-color: {COLOR_CARD} !important;
+        border-color: {COLOR_CARD_BORDER} !important;
+      }}
+    }}
+    @media (prefers-color-scheme: light) {{
+      body, table, td, div, p, span, h1, h2, h3 {{
+        background-color: {COLOR_BACKGROUND} !important;
+        color: {COLOR_TEXT_MAIN} !important;
+      }}
+      .email-card-td {{
+        background-color: {COLOR_CARD} !important;
+        border-color: {COLOR_CARD_BORDER} !important;
+      }}
     }}
     a {{
-      color: {COLOR_PRIMARY};
+      color: {COLOR_PRIMARY} !important;
     }}
   </style>
 </head>
-<body>
+<body style="margin:0 !important; padding:0 !important; background-color:{COLOR_BACKGROUND} !important; color:{COLOR_TEXT_MAIN} !important;">
   <table width="100%" cellpadding="0" cellspacing="0"
-         style="background-color:{COLOR_BACKGROUND}; min-height:100vh; padding:40px 16px;">
+         style="background-color:{COLOR_BACKGROUND} !important; color:{COLOR_TEXT_MAIN} !important; min-height:100vh; padding:40px 16px;">
     <tr>
-      <td align="center">
+      <td align="center" style="background-color:{COLOR_BACKGROUND} !important;">
         <table width="100%" style="max-width:{EMAIL_MAX_WIDTH}; width:100%;"
                cellpadding="0" cellspacing="0">
           <tr>
-            <td style="
-              background:{COLOR_CARD};
-              border:1px solid {COLOR_CARD_BORDER};
+            <td class="email-card-td" style="
+              background-color:{COLOR_CARD} !important;
+              color:{COLOR_TEXT_MAIN} !important;
+              border:1px solid {COLOR_CARD_BORDER} !important;
               border-radius:16px;
               padding:40px 40px 32px 40px;
             ">
@@ -236,72 +277,58 @@ def email_wrapper(body_html: str) -> str:
 # アクションタイプ別 HTML ビルド関数
 # ---------------------------------------------------------------------------
 
-def build_signup_email(display_name: str, verification_link: str) -> str:
+def build_signup_email(display_name: str, verification_link: str, lang: str = "en") -> str:
     """ユーザー登録確認メール"""
-    greeting = f"Hi {display_name},<br/><br/>" if display_name else "Hi,<br/><br/>"
+    c = get_email_content(lang)
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else ""
     body = (
         email_header()
-        + email_heading("Welcome to leFture!")
-        + email_text(
-            f"{greeting}Thank you for signing up for leFture. "
-            "Please click the button below to verify your email address."
-        )
-        + email_button("Verify Email Address", verification_link)
+        + email_heading(c.SIGNUP_HEADING)
+        + email_text(f"{greeting}{c.SIGNUP_BODY}")
+        + email_button(c.SIGNUP_BUTTON, verification_link)
         + email_divider()
-        + email_text("This link is valid for <strong>24 hours</strong>.", muted=True)
-        + email_fallback_link(verification_link)
-        + email_footer()
+        + email_text(c.SIGNUP_EXPIRE_NOTE, muted=True)
+        + email_fallback_link(verification_link, lang=lang)
+        + email_footer(lang=lang)
     )
     return email_wrapper(body)
 
 
-def build_password_reset_email(display_name: str, reset_link: str) -> str:
+def build_password_reset_email(display_name: str, reset_link: str, lang: str = "en") -> str:
     """パスワードリセットメール"""
-    greeting = f"Hi {display_name},<br/><br/>" if display_name else "Hi,<br/><br/>"
+    c = get_email_content(lang)
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else ""
     body = (
         email_header()
-        + email_heading("Reset Your Password")
-        + email_text(
-            f"{greeting}A request has been made to reset your password. "
-            "Please click the button below to set a new password."
-        )
-        + email_button("Reset Password", reset_link)
+        + email_heading(c.PASSWORD_RESET_HEADING)
+        + email_text(f"{greeting}{c.PASSWORD_RESET_BODY}")
+        + email_button(c.PASSWORD_RESET_BUTTON, reset_link)
         + email_divider()
-        + email_text(
-            "This link is valid for <strong>1 hour</strong>. "
-            "If you did not request a password reset, you can safely ignore this email.",
-            muted=True,
-        )
-        + email_fallback_link(reset_link)
-        + email_footer()
+        + email_text(c.PASSWORD_RESET_EXPIRE_NOTE, muted=True)
+        + email_fallback_link(reset_link, lang=lang)
+        + email_footer(lang=lang)
     )
     return email_wrapper(body)
 
 
-def build_email_change_email(new_email: str, confirmation_link: str) -> str:
+def build_email_change_email(new_email: str, confirmation_link: str, lang: str = "en") -> str:
     """メールアドレス変更確認メール"""
+    c = get_email_content(lang)
     new_email_note = (
-        f"New Email Address: <strong style='color:{COLOR_TEXT_MAIN};'>{new_email}</strong><br/>"
+        f"{c.EMAIL_CHANGE_NEW_EMAIL_LABEL}: <strong style='color:{COLOR_TEXT_MAIN};'>{new_email}</strong><br/>"
         if new_email
         else ""
     )
     body = (
         email_header()
-        + email_heading("Confirm Email Change")
-        + email_text(
-            "A change of email address has been requested for your leFture account. "
-            "Please click the button below to confirm this change."
-        )
-        + email_text(new_email_note, muted=True)
-        + email_button("Confirm Email Change", confirmation_link)
+        + email_heading(c.EMAIL_CHANGE_HEADING)
+        + email_text(c.EMAIL_CHANGE_BODY)
+        + (email_text(new_email_note, muted=True) if new_email_note else "")
+        + email_button(c.EMAIL_CHANGE_BUTTON, confirmation_link)
         + email_divider()
-        + email_text(
-            "This link is valid for <strong>24 hours</strong>. "
-            "If you did not make this request, please ignore this email.",
-            muted=True,
-        )
-        + email_fallback_link(confirmation_link)
-        + email_footer()
+        + email_text(c.EMAIL_CHANGE_EXPIRE_NOTE, muted=True)
+        + email_fallback_link(confirmation_link, lang=lang)
+        + email_footer(lang=lang)
     )
     return email_wrapper(body)
 
@@ -311,11 +338,13 @@ def build_support_user_ack_email(
     ticket_code: str,
     category: str,
     message: str,
+    lang: str = "en",
 ) -> str:
     """お問い合わせ自動受信確認メール（ユーザー向け）"""
-    greeting = f"Hi {display_name},<br/><br/>" if display_name else "Hi,<br/><br/>"
+    c = get_email_content(lang)
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else ""
     formatted_message = message.replace("\n", "<br/>")
-    
+
     ticket_info = f"""
     <div style="
       background:{COLOR_CARD_BORDER};
@@ -327,28 +356,21 @@ def build_support_user_ack_email(
       font-size:{FONT_SIZE_BODY};
       line-height:1.6;
     ">
-      <p style="margin:0 0 8px 0;"><strong>Ticket Code:</strong> <span style="color:{COLOR_PRIMARY}; font-weight:700;">{ticket_code}</span></p>
-      <p style="margin:0 0 8px 0;"><strong>Category:</strong> {category}</p>
-      <p style="margin:0 0 4px 0;"><strong>Message Details:</strong></p>
+      <p style="margin:0 0 8px 0;"><strong>{c.SUPPORT_ACK_TICKET_CODE_LABEL}:</strong> <span style="color:{COLOR_PRIMARY}; font-weight:700;">{ticket_code}</span></p>
+      <p style="margin:0 0 8px 0;"><strong>{c.SUPPORT_ACK_CATEGORY_LABEL}:</strong> {category}</p>
+      <p style="margin:0 0 4px 0;"><strong>{c.SUPPORT_ACK_MESSAGE_LABEL}:</strong></p>
       <p style="margin:0; color:{COLOR_TEXT_MUTED}; word-break:break-word;">{formatted_message}</p>
     </div>
     """
-    
+
     body = (
-        email_header("leFture Support")
-        + email_heading("Inquiry Received")
-        + email_text(
-            f"{greeting}Thank you for contacting leFture Support. "
-            "We have received your report and our team is currently reviewing your message."
-        )
+        email_header(c.SUPPORT_APP_NAME)
+        + email_heading(c.SUPPORT_ACK_HEADING)
+        + email_text(f"{greeting}{c.SUPPORT_ACK_BODY}")
         + ticket_info
         + email_divider()
-        + email_text(
-            "Our support team will get back to you as soon as possible via this email address. "
-            "Please keep your ticket code for reference.",
-            muted=True,
-        )
-        + email_footer()
+        + email_text(c.SUPPORT_ACK_FOOTER_NOTE, muted=True)
+        + email_footer(lang=lang)
     )
     return email_wrapper(body)
 
@@ -361,10 +383,12 @@ def build_support_admin_notification_email(
     message: str,
     attachments_section_html: str = "",
     device_info_json: str = "",
+    lang: str = "en",
 ) -> str:
     """お問い合わせ受信通知メール（管理者・チーム向け）"""
+    c = get_email_content(lang)
     formatted_message = message.replace("\n", "<br/>")
-    
+
     device_info_block = ""
     if device_info_json:
         device_info_block = f"""
@@ -402,16 +426,16 @@ def build_support_admin_notification_email(
     </div>
     """
 
+    footer_note = c.SUPPORT_ADMIN_FOOTER_NOTE.format(user_email=user_email)
+
     body = (
-        email_header("leFture Support Desk")
-        + email_heading("[Action Required] New Support Inquiry")
-        + email_text("A new support ticket has been submitted by a user:")
+        email_header(c.SUPPORT_DESK_APP_NAME)
+        + email_heading(c.SUPPORT_ADMIN_HEADING)
+        + email_text(c.SUPPORT_ADMIN_BODY)
         + admin_info
         + email_divider()
-        + email_text(
-            f"Replying directly to this email will respond to the user's email address (<strong>{user_email}</strong>).",
-            muted=True,
-        )
-        + email_footer()
+        + email_text(footer_note, muted=True)
+        + email_footer(lang=lang)
     )
     return email_wrapper(body)
+

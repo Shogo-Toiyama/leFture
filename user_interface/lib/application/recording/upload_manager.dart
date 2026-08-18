@@ -213,6 +213,21 @@ class UploadManager {
             }
           }
 
+          // Assetの状態も「アップロード済み」に更新する。
+          // ★ 以前はJobのstatusしか更新しておらず、Asset.uploadStatusが永久に
+          // 'queued'のままだった。これによりサインアウト時の「未アップロードの
+          // 録音」判定(local_data_wipe_service.dart)が常にtrueになり、実際は
+          // 同期済みでもサインアウトがブロックされ続けるバグになっていた。
+          if (job.kind == 'audio_upload' || job.kind == 'master_audio_upload') {
+            final uploadedAsset = await _repo.getAsset(job.assetId);
+            if (uploadedAsset != null) {
+              await _repo.updateAssetUploaded(
+                assetId: job.assetId,
+                remotePath: uploadedAsset.storagePath ?? '',
+              );
+            }
+          }
+
           // Q1. この授業の未送信「チャンク」ジョブはまだ残っているか？
           // ★ マスター音声(kind: master_audio_upload)は分析の入力ではなく再生用途
           // でしかないため、ここでは意図的に見ない。マスター音声の失敗・保留が
