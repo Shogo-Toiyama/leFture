@@ -896,6 +896,48 @@ abstract class AppLocalizations {
   /// **'LIVE TRANSCRIPTION'**
   String get recordingLiveTranscriptHeader;
 
+  /// Status shown next to the mic level meter on the Live tab while the voice detector hears someone speaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening'**
+  String get recordingLiveListeningLabel;
+
+  /// Status shown next to the mic level meter on the Live tab while recording is running but nobody is speaking yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for speech'**
+  String get recordingLiveWaitingForSpeechLabel;
+
+  /// Status shown next to the mic level meter on the Live tab while the recording is paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get recordingLivePausedLabel;
+
+  /// Status shown next to the mic level meter on the Live tab before the on-device speech engine has finished starting up.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready...'**
+  String get recordingLivePreparingLabel;
+
+  /// Label shown beside a small spinner on the Live tab while the on-device engine is decoding audio into text.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing'**
+  String get recordingLiveTranscribingLabel;
+
+  /// Warning on the Live tab shown when the on-device engine had to discard audio it could not transcribe in time, reassuring the user that the server-side transcript is unaffected.
+  ///
+  /// In en, this message translates to:
+  /// **'This device couldn\'t keep up, so part of the live text is missing. The full transcript will still arrive after the recording.'**
+  String get recordingLiveDroppedNotice;
+
+  /// Placeholder shown inline in the Live tab transcript for a time range where on-device transcription was intentionally paused (Live tab not visible or app backgrounded). Reassures the user that recording never stopped and the server-side transcript will fill the gap in.
+  ///
+  /// In en, this message translates to:
+  /// **'Live text was paused here to save battery. The full transcript arrives in about a minute.'**
+  String get recordingLiveSkippedGapNotice;
+
   /// Placeholder text inside the live transcript panel when recording has started but no speech has been transcribed yet.
   ///
   /// In en, this message translates to:
@@ -3379,6 +3421,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap left / right  •  Swipe to change topic'**
   String get reviewCardsViewerNavigationHint;
+
+  /// Label for Review Card 'Hook' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: つかみ).
+  ///
+  /// In en, this message translates to:
+  /// **'Hook'**
+  String get reviewCardTypeHook;
+
+  /// Label for Review Card 'Core Why' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: 重要ポイント).
+  ///
+  /// In en, this message translates to:
+  /// **'Core Why'**
+  String get reviewCardTypeCoreWhy;
+
+  /// Label for Review Card 'Gotcha' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: ひらめき).
+  ///
+  /// In en, this message translates to:
+  /// **'Gotcha'**
+  String get reviewCardTypeGotcha;
+
+  /// Label for Review Card 'Next Action' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: 次のアクション).
+  ///
+  /// In en, this message translates to:
+  /// **'Next Action'**
+  String get reviewCardTypeNextAction;
 
   /// Disclaimer text displayed at the bottom of AI-generated content (transcript, review cards, deep notes) noting that AI-generated content may contain inaccuracies.
   ///

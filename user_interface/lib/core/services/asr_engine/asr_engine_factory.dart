@@ -3,6 +3,7 @@ import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
 import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/domain/entities/app_language.dart';
 
 import 'asr_engine.dart';
 import 'vad_offline_engine.dart';
@@ -29,6 +30,12 @@ class AsrEngineFactory {
   static const _minSilenceDuration = 0.6;
   static const _minSpeechDuration = 0.25;
 
+  // 喋り始めてから1秒後と3秒後に暫定テキストを出す。確定テキストのウィンドウは
+  // 変えないので品質は落ちず、増えるデコード回数は「長い無音の後の最初の
+  // ウィンドウだけ最大2回」に限られる。
+  static const _warmupCheckpoints = [1.0, 3.0];
+  static const _warmupRearmSilenceDuration = 5.0;
+
   /// 必要なモデルがまだローカルに揃っていない場合はnullを返す
   /// (呼び出し側は`AsrModelManager`のready状態を先に確認する想定だが、念のため)。
   Future<AsrEngineHandle?> createEngine(String languageCode, {double initialOffsetSec = 0.0}) async {
@@ -48,9 +55,13 @@ class AsrEngineFactory {
       DevLog.add('🎙️ [AsrEngineFactory] shared Whisper model not downloaded yet → no engine this session');
       return null;
     }
+    // sherpa-onnxの規約では、language: ''(空文字)が「自動判定」を意味する。
+    // 'auto'という文字列そのものは有効な言語コードとして解釈されないため、
+    // ここで変換する。
+    final whisperLanguage = languageCode == kAutoDetectLanguageCode ? '' : languageCode;
     DevLog.add(
       '🎙️ [AsrEngineFactory] → VadOfflineEngine/Whisper selected '
-      'for "$languageCode" (whisperDir="$whisperDir")',
+      'for "$languageCode" (whisperLanguage="$whisperLanguage", whisperDir="$whisperDir")',
     );
     return AsrEngineHandle(
       engine: VadOfflineEngine(
@@ -59,7 +70,7 @@ class AsrEngineFactory {
             whisper: sherpa_onnx.OfflineWhisperModelConfig(
               encoder: p.join(whisperDir, 'encoder.onnx'),
               decoder: p.join(whisperDir, 'decoder.onnx'),
-              language: languageCode,
+              language: whisperLanguage,
               task: 'transcribe',
             ),
             tokens: p.join(whisperDir, 'tokens.txt'),
@@ -69,6 +80,8 @@ class AsrEngineFactory {
         maxSpeechDuration: _whisperMaxSpeechDuration,
         minSilenceDuration: _minSilenceDuration,
         minSpeechDuration: _minSpeechDuration,
+        warmupCheckpoints: _warmupCheckpoints,
+        warmupRearmSilenceDuration: _warmupRearmSilenceDuration,
         initialOffsetSec: initialOffsetSec,
       ),
       groupKey: kWhisperPseudoLanguageCode,

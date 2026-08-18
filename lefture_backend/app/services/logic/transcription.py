@@ -75,11 +75,20 @@ class TranscriptionService:
         if not self.account_id or not self.api_key:
             self.logger.log("⚠️ CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_KEY is not set in environment variables.")
 
-    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "", language: str | None = None) -> dict:
+    async def run_in_memory(self, audio_bytes: bytes, chunk_index: int, prompt_keywords: str = "") -> dict:
         """
         [究極のシンプルパイプライン]
         Flutterから送られてきた34秒（オーバーラップ込み）のM4A(AAC)データをBase64エンコードし、
         Cloudflare Workers AIのWhisper-large-v3-turboモデルに送信する。
+
+        言語は常にCloudflare側の自動判定に任せる(languageパラメータを渡さない)。
+        以前はlectures.recording_languageをヒントとして渡していたが、Cloudflareの
+        Whisperには「ヒントが実際の音声と違う場合にフォールバックする」機構が無く
+        (Modal側のModalTranscriptionServiceとは異なる)、強制した言語が間違って
+        いると文字起こしそのものが破綻する。実測でも(language未指定のまま)
+        confidence 1.0で正しく自動判定できることを確認済みなので、常に自動判定に
+        統一する方が安全。実際に検出された言語はレスポンスの
+        transcription_info.languageから取得し、呼び出し側がDBへ保存する。
         """
         self.logger.log(f"   [Logic] Loading audio into memory for chunk {chunk_index}")
 
@@ -93,7 +102,8 @@ class TranscriptionService:
             return {
                 "text": "",
                 "segments": [],
-                "audio_duration": actual_duration
+                "audio_duration": actual_duration,
+                "detected_language": None,
             }
 
         # ---------------------------------------------------------
@@ -112,9 +122,6 @@ class TranscriptionService:
         payload = {
             "audio": audio_b64,
         }
-        # 未指定ならキー自体を送らず、Whisperの自動言語判定に任せる
-        if language:
-            payload["language"] = language
         if prompt_keywords:
             payload["initial_prompt"] = prompt_keywords
 
@@ -174,7 +181,9 @@ class TranscriptionService:
         return {
             "text": full_text,
             "segments": segments_data,
-            "audio_duration": actual_duration
+            "audio_duration": actual_duration,
+            # 無音などでtranscription_info自体が返らない場合に備えてNoneフォールバック。
+            "detected_language": (result.get("transcription_info") or {}).get("language"),
         }
 
 
@@ -276,7 +285,10 @@ class ModalTranscriptionService:
             return {
                 "text": full_text,
                 "segments": segments_data,
-                "audio_duration": actual_duration
+                "audio_duration": actual_duration,
+                # Modal側は既にhint_languageの検証→不一致なら自動判定、まで
+                # やった上でこの値を返している(modal/whisper_deploy_api.py参照)。
+                "detected_language": result.get("language"),
             }
 
         except (Exception, asyncio.CancelledError) as e:

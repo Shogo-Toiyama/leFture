@@ -107,6 +107,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
           reaction: note?.reaction,
           saved: note?.saved ?? false,
           annotations: note?.annotations ?? const [],
+          imagePath: t.imagePath,
         );
       }).toList();
     }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
@@ -1244,6 +1245,17 @@ class _NoteDetailContent extends HookWidget {
                     ),
                   ),
 
+                // ── Hero Image ─────────────────────────────────────────────
+                if (topic.imagePath != null &&
+                    topic.imagePath!.trim().isNotEmpty) ...[
+                  _TopicHeroImage(
+                    imagePath: topic.imagePath!,
+                    topicIndex: topic.index,
+                    borderRadius: 16,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 // ── Title ──────────────────────────────────────────────────
                 SelectionContainer.disabled(
                   child: Text(
@@ -1475,6 +1487,63 @@ class _NoteDetailContent extends HookWidget {
                 ? AppColors.paper.background
                 : textThemeColor,
             size: currentIconSize,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Topic Hero Image for Deep Note
+// ---------------------------------------------------------------------------
+class _TopicHeroImage extends ConsumerWidget {
+  const _TopicHeroImage({
+    required this.imagePath,
+    required this.topicIndex,
+    this.borderRadius = 16,
+  });
+
+  final String imagePath;
+  final int topicIndex;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAsset = imagePath.startsWith('assets/');
+    final fileAsync = isAsset
+        ? null
+        : ref.watch(artifactFileProvider(imagePath));
+    final file = fileAsync?.asData?.value;
+
+    Widget child;
+    if (isAsset) {
+      child = Image.asset(imagePath, fit: BoxFit.cover);
+    } else if (file != null) {
+      child = Image.file(file, fit: BoxFit.cover);
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return SelectionContainer.disabled(
+      child: Hero(
+        tag: 'topic_hero_image_${topicIndex}_$imagePath',
+        child: Container(
+          width: double.infinity,
+          height: 180,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: child,
           ),
         ),
       ),

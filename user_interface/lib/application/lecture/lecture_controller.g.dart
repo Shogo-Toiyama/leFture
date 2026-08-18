@@ -21,9 +21,16 @@ final class LectureControllerProvider
         retry: null,
         name: r'lectureControllerProvider',
         isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+        dependencies: <ProviderOrFamily>[recordingControllerProvider],
+        $allTransitiveDependencies: <ProviderOrFamily>[
+          LectureControllerProvider.$allTransitiveDependencies0,
+          LectureControllerProvider.$allTransitiveDependencies1,
+        ],
       );
+
+  static final $allTransitiveDependencies0 = recordingControllerProvider;
+  static final $allTransitiveDependencies1 =
+      RecordingControllerProvider.$allTransitiveDependencies0;
 
   @override
   String debugGetCreateSourceHash() => _$lectureControllerHash();
@@ -33,7 +40,7 @@ final class LectureControllerProvider
   LectureController create() => LectureController();
 }
 
-String _$lectureControllerHash() => r'39720e25f5a752719aa4d519ff32dfd7d1d3a0ae';
+String _$lectureControllerHash() => r'777274cb04adfe80442f357deb99f0ecf332d04a';
 
 abstract class _$LectureController extends $AsyncNotifier<void> {
   FutureOr<void> build();

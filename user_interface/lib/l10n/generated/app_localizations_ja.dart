@@ -421,6 +421,29 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recordingLiveTranscriptHeader => 'ライブ文字起こし';
 
   @override
+  String get recordingLiveListeningLabel => '聞き取り中';
+
+  @override
+  String get recordingLiveWaitingForSpeechLabel => '発話を待っています';
+
+  @override
+  String get recordingLivePausedLabel => '一時停止中';
+
+  @override
+  String get recordingLivePreparingLabel => '準備中...';
+
+  @override
+  String get recordingLiveTranscribingLabel => '認識中';
+
+  @override
+  String get recordingLiveDroppedNotice =>
+      '端末の処理が追いつかず、ライブ表示の一部が欠けています。完全な文字起こしは録音後に届きます。';
+
+  @override
+  String get recordingLiveSkippedGapNotice =>
+      'バッテリー節約のため、この区間は端末での文字起こしを停止しました。約1分で正式な文字起こしが表示されます。';
+
+  @override
   String get recordingWaitingForAudio => '音声を待っています...';
 
   @override
@@ -1787,6 +1810,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get reviewCardsViewerNavigationHint => '左右をタップ  •  スワイプでトピック切替';
+
+  @override
+  String get reviewCardTypeHook => 'つかみ';
+
+  @override
+  String get reviewCardTypeCoreWhy => '重要ポイント';
+
+  @override
+  String get reviewCardTypeGotcha => 'ひらめき';
+
+  @override
+  String get reviewCardTypeNextAction => '次のアクション';
 
   @override
   String get aiDisclaimerText => '※ AI生成コンテンツのため誤りが含まれる場合があります';

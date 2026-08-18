@@ -7,6 +7,7 @@ import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/application/recording/recording_controller.dart';
 import 'package:lefture/infrastructure/local_db/repositories/recording_repository_drift.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/application/auth/local_data_wipe_service.dart';
@@ -50,7 +51,7 @@ part 'lecture_controller.g.dart';
 // ごと(_lastBootstrapAttemptAtの記憶も)消えてしまう。すると直後のHome表示時に
 // もう一度bootstrapIfNeededを呼んだ時、15分スロットルが効かず全データを
 // 再度Pullし直してしまっていた。セッション中は保持し続けることでこれを防ぐ。
-@Riverpod(keepAlive: true)
+@Riverpod(keepAlive: true, dependencies: [RecordingController])
 class LectureController extends _$LectureController {
   /// [_runBootstrapLectures]内でPullするエンティティの数(下の`pulls`マップの
   /// エントリ数と一致させる)。syncProgressProviderの母数をWelcomePage側からも
@@ -561,6 +562,15 @@ class LectureController extends _$LectureController {
   /// (see topic_map_repository_supabase.dart / task_runners.py の設計議論)。
   Future<void> deleteLecture(String lectureId, {String? courseId}) async {
     DevLog.add('🗑️ [LectureController] deleteLecture called: $lectureId');
+
+    // 現在録音中の講義は削除不可とするガード
+    final recordingState = ref.read(recordingControllerProvider);
+    if (recordingState.isRecording && recordingState.currentLectureId == lectureId) {
+      DevLog.add(
+        '🚫 [LectureController] Refused to delete currently recording lecture: $lectureId',
+      );
+      throw Exception('Cannot delete a lecture that is currently being recorded.');
+    }
 
     // チュートリアル講義は削除UI側で選択肢自体を出さないが、万一この関数が
     // 別経路から直接呼ばれても、ここで最終的にブロックする。

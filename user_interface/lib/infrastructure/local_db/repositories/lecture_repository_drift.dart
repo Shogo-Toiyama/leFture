@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/core/utils/network_constants.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -65,6 +67,28 @@ class LectureRepositoryDrift {
         op: 'update', // 論理削除なので update 扱い
       );
     });
+  }
+
+  /// 講義をローカルDBおよびSupabaseから物理削除（Hard Delete）する
+  Future<void> hardDeleteLecture({required String lectureId}) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    // 1. ローカルDBから物理削除
+    await _db.hardDeleteLectureCascade(lectureId);
+
+    // 2. Supabaseから物理削除
+    try {
+      if (!await _db.isTutorialLecture(lectureId)) {
+        await supabase
+            .from('lectures')
+            .delete()
+            .eq('id', lectureId)
+            .timeout(networkTimeout);
+      }
+    } catch (e) {
+      DevLog.add('⚠️ [LectureRepo] SupabaseからのHardDelete処理(未登録または通信エラー): $e');
+    }
   }
 
   /// タイトルと所属コースを更新し、Outboxに登録する (Transaction)

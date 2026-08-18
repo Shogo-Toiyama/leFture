@@ -45,7 +45,6 @@ class AppRoutes {
   static const noteViewer = 'v/:lectureId'; // 例: v/456
 
   // Review Cards (Nested under /home/courses/c/:courseId)
-  static const reviewCardsDashboard = 'rc/:lectureId';        // rc/:lectureId
   static const reviewCardsViewer    = 'rcv/:lectureId';       // rcv/:lectureId
 
   // Deep Notes (Nested under /home/courses/c/:courseId)

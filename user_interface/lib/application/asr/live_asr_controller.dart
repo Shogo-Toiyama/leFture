@@ -8,11 +8,112 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/core/services/asr_engine/asr_engine.dart';
 import 'package:lefture/core/services/asr_engine/asr_engine_factory.dart';
+import 'package:lefture/core/services/asr_engine/asr_engine_status.dart';
 import 'package:lefture/core/services/asr_engine/asr_live_segment.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 
 part 'live_asr_controller.g.dart';
+
+/// 端末での文字起こしを省略した区間(録音全体の経過秒数で表す)。
+///
+/// Liveタブを離れている間・アプリがバックグラウンドの間は、電力と発熱を
+/// 抑えるためデコードを完全に止めている。その区間だけオンデバイスの字幕が
+/// 存在しないので、UI上は文字が丸ごと抜けたように見えてしまう。実際には
+/// 録音そのものは続いていて、サーバー側の文字起こしが追いつけば必ず埋まる
+/// ため、「壊れて空白になっている」のではないことを伝えるためにこの範囲を
+/// 覚えておく。
+class AsrTranscriptGap {
+  const AsrTranscriptGap({required this.startSec, this.endSec});
+
+  /// 省略が始まった位置(録音開始からの秒数)。
+  final double startSec;
+
+  /// 省略が終わった位置。nullなら現在も省略中(まだLiveタブに戻っていない)。
+  final double? endSec;
+
+  AsrTranscriptGap closedAt(double sec) => AsrTranscriptGap(startSec: startSec, endSec: sec);
+}
+
+/// Liveタブが「今ちゃんと聞こえていて処理が動いているか」を出すための状態。
+///
+/// 文字起こしは仕組み上どうしても数秒待たされる。その間ずっと画面が
+/// 無反応だと、ユーザーには本当に録音・認識されているのか分からない
+/// (「10秒待たされる」以上に「動いているのか分からない」ことの方が
+/// 不安の原因になる)。テキスト以外の手がかりを常時出すために使う。
+class LiveAsrStatusState {
+  const LiveAsrStatusState({
+    this.engineRunning = false,
+    this.speechDetected = false,
+    this.decoding = false,
+    this.droppedFinalCount = 0,
+    this.gaps = const [],
+  });
+
+  /// オンデバイスASRエンジンが起動済みか(モデル未DL/起動待ちならfalse)。
+  final bool engineRunning;
+
+  /// VADが今この瞬間、発話を検知しているか。
+  final bool speechDetected;
+
+  /// デコード(認識)を実行中か。
+  final bool decoding;
+
+  /// 端末の処理が追いつかず捨てた確定チャンクの累計(＝欠けた区間の数)。
+  final int droppedFinalCount;
+
+  /// 節電のため端末での文字起こしを省略した区間。
+  final List<AsrTranscriptGap> gaps;
+
+  LiveAsrStatusState copyWith({
+    bool? engineRunning,
+    bool? speechDetected,
+    bool? decoding,
+    int? droppedFinalCount,
+    List<AsrTranscriptGap>? gaps,
+  }) {
+    return LiveAsrStatusState(
+      engineRunning: engineRunning ?? this.engineRunning,
+      speechDetected: speechDetected ?? this.speechDetected,
+      decoding: decoding ?? this.decoding,
+      droppedFinalCount: droppedFinalCount ?? this.droppedFinalCount,
+      gaps: gaps ?? this.gaps,
+    );
+  }
+
+  static const idle = LiveAsrStatusState();
+}
+
+/// [LiveAsrController]が持つエンジンの稼働状況。認識テキスト本体
+/// ([LiveAsrController]のstate)とは更新頻度も用途も違うため、別のproviderに
+/// 分けている(テキストが増えないタイミングでも毎秒動く表示に使うため)。
+@Riverpod(keepAlive: true)
+class LiveAsrStatus extends _$LiveAsrStatus {
+  @override
+  LiveAsrStatusState build() => LiveAsrStatusState.idle;
+
+  void update(LiveAsrStatusState value) => state = value;
+
+  /// ワーカー由来の稼働状況だけを差し替える(ギャップ情報は[LiveAsrController]が
+  /// 別のタイミングで積むので、こちらで消してしまわないようにする)。
+  void updateEngineStatus({
+    required bool engineRunning,
+    required bool speechDetected,
+    required bool decoding,
+    required int droppedFinalCount,
+  }) {
+    state = state.copyWith(
+      engineRunning: engineRunning,
+      speechDetected: speechDetected,
+      decoding: decoding,
+      droppedFinalCount: droppedFinalCount,
+    );
+  }
+
+  void setGaps(List<AsrTranscriptGap> gaps) => state = state.copyWith(gaps: gaps);
+
+  void reset() => state = LiveAsrStatusState.idle;
+}
 
 /// 録音の開始/終了に同期してオンデバイスASRエンジンの起動/停止を行う
 /// オーケストレーター。`RecordingController`の`onMasterDataReady`コールバックから
@@ -47,6 +148,7 @@ class LiveAsrController extends _$LiveAsrController {
 
   AsrEngine? _engine;
   StreamSubscription<AsrLiveSegment>? _subscription;
+  StreamSubscription<AsrEngineStatus>? _statusSubscription;
   bool _starting = false;
   // start()実行中(モデルロード/isolate起動待ち)にstop()が呼ばれた場合、
   // start()完了直後に即dispose()できるようにするためのフラグ。これが無いと
@@ -61,6 +163,22 @@ class LiveAsrController extends _$LiveAsrController {
   bool _tabFocused = false;
   // アプリがフォアグラウンドかどうか(内蔵のWidgetsBindingObserverが更新)。
   bool _appForegrounded = true;
+
+  // ---- 節電のため文字起こしを省略した区間の記録 ----
+  // 現在デコードを止めているか(_applyPausedStateの立ち上がり/立ち下がりを
+  // 検出するために持つ。同じ値で何度呼ばれても区間を二重に積まない)。
+  bool _decodingPaused = false;
+  // 今のエンジンセッションが録音全体のどこから始まったか。一時停止→再開で
+  // エンジンを起動し直すたびに、呼び出し側から渡されるinitialOffsetSecが入る。
+  double _sessionOffsetSec = 0;
+  // エンジン起動からの経過時間。録音中は音声の進みと実時間が一致するので、
+  // これに_sessionOffsetSecを足せば「録音全体での現在位置」になる
+  // (ギャップ表示の境界に使うだけなので秒未満の誤差は問題にならない)。
+  final Stopwatch _sessionClock = Stopwatch();
+  final List<AsrTranscriptGap> _gaps = [];
+
+  double get _currentAudioSec => _sessionOffsetSec + _sessionClock.elapsedMilliseconds / 1000.0;
+  double get currentAudioSec => _currentAudioSec;
   // モデルが常駐している間、実際に音声が流れているかどうかに関わらず
   // 一定間隔でログを出す。「録音を止めたはずなのにモデルがまだ生きている」
   // ようなリーク(発熱の原因になりうる)を、DevLogを見るだけで気付けるように
@@ -85,7 +203,18 @@ class LiveAsrController extends _$LiveAsrController {
   /// 経過秒数」を渡す。これが無いと、再開のたびに新しいisolateが起動して
   /// 内部のタイムスタンプが0から数え直しになり、サーバー側watermarkによる
   /// 表示フィルタ(`_LiveTranscriptPanel`)で再開後の字幕が全て消えてしまう。
-  Future<void> start(String languageCode, {double initialOffsetSec = 0.0}) async {
+  /// [preserveHistory]がtrueなら、それまでに表示していたオンデバイス字幕
+  /// ([state]の中身)をクリアしない。一時停止→再開や録音言語の途中変更のように、
+  /// 「同じ録音セッションの続き」としてエンジンを起動し直す場合に使う
+  /// ——ここをfalse(既定)のまま呼ぶと、直前まで画面に出ていたオンデバイス
+  /// 版の文字起こしが録音の途中で丸ごと消えてしまう(サーバー側の確定稿が
+  /// その区間に追いつくまで、数分間ぶんの空白として見える)。新しい録音を
+  /// 開始する場合(前の講義の残骸を持ち越してはいけない)だけfalseのままにする。
+  Future<void> start(
+    String languageCode, {
+    double initialOffsetSec = 0.0,
+    bool preserveHistory = false,
+  }) async {
     DevLog.add('🎙️ [LiveAsrController] start("$languageCode") requested');
     if (_engine != null || _starting) {
       DevLog.add(
@@ -121,7 +250,34 @@ class LiveAsrController extends _$LiveAsrController {
       }
 
       _engine = engine;
-      state = [];
+      if (!preserveHistory) state = [];
+      // 一時停止→再開でエンジンを起動し直した場合も、ギャップの位置を録音
+      // 全体の時間軸で表せるように、このセッションの開始位置から数え直す。
+      _sessionOffsetSec = initialOffsetSec;
+      _sessionClock
+        ..reset()
+        ..start();
+      // エンジンの稼働状況をUIへ橋渡しする。「聞こえているか」の表示は、
+      // 文字が出ない数秒間の唯一の手がかりになるので、エンジンが立ち上がった
+      // 時点で必ず購読を張る。
+      _statusSubscription = engine.status.listen((s) {
+        ref
+            .read(liveAsrStatusProvider.notifier)
+            .updateEngineStatus(
+              engineRunning: true,
+              speechDetected: s.speechDetected,
+              decoding: s.decoding,
+              droppedFinalCount: s.droppedFinalCount,
+            );
+      });
+      ref
+          .read(liveAsrStatusProvider.notifier)
+          .updateEngineStatus(
+            engineRunning: true,
+            speechDetected: false,
+            decoding: false,
+            droppedFinalCount: 0,
+          );
       DevLog.add(
         '🎙️ [LiveAsrController] engine started (groupKey="${handle.groupKey}", type=${engine.runtimeType})',
       );
@@ -145,14 +301,29 @@ class LiveAsrController extends _$LiveAsrController {
         );
 
         final current = state;
-        // 直前の行がまだ未確定(isFinal:false)なら、新しい行を増やすのではなく
-        // その行を上書きする(partial→partialの更新も、partial→finalの確定も
-        // どちらもここで吸収する)。
-        if (current.isNotEmpty && !current.last.isFinal) {
-          state = [...current.sublist(0, current.length - 1), segment];
-        } else {
-          state = [...current, segment];
+        // 末尾の行が「同じ区間の未確定行」なら、新しい行を増やすのではなく
+        // その行を置き換える(暫定→暫定の更新も、暫定→確定の確定もここで
+        // 吸収する)。タイムスタンプまで一致を見るのは、別の区間の確定テキストが
+        // 前の区間の暫定行を食い潰してしまわないようにするため。
+        final replaceIndex =
+            current.isNotEmpty &&
+                !current.last.isFinal &&
+                current.last.timestampSec == segment.timestampSec
+            ? current.length - 1
+            : null;
+
+        if (segment.text.isEmpty) {
+          // 空の確定 = その区間には結局何も無かった(ノイズだけだった)。
+          // 暫定を出していたなら、それは幻覚だったということなので取り消す。
+          if (segment.isFinal && replaceIndex != null) {
+            state = current.sublist(0, replaceIndex);
+          }
+          return;
         }
+
+        state = replaceIndex != null
+            ? [...current.sublist(0, replaceIndex), segment]
+            : [...current, segment];
       });
       unawaited(
         ref.read(appDatabaseProvider).touchAsrModelUsed(handle.groupKey).catchError((e, st) {
@@ -163,6 +334,12 @@ class LiveAsrController extends _$LiveAsrController {
       DevLog.add('🚨 [LiveAsrController] Failed to start ASR engine: $e\n$st');
       _heartbeat?.cancel();
       _heartbeat = null;
+      await _statusSubscription?.cancel();
+      _statusSubscription = null;
+      _sessionClock.stop();
+      _decodingPaused = false;
+      _gaps.clear();
+      ref.read(liveAsrStatusProvider.notifier).reset();
       await _engine?.dispose();
       _engine = null;
     } finally {
@@ -205,6 +382,27 @@ class LiveAsrController extends _$LiveAsrController {
       '(tabFocused=$_tabFocused, appForegrounded=$_appForegrounded)',
     );
     _engine?.setDecodingPaused(paused);
+    _recordGapBoundary(paused);
+  }
+
+  /// デコードの停止/再開の切り替わりで、省略した区間を記録する。
+  /// エンジンが動いている間だけ意味を持つ(録音していない時の停止は
+  /// そもそも文字起こしすべき音声が無いので区間にしない)。
+  void _recordGapBoundary(bool paused) {
+    if (_engine == null) return;
+    if (paused == _decodingPaused) return;
+    _decodingPaused = paused;
+
+    if (paused) {
+      _gaps.add(AsrTranscriptGap(startSec: _currentAudioSec));
+    } else {
+      if (_gaps.isEmpty || _gaps.last.endSec != null) return;
+      _gaps[_gaps.length - 1] = _gaps.last.closedAt(_currentAudioSec);
+    }
+    final updatedGaps = List<AsrTranscriptGap>.unmodifiable(_gaps);
+    Future.microtask(() {
+      ref.read(liveAsrStatusProvider.notifier).setGaps(updatedGaps);
+    });
   }
 
   void acceptPcm16(Uint8List bytes) {
@@ -231,6 +429,13 @@ class LiveAsrController extends _$LiveAsrController {
     _heartbeat = null;
     await _subscription?.cancel();
     _subscription = null;
+    await _statusSubscription?.cancel();
+    _statusSubscription = null;
+    // 録音が終われば字幕そのものが不要になるので、省略区間の記録も畳む。
+    _sessionClock.stop();
+    _decodingPaused = false;
+    _gaps.clear();
+    ref.read(liveAsrStatusProvider.notifier).reset();
     await _engine?.dispose();
     _engine = null;
   }

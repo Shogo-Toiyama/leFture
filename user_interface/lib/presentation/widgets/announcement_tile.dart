@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
@@ -85,7 +86,12 @@ class AnnouncementTile extends HookConsumerWidget {
       ]).animate(peekController),
     );
 
-    final currentOffset = slideOffset != 0.0 ? slideOffset : peekOffset;
+    final dragOffset = useState<double>(0.0);
+
+    final currentOffset = (slideOffset != 0.0
+            ? slideOffset
+            : (peekController.isAnimating ? peekOffset : 0.0)) +
+        dragOffset.value;
 
     final prevCompletedRef = useRef<bool>(isCompleted);
     final prevCompleted = prevCompletedRef.value;
@@ -144,11 +150,14 @@ class AnnouncementTile extends HookConsumerWidget {
           ),
         Transform.translate(
           offset: Offset(currentOffset, 0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.universe.voidBackground, // 透過防止用のソリッド背景色
-              borderRadius: BorderRadius.circular(14),
-            ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: AppColors.universe.voidBackground, // 透過防止用のソリッド背景色
+                borderRadius: BorderRadius.circular(14),
+              ),
             child: Opacity(
               opacity: isCompleted ? 0.55 : 1.0,
               child: Container(
@@ -317,6 +326,7 @@ class AnnouncementTile extends HookConsumerWidget {
   ),
 ),
 ),
+),
       ],
     );
 
@@ -375,57 +385,59 @@ class AnnouncementTile extends HookConsumerWidget {
       child: tile,
     );
 
-    // スワイプDone/Undo機能
+    // スワイプDone/Undo機能 (自前ドラッグで角丸を完璧に保持)
     if (onToggleComplete != null) {
-      tile = Dismissible(
-        key: ValueKey('announcement_${announcement.id}_$isCompleted'),
-        direction: DismissDirection.endToStart,
-        // confirmDismiss で false を返すことで物理的には消さず、コールバックのみ実行
-        //
-        // ここから例外を投げてはいけない。Dismissibleは confirmDismiss が例外で
-        // 終わると元の位置へ戻す reverse() に到達しないため(Flutter SDKの
-        // dismissible.dart `_handleMoveCompleted`)、タイルがスワイプしきった
-        // 位置=背景の「Done」が見えたまま固まり、状態も変わらない。
-        // 失敗しても必ず false を返して元に戻す。
-        confirmDismiss: (_) async {
-          hasSwiped.value = true;
-          try {
-            await onToggleComplete!(announcement);
-          } catch (e, stack) {
-            hasSwiped.value = false;
-            DevLog.add('⚠️ [AnnouncementTile] Toggle complete failed: $e\n$stack');
-          }
-          return false;
+      tile = GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragUpdate: (details) {
+          // 端（画面全幅）まで最後までスライド可能にする
+          final newOffset = (dragOffset.value + details.delta.dx).clamp(-screenWidth, 0.0);
+          dragOffset.value = newOffset;
         },
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
-          decoration: BoxDecoration(
-            color: prevCompleted
-                ? Colors.blueGrey.shade700
-                : Colors.green.shade700,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                prevCompleted ? Icons.undo : Icons.check,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                prevCompleted ? 'Undo' : 'Done',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+        onHorizontalDragEnd: (details) async {
+          final currentDrag = dragOffset.value;
+          final threshold = -screenWidth * 0.35;
+
+          // フリック速度は無視し、しっかり画面幅の35%以上引っ張った場合のみ Done にする
+          if (currentDrag <= threshold) {
+            hasSwiped.value = true;
+
+            // ① 現在地から画面外 (-screenWidth) まで滑らかに最後までスライドし切る
+            const durationMs = 200;
+            final start = dragOffset.value;
+            final distance = -screenWidth - start;
+            final startTime = DateTime.now().millisecondsSinceEpoch;
+
+            while (true) {
+              final elapsed = DateTime.now().millisecondsSinceEpoch - startTime;
+              if (elapsed >= durationMs) {
+                dragOffset.value = -screenWidth;
+                break;
+              }
+              final t = elapsed / durationMs;
+              final ease = 1.0 - math.pow(1.0 - t, 3);
+              dragOffset.value = start + distance * ease;
+              await Future.delayed(const Duration(milliseconds: 16));
+            }
+
+            // ② 端までスライドし切ってから Done / Undo 状態を切り替え
+            try {
+              await onToggleComplete!(announcement);
+            } catch (e, stack) {
+              hasSwiped.value = false;
+              DevLog.add('⚠️ [AnnouncementTile] Toggle complete failed: $e\n$stack');
+            }
+
+            // ③ 位置を 0.0 にリセット
+            dragOffset.value = 0.0;
+          } else {
+            // 35% 未満の場合はキャンセルし、元の位置に戻す
+            dragOffset.value = 0.0;
+          }
+        },
+        onHorizontalDragCancel: () {
+          dragOffset.value = 0.0;
+        },
         child: tile,
       );
     }

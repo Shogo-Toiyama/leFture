@@ -437,6 +437,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingLiveTranscriptHeader => 'LIVE TRANSCRIPTION';
 
   @override
+  String get recordingLiveListeningLabel => 'Listening';
+
+  @override
+  String get recordingLiveWaitingForSpeechLabel => 'Waiting for speech';
+
+  @override
+  String get recordingLivePausedLabel => 'Paused';
+
+  @override
+  String get recordingLivePreparingLabel => 'Getting ready...';
+
+  @override
+  String get recordingLiveTranscribingLabel => 'Transcribing';
+
+  @override
+  String get recordingLiveDroppedNotice =>
+      'This device couldn\'t keep up, so part of the live text is missing. The full transcript will still arrive after the recording.';
+
+  @override
+  String get recordingLiveSkippedGapNotice =>
+      'Live text was paused here to save battery. The full transcript arrives in about a minute.';
+
+  @override
   String get recordingWaitingForAudio => 'Waiting for audio...';
 
   @override
@@ -1862,6 +1885,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reviewCardsViewerNavigationHint =>
       'Tap left / right  •  Swipe to change topic';
+
+  @override
+  String get reviewCardTypeHook => 'Hook';
+
+  @override
+  String get reviewCardTypeCoreWhy => 'Core Why';
+
+  @override
+  String get reviewCardTypeGotcha => 'Gotcha';
+
+  @override
+  String get reviewCardTypeNextAction => 'Next Action';
 
   @override
   String get aiDisclaimerText =>

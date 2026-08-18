@@ -336,10 +336,9 @@ async def receive_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
     """
     supabase = get_supabase_client()
     res = await asyncio.to_thread(
-        lambda: supabase.table("lectures").select("user_id, recording_language").eq("id", lecture_id).single().execute()
+        lambda: supabase.table("lectures").select("user_id").eq("id", lecture_id).single().execute()
     )
     uid = res.data["user_id"] if res.data else "unknown_user"
-    language = res.data.get("recording_language") if res.data else None
 
     # 受け取った音声バイナリをそのまま R2 に保存（バックアップ＆参照用、非同期処理側が後で読み直す）
     seqStr = str(chunk_index).zfill(3)
@@ -361,7 +360,6 @@ async def receive_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
         whisper_context=whisper_context,
         r2_audio_path=audio_r2_path,
         uid=uid,
-        language=language,
     )
 
 
@@ -582,7 +580,7 @@ async def trigger_sentence_review_for_batch_if_ready(
     return False
 
 
-async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time: float, whisper_context: str, r2_audio_path: str, uid: str, language: str | None = None):
+async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time: float, whisper_context: str, r2_audio_path: str, uid: str):
     """
     receive_transcribe_chunk がenqueueしたタスクを実際に処理する（Cloud Tasksから呼ばれる）。
     R2から音声を取得し、Cloudflare Whisperで文字起こしし、DBを更新、4チャンクごとの
@@ -624,7 +622,6 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
             audio_bytes=audio_bytes,
             chunk_index=chunk_index,
             prompt_keywords=whisper_context,
-            language=language,
         )
 
         # 3. DBを更新し、真実のテキストを書き込む（R2への保存は受付側で完了済み）
@@ -639,6 +636,7 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
                 "segments_stt": result["segments"],
                 "confidence": result["segments"][0]["confidence"] if result["segments"] else 0.0,
                 "storage_path": r2_audio_path,
+                "detected_language": result.get("detected_language"),
                 "billing_records": [vars(r) for r in billing.records],
             }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         )
@@ -1077,7 +1075,6 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
                 audio_bytes=audio_bytes,
                 chunk_index=0,
                 prompt_keywords=whisper_context,
-                language=language,
             )
         else:
             # PreRecorded（マスター）モード: Modal Faster Whisper を使用
@@ -1143,11 +1140,21 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
                     "confidence": raw_segments[0].get("confidence", 0.99) if raw_segments else 0.99,
                     "storage_path": audio_path,
                     "start_time": 0.0,
+                    "detected_language": result.get("detected_language"),
                     "billing_records": [vars(r) for r in billing.records],
                 }, on_conflict="lecture_id,chunk_index").execute()
             )
         else:
             logger.log("⏭️ Skipping lecture_transcripts registration (Pre-recorded mode, already in R2)")
+            # プレレコはlecture_transcriptsに行を作らないため、検出言語の保存先は
+            # lectures.detected_recording_language(講義1件につき1値)にする。
+            detected_language = result.get("detected_language")
+            if detected_language:
+                await asyncio.to_thread(
+                    lambda: supabase.table("lectures").update({
+                        "detected_recording_language": detected_language,
+                    }).eq("id", lecture_id).execute()
+                )
         
         # 7. 請求データの合算と保存
         aggregated_records = _aggregate_billing_records(billing.records)

@@ -16,6 +16,7 @@ import 'package:lefture/presentation/themes/app_colors.dart'; // 色追加
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
 import 'package:lefture/application/recording/live_transcript_provider.dart';
 import 'package:lefture/application/asr/live_asr_controller.dart';
+import 'package:lefture/core/services/asr_engine/asr_engine_status.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
 import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
@@ -31,6 +32,7 @@ import '../../../application/recording/recording_state.dart';
 import '../dev_tools/simulate_recording_tab.dart';
 import '../dev_tools/test_mode_flag.dart';
 import 'widgets/audio_waveform_visualizer.dart';
+import 'widgets/live_listening_indicator.dart';
 import 'widgets/course_picker_sheet.dart';
 
 class RecordingPage extends HookConsumerWidget {
@@ -288,7 +290,9 @@ class RecordingPage extends HookConsumerWidget {
     // 将来的にクリーンアップの意味が食い違って事故りやすいため)。
     useEffect(() {
       final liveAsrNotifier = ref.read(liveAsrControllerProvider.notifier);
-      return () => liveAsrNotifier.setLiveTabFocused(false);
+      return () {
+        Future.microtask(() => liveAsrNotifier.setLiveTabFocused(false));
+      };
     }, []);
 
     // MVPのためコメントアウト
@@ -2372,7 +2376,76 @@ class _LiveTab extends HookConsumerWidget {
   }
 }
 
-/// 録音状態バッジ。録音中は🔴Recording...、一時停止中は🟡Paused、それ以外は非表示。
+/// 節電のため端末側の文字起こしを止めていた区間に差し込む案内行。
+///
+/// 録音そのものは止まっていない(サーバー側には全区間が送られている)ことと、
+/// 待てば正式な文字起こしで埋まることを伝えるのが目的。ここで何も出さないと、
+/// ユーザーには「その時間だけ録れていなかった」ようにしか見えない。
+class _SkippedGapNotice extends StatelessWidget {
+  const _SkippedGapNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.universe.glassWhiteLow,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.universe.glassBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.battery_saver_rounded,
+            size: 14,
+            color: AppColors.universe.textComet,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.recordingLiveSkippedGapNotice,
+              style: TextStyle(
+                color: AppColors.universe.textComet,
+                fontSize: 11.5,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Liveタブのテキスト行の色/字体を、出どころに応じて3段階で分ける:
+///
+/// 1. サーバー確定稿(最終的な正解) — 一番明るい[textStarlight]、通常体
+/// 2. オンデバイス確定(まだサーバーに追い越されていない下書き) — 少し灰色の
+///    [textComet]、通常体。「確定はしているが、まだ本物ではない」ことを示す
+/// 3. オンデバイス暫定(endpoint検知前) — 2よりさらに薄い[textComet]、斜体
+///
+/// サーバー確定とオンデバイス確定は以前どちらも同じ色で描かれており、
+/// 画面をスクロールして戻った時にどこからがサーバー版の「本当の文字起こし」
+/// なのか判別できなかった。
+TextStyle _liveTranscriptTextStyle({required bool isFinal, required bool isOnDevice}) {
+  if (!isFinal) {
+    return TextStyle(
+      color: AppColors.universe.textComet.withValues(alpha: 0.65),
+      fontStyle: FontStyle.italic,
+      fontSize: 14,
+      height: 1.4,
+    );
+  }
+  return TextStyle(
+    color: isOnDevice ? AppColors.universe.textComet : AppColors.universe.textStarlight,
+    fontStyle: FontStyle.normal,
+    fontSize: 14,
+    height: 1.4,
+  );
+}
+
 class _RecordingStatusBadge extends StatelessWidget {
   const _RecordingStatusBadge({required this.phase});
 
@@ -2428,6 +2501,13 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
 
   static const double _bottomThresholdPx = 24;
 
+  /// これより短い省略区間には案内を出さない。[kAsrLivePreBufferSeconds]と
+  /// 同じ値にすること — ワーカー側がその秒数だけ音声をリングバッファで
+  /// 救っているため、これ未満の区間は「案内を省いている」のではなく
+  /// 「本当に何も欠けていない」。しきい値をこれより大きくすると、実際には
+  /// 音声が欠けているのに案内が出ない区間ができてしまう。
+  static const double _minGapNoticeSec = kAsrLivePreBufferSeconds;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -2457,11 +2537,47 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
         : onDeviceSegments
               .where((s) => s.timestampSec >= serverWatermark)
               .toList();
-    final combined = <(double, String, bool)>[
-      for (final s in sentences) (s.startSec, s.text, true),
-      for (final s in visibleOnDeviceSegments)
-        (s.timestampSec, s.text, s.isFinal),
-    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    // 節電のため端末側の文字起こしを止めていた区間。サーバー側が既に
+    // 追い越した(watermarkより手前で閉じている)区間は、もうテキストが
+    // 埋まっているのでプレースホルダを出す必要がない。
+    // 短すぎる区間(タブを一瞬だけ切り替えた等)もノイズになるので出さない。
+    final skippedGaps = ref
+        .watch(liveAsrStatusProvider.select((s) => s.gaps))
+        .where((gap) {
+          final end = gap.endSec;
+          if (end != null && end - gap.startSec < _minGapNoticeSec) return false;
+          if (serverWatermark == null) return true;
+          return end == null || end > serverWatermark;
+        })
+        .toList();
+
+    final combined =
+        <({double timeSec, String text, bool isFinal, bool isGap, bool isOnDevice})>[
+          for (final s in sentences)
+            (
+              timeSec: s.startSec,
+              text: s.text,
+              isFinal: true,
+              isGap: false,
+              isOnDevice: false,
+            ),
+          for (final s in visibleOnDeviceSegments)
+            (
+              timeSec: s.timestampSec,
+              text: s.text,
+              isFinal: s.isFinal,
+              isGap: false,
+              isOnDevice: true,
+            ),
+          for (final gap in skippedGaps)
+            (
+              timeSec: gap.startSec,
+              text: '',
+              isFinal: true,
+              isGap: true,
+              isOnDevice: false,
+            ),
+        ]..sort((a, b) => a.timeSec.compareTo(b.timeSec));
 
     void scrollToBottom() {
       if (!scrollController.hasClients) return;
@@ -2513,6 +2629,13 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
             ),
           ),
           Divider(height: 1, color: AppColors.universe.glassBorder),
+          // 文字起こしは数秒に一度しか増えないため、その間も動き続ける
+          // 「聞こえてるよ」の手がかりをテキストの上に常時出す。
+          if (phase == RecordingPhase.recording ||
+              phase == RecordingPhase.paused) ...[
+            LiveListeningIndicator(phase: phase),
+            Divider(height: 1, color: AppColors.universe.glassBorder),
+          ],
           Expanded(
             child: Stack(
               children: [
@@ -2548,12 +2671,12 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
                           separatorBuilder: (_, _) =>
                               const SizedBox(height: 14),
                           itemBuilder: (context, i) {
-                            final (sec, text, isFinal) = combined[i];
+                            final row = combined[i];
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _formatMmSs(sec.round()),
+                                  _formatMmSs(row.timeSec.round()),
                                   style: TextStyle(
                                     color: AppColors.universe.textComet,
                                     fontSize: 11,
@@ -2564,22 +2687,15 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
-                                    text,
-                                    // 未確定(まだendpoint検知前)の行は、確定行と
-                                    // 見た目で区別できるよう斜体+やや薄い色にする。
-                                    style: TextStyle(
-                                      color: isFinal
-                                          ? AppColors.universe.textStarlight
-                                          : AppColors.universe.textStarlight
-                                                .withValues(alpha: 0.6),
-                                      fontStyle: isFinal
-                                          ? FontStyle.normal
-                                          : FontStyle.italic,
-                                      fontSize: 14,
-                                      height: 1.4,
-                                    ),
-                                  ),
+                                  child: row.isGap
+                                      ? _SkippedGapNotice()
+                                      : Text(
+                                          row.text,
+                                          style: _liveTranscriptTextStyle(
+                                            isFinal: row.isFinal,
+                                            isOnDevice: row.isOnDevice,
+                                          ),
+                                        ),
                                 ),
                               ],
                             );

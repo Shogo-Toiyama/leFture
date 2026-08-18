@@ -6,11 +6,13 @@ import 'package:lefture/core/services/audio_record/audio_chunker.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
+import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
 import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/application/asr/live_asr_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
+import 'package:lefture/domain/entities/app_language.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -45,6 +47,14 @@ enum RealtimeToggleResult {
   /// クレジット残高が[kRealtimeMinCreditUsd]に満たない。
   insufficientCredits,
 }
+
+/// Flutter内部では録音言語の「自動判定」を[kAutoDetectLanguageCode]という
+/// 具体的な文字列コードとして扱う(通常の言語と同じ`String`型のまま、
+/// オンデバイスWhisperのモデル選択などの既存コードに`String?`を波及させ
+/// ないため)。一方DB/バックエンドは元々「未設定(null)なら自動判定」という
+/// 規約で統一されているので、書き込み境界(ローカルDB/Supabase)でだけ
+/// このコードをnullへ変換する。
+String? _dbRecordingLanguage(String code) => code == kAutoDetectLanguageCode ? null : code;
 
 /// PCM16bitデータから音量振幅 (0.0 〜 1.0) を算出する
 double _calculatePcmAudioLevel(Uint8List data) {
@@ -245,6 +255,9 @@ class RecordingController extends _$RecordingController {
         ref.read(liveAsrControllerProvider.notifier).start(
               recordingLanguage,
               initialOffsetSec: state.elapsedSeconds.toDouble(),
+              // 同じ録音セッションの続き。直前まで画面に出ていたオンデバイス
+              // 字幕を一時停止のたびに消してしまわないようにする。
+              preserveHistory: true,
             );
       }
 
@@ -302,7 +315,7 @@ class RecordingController extends _$RecordingController {
         presetTitle: state.title.isNotEmpty ? state.title : null,
         autoStartAnalysis: state.autoStartAnalysis,
         isRealtime: state.realtimeTranscribe,
-        recordingLanguage: recordingLanguage,
+        recordingLanguage: _dbRecordingLanguage(recordingLanguage),
         displayLanguage: displayLanguage,
       );
       DevLog.add('[StartSession] 5/8 draft lecture created: $lectureId');
@@ -701,19 +714,21 @@ class RecordingController extends _$RecordingController {
     _dbSubscription?.cancel();
 
     if (state.currentLectureId != null) {
-      await _recorder.cleanUpMasterAudioFiles(state.currentLectureId!);
+      final lectureId = state.currentLectureId!;
+      await _recorder.cleanUpMasterAudioFiles(lectureId);
 
-      // ローカルのジョブ/アセットは消してこれ以上チャンクが送られないようにする
-      // (Lecture本体はここでは消さない — 下のsoftDeleteLectureが読み出す必要があるため)。
-      await _repo.deleteLectureJobsAndAssets(state.currentLectureId!);
+      // 1. Supabase側の未完了ジョブをキャンセル
+      try {
+        await ref.read(jobRepositoryProvider).cancelJobsForLecture(lectureId: lectureId);
+      } catch (e) {
+        DevLog.add('⚠️ [CancelAndDiscard] ジョブキャンセルのエラー(無視可能): $e');
+      }
 
-      // Discard時点で、バックグラウンドのチャンクアップロード(UploadManager)が
-      // 既にSupabaseへ`lectures`行を作ってしまっている可能性がある(レース)。
-      // ハード削除ではなく、通常のTrash機能と同じ論理削除(deleted_at)を使う
-      // ことで、Outbox経由でその行にも`deleted_at`が届くようにする。
-      // 30日後には既存のリテンション処理(ローカル: LocalRetentionService /
-      // サーバー: /maintenance/patrol)が自動的に完全削除する。
-      await ref.read(lectureRepositoryProvider).softDeleteLecture(lectureId: state.currentLectureId!);
+      // 2. ローカルのジョブ/アセットを消してこれ以上チャンクが送られないようにする
+      await _repo.deleteLectureJobsAndAssets(lectureId);
+
+      // 3. 講義本体をローカルDBおよびSupabaseから完全物理削除(Hard Delete)
+      await ref.read(lectureRepositoryProvider).hardDeleteLecture(lectureId: lectureId);
     }
 
     // `RecordingState.idle()`はrealtimeTranscribe/autoStartAnalysisを常に
@@ -768,7 +783,7 @@ class RecordingController extends _$RecordingController {
         presetTitle: state.title.isNotEmpty ? state.title : null,
         autoStartAnalysis: state.autoStartAnalysis,
         isRealtime: false, // 外部ファイルは常にプレレコ
-        recordingLanguage: ref.read(recordingLanguageControllerProvider),
+        recordingLanguage: _dbRecordingLanguage(ref.read(recordingLanguageControllerProvider)),
         displayLanguage: ref.read(displayLanguageControllerProvider),
       );
       DevLog.add('[UploadAudioFile] 2/4 draft lecture created: $lectureId');
@@ -835,5 +850,44 @@ class RecordingController extends _$RecordingController {
   void clearTransientNotice() {
     if (state.transientNotice == null) return;
     state = state.copyWith(clearTransientNotice: true);
+  }
+
+  /// 録音言語を変更する。録音中(Recording中)に呼ばれた場合は、
+  /// ローカルDB/Supabaseの講義メタデータを更新し、Live ASRエンジンの
+  /// 再起動を行ってシームレスに新言語へ切り替える。
+  Future<void> updateRecordingLanguage(String newLanguageCode) async {
+    await ref.read(recordingLanguageControllerProvider.notifier).setLanguage(newLanguageCode);
+
+    final lectureId = state.currentLectureId;
+    if (lectureId != null) {
+      // 1. ローカルDBとSupabaseの講義メタデータを新言語に更新
+      final dbLanguage = _dbRecordingLanguage(newLanguageCode);
+      await _repo.updateLectureRecordingLanguage(lectureId, dbLanguage);
+      try {
+        await supabase.from('lectures').update({
+          'recording_language': dbLanguage,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', lectureId);
+      } catch (e) {
+        DevLog.add('⚠️ [RecordingController] Failed to sync updated recording_language to Supabase: $e');
+      }
+    }
+
+    // 2. 録音中かつリアルタイム文字起こしが有効なら、Live ASRエンジンを安全に引き継ぎ再起動
+    if ((state.phase == RecordingPhase.recording || state.phase == RecordingPhase.paused) &&
+        state.realtimeTranscribe) {
+      final liveAsrNotifier = ref.read(liveAsrControllerProvider.notifier);
+      final currentSec = liveAsrNotifier.currentAudioSec;
+      await liveAsrNotifier.stop();
+      if (state.phase == RecordingPhase.recording) {
+        await liveAsrNotifier.start(
+          newLanguageCode,
+          initialOffsetSec: currentSec > 0 ? currentSec : state.elapsedSeconds.toDouble(),
+          // 言語を変えただけで、録音セッション自体は続いている。
+          // 切り替え前までのオンデバイス字幕を消してはいけない。
+          preserveHistory: true,
+        );
+      }
+    }
   }
 }

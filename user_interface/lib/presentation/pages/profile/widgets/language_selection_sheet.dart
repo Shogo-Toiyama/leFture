@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/recording_controller.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
-import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/domain/entities/app_language.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
-import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
-import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 enum LanguageSheetMode { recording, display }
@@ -139,11 +135,8 @@ class LanguageSelectionSheet extends ConsumerWidget {
                       if (!isSelected) {
                         if (isRecording) {
                           await ref
-                              .read(recordingLanguageControllerProvider.notifier)
-                              .setLanguage(lang.code);
-                          if (context.mounted) {
-                            await _maybeDownloadForNewLanguage(context, ref, lang);
-                          }
+                              .read(recordingControllerProvider.notifier)
+                              .updateRecordingLanguage(lang.code);
                         } else {
                           await ref
                               .read(displayLanguageControllerProvider.notifier)
@@ -165,46 +158,8 @@ class LanguageSelectionSheet extends ConsumerWidget {
   }
 }
 
-/// 録音言語を変更した直後、Realtime Recordingが有効でその言語のモデルが
-/// まだ無い場合に、ダウンロードするかどうかをユーザーに確認する。
-/// 「ダウンロードしない」を選んだ場合はRealtime Recording自体をOFFにする
-/// (モデルが無いままONにしていても意味が無いため)。Realtime自体が無効なら
-/// 何もしない(無駄な自動ダウンロードを避ける)。
-Future<void> _maybeDownloadForNewLanguage(
-  BuildContext context,
-  WidgetRef ref,
-  AppLanguage lang,
-) async {
-  if (!RecordingPreferences().getRealtimeTranscribe()) return;
 
-  final modelState = ref.read(asrModelManagerProvider.notifier).statusForLanguage(lang.code);
-  // 既に手元にある/取得が進行中なら何もしなくてよい。
-  if (modelState.installed ||
-      modelState.status == AsrModelStatus.downloading ||
-      modelState.status == AsrModelStatus.checking) {
-    return;
-  }
-
-  final confirmed = await showCustomDialog(
-    context: context,
-    title: 'Speech model required',
-    message:
-        "Download the on-device speech model for ${lang.englishName}? If you skip, Realtime transcribe will be turned off.",
-    confirmLabel: 'Download',
-    cancelLabel: 'Turn off',
-    icon: Icons.download_rounded,
-  );
-
-  if (confirmed == true) {
-    if (context.mounted) {
-      await ensureAsrModelWithErrorDialog(context, ref, lang.code);
-    }
-  } else {
-    await ref.read(recordingControllerProvider.notifier).setRealtimeTranscribe(false);
-  }
-}
-
-class _LanguageTile extends StatelessWidget {
+class _LanguageTile extends ConsumerWidget {
   const _LanguageTile({
     required this.language,
     required this.isSelected,
@@ -216,7 +171,11 @@ class _LanguageTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final displayLangCode = ref.watch(displayLanguageControllerProvider);
+    final mainTitle = language.getNativeName(displayLangCode);
+    final subTitle = language.localizedName(displayLangCode);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -229,7 +188,7 @@ class _LanguageTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    language.nativeName,
+                    mainTitle,
                     style: TextStyle(
                       color: isSelected
                           ? AppColors.starGold
@@ -239,14 +198,16 @@ class _LanguageTile extends StatelessWidget {
                           isSelected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    language.englishName,
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 12,
+                  if (subTitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subTitle,
+                      style: TextStyle(
+                        color: AppColors.universe.textComet,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

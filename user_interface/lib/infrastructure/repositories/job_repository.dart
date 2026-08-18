@@ -279,4 +279,22 @@ class JobRepository {
       );
     }
   }
+
+  /// ユーザーの未完了ジョブ (status == PENDING または RUNNING) が存在するかを調べる。
+  Future<bool> hasActiveProcessingJobs(String userId) async {
+    try {
+      final response = await _supabase
+          .from('processing_jobs')
+          .select('id')
+          .eq('user_id', userId)
+          .inFilter('status', ['PENDING', 'RUNNING'])
+          .limit(1)
+          .timeout(networkTimeout);
+      return (response as List).isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
 }
+

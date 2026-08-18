@@ -13,6 +13,63 @@ class AppLanguage {
   final String nativeName;
   final String englishName;
 
+  /// メインタイトル（上の文字）を返します。
+  /// [kAutoDetectLanguageCode] ('auto') の場合、表示言語に応じて「自動判定」や「Auto-detect」を返します。
+  String getNativeName(String displayLanguageCode) {
+    if (code == kAutoDetectLanguageCode) {
+      if (displayLanguageCode == 'ja') {
+        return '自動判定';
+      }
+      return 'Auto-detect';
+    }
+    return nativeName;
+  }
+
+  /// 現在の表示言語 [displayLanguageCode] ('ja', 'en' など) に応じたサブテキスト（下の文字）を返します。
+  /// 'auto' の場合は全体の見た目・高さを揃えるため、複数言語録音用の説明文を返します。
+  String? localizedName(String displayLanguageCode) {
+    if (code == kAutoDetectLanguageCode) {
+      if (displayLanguageCode == 'ja') {
+        return '複数言語が混ざる講義を録音する場合に選択';
+      }
+      return 'Use when multiple languages are spoken in class';
+    }
+
+    if (displayLanguageCode == 'ja') {
+      switch (code) {
+        case 'en':
+          return '英語';
+        case 'ja':
+          return '日本語';
+        case 'fr':
+          return 'フランス語';
+        case 'es':
+          return 'スペイン語';
+        case 'de':
+          return 'ドイツ語';
+        case 'zh':
+          return '中国語';
+        case 'yue':
+          return '広東語';
+        case 'ko':
+          return '韓国語';
+        case 'pt':
+          return 'ポルトガル語';
+        case 'it':
+          return 'イタリア語';
+        case 'ru':
+          return 'ロシア語';
+        case 'ar':
+          return 'アラビア語';
+        case 'hi':
+          return 'ヒンディー語';
+        default:
+          return englishName;
+      }
+    }
+    return englishName;
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is AppLanguage && other.code == code);
@@ -27,8 +84,20 @@ const List<AppLanguage> kDisplayLanguages = [
   AppLanguage(code: 'ja', nativeName: '日本語', englishName: 'Japanese'),
 ];
 
+/// 録音言語の「自動判定」を表す予約コード。選択すると、サーバー側
+/// (Cloudflare/Modal Whisper)にもオンデバイスWhisperにも特定の言語を
+/// 強制せず、Whisper自身の言語判定に任せる。lectures.recording_languageは
+/// このコードではなくnullとして保存される(バックエンド側は元々「未設定
+/// ならWhisperの自動判定に任せる」という規約で統一されているため)。
+const String kAutoDetectLanguageCode = 'auto';
+
 /// 録音・文字起こしに対応している言語一覧
 const List<AppLanguage> kRecordingLanguages = [
+  AppLanguage(
+    code: kAutoDetectLanguageCode,
+    nativeName: 'Auto-detect',
+    englishName: 'Auto-detect',
+  ),
   AppLanguage(code: 'en', nativeName: 'English', englishName: 'English'),
   AppLanguage(code: 'ja', nativeName: '日本語', englishName: 'Japanese'),
   AppLanguage(code: 'fr', nativeName: 'Français', englishName: 'French'),

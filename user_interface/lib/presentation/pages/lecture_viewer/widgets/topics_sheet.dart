@@ -180,7 +180,8 @@ class _TopicTile extends ConsumerWidget {
       }
       for (final t in allTopics) {
         if (t.index == topic.index) break;
-        firstCardIndex += (sortedCardsMap[t.index]?.length ?? 0);
+        // 各トピックには 表紙カード(1枚) + コンテンツカード(cards.length) が存在するため 1 + length で加算
+        firstCardIndex += 1 + (sortedCardsMap[t.index]?.length ?? 0);
       }
     }
 

@@ -70,12 +70,14 @@ class TutorialAnnouncement {
   const TutorialAnnouncement({
     required this.id,
     required this.type,
-    required this.content,
+    required this.title,
+    this.description,
   });
 
   final String id;
-  final String type; // 'TODO' | 'INFO'
-  final String content;
+  final String type; // 'TODO' | 'INFO' | 'HINT' | 'EVENT'
+  final String title;
+  final String? description;
 }
 
 class TutorialKeyword {

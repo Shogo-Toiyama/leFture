@@ -21,6 +21,7 @@ import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.da
 import 'package:lefture/presentation/pages/course/widgets/course_details_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/application/recording/recording_controller.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
@@ -621,6 +622,11 @@ class _CourseLectureListView extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Icon(
+                                Icons.chevron_left,
+                                color: themeColor,
+                                size: 22,
+                              ),
                               Flexible(
                                 child: Text(
                                   l10n.coursePageBackToCoursesLabel,
@@ -632,11 +638,6 @@ class _CourseLectureListView extends ConsumerWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              Icon(
-                                Icons.chevron_right,
-                                color: themeColor,
-                                size: 22,
                               ),
                             ],
                           ),
@@ -1051,6 +1052,24 @@ class _CourseLectureListView extends ConsumerWidget {
                             );
                           },
                           onDelete: () async {
+                            final recordingState = ref.read(recordingControllerProvider);
+                            if (recordingState.isRecording &&
+                                recordingState.currentLectureId == lectures[index].id) {
+                              await showDialog<void>(
+                                context: context,
+                                builder: (context) => const CustomDialog(
+                                  title: '録音中の講義は削除できません',
+                                  message:
+                                      'この講義は現在録音中です。削除する場合は、録音画面から録音を保存または破棄してください。',
+                                  confirmLabel: 'OK',
+                                  cancelLabel: null,
+                                  icon: Icons.mic_off_rounded,
+                                  iconColor: Colors.amber,
+                                ),
+                              );
+                              return;
+                            }
+
                             await ref
                                 .read(lectureControllerProvider.notifier)
                                 .deleteLecture(

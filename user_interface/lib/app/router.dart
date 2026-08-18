@@ -36,7 +36,6 @@ import 'package:lefture/presentation/pages/contact/contact_page.dart';
 import 'package:lefture/presentation/pages/profile/permissions_settings_page.dart';
 import 'package:lefture/presentation/pages/course/course_page.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/lecture_viewer_page.dart';
-import 'package:lefture/presentation/pages/review_cards/review_cards_dashboard_page.dart';
 import 'package:lefture/presentation/pages/review_cards/review_cards_viewer_page.dart';
 import 'package:lefture/presentation/pages/deep_notes/deep_notes_list_page.dart';
 import 'package:lefture/presentation/pages/deep_notes/deep_notes_detail_page.dart';
@@ -455,15 +454,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                         },
                       ),
                     ],
-                  ),
-
-                  // Review Cards: /home/notes/c/:courseId/rc/:lectureId
-                  GoRoute(
-                    path: AppRoutes.reviewCardsDashboard, // 'rc/:lectureId'
-                    builder: (context, state) {
-                      final id = state.pathParameters['lectureId']!;
-                      return ReviewCardsDashboardPage(lectureId: id);
-                    },
                   ),
 
                   // Review Cards Viewer: /home/notes/c/:courseId/rcv/:lectureId

@@ -684,6 +684,41 @@
     "description": "Header title of the live transcript card on the Recording page's Live tab."
   },
 
+  "recordingLiveListeningLabel": "Listening",
+  "@recordingLiveListeningLabel": {
+    "description": "Status shown next to the mic level meter on the Live tab while the voice detector hears someone speaking."
+  },
+
+  "recordingLiveWaitingForSpeechLabel": "Waiting for speech",
+  "@recordingLiveWaitingForSpeechLabel": {
+    "description": "Status shown next to the mic level meter on the Live tab while recording is running but nobody is speaking yet."
+  },
+
+  "recordingLivePausedLabel": "Paused",
+  "@recordingLivePausedLabel": {
+    "description": "Status shown next to the mic level meter on the Live tab while the recording is paused."
+  },
+
+  "recordingLivePreparingLabel": "Getting ready...",
+  "@recordingLivePreparingLabel": {
+    "description": "Status shown next to the mic level meter on the Live tab before the on-device speech engine has finished starting up."
+  },
+
+  "recordingLiveTranscribingLabel": "Transcribing",
+  "@recordingLiveTranscribingLabel": {
+    "description": "Label shown beside a small spinner on the Live tab while the on-device engine is decoding audio into text."
+  },
+
+  "recordingLiveDroppedNotice": "This device couldn't keep up, so part of the live text is missing. The full transcript will still arrive after the recording.",
+  "@recordingLiveDroppedNotice": {
+    "description": "Warning on the Live tab shown when the on-device engine had to discard audio it could not transcribe in time, reassuring the user that the server-side transcript is unaffected."
+  },
+
+  "recordingLiveSkippedGapNotice": "Live text was paused here to save battery. The full transcript arrives in about a minute.",
+  "@recordingLiveSkippedGapNotice": {
+    "description": "Placeholder shown inline in the Live tab transcript for a time range where on-device transcription was intentionally paused (Live tab not visible or app backgrounded). Reassures the user that recording never stopped and the server-side transcript will fill the gap in."
+  },
+
   "recordingWaitingForAudio": "Waiting for audio...",
   "@recordingWaitingForAudio": {
     "description": "Placeholder text inside the live transcript panel when recording has started but no speech has been transcribed yet."
@@ -3050,6 +3085,23 @@
   "reviewCardsViewerNavigationHint": "Tap left / right  •  Swipe to change topic",
   "@reviewCardsViewerNavigationHint": {
     "description": "Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, swiping moves between whole topics. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator."
+  },
+
+  "reviewCardTypeHook": "Hook",
+  "@reviewCardTypeHook": {
+    "description": "Label for Review Card 'Hook' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: つかみ)."
+  },
+  "reviewCardTypeCoreWhy": "Core Why",
+  "@reviewCardTypeCoreWhy": {
+    "description": "Label for Review Card 'Core Why' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: 重要ポイント)."
+  },
+  "reviewCardTypeGotcha": "Gotcha",
+  "@reviewCardTypeGotcha": {
+    "description": "Label for Review Card 'Gotcha' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: ひらめき)."
+  },
+  "reviewCardTypeNextAction": "Next Action",
+  "@reviewCardTypeNextAction": {
+    "description": "Label for Review Card 'Next Action' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: 次のアクション)."
   },
 
   "aiDisclaimerText": "* AI-generated content may contain inaccuracies",

@@ -7,7 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 // import 'package:go_router/go_router.dart';
-// import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/domain/entities/credit_summary.dart';
 import 'package:lefture/domain/entities/credit_usage_item.dart';
@@ -19,13 +19,11 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 /// タイルから遷移してくる。追加クレジット購入・履歴表示は今はUIだけ用意し、
 /// 実際の購入導線(store_purchase)はまだ無いので全て無効化しておく。
 ///
-/// 更新方法は3つ: (1) このページを開いている間は自動で定期的に再取得
+/// 更新方法は3つ: (1) このページを開いている間は自動で定期的に再取得 (5秒間隔ポーリング)
 /// (処理中のジョブがある間、消費されていく様子が見えるように)、
 /// (2) Pull-to-refresh、(3) AppBarの更新ボタン。
 class CreditDetailPage extends HookConsumerWidget {
   const CreditDetailPage({super.key});
-
-  static const _autoRefreshInterval = Duration(seconds: 20);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,20 +31,13 @@ class CreditDetailPage extends HookConsumerWidget {
     final summaryAsync = ref.watch(creditSummaryProvider);
 
     useEffect(() {
-      final timer = Timer.periodic(_autoRefreshInterval, (_) {
-        ref.invalidate(creditSummaryProvider);
-        ref.invalidate(creditUsageHistoryProvider);
-      });
-      return timer.cancel;
+      final service = ref.read(creditPollingProvider);
+      service.startPagePolling();
+      return service.stopPagePolling;
     }, const []);
 
     Future<void> handleRefresh() async {
-      ref.invalidate(creditSummaryProvider);
-      ref.invalidate(creditUsageHistoryProvider);
-      await Future.wait([
-        ref.read(creditSummaryProvider.future),
-        ref.read(creditUsageHistoryProvider.future),
-      ]);
+      await ref.read(creditPollingProvider).refreshCreditData();
     }
 
     return Scaffold(
@@ -66,8 +57,7 @@ class CreditDetailPage extends HookConsumerWidget {
                 icon: const Icon(Icons.refresh_rounded, color: Color(0xFFF2F2F2)),
                 tooltip: l10n.creditDetailRefreshTooltip,
                 onPressed: () {
-                  ref.invalidate(creditSummaryProvider);
-                  ref.invalidate(creditUsageHistoryProvider);
+                  ref.read(creditPollingProvider).invalidateCreditData();
                 },
               ),
             ],
@@ -92,7 +82,7 @@ class CreditDetailPage extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
-                      onPressed: () => ref.invalidate(creditSummaryProvider),
+                      onPressed: () => ref.read(creditPollingProvider).invalidateCreditData(),
                       child: Text(l10n.creditDetailRetryButton),
                     ),
                   ],

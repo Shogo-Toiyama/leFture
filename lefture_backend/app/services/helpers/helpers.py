@@ -2,6 +2,7 @@ import re
 import json
 import hashlib
 import uuid
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -710,30 +711,65 @@ def _resolve_language_name(code: str | None) -> str | None:
     return _LANGUAGE_CODE_TO_NAME.get(code, code)
 
 
+def _majority_detected_language(supabase, lecture_id: str) -> str | None:
+    """
+    リアルタイム講義の実際のトランスクリプト言語を、チャンクごとに保存された
+    lecture_transcripts.detected_languageの多数決で解決する。1チャンクだけ誤検出
+    しても(短い/ノイズの多いチャンクでは起こり得る)講義全体の判定がブレないように、
+    最頻値を採用する。
+    """
+    rows_res = supabase.table("lecture_transcripts")\
+        .select("detected_language")\
+        .eq("lecture_id", lecture_id)\
+        .execute()
+    codes = [r["detected_language"] for r in (rows_res.data or []) if r.get("detected_language")]
+    if not codes:
+        return None
+    return Counter(codes).most_common(1)[0][0]
+
+
 def _get_content_language_context(lecture_id: str) -> tuple[str, str, bool]:
     """
     コンテンツ生成タスク(Core Extraction, Review Cards, Deep Notesなど)向けに、
     「何語で書くか(content_language)」と「トランスクリプトの原語(transcript_language)」
     を解決します。
 
-    - content_language: lectures.display_language が優先。無ければ
-      lectures.recording_language、それも無ければ "English" にフォールバックする
-      (Flutter側 app_database.dart のコメント通りの設計)。
-    - is_bilingual: 表示言語と録音言語が実際に異なり、専門用語の原語併記が必要なケースかどうか。
+    - content_language: lectures.display_language が優先。無ければ後述の
+      transcript_languageにフォールバックする(Flutter側 app_database.dart の
+      コメント通りの設計)。
+    - transcript_language: 実際にWhisperが検出した言語を優先する
+      (lectures.detected_recording_language、無ければ
+      lecture_transcriptsの多数決)。ユーザーが選んだ(または選ばなかった)
+      recording_languageは、実際の音声内容と食い違うことがある
+      (選択ミス、日英混在の授業、録音言語「自動判定」など)ため、
+      あくまで検出結果が無い場合の最終フォールバックとしてのみ使う。
+    - is_bilingual: 表示言語と実際のトランスクリプト言語が異なり、
+      専門用語の原語併記が必要なケースかどうか。
     """
     supabase = get_supabase_client()
 
-    lec_res = supabase.table("lectures").select("recording_language, display_language").eq("id", lecture_id).single().execute()
+    lec_res = supabase.table("lectures")\
+        .select("recording_language, display_language, detected_recording_language")\
+        .eq("id", lecture_id).single().execute()
     if not lec_res.data:
         return "English", "English", False
 
-    recording_code = lec_res.data.get("recording_language")
     display_code = lec_res.data.get("display_language")
 
-    transcript_language = _resolve_language_name(recording_code) or "English"
+    # 実際に検出された言語を優先する。プレレコはlectures側に1値、
+    # リアルタイムはlecture_transcripts側にチャンクごとの値がある。
+    detected_code = lec_res.data.get("detected_recording_language")
+    if not detected_code:
+        detected_code = _majority_detected_language(supabase, lecture_id)
+
+    # 検出結果がまだ無い(文字起こし前、または取得失敗)場合のみ、
+    # ユーザーが選んだrecording_languageにフォールバックする。
+    transcript_code = detected_code or lec_res.data.get("recording_language")
+
+    transcript_language = _resolve_language_name(transcript_code) or "English"
     content_language = _resolve_language_name(display_code) or transcript_language
 
-    is_bilingual = bool(recording_code) and bool(display_code) and recording_code != display_code
+    is_bilingual = bool(transcript_code) and bool(display_code) and transcript_code != display_code
 
     return content_language, transcript_language, is_bilingual
 

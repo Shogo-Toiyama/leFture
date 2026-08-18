@@ -185,6 +185,17 @@ class RecordingRepositoryDrift {
         .watchSingleOrNull();
   }
 
+  /// 講義の録音言語(recordingLanguage)をローカルDBで更新する。
+  /// [languageCode]がnullなら「自動判定」(未設定)として保存する。
+  Future<void> updateLectureRecordingLanguage(String lectureId, String? languageCode) async {
+    await (db.update(db.localLectures)..where((t) => t.id.equals(lectureId))).write(
+      LocalLecturesCompanion(
+        recordingLanguage: Value(languageCode),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Stream<List<LocalLectureAsset>> watchLectureAssets(String lectureId) {
     return (db.select(db.localLectureAssets)
           ..where((t) => t.lectureId.equals(lectureId))

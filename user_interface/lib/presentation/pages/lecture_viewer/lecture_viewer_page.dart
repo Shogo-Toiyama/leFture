@@ -480,6 +480,11 @@ class _LectureViewerBody extends HookConsumerWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                Icon(
+                                  Icons.chevron_left,
+                                  color: themeColor,
+                                  size: 22,
+                                ),
                                 Flexible(
                                   child: Text(
                                     course?.displayTitle ?? l10n.coursePageTitle,
@@ -491,11 +496,6 @@ class _LectureViewerBody extends HookConsumerWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                Icon(
-                                  Icons.chevron_right,
-                                  color: themeColor,
-                                  size: 22,
                                 ),
                               ],
                             ),

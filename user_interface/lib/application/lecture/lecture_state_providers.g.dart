@@ -64,7 +64,7 @@ final class LectureStateProvider
   }
 }
 
-String _$lectureStateHash() => r'a242d510d81290b1704eb4f411a81920b4fff4e2';
+String _$lectureStateHash() => r'b3023137e9794b331a2e288513f46f47f074df0d';
 
 final class LectureStateFamily extends $Family
     with $FunctionalFamilyOverride<Stream<LectureUIState>, String> {

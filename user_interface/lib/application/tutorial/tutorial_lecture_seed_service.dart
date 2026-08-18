@@ -30,7 +30,7 @@ class TutorialLectureSeedService {
   final AppDatabase _db;
 
   static const _uuid = Uuid();
-  static const int kTutorialVersion = 5;
+  static const int kTutorialVersion = 9;
 
   /// 既定コース(DefaultCourseServiceが確保する、チュートリアル講義兼メモ用の
   /// 常設コース)のタイトル。チュートリアル文言と同じ言語マップから引くことで
@@ -231,14 +231,16 @@ class TutorialLectureSeedService {
     final threshold = lecture.createdAt.add(const Duration(minutes: 1));
     if (!rows.any((r) => r.createdAt.isAfter(threshold))) return;
 
-    // tutorial_content上の定義順(`ann_1`, `ann_2`, ...)を保って振り直す。
+    // tutorial_content上の定義順(`ann_1`, `ann_2`, ...)で降順ソート時に上から
+    // 並ぶよう、先頭のものほど新しい時刻(total - i 秒後)を設定する。
     final ordered = [...rows]..sort((a, b) => a.id.compareTo(b.id));
-    for (var i = 0; i < ordered.length; i++) {
+    final total = ordered.length;
+    for (var i = 0; i < total; i++) {
       await (_db.update(_db.localAnnouncements)
             ..where((t) => t.id.equals(ordered[i].id) & t.userId.equals(userId)))
           .write(
         LocalAnnouncementsCompanion(
-          createdAt: Value(lecture.createdAt.add(Duration(seconds: i))),
+          createdAt: Value(lecture.createdAt.add(Duration(seconds: total - i))),
         ),
       );
     }
@@ -343,10 +345,11 @@ class TutorialLectureSeedService {
       updatedAt: now,
     );
 
-    // 3件が同一時刻だとチュートリアル内での並び順まで不定になるため、
-    // 定義順に1秒ずつずらして固定する(講義内一覧は昇順=ann_1が先頭)。
+    // 降順ソートされる一覧で上から ann_1, ann_2, ann_3 の順で並ぶよう、
+    // 先頭(i=0)のものほど新しい時刻(total - i 秒後)をセットする。
+    final total = content.announcements.length;
     final announcementCompanions = <LocalAnnouncementsCompanion>[];
-    for (var i = 0; i < content.announcements.length; i++) {
+    for (var i = 0; i < total; i++) {
       final a = content.announcements[i];
       announcementCompanions.add(
         LocalAnnouncementsCompanion.insert(
@@ -354,8 +357,9 @@ class TutorialLectureSeedService {
           userId: userId,
           lectureId: lectureId,
           type: a.type,
-          title: a.content,
-          createdAt: Value(announcementBaseAt.add(Duration(seconds: i))),
+          title: a.title,
+          description: Value(a.description),
+          createdAt: Value(announcementBaseAt.add(Duration(seconds: total - i))),
           updatedAt: Value(now),
         ),
       );

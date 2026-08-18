@@ -243,34 +243,55 @@ class CustomAppBar extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 左側と右側の要素
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // 左: ホームボタン + 録音チップ (リアルタイムで同期)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (showHomeButton) ...[
-                    GestureDetector(
-                      onTap: onHomeTap ?? () => context.go(AppRoutes.home),
-                      onLongPress: () => _showNavigationStack(context, ref),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Icon(Icons.home, color: iconColor),
+      child: SizedBox(
+        height: 40,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // 左側と右側の要素
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // 左: ホームボタン + 録音チップ (リアルタイムで同期)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRect(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOutCubic,
+                        width: showHomeButton ? 48.0 : 0.0,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: showHomeButton ? 1.0 : 0.0,
+                          child: OverflowBox(
+                            minWidth: 48,
+                            maxWidth: 48,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: onHomeTap ?? () => context.go(AppRoutes.home),
+                                  onLongPress: () => _showNavigationStack(context, ref),
+                                  child: MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Icon(Icons.home, color: iconColor),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const RecordingTimerChip(),
                   ],
-                  const RecordingTimerChip(),
-                ],
-              ),
+                ),
 
               // 右: プロフィール & クレジット残量 (および追加アクションボタン)
               Row(
@@ -343,6 +364,7 @@ class CustomAppBar extends ConsumerWidget {
             ),
         ],
       ),
+    ),
     );
   }
 }

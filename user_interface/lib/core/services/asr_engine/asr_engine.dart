@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'asr_engine_status.dart';
 import 'asr_live_segment.dart';
 
 /// オンデバイスASRエンジンの共通インターフェース。
@@ -18,8 +19,12 @@ abstract class AsrEngine {
   /// ズレないようにするため)。
   void setDecodingPaused(bool paused);
 
-  /// 確定した発話セグメントのテキスト。
+  /// 認識された発話セグメントのテキスト。[AsrLiveSegment.isFinal]がfalseの
+  /// ものは暫定(後からより長い文脈で再認識され、同じ区間が上書きされる)。
   Stream<AsrLiveSegment> get segments;
+
+  /// 稼働状況。値が変わった時だけ流れる(毎フレームは流れない)。
+  Stream<AsrEngineStatus> get status;
 
   Future<void> dispose();
 }

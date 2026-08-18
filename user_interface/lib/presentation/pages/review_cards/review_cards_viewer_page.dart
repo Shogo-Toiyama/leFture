@@ -202,6 +202,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     );
     final currentCardIndex = useState<int>(initialIndex);
     final previousCardIndex = useState<int>(initialIndex);
+    final lastBackwardJumpIndex = useState<int?>(null); // 戻る用履歴 (進むスワイプ時に記録)
+    final lastForwardJumpIndex = useState<int?>(null);  // 進む用履歴 (戻るスワイプ時に記録)
     final isAnimating = useState<bool>(false);
     final isGoingForward = useState<bool>(true);
 
@@ -1007,23 +1009,48 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                             if (hasSelection.value) return;
                             if (details.primaryVelocity == null) return;
                             if (details.primaryVelocity! < -300) {
-                              if (currentGroupIndex < groups.length - 1) {
-                                navigateTo(
-                                  groupStartIndex[currentGroupIndex + 1],
-                                );
+                              // 【右から左へスワイプ (進む)】
+                              if (lastForwardJumpIndex.value != null &&
+                                  lastForwardJumpIndex.value! > currentCardIndex.value) {
+                                // 直前の「戻るスワイプ」で離れた元のカード位置へ一発復帰
+                                final targetIndex = lastForwardJumpIndex.value!;
+                                lastForwardJumpIndex.value = null; // 履歴を消費
+                                navigateTo(targetIndex);
+                              } else {
+                                // 通常の次トピック跳躍
+                                if (currentGroupIndex < groups.length - 1) {
+                                  lastBackwardJumpIndex.value = currentCardIndex.value; // 戻る履歴に現在地を記録
+                                  lastForwardJumpIndex.value = null; // 進む履歴はクリア
+                                  navigateTo(
+                                    groupStartIndex[currentGroupIndex + 1],
+                                  );
+                                }
                               }
                             } else if (details.primaryVelocity! > 300) {
-                              final currentTopicCoverIndex =
-                                  groupStartIndex[currentGroupIndex];
-                              if (currentCardIndex.value >
-                                  currentTopicCoverIndex) {
-                                // Jump to the cover of the current topic if we are on a content card
-                                navigateTo(currentTopicCoverIndex);
-                              } else if (currentGroupIndex > 0) {
-                                // Jump to the cover of the previous topic only if we are already on the current cover
-                                navigateTo(
-                                  groupStartIndex[currentGroupIndex - 1],
-                                );
+                              // 【左から右へスワイプ (戻る)】
+                              if (lastBackwardJumpIndex.value != null &&
+                                  lastBackwardJumpIndex.value! < currentCardIndex.value) {
+                                // 直前の「進むスワイプ」で離れた元のカード位置へ一発復帰
+                                final targetIndex = lastBackwardJumpIndex.value!;
+                                lastBackwardJumpIndex.value = null; // 履歴を消費
+                                lastForwardJumpIndex.value = currentCardIndex.value; // 進む履歴に離れる現在地を記録
+                                navigateTo(targetIndex);
+                              } else {
+                                final currentTopicCoverIndex =
+                                    groupStartIndex[currentGroupIndex];
+                                // 戻る跳躍をする前の現在位置を進む履歴に記録
+                                lastForwardJumpIndex.value = currentCardIndex.value;
+
+                                if (currentCardIndex.value >
+                                    currentTopicCoverIndex) {
+                                  // コンテンツカードにいる場合は現在のトピックの表紙へ
+                                  navigateTo(currentTopicCoverIndex);
+                                } else if (currentGroupIndex > 0) {
+                                  // 既に表紙にいる場合は前のトピックの表紙へ
+                                  navigateTo(
+                                    groupStartIndex[currentGroupIndex - 1],
+                                  );
+                                }
                               }
                             }
                           },
@@ -1438,6 +1465,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                     );
                                   }
                                   final card = group.cards[tileIdx - 1];
+                                  final typeColor = reviewCardTypeColor(
+                                    card.cardType,
+                                  );
                                   final preview =
                                       card.title?.trim().isNotEmpty == true
                                       ? card.title!.trim()
@@ -1470,9 +1500,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                         ),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.07,
+                                          color: typeColor.withValues(
+                                            alpha: 0.45,
                                           ),
+                                          width: 1.5,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
@@ -1607,6 +1638,37 @@ class _CoverCard extends StatelessWidget {
   }
 }
 
+Color reviewCardTypeColor(String? cardType) {
+  switch (cardType?.toLowerCase()) {
+    case 'hook':
+      return const Color(0xFFFFB300);
+    case 'core_why':
+      return const Color(0xFF42A5F5);
+    case 'gotcha':
+      return const Color(0xFFFF9A3D);
+    case 'next_action':
+      return const Color(0xFFB98BFF);
+    default:
+      return const Color(0xFFFFB300);
+  }
+}
+
+String reviewCardTypeLabel(BuildContext context, String? cardType) {
+  final l10n = AppLocalizations.of(context);
+  switch (cardType?.toLowerCase()) {
+    case 'hook':
+      return l10n.reviewCardTypeHook;
+    case 'core_why':
+      return l10n.reviewCardTypeCoreWhy;
+    case 'gotcha':
+      return l10n.reviewCardTypeGotcha;
+    case 'next_action':
+      return l10n.reviewCardTypeNextAction;
+    default:
+      return 'Review Card';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Content card
 // ---------------------------------------------------------------------------
@@ -1639,6 +1701,9 @@ class _ContentCard extends StatelessWidget {
         ? AssetImage(imagePath!)
         : (imageFile != null ? FileImage(imageFile!) : null);
 
+    final typeColor = reviewCardTypeColor(card.cardType);
+    final typeLabel = reviewCardTypeLabel(context, card.cardType);
+
     final blocks = Column(
       children: card.cardContent
           .asMap()
@@ -1649,10 +1714,6 @@ class _ContentCard extends StatelessWidget {
               child: _ReviewCardBlockView(
                 block: entry.value,
                 themeColor: themeColor,
-                // temporaryHighlightと範囲が重なる本物の注釈は除外する。除外しないと
-                // 同じ範囲に2つの注釈(本物のnote + プレビュー用ダミー)が競合し、
-                // どちらが実際に描画されるかがソート順次第で不定になってしまう
-                // (MarkdownAnnotationBuilderは重なる注釈の後勝ちを保証しないため)。
                 annotations: [
                   ...card.annotations.where((a) {
                     if (a.blockIdx != entry.key) return false;
@@ -1675,7 +1736,12 @@ class _ContentCard extends StatelessWidget {
     );
 
     final content = SingleChildScrollView(
-      padding: EdgeInsets.all(hasImage ? 20 : 28),
+      padding: EdgeInsets.fromLTRB(
+        hasImage ? 20 : 28,
+        hasImage ? 20 : 28,
+        hasImage ? 20 : 28,
+        hasImage ? 44 : 52,
+      ),
       child: Column(
         children: [
           SelectionContainer.disabled(
@@ -1713,6 +1779,68 @@ class _ContentCard extends StatelessWidget {
       ),
     );
 
+    final paperColor = AppColors.paper.surface;
+
+    Widget buildFooterDecoration(double bottomRadius) {
+      return IgnorePointer(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(bottomRadius),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  paperColor.withValues(alpha: 0.0),
+                  Color.lerp(paperColor, typeColor, 0.08)!.withValues(alpha: 0.70),
+                  Color.lerp(paperColor, typeColor, 0.18)!.withValues(alpha: 0.95),
+                  Color.lerp(paperColor, typeColor, 0.28)!,
+                ],
+                stops: const [0.0, 0.35, 0.70, 1.0],
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: typeColor.withValues(alpha: 0.45),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: SelectionContainer.disabled(
+                    child: Text(
+                      typeLabel,
+                      style: TextStyle(
+                        color: typeColor,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: typeColor.withValues(alpha: 0.45),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     if (!hasImage) {
       return Container(
         decoration: BoxDecoration(
@@ -1735,7 +1863,16 @@ class _ContentCard extends StatelessWidget {
             ),
           ],
         ),
-        child: content,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              content,
+              buildFooterDecoration(24),
+            ],
+          ),
+        ),
       );
     }
 
@@ -1762,7 +1899,16 @@ class _ContentCard extends StatelessWidget {
           color: AppColors.paper.surface.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: content,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              content,
+              buildFooterDecoration(16),
+            ],
+          ),
+        ),
       ),
     );
   }

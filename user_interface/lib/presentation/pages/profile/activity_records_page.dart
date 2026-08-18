@@ -173,7 +173,12 @@ class ActivityRecordsPage extends HookConsumerWidget {
               if (type == ActivityType.trash)
                 IconButton(
                   icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.correctionRed),
-                  onPressed: () => _confirmEmptyTrash(context, ref),
+                  onPressed: () => _confirmEmptyTrash(
+                    context,
+                    ref,
+                    deletingRecordIds,
+                    recordsAsync.asData?.value.map((r) => r.id).toSet() ?? const {},
+                  ),
                   tooltip: l10n.activityRecordsEmptyTrashLabel,
                 ),
             ],
@@ -755,7 +760,12 @@ class ActivityRecordsPage extends HookConsumerWidget {
     );
   }
 
-  void _confirmEmptyTrash(BuildContext context, WidgetRef ref) {
+  void _confirmEmptyTrash(
+    BuildContext context,
+    WidgetRef ref,
+    ValueNotifier<Set<String>> deletingRecordIds,
+    Set<String> targetRecordIds,
+  ) {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
@@ -778,6 +788,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
             TextButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
+                deletingRecordIds.value = {...deletingRecordIds.value, ...targetRecordIds};
                 // dialogContextはダイアログを閉じた直後にunmountされるため、
                 // await後も有効な外側のページcontextを使う(_confirmDeleteSingleTrashItem
                 // と同じ理由)。
@@ -800,6 +811,8 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   if (context.mounted) {
                     AppErrorDialog.showSmart(context, e, actionName: 'emptying trash');
                   }
+                } finally {
+                  deletingRecordIds.value = deletingRecordIds.value.difference(targetRecordIds);
                 }
               },
               child: Text(l10n.activityRecordsEmptyTrashLabel, style: const TextStyle(color: AppColors.correctionRed)),

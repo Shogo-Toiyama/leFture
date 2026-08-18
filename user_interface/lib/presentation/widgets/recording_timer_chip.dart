@@ -33,7 +33,19 @@ class RecordingTimerChip extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isRecording ? AppColors.correctionRed : AppColors.alertAmber,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isRecording
+                ? [
+                    const Color(0xFFB71C1C), // 少し暗い赤
+                    AppColors.correctionRed, // 今の赤
+                  ]
+                : [
+                    const Color(0xFFE65100), // 少し暗めの黄色/アンバー
+                    AppColors.alertAmber, // 今の黄色
+                  ],
+          ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

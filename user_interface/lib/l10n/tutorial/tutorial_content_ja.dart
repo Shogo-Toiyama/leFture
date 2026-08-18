@@ -19,18 +19,23 @@ const kTutorialContentJa = TutorialContent(
     TutorialAnnouncement(
       id: 'ann_1',
       type: 'TODO',
-      content: 'プロフィール（専攻・興味・将来の夢）を埋めて、自分だけのパーソナライズファンファクトを体験しよう！',
+      title: 'スライドして完了にしよう',
+      description:
+          'このアナウンスメントタイルを左にスライド（スワイプ）して、完了状態に切り替えてみよう！',
     ),
     TutorialAnnouncement(
       id: 'ann_2',
       type: 'TODO',
-      content: '新しいコースを作成して、次の実際の授業でさっそく録音ボタンを押してみよう！',
+      title: '次の講義で録音してみよう',
+      description:
+          'ホーム画面下の録音ボタンを押して、次の実際の授業でさっそく講義を録音してみよう！',
     ),
     TutorialAnnouncement(
       id: 'ann_3',
-      type: 'INFO',
-      content:
-          'パートナーAIや成長を象徴する「学びの銀河」など、今後まだまだワクワクする新機能が追加される予定です！お楽しみに！',
+      type: 'HINT',
+      title: '授業中にリアクションを残そう',
+      description:
+          '授業中に「面白い」「難しい」と感じたらLiveタブからリアクションを追加しよう！あとから文字起こし画面でタイムスタンプとして見返せるよ。',
     ),
   ],
   keywords: [
@@ -143,8 +148,8 @@ const kTutorialContentJa = TutorialContent(
         ),
         TutorialReviewCard(
           cardType: 'next_action',
-          heroEmoji: '🧭',
-          title: '次のステップへ',
+          heroEmoji: '🚀',
+          title: 'さっそく復習を始めよう',
           contentBlocks: [
             {
               'type': 'paragraph',
@@ -173,7 +178,7 @@ const kTutorialContentJa = TutorialContent(
       deepNoteMarkdown: '''## 💡 二つの復習方法
 授業で習ったことを定着させるのに、復習はとても有効な手段です。でもなかなか手がつけにくいのはいくつかの理由があると思います。まずきれいな復習教材なんてほとんどありません。だいたいは教授の板書や自分のノートです。それらは読みにくく、後からだとコンテキストがわかりにくい場合もあります。それに、しっかりと復習するには時間がかかります。そんな復習を、なんとか楽しく簡単に、そしてしっかりと学べる時間にできないかと考えた結果、このアプリには二つの復習方法を作りました。
 
-## 🎴 復習カード
+## 🧩 復習カード
 授業後すぐに15分程度でさっと復習したいとき、このカードをめくっていくだけで授業中の大切なポイントはしっかりとつかむことができます。1トピックにつき、以下の4枚構成になっています。
 
 - **つかみ (Hook)**: まずは直感的にピンとくる例え話で興味を引く
@@ -214,7 +219,7 @@ const kTutorialContentJa = TutorialContent(
         ),
         TutorialReviewCard(
           cardType: 'core_why',
-          heroEmoji: '🎴',
+          heroEmoji: '🧩',
           title: '15分でサクッと「復習カード」',
           contentBlocks: [
             {
@@ -254,8 +259,8 @@ const kTutorialContentJa = TutorialContent(
         ),
         TutorialReviewCard(
           cardType: 'next_action',
-          heroEmoji: '🧭',
-          title: '賢い使い分けと次のステップ',
+          heroEmoji: '💡',
+          title: '自分に合った学習スタイルを見つけよう',
           contentBlocks: [
             {
               'type': 'paragraph',
@@ -362,8 +367,8 @@ const kTutorialContentJa = TutorialContent(
         ),
         TutorialReviewCard(
           cardType: 'next_action',
-          heroEmoji: '🧭',
-          title: '次のステップ',
+          heroEmoji: '🎯',
+          title: 'プロフィールを登録して体験しよう',
           contentBlocks: [
             {
               'type': 'paragraph',

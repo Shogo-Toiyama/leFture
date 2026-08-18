@@ -7,6 +7,7 @@ import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 import 'package:lefture/core/utils/dev_log.dart';
 
 import 'asr_engine.dart';
+import 'asr_engine_status.dart';
 import 'asr_live_segment.dart';
 import 'vad_offline_isolate_messages.dart';
 import 'vad_offline_isolate_worker.dart';
@@ -20,12 +21,10 @@ import 'vad_offline_isolate_worker.dart';
 /// ([vadOfflineIsolateEntry])の中で行い、このクラスはPCMバイト列の送信と
 /// 認識結果[AsrLiveSegment]の受信だけを担う薄いプロキシになっている。
 ///
-/// デコードは「VADが発話の区切りを検知した時」または
+/// 確定テキストのデコードは「VADが発話の区切りを検知した時」または
 /// 「[confirmIntervalDuration]秒経っても区切りが来ない時」の2つのタイミングで
-/// 1回だけ行う(プレビュー用の頻繁な再デコードは行わない)。以前はプレビューを
-/// 0.4秒おきに再デコードしていたが、実機のCPUが録音のリアルタイム速度に
-/// 追いつけず、録音を止めても文字起こしがずっと終わらないほど遅延が
-/// 蓄積する問題が出たため、この最も軽い方式に切り替えた。
+/// 1回だけ行う。加えて、喋り始めの立ち上がりだけ[warmupCheckpoints]の時点で
+/// 暫定テキストを出す(詳細はワーカー側のドキュメントを参照)。
 class VadOfflineEngine implements AsrEngine {
   VadOfflineEngine({
     required this.recognizerConfig,
@@ -34,6 +33,8 @@ class VadOfflineEngine implements AsrEngine {
     this.minSilenceDuration = 0.5,
     this.minSpeechDuration = 0.25,
     this.confirmIntervalDuration = 10.0,
+    this.warmupCheckpoints = const [1.0, 3.0],
+    this.warmupRearmSilenceDuration = 5.0,
     this.initialOffsetSec = 0.0,
   });
 
@@ -46,6 +47,13 @@ class VadOfflineEngine implements AsrEngine {
 
   /// VADの区切りが来ない場合でも、最低これだけの間隔で強制的に1回デコードする。
   final double confirmIntervalDuration;
+
+  /// 喋り始めてから何秒の時点で暫定テキストを出すか。ウィンドウの区切り方は
+  /// 変えないため、確定テキストの品質には影響しない。
+  final List<double> warmupCheckpoints;
+
+  /// これだけ無音が続いたら、次の発話でまた[warmupCheckpoints]を使う。
+  final double warmupRearmSilenceDuration;
 
   /// 一時停止→再開のたびに新しいisolateが起動して内部のサンプルカウントが
   /// 0から始まってしまうと、確定テキストのtimestampSecが録音全体の経過時間
@@ -60,9 +68,13 @@ class VadOfflineEngine implements AsrEngine {
   Completer<void>? _readyCompleter;
   Completer<void>? _disposedCompleter;
   final _controller = StreamController<AsrLiveSegment>.broadcast();
+  final _statusController = StreamController<AsrEngineStatus>.broadcast();
 
   @override
   Stream<AsrLiveSegment> get segments => _controller.stream;
+
+  @override
+  Stream<AsrEngineStatus> get status => _statusController.stream;
 
   @override
   Future<void> start() async {
@@ -93,6 +105,8 @@ class VadOfflineEngine implements AsrEngine {
           minSilenceDuration: minSilenceDuration,
           minSpeechDuration: minSpeechDuration,
           confirmIntervalDuration: confirmIntervalDuration,
+          warmupCheckpoints: warmupCheckpoints,
+          warmupRearmSilenceDuration: warmupRearmSilenceDuration,
           initialOffsetSec: initialOffsetSec,
         ),
       );
@@ -100,6 +114,16 @@ class VadOfflineEngine implements AsrEngine {
       _readyCompleter?.complete();
     } else if (message is AsrLiveSegment) {
       if (!_controller.isClosed) _controller.add(message);
+    } else if (message is VadOfflineIsolateStatus) {
+      if (!_statusController.isClosed) {
+        _statusController.add(
+          AsrEngineStatus(
+            speechDetected: message.speechDetected,
+            decoding: message.decoding,
+            droppedFinalCount: message.droppedFinalCount,
+          ),
+        );
+      }
     } else if (message is VadOfflineIsolateDisposed) {
       _disposedCompleter?.complete();
     }
@@ -141,6 +165,7 @@ class VadOfflineEngine implements AsrEngine {
     _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
     await _controller.close();
+    await _statusController.close();
     DevLog.add('🎙️ [VadOfflineEngine] dispose() complete');
   }
 }

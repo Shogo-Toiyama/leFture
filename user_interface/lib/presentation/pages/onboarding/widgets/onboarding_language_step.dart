@@ -61,6 +61,7 @@ class OnboardingLanguageStep extends HookConsumerWidget {
                     label: l10n.onboardingLanguageDisplayLabel,
                     description: l10n.onboardingLanguageDisplayDesc,
                     selected: displayLanguage,
+                    displayCode: displayCode,
                     onTap: () => _openSheet(context, LanguageSheetMode.display),
                   ),
                   const SizedBox(height: 12),
@@ -69,6 +70,7 @@ class OnboardingLanguageStep extends HookConsumerWidget {
                     label: l10n.onboardingLanguageRecordingLabel,
                     description: l10n.onboardingLanguageRecordingDesc,
                     selected: recordingLanguage,
+                    displayCode: displayCode,
                     onTap: () => _openSheet(context, LanguageSheetMode.recording),
                   ),
                   const SizedBox(height: 16),
@@ -114,6 +116,7 @@ class _LanguageRow extends StatelessWidget {
     required this.label,
     required this.description,
     required this.selected,
+    required this.displayCode,
     required this.onTap,
   });
 
@@ -121,6 +124,7 @@ class _LanguageRow extends StatelessWidget {
   final String label;
   final String description;
   final AppLanguage selected;
+  final String displayCode;
   final VoidCallback onTap;
 
   @override
@@ -174,7 +178,7 @@ class _LanguageRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    selected.nativeName,
+                    selected.getNativeName(displayCode),
                     style: const TextStyle(
                       color: AppColors.starGold,
                       fontSize: 14,

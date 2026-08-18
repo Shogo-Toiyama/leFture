@@ -14,6 +14,8 @@ class VadOfflineIsolateConfig {
     required this.minSilenceDuration,
     required this.minSpeechDuration,
     required this.confirmIntervalDuration,
+    required this.warmupCheckpoints,
+    required this.warmupRearmSilenceDuration,
     this.initialOffsetSec = 0.0,
   });
 
@@ -34,6 +36,30 @@ class VadOfflineIsolateConfig {
   /// (`_LiveTranscriptPanel`)で再開後の字幕が全て消える不具合になるため、
   /// 呼び出し側(RecordingController)が把握している経過秒数をここに渡す。
   final double initialOffsetSec;
+
+  /// 「喋り始めてから何秒の時点で暫定テキストを出すか」のチェックポイント。
+  /// 例: [1.0, 3.0] なら、発話開始1秒後と3秒後にそこまでの音声を暫定として
+  /// デコードし、いつも通り[confirmIntervalDuration]で確定させる。
+  /// 空リストにすると立ち上がりバーストは無効。
+  final List<double> warmupCheckpoints;
+
+  /// これだけ無音が続いたら、次に喋り始めた時にまた[warmupCheckpoints]を
+  /// 使う(＝長い間の後の「ちゃんと聞こえてるよ」を再度出す)。
+  final double warmupRearmSilenceDuration;
+}
+
+/// ワーカーisolate→メインisolate: 稼働状況の変化通知。値が変わった時だけ
+/// 送る(毎フレーム送るとポートが無駄に混む)。
+class VadOfflineIsolateStatus {
+  const VadOfflineIsolateStatus({
+    required this.speechDetected,
+    required this.decoding,
+    required this.droppedFinalCount,
+  });
+
+  final bool speechDetected;
+  final bool decoding;
+  final int droppedFinalCount;
 }
 
 class VadOfflineIsolateReady {

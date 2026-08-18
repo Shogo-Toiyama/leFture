@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/router.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/application/sync/app_lifecycle_sync_watcher.dart';
@@ -19,6 +20,10 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // アプリ起動中ずっとバックグラウンド復帰/オンライン復帰を監視させる
     ref.watch(appLifecycleSyncWatcherProvider);
+
+    // クレジット情報の自動ポーリング（録音中・バックエンド処理中・クレジットページ表示中）を監視
+    ref.watch(creditPollingProvider);
+
 
     // ★ UploadManagerはkeepAlive:trueだが、誰かがこのProviderをwatch/readする
     // までRiverpodはインスタンス自体を作らない(=initialize()内の接続監視・

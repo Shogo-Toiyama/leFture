@@ -29,6 +29,7 @@ class DeepNoteTopic {
     this.reaction,
     this.saved = false,
     this.annotations = const [],
+    this.imagePath,
   });
 
   final int index;
@@ -41,6 +42,7 @@ class DeepNoteTopic {
   final String? reaction;
   final bool saved;
   final List<Annotation> annotations;
+  final String? imagePath;
 }
 
 // ---------------------------------------------------------------------------

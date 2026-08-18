@@ -223,7 +223,7 @@ EXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topi
     },
     {
       "card_type": "next_action",
-      "hero_emoji": "🧭",
+      "hero_emoji": "🚀",
       "title": "Master the Mechanics",
       "content_blocks": [
         {
@@ -258,8 +258,8 @@ ADDITIONAL EXAMPLES (illustrating the two conditional branches — not full outp
 Example A — no omissions occurred, so the Uncovered sub-section is skipped entirely (`next_action.content_blocks` goes straight from the summary paragraph to the cliffhanger paragraph, with no heading and no list in between):
 {
   "card_type": "next_action",
-  "hero_emoji": "🧭",
-  "title": "...",
+  "hero_emoji": "🎯",
+  "title": "Take Action & Practice",
   "content_blocks": [
     { "type": "paragraph", "text": "<brief, self-contained summary of this segment only>" },
     { "type": "paragraph", "text": "<cliffhanger tease for the next topic, grounded only in NEXT_TOPIC_CONTEXT>" }

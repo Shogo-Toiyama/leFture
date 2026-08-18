@@ -20,20 +20,23 @@ const kTutorialContentEn = TutorialContent(
     TutorialAnnouncement(
       id: 'ann_1',
       type: 'TODO',
-      content:
-          'Fill in your profile (major, interests, future goals) to experience personalized Fun Facts tailored just for you!',
+      title: 'Swipe to Complete',
+      description:
+          'Try swiping this announcement tile to the left to mark it as completed!',
     ),
     TutorialAnnouncement(
       id: 'ann_2',
       type: 'TODO',
-      content:
-          'Create a new course and try hitting the record button in your next actual lecture!',
+      title: 'Record Your Next Lecture',
+      description:
+          'Tap the record button at the bottom of the Home screen to start recording your next class!',
     ),
     TutorialAnnouncement(
       id: 'ann_3',
-      type: 'INFO',
-      content:
-          'Exciting upcoming features like a companion partner AI and your growing "Galaxy of Learning" are on the way! Stay tuned!',
+      type: 'HINT',
+      title: 'Leave Live Reactions',
+      description:
+          'Add reactions in the Live tab whenever you feel "Interesting" or "Difficult"! You can revisit those moments later from the transcript.',
     ),
   ],
   keywords: [
@@ -156,8 +159,8 @@ On the bus ride home or relaxing on your couch, you can review in a stress-free 
         ),
         TutorialReviewCard(
           cardType: 'next_action',
-          heroEmoji: '🧭',
-          title: 'Next Steps',
+          heroEmoji: '🚀',
+          title: 'Start Your Review Routine',
           contentBlocks: [
             {
               'type': 'paragraph',
@@ -189,7 +192,7 @@ On the bus ride home or relaxing on your couch, you can review in a stress-free 
       deepNoteMarkdown: '''## 💡 Two Ways to Review
 Reviewing is one of the most effective ways to retain what you've learned, but getting started is often difficult for several reasons: clean review materials rarely exist (usually just messy board photos or personal notes lacking context), and thorough reviewing takes hours. To turn reviewing into an enjoyable, effortless, and solid learning habit, we created two complementary review methods.
 
-## 🎴 Review Cards
+## 🧩 Review Cards
 When you want to quickly recap key lecture points in about 15 minutes right after class, simply swipe through these flashcards. Each topic follows a 4-card structure:
 
 - **Hook**: An intuitive analogy to grab your attention right away
@@ -233,7 +236,7 @@ Having crystal-clear study materials ready right after class removes the frictio
         ),
         TutorialReviewCard(
           cardType: 'core_why',
-          heroEmoji: '🎴',
+          heroEmoji: '🧩',
           title: '15-Minute Review Cards',
           contentBlocks: [
             {
@@ -279,26 +282,26 @@ Having crystal-clear study materials ready right after class removes the frictio
         ),
         TutorialReviewCard(
           cardType: 'next_action',
-          heroEmoji: '🧭',
-          title: 'Smart Habits & Next Steps',
+          heroEmoji: '💡',
+          title: 'Discover Your Best Study Style',
           contentBlocks: [
             {
               'type': 'paragraph',
               'text':
-                  'Use cards for quick daily recaps, and dive into Deep Notes on weekends or before exams.',
+                  'Use Review Cards for light daily check-ins, and dive into Deep Notes before exams or on weekends.',
             },
             {
               'type': 'list',
               'items': [
-                'Daily routine: Swipe through cards for 15 minutes',
-                'Exam prep: Explore Deep Notes and citations',
-                'Anything that catches your eye: highlight it or leave a note',
+                'Daily Review: Swipe through cards in 15 minutes',
+                'Exam Prep: Read Deep Notes for context & citations',
+                'Save key sentences with highlights and custom notes',
               ],
             },
             {
               'type': 'paragraph',
               'text':
-                  'Next up: discover the secret behind our personalized "Fun Fact" section!',
+                  'Next, let\'s explore the "Fun Facts" section that makes learning genuinely exciting!',
             },
           ],
         ),
@@ -306,86 +309,84 @@ Having crystal-clear study materials ready right after class removes the frictio
     ),
     TutorialTopic(
       topicIndex: 3,
-      title: 'Connecting to Yourself',
-      summary:
-          'How profile personalization and real-time web search generate unique "AHA Moments".',
-      deepNoteMarkdown: '''## 🧠 Learning for Your Own Future
-The lectures you attend are for your own future. If you are investing your time, learning with genuine interest is infinitely more rewarding! Concepts that seem irrelevant today might become critical in your career or practical in daily life.
+      title: 'Connecting Knowledge to Yourself',
+      summary: 'Personalized Fun Facts created from your profile and real-time Web Search.',
+      deepNoteMarkdown: '''## 🧠 Study for Your Own Time & Growth
+The classes you take today belong to you. Learning should be enjoyable and provide positive value for your future. Even dry concepts might become crucial in your career, and unrelated subjects can enrich your everyday life. If you're going to study anyway, making it fun and meaningful works best!
 
-Have you ever experienced this in school?
-> **You completely forgot textbook formulas, but vividly remember the bizarre quirk or historical anecdote the teacher briefly shared.**
+## 💡 Emotionally Charged Memories & Fun Facts
+Remember when you were in school? You might have forgotten formulas or textbook definitions, but still clearly remember a teacher's funny anecdote or historical trivia.
 
-The human brain remembers emotionally engaging stories and personally relevant information far better than dry, abstract symbols.
+The human brain naturally retains information that triggers emotions or feels personally relevant.
 
-## 💡 The Fun Fact Section & AHA Moments
-We built the "**Fun Fact**" section to bring that engaging feeling to every single lecture, by combining three ingredients:
+That's why we built the **Fun Facts** section — combining three sources of information:
 
-- **Your profile**: The major, hobbies, and career ambitions you registered
-- **Today's lecture**: The specific topics and keywords covered
-- **Real-time web search**: Live data showing how the theory is actively used in modern industries and breaking news
+- **Your Profile**: Your major, hobbies, and career goals
+- **Lecture Topics**: Today's core concepts and keywords
+- **Real-Time Web Search**: How this theory is applied in current news and industry
 
-When a seemingly dry concept suddenly connects to something you love, you experience an illuminating **"AHA Moment"**. We deliver personalized Fun Facts that make you genuinely look forward to your next class!''',
+When an abstract concept connects with something you love, you get a sudden "AHA!" moment that turns studying into something you look forward to.''',
       reviewCards: [
         TutorialReviewCard(
           cardType: 'hook',
           heroEmoji: '🧠',
-          title: 'Emotional stories stick',
+          title: 'Memories Tied to Emotion Stick',
           contentBlocks: [
             {
               'type': 'quote',
               'text':
-                  'You might forget bold textbook terms, but you never forget the quirky anecdote your professor told!',
+                  'Forget textbook formulas, but remember a professor\'s quirky story? Here\'s why!',
             },
             {
               'type': 'paragraph',
               'text':
-                  'Our brains are wired to retain stories that spark emotion and feel personally relevant far more easily.',
+                  'Human memory prioritizes emotional triggers and personal relevance over dry facts.',
             },
             {
               'type': 'paragraph',
               'text':
-                  'So why not deliberately create that spark in every single lecture? That\'s exactly the idea behind the "**Fun Fact**" section.',
+                  'The Fun Facts section intentionally creates those "AHA!" moments in every single lecture.',
             },
           ],
         ),
         TutorialReviewCard(
           cardType: 'core_why',
           heroEmoji: '🔮',
-          title: 'Personalized Fun Facts',
+          title: 'Fun Facts Tailored Just for You',
           contentBlocks: [
             {
               'type': 'paragraph',
               'text':
-                  'Based on your registered profile (major, hobbies, career dreams), AI connects lecture topics to your personal passions.',
+                  'AI connects today\'s lecture with your background, hobbies, and dreams registered in your profile.',
             },
             {
               'type': 'callout',
               'alert_type': 'info',
               'text':
-                  'Experience sudden "AHA Moments" as seemingly unrelated academic concepts link directly to what you love.',
+                  'See how abstract concepts directly relate to your passions and future goals!',
             },
             {
               'type': 'paragraph',
               'text':
-                  'Take a thermodynamics lecture, for example: someone who loves cooking might get a kitchen-science angle, while an athlete gets an explanation through muscle metabolism. Same lecture, but **the entry point is written just for you**.',
+                  'Whether you love cooking or sports, thermodynamics gets explained using analogies from the kitchen or athletic metabolism!',
             },
           ],
         ),
         TutorialReviewCard(
           cardType: 'gotcha',
           heroEmoji: '🌐',
-          title: 'Live Web Search & Real-World Use',
+          title: 'Real-Time Web Search & Living Knowledge',
           contentBlocks: [
             {
               'type': 'paragraph',
               'text':
-                  'AI searches the web in real-time to explain how theoretical concepts are actively applied in modern society and latest news.',
+                  'Real-time web searches reveal how concepts are being applied in current industry news today.',
             },
             {
               'type': 'callout',
               'alert_type': 'warning',
               'text':
-                  'Dry academic concepts transform into living, practical knowledge for your future!',
+                  'Static textbook theory turns into active, real-world knowledge for your career!',
             },
             {
               'type': 'paragraph',
@@ -396,8 +397,8 @@ When a seemingly dry concept suddenly connects to something you love, you experi
         ),
         TutorialReviewCard(
           cardType: 'next_action',
-          heroEmoji: '🧭',
-          title: 'Next Steps',
+          heroEmoji: '🎯',
+          title: 'Set Up Your Profile & Enjoy',
           contentBlocks: [
             {
               'type': 'paragraph',

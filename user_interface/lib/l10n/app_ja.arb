@@ -136,6 +136,13 @@
   "recordingMomentRevisitLabel": "後で復習",
   "recordingMomentNoteLabel": "メモ",
   "recordingLiveTranscriptHeader": "ライブ文字起こし",
+  "recordingLiveListeningLabel": "聞き取り中",
+  "recordingLiveWaitingForSpeechLabel": "発話を待っています",
+  "recordingLivePausedLabel": "一時停止中",
+  "recordingLivePreparingLabel": "準備中...",
+  "recordingLiveTranscribingLabel": "認識中",
+  "recordingLiveDroppedNotice": "端末の処理が追いつかず、ライブ表示の一部が欠けています。完全な文字起こしは録音後に届きます。",
+  "recordingLiveSkippedGapNotice": "バッテリー節約のため、この区間は端末での文字起こしを停止しました。約1分で正式な文字起こしが表示されます。",
   "recordingWaitingForAudio": "音声を待っています...",
   "recordingRealtimeOffHint": "ライブ字幕やAIとの会話を使うには、（Voiceタブの「More Settings」から）リアルタイム文字起こしをオンにしてください。",
   "recordingReactionFunLabel": "面白い",
@@ -581,6 +588,22 @@
   "reviewCardsViewerPageCounter": "{current} / {total}",
   "reviewCardsViewerListSheetTitle": "復習カード一覧",
   "reviewCardsViewerNavigationHint": "左右をタップ  •  スワイプでトピック切替",
+  "reviewCardTypeHook": "つかみ",
+  "@reviewCardTypeHook": {
+    "description": "そのまま訳さず言語によって良いニュアンスの短めの言葉を選ぶこと。"
+  },
+  "reviewCardTypeCoreWhy": "重要ポイント",
+  "@reviewCardTypeCoreWhy": {
+    "description": "そのまま訳さず言語によって良いニュアンスの短めの言葉を選ぶこと。"
+  },
+  "reviewCardTypeGotcha": "ひらめき",
+  "@reviewCardTypeGotcha": {
+    "description": "そのまま訳さず言語によって良いニュアンスの短めの言葉を選ぶこと。"
+  },
+  "reviewCardTypeNextAction": "次のアクション",
+  "@reviewCardTypeNextAction": {
+    "description": "そのまま訳さず言語によって良いニュアンスの短めの言葉を選ぶこと。"
+  },
   "aiDisclaimerText": "※ AI生成コンテンツのため誤りが含まれる場合があります",
   "changeAvatarSheetTitle": "アバターを変更",
   "changeAvatarSelectFromLibrary": "ライブラリから選択",

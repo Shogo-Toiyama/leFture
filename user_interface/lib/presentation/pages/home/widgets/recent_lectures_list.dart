@@ -8,6 +8,9 @@ import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dar
 import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 
+import 'package:lefture/application/recording/recording_controller.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
+
 class RecentLecturesList extends ConsumerWidget {
   const RecentLecturesList({super.key});
 
@@ -45,6 +48,24 @@ class RecentLecturesList extends ConsumerWidget {
             );
           },
           onDelete: () async {
+            final recordingState = ref.read(recordingControllerProvider);
+            if (recordingState.isRecording &&
+                recordingState.currentLectureId == lecture.id) {
+              await showDialog<void>(
+                context: context,
+                builder: (context) => const CustomDialog(
+                  title: '録音中の講義は削除できません',
+                  message:
+                      'この講義は現在録音中です。削除する場合は、録音画面から録音を保存または破棄してください。',
+                  confirmLabel: 'OK',
+                  cancelLabel: null,
+                  icon: Icons.mic_off_rounded,
+                  iconColor: Colors.amber,
+                ),
+              );
+              return;
+            }
+
             await ref
                 .read(lectureControllerProvider.notifier)
                 .deleteLecture(lecture.id, courseId: lecture.courseId);
