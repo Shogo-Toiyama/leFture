@@ -3082,9 +3082,9 @@
     "description": "Title at the top of the bottom sheet opened from the Review Cards viewer's grid-view button, listing every topic's cover and content cards for quick navigation."
   },
 
-  "reviewCardsViewerNavigationHint": "Tap left / right  •  Swipe to change topic",
+  "reviewCardsViewerNavigationHint": "Tap left / right  •  Swipe to flip",
   "@reviewCardsViewerNavigationHint": {
-    "description": "Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, swiping moves between whole topics. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator."
+    "description": "Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, and swiping drags the card to flip to the previous/next one. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator."
   },
 
   "reviewCardTypeHook": "Hook",

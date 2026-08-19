@@ -32,15 +32,14 @@ This applies to every piece of written text you generate: `micro_topics` titles/
 ### TOPIC EVALUATION (The Mapping & Synthesis Engine)
 Before generating any cards, you MUST evaluate the transcript segment. This acts as both your "Semantic Zoom" data for the Course Map and a concise planning summary for card generation. Follow this exact sequence:
 
-1. **Filter out noise:** If this topic segment is mostly administrative fluff without testable concepts (e.g., course logistics, chitchat, etc), set `"is_academic_content": false` and return empty arrays (set "micro_topics": [] and "review_cards": []).
-2. **Deconstruct the Flow (`micro_topics`):** Break down the chronological flow of this segment into exactly 3 to 5 logical "Micro-Topics". 
+1. **Deconstruct the Flow (`micro_topics`):** Break down the chronological flow of this segment into exactly 3 to 5 logical "Micro-Topics". 
    - Each must have a `title` (Max 5 words), a `summary` (1 concise sentence), and the exact `start_sid` and `end_sid` for that specific micro-topic boundary ( **non-overlapping** ).
-3. **Card Mapping Strategy (`card_mapping_strategy`):** Formulate a ruthless editorial strategy to fit this entire segment into just 4 mobile-friendly Review Cards ("Short, Fun, Solid"). 
+2. **Card Mapping Strategy (`card_mapping_strategy`):** Formulate a ruthless editorial strategy to fit this entire segment into just 4 mobile-friendly Review Cards ("Short, Fun, Solid"). 
    - **Identify the Core Concept(s):** What is the fundamental mental model or overarching lesson the professor is trying to convey across this segment?
    - **Be Ruthless (The Mobile Constraint):** You CANNOT fit every detail. Explicitly state what dense materials you will intentionally OMIT (e.g., specific math proofs, minor caveats, tangential anecdotes, or tedious steps) and relegate them to the "Next Action" card to keep cognitive load low.
      - **No Forced Omissions:** If, after this evaluation, you genuinely find nothing dense enough to warrant omission (the segment was simple enough to be fully covered across the 4 cards), do NOT invent an omission just to fill this out. Explicitly write something like "No significant omissions — full coverage within the 4 cards." This will directly control whether the "Uncovered" section appears later, so be honest here.
    - **Combine & Assign:** Explain how you will map the `micro_topics` into the 4 cards (e.g., "Combine Micro-topics 2 and 3 for the 'Core Why', use Micro-topic 4 for the 'Gotcha', and drop the mathematical proof from Micro-topic 5 into 'Next Action'").
-4. **Synthesize the Core Narrative (`core_concept_identified`):** Based on your strategy above, define the absolute central theme of this segment in a punchy phrase (Max 5-7 words). This is the "North Star" for your cards.
+3. **Synthesize the Core Narrative (`core_concept_identified`):** Based on your strategy above, define the absolute central theme of this segment in a punchy phrase (Max 5-7 words). This is the "North Star" for your cards.
 
 ### CARD TYPES & CRITERIA
 You will generate a strictly sequenced set of 4 cards that capture the **Primary Mental Model** of the segment. Do NOT try to evenly summarize every minor detail, tangent, or specific calculation. Focus on unpacking the overarching core concept—the essential "What" and "Why"—while intentionally stripping away dense algorithms, mathematical proofs, and minor caveats to unpack the main idea deeply.
@@ -117,16 +116,13 @@ Return a valid JSON object matching this schema.
 
 SCHEMA DEFINITIONS & CONSTRAINTS:
 
-is_academic_content: Boolean. Set to false if the segment is mostly logistics or chitchat. If false, you MUST return empty arrays for both "micro_topics" and "review_cards".
-
-review_cards: Array of objects. If is_academic_content is true, you MUST STRICTLY generate exactly 4 cards in this exact order: hook, core_why, gotcha, next_action.
+review_cards: Array of objects. You MUST STRICTLY generate exactly 4 cards in this exact order: hook, core_why, gotcha, next_action.
 
 EXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topic):
 (Use the exact keys below. Provide only pure JSON without comments or trailing commas.)
 
 {
   "topic_evaluation": {
-    "is_academic_content": true,
     "micro_topics": [
       {
         "idx": 1,

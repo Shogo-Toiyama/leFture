@@ -587,7 +587,7 @@
   "reviewCardsViewerViewListTooltip": "一覧を表示",
   "reviewCardsViewerPageCounter": "{current} / {total}",
   "reviewCardsViewerListSheetTitle": "復習カード一覧",
-  "reviewCardsViewerNavigationHint": "左右をタップ  •  スワイプでトピック切替",
+  "reviewCardsViewerNavigationHint": "左右をタップ  •  スワイプでめくる",
   "reviewCardTypeHook": "つかみ",
   "@reviewCardTypeHook": {
     "description": "そのまま訳さず言語によって良いニュアンスの短めの言葉を選ぶこと。"

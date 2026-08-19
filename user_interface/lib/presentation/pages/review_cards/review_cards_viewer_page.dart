@@ -1,8 +1,11 @@
 // lib/presentation/pages/review_cards/review_cards_viewer_page.dart
 
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -73,6 +76,25 @@ double _staggeredLocal(double overall, int stepIndex, int totalSteps) {
   return Curves.easeInOut.transform(
     ((overall - begin) / (end - begin)).clamp(0.0, 1.0),
   );
+}
+
+// Inverse of [_staggeredLocal] for the leading layer (stepIndex 0): the overall
+// progress at which that layer has travelled [departed] of its own path.
+// Bisected because the underlying easing curve has no closed-form inverse.
+double _progressForLeadLayer(double departed, int totalSteps) {
+  if (departed <= 0.0) return 0.0;
+  if (departed >= 1.0) return 1.0;
+  var lo = 0.0;
+  var hi = 1.0;
+  for (var i = 0; i < 24; i++) {
+    final mid = (lo + hi) / 2;
+    if (_staggeredLocal(mid, 0, totalSteps) < departed) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return (lo + hi) / 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -200,10 +222,65 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     final animationController = useAnimationController(
       duration: const Duration(milliseconds: 350),
     );
-    final currentCardIndex = useState<int>(initialIndex);
-    final previousCardIndex = useState<int>(initialIndex);
-    final lastBackwardJumpIndex = useState<int?>(null); // 戻る用履歴 (進むスワイプ時に記録)
-    final lastForwardJumpIndex = useState<int?>(null);  // 進む用履歴 (戻るスワイプ時に記録)
+    final progressPulseController = useAnimationController(
+      duration: const Duration(milliseconds: 400),
+    );
+    final pulseAnimation = useAnimation(
+      useMemoized(
+        () => TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.0, end: 1.0)
+                .chain(CurveTween(curve: Curves.easeOutCubic)),
+            weight: 35,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.0, end: 0.0)
+                .chain(CurveTween(curve: Curves.easeInOutCubic)),
+            weight: 65,
+          ),
+        ]).animate(progressPulseController),
+        [progressPulseController],
+      ),
+    );
+    // committedIndex: タイトル/カウンター/カード別ツールバー/進捗バーの塗り/
+    // useEffectを駆動する「確定した」カード。ジェスチャーが確定した瞬間にだけ
+    // 更新する(ドラッグ/スクラブの途中で更新すると他のUIがチラつくため)。
+    final committedIndex = useState<int>(initialIndex);
+    // visualIndex: アニメーション/ドラッグ/スクラブ中に連続的に更新される、
+    // 実際に描画されるカードの表示ターゲット。
+    final visualIndex = useState<int>(initialIndex);
+    // anchorIndex: カスケードアニメーションの「層0」(めくられていく元のカード)。
+    final anchorIndex = useState<int>(initialIndex);
+    // dragProgress: 1枚スワイプ中の指の追従量 (符号付き, 概ね -1..1)。
+    final dragProgress = useState<double>(0.0);
+    // overscroll: 先頭/末尾のカードで、それ以上進めない方向へ引っ張られた分
+    // (符号付き, カード幅に対する割合)。ページ送りには使わず、カードを少しだけ
+    // 指について動かして「これ以上は無い」ことを示すためだけに使う。
+    final overscroll = useState<double>(0.0);
+    // ドラッグの生の累積量。overscrollとdragProgressに振り分ける元になる。
+    final rawDrag = useRef<double>(0.0);
+    // 端でタップされたときの「行こうとして戻る」演出の往路かどうか。
+    // ドラッグと違って指が押し続けてくれないので、往路だけ自前で時間を持つ。
+    final isNudging = useState<bool>(false);
+    final nudgeTimer = useRef<Timer?>(null);
+    useEffect(() => () => nudgeTimer.value?.cancel(), const []);
+
+    // カード本文は_ContentCard内のSelectionArea配下にあり、そのタップ認識器が
+    // ジェスチャーアリーナに先に入る(=先に勝つ)ため、外側のGestureDetectorの
+    // onTapUpには本文の上のタップが一切届かない。Listenerはアリーナに参加せず
+    // 生のポインタを受け取るので、「指が動いていない・長押しでもない」ものだけを
+    // 自前でタップと判定してめくりに使う。
+    final tapDownPosition = useRef<Offset?>(null);
+    final tapDownTime = useRef<Duration>(Duration.zero);
+    final tapMoved = useRef<bool>(false);
+    // scrubPos: 進捗バーをなぞっている間の「小数付きカード位置」。整数部が今
+    // めくられているカード、小数部がめくれ具合になるので、指の速さに関わらず
+    // 前後どちらへも途切れずにパラパラめくれる。
+    final scrubPos = useState<double>(initialIndex.toDouble());
+    final isDragging = useState<bool>(false);
+    final isScrubbing = useState<bool>(false);
+    // isAnimating: 確定へ向けた着地アニメーション(タップ, またはドラッグ/
+    // スクラブ解放後のsettle)が再生中かどうか。
     final isAnimating = useState<bool>(false);
     final isGoingForward = useState<bool>(true);
 
@@ -225,7 +302,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     // notifierへ二重登録されるのを避けるため、現在表示中のカードにしか渡さない)。
     final selectionListenerNotifier = useMemoized(
       () => SelectionListenerNotifier(),
-      [currentCardIndex.value],
+      [committedIndex.value],
     );
     useEffect(() => selectionListenerNotifier.dispose, [
       selectionListenerNotifier,
@@ -255,7 +332,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     // resets it to a known-good state instead of reusing the tainted one.
     final selectionAreaKey = useMemoized(
       () => GlobalKey<SelectionAreaState>(),
-      [currentCardIndex.value],
+      [committedIndex.value],
     );
     final temporaryHighlight = useState<Annotation?>(null);
     final temporaryHighlightBlockIdx = useState<int?>(null);
@@ -274,9 +351,11 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       activeNoteAnnotation.value = null;
       isEditingNote.value = false;
       return null;
-    }, [currentCardIndex.value]);
+    }, [committedIndex.value]);
 
     final screenWidth = MediaQuery.of(context).size.width;
+    // The card area is the screen minus the horizontal padding around it.
+    final cardWidth = screenWidth - 32;
 
     // Build flat list: cover + content cards per group
     final flatItems = useMemoized(() {
@@ -312,22 +391,113 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           : widgetRef.watch(artifactFileProvider(path)).asData?.value;
     }
 
-    final navigateTo = useCallback((int newIndex, {bool immediate = false}) {
-      if (isAnimating.value || newIndex == currentCardIndex.value) return;
+    // Bumped whenever a new gesture or navigation takes ownership of the
+    // animation, so a superseded transition's completion callback can tell it
+    // is stale and leave the newer one's state alone.
+    final animToken = useRef<int>(0);
+
+    // Animates from a settled [anchor] card toward its neighbour in [dir],
+    // starting at [fromProgress], and lands on the neighbour when [toDest] is
+    // true or back on [anchor] when it is false. Shared by the card drag and
+    // the progress-bar scrub, which both hand over mid-transition.
+    void settle({
+      required int anchor,
+      required int dir,
+      required double fromProgress,
+      required bool toDest,
+    }) {
+      final dest = (anchor + dir).clamp(0, totalCards - 1);
+      final landing = toDest ? dest : anchor;
+      animToken.value++;
+      final token = animToken.value;
+      isDragging.value = false;
+      isScrubbing.value = false;
+      anchorIndex.value = anchor;
+      visualIndex.value = dest;
+      isGoingForward.value = dir > 0;
+      isAnimating.value = true;
+      final done = toDest
+          ? animationController.forward(from: fromProgress.clamp(0.0, 1.0))
+          : animationController.reverse(from: fromProgress.clamp(0.0, 1.0));
+      done.then((_) {
+        if (animToken.value != token) return;
+        isAnimating.value = false;
+        committedIndex.value = landing;
+        anchorIndex.value = landing;
+        visualIndex.value = landing;
+      });
+    }
+
+    void navigateTo(int newIndex, {bool immediate = false}) {
+      final target = newIndex.clamp(0, totalCards - 1);
+      animToken.value++;
+      final token = animToken.value;
+      animationController.stop();
+      isDragging.value = false;
+      isScrubbing.value = false;
+
       if (immediate) {
-        currentCardIndex.value = newIndex;
-        previousCardIndex.value = newIndex;
+        isAnimating.value = false;
+        committedIndex.value = target;
+        visualIndex.value = target;
+        anchorIndex.value = target;
         return;
       }
-      previousCardIndex.value = currentCardIndex.value;
-      isGoingForward.value = newIndex > currentCardIndex.value;
-      currentCardIndex.value = newIndex;
-      isAnimating.value = true;
-      animationController.forward(from: 0.0).then((_) {
+
+      // Chain onto an in-flight cascade heading the same way: extend the
+      // destination and restart the controller at the progress that leaves the
+      // front card exactly where it is on screen right now. Without this a
+      // second tap during the first tap's animation would visibly snap the
+      // front card back into place.
+      var anchor = committedIndex.value;
+      var startFrom = 0.0;
+      final inFlight = visualIndex.value - anchorIndex.value;
+      if (isAnimating.value &&
+          inFlight != 0 &&
+          (target - anchorIndex.value).sign == inFlight.sign) {
+        // Re-anchor on the frontmost card that is still on screen, dropping
+        // the layers that have already flown off. Anchoring on the original
+        // layer 0 instead would ask for the progress at which it has
+        // *finished* departing, and since each added layer compresses that
+        // layer's window toward the start of the timeline, a few stacked-up
+        // taps push the answer to 1.0 -- the restart then completes instantly
+        // and the card snaps into place with no animation at all.
+        final p = animationController.value;
+        final distance = inFlight.abs();
+        final skipCount = distance.clamp(1, 5);
+        final sign = inFlight.sign;
+        var lead = 0;
+        while (lead < skipCount - 1 &&
+            _staggeredLocal(p, lead, skipCount) >= 1.0) {
+          lead++;
+        }
+        // Same proportional sampling the cascade renderer uses, so this really
+        // is the card that layer [lead] is currently showing.
+        anchor = anchorIndex.value + sign * ((lead * distance) ~/ skipCount);
+        startFrom = _progressForLeadLayer(
+          _staggeredLocal(p, lead, skipCount),
+          (target - anchor).abs().clamp(1, 5),
+        );
+      }
+      if (target == anchor) {
         isAnimating.value = false;
-        previousCardIndex.value = newIndex;
+        committedIndex.value = target;
+        visualIndex.value = target;
+        anchorIndex.value = target;
+        return;
+      }
+
+      anchorIndex.value = anchor;
+      isGoingForward.value = target > anchor;
+      visualIndex.value = target;
+      committedIndex.value = target;
+      isAnimating.value = true;
+      animationController.forward(from: startFrom).then((_) {
+        if (animToken.value != token) return;
+        isAnimating.value = false;
+        anchorIndex.value = target;
       });
-    }, [currentCardIndex.value, isAnimating.value]);
+    }
 
     // ノート編集をキャンセルする(保存せずに閉じる)。外側タップ時に呼ばれる。
     void cancelNote() {
@@ -374,13 +544,38 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         // '!registered'. Selection during a swipe is meaningless anyway, so
         // simply withholding the notifier while animating avoids the clash.
         selectionListenerNotifier:
-            cardIdx == currentCardIndex.value && !isAnimating.value
+            cardIdx == committedIndex.value &&
+                !isAnimating.value &&
+                !isDragging.value &&
+                !isScrubbing.value
             ? selectionListenerNotifier
             : null,
-        temporaryHighlight: cardIdx == currentCardIndex.value
+        selectionAreaKey:
+            cardIdx == committedIndex.value &&
+                !isAnimating.value &&
+                !isDragging.value &&
+                !isScrubbing.value
+            ? selectionAreaKey
+            : null,
+        onSelectionChanged:
+            cardIdx == committedIndex.value &&
+                !isAnimating.value &&
+                !isDragging.value &&
+                !isScrubbing.value
+            ? (content) {
+                hasSelection.value =
+                    content != null && content.plainText.isNotEmpty;
+                if (hasSelection.value) {
+                  selectedText.value = content!.plainText;
+                } else {
+                  highlightToolbarOpen.value = false;
+                }
+              }
+            : null,
+        temporaryHighlight: cardIdx == committedIndex.value
             ? temporaryHighlight.value
             : null,
-        temporaryHighlightBlockIdx: cardIdx == currentCardIndex.value
+        temporaryHighlightBlockIdx: cardIdx == committedIndex.value
             ? temporaryHighlightBlockIdx.value
             : null,
         onAnnotationTap: (a) {
@@ -407,9 +602,67 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       );
     }
 
-    final index = currentCardIndex.value.clamp(0, totalCards - 1);
-    final currentGroupIndex = flatItems[index].groupIndex;
-    final topic = groups[currentGroupIndex];
+    final index = committedIndex.value.clamp(0, totalCards - 1);
+
+    // 進捗バー上のx座標を、全トピックを通した小数付きカード位置に変換する。
+    // バーはトピックごとに等幅で分割され、その中をカード枚数で等分している。
+    final progressBarKey = useMemoized(() => GlobalKey(), const []);
+    double scrubPosFromDx(double dx, double width) {
+      if (width <= 0) return 0.0;
+      final slot = (dx / width).clamp(0.0, 1.0) * groups.length;
+      final topicIdx = slot.floor().clamp(0, groups.length - 1);
+      final within = (slot - topicIdx).clamp(0.0, 1.0);
+      final pos =
+          groupStartIndex[topicIdx] +
+          within * (groups[topicIdx].cards.length + 1);
+      return pos.clamp(0.0, (totalCards - 1).toDouble());
+    }
+
+    void updateScrub(Offset globalPosition) {
+      final box =
+          progressBarKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null) return;
+      scrubPos.value = scrubPosFromDx(
+        box.globalToLocal(globalPosition).dx,
+        box.size.width,
+      );
+    }
+
+    // 端でのタップに、ドラッグのラバーバンドと同じ「行こうとして戻る」動きを
+    // 一往復だけ再生させる。overscrollを一瞬だけ立ててからゼロに戻すことで、
+    // 復路はドラッグを離したときとまったく同じバネに乗る。
+    void bounceEdge({required bool forward}) {
+      nudgeTimer.value?.cancel();
+      overscroll.value = forward ? 0.35 : -0.35;
+      isNudging.value = true;
+      nudgeTimer.value = Timer(const Duration(milliseconds: 130), () {
+        isNudging.value = false;
+        overscroll.value = 0.0;
+      });
+    }
+
+    void beginScrub(Offset globalPosition) {
+      animToken.value++;
+      animationController.stop();
+      isAnimating.value = false;
+      isDragging.value = false;
+      isScrubbing.value = true;
+      updateScrub(globalPosition);
+    }
+
+    void endScrub() {
+      if (!isScrubbing.value) return;
+      final anchor = scrubPos.value.floor().clamp(0, totalCards - 1);
+      final frac = (scrubPos.value - anchor).clamp(0.0, 1.0);
+      settle(anchor: anchor, dir: 1, fromProgress: frac, toDest: frac >= 0.5);
+    }
+
+    // スクラブ中は、指がどこを指しているかを見出しとカウンターにも反映する
+    // (どこに着地するのか分からないと、なぞり操作の意味が薄いため)。
+    final displayIndex = isScrubbing.value
+        ? scrubPos.value.round().clamp(0, totalCards - 1)
+        : index;
+    final topic = groups[flatItems[displayIndex].groupIndex];
 
     // 現在選択中の範囲が、現在のカードのどのブロックの何文字目〜何文字目に
     // あたるかを求める。SelectableRegion.getSelection()はタイトル/絵文字を
@@ -429,7 +682,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     // 1つの範囲として繋がって見える)。
     List<TextLocation> locateSelectionBlocks() {
       final card = flatItems[index].card;
-      if (card == null || !selectionListenerNotifier.registered) return const [];
+      if (card == null || !selectionListenerNotifier.registered) {
+        return const [];
+      }
       final range = selectionListenerNotifier.selection.range;
       if (range == null) return const [];
       return locateBlocksFromReviewCardRange(card, range);
@@ -464,7 +719,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
             startIdx: located.startIdx,
             endIdx: located.endIdx,
             annotationType: 'highlight',
-            annotatedWords: blockText.substring(located.startIdx, located.endIdx),
+            annotatedWords: blockText.substring(
+              located.startIdx,
+              located.endIdx,
+            ),
             contents: {'type': mode, 'color': colorToHex(highlightColor.value)},
           );
         }
@@ -789,16 +1047,17 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   if (e.options.isNotEmpty) {
                                     final selectedCitation =
                                         await BroadSelectionSheet.show(
-                                      context,
-                                      options: e.options,
-                                    );
+                                          context,
+                                          options: e.options,
+                                        );
                                     if (selectedCitation != null &&
                                         context.mounted) {
                                       final sortedSids = List<int>.from(
                                         selectedCitation.sids,
                                       )..sort();
-                                      final startSid =
-                                          formatSid(sortedSids.first);
+                                      final startSid = formatSid(
+                                        sortedSids.first,
+                                      );
                                       final endSid = formatSid(sortedSids.last);
                                       final courseIdVal = course?.id;
                                       if (lectureId.isNotEmpty) {
@@ -906,7 +1165,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       l10n.reviewCardsViewerPageCounter(
-                        index + 1,
+                        displayIndex + 1,
                         totalCards,
                       ),
                       style: TextStyle(
@@ -920,46 +1179,91 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
               ),
 
               // ── Progress bars (Stories-style) ────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: List.generate(groups.length, (topicIdx) {
-                    final group = groups[topicIdx];
-                    final groupStart = groupStartIndex[topicIdx];
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: Row(
-                          children: List.generate(group.cards.length + 1, (
-                            cardIdx,
-                          ) {
-                            final absIdx = groupStart + cardIdx;
-                            final isFilled = absIdx <= index;
-                            final isActive = absIdx == index;
-                            return Expanded(
-                              child: Container(
-                                height: 3,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 1,
+              // Dragging along the bar scrubs through every card of every
+              // topic; the vertical padding just makes the 3px bar grabbable.
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  progressPulseController.forward(from: 0.0);
+                },
+                onHorizontalDragStart: (d) => beginScrub(d.globalPosition),
+                onHorizontalDragUpdate: (d) {
+                  if (!isScrubbing.value) return;
+                  updateScrub(d.globalPosition);
+                },
+                onHorizontalDragEnd: (_) => endScrub(),
+                onHorizontalDragCancel: endScrub,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    key: progressBarKey,
+                    children: List.generate(groups.length, (topicIdx) {
+                      final group = groups[topicIdx];
+                      final groupStart = groupStartIndex[topicIdx];
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: List.generate(group.cards.length + 1, (
+                              cardIdx,
+                            ) {
+                              final absIdx = groupStart + cardIdx;
+                              final isFilled = absIdx <= displayIndex;
+                              final isActive = absIdx == displayIndex;
+                              final double highlightFactor = (isScrubbing.value || isDragging.value)
+                                  ? 1.0
+                                  : pulseAnimation;
+                              final double barHeight = isActive
+                                  ? 3.0 + 4.0 * highlightFactor
+                                  : 3.0;
+                              return Expanded(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 120),
+                                  curve: Curves.easeOutCubic,
+                                  height: barHeight,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isActive
+                                        ? Color.lerp(
+                                            textThemeColor,
+                                            Colors.white,
+                                            0.28 * highlightFactor,
+                                          )
+                                        : isFilled
+                                        ? textThemeColor.withValues(alpha: 0.55)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(
+                                      2.0 + 1.5 * highlightFactor,
+                                    ),
+                                    boxShadow: isActive && highlightFactor > 0.01
+                                        ? [
+                                            BoxShadow(
+                                              color: textThemeColor.withValues(
+                                                alpha: 0.75 * highlightFactor,
+                                              ),
+                                              blurRadius: 7 * highlightFactor,
+                                              spreadRadius: 1.5 * highlightFactor,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
                                 ),
-                                decoration: BoxDecoration(
-                                  color: isActive
-                                      ? textThemeColor
-                                      : isFilled
-                                      ? textThemeColor.withValues(alpha: 0.55)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            );
-                          }),
+                              );
+                            }),
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
 
               // ── Card area ────────────────────────────────────────────────
               Expanded(
@@ -968,249 +1272,371 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: SelectionArea(
-                        key: selectionAreaKey,
-                        contextMenuBuilder: (context, selectableRegionState) =>
-                            const SizedBox.shrink(),
-                        onSelectionChanged: (content) {
-                          hasSelection.value =
-                              content != null && content.plainText.isNotEmpty;
+                      child: Listener(
+                        onPointerDown: (event) {
+                          tapDownPosition.value = event.localPosition;
+                          tapDownTime.value = event.timeStamp;
+                          tapMoved.value = false;
+                        },
+                        onPointerMove: (event) {
+                          final start = tapDownPosition.value;
+                          if (start != null &&
+                              (event.localPosition - start).distance >
+                                  kTouchSlop) {
+                            tapMoved.value = true;
+                          }
+                        },
+                        onPointerCancel: (_) => tapDownPosition.value = null,
+                        onPointerUp: (event) {
+                          final start = tapDownPosition.value;
+                          tapDownPosition.value = null;
+                          // 指が動いていればスワイプ、長く押されていれば選択操作
+                          // なので、どちらもめくりとしては扱わない。
+                          if (start == null || tapMoved.value) return;
+                          if (event.timeStamp - tapDownTime.value >
+                              kLongPressTimeout) {
+                            return;
+                          }
                           if (hasSelection.value) {
-                            selectedText.value = content!.plainText;
+                            // A tap while text is selected just dismisses the
+                            // selection; it shouldn't also navigate.
+                            selectionAreaKey.currentState?.selectableRegion
+                                .clearSelection();
+                            return;
+                          }
+                          if (start.dx < cardWidth * 0.3) {
+                            if (committedIndex.value > 0) {
+                              navigateTo(committedIndex.value - 1);
+                            } else {
+                              bounceEdge(forward: false);
+                            }
                           } else {
-                            highlightToolbarOpen.value = false;
-                            // NoteSubToolbar内のTextFieldにフォーカスが移る際にも
-                            // ここを通るが、Noteツールバーは選択解除では閉じない
-                            // (保存/再タップで明示的に閉じるまで開いたままにする)。
+                            if (committedIndex.value < totalCards - 1) {
+                              navigateTo(committedIndex.value + 1);
+                            } else {
+                              bounceEdge(forward: true);
+                            }
                           }
                         },
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTapUp: (details) {
-                            if (hasSelection.value) {
-                              // A tap while text is selected just dismisses the
-                              // selection; it shouldn't also navigate.
-                              selectionAreaKey.currentState?.selectableRegion
-                                  .clearSelection();
-                              return;
-                            }
-                            final cardWidth = screenWidth - 32;
-                            if (details.localPosition.dx < cardWidth * 0.3) {
-                              if (currentCardIndex.value > 0) {
-                                navigateTo(currentCardIndex.value - 1);
-                              }
-                            } else {
-                              if (currentCardIndex.value < totalCards - 1) {
-                                navigateTo(currentCardIndex.value + 1);
-                              }
-                            }
+                          onHorizontalDragStart: (_) {
+                            if (hasSelection.value) return;
+                            animToken.value++;
+                            animationController.stop();
+                            isAnimating.value = false;
+                            isScrubbing.value = false;
+                            anchorIndex.value = committedIndex.value;
+                            visualIndex.value = committedIndex.value;
+                            dragProgress.value = 0.0;
+                            // A tap's nudge may still be pending; letting its
+                            // timer fire mid-drag would zero the rubber band
+                            // out from under the finger.
+                            nudgeTimer.value?.cancel();
+                            isNudging.value = false;
+                            overscroll.value = 0.0;
+                            rawDrag.value = 0.0;
+                            isDragging.value = true;
+                          },
+                          onHorizontalDragUpdate: (details) {
+                            if (!isDragging.value || hasSelection.value) return;
+                            // Dragging left (negative dx) moves forward.
+                            rawDrag.value =
+                                (rawDrag.value - details.delta.dx / cardWidth)
+                                    .clamp(-2.0, 2.0);
+                            final atStart = committedIndex.value == 0;
+                            final atEnd =
+                                committedIndex.value == totalCards - 1;
+                            dragProgress.value = rawDrag.value.clamp(
+                              atStart ? 0.0 : -1.0,
+                              atEnd ? 0.0 : 1.0,
+                            );
+                            // At the very first / last card the leftover pull
+                            // has nowhere to page to, so it feeds the rubber
+                            // band instead.
+                            final excess = rawDrag.value - dragProgress.value;
+                            overscroll.value =
+                                (atStart && excess < 0) || (atEnd && excess > 0)
+                                ? excess
+                                : 0.0;
                           },
                           onHorizontalDragEnd: (details) {
-                            if (hasSelection.value) return;
-                            if (details.primaryVelocity == null) return;
-                            if (details.primaryVelocity! < -300) {
-                              // 【右から左へスワイプ (進む)】
-                              if (lastForwardJumpIndex.value != null &&
-                                  lastForwardJumpIndex.value! > currentCardIndex.value) {
-                                // 直前の「戻るスワイプ」で離れた元のカード位置へ一発復帰
-                                final targetIndex = lastForwardJumpIndex.value!;
-                                lastForwardJumpIndex.value = null; // 履歴を消費
-                                navigateTo(targetIndex);
-                              } else {
-                                // 通常の次トピック跳躍
-                                if (currentGroupIndex < groups.length - 1) {
-                                  lastBackwardJumpIndex.value = currentCardIndex.value; // 戻る履歴に現在地を記録
-                                  lastForwardJumpIndex.value = null; // 進む履歴はクリア
-                                  navigateTo(
-                                    groupStartIndex[currentGroupIndex + 1],
-                                  );
-                                }
-                              }
-                            } else if (details.primaryVelocity! > 300) {
-                              // 【左から右へスワイプ (戻る)】
-                              if (lastBackwardJumpIndex.value != null &&
-                                  lastBackwardJumpIndex.value! < currentCardIndex.value) {
-                                // 直前の「進むスワイプ」で離れた元のカード位置へ一発復帰
-                                final targetIndex = lastBackwardJumpIndex.value!;
-                                lastBackwardJumpIndex.value = null; // 履歴を消費
-                                lastForwardJumpIndex.value = currentCardIndex.value; // 進む履歴に離れる現在地を記録
-                                navigateTo(targetIndex);
-                              } else {
-                                final currentTopicCoverIndex =
-                                    groupStartIndex[currentGroupIndex];
-                                // 戻る跳躍をする前の現在位置を進む履歴に記録
-                                lastForwardJumpIndex.value = currentCardIndex.value;
-
-                                if (currentCardIndex.value >
-                                    currentTopicCoverIndex) {
-                                  // コンテンツカードにいる場合は現在のトピックの表紙へ
-                                  navigateTo(currentTopicCoverIndex);
-                                } else if (currentGroupIndex > 0) {
-                                  // 既に表紙にいる場合は前のトピックの表紙へ
-                                  navigateTo(
-                                    groupStartIndex[currentGroupIndex - 1],
-                                  );
-                                }
-                              }
-                            }
+                            if (!isDragging.value) return;
+                            final travelled = dragProgress.value;
+                            final dir = travelled >= 0 ? 1 : -1;
+                            final velocity = details.primaryVelocity ?? 0.0;
+                            final flung =
+                                velocity.abs() > 700 &&
+                                (velocity < 0) == (dir > 0);
+                            final commit =
+                                travelled.abs() >= 0.35 ||
+                                (travelled.abs() > 0.03 && flung);
+                            dragProgress.value = 0.0;
+                            // Letting go releases the rubber band: isDragging
+                            // goes false in settle(), which switches the
+                            // TweenAnimationBuilder below from "track the
+                            // finger" to "ease back to zero".
+                            overscroll.value = 0.0;
+                            rawDrag.value = 0.0;
+                            settle(
+                              anchor: committedIndex.value,
+                              dir: dir,
+                              fromProgress: travelled.abs(),
+                              toDest: commit,
+                            );
                           },
-                          child: Builder(
-                            builder: (context) {
-                              // Pre-warm the widget cache for both neighbors so the
-                              // Markdown parse / decoration setup for the next card
-                              // has already happened by the time it's actually
-                              // needed, instead of paying that cost synchronously
-                              // at the start of the transition.
-                              if (currentCardIndex.value > 0) {
-                                buildCard(currentCardIndex.value - 1);
-                              }
-                              if (currentCardIndex.value < totalCards - 1) {
-                                buildCard(currentCardIndex.value + 1);
-                              }
-
-                              final currentCard = buildCard(
-                                currentCardIndex.value,
-                              );
-
-                              return AnimatedBuilder(
-                                animation: animationController,
-                                builder: (context, _) {
-                                  if (isAnimating.value) {
-                                    final progress = animationController.value;
-                                    final oldIndex = previousCardIndex.value;
-                                    final newIndex = currentCardIndex.value;
-                                    // Multi-card swipes (e.g. jumping straight to
-                                    // the next/previous topic cover) skip over
-                                    // several cards at once. Represent each
-                                    // skipped card (max 5, since topics are a
-                                    // fixed 5 cards) as its own real, stacked
-                                    // layer instead of a single generic
-                                    // transition. Layer 0 is always [oldIndex] and
-                                    // the last layer is always [newIndex] exactly
-                                    // -- middle layers are sampled proportionally
-                                    // when the real distance is larger than the
-                                    // number of layer slots, so the animation
-                                    // never lands anywhere but the true target.
-                                    final totalDistance = (newIndex - oldIndex)
-                                        .abs();
-                                    final skipCount = totalDistance.clamp(1, 5);
-                                    final sign = newIndex >= oldIndex ? 1 : -1;
-                                    final layers = <Widget>[
-                                      for (var d = 0; d <= skipCount; d++)
-                                        buildCard(
-                                          (d == skipCount
-                                                  ? newIndex
-                                                  : oldIndex +
-                                                        sign *
-                                                            ((d * totalDistance) ~/
-                                                                skipCount))
-                                              .clamp(0, totalCards - 1),
-                                        ),
-                                    ];
-
-                                    if (isGoingForward.value) {
-                                      // Only the final destination layer grows in
-                                      // from underneath; the cards flying past on
-                                      // top of it all stay the same size as each
-                                      // other (only their position/rotation
-                                      // changes) so the stack doesn't look like it
-                                      // shrinks as it goes deeper.
-                                      final finalRestScale =
-                                          1.0 - 0.08 * skipCount;
-                                      return Stack(
-                                        children: [
-                                          Positioned.fill(
-                                            child: Transform.scale(
-                                              scale:
-                                                  finalRestScale +
-                                                  (1.0 - finalRestScale) *
-                                                      progress,
-                                              child: Opacity(
-                                                opacity: 0.5 + (0.5 * progress),
-                                                child: layers[skipCount],
-                                              ),
-                                            ),
-                                          ),
-                                          for (
-                                            var d = skipCount - 1;
-                                            d >= 0;
-                                            d--
-                                          )
-                                            Positioned.fill(
-                                              child: Transform.translate(
-                                                offset: Offset(
-                                                  -_staggeredLocal(
-                                                        progress,
-                                                        d,
-                                                        skipCount,
-                                                      ) *
-                                                      screenWidth,
-                                                  0,
-                                                ),
-                                                child: Transform.rotate(
-                                                  angle:
-                                                      -_staggeredLocal(
-                                                        progress,
-                                                        d,
-                                                        skipCount,
-                                                      ) *
-                                                      0.2,
-                                                  alignment:
-                                                      Alignment.bottomCenter,
-                                                  child: layers[d],
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      );
-                                    } else {
-                                      return Stack(
-                                        children: [
-                                          Positioned.fill(
-                                            child: Transform.scale(
-                                              scale: 1.0 - (0.08 * progress),
-                                              child: Opacity(
-                                                opacity: 1.0 - (0.5 * progress),
-                                                child: layers[0],
-                                              ),
-                                            ),
-                                          ),
-                                          for (var d = 1; d <= skipCount; d++)
-                                            Positioned.fill(
-                                              child: Transform.translate(
-                                                offset: Offset(
-                                                  -(1.0 -
-                                                          _staggeredLocal(
-                                                            progress,
-                                                            d - 1,
-                                                            skipCount,
-                                                          )) *
-                                                      screenWidth,
-                                                  0,
-                                                ),
-                                                child: Transform.rotate(
-                                                  angle:
-                                                      -(1.0 -
-                                                          _staggeredLocal(
-                                                            progress,
-                                                            d - 1,
-                                                            skipCount,
-                                                          )) *
-                                                      0.2,
-                                                  alignment:
-                                                      Alignment.bottomCenter,
-                                                  child: layers[d],
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      );
-                                    }
+                          onHorizontalDragCancel: () {
+                            if (!isDragging.value) return;
+                            final travelled = dragProgress.value;
+                            dragProgress.value = 0.0;
+                            overscroll.value = 0.0;
+                            rawDrag.value = 0.0;
+                            settle(
+                              anchor: committedIndex.value,
+                              dir: travelled >= 0 ? 1 : -1,
+                              fromProgress: travelled.abs(),
+                              toDest: false,
+                            );
+                          },
+                          child: TweenAnimationBuilder<double>(
+                            // Diminishing returns: the card gives a little at
+                            // first and then refuses to move further, so it
+                            // reads as "there is nothing past this one".
+                            tween: Tween<double>(
+                              end: overscroll.value == 0.0
+                                  ? 0.0
+                                  : -overscroll.value.sign *
+                                        0.14 *
+                                        cardWidth *
+                                        (1.0 -
+                                            1.0 /
+                                                (1.0 +
+                                                    overscroll.value.abs() *
+                                                        4.0)),
+                            ),
+                            // Zero while the finger is down so the card tracks
+                            // it exactly; a tap's outward nudge is quick, and
+                            // everything else is the spring settling back.
+                            duration: isDragging.value
+                                ? Duration.zero
+                                : isNudging.value
+                                ? const Duration(milliseconds: 130)
+                                : const Duration(milliseconds: 320),
+                            curve: isNudging.value
+                                ? Curves.easeOut
+                                : Curves.easeOutCubic,
+                            builder: (context, dx, child) =>
+                                Transform.translate(
+                                  offset: Offset(dx, 0),
+                                  child: child,
+                                ),
+                            child: Builder(
+                              builder: (context) {
+                                // Pre-warm the widget cache for both neighbors so the
+                                // Markdown parse / decoration setup for the next card
+                                // has already happened by the time it's actually
+                                // needed, instead of paying that cost synchronously
+                                // at the start of the transition. Skipped while a
+                                // gesture is live: it rebuilds on every finger
+                                // movement, and the cards it would warm are already
+                                // being rendered by the cascade below.
+                                if (!isDragging.value && !isScrubbing.value) {
+                                  if (committedIndex.value > 0) {
+                                    buildCard(committedIndex.value - 1);
                                   }
-                                  return currentCard;
-                                },
-                              );
-                            },
+                                  if (committedIndex.value < totalCards - 1) {
+                                    buildCard(committedIndex.value + 1);
+                                  }
+                                }
+
+                                return AnimatedBuilder(
+                                  animation: animationController,
+                                  builder: (context, _) {
+                                    // The same cascade renders three different
+                                    // drivers: the settle/tap animation reads the
+                                    // controller, a card drag reads the finger's
+                                    // offset, and a progress-bar scrub reads the
+                                    // fractional card position under the finger.
+                                    final int oldIndex;
+                                    final int newIndex;
+                                    final double progress;
+                                    final bool forward;
+                                    if (isScrubbing.value) {
+                                      oldIndex = scrubPos.value.floor().clamp(
+                                        0,
+                                        totalCards - 1,
+                                      );
+                                      newIndex = (oldIndex + 1).clamp(
+                                        0,
+                                        totalCards - 1,
+                                      );
+                                      progress = (scrubPos.value - oldIndex)
+                                          .clamp(0.0, 1.0);
+                                      // Always the forward geometry: as the finger
+                                      // moves back the fraction just unwinds, which
+                                      // keeps the flip continuous either way.
+                                      forward = true;
+                                    } else if (isDragging.value) {
+                                      oldIndex = anchorIndex.value;
+                                      forward = dragProgress.value >= 0;
+                                      newIndex = (oldIndex + (forward ? 1 : -1))
+                                          .clamp(0, totalCards - 1);
+                                      progress = dragProgress.value.abs().clamp(
+                                        0.0,
+                                        1.0,
+                                      );
+                                    } else if (isAnimating.value) {
+                                      oldIndex = anchorIndex.value;
+                                      newIndex = visualIndex.value;
+                                      progress = animationController.value;
+                                      forward = isGoingForward.value;
+                                    } else {
+                                      return buildCard(committedIndex.value);
+                                    }
+
+                                    if (oldIndex != newIndex) {
+                                      // Multi-card moves (e.g. jumping straight to
+                                      // another topic from the list sheet) skip over
+                                      // several cards at once. Represent each
+                                      // skipped card (max 5, since topics are a
+                                      // fixed 5 cards) as its own real, stacked
+                                      // layer instead of a single generic
+                                      // transition. Layer 0 is always [oldIndex] and
+                                      // the last layer is always [newIndex] exactly
+                                      // -- middle layers are sampled proportionally
+                                      // when the real distance is larger than the
+                                      // number of layer slots, so the animation
+                                      // never lands anywhere but the true target.
+                                      final totalDistance =
+                                          (newIndex - oldIndex).abs();
+                                      final skipCount = totalDistance.clamp(
+                                        1,
+                                        5,
+                                      );
+                                      final sign = newIndex >= oldIndex
+                                          ? 1
+                                          : -1;
+                                      final layers = <Widget>[
+                                        for (var d = 0; d <= skipCount; d++)
+                                          buildCard(
+                                            (d == skipCount
+                                                    ? newIndex
+                                                    : oldIndex +
+                                                          sign *
+                                                              ((d * totalDistance) ~/
+                                                                  skipCount))
+                                                .clamp(0, totalCards - 1),
+                                          ),
+                                      ];
+
+                                      if (forward) {
+                                        // Only the final destination layer grows in
+                                        // from underneath; the cards flying past on
+                                        // top of it all stay the same size as each
+                                        // other (only their position/rotation
+                                        // changes) so the stack doesn't look like it
+                                        // shrinks as it goes deeper.
+                                        final finalRestScale =
+                                            1.0 - 0.08 * skipCount;
+                                        return Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: Transform.scale(
+                                                scale:
+                                                    finalRestScale +
+                                                    (1.0 - finalRestScale) *
+                                                        progress,
+                                                child: Opacity(
+                                                  opacity:
+                                                      0.5 + (0.5 * progress),
+                                                  child: layers[skipCount],
+                                                ),
+                                              ),
+                                            ),
+                                            for (
+                                              var d = skipCount - 1;
+                                              d >= 0;
+                                              d--
+                                            )
+                                              Positioned.fill(
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                    -_staggeredLocal(
+                                                          progress,
+                                                          d,
+                                                          skipCount,
+                                                        ) *
+                                                        screenWidth,
+                                                    0,
+                                                  ),
+                                                  child: Transform.rotate(
+                                                    angle:
+                                                        -_staggeredLocal(
+                                                          progress,
+                                                          d,
+                                                          skipCount,
+                                                        ) *
+                                                        0.2,
+                                                    alignment:
+                                                        Alignment.bottomCenter,
+                                                    child: layers[d],
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        );
+                                      } else {
+                                        return Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: Transform.scale(
+                                                scale: 1.0 - (0.08 * progress),
+                                                child: Opacity(
+                                                  opacity:
+                                                      1.0 - (0.5 * progress),
+                                                  child: layers[0],
+                                                ),
+                                              ),
+                                            ),
+                                            for (var d = 1; d <= skipCount; d++)
+                                              Positioned.fill(
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                    -(1.0 -
+                                                            _staggeredLocal(
+                                                              progress,
+                                                              d - 1,
+                                                              skipCount,
+                                                            )) *
+                                                        screenWidth,
+                                                    0,
+                                                  ),
+                                                  child: Transform.rotate(
+                                                    angle:
+                                                        -(1.0 -
+                                                            _staggeredLocal(
+                                                              progress,
+                                                              d - 1,
+                                                              skipCount,
+                                                            )) *
+                                                        0.2,
+                                                    alignment:
+                                                        Alignment.bottomCenter,
+                                                    child: layers[d],
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        );
+                                      }
+                                    }
+                                    // Clamped against an edge: nothing to cascade
+                                    // between, so just show the card itself.
+                                    return buildCard(oldIndex);
+                                  },
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
@@ -1332,7 +1758,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     Text(
                       l10n.aiDisclaimerText,
                       style: TextStyle(
-                        color: AppColors.paper.textPencil.withValues(alpha: 0.7),
+                        color: AppColors.paper.textPencil.withValues(
+                          alpha: 0.7,
+                        ),
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -1396,7 +1824,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            AppLocalizations.of(context).reviewCardsViewerListSheetTitle,
+                            AppLocalizations.of(
+                              context,
+                            ).reviewCardsViewerListSheetTitle,
                             style: TextStyle(
                               color: AppColors.paper.textInk,
                               fontSize: 20,
@@ -1519,10 +1949,15 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          if (card.heroEmoji?.trim().isNotEmpty == true) ...[
+                                          if (card.heroEmoji
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true) ...[
                                             Text(
                                               card.heroEmoji!.trim(),
-                                              style: const TextStyle(fontSize: 24),
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                              ),
                                             ),
                                             const SizedBox(height: 4),
                                           ],
@@ -1594,44 +2029,61 @@ class _CoverCard extends StatelessWidget {
     );
 
     return SelectionContainer.disabled(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (isAsset)
-              Image.asset(imagePath!, fit: BoxFit.cover)
-            else if (imageFile != null)
-              Image.file(imageFile!, fit: BoxFit.cover)
-            else
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 36,
+              spreadRadius: 4,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (isAsset)
+                Image.asset(imagePath!, fit: BoxFit.cover)
+              else if (imageFile != null)
+                Image.file(imageFile!, fit: BoxFit.cover)
+              else
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
+                    ),
+                  ),
+                ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  color: Colors.white.withValues(alpha: 0.72),
+                  child: Text(
+                    title,
+                    style: titleStyle,
+                    textAlign: TextAlign.center,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                color: Colors.white.withValues(alpha: 0.72),
-                child: Text(
-                  title,
-                  style: titleStyle,
-                  textAlign: TextAlign.center,
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1679,6 +2131,8 @@ class _ContentCard extends StatelessWidget {
     this.imagePath,
     required this.themeColor,
     this.selectionListenerNotifier,
+    this.selectionAreaKey,
+    this.onSelectionChanged,
     this.temporaryHighlight,
     this.temporaryHighlightBlockIdx,
     this.onAnnotationTap,
@@ -1689,6 +2143,8 @@ class _ContentCard extends StatelessWidget {
   final String? imagePath;
   final Color themeColor;
   final SelectionListenerNotifier? selectionListenerNotifier;
+  final GlobalKey<SelectionAreaState>? selectionAreaKey;
+  final ValueChanged<SelectedContent?>? onSelectionChanged;
   final Annotation? temporaryHighlight;
   final int? temporaryHighlightBlockIdx;
   final ValueChanged<Annotation>? onAnnotationTap;
@@ -1769,9 +2225,15 @@ class _ContentCard extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           if (selectionListenerNotifier != null)
-            SelectionListener(
-              selectionNotifier: selectionListenerNotifier!,
-              child: blocks,
+            SelectionArea(
+              key: selectionAreaKey,
+              contextMenuBuilder: (context, selectableRegionState) =>
+                  const SizedBox.shrink(),
+              onSelectionChanged: onSelectionChanged,
+              child: SelectionListener(
+                selectionNotifier: selectionListenerNotifier!,
+                child: blocks,
+              ),
             )
           else
             blocks,
@@ -1797,8 +2259,16 @@ class _ContentCard extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   paperColor.withValues(alpha: 0.0),
-                  Color.lerp(paperColor, typeColor, 0.08)!.withValues(alpha: 0.70),
-                  Color.lerp(paperColor, typeColor, 0.18)!.withValues(alpha: 0.95),
+                  Color.lerp(
+                    paperColor,
+                    typeColor,
+                    0.08,
+                  )!.withValues(alpha: 0.70),
+                  Color.lerp(
+                    paperColor,
+                    typeColor,
+                    0.18,
+                  )!.withValues(alpha: 0.95),
                   Color.lerp(paperColor, typeColor, 0.28)!,
                 ],
                 stops: const [0.0, 0.35, 0.70, 1.0],
@@ -1867,10 +2337,7 @@ class _ContentCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           child: Stack(
             fit: StackFit.expand,
-            children: [
-              content,
-              buildFooterDecoration(24),
-            ],
+            children: [content, buildFooterDecoration(24)],
           ),
         ),
       );
@@ -1903,10 +2370,7 @@ class _ContentCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Stack(
             fit: StackFit.expand,
-            children: [
-              content,
-              buildFooterDecoration(16),
-            ],
+            children: [content, buildFooterDecoration(16)],
           ),
         ),
       ),
@@ -1926,9 +2390,15 @@ class _CalloutStyle {
   static _CalloutStyle fromAlertType(String? alertType, Color infoColor) {
     switch (alertType) {
       case 'warning':
-        return const _CalloutStyle(Color(0xFFE0A100), Icons.warning_amber_rounded);
+        return const _CalloutStyle(
+          Color(0xFFE0A100),
+          Icons.warning_amber_rounded,
+        );
       case 'error':
-        return const _CalloutStyle(Color(0xFFE5484D), Icons.error_outline_rounded);
+        return const _CalloutStyle(
+          Color(0xFFE5484D),
+          Icons.error_outline_rounded,
+        );
       case 'info':
       default:
         return _CalloutStyle(infoColor, Icons.lightbulb_outline_rounded);

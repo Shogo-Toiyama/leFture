@@ -1884,7 +1884,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewCardsViewerNavigationHint =>
-      'Tap left / right  •  Swipe to change topic';
+      'Tap left / right  •  Swipe to flip';
 
   @override
   String get reviewCardTypeHook => 'Hook';

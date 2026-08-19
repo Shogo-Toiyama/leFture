@@ -182,7 +182,7 @@ def print_log(*args):
 def _parse_detail_contents(content: str) -> tuple[str, str]:
     """
     Detailed Contents (Markdown) から、以下の2つを抽出して返す:
-    - summary: タイトル(H1)のすぐ下にある1-3文のミニサマリー
+    - summary: タイトル(H1)のすぐ下にある1-3文のミニサマリー (最初の段落)
     - clean_contents: タイトルとミニサマリーを抜いた、H2以降の純粋なコンテンツ
     """
     lines = content.strip().splitlines()
@@ -203,46 +203,57 @@ def _parse_detail_contents(content: str) -> tuple[str, str]:
     summary_lines = []
     content_start_idx = -1
 
+    def _is_heading_line(line_str: str) -> bool:
+        s = line_str.strip()
+        if not s:
+            return False
+        # 標準的なMarkdown見出し (#, ##, ###)
+        if s.startswith('#'):
+            return True
+        # 太字で始まる単独行 (例: **タイトル** または 🦁 **タイトル**)
+        if (s.startswith('**') and s.endswith('**')) or s.startswith('* ') or s.startswith('- '):
+            return True
+        # 絵文字から始まる短めの行（見出しとみなす）
+        if len(s) < 60 and re.match(r'^[\U00010000-\U0010ffff\u2600-\u27ff\u2300-\u23ff]', s):
+            return True
+        return False
+
     # H1 の次の行からスキャン開始
-    in_summary = False
     for i in range(title_idx + 1, len(lines)):
         line = lines[i]
         stripped = line.strip()
 
-        # 次の見出し (## または #) が来たらサマリー区切り
-        if stripped.startswith('##') or stripped.startswith('# '):
+        # 空行だった場合
+        if not stripped:
+            if summary_lines:
+                # すでにサマリー（最初の段落）を読み込み済みなら、空行に達した時点でサマリー抽出終了
+                content_start_idx = i + 1
+                break
+            continue  # H1直後の空行はスキップ
+
+        # 見出しとみなせる行が来たらサマリー抽出終了
+        if _is_heading_line(stripped):
             content_start_idx = i
             break
 
-        if stripped:
-            in_summary = True
-            summary_lines.append(line)
-        else:
-            # 空行だった場合
-            if in_summary:
-                # すでにサマリー読み込み中で次の非空行が見出し(##)なら、そこでサマリー終了
-                next_non_empty = ""
-                next_non_empty_idx = -1
-                for j in range(i + 1, len(lines)):
-                    if lines[j].strip():
-                        next_non_empty = lines[j].strip()
-                        next_non_empty_idx = j
-                        break
-                if next_non_empty.startswith('##') or next_non_empty.startswith('# '):
-                    content_start_idx = next_non_empty_idx
-                    break
-                else:
-                    # 見出しでなければ改行としてサマリーに含める
-                    summary_lines.append(line)
+        summary_lines.append(line)
 
     summary = "\n".join(summary_lines).strip()
 
     # コンテンツ本体の切り出し
-    if content_start_idx != -1:
+    if content_start_idx != -1 and content_start_idx < len(lines):
         clean_contents = "\n".join(lines[content_start_idx:]).strip()
     else:
         remaining_lines = lines[title_idx + 1 + len(summary_lines):]
         clean_contents = "\n".join(remaining_lines).strip()
+
+    # セイフティネット: 万が一サマリーが400文字を超えて長大化している場合は最初の段落のみを強制抽出
+    if len(summary) > 400:
+        summary_paragraphs = [p.strip() for p in summary.split('\n\n') if p.strip()]
+        if len(summary_paragraphs) > 1:
+            summary = summary_paragraphs[0]
+            overflow_text = "\n\n".join(summary_paragraphs[1:])
+            clean_contents = f"{overflow_text}\n\n{clean_contents}".strip()
 
     return summary, clean_contents
 

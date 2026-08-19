@@ -6,7 +6,6 @@ import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/domain/entities/processing_task.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
-import 'package:lefture/presentation/widgets/custom_dialog.dart';
 
 /// パイプラインの各ステップ(processingTaskOrder順)を1行ずつ表示するリスト。
 /// [ProcessingView]（分析中）と[LectureStatusScaffold]のfailed状態、両方から
@@ -173,7 +172,6 @@ class _StepTile extends StatelessWidget {
     this.subtitle,
     this.showSpinner = false,
     this.strikethrough = false,
-    this.trailing,
   });
 
   final IconData? icon;
@@ -183,7 +181,6 @@ class _StepTile extends StatelessWidget {
   final Widget? subtitle;
   final bool showSpinner;
   final bool strikethrough;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -221,13 +218,12 @@ class _StepTile extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) trailing!,
       ],
     );
   }
 }
 
-class _RetryableCompletedStep extends HookConsumerWidget {
+class _RetryableCompletedStep extends StatelessWidget {
   const _RetryableCompletedStep({required this.taskType, required this.task, required this.label});
 
   final String taskType;
@@ -235,70 +231,14 @@ class _RetryableCompletedStep extends HookConsumerWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isRetrying = useState(false);
-
-    Future<void> retryFromHere() async {
-      final downstream = downstreamOf(taskType)..remove(taskType);
-      final downstreamLabels = processingTaskOrder
-          .where(downstream.contains)
-          .map((t) => localizedProcessingTaskLabel(l10n, t))
-          .toList();
-
-      final message = downstreamLabels.isEmpty
-          ? l10n.pipelineStepsRetryConfirmMessageSimple(label)
-          : l10n.pipelineStepsRetryConfirmMessageWithDownstream(
-              label,
-              downstreamLabels.join(', '),
-            );
-
-      final confirm = await showCustomDialog(
-        context: context,
-        title: l10n.pipelineStepsRetryDialogTitle,
-        message: message,
-        confirmLabel: l10n.pipelineStepsRetryConfirmButton,
-        icon: Icons.refresh,
-        isDestructive: true,
-      );
-      if (confirm != true) return;
-
-      isRetrying.value = true;
-      try {
-        await ref.read(jobRepositoryProvider).retryTask(taskId: task.id);
-        // watchTasksForJobは全タスクが終端状態(FAILED/CANCELLED込み)になると
-        // ポーリングを永久停止する。リトライはジョブを作り直さず同じジョブ内で
-        // タスクをRUNNING/QUEUEDに戻すだけなので、invalidateして明示的に
-        // ポーリングを再起動しないと、以後永久に古いスナップショットのまま
-        // 更新されなくなる(スピナーが二度と出ない不具合の原因)。
-        ref.invalidate(jobTasksStreamProvider(task.jobId));
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.pipelineStepsRetryFailedSnackbar(e.toString()))),
-          );
-        }
-      } finally {
-        if (context.mounted) isRetrying.value = false;
-      }
-    }
 
     return _StepTile(
       icon: Icons.check_circle,
       iconColor: AppColors.growthGreen,
       label: label,
       subtitle: Text(DateFormat.jm(l10n.localeName).format(task.updatedAt.toLocal())),
-      trailing: IconButton(
-        onPressed: isRetrying.value ? null : retryFromHere,
-        tooltip: l10n.pipelineStepsRetryTooltip,
-        icon: isRetrying.value
-            ? SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.universe.textComet),
-              )
-            : Icon(Icons.replay, size: 18, color: AppColors.universe.textComet),
-      ),
     );
   }
 }

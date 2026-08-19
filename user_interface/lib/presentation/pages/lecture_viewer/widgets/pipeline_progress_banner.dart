@@ -135,7 +135,7 @@ class PipelineProgressBanner extends HookConsumerWidget {
   }
 }
 
-class _PipelineDetailsSheet extends ConsumerWidget {
+class _PipelineDetailsSheet extends StatelessWidget {
   const _PipelineDetailsSheet({
     required this.lectureId,
     required this.initialTasks,
@@ -147,15 +147,8 @@ class _PipelineDetailsSheet extends ConsumerWidget {
   final bool initialJobFailed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final job = ref.watch(jobStreamProvider(lectureId)).asData?.value;
-    final tasks = job == null
-        ? initialTasks
-        : ref.watch(jobTasksStreamProvider(job.id)).asData?.value ?? initialTasks;
-    final jobFailed = job == null
-        ? initialJobFailed
-        : (job.status == 'FAILED' || job.status == 'ERROR');
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -192,7 +185,18 @@ class _PipelineDetailsSheet extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              PipelineStepsList(tasks: tasks, jobFailed: jobFailed),
+              Consumer(
+                builder: (context, ref, _) {
+                  final job = ref.watch(jobStreamProvider(lectureId)).asData?.value;
+                  final tasks = job == null
+                      ? initialTasks
+                      : ref.watch(jobTasksStreamProvider(job.id)).asData?.value ?? initialTasks;
+                  final jobFailed = job == null
+                      ? initialJobFailed
+                      : (job.status == 'FAILED' || job.status == 'ERROR');
+                  return PipelineStepsList(tasks: tasks, jobFailed: jobFailed);
+                },
+              ),
             ],
           ),
         );

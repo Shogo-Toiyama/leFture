@@ -370,15 +370,15 @@ class _TopicThumbnail extends ConsumerWidget {
       }
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.universe.glassBorder),
-          borderRadius: BorderRadius.circular(12),
-        ),
+    return Container(
+      width: size,
+      height: size,
+      foregroundDecoration: BoxDecoration(
+        border: Border.all(color: AppColors.universe.glassBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
         child: imageWidget,
       ),
     );

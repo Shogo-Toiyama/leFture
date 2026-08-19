@@ -1,7 +1,6 @@
 [
   {
     "topic_evaluation": {
-      "is_academic_content": true,
       "micro_topics": [
         {
           "idx": 1,
@@ -130,7 +129,6 @@
   },
   {
     "topic_evaluation": {
-      "is_academic_content": true,
       "micro_topics": [
         {
           "idx": 1,
@@ -247,7 +245,6 @@
   },
   {
     "topic_evaluation": {
-      "is_academic_content": true,
       "micro_topics": [
         {
           "idx": 1,
@@ -368,7 +365,6 @@
   },
   {
     "topic_evaluation": {
-      "is_academic_content": true,
       "micro_topics": [
         {
           "idx": 1,
@@ -492,7 +488,6 @@
   },
   {
     "topic_evaluation": {
-      "is_academic_content": true,
       "micro_topics": [
         {
           "idx": 1,
@@ -619,7 +614,6 @@
   },
   {
     "topic_evaluation": {
-      "is_academic_content": true,
       "micro_topics": [
         {
           "idx": 1,

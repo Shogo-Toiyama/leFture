@@ -580,6 +580,18 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       topic: topic,
                       topicIndex: currentIndex.value,
                       totalTopics: totalTopics,
+                      prevImagePath: currentIndex.value > 0
+                          ? resolvedTopics[currentIndex.value - 1].imagePath
+                          : null,
+                      prevTitle: currentIndex.value > 0
+                          ? resolvedTopics[currentIndex.value - 1].title
+                          : null,
+                      nextImagePath: currentIndex.value < totalTopics - 1
+                          ? resolvedTopics[currentIndex.value + 1].imagePath
+                          : null,
+                      nextTitle: currentIndex.value < totalTopics - 1
+                          ? resolvedTopics[currentIndex.value + 1].title
+                          : null,
                       arrivalDirection: navigationDirection.value,
                       textThemeColor: textThemeColor,
                       selectionAreaKey: selectionAreaKey,
@@ -1042,6 +1054,10 @@ class _NoteDetailContent extends HookWidget {
     required this.onPrev,
     required this.textThemeColor,
     required this.onSelectionChanged,
+    this.prevImagePath,
+    this.prevTitle,
+    this.nextImagePath,
+    this.nextTitle,
     this.selectionAreaKey,
     this.selectionListenerNotifier,
     this.temporaryHighlight,
@@ -1056,6 +1072,10 @@ class _NoteDetailContent extends HookWidget {
   final VoidCallback onPrev;
   final Color textThemeColor;
   final ValueChanged<String?> onSelectionChanged;
+  final String? prevImagePath;
+  final String? prevTitle;
+  final String? nextImagePath;
+  final String? nextTitle;
   final GlobalKey<SelectionAreaState>? selectionAreaKey;
   final SelectionListenerNotifier? selectionListenerNotifier;
   final Annotation? temporaryHighlight;
@@ -1178,13 +1198,18 @@ class _NoteDetailContent extends HookWidget {
           }
 
           if (isDragging) {
+            final overscrollDown = m.pixels - m.maxScrollExtent;
+            final overscrollUp = m.minScrollExtent - m.pixels;
+
+            // 「完全に下の状態」なら50px（従来の半分）、途中からのドラッグでも120px（1.2倍）
+            final thresholdNext = startedAtBottom.value ? 50.0 : 120.0;
+            final thresholdPrev = startedAtTop.value ? 50.0 : 120.0;
+
             shouldGoToNext.value =
-                startedAtBottom.value &&
-                m.pixels >= m.maxScrollExtent + 100 &&
+                overscrollDown >= thresholdNext &&
                 topicIndex < totalTopics - 1;
             shouldGoToPrev.value =
-                startedAtTop.value &&
-                m.pixels <= m.minScrollExtent - 100 &&
+                overscrollUp >= thresholdPrev &&
                 topicIndex > 0;
           }
         }
@@ -1197,16 +1222,7 @@ class _NoteDetailContent extends HookWidget {
         }
         return false;
       },
-      child: SelectionArea(
-        key: selectionAreaKey,
-        contextMenuBuilder: (context, selectableRegionState) =>
-            const SizedBox.shrink(),
-        onSelectionChanged: (content) => onSelectionChanged(
-          content != null && content.plainText.isNotEmpty
-              ? content.plainText
-              : null,
-        ),
-        child: CustomScrollbar(
+      child: CustomScrollbar(
           controller: scrollController,
           // 1トピック分のノートは有限かつ短いドキュメントなので、フィード向けの
           // 遅延読み込み(Sliver)を伴うListViewではなく、最初から全体を一括で
@@ -1221,8 +1237,17 @@ class _NoteDetailContent extends HookWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Prev arrow ─────────────────────────────────────────────
-                if (topicIndex > 0)
+                // ── Prev Topic Navigation & Preview ─────────────────────────
+                if (topicIndex > 0) ...[
+                  if ((prevImagePath != null && prevImagePath!.trim().isNotEmpty) ||
+                      (prevTitle != null && prevTitle!.trim().isNotEmpty)) ...[
+                    _AdjacentTopicHeroPreview(
+                      imagePath: prevImagePath,
+                      title: prevTitle,
+                      isNext: false,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Center(
                     child: Column(
                       children: [
@@ -1230,6 +1255,8 @@ class _NoteDetailContent extends HookWidget {
                           context: context,
                           icon: Icons.keyboard_arrow_up,
                           overscroll: overscrollTop.value,
+                          threshold: startedAtTop.value ? 50.0 : 120.0,
+                          hasReachedThreshold: shouldGoToPrev.value,
                           textThemeColor: textThemeColor,
                           onTap: onPrev,
                         ),
@@ -1244,6 +1271,7 @@ class _NoteDetailContent extends HookWidget {
                       ],
                     ),
                   ),
+                ],
 
                 // ── Hero Image ─────────────────────────────────────────────
                 if (topic.imagePath != null &&
@@ -1341,10 +1369,19 @@ class _NoteDetailContent extends HookWidget {
                 const SizedBox(height: 24),
 
                 // ── Markdown content ───────────────────────────────────────
-                _maybeWrapWithSelectionListener(
-                  selectionListenerNotifier,
-                  MarkdownBody(
-                    key: ValueKey(annotationsCacheKeyValue),
+                SelectionArea(
+                  key: selectionAreaKey,
+                  contextMenuBuilder: (context, selectableRegionState) =>
+                      const SizedBox.shrink(),
+                  onSelectionChanged: (content) => onSelectionChanged(
+                    content != null && content.plainText.isNotEmpty
+                        ? content.plainText
+                        : null,
+                  ),
+                  child: _maybeWrapWithSelectionListener(
+                    selectionListenerNotifier,
+                    MarkdownBody(
+                      key: ValueKey(annotationsCacheKeyValue),
                     data: topic.content.isNotEmpty
                         ? stripSidCitations(stripFigurePlaceholders(topic.content))
                         : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
@@ -1409,8 +1446,9 @@ class _NoteDetailContent extends HookWidget {
                             ),
                           ),
                         ),
+                      ),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 32),
 
                 // ── AI Disclaimer ──────────────────────────────────────────
@@ -1424,7 +1462,7 @@ class _NoteDetailContent extends HookWidget {
                   ),
                 ),
 
-                // ── Next arrow ─────────────────────────────────────────────
+                // ── Next Topic Navigation & Preview ─────────────────────────
                 if (topicIndex < totalTopics - 1) ...[
                   const SizedBox(height: 16),
                   Center(
@@ -1441,19 +1479,29 @@ class _NoteDetailContent extends HookWidget {
                           context: context,
                           icon: Icons.keyboard_arrow_down,
                           overscroll: overscrollBottom.value,
+                          threshold: startedAtBottom.value ? 50.0 : 120.0,
+                          hasReachedThreshold: shouldGoToNext.value,
                           textThemeColor: textThemeColor,
                           onTap: onNext,
                         ),
                       ],
                     ),
                   ),
+                  if ((nextImagePath != null && nextImagePath!.trim().isNotEmpty) ||
+                      (nextTitle != null && nextTitle!.trim().isNotEmpty)) ...[
+                    const SizedBox(height: 8),
+                    _AdjacentTopicHeroPreview(
+                      imagePath: nextImagePath,
+                      title: nextTitle,
+                      isNext: true,
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 32),
               ],
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -1461,32 +1509,186 @@ class _NoteDetailContent extends HookWidget {
     required BuildContext context,
     required IconData icon,
     required double overscroll,
+    required double threshold,
+    required bool hasReachedThreshold,
     required Color textThemeColor,
     required VoidCallback onTap,
   }) {
-    final hasReachedThreshold = overscroll >= 100.0;
-    final double scale = 1.0 + (overscroll.clamp(0.0, 100.0) / 100.0) * 0.5;
-    const double baseIconSize = 24.0;
-    final double currentIconSize = baseIconSize * scale;
+    final double progress = (overscroll / threshold).clamp(0.0, 1.0);
+    const double iconSize = 24.0;
 
     return IconButton(
       onPressed: onTap,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
-      icon: Container(
+      icon: SizedBox(
         width: 44,
         height: 44,
-        decoration: BoxDecoration(
-          color: hasReachedThreshold ? textThemeColor : Colors.transparent,
-          shape: BoxShape.circle,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            if (hasReachedThreshold)
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: textThemeColor,
+                  shape: BoxShape.circle,
+                ),
+              )
+            else if (progress > 0)
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 2.5,
+                  strokeCap: StrokeCap.round,
+                  valueColor: AlwaysStoppedAnimation(textThemeColor),
+                  backgroundColor: textThemeColor.withValues(alpha: 0.15),
+                ),
+              ),
+            Icon(
+              icon,
+              color: hasReachedThreshold
+                  ? AppColors.paper.background
+                  : textThemeColor,
+              size: iconSize,
+            ),
+          ],
         ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: hasReachedThreshold
-                ? AppColors.paper.background
-                : textThemeColor,
-            size: currentIconSize,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Adjacent Topic Hero Preview (faint preview with gradient fade & title)
+// ---------------------------------------------------------------------------
+class _AdjacentTopicHeroPreview extends ConsumerWidget {
+  const _AdjacentTopicHeroPreview({
+    this.imagePath,
+    this.title,
+    required this.isNext,
+  });
+
+  final String? imagePath;
+  final String? title;
+  final bool isNext;
+
+  static const double height = 64.0;
+  static const double borderRadius = 14.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final path = imagePath;
+    final hasImage = path != null && path.trim().isNotEmpty;
+    final isAsset = hasImage && path.startsWith('assets/');
+    final fileAsync = hasImage && !isAsset
+        ? ref.watch(artifactFileProvider(path))
+        : null;
+    final file = fileAsync?.asData?.value;
+
+    Widget? imageWidget;
+    if (isAsset) {
+      imageWidget = Image.asset(
+        path,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: height,
+      );
+    } else if (file != null) {
+      imageWidget = Image.file(
+        file,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: height,
+      );
+    }
+
+    final hasTitle = title != null && title!.trim().isNotEmpty;
+    if (imageWidget == null && !hasTitle) {
+      return const SizedBox.shrink();
+    }
+
+    final effectiveBorderRadius = isNext
+        ? const BorderRadius.vertical(top: Radius.circular(borderRadius))
+        : const BorderRadius.vertical(bottom: Radius.circular(borderRadius));
+
+    return SelectionContainer.disabled(
+      child: ClipRRect(
+        borderRadius: effectiveBorderRadius,
+        child: Container(
+          width: double.infinity,
+          height: height,
+          decoration: BoxDecoration(
+            color: AppColors.paper.background,
+            borderRadius: effectiveBorderRadius,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (imageWidget != null) ...[
+                Opacity(
+                  opacity: 0.35,
+                  child: imageWidget,
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: isNext ? Alignment.topCenter : Alignment.bottomCenter,
+                      end: isNext ? Alignment.bottomCenter : Alignment.topCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppColors.paper.background.withValues(alpha: 0.35),
+                        AppColors.paper.background,
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
+                  ),
+                ),
+              ],
+              if (hasTitle)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      title!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            offset: const Offset(-1, -1),
+                            blurRadius: 1,
+                          ),
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            offset: const Offset(1, -1),
+                            blurRadius: 1,
+                          ),
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            offset: const Offset(1, 1),
+                            blurRadius: 1,
+                          ),
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            offset: const Offset(-1, 1),
+                            blurRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

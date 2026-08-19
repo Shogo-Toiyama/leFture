@@ -429,10 +429,13 @@ class _LectureViewerBody extends HookConsumerWidget {
       return null;
     }, [initialOpenAnnouncementId, announcements]);
 
-    // 何かは既に出ているが、ジョブ自体はまだ完了していない(生成中 or 一部失敗)
-    // 間だけ、控えめな進捗/エラーバナーを出す。全部readyになった(=complete)
-    // 瞬間に自然に消える。
-    final showProgressBanner = !forceReady && hasAnyReady && job != null && job.status != 'COMPLETED';
+    // 何かは既に出ているか、または現在解析実行中(processing)であり、
+    // かつジョブ自体はまだ完了していない間だけ控えめな進捗/エラーバナーを出す。
+    // 全部readyになった(=complete)瞬間に自然に消える。
+    final showProgressBanner = !forceReady &&
+        (hasAnyReady || uiState == LectureUIState.processing) &&
+        job != null &&
+        job.status != 'COMPLETED';
 
     // ★ ヘッダー(プロフィールアイコン・Homeボタン)はブラーの対象外にする。
     // FullScreenRevealBlurはchildに渡したもの全部にブラー+暗いオーバーレイを
@@ -880,7 +883,7 @@ class _LectureViewerBody extends HookConsumerWidget {
             const CustomAppBar(showHomeButton: true),
             Expanded(
               child: FullScreenRevealBlur(
-                active: !hasAnyReady,
+                active: !hasAnyReady && uiState != LectureUIState.processing,
                 overlay: LectureOverlayCard(lecture: lecture, uiState: uiState),
                 child: blurredBody,
               ),

@@ -3416,10 +3416,10 @@ abstract class AppLocalizations {
   /// **'Review Cards List'**
   String get reviewCardsViewerListSheetTitle;
 
-  /// Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, swiping moves between whole topics. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator.
+  /// Small hint text below the flashcard area on the Review Cards viewer, explaining the two navigation gestures: tapping the left/right edge of a card moves one card at a time, and swiping drags the card to flip to the previous/next one. Keep concise; the '•' separates the two clauses and can be kept or replaced with a locale-appropriate separator.
   ///
   /// In en, this message translates to:
-  /// **'Tap left / right  •  Swipe to change topic'**
+  /// **'Tap left / right  •  Swipe to flip'**
   String get reviewCardsViewerNavigationHint;
 
   /// Label for Review Card 'Hook' type. Do not translate literally; choose a short word with good nuance depending on the language (e.g., ja: つかみ).

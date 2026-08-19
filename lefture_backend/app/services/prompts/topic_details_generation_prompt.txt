@@ -47,10 +47,31 @@ EVIDENCE REQUIREMENT (STRICT)
 
 STRUCTURE & HEADINGS
 - **H1:** Must be exactly `# <idx>. <Topic Title>`
-- **Mini-Summary:** Immediately after the H1, write a 1–3 sentence explanation of the core idea.
+- **Mini-Summary:** Immediately after H1, write a 1–3 sentence explanation of the core idea as a single paragraph. Separate it from H2 sections with a blank line.
 - **H2 Sections:** Organize into 4–7 meaningful sections. Merge sections with 2 or fewer sentences.
-- **Engaging Headings:** Use learner-oriented headings with prepended emojis.
-  - *Good Examples:* "🔍 What <Term> Means", "⚙️ How <Process> Works", "🆚 <A> vs <B>", "⚠️ Common Confusion", "💡 Example: <Case>", "🎯 Key Takeaway"
+- **STRICT H2 FORMAT:** Every section heading MUST start strictly with `## ` followed by a prepended emoji and title (e.g., `## 🔍 What <Term> Means`). Do NOT omit `## ` or write plain bold text for headings.
+- **Engaging Headings Examples:** `## 🔍 What <Term> Means`, `## ⚙️ How <Process> Works`, `## 🆚 <A> vs <B>`, `## ⚠️ Common Confusion`, `## 💡 Example: <Case>`, `## 🎯 Key Takeaway`
+
+OUTPUT TEMPLATE (STRICTLY FOLLOW THIS MARKDOWN STRUCTURE):
+
+# 1. Virtual Memory and Page Tables
+
+Virtual memory provides each process with the illusion of a contiguous private address space, isolating programs from one another. The operating system uses hardware-assisted page tables to map virtual addresses to physical RAM, ensuring safety without sacrificing access performance.
+
+## 🔍 Why Virtual Memory Matters
+Without hardware isolation, a malicious or buggy application could write directly to another program's memory.⟦s000001⟧ By introducing **virtual addresses**, the operating system enforces strict memory protection so that processes remain strictly isolated from one another.⟦s000002-s000004⟧
+
+## ⚙️ How Address Translation Works
+When a CPU executes a memory instruction, the **Memory Management Unit (MMU)** intercepts the virtual address and looks up its physical mapping in the page table:
+
+1. **Page Directory Lookup:** Translates the upper address bits to locate the page table entry.⟦s000005⟧
+2. **Offset Addition:** Combines the physical frame address with lower offset bits to form the final physical address.⟦s000006-s000008⟧
+
+> Note: Hardware caches like the **Translation Lookaside Buffer (TLB)** store recent translations to make this lookup nearly instantaneous.⟦s000009⟧
+
+## 🎯 Key Takeaways
+* **Isolation**: Processes cannot inspect or modify physical memory belonging to other processes.⟦s000010⟧
+* **Efficiency**: TLBs remove translation overhead for frequent memory accesses.⟦s000011-s000012⟧
 
 OUTPUT
 - Return Markdown text ONLY. No extra commentary.

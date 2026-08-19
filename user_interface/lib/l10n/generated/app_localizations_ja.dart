@@ -1809,7 +1809,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reviewCardsViewerListSheetTitle => '復習カード一覧';
 
   @override
-  String get reviewCardsViewerNavigationHint => '左右をタップ  •  スワイプでトピック切替';
+  String get reviewCardsViewerNavigationHint => '左右をタップ  •  スワイプでめくる';
 
   @override
   String get reviewCardTypeHook => 'つかみ';

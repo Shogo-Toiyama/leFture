@@ -47,12 +47,13 @@ class LectureHeroCollage extends ConsumerWidget {
         final collageWidget = Container(
           height: 180.0,
           width: double.infinity,
-          decoration: BoxDecoration(
+          foregroundDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.universe.glassBorder),
           ),
-          clipBehavior: Clip.antiAlias, // Clip contents to rounded corners
-          child: LayoutBuilder(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: LayoutBuilder(
             builder: (context, constraints) {
               final w = constraints.maxWidth;
               final h = constraints.maxHeight;
@@ -107,7 +108,8 @@ class LectureHeroCollage extends ConsumerWidget {
               );
             },
           ),
-        );
+        ),
+      );
 
         if (onTap != null) {
           return GestureDetector(
