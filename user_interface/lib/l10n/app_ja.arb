@@ -144,7 +144,7 @@
   "recordingLiveDroppedNotice": "端末の処理が追いつかず、ライブ表示の一部が欠けています。完全な文字起こしは録音後に届きます。",
   "recordingLiveSkippedGapNotice": "バッテリー節約のため、この区間は端末での文字起こしを停止しました。約1分で正式な文字起こしが表示されます。",
   "recordingWaitingForAudio": "音声を待っています...",
-  "recordingRealtimeOffHint": "ライブ字幕やAIとの会話を使うには、（Voiceタブの「More Settings」から）リアルタイム文字起こしをオンにしてください。",
+  "recordingRealtimeOffHint": "ライブ字幕を使うには、（音声タブの「設定」から）リアルタイム文字起こしをオンにしてください。",
   "recordingReactionFunLabel": "面白い",
   "recordingReactionDifficultLabel": "難しい",
   "recordingReactionRevisitLabel": "後で",

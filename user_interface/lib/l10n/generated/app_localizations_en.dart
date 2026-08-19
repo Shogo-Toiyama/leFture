@@ -464,7 +464,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recordingRealtimeOffHint =>
-      'Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.';
+      'Turn on Realtime Transcribe (Settings, Voice tab) to see live captions here.';
 
   @override
   String get recordingReactionFunLabel => 'Interesting';

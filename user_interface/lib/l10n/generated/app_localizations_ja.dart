@@ -448,7 +448,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get recordingRealtimeOffHint =>
-      'ライブ字幕やAIとの会話を使うには、（Voiceタブの「More Settings」から）リアルタイム文字起こしをオンにしてください。';
+      'ライブ字幕を使うには、（音声タブの「設定」から）リアルタイム文字起こしをオンにしてください。';
 
   @override
   String get recordingReactionFunLabel => '面白い';

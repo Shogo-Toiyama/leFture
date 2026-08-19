@@ -299,6 +299,7 @@ class RecordingPage extends HookConsumerWidget {
     // final memoCtl = useTextEditingController();
     // useListenable(memoCtl);
     final showMoreSettings = useState(false);
+    final moreSettingsKey = useMemoized(() => GlobalKey());
     final scrollController = useScrollController();
     final selectedAudioFilePath = useState<String?>(null);
     final isSelectingFile = useState(false);
@@ -961,19 +962,23 @@ class RecordingPage extends HookConsumerWidget {
                                 child: InkWell(
                                   onTap: () {
                                     showMoreSettings.value = true;
-                                    Future.microtask(() {
-                                      if (scrollController.hasClients) {
-                                        scrollController.animateTo(
-                                          scrollController
-                                              .position
-                                              .maxScrollExtent,
-                                          duration: const Duration(
-                                            milliseconds: 300,
-                                          ),
-                                          curve: Curves.easeOut,
-                                        );
-                                      }
-                                    });
+                                    Future.delayed(
+                                      const Duration(milliseconds: 300),
+                                      () {
+                                        final ctx =
+                                            moreSettingsKey.currentContext;
+                                        if (ctx != null && ctx.mounted) {
+                                          Scrollable.ensureVisible(
+                                            ctx,
+                                            alignment: 0.0,
+                                            duration: const Duration(
+                                              milliseconds: 350,
+                                            ),
+                                            curve: Curves.easeOutCubic,
+                                          );
+                                        }
+                                      },
+                                    );
                                   },
                                   borderRadius: BorderRadius.circular(20),
                                   child: Container(
@@ -1484,6 +1489,7 @@ class RecordingPage extends HookConsumerWidget {
 
                               // More Settings アコーディオン
                               AnimatedContainer(
+                                key: moreSettingsKey,
                                 duration: const Duration(milliseconds: 300),
                                 margin: const EdgeInsets.symmetric(vertical: 8),
                                 decoration: BoxDecoration(
@@ -1519,19 +1525,23 @@ class RecordingPage extends HookConsumerWidget {
                                     final willExpand = !showMoreSettings.value;
                                     showMoreSettings.value = willExpand;
                                     if (willExpand) {
-                                      Future.microtask(() {
-                                        if (scrollController.hasClients) {
-                                          scrollController.animateTo(
-                                            scrollController
-                                                .position
-                                                .maxScrollExtent,
-                                            duration: const Duration(
-                                              milliseconds: 300,
-                                            ),
-                                            curve: Curves.easeOutCubic,
-                                          );
-                                        }
-                                      });
+                                      Future.delayed(
+                                        const Duration(milliseconds: 300),
+                                        () {
+                                          final ctx =
+                                              moreSettingsKey.currentContext;
+                                          if (ctx != null && ctx.mounted) {
+                                            Scrollable.ensureVisible(
+                                              ctx,
+                                              alignment: 0.0,
+                                              duration: const Duration(
+                                                milliseconds: 350,
+                                              ),
+                                              curve: Curves.easeOutCubic,
+                                            );
+                                          }
+                                        },
+                                      );
                                     }
                                   },
                                   borderRadius: BorderRadius.circular(12),

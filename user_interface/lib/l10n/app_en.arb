@@ -724,7 +724,7 @@
     "description": "Placeholder text inside the live transcript panel when recording has started but no speech has been transcribed yet."
   },
 
-  "recordingRealtimeOffHint": "Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.",
+  "recordingRealtimeOffHint": "Turn on Realtime Transcribe (Settings, Voice tab) to see live captions here.",
   "@recordingRealtimeOffHint": {
     "description": "Hint box shown on the Live tab when Realtime Transcribe is off, telling the user where to go to enable it (references the 'More Settings' section and 'Voice' tab by name — keep those consistent with how they're labeled elsewhere in the app)."
   },

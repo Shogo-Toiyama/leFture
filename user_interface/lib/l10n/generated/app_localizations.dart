@@ -947,7 +947,7 @@ abstract class AppLocalizations {
   /// Hint box shown on the Live tab when Realtime Transcribe is off, telling the user where to go to enable it (references the 'More Settings' section and 'Voice' tab by name — keep those consistent with how they're labeled elsewhere in the app).
   ///
   /// In en, this message translates to:
-  /// **'Turn on Realtime Transcribe (More Settings, Voice tab) to see live captions and ask AI here.'**
+  /// **'Turn on Realtime Transcribe (Settings, Voice tab) to see live captions here.'**
   String get recordingRealtimeOffHint;
 
   /// Short caption under an icon on one of three reaction buttons (Interesting / Difficult / Revisit) on the Recording page's Live tab. Must stay very short to fit under the icon.
