@@ -3330,87 +3330,6 @@
     "description": "Section header subtitle for Recent Lectures on the home page."
   },
 
-  "emptyHomeDefaultName": "Explorer",
-  "@emptyHomeDefaultName": {
-    "description": "Fallback name used in the welcome greeting on the empty home onboarding screen if the user has no username set."
-  },
-
-  "emptyHomeWelcomeGreeting": "Welcome to leFture, {name}.",
-  "@emptyHomeWelcomeGreeting": {
-    "description": "Headline greeting on the empty home onboarding screen.",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "Explorer"
-      }
-    }
-  },
-
-  "emptyHomeStartBuilding": "Start building your future.",
-  "@emptyHomeStartBuilding": {
-    "description": "Subheadline under the welcome greeting on the empty home screen."
-  },
-
-  "emptyHomeGalaxyDescription": "Every lecture you add lights a new star.\nKeep learning, and this galaxy will grow into one that's entirely your own.",
-  "@emptyHomeGalaxyDescription": {
-    "description": "Explanatory text under the galaxy graphic on the empty home onboarding screen."
-  },
-
-  "emptyHomeStepMakeProfileTitle": "Make Profile",
-  "@emptyHomeStepMakeProfileTitle": {
-    "description": "Step 1 title in the onboarding checklist on the empty home screen."
-  },
-
-  "emptyHomeStepMakeProfileDoneSubtitle": "Your profile is set",
-  "@emptyHomeStepMakeProfileDoneSubtitle": {
-    "description": "Step 1 subtitle when completed."
-  },
-
-  "emptyHomeStepMakeProfilePendingSubtitle": "Tell leFture a bit about yourself",
-  "@emptyHomeStepMakeProfilePendingSubtitle": {
-    "description": "Step 1 subtitle when pending."
-  },
-
-  "emptyHomeStepCreateCourseTitle": "Create Course",
-  "@emptyHomeStepCreateCourseTitle": {
-    "description": "Step 2 title in the onboarding checklist on the empty home screen."
-  },
-
-  "emptyHomeStepCreateCourseDisabledSubtitle": "Complete your profile first",
-  "@emptyHomeStepCreateCourseDisabledSubtitle": {
-    "description": "Step 2 subtitle when disabled."
-  },
-
-  "emptyHomeStepCreateCourseDoneSubtitle": "Course created",
-  "@emptyHomeStepCreateCourseDoneSubtitle": {
-    "description": "Step 2 subtitle when completed."
-  },
-
-  "emptyHomeStepCreateCoursePendingSubtitle": "Add your first course",
-  "@emptyHomeStepCreateCoursePendingSubtitle": {
-    "description": "Step 2 subtitle when pending."
-  },
-
-  "emptyHomeStepRecordLectureTitle": "Record Lecture",
-  "@emptyHomeStepRecordLectureTitle": {
-    "description": "Step 3 title in the onboarding checklist on the empty home screen."
-  },
-
-  "emptyHomeStepRecordLectureDisabledSubtitle": "Create a course first",
-  "@emptyHomeStepRecordLectureDisabledSubtitle": {
-    "description": "Step 3 subtitle when disabled."
-  },
-
-  "emptyHomeStepRecordLectureDoneSubtitle": "Lecture recorded",
-  "@emptyHomeStepRecordLectureDoneSubtitle": {
-    "description": "Step 3 subtitle when completed."
-  },
-
-  "emptyHomeStepRecordLecturePendingSubtitle": "Record your first lecture",
-  "@emptyHomeStepRecordLecturePendingSubtitle": {
-    "description": "Step 3 subtitle when pending."
-  },
-
   "funFactsUntitledLecture": "Untitled Lecture",
   "@funFactsUntitledLecture": {
     "description": "Fallback title for a lecture in Fun Facts card when title is empty."
@@ -4278,5 +4197,10 @@
   "signOutStayCancelButton": "Stay signed in",
   "@signOutStayCancelButton": {
     "description": "Cancel button of the sign-out confirmation dialog. Keeps the user signed in so pending data can finish syncing."
+  },
+
+  "signInUserNotFoundMessage": "Account not found. Please register from the sign-up page with a username.",
+  "@signInUserNotFoundMessage": {
+    "description": "Error message shown when a user tries to sign in via social auth on the sign-in page without an existing account."
   }
 }

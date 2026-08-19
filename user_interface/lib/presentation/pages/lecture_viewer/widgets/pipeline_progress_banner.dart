@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/domain/entities/processing_task.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -40,7 +41,11 @@ class PipelineProgressBanner extends HookConsumerWidget {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => _PipelineDetailsSheet(tasks: tasks, jobFailed: jobFailed),
+        builder: (_) => _PipelineDetailsSheet(
+          lectureId: lectureId,
+          initialTasks: tasks,
+          initialJobFailed: jobFailed,
+        ),
       );
     }
 
@@ -130,15 +135,28 @@ class PipelineProgressBanner extends HookConsumerWidget {
   }
 }
 
-class _PipelineDetailsSheet extends StatelessWidget {
-  const _PipelineDetailsSheet({required this.tasks, required this.jobFailed});
+class _PipelineDetailsSheet extends ConsumerWidget {
+  const _PipelineDetailsSheet({
+    required this.lectureId,
+    required this.initialTasks,
+    required this.initialJobFailed,
+  });
 
-  final List<ProcessingTask> tasks;
-  final bool jobFailed;
+  final String lectureId;
+  final List<ProcessingTask> initialTasks;
+  final bool initialJobFailed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final job = ref.watch(jobStreamProvider(lectureId)).asData?.value;
+    final tasks = job == null
+        ? initialTasks
+        : ref.watch(jobTasksStreamProvider(job.id)).asData?.value ?? initialTasks;
+    final jobFailed = job == null
+        ? initialJobFailed
+        : (job.status == 'FAILED' || job.status == 'ERROR');
+
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.3,

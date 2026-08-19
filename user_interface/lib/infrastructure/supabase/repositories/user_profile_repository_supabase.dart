@@ -10,6 +10,12 @@ import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/application/profile/display_language_controller.dart';
+import 'package:lefture/application/recording/recording_language_controller.dart';
+import 'package:lefture/domain/entities/app_language.dart';
+import 'package:lefture/application/sync/outbox_sync_service.dart';
+import 'package:lefture/application/sync/user_profile_outbox_push_handler.dart';
 
 part 'user_profile_repository_supabase.g.dart';
 
@@ -71,8 +77,38 @@ class UserProfileRepositorySupabase {
 
     final profile = UserProfile.fromMap(row);
 
+    // まだOutboxにpushされていないローカルの変更(言語に限らず、この行の
+    // どのフィールドの変更でも)がある場合、サーバーからの古い値で
+    // ローカル(SharedPreferences/Riverpod状態/Driftキャッシュ)を
+    // 上書きしない。UserProfileSyncService.pull()と同じ判定をここでも使う。
     final pendingIds = await _db.getPendingOutboxEntityIds('user_profile');
-    if (pendingIds.contains(uid)) {
+    final isPending = pendingIds.contains(uid);
+
+    // クラウド上の metadata に言語設定が存在する場合はローカル(SharedPreferences等)に復元・同期する
+    if (!isPending && profile.metadata != null) {
+      final meta = profile.metadata!;
+      final displayLang = meta[_displayLanguageMetadataKey] as String?;
+      final recordingLang = meta[_recordingLanguageMetadataKey] as String?;
+      if (displayLang != null && displayLang.isNotEmpty) {
+        await RecordingPreferences().setDisplayLanguage(displayLang);
+        try {
+          _ref.read(displayLanguageControllerProvider.notifier).syncFromPreferences();
+        } catch (_) {}
+      }
+      if (recordingLang != null && recordingLang.isNotEmpty) {
+        await RecordingPreferences().setRecordingLanguage(recordingLang);
+        try {
+          _ref.read(recordingLanguageControllerProvider.notifier).syncFromPreferences();
+        } catch (_) {}
+      }
+      // 端末セットアップ完了フラグはここでは立てない。この端末で実際に
+      // マイク・通知・(Android)バッテリー最適化の権限が許可されているかは
+      // 見ていないため、router.dart側の権限を考慮したゲートに任せる
+      // (router.dartはhasCompletedOnboarding()の直後に必ずこのゲートを
+      // 見るため、二重管理にはならない)。
+    }
+
+    if (isPending) {
       return profile;
     }
 
@@ -230,6 +266,7 @@ class UserProfileRepositorySupabase {
   static const _tutorialCompletedMetadataKey = 'tutorial_completed_at';
   static const _tutorialCreatedMetadataKey = 'tutorial_created_at';
   static const _displayLanguageMetadataKey = 'display_language';
+  static const _recordingLanguageMetadataKey = 'recording_language';
   bool? _cachedOnboardingCompleted;
   bool? _cachedTutorialCompleted;
 
@@ -413,6 +450,8 @@ class UserProfileRepositorySupabase {
     metadata[_onboardingCompletedMetadataKey] = DateTime.now()
         .toUtc()
         .toIso8601String();
+    metadata[_displayLanguageMetadataKey] = RecordingPreferences().getDisplayLanguage();
+    metadata[_recordingLanguageMetadataKey] = RecordingPreferences().getRecordingLanguage();
 
     // metadataJson以外のフィールドはあえてCompanionに含めない(Value()でラップ
     // しない)。insertOnConflictUpdateは指定したカラムしか更新しないため、
@@ -431,6 +470,7 @@ class UserProfileRepositorySupabase {
       entityId: uid,
       op: 'update',
     );
+    await _pushOutboxImmediately();
   }
 
   /// チュートリアル閲覧完了をmetadataにマージして記録し、サーバーにも同期する。
@@ -477,10 +517,6 @@ class UserProfileRepositorySupabase {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
 
-    try {
-      await getCurrentProfile();
-    } catch (_) {}
-
     final existing = await _db.getUserProfile(uid);
     final metadata = existing?.metadataJson != null
         ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
@@ -489,6 +525,7 @@ class UserProfileRepositorySupabase {
     if (metadata[_displayLanguageMetadataKey] == languageCode) return;
 
     metadata[_displayLanguageMetadataKey] = languageCode;
+    metadata[_recordingLanguageMetadataKey] ??= RecordingPreferences().getRecordingLanguage();
 
     await _db.upsertUserProfile(
       LocalUserProfilesCompanion(
@@ -504,17 +541,94 @@ class UserProfileRepositorySupabase {
       op: 'update',
     );
 
-    // Supabase Auth 側の user_metadata にも同期（メールフック等で参照できるように）
+    DevLog.add('🌐 [UserProfileRepo] Saved display_language=$languageCode to metadata and enqueued to outbox');
+
+    // UIをブロックしないよう、ネットワーク通信(Auth更新 & Outbox Push)は非同期バックグラウンドで実行
+    unawaited(_syncAuthUserMetadataAndPush(
+      displayLanguage: languageCode,
+      recordingLanguage: metadata[_recordingLanguageMetadataKey] as String?,
+    ));
+  }
+
+  /// 録音言語（recording_language: 'ja', 'en'等）をuser_profilesのmetadataに保存・マージし、
+  /// サーバー(Supabase user_profilesテーブル & Supabase Auth user_metadata)へ同期する。
+  Future<void> setRecordingLanguage(String languageCode) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    // 「自動判定」はFlutter内部では具体的な文字列コード(kAutoDetectLanguageCode)
+    // として扱っているが、lectures.recording_languageをはじめバックエンド側は
+    // 「未設定(null)なら自動判定」という規約で統一されている。ここ(サーバーへの
+    // 書き込み境界)で正規化しておかないと、このmetadataだけ'auto'という
+    // 生の文字列が入り、規約が食い違ってしまう。
+    final normalized = languageCode == kAutoDetectLanguageCode ? null : languageCode;
+
+    final existing = await _db.getUserProfile(uid);
+    final metadata = existing?.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
+        : <String, dynamic>{};
+
+    if (metadata[_recordingLanguageMetadataKey] == normalized &&
+        metadata[_displayLanguageMetadataKey] != null) {
+      return;
+    }
+
+    metadata[_recordingLanguageMetadataKey] = normalized;
+    metadata[_displayLanguageMetadataKey] ??= RecordingPreferences().getDisplayLanguage();
+
+    await _db.upsertUserProfile(
+      LocalUserProfilesCompanion(
+        id: Value(uid),
+        metadataJson: Value(jsonEncode(metadata)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.enqueueOutbox(
+      entityType: 'user_profile',
+      entityId: uid,
+      op: 'update',
+    );
+
+    DevLog.add('🌐 [UserProfileRepo] Saved recording_language=$normalized (raw="$languageCode") to metadata and enqueued to outbox');
+
+    // UIをブロックしないよう、ネットワーク通信(Auth更新 & Outbox Push)は非同期バックグラウンドで実行
+    unawaited(_syncAuthUserMetadataAndPush(
+      recordingLanguage: normalized,
+      displayLanguage: metadata[_displayLanguageMetadataKey] as String?,
+    ));
+  }
+
+  Future<void> _syncAuthUserMetadataAndPush({
+    String? displayLanguage,
+    String? recordingLanguage,
+  }) async {
     try {
-      await supabase.auth.updateUser(
-        UserAttributes(
-          data: {'display_language': languageCode},
-        ),
-      );
+      final data = <String, dynamic>{};
+      if (displayLanguage != null) data['display_language'] = displayLanguage;
+      if (recordingLanguage != null) data['recording_language'] = recordingLanguage;
+
+      if (data.isNotEmpty) {
+        await supabase.auth.updateUser(
+          UserAttributes(data: data),
+        );
+      }
     } catch (e) {
       DevLog.add('⚠️ [UserProfileRepo] Failed to update Auth user_metadata: $e');
     }
 
-    DevLog.add('🌐 [UserProfileRepo] Saved display_language=$languageCode to metadata and enqueued to outbox');
+    await _pushOutboxImmediately();
+  }
+
+  Future<void> _pushOutboxImmediately() async {
+    try {
+      final syncService = OutboxSyncService(_db, {
+        'user_profile': UserProfileOutboxPushHandler(),
+      });
+      await syncService.pushAll();
+    } catch (e) {
+      DevLog.add('⚠️ [UserProfileRepo] Failed to push user_profile outbox immediately: $e');
+    }
   }
 }
+

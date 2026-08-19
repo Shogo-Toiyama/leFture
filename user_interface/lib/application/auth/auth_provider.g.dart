@@ -153,9 +153,24 @@ final class AuthControllerProvider
         retry: null,
         name: r'authControllerProvider',
         isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+        dependencies: <ProviderOrFamily>[
+          userProfileRepositoryProvider,
+          lectureControllerProvider,
+        ],
+        $allTransitiveDependencies: <ProviderOrFamily>{
+          AuthControllerProvider.$allTransitiveDependencies0,
+          AuthControllerProvider.$allTransitiveDependencies1,
+          AuthControllerProvider.$allTransitiveDependencies2,
+          AuthControllerProvider.$allTransitiveDependencies3,
+        },
       );
+
+  static final $allTransitiveDependencies0 = userProfileRepositoryProvider;
+  static final $allTransitiveDependencies1 = lectureControllerProvider;
+  static final $allTransitiveDependencies2 =
+      LectureControllerProvider.$allTransitiveDependencies0;
+  static final $allTransitiveDependencies3 =
+      LectureControllerProvider.$allTransitiveDependencies1;
 
   @override
   String debugGetCreateSourceHash() => _$authControllerHash();
@@ -165,7 +180,7 @@ final class AuthControllerProvider
   AuthController create() => AuthController();
 }
 
-String _$authControllerHash() => r'037c0b6faf63937bef3249eb500a75445caf7610';
+String _$authControllerHash() => r'9c4e701f3831cb60db576c1251df44dfef6afc52';
 
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
 

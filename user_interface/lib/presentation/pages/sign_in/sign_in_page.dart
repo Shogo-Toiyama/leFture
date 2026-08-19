@@ -41,6 +41,10 @@ class SignInPage extends HookConsumerWidget {
           }
         },
         error: (error, stackTrace) {
+          if (error.toString().contains('ACCOUNT_NOT_FOUND')) {
+            inlineError.value = l10n.signInUserNotFoundMessage;
+            return;
+          }
           AppErrorDialog.showSmartNamed(
             context,
             actionName: 'signing in',

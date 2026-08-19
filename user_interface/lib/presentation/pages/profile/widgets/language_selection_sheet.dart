@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
@@ -131,19 +132,19 @@ class LanguageSelectionSheet extends ConsumerWidget {
                   return _LanguageTile(
                     language: lang,
                     isSelected: isSelected,
-                    onTap: () async {
+                    onTap: () {
                       if (!isSelected) {
                         if (isRecording) {
-                          await ref
+                          unawaited(ref
                               .read(recordingControllerProvider.notifier)
-                              .updateRecordingLanguage(lang.code);
+                              .updateRecordingLanguage(lang.code));
                         } else {
-                          await ref
+                          unawaited(ref
                               .read(displayLanguageControllerProvider.notifier)
-                              .setLanguage(lang.code);
+                              .setLanguage(lang.code));
                         }
                       }
-                      if (context.mounted) Navigator.of(context).pop();
+                      Navigator.of(context).pop();
                     },
                   );
                 },

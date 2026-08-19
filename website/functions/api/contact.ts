@@ -213,7 +213,8 @@ function buildEmailWrapper(bodyHtml: string): string {
         border-color: ${COLOR_CARD_BORDER} !important;
       }
     }
-    a { color: ${COLOR_PRIMARY} !important; }
+    a { color: ${COLOR_PRIMARY}; }
+    .email-btn-link { color: #0D0D14 !important; background-color: ${COLOR_PRIMARY} !important; }
   </style>
 </head>
 <body style="margin:0 !important; padding:0 !important; background-color:${COLOR_BACKGROUND} !important; color:${COLOR_TEXT_MAIN} !important;">

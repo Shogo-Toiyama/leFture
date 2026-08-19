@@ -1955,54 +1955,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get homeRecentLecturesSectionTitle => '最近の講義';
 
   @override
-  String get emptyHomeDefaultName => 'チャレンジャー';
-
-  @override
-  String emptyHomeWelcomeGreeting(String name) {
-    return 'leFtureへようこそ、$nameさん';
-  }
-
-  @override
-  String get emptyHomeStartBuilding => 'あなたの未来を創り始めましょう。';
-
-  @override
-  String get emptyHomeGalaxyDescription =>
-      '講義を追加するたびに、新しい星が灯ります。\n学びを重ねることで、あなただけの銀河が広がっていきます。';
-
-  @override
-  String get emptyHomeStepMakeProfileTitle => 'プロフィール作成';
-
-  @override
-  String get emptyHomeStepMakeProfileDoneSubtitle => 'プロフィール設定完了';
-
-  @override
-  String get emptyHomeStepMakeProfilePendingSubtitle => 'あなたについて教えてください';
-
-  @override
-  String get emptyHomeStepCreateCourseTitle => 'コースを作成';
-
-  @override
-  String get emptyHomeStepCreateCourseDisabledSubtitle => '最初にプロフィールを設定してください';
-
-  @override
-  String get emptyHomeStepCreateCourseDoneSubtitle => 'コース作成済み';
-
-  @override
-  String get emptyHomeStepCreateCoursePendingSubtitle => '最初のコースを追加しましょう';
-
-  @override
-  String get emptyHomeStepRecordLectureTitle => '講義を録音';
-
-  @override
-  String get emptyHomeStepRecordLectureDisabledSubtitle => '最初にコースを作成してください';
-
-  @override
-  String get emptyHomeStepRecordLectureDoneSubtitle => '講義録音済み';
-
-  @override
-  String get emptyHomeStepRecordLecturePendingSubtitle => '最初の講義を録音しましょう';
-
-  @override
   String get funFactsUntitledLecture => '無題の講義';
 
   @override
@@ -2688,4 +2640,8 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get signOutStayCancelButton => 'サインアウトしない';
+
+  @override
+  String get signInUserNotFoundMessage =>
+      'アカウントが存在しません。新規登録画面からユーザーネームを設定して登録してください。';
 }

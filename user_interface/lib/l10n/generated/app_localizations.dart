@@ -3692,96 +3692,6 @@ abstract class AppLocalizations {
   /// **'RECENT LECTURES'**
   String get homeRecentLecturesSectionTitle;
 
-  /// Fallback name used in the welcome greeting on the empty home onboarding screen if the user has no username set.
-  ///
-  /// In en, this message translates to:
-  /// **'Explorer'**
-  String get emptyHomeDefaultName;
-
-  /// Headline greeting on the empty home onboarding screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome to leFture, {name}.'**
-  String emptyHomeWelcomeGreeting(String name);
-
-  /// Subheadline under the welcome greeting on the empty home screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Start building your future.'**
-  String get emptyHomeStartBuilding;
-
-  /// Explanatory text under the galaxy graphic on the empty home onboarding screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Every lecture you add lights a new star.\nKeep learning, and this galaxy will grow into one that\'s entirely your own.'**
-  String get emptyHomeGalaxyDescription;
-
-  /// Step 1 title in the onboarding checklist on the empty home screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Make Profile'**
-  String get emptyHomeStepMakeProfileTitle;
-
-  /// Step 1 subtitle when completed.
-  ///
-  /// In en, this message translates to:
-  /// **'Your profile is set'**
-  String get emptyHomeStepMakeProfileDoneSubtitle;
-
-  /// Step 1 subtitle when pending.
-  ///
-  /// In en, this message translates to:
-  /// **'Tell leFture a bit about yourself'**
-  String get emptyHomeStepMakeProfilePendingSubtitle;
-
-  /// Step 2 title in the onboarding checklist on the empty home screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Course'**
-  String get emptyHomeStepCreateCourseTitle;
-
-  /// Step 2 subtitle when disabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete your profile first'**
-  String get emptyHomeStepCreateCourseDisabledSubtitle;
-
-  /// Step 2 subtitle when completed.
-  ///
-  /// In en, this message translates to:
-  /// **'Course created'**
-  String get emptyHomeStepCreateCourseDoneSubtitle;
-
-  /// Step 2 subtitle when pending.
-  ///
-  /// In en, this message translates to:
-  /// **'Add your first course'**
-  String get emptyHomeStepCreateCoursePendingSubtitle;
-
-  /// Step 3 title in the onboarding checklist on the empty home screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Record Lecture'**
-  String get emptyHomeStepRecordLectureTitle;
-
-  /// Step 3 subtitle when disabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Create a course first'**
-  String get emptyHomeStepRecordLectureDisabledSubtitle;
-
-  /// Step 3 subtitle when completed.
-  ///
-  /// In en, this message translates to:
-  /// **'Lecture recorded'**
-  String get emptyHomeStepRecordLectureDoneSubtitle;
-
-  /// Step 3 subtitle when pending.
-  ///
-  /// In en, this message translates to:
-  /// **'Record your first lecture'**
-  String get emptyHomeStepRecordLecturePendingSubtitle;
-
   /// Fallback title for a lecture in Fun Facts card when title is empty.
   ///
   /// In en, this message translates to:
@@ -5053,6 +4963,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stay signed in'**
   String get signOutStayCancelButton;
+
+  /// Error message shown when a user tries to sign in via social auth on the sign-in page without an existing account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not found. Please register from the sign-up page with a username.'**
+  String get signInUserNotFoundMessage;
 }
 
 class _AppLocalizationsDelegate

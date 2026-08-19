@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/core/services/device_permissions_service.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/infrastructure/supabase/pending_auth_action.dart';
@@ -240,23 +241,38 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == AppRoutes.accountDeleted ||
           isEmailSignupPendingResult;
 
+      // 0. 未ログイン状態への遷移(=signOut()直後)が自己都合のアカウント削除
+      //    (deleteAccount()、非公開ルートから実行)によるものなら、現在地に
+      //    関わらず通常のサインイン画面ではなく削除完了画面へ誘導する
+      //    (一度使ったらフラグは消費する)。
+      //    ※ ソーシャルサインイン時の「未登録アカウントの自動ロールバック」
+      //    (_cleanupUnauthorizedNewSocialUser)はこのフラグを使わない
+      //    (削除完了画面ではなく通常のサインイン画面にエラー表示するのが
+      //    正しいUXのため。auth_provider.dart参照)。
+      if (session == null && isAccountBeingDeleted) {
+        isAccountBeingDeleted = false;
+        return AppRoutes.accountDeleted;
+      }
+
       // 1. 未ログインなら基本サインインへ強制移動。ただしこの端末でまだ
       //    Introduction(3枚のスライド)を見せていなければ、サインインより
       //    先にそちらへ誘導する(新規インストール限定の一度きりの導線)。
       if (session == null && !isPublicRoute) {
-        // アカウント削除によるsignOut()直後の場合、まだこの画面(ダイアログ表示中)
-        // へ到達した状態でredirectが割り込むことがある。このケースだけは通常の
-        // /sign_inではなく削除完了画面へ誘導する(一度使ったらフラグは消費する)。
-        if (isAccountBeingDeleted) {
-          isAccountBeingDeleted = false;
-          return AppRoutes.accountDeleted;
-        }
         final hasSeenIntro = RecordingPreferences().getHasSeenIntroduction();
         return hasSeenIntro ? AppRoutes.signIn : AppRoutes.introduction;
       }
 
       // 2. ログイン済みなのにAuth画面に来たらホームへ飛ばす（ただしパスワード再設定画面は除く）
-      if (session != null && isAuthRoute && path != AppRoutes.resetPassword) {
+      //    ただし、ソーシャルサインインが「既存アカウントか(=新規作成された
+      //    Authユーザーではないか)」を判定・ロールバック中は、この自動遷移を
+      //    保留する。signInWithIdToken成功時点でセッションが確立し
+      //    onAuthStateChangeが発火するため、判定・削除処理の完了より先に
+      //    ここで/homeへ連れて行ってしまうと、SignInPage側の
+      //    ロールバック/エラー表示が完走できない(auth_provider.dart参照)。
+      if (session != null &&
+          isAuthRoute &&
+          path != AppRoutes.resetPassword &&
+          !isCheckingNewSocialAccount) {
         return AppRoutes.home;
       }
 
@@ -278,18 +294,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         final uid = session.user.id;
         final deviceSetupCompleted =
             RecordingPreferences().getHasCompletedDeviceSetup(uid);
-        // 「言語・権限のスライドが再表示された」系の切り分け用。この値はSharedPreferences
-        // (端末ローカル・uidごと)なので、サインアウトのローカルデータwipeでは消えない。
-        // ここがtrueなのにスライドが出た場合は、DeviceSetupではなく上の
-        // オンボーディング判定(=プロフィールのmetadata)側が原因。
         DevLog.add(
           '[Router] deviceSetupCompleted=$deviceSetupCompleted (uid=$uid, path=$path)',
         );
         if (!deviceSetupCompleted &&
             path != AppRoutes.deviceSetup &&
             path != AppRoutes.welcome) {
-          DevLog.add('[Router] redirecting to AppRoutes.deviceSetup');
-          return AppRoutes.deviceSetup;
+          final missingPermissions =
+              await DevicePermissionsService.hasMissingRequiredPermissions();
+          if (!missingPermissions) {
+            // OSの必須権限がすべて許可済みの場合は、余計なダイアログをスキップして完了フラグを立てる
+            await RecordingPreferences().setHasCompletedDeviceSetup(uid, true);
+          } else {
+            DevLog.add('[Router] redirecting to AppRoutes.deviceSetup');
+            return AppRoutes.deviceSetup;
+          }
         }
       }
 

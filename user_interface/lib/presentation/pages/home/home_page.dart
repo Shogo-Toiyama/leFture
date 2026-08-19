@@ -12,7 +12,6 @@ import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/fun_fact/fun_fact_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
-import 'package:lefture/application/debug/debug_providers.dart';
 import 'package:lefture/application/profile/user_profile_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
@@ -29,7 +28,6 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'widgets/announcement_bar.dart';
 import 'widgets/recent_lectures_list.dart';
 import 'widgets/combined_header.dart';
-import 'widgets/empty_home_content.dart';
 import 'widgets/initial_sync_error_content.dart';
 
 // 銀河ウィジェットの高さの、画面縦幅に対する割合
@@ -193,7 +191,6 @@ class HomePage extends HookConsumerWidget {
     // 保持し続けるため、チラつき/暗転を防げる。
     final courses = coursesAsync.value;
     final lectures = lecturesAsync.value;
-    final forceEmpty = ref.watch(debugForceEmptyHomeProvider);
 
     // 初回の必須Pullが失敗した状態(InitialSyncErrorContent)からの再試行。
     // オフラインなら試みずSnackBarのみ出す(Pull-to-Refreshと同じ方針)。
@@ -225,9 +222,7 @@ class HomePage extends HookConsumerWidget {
 
     // データ読み込み中は、一瞬のチラつきを防ぐためにローディング画面を表示する。
     // lecturesが0件の場合は、上の同期(syncAttempted)が一度終わるまでは
-    // 「まだ同期前で空」の可能性があるため、ローディング扱いのままにする
-    // (新規インストール直後に本当はレクチャーがあるのにEmptyHomeContentへ
-    // 飛んでしまう不具合の対策)。
+    // 「まだ同期前で空」の可能性があるため、ローディング扱いのままにする。
     final stillWaitingForFirstSync =
         lectures != null && lectures.isEmpty && !syncAttempted.value;
     if (courses == null || lectures == null || stillWaitingForFirstSync) {
@@ -245,16 +240,8 @@ class HomePage extends HookConsumerWidget {
       );
     }
 
-    if (lectures.isEmpty || forceEmpty) {
-      // forceEmptyはQAトグルなので常にEmptyHomeContentを優先する。
-      // hasSyncedBefore==falseは「一度も'lecture'の全件Pullに成功していない」
-      // ことを意味し、この場合の「0件」は本当に0件なのか単に未同期なのか
-      // 区別できないため、紛らわしいEmptyHomeContentではなく明示的な
-      // エラー画面(再試行ボタン付き)を出す。
-      if (!forceEmpty && !hasSyncedBefore.value) {
-        return InitialSyncErrorContent(onRetry: handleInitialSyncRetry);
-      }
-      return const EmptyHomeContent();
+    if (lectures.isEmpty) {
+      return InitialSyncErrorContent(onRetry: handleInitialSyncRetry);
     }
 
     // 銀河エリアを引っ張って離すとリロードする（下に表示されるレクチャー等の実データを再取得する）

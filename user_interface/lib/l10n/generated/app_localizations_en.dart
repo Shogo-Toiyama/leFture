@@ -2040,59 +2040,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeRecentLecturesSectionTitle => 'RECENT LECTURES';
 
   @override
-  String get emptyHomeDefaultName => 'Explorer';
-
-  @override
-  String emptyHomeWelcomeGreeting(String name) {
-    return 'Welcome to leFture, $name.';
-  }
-
-  @override
-  String get emptyHomeStartBuilding => 'Start building your future.';
-
-  @override
-  String get emptyHomeGalaxyDescription =>
-      'Every lecture you add lights a new star.\nKeep learning, and this galaxy will grow into one that\'s entirely your own.';
-
-  @override
-  String get emptyHomeStepMakeProfileTitle => 'Make Profile';
-
-  @override
-  String get emptyHomeStepMakeProfileDoneSubtitle => 'Your profile is set';
-
-  @override
-  String get emptyHomeStepMakeProfilePendingSubtitle =>
-      'Tell leFture a bit about yourself';
-
-  @override
-  String get emptyHomeStepCreateCourseTitle => 'Create Course';
-
-  @override
-  String get emptyHomeStepCreateCourseDisabledSubtitle =>
-      'Complete your profile first';
-
-  @override
-  String get emptyHomeStepCreateCourseDoneSubtitle => 'Course created';
-
-  @override
-  String get emptyHomeStepCreateCoursePendingSubtitle =>
-      'Add your first course';
-
-  @override
-  String get emptyHomeStepRecordLectureTitle => 'Record Lecture';
-
-  @override
-  String get emptyHomeStepRecordLectureDisabledSubtitle =>
-      'Create a course first';
-
-  @override
-  String get emptyHomeStepRecordLectureDoneSubtitle => 'Lecture recorded';
-
-  @override
-  String get emptyHomeStepRecordLecturePendingSubtitle =>
-      'Record your first lecture';
-
-  @override
   String get funFactsUntitledLecture => 'Untitled Lecture';
 
   @override
@@ -2813,4 +2760,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signOutStayCancelButton => 'Stay signed in';
+
+  @override
+  String get signInUserNotFoundMessage =>
+      'Account not found. Please register from the sign-up page with a username.';
 }

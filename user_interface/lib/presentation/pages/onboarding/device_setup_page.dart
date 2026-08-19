@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/core/services/device_permissions_service.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_language_step.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_permissions_step.dart';
@@ -24,6 +25,7 @@ class DeviceSetupPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final step = useState(0);
+    final isChecking = useState(true);
 
     Future<void> finish() async {
       final uid = supabase.auth.currentUser?.id;
@@ -32,6 +34,22 @@ class DeviceSetupPage extends HookConsumerWidget {
       }
       if (context.mounted) context.go(AppRoutes.home);
     }
+
+    useEffect(() {
+      Future<void> initCheck() async {
+        final missingPermissions =
+            await DevicePermissionsService.hasMissingRequiredPermissions();
+        if (!missingPermissions) {
+          // 権限がすでに全て許可されている場合は完了してホームへ
+          await finish();
+          return;
+        }
+        isChecking.value = false;
+      }
+
+      initCheck();
+      return null;
+    }, const []);
 
     void next() {
       FocusManager.instance.primaryFocus?.unfocus();
@@ -47,6 +65,15 @@ class DeviceSetupPage extends HookConsumerWidget {
       FocusManager.instance.primaryFocus?.unfocus();
       SystemChannels.textInput.invokeMethod('TextInput.hide');
       if (step.value > 0) step.value--;
+    }
+
+    if (isChecking.value) {
+      return Scaffold(
+        backgroundColor: AppColors.universe.voidBackground,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.starGold),
+        ),
+      );
     }
 
     final steps = <Widget>[

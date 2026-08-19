@@ -100,11 +100,12 @@ def email_button(label: str, url: str) -> str:
       <tr>
         <td align="center">
           <a href="{url}"
+             class="email-btn-link"
              style="
                display:inline-block;
                padding:14px 36px;
-               background:{COLOR_PRIMARY};
-               color:{COLOR_BUTTON_TEXT};
+               background-color:{COLOR_PRIMARY} !important;
+               color:{COLOR_BUTTON_TEXT} !important;
                text-decoration:none;
                font-family:{FONT_STACK};
                font-size:{FONT_SIZE_BODY};
@@ -151,7 +152,7 @@ def email_fallback_link(url: str, lang: str = "en") -> str:
       font-family:{FONT_STACK};
       word-break:break-all;
     ">
-      <a href="{url}" style="color:{COLOR_PRIMARY};">{url}</a>
+      <a href="{url}" style="color:{COLOR_PRIMARY} !important;">{url}</a>
     </p>
     """
 
@@ -243,7 +244,11 @@ def email_wrapper(body_html: str) -> str:
       }}
     }}
     a {{
-      color: {COLOR_PRIMARY} !important;
+      color: {COLOR_PRIMARY};
+    }}
+    .email-btn-link {{
+      color: {COLOR_BUTTON_TEXT} !important;
+      background-color: {COLOR_PRIMARY} !important;
     }}
   </style>
 </head>

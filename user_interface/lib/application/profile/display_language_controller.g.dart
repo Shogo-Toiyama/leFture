@@ -9,20 +9,20 @@ part of 'display_language_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// アプリ画面表示言語（Display Language）の状態管理。
-/// 変更はすぐに [RecordingPreferences] に永続化される。
-/// 今後 Flutter の Locale 連動等を実装する際はここを拡張する。
+/// 変更はすぐに [RecordingPreferences] に永続化され、[userProfileRepositoryProvider] 経由で
+/// user_profiles の metadata (display_language) および Supabase Auth へ同期される。
 
 @ProviderFor(DisplayLanguageController)
 final displayLanguageControllerProvider = DisplayLanguageControllerProvider._();
 
 /// アプリ画面表示言語（Display Language）の状態管理。
-/// 変更はすぐに [RecordingPreferences] に永続化される。
-/// 今後 Flutter の Locale 連動等を実装する際はここを拡張する。
+/// 変更はすぐに [RecordingPreferences] に永続化され、[userProfileRepositoryProvider] 経由で
+/// user_profiles の metadata (display_language) および Supabase Auth へ同期される。
 final class DisplayLanguageControllerProvider
     extends $NotifierProvider<DisplayLanguageController, String> {
   /// アプリ画面表示言語（Display Language）の状態管理。
-  /// 変更はすぐに [RecordingPreferences] に永続化される。
-  /// 今後 Flutter の Locale 連動等を実装する際はここを拡張する。
+  /// 変更はすぐに [RecordingPreferences] に永続化され、[userProfileRepositoryProvider] 経由で
+  /// user_profiles の metadata (display_language) および Supabase Auth へ同期される。
   DisplayLanguageControllerProvider._()
     : super(
         from: null,
@@ -51,11 +51,11 @@ final class DisplayLanguageControllerProvider
 }
 
 String _$displayLanguageControllerHash() =>
-    r'50c8ff6e5dba7ea0910b3153a208d93ce3bd6706';
+    r'a59c8b47362022117737c3b64a5b8f26b97eb52a';
 
 /// アプリ画面表示言語（Display Language）の状態管理。
-/// 変更はすぐに [RecordingPreferences] に永続化される。
-/// 今後 Flutter の Locale 連動等を実装する際はここを拡張する。
+/// 変更はすぐに [RecordingPreferences] に永続化され、[userProfileRepositoryProvider] 経由で
+/// user_profiles の metadata (display_language) および Supabase Auth へ同期される。
 
 abstract class _$DisplayLanguageController extends $Notifier<String> {
   String build();

@@ -110,6 +110,7 @@ class SignUpPage extends HookConsumerWidget {
       if (!validateUsernameAndTerms()) return;
       ref.read(authControllerProvider.notifier).signInWithGoogle(
         desiredUsername: usernameController.text.trim(),
+        isSignUp: true,
       );
     }
 
@@ -117,6 +118,7 @@ class SignUpPage extends HookConsumerWidget {
       if (!validateUsernameAndTerms()) return;
       ref.read(authControllerProvider.notifier).signInWithApple(
         desiredUsername: usernameController.text.trim(),
+        isSignUp: true,
       );
     }
 

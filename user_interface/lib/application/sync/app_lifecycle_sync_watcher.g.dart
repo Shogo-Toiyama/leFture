@@ -55,9 +55,24 @@ final class AppLifecycleSyncWatcherProvider
         retry: null,
         name: r'appLifecycleSyncWatcherProvider',
         isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
+        dependencies: <ProviderOrFamily>[
+          lectureControllerProvider,
+          appConfigControllerProvider,
+        ],
+        $allTransitiveDependencies: <ProviderOrFamily>{
+          AppLifecycleSyncWatcherProvider.$allTransitiveDependencies0,
+          AppLifecycleSyncWatcherProvider.$allTransitiveDependencies1,
+          AppLifecycleSyncWatcherProvider.$allTransitiveDependencies2,
+          AppLifecycleSyncWatcherProvider.$allTransitiveDependencies3,
+        },
       );
+
+  static final $allTransitiveDependencies0 = lectureControllerProvider;
+  static final $allTransitiveDependencies1 =
+      LectureControllerProvider.$allTransitiveDependencies0;
+  static final $allTransitiveDependencies2 =
+      LectureControllerProvider.$allTransitiveDependencies1;
+  static final $allTransitiveDependencies3 = appConfigControllerProvider;
 
   @override
   String debugGetCreateSourceHash() => _$appLifecycleSyncWatcherHash();
@@ -83,4 +98,4 @@ final class AppLifecycleSyncWatcherProvider
 }
 
 String _$appLifecycleSyncWatcherHash() =>
-    r'ae87db6d13ba28920522aaaf1a255c9e8939bac9';
+    r'bed59b0b20ff475d12a6d73b08c82b0c789c3997';

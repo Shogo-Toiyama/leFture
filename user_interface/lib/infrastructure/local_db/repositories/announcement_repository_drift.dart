@@ -19,11 +19,11 @@ class AnnouncementRepositoryDrift {
 
   AnnouncementRepositoryDrift(this._db);
 
-  /// 講義に紐づくアナウンスメント全件(completed_atを問わず、論理削除除外、発生順)。
+  /// 講義に紐づくアナウンスメント全件(completed_atを問わず、論理削除除外、新しい順)。
   Stream<List<Announcement>> watchAnnouncementsForLecture(String lectureId) {
     final query = _db.select(_db.localAnnouncements)
       ..where((t) => t.lectureId.equals(lectureId) & t.deletedAt.isNull())
-      ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]);
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     return query.watch().map((rows) => rows.map(_toDomain).toList());
   }
 

@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:http/http.dart' as http;
 
+import '../../core/services/recording_preferences.dart';
 import '../../core/utils/dev_log.dart';
 import '../lecture/lecture_controller.dart';
 import '../../infrastructure/local_db/app_database_provider.dart';
@@ -82,8 +83,16 @@ bool isLoggedIn(Ref ref) {
 /// セットのみを行う。
 bool isAccountBeingDeleted = false;
 
+/// サインイン画面からのソーシャルサインインで「既存アカウントか」を判定して
+/// いる最中(〜不正な新規作成アカウントの削除完了まで)にセットするフラグ。
+/// signInWithIdToken() は成功した瞬間にセッションを確立して onAuthStateChange
+/// を発火させるため、GoRouter の redirect がこの判定・削除処理の完了を待たずに
+/// 「ログイン済み→/home」判定を割り込みで行ってしまう。redirect 側はこの
+/// フラグが立っている間、その自動遷移を保留する(router.dart 参照)。
+bool isCheckingNewSocialAccount = false;
+
 /// 🔐 Auth操作を管理する AsyncNotifier 相当のクラス
-@riverpod
+@Riverpod(dependencies: [userProfileRepository, LectureController])
 class AuthController extends _$AuthController {
   @override
   FutureOr<void> build() {
@@ -112,9 +121,12 @@ class AuthController extends _$AuthController {
   }) async {
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() async {
+      final prefs = RecordingPreferences();
       await supabase.auth.signUp(
         data: {
           'display_name': username,
+          'display_language': prefs.getDisplayLanguage(),
+          'recording_language': prefs.getRecordingLanguage(),
         },
         email: email,
         password: password,
@@ -200,14 +212,86 @@ class AuthController extends _$AuthController {
     }
   }
 
+  /// 現在ログイン中の Supabase Auth ユーザーが、今回のサインインで初めて
+  /// 作成されたレコードかどうかを判定する。
+  ///
+  /// `user_profiles.username` の有無で判定していた旧実装は、username の
+  /// 保存がローカルDB優先+Outbox経由でSupabaseへ非同期反映される
+  /// (UserProfileRepositorySupabase.updateProfile 参照)ため、反映前に一度
+  /// サインアウトしてソーシャル再サインインすると正規の既存アカウントが
+  /// 「未登録」と誤判定され削除されてしまう競合状態があった。
+  ///
+  /// Auth の `created_at`/`last_sign_in_at` はアプリ側の同期状態に一切
+  /// 依存せず、signInWithIdToken 成功時点でサーバーが確定させる値のため、
+  /// これを比較して「作成直後の初回サインイン(=新規)」かどうかを判定する。
+  bool _isNewlyCreatedAuthUser() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return false;
+    final createdAt = DateTime.tryParse(user.createdAt);
+    final lastSignInAtRaw = user.lastSignInAt;
+    final lastSignInAt =
+        lastSignInAtRaw != null ? DateTime.tryParse(lastSignInAtRaw) : null;
+    if (createdAt == null || lastSignInAt == null) {
+      // 判定不能な場合は誤って既存アカウントを削除しない方へ倒す
+      // (フェイルセーフ: 「新規ではない」扱いにする)。
+      return false;
+    }
+    return lastSignInAt.difference(createdAt).abs() <
+        const Duration(seconds: 10);
+  }
+
+  /// サインイン画面から未登録ソーシャルアカウントでサインインしてしまった際に、
+  /// 自動作成された Auth レコードをバックエンド経由で即座に削除し、
+  /// ローカルデータをクリアしてサインアウトする。
+  ///
+  /// ※ `isAccountBeingDeleted` は使わない。あのフラグは自己都合の
+  /// アカウント削除(MyAccountPage等、非公開ルート)専用で、立てると
+  /// router.dart が「アカウントが削除されました」画面へ誘導してしまう。
+  /// このケースは削除ではなく「そもそもアカウントが存在しない」ため、
+  /// SignInPage 側の ACCOUNT_NOT_FOUND エラー表示(通常のサインイン画面に
+  /// 留まったままメッセージを出す)が正しい遷移。/sign_in は公開ルート
+  /// 扱いなので、signOut() 後もそのまま同画面に留まる。
+  Future<void> _cleanupUnauthorizedNewSocialUser() async {
+    final jwt = supabase.auth.currentSession?.accessToken;
+    final wipeService = LocalDataWipeService(ref.read(appDatabaseProvider));
+    final lectureController = ref.read(lectureControllerProvider.notifier);
+
+    if (jwt != null) {
+      try {
+        await http.post(
+          Uri.parse('https://lefture-511705914929.us-west1.run.app/auth/delete-account'),
+          headers: {'Authorization': 'Bearer $jwt'},
+        ).timeout(const Duration(seconds: 15));
+        DevLog.add('🧹 [Auth] Deleted unauthorized new social Auth user on backend.');
+      } catch (e) {
+        DevLog.add('⚠️ [Auth] Failed to delete unauthorized social user on backend: $e');
+      }
+    }
+
+    await supabase.auth.signOut();
+
+    try {
+      await wipeService.wipeAll();
+      lectureController.invalidateArtifactFileCache();
+    } catch (e) {
+      DevLog.add('⚠️ [Auth] Local wipe after unauthorized social user cleanup failed: $e');
+    }
+  }
+
   /// Google でサインイン
   /// ネイティブSDK(google_sign_in)経由でGoogleと直接やり取りし、得たIDトークンを
   /// signInWithIdTokenでSupabaseに渡す。ブラウザを一切開かないため、
   /// Supabaseのプロジェクトドメインが同意画面に表示されない。
   ///
   /// [desiredUsername] はサインアップ画面で入力されたユーザーネーム。
-  /// サインイン画面からの呼び出しではnullのままでよい。
-  Future<void> signInWithGoogle({String? desiredUsername}) async {
+  /// [isSignUp] が false（サインイン画面からの実行）の場合、signInWithIdToken
+  /// によって新規にAuthユーザーが作成されてしまった(＝事前に登録済みのアカウント
+  /// が存在しなかった)ケースを検出して自動サインインを拒否し、自動作成された
+  /// Authユーザーを破棄して「アカウントが存在しません」エラーをスローする。
+  Future<void> signInWithGoogle({
+    String? desiredUsername,
+    bool isSignUp = false,
+  }) async {
     state = const AsyncLoading();
     try {
       final account = await GoogleSignIn.instance.authenticate();
@@ -221,10 +305,22 @@ class AuthController extends _$AuthController {
           idToken: idToken,
           nonce: googleSignInRawNonce,
         );
+
+        if (isSignUp) {
+          await _applyDesiredUsernameIfMissing(desiredUsername);
+        } else {
+          isCheckingNewSocialAccount = true;
+          try {
+            if (_isNewlyCreatedAuthUser()) {
+              DevLog.add('🚫 [Auth] Social sign-in on SignInPage created a brand-new Auth user. Rolling back...');
+              await _cleanupUnauthorizedNewSocialUser();
+              throw Exception('ACCOUNT_NOT_FOUND');
+            }
+          } finally {
+            isCheckingNewSocialAccount = false;
+          }
+        }
       });
-      if (!result.hasError) {
-        await _applyDesiredUsernameIfMissing(desiredUsername);
-      }
       if (!ref.mounted) return;
       state = result;
     } on GoogleSignInException catch (e) {
@@ -238,22 +334,17 @@ class AuthController extends _$AuthController {
 
   /// Apple でサインイン
   /// ネイティブSDK(sign_in_with_apple)経由でAppleと直接やり取りし、得た
-  /// IDトークンをsignInWithIdTokenでSupabaseに渡す。Googleと同様、ブラウザを
-  /// 一切開かない。Appleはnonceの検証を要求するため、生のnonceを生成して
-  /// そのSHA-256ハッシュをApple側のリクエストに渡し、Supabase側へは
-  /// 検証用に生のnonceをそのまま渡す。
-  ///
-  /// AndroidにはネイティブのSign in with Apple自体が存在せず、
-  /// sign_in_with_apple パッケージはAndroidでは別途Services ID/返却URLの
-  /// Web用設定(webAuthenticationOptions)が無いと動作しない。その設定は
-  /// 未実施のため、Android(および万一のWeb)では従来のブラウザ経由の
-  /// signInWithOAuthにフォールバックする。iOS/macOSのみネイティブフローを使う。
+  /// IDトークンをsignInWithIdTokenでSupabaseに渡す。
   ///
   /// [desiredUsername] はサインアップ画面で入力されたユーザーネーム。
-  /// サインイン画面からの呼び出しではnullのままでよい。ブラウザ経由の
-  /// Androidフォールバックはこの場では認証が完了しない(ディープリンク
-  /// コールバック待ち)ため、ユーザーネームの反映は非ネイティブ経路では行わない。
-  Future<void> signInWithApple({String? desiredUsername}) async {
+  /// [isSignUp] が false（サインイン画面からの実行）の場合、signInWithIdToken
+  /// によって新規にAuthユーザーが作成されてしまった(＝事前に登録済みのアカウント
+  /// が存在しなかった)ケースを検出して自動サインインを拒否し、自動作成された
+  /// Authユーザーを破棄して「アカウントが存在しません」エラーをスローする。
+  Future<void> signInWithApple({
+    String? desiredUsername,
+    bool isSignUp = false,
+  }) async {
     if (kIsWeb || !(Platform.isIOS || Platform.isMacOS)) {
       state = const AsyncLoading();
       final result = await AsyncValue.guard(() async {
@@ -288,10 +379,22 @@ class AuthController extends _$AuthController {
           idToken: idToken,
           nonce: rawNonce,
         );
+
+        if (isSignUp) {
+          await _applyDesiredUsernameIfMissing(desiredUsername);
+        } else {
+          isCheckingNewSocialAccount = true;
+          try {
+            if (_isNewlyCreatedAuthUser()) {
+              DevLog.add('🚫 [Auth] Social sign-in on SignInPage created a brand-new Auth user. Rolling back...');
+              await _cleanupUnauthorizedNewSocialUser();
+              throw Exception('ACCOUNT_NOT_FOUND');
+            }
+          } finally {
+            isCheckingNewSocialAccount = false;
+          }
+        }
       });
-      if (!result.hasError) {
-        await _applyDesiredUsernameIfMissing(desiredUsername);
-      }
       if (!ref.mounted) return;
       state = result;
     } on SignInWithAppleAuthorizationException catch (e) {

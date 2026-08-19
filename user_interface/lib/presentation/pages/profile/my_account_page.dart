@@ -8,7 +8,6 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/domain/entities/credit_summary.dart';
-import 'package:lefture/application/debug/debug_providers.dart';
 import 'package:lefture/domain/entities/user_profile.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/profile/user_profile_provider.dart';
@@ -1357,63 +1356,6 @@ class _SettingsTile extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Debug Section (collapsed / hidden by default visually)
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ignore: unused_element
-class _DebugSection extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final forceEmptyHome = ref.watch(debugForceEmptyHomeProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '🛠 DEBUG',
-            style: TextStyle(
-              color: Colors.white24,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0x0AFFFFFF),
-              border: Border.all(color: Colors.white12, width: 1),
-            ),
-            child: SwitchListTile(
-              secondary: const Icon(
-                Icons.bug_report,
-                color: Colors.white30,
-                size: 20,
-              ),
-              title: const Text(
-                'Force Empty Home',
-                style: TextStyle(color: Colors.white38, fontSize: 13),
-              ),
-              subtitle: const Text(
-                'Shows onboarding state on Home.',
-                style: TextStyle(color: Colors.white24, fontSize: 11),
-              ),
-              value: forceEmptyHome,
-              activeThumbColor: AppColors.starGold,
-              onChanged: (val) {
-                ref.read(debugForceEmptyHomeProvider.notifier).toggle(val);
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

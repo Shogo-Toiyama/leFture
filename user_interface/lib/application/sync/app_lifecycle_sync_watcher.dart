@@ -18,7 +18,10 @@ part 'app_lifecycle_sync_watcher.g.dart';
 /// 届かない期間が任意に長くなってしまう。AppConfigについても同様に、
 /// Realtime購読のような常時接続を持たない代わりに、このタイミングで
 /// 定期的に最新状態を確認する。
-@Riverpod(keepAlive: true)
+@Riverpod(
+  keepAlive: true,
+  dependencies: [LectureController, AppConfigController],
+)
 AppLifecycleSyncWatcher appLifecycleSyncWatcher(Ref ref) {
   final watcher = AppLifecycleSyncWatcher(ref);
   watcher.initialize();
