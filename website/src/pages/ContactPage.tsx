@@ -3,10 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n/LanguageContext';
 import { Mail, Send, CheckCircle2, AlertCircle, Loader2, Copy, Check, X, UploadCloud } from 'lucide-react';
 import { CustomSelect } from '../components/CustomSelect';
+import { usePageMeta } from '../lib/usePageMeta';
 
 export const ContactPage: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+
+  usePageMeta({
+    title: 'Contact Us | leFture',
+    description: 'Get in touch with the leFture team for feedback, support, or partnership inquiries.',
+    canonicalPath: '/contact',
+  });
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

@@ -3,9 +3,17 @@ import ReactMarkdown from 'react-markdown';
 import { getLegalDocument, LegalDocument } from '../lib/supabase';
 import { useTranslation } from '../i18n/LanguageContext';
 import { ShieldCheck, Loader2, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
+import { usePageMeta } from '../lib/usePageMeta';
 
 export const PrivacyPage: React.FC = () => {
   const { locale, t } = useTranslation();
+
+  usePageMeta({
+    title: 'Privacy Policy | leFture',
+    description: 'Learn how leFture collects, uses, and protects your personal data and audio recordings.',
+    canonicalPath: '/privacy',
+  });
+
   const [doc, setDoc] = useState<LegalDocument | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

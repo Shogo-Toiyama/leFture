@@ -3,9 +3,17 @@ import ReactMarkdown from 'react-markdown';
 import { getLegalDocument, LegalDocument } from '../lib/supabase';
 import { useTranslation } from '../i18n/LanguageContext';
 import { FileText, Loader2, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
+import { usePageMeta } from '../lib/usePageMeta';
 
 export const TermsPage: React.FC = () => {
   const { locale, t } = useTranslation();
+
+  usePageMeta({
+    title: 'Terms of Service | leFture',
+    description: 'Read the Terms of Service for leFture, the AI-powered lecture companion.',
+    canonicalPath: '/terms',
+  });
+
   const [doc, setDoc] = useState<LegalDocument | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

@@ -11,6 +11,7 @@ import { ClayField } from '../components/home/ClayField';
 import { Waveform } from '../components/home/Waveform';
 import { ReviewCardDeck } from '../components/home/ReviewCardDeck';
 import { PipelineSection } from '../components/home/PipelineSection';
+import { usePageMeta } from '../lib/usePageMeta';
 import './home.css';
 
 /** Accent colours, straight from the app's Universe palette. */
@@ -96,6 +97,13 @@ const FactRotator: React.FC<{
 export const HomePage: React.FC = () => {
   const { t, locale } = useTranslation();
   const home = t.home;
+
+  usePageMeta({
+    title: 'leFture | Turn Any Lecture into Knowledge for Your Future',
+    description:
+      'leFture transforms raw lecture audio into interactive review cards, deep notes, and personalized fun facts. Just tap record, set your phone down, and focus on the lecture.',
+    canonicalPath: '/',
+  });
 
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /galaxy
+
+Sitemap: https://lefture.com/sitemap.xml

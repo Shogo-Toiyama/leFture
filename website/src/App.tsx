@@ -14,6 +14,9 @@ const PrivacyPage = lazy(() =>
 const ContactPage = lazy(() =>
   import('./pages/ContactPage').then((m) => ({ default: m.ContactPage }))
 );
+const GalaxyScreenshotPage = lazy(() =>
+  import('./pages/GalaxyScreenshotPage').then((m) => ({ default: m.GalaxyScreenshotPage }))
+);
 
 const PageLoader: React.FC = () => (
   <div
@@ -48,6 +51,15 @@ export const App: React.FC = () => {
     <LanguageProvider>
       <BrowserRouter>
         <Routes>
+          {/* Temporary full-screen Galaxy page for screenshots (no header/footer) */}
+          <Route
+            path="galaxy"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <GalaxyScreenshotPage />
+              </Suspense>
+            }
+          />
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route

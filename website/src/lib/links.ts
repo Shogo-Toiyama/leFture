@@ -13,4 +13,4 @@ export const APP_STORE_URL = 'https://apps.apple.com';
  * Open Graph tags in index.html can be made absolute. Social crawlers reject
  * relative og:image paths.
  */
-export const SITE_ORIGIN = 'https://lefture.app';
+export const SITE_ORIGIN = 'https://lefture.com';

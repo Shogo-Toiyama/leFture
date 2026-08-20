@@ -6,7 +6,7 @@ export const ja: Translations = {
     terms: '利用規約',
     privacy: 'プライバシーポリシー',
     contact: 'お問い合わせ',
-    downloadApp: 'App Store',
+    downloadApp: '近日公開',
   },
   home: {
     hero: {
@@ -15,7 +15,7 @@ export const ja: Translations = {
       titleGlow: '講義に集中するだけ。',
       subtitle:
         'leFtureは、講義の録音から復習カード・詳細ノート・あなただけのファンファクトを自動生成するAI学習アプリ。授業中のノート取りや置いてけぼりのストレスから解放され、毎日の学びがワクワクする未来の知識へ変わります。',
-      primaryCta: 'App Storeでダウンロード',
+      primaryCta: 'App Storeで近日公開',
       secondaryCta: 'どんなアプリ？',
       scrollHint: 'Scroll',
     },
@@ -220,7 +220,7 @@ export const ja: Translations = {
     cta: {
       heading: '明日の講義が、楽しみになりますように。',
       sub: 'leFture は "Lectures for the Futures" の略。あなたが毎日通う講義が、ちゃんとあなたの未来を形づくっていると感じられますように。心から応援しています。',
-      button: 'App Storeでダウンロード',
+      button: 'App Storeで近日公開',
       secondary: 'お問い合わせ',
     },
   },

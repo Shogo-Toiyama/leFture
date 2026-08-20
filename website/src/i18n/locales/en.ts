@@ -6,7 +6,7 @@ export const en: Translations = {
     terms: 'Terms of Service',
     privacy: 'Privacy Policy',
     contact: 'Contact',
-    downloadApp: 'App Store',
+    downloadApp: 'Coming Soon',
   },
   home: {
     hero: {
@@ -15,7 +15,7 @@ export const en: Translations = {
       titleGlow: 'Just focus.',
       subtitle:
         'leFture turns lecture recordings into bite-sized review cards, deep notes, and personalized fun facts. Free yourself from the stress of falling behind, and turn every class into an exciting, future-shaping journey.',
-      primaryCta: 'Download on App Store',
+      primaryCta: 'Coming Soon on App Store',
       secondaryCta: 'See how it works',
       scrollHint: 'Scroll',
     },
@@ -220,7 +220,7 @@ export const en: Translations = {
     cta: {
       heading: 'Here is to looking forward to tomorrow’s lecture.',
       sub: 'leFture stands for "Lectures for the Futures." We hope the classes you attend every day start to feel like they are genuinely shaping your own future. We are cheering for you.',
-      button: 'Download on App Store',
+      button: 'Coming Soon on App Store',
       secondary: 'Contact us',
     },
   },

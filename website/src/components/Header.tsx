@@ -53,6 +53,21 @@ export const Header: React.FC = () => {
           }}>
             leFture
           </span>
+          <span style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: '0.68rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            padding: '2px 7px',
+            borderRadius: '6px',
+            backgroundColor: 'rgba(255, 179, 0, 0.12)',
+            color: 'var(--accent)',
+            border: '1px solid rgba(255, 179, 0, 0.3)',
+            marginLeft: '2px',
+          }}>
+            Beta
+          </span>
         </Link>
 
         {/* Header Right Actions (Custom Language Dropdown & App Store Button) */}

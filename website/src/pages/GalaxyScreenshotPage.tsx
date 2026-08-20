@@ -1,45 +1,26 @@
 import React, { useEffect, useRef } from 'react';
-import { clamp01, prefersReducedMotion, smoothstep, subscribeScroll } from '../../lib/scrollBus';
-import { subscribeMouse } from '../../lib/mouseBus';
 
-/**
- * A canvas port of the spiral galaxy the Flutter app renders on its home
- * screen (see `lib/application/galaxy/galaxy_data_provider.dart` and
- * `lib/presentation/widgets/galaxy/galaxy_view.dart`). Same generation maths,
- * same palette, same perspective projection — just far fewer stars so it stays
- * smooth in a browser.
- *
- * It never stops moving: the disk rotates continuously, background stars
- * twinkle, and shooting stars streak across every few seconds. Scrolling flies
- * the camera *into* the galaxy while the whole layer dims down to become the
- * page background.
- */
-
-// --- Palette (mirrors _GalaxyPainter in galaxy_view.dart) --------------------
+// --- Palette (mirrors GalaxyCanvas.tsx) --------------------
 const VOID_COLOR = '#111422';
 const STAR_PALETTE = ['#FFFFFF', '#B7D8FF', '#FFE7B0', '#FFB7B7'];
 const NEBULA_PALETTE = ['#FF5FA2', '#FF9A3D', '#B86BFF', '#4FA8FF'];
-const SHOOTING_PALETTE = ['#FFB300', '#FFD166', '#FFFFFF', '#4AA8FF', '#B98BFF'];
 
-// --- Camera -----------------------------------------------------------------
-const BASE_PITCH = 0.48;
-const BASE_ROLL = -0.16;
-const AUTO_SPIN = 0.06; // radians per second, matches the app's 0.002/frame @30fps
+// --- Camera Defaults ---------------------------------------
+const DEFAULT_PITCH = 0.45;
+const DEFAULT_YAW = 0.6;
+const DEFAULT_ZOOM = 1.8;
 const FOV = 1.2;
 
 // ★ ネビュラ（星雲ガス）の大きさ倍率
 const NEBULA_SCALE = 0.5;
 
-// ★ 銀河中心のピンクの光（内側コア）の調整（ここを変えるだけで調整できます）
-const CORE_PINK_OPACITY = 0.8; // 明るさ・透明度倍率 (例: 0.5 で半分, 1.5 で明るく, 0.0 で非表示)
+// ★ 銀河中心のピンク発光の調整（ここを変えるだけで調整できます）
+const CORE_PINK_OPACITY = 1.0; // 明るさ・透明度倍率 (例: 0.5 で半分, 1.5 で明るく, 0.0 で非表示)
 const CORE_PINK_SCALE = 0.8;   // 大きさ倍率 (例: 0.8 で小さく, 1.3 で大きく)
 
-// ★ 銀河中心の青い光（外側グロー）の調整（ここを変えるだけで調整できます）
-const CORE_BLUE_OPACITY = 0.8; // 明るさ・透明度倍率 (例: 0.5 で半分, 1.5 で明るく, 0.0 で非表示)
-const CORE_BLUE_SCALE = 1.0;   // 大きさ倍率 (例: 0.8 で小さく, 1.3 で大きく)
-
-// ★ 銀河の星の大きさ倍率（ここを変えるだけで調整できます）
-const STAR_SCALE = 1.7; // 銀河の星（バルジ・渦状腕）の大きさ倍率 (例: 1.5 で50%大きく, 0.8 で小さく)
+// ★ 星の大きさ倍率（ここを変えるだけで調整できます）
+const STAR_SCALE = 1.8;        // 銀河の星（バルジ・渦状腕）の大きさ倍率 (例: 1.3 で30%大きく)
+const BG_STAR_SCALE = 1.0;     // 背景の遠い星の大きさ倍率 (例: 1.3 で30%大きく)
 
 interface Counts {
   bulge: number;
@@ -51,10 +32,9 @@ interface Counts {
 function pickCounts(width: number): Counts {
   if (width < 700) return { bulge: 1100, disk: 3000, nebula: 8, bg: 340 };
   if (width < 1200) return { bulge: 1700, disk: 4800, nebula: 12, bg: 520 };
-  return { bulge: 2200, disk: 6200, nebula: 15, bg: 720 };
+  return { bulge: 2400, disk: 7000, nebula: 15, bg: 800 };
 }
 
-/** Deterministic PRNG so the galaxy looks identical on every load. */
 function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => {
@@ -94,10 +74,6 @@ interface BgStars {
   count: number;
 }
 
-/**
- * Ported from `_generateSpiralGalaxy`. The disk lies in the x/z plane and is
- * thin along y, so the camera can tilt over it.
- */
 function buildStars(counts: Counts, seed = 42): Stars {
   const total = counts.bulge + counts.disk;
   const x = new Float32Array(total);
@@ -193,7 +169,7 @@ function buildNebula(count: number, seed = 77): Nebula {
   const arms = 3;
   const spiralTightness = 5.0;
   const innerStartNorm = 0.10;
-  const galaxyRadius = 0.9;
+  const galaxyRadius = 0.7;
   const thickness = 0.05;
 
   for (let i = 0; i < count; i++) {
@@ -236,7 +212,6 @@ function buildBgStars(count: number, seed = 123): BgStars {
   for (let i = 0; i < count; i++) {
     x01[i] = rnd();
     y01[i] = rnd();
-    // Larger and more distinct background stars
     r[i] = 0.5 + Math.pow(rnd(), 2.5) * 1.6;
     alpha[i] = 0.35 + Math.pow(rnd(), 2.0) * 0.65;
     phase[i] = rnd() * Math.PI * 2;
@@ -245,7 +220,14 @@ function buildBgStars(count: number, seed = 123): BgStars {
   return { x01, y01, r, alpha, phase, count };
 }
 
-/** Soft round sprite, pre-tinted so we never pay for per-star filters. */
+function hexToRgba(hex: string, alpha: number): string {
+  const v = hex.replace('#', '');
+  const r = parseInt(v.slice(0, 2), 16);
+  const g = parseInt(v.slice(2, 4), 16);
+  const b = parseInt(v.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function makeSprite(color: string, size = 48): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = size;
@@ -270,7 +252,7 @@ function makeNebulaSprite(color: string, size = 192): HTMLCanvasElement {
   const g = c.getContext('2d')!;
   const half = size / 2;
   const grad = g.createRadialGradient(half, half, 0, half, half, half);
-  // Richer core density (1.0 -> 0.75 -> 0.35 -> 0.10 -> 0)
+  // Richer core density (1.0 -> 0.7 -> 0.35 -> 0.1 -> 0) so it doesn't wash out at distance
   grad.addColorStop(0, hexToRgba(color, 1.0));
   grad.addColorStop(0.20, hexToRgba(color, 0.75));
   grad.addColorStop(0.45, hexToRgba(color, 0.35));
@@ -281,39 +263,27 @@ function makeNebulaSprite(color: string, size = 192): HTMLCanvasElement {
   return c;
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-  const v = hex.replace('#', '');
-  const r = parseInt(v.slice(0, 2), 16);
-  const g = parseInt(v.slice(2, 4), 16);
-  const b = parseInt(v.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+function clamp(val: number, min: number, max: number): number {
+  return Math.min(Math.max(val, min), max);
 }
 
-interface ShootingStar {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  length: number;
-  width: number;
-  color: string;
-  life: number;
-  maxLife: number;
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
-export const GalaxyCanvas: React.FC = () => {
+export const GalaxyScreenshotPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const layerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const layer = layerRef.current;
-    if (!canvas || !layer) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
-    const reduced = prefersReducedMotion();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     let width = window.innerWidth;
@@ -328,34 +298,65 @@ export const GalaxyCanvas: React.FC = () => {
     const nebulaSprites = NEBULA_PALETTE.map((c) => makeNebulaSprite(c, 192));
     const whiteSprite = starSprites[0];
 
-    // --- Live camera state ---------------------------------------------------
-    let yaw = 0.6;
-    let scrollProgress = 0; // 0 at the top of the page, 1 once the hero is gone
-    let introT = 0; // 0 → 1 fly-in on first paint
-    let pointerX = 0;
-    let pointerY = 0;
-
-    const unsubscribeScroll = subscribeScroll((y, vh) => {
-      scrollProgress = clamp01(y / Math.max(1, vh * 0.9));
-    });
-
-    const unsubscribeMouse = subscribeMouse((mx, my) => {
-      pointerX = mx;
-      pointerY = my;
-    });
-
-    const shooting: ShootingStar[] = [];
-    let shootingCooldown = 1.2;
+    // --- Interactive camera state ---
+    let yaw = DEFAULT_YAW;
+    let pitch = DEFAULT_PITCH;
+    let zoom = DEFAULT_ZOOM;
     let elapsed = 0;
 
-    // Setting canvas.width/height clears the bitmap to black immediately
-    // (ctx has alpha: false), but the redraw only lands on the next
-    // throttled animation frame. On mobile that gap is visible as a flash
-    // every time the browser chrome shows/hides and fires `resize` — and
-    // on desktop, every intermediate frame while dragging the window edge.
-    // Repainting synchronously right after the resize closes that gap.
-    // (Must come after the camera state above: it calls render(), which
-    // reads scrollProgress/pointerX/pointerY.)
+    // --- Drag & Wheel Interaction ---
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startYaw = yaw;
+    let startPitch = pitch;
+
+    const onPointerDown = (e: PointerEvent) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startYaw = yaw;
+      startPitch = pitch;
+      container.style.cursor = 'grabbing';
+      canvas.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      // Sensitivity: horizontal drag changes yaw, vertical drag changes pitch
+      const sensitivity = 0.005;
+      yaw = startYaw + dx * sensitivity;
+      pitch = clamp(startPitch + dy * sensitivity, -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05);
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!isDragging) return;
+      isDragging = false;
+      container.style.cursor = 'grab';
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // Smooth zoom scaling
+      const zoomFactor = Math.exp(-e.deltaY * 0.0015);
+      zoom = clamp(zoom * zoomFactor, 0.4, 15.0);
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointercancel', onPointerUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+
+    // --- Resize ---
     let resizeRaf = 0;
     function resize() {
       width = window.innerWidth;
@@ -367,8 +368,8 @@ export const GalaxyCanvas: React.FC = () => {
       canvas!.height = nextH;
       canvas!.style.width = `${width}px`;
       canvas!.style.height = `${height}px`;
-      render(0);
     }
+
     function onResize() {
       if (resizeRaf) cancelAnimationFrame(resizeRaf);
       resizeRaf = requestAnimationFrame(resize);
@@ -376,57 +377,20 @@ export const GalaxyCanvas: React.FC = () => {
     resize();
     window.addEventListener('resize', onResize);
 
-    function spawnShootingStar() {
-      const rightToLeft = Math.random() < 0.75;
-      const angle = rightToLeft
-        ? Math.PI * 0.75 + (Math.random() - 0.5) * 0.2
-        : Math.PI * 0.25 + (Math.random() - 0.5) * 0.2;
-      const speed = (Math.random() * 260 + 420) / 1;
-      shooting.push({
-        x: rightToLeft
-          ? width * (0.3 + Math.random() * 0.8)
-          : width * (-0.1 + Math.random() * 0.5),
-        y: Math.random() * height * 0.5,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        length: Math.random() * 110 + 90,
-        width: Math.random() * 1.2 + 1.3,
-        color: SHOOTING_PALETTE[Math.floor(Math.random() * SHOOTING_PALETTE.length)],
-        life: 0,
-        maxLife: Math.random() * 0.5 + 0.8,
-      });
-    }
-
-    // --- Render --------------------------------------------------------------
+    // --- Render Loop ---
     function render(dt: number) {
       elapsed += dt;
 
-      // Ease the intro fly-in (easeOutQuart), then hand control to scroll.
-      introT = Math.min(1, introT + dt / 2.6);
-      const introEase = 1 - Math.pow(1 - introT, 4);
-      const introZoom = 1.15 + introEase * 0.72;
-
-      if (!reduced) {
-        yaw += AUTO_SPIN * dt;
-      }
-
-      const p = scrollProgress;
-      // Milder scroll zoom (~0.75x of previous expansion) so the galaxy remains a balanced background
-      const zoom = Math.min(6, introZoom * (1 + p * 1.0));
-      // Inverted mouse parallax so the galaxy tracks naturally with pointer movement
-      const viewYaw = yaw + p * 0.85 - pointerX * 0.36;
-      const pitch = BASE_PITCH + p * 0.52 + pointerY * 0.20;
-
-      const fadeT = clamp01((p - 0.06) / 0.55);
-      const fade = fadeT * fadeT * (3 - 2 * fadeT);
-      layer!.style.opacity = String(1 - fade * 0.80);
+      const viewYaw = yaw;
+      const viewPitch = pitch;
 
       const cy = Math.cos(viewYaw);
       const sy = Math.sin(viewYaw);
-      const cp = Math.cos(pitch);
-      const sp = Math.sin(pitch);
-      const cr = Math.cos(BASE_ROLL);
-      const sr = Math.sin(BASE_ROLL);
+      const cp = Math.cos(viewPitch);
+      const sp = Math.sin(viewPitch);
+      const roll = 0;
+      const cr = Math.cos(roll);
+      const sr = Math.sin(roll);
 
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx!.globalAlpha = 1;
@@ -434,37 +398,34 @@ export const GalaxyCanvas: React.FC = () => {
       ctx!.fillStyle = VOID_COLOR;
       ctx!.fillRect(0, 0, width, height);
 
-      // Inverted translation for natural 3D depth perception
-      const centerX = width * 0.5 - pointerX * 24;
-      const centerY = height * (0.4 - p * 0.06) - pointerY * 18;
+      // Centered precisely on screen
+      const centerX = width * 0.5;
+      const centerY = height * 0.5;
       const screenMin = Math.min(width, height);
-      // Sized 1.2x larger so the galaxy disk fills the Hero frame with more presence
       const scale = Math.max(width, height) * 0.70 * zoom;
       const densityScale = Math.min(2.4, Math.max(1, scale / 800));
-      const z01 = clamp01((zoom - 1) / 7);
+      const z01 = clamp((zoom - 1) / 7, 0, 1);
 
       ctx!.globalCompositeOperation = 'lighter';
 
-      // 1. Distant background stars (inverted parallax shift)
+      // 1. Background stars
       const avoidR = screenMin * 0.14;
       const bgScale = Math.min(1.4, Math.max(1.0, screenMin / 400));
-      const bgShiftX = -pointerX * 32;
-      const bgShiftY = -pointerY * 26 - p * 40;
       for (let i = 0; i < bgStars.count; i++) {
-        const x = bgStars.x01[i] * width + bgShiftX;
-        const y = bgStars.y01[i] * height + bgShiftY;
+        const x = bgStars.x01[i] * width;
+        const y = bgStars.y01[i] * height;
         const dx = x - centerX;
         const dy = y - centerY;
         const avoid = Math.min(1, Math.max(0.55, (dx * dx + dy * dy) / (avoidR * avoidR)));
-        const twinkle = reduced ? 1 : 0.55 + 0.45 * Math.sin(elapsed * 1.8 + bgStars.phase[i]);
+        const twinkle = 0.55 + 0.45 * Math.sin(elapsed * 1.8 + bgStars.phase[i]);
         const a = Math.min(0.68, bgStars.alpha[i] * avoid * twinkle);
         if (a < 0.02) continue;
-        const r = bgStars.r[i] * 1.45 * bgScale;
+        const r = bgStars.r[i] * 1.45 * bgScale * BG_STAR_SCALE;
         ctx!.globalAlpha = a;
         ctx!.drawImage(whiteSprite, x - r, y - r, r * 2, r * 2);
       }
 
-      // 2. Core glow (enhanced vibrancy & presence)
+      // 2. Core glow
       const tilt = Math.abs(sp);
       const haze = 1.35 - 0.55 * z01;
       const coreRadius = scale * 0.33 * haze;
@@ -472,26 +433,21 @@ export const GalaxyCanvas: React.FC = () => {
       ctx!.globalAlpha = 1;
       ctx!.globalCompositeOperation = 'screen';
 
-      // 1. 青い光（Outer Core Glow）
       ctx!.save();
       ctx!.translate(centerX, centerY);
-      ctx!.rotate(Math.atan2(sr, cr));
       ctx!.scale(1, 0.35 + 0.65 * tilt);
-      const blueRadius = coreRadius * CORE_BLUE_SCALE;
-      const outerGlow = ctx!.createRadialGradient(0, 0, 0, 0, 0, blueRadius);
-      outerGlow.addColorStop(0, `rgba(224, 246, 255, ${0.72 * CORE_BLUE_OPACITY})`);
-      outerGlow.addColorStop(0.32, `rgba(115, 210, 255, ${0.36 * CORE_BLUE_OPACITY})`);
+      const outerGlow = ctx!.createRadialGradient(0, 0, 0, 0, 0, coreRadius);
+      outerGlow.addColorStop(0, 'rgba(224, 246, 255, 0.72)');
+      outerGlow.addColorStop(0.32, 'rgba(115, 210, 255, 0.36)');
       outerGlow.addColorStop(0.82, 'rgba(30, 27, 46, 0)');
       ctx!.fillStyle = outerGlow;
       ctx!.beginPath();
-      ctx!.arc(0, 0, blueRadius, 0, Math.PI * 2);
+      ctx!.arc(0, 0, coreRadius, 0, Math.PI * 2);
       ctx!.fill();
       ctx!.restore();
 
-      // 2. ピンクの光（Inner Core Glow）
       ctx!.save();
       ctx!.translate(centerX, centerY);
-      ctx!.rotate(Math.atan2(sr, cr));
       ctx!.scale(1, 0.75 + 0.25 * tilt);
       const pinkRadius = coreRadius * 0.52 * CORE_PINK_SCALE;
       const innerCore = ctx!.createRadialGradient(0, 0, 0, 0, 0, pinkRadius);
@@ -504,6 +460,7 @@ export const GalaxyCanvas: React.FC = () => {
       ctx!.fill();
       ctx!.restore();
 
+      // Maintain solid visibility across zoom levels
       const zoomFade = Math.max(0.65, Math.min(1.2, 0.65 + 0.35 * Math.sqrt(z01)));
       const sizeFade = 0.60 + 0.40 * z01;
 
@@ -530,17 +487,16 @@ export const GalaxyCanvas: React.FC = () => {
         if (x < -220 || x > width + 220 || y < -220 || y > height + 220) continue;
 
         const rPx = ((nebula.radius[i] * scale) / (depth * FOV)) * sizeFade * NEBULA_SCALE;
-        const a = clamp01(nebula.alpha[i] * zoomFade);
-        if (a < 0.01) continue;
+        // Keep solid presence even at distance
+        const a = clamp(nebula.alpha[i] * zoomFade, 0.08, 1.0);
 
         ctx!.globalAlpha = a;
         ctx!.drawImage(nebulaSprites[nebula.color[i]], x - rPx, y - rPx, rPx * 2, rPx * 2);
       }
 
-
-      // 4. The stars themselves
+      // 4. Stars
       ctx!.globalCompositeOperation = 'lighter';
-      const zoomT = clamp01((zoom - 0.6) / 2.4);
+      const zoomT = clamp((zoom - 0.6) / 2.4, 0, 1);
       const zoomBoost = 0.55 + 0.9 * Math.pow(zoomT, 2.2);
       const baseAlphaFactor = 0.6 + 0.5 * z01;
 
@@ -564,17 +520,10 @@ export const GalaxyCanvas: React.FC = () => {
 
         if (x < -24 || x > width + 24 || y < -24 || y > height + 24) continue;
 
-        // Stars right on top of the core glow already read as bright via that
-        // glow; letting them draw at full size/alpha too is what was pushing
-        // the centre toward a flat white disc instead of a starfield. Fading
-        // them out over the inner ~55% of the core radius means the boost
-        // below lands on the disk and spiral arms — where individual points
-        // are what makes this read as a galaxy rather than a smudge — without
-        // adding to the pileup at the centre.
         const distFromCenter = Math.hypot(x - centerX, y - centerY);
         const coreFade = smoothstep(coreRadius * 0.1, coreRadius * 0.65, distFromCenter);
 
-        const sizePx = (stars.size[i] / depth) * zoomBoost * densityScale * STAR_SCALE;
+        const sizePx = (stars.size[i] / depth) * zoomBoost * densityScale;
         if (sizePx < 0.22) continue;
 
         const a = Math.min(
@@ -582,94 +531,27 @@ export const GalaxyCanvas: React.FC = () => {
           Math.max(0.2, (stars.bright[i] / Math.pow(depth, 0.85)) * baseAlphaFactor)
         ) * (0.35 + 0.65 * coreFade);
 
-        const r = sizePx * 1.4 * (0.7 + 0.3 * coreFade);
+        const r = sizePx * 1.4 * (0.7 + 0.3 * coreFade) * STAR_SCALE;
         ctx!.globalAlpha = a;
         ctx!.drawImage(starSprites[stars.type[i]], x - r, y - r, r * 2, r * 2);
       }
 
-
-      // 5. Shooting stars
-      if (!reduced) {
-        shootingCooldown -= dt;
-        if (shootingCooldown <= 0 && shooting.length < 3) {
-          spawnShootingStar();
-          shootingCooldown = 1.4 + Math.random() * 2.4;
-        }
-
-        for (let i = shooting.length - 1; i >= 0; i--) {
-          const s = shooting[i];
-          s.x += s.vx * dt;
-          s.y += s.vy * dt;
-          s.life += dt;
-
-          const progress = s.life / s.maxLife;
-          if (
-            progress >= 1 ||
-            s.x < -260 ||
-            s.x > width + 260 ||
-            s.y > height + 260
-          ) {
-            shooting.splice(i, 1);
-            continue;
-          }
-
-          const fade =
-            progress < 0.25 ? progress / 0.25 : progress > 0.85 ? (1 - progress) / 0.15 : 1;
-          const opacity = clamp01(fade) * (1 - p * 0.7);
-          if (opacity <= 0.01) continue;
-
-          const speed = Math.hypot(s.vx, s.vy) || 1;
-          const tailX = s.x - (s.vx / speed) * s.length;
-          const tailY = s.y - (s.vy / speed) * s.length;
-
-          const grad = ctx!.createLinearGradient(tailX, tailY, s.x, s.y);
-          grad.addColorStop(0, hexToRgba(s.color, 0));
-          grad.addColorStop(1, hexToRgba(s.color, opacity * 0.9));
-
-          ctx!.globalAlpha = 1;
-          ctx!.strokeStyle = grad;
-          ctx!.lineWidth = s.width;
-          ctx!.lineCap = 'round';
-          ctx!.beginPath();
-          ctx!.moveTo(tailX, tailY);
-          ctx!.lineTo(s.x, s.y);
-          ctx!.stroke();
-
-          ctx!.globalAlpha = opacity;
-          const headR = s.width * 3.2;
-          ctx!.drawImage(whiteSprite, s.x - headR, s.y - headR, headR * 2, headR * 2);
-        }
-      }
-
-      ctx!.globalAlpha = 1;
+      // 5. Shooting stars (Disabled for clean screenshot capture)
+      // ctx!.globalAlpha = 1;
       ctx!.globalCompositeOperation = 'source-over';
     }
 
-    // --- Loop ----------------------------------------------------------------
     let rafId = 0;
     let lastTime = performance.now();
     let accumulator = 0;
 
-    if (reduced) {
-      render(0);
-      return () => {
-        cancelAnimationFrame(resizeRaf);
-        window.removeEventListener('resize', onResize);
-        unsubscribeMouse();
-        unsubscribeScroll();
-      };
-    }
-
     function frame(now: number) {
       rafId = requestAnimationFrame(frame);
-
       const dt = Math.min(0.05, (now - lastTime) / 1000);
       lastTime = now;
 
-      const targetInterval = scrollProgress > 0.92 ? 1 / 12 : 1 / 40;
       accumulator += dt;
-      if (accumulator < targetInterval) return;
-
+      if (accumulator < 1 / 60) return;
       const step = accumulator;
       accumulator = 0;
       render(step);
@@ -677,31 +559,42 @@ export const GalaxyCanvas: React.FC = () => {
 
     rafId = requestAnimationFrame(frame);
 
-    function onVisibilityChange() {
-      if (document.hidden) {
-        cancelAnimationFrame(rafId);
-      } else {
-        lastTime = performance.now();
-        accumulator = 0;
-        rafId = requestAnimationFrame(frame);
-      }
-    }
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
     return () => {
       cancelAnimationFrame(rafId);
       cancelAnimationFrame(resizeRaf);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('resize', onResize);
-      unsubscribeMouse();
-      unsubscribeScroll();
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointercancel', onPointerUp);
+      canvas.removeEventListener('wheel', onWheel);
     };
   }, []);
 
   return (
-    <div className="galaxy-layer" ref={layerRef} aria-hidden="true">
-      <canvas ref={canvasRef} />
-      <div className="galaxy-vignette" />
+    <div
+      ref={containerRef}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: VOID_COLOR,
+        overflow: 'hidden',
+        cursor: 'grab',
+        userSelect: 'none',
+        touchAction: 'none',
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+        }}
+      />
     </div>
   );
 };

@@ -22,6 +22,7 @@ import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/widgets/galaxy/galaxy_view.dart';
 import 'package:lefture/presentation/widgets/spaceship_announcement_modal.dart';
 import 'package:lefture/application/transmission/transmission_provider.dart';
+import 'package:lefture/application/tutorial/tutorial_lecture_seed_provider.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
@@ -185,6 +186,7 @@ class HomePage extends HookConsumerWidget {
     // （コースがあってもレクチャーが無ければ、RecentLecturesList等はどのみち空になるため）
     final coursesAsync = ref.watch(courseListProvider);
     final lecturesAsync = ref.watch(allLecturesStreamProvider);
+    final tutorialSeedAsync = ref.watch(tutorialLectureSeedProvider);
     // .asDataだとCourse作成後のref.invalidate(courseListProvider)で
     // 再取得中(AsyncLoading)の間ずっとnullになり、ホーム全体がローディング
     // 画面(ほぼ黒背景)に差し替わってしまう。.valueは再取得中でも直前の値を
@@ -221,10 +223,13 @@ class HomePage extends HookConsumerWidget {
     // );
 
     // データ読み込み中は、一瞬のチラつきを防ぐためにローディング画面を表示する。
-    // lecturesが0件の場合は、上の同期(syncAttempted)が一度終わるまでは
-    // 「まだ同期前で空」の可能性があるため、ローディング扱いのままにする。
+    // lecturesが0件の場合は、クラウド同期(syncAttempted)およびチュートリアル講義のシード(tutorialSeedAsync)が
+    // 完了するまでは「まだ同期・シード処理中」の可能性があるため、ローディング扱いのままにする。
+    final isTutorialSeeding = tutorialSeedAsync.isLoading;
     final stillWaitingForFirstSync =
-        lectures != null && lectures.isEmpty && !syncAttempted.value;
+        lectures != null &&
+        lectures.isEmpty &&
+        (!syncAttempted.value || isTutorialSeeding);
     if (courses == null || lectures == null || stillWaitingForFirstSync) {
       DevLog.add(
         '🏠 [HomePage] Showing CircularProgressIndicator (loading): '
@@ -240,7 +245,9 @@ class HomePage extends HookConsumerWidget {
       );
     }
 
-    if (lectures.isEmpty) {
+    // 講義が0件で、かつ一度もPullが成功していない場合（オフラインなどで初回の同期が失敗した状態）
+    // のみ、再試行可能なエラー画面を表示する。
+    if (lectures.isEmpty && !hasSyncedBefore.value) {
       return InitialSyncErrorContent(onRetry: handleInitialSyncRetry);
     }
 

@@ -2,12 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/webp" href="/img/app-icon.webp" />
+    <link rel="apple-touch-icon" href="/img/app-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>leFture | Turn Any Lecture into Knowledge for Your Future</title>
     <meta
       name="description"
       content="leFture (Lectures for the Futures) transforms raw lecture audio into interactive review cards, deep notes, and personalized fun facts. Just tap record, set your phone down, and focus on the lecture."
+    />
+    <meta
+      name="keywords"
+      content="AI lecture note, note taker, lecture recording, study companion, flashcards, voice transcribe, lecture summary, AI講義ノート, 講義要約, 音声録音, 文字起こし, 復習カード, 単語帳, 大学 勉強アプリ"
     />
     <meta name="theme-color" content="#111422" />
 
@@ -32,6 +37,59 @@
       content="Just tap record, put your phone down, and focus. Get interactive review cards, deep notes, and personalized fun facts in minutes."
     />
     <meta name="twitter:image" content="https://lefture.com/og.png" />
+    <!-- TODO: Add Twitter/X handle once created:
+    <meta name="twitter:site" content="@lefture_app" />
+    <meta name="twitter:creator" content="@lefture_app" />
+    -->
+
+    <!-- Structured Data (JSON-LD) for Schema.org SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://lefture.com/#app",
+            "name": "leFture",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "iOS, Android",
+            "description": "Transforms raw lecture audio into interactive review cards, deep notes, and personalized fun facts. Put your phone down and focus on the lecture.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "description": "Free during Beta"
+            },
+            "keywords": "AI lecture note, note taker, lecture recording, study companion, flashcards, voice transcribe, lecture summary, AI講義ノート, 講義要約, 音声録音, 文字起こし, 復習カード, 単語帳, 大学 勉強アプリ",
+            "image": "https://lefture.com/og.png",
+            "screenshot": "https://lefture.com/og.png",
+            "author": {
+              "@id": "https://lefture.com/#organization"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://lefture.com/#organization",
+            "name": "leFture Team",
+            "url": "https://lefture.com/",
+            "logo": "https://lefture.com/img/app-icon.png",
+            "founder": {
+              "@type": "Person",
+              "name": "Shogo Toiyama"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://lefture.com/#website",
+            "url": "https://lefture.com/",
+            "name": "leFture",
+            "publisher": {
+              "@id": "https://lefture.com/#organization"
+            }
+          }
+        ]
+      }
+    </script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
