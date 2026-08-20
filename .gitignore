@@ -5,6 +5,10 @@ contents_generation/lectures
 __pycache__/
 *.png
 *.jpg
+!website/public/**/*.png
+!website/public/**/*.jpg
+!website/public/*.png
+!website/public/*.jpg
 *.wav
 *.m4a
 *.mp3
