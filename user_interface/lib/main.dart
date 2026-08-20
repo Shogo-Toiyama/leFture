@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
@@ -29,6 +30,11 @@ void _logUncaughtError(Object error, StackTrace stack) {
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+
+    // 画面の向きを縦向き（Portrait）に固定
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
 
     // Flutterフレームワーク内のエラー(widget build中の例外など)を確実にログへ出す。
     // これが無いと、非同期コールバック内の例外が画面に何も表示されないまま

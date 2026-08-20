@@ -224,17 +224,10 @@ footer {
   }
 }
 
-/* Header actions must never wrap — at ~390px the language label is the first
-   thing to go, which keeps the App Store CTA on one line. */
+/* Header actions must never wrap */
 .btn-primary,
 .btn-secondary {
   white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-  .lang-label {
-    display: none;
-  }
 }
 
 /* Glow Badge */
