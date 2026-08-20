@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
-   Site Header (Responsive 2-Tier Mobile Dynamic Header)
+   Site Header (Clean, Ultra-Lightweight, 100% Solid Responsive Header)
    -------------------------------------------------------------------------- */
 
 .site-header {
@@ -9,9 +9,8 @@
   width: 100%;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  background-color: rgba(13, 16, 29, 0.88);
+  background-color: rgba(13, 16, 29, 0.90);
   border-bottom: 1px solid var(--glass-border);
-  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .site-header-container {
@@ -20,7 +19,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Logo Area */
@@ -29,7 +27,6 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  transition: opacity 0.2s ease;
 }
 
 .header-logo-img {
@@ -39,7 +36,12 @@
   object-fit: cover;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
   display: block;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.header-logo-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .header-logo-text {
@@ -75,8 +77,8 @@
   gap: 12px;
 }
 
-/* Desktop CTA Button */
-.header-cta-btn {
+/* CTA Button (Scoped selector to override global .btn-primary min-height) */
+.site-header a.header-cta-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -84,7 +86,9 @@
   padding: 8px 18px;
   font-size: 0.85rem;
   min-height: 38px;
+  height: 38px;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .header-cta-text-stacked {
@@ -96,9 +100,8 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 640px) {
-  /* 1. TOP STATE (最上部にいる時) */
   .site-header-container {
-    height: 66px;
+    height: 56px;
     gap: 8px;
   }
 
@@ -107,20 +110,20 @@
   }
 
   .header-logo-img {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
   }
 
-  /* leFture と Beta を縦並びにして横幅を節約 */
+  /* leFture と Beta を縦並びにして横幅を大幅節約 */
   .header-logo-title-group {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: 2px;
   }
 
   .header-logo-text {
-    font-size: 1.18rem;
+    font-size: 1.15rem;
   }
 
   .header-beta-badge {
@@ -139,12 +142,15 @@
     display: none;
   }
 
-  /* CTA ボタン（通常のスマホ幅では自然な1行横並びを維持） */
-  .header-cta-btn {
-    padding: 6px 12px;
-    min-height: 36px;
-    gap: 6px;
-    font-size: 0.78rem;
+  /* CTA ボタン（401px〜640px: アイコンと同じ高さ 30px に厳格指定） */
+  .site-header a.header-cta-btn {
+    padding: 0 10px;
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
+    gap: 5px;
+    font-size: 0.76rem;
+    box-sizing: border-box;
   }
 
   .header-cta-text-single {
@@ -154,63 +160,41 @@
   .header-cta-text-stacked {
     display: none;
   }
+}
 
-  /* 最終手段：画面幅 350px 以下の極小端末でのみ2段組にする */
-  @media (max-width: 350px) {
-    .header-cta-text-single {
-      display: none;
-    }
-    .header-cta-text-stacked {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      line-height: 1.05;
-      text-align: left;
-      gap: 1px;
-    }
-    .header-cta-line1,
-    .header-cta-line2 {
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      line-height: 1.05;
-    }
+/* --------------------------------------------------------------------------
+   Narrow Mobile Styles (max-width: 400px: iPhone SE / 小型スマホ)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 400px) {
+  .site-header a.header-cta-btn {
+    padding: 0 8px;
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
+    gap: 4px;
+    box-sizing: border-box;
   }
 
-  /* 2. SCROLLED STATE (スクロールした時: スリム＆ミニマル) */
-  .site-header.is-scrolled {
-    background-color: rgba(13, 16, 29, 0.95);
-  }
-
-  .site-header.is-scrolled .site-header-container {
-    height: 52px;
-  }
-
-  /* スクロール時はアイコンとBetaを非表示にし、leFtureの文字のみに */
-  .site-header.is-scrolled .header-logo-img {
+  .header-cta-text-single {
     display: none;
   }
 
-  .site-header.is-scrolled .header-beta-badge {
-    display: none;
-  }
-
-  .site-header.is-scrolled .header-logo-text {
-    font-size: 1.25rem;
-  }
-
-  /* スクロール時はCTAボタンをAppleロゴのみのサークルに圧縮 */
-  .site-header.is-scrolled .header-cta-btn {
-    padding: 0;
-    width: 36px;
-    height: 36px;
-    min-height: 36px;
-    border-radius: 50%;
+  /* 400px以下で2段組に変形（高さ30pxのアイコンサイズにぴったり収める） */
+  .header-cta-text-stacked {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1;
+    text-align: left;
     gap: 0;
   }
 
-  .site-header.is-scrolled .header-cta-text-single,
-  .site-header.is-scrolled .header-cta-text-stacked {
-    display: none !important;
+  .header-cta-line1,
+  .header-cta-line2 {
+    font-size: 0.60rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1;
   }
 }

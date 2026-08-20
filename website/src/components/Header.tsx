@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n/LanguageContext';
 import { LanguageDropdown } from './LanguageDropdown';
@@ -8,24 +8,12 @@ import './header.css';
 
 export const Header: React.FC = () => {
   const { t, locale } = useTranslation();
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 30);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const ctaLine1 = locale === 'ja' ? '近日' : 'Coming';
   const ctaLine2 = locale === 'ja' ? '公開' : 'Soon';
 
   return (
-    <header className={`site-header${isScrolled ? ' is-scrolled' : ''}`}>
+    <header className="site-header">
       <div className="container site-header-container">
         {/* Logo */}
         <Link to="/" className="header-logo-link" aria-label="leFture Home">
@@ -53,12 +41,12 @@ export const Header: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary header-cta-btn"
-            aria-label={`${ctaLine1} ${ctaLine2}`}
+            aria-label={t.nav.downloadApp}
           >
             <AppleLogo size={16} />
-            {/* Desktop single text */}
+            {/* >400px: 1-line horizontal text */}
             <span className="header-cta-text-single">{t.nav.downloadApp}</span>
-            {/* Mobile stacked 2-tier text: Coming / Soon */}
+            {/* <=400px: 2-tier stacked text (Coming / Soon) */}
             <span className="header-cta-text-stacked">
               <span className="header-cta-line1">{ctaLine1}</span>
               <span className="header-cta-line2">{ctaLine2}</span>
