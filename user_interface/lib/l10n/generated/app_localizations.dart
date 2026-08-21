@@ -1301,6 +1301,12 @@ abstract class AppLocalizations {
   /// **'Choose Course'**
   String get notStartedChooseCourseButton;
 
+  /// Tooltip/label on the edit (pencil) icon button on the 'Ready to Analyze' screen, opening LectureEditSheet so the user can rename the lecture or change its course even when a course is already assigned (the no-course warning banner only appears when there is none).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit title & course'**
+  String get notStartedEditTooltip;
+
   /// Banner shown on the 'Ready to Analyze' screen while chunk/master audio uploads are still queued or retrying. The Start Analysis button is disabled in this state because the backend would fail with a missing-audio error.
   ///
   /// In en, this message translates to:
@@ -1366,6 +1372,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We tried to start analysis automatically after upload, but it failed and will keep retrying in the background: {error}\nYou can also start it manually below.'**
   String notStartedAutoStartFailedWarning(String error);
+
+  /// Headline shown in place of the Start Analysis button for a brief window after the analysis request has been sent locally but the server hasn't confirmed the job yet (closes a few-second gap that used to flash the Start Analysis button again right after upload finished).
+  ///
+  /// In en, this message translates to:
+  /// **'Starting analysis...'**
+  String get notStartedAnalysisStartingTitle;
+
+  /// Subtitle under notStartedAnalysisStartingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This should only take a moment.'**
+  String get notStartedAnalysisStartingSubtitle;
+
+  /// Home screen banner title telling the user that one or more recordings were left on the device because the app was closed or crashed before they were saved. Tapping it opens the affected lecture. {count} is the number of such recordings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 recording wasn\'t saved} other{{count} recordings weren\'t saved}}'**
+  String recoveryBannerTitle(num count);
+
+  /// Subtitle under recoveryBannerTitle on the Home screen recovery banner.
+  ///
+  /// In en, this message translates to:
+  /// **'The audio is still on your device. Tap to review it.'**
+  String get recoveryBannerSubtitle;
+
+  /// Title of the bottom sheet listing every unsaved recording, shown when the Home recovery banner is tapped and there is more than one. {count} is the number of recordings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 unsaved recording} other{{count} unsaved recordings}}'**
+  String recoveryListSheetTitle(num count);
+
+  /// Reassuring headline at the top of the recovery card, shown for a recording that was left on the device after the app was closed or crashed before it could be saved normally. Meant to immediately dispel the worry that the data is corrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording is safe'**
+  String get recoverySafeTitle;
+
+  /// Body text under recoverySafeTitle, explaining what happened in plain terms and that the audio itself is intact.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture didn\'t finish saving this recording last time — probably the app was closed or crashed. Nothing is lost: listen to it below, then choose what to do.'**
+  String get recoverySafeSubtitle;
+
+  /// Label showing when the recovered recording started, using the device's local date/time/weekday. {datetime} is a pre-formatted localized string (e.g. 'Thu, Aug 20, 2026 14:30').
+  ///
+  /// In en, this message translates to:
+  /// **'Started {datetime}'**
+  String recoveryStartedAtLabel(String datetime);
+
+  /// Label showing the recovered recording's duration (mm:ss or h:mm:ss). {duration} is a pre-formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'Length: {duration}'**
+  String recoveryDurationLabel(String duration);
+
+  /// Metadata chip on the recovery card indicating Realtime Transcribe was enabled during this recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription was on'**
+  String get recoveryRealtimeOnLabel;
+
+  /// Metadata chip on the recovery card indicating Realtime Transcribe was disabled during this recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription was off'**
+  String get recoveryRealtimeOffLabel;
+
+  /// Button to expand the metadata accordion on the recovery card.
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get recoveryViewDetails;
+
+  /// Button to collapse the metadata accordion on the recovery card.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get recoveryHideDetails;
+
+  /// Label for the recording start date/time row in the recovery details accordion (first row, above Duration). The value is a pre-formatted localized datetime string.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get recoveryDetailStartedAt;
+
+  /// Label for the duration row in the recovery details accordion.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get recoveryDetailDuration;
+
+  /// Label for the language row in the recovery details accordion.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get recoveryDetailLanguage;
+
+  /// Label for the realtime transcription row in the recovery details accordion.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription'**
+  String get recoveryDetailRealtime;
+
+  /// Status text indicating a feature is enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get recoveryStatusOn;
+
+  /// Status text indicating a feature is disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get recoveryStatusOff;
+
+  /// Progress label shown while the recovered recording is being converted from raw audio to a playable file. {percent} is 0-100, updated continuously so the user can see it isn't stuck.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing playback... {percent}%'**
+  String recoveryEncodingLabel(int percent);
+
+  /// Headline shown when converting the recovered raw audio to a playable file failed (e.g. the file is genuinely corrupted or too short). Distinct from a merely-slow encode — this means it did not succeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t prepare this recording'**
+  String get recoveryEncodingFailedTitle;
+
+  /// Button to retry preparing (encoding) a recovered recording after a failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get recoveryEncodingFailedRetryButton;
+
+  /// Section header above the transcript shown on the recovery card.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript'**
+  String get recoveryTranscriptSectionTitle;
+
+  /// Section header above the reactions shown on the recovery card when there are only moments/reactions recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions'**
+  String get recoveryMomentsSectionTitle;
+
+  /// Primary button on the recovery card that uploads the recovered recording and starts AI analysis, same outcome as the normal Start Analysis button elsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Analysis'**
+  String get recoveryStartAnalysisButton;
+
+  /// Button on the recovery card that permanently discards the recovered recording (audio file and local records).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get recoveryDeleteButton;
+
+  /// Secondary button on the recovery card that uploads the recovered recording to the server without starting AI analysis. Sets autoStartAnalysis to false so the lecture lands on the normal 'Ready to Analyze' screen with a manual Start Analysis button, instead of firing analysis automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Only'**
+  String get recoveryUploadOnlyButton;
+
+  /// Tooltip/label on the edit (pencil) icon button on the recovery card, opening the same LectureEditSheet used elsewhere in the app to set the lecture's title and course before deciding what to do with the recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit title & course'**
+  String get recoveryEditTooltip;
+
+  /// Confirmation dialog title before permanently discarding a recovered recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this recording?'**
+  String get recoveryDeleteConfirmTitle;
+
+  /// Confirmation dialog body warning that deleting a recovered recording is permanent (it was never uploaded, so there's no server copy to fall back on).
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone. The audio was never uploaded, so deleting it here removes it for good.'**
+  String get recoveryDeleteConfirmMessage;
+
+  /// Destructive confirm button on the recovery delete confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get recoveryDeleteConfirmButton;
+
+  /// Cancel button on the recovery delete confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get recoveryCancelButton;
 
   /// Tooltip on a bookmark icon button in the footer of a topic preview card (currently a placeholder/no-op action). Short label.
   ///
@@ -3049,6 +3247,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No Course (Unassigned)'**
   String get lectureEditSheetNoCourseLabel;
+
+  /// Label displayed on a lecture tile when the lecture has no course assigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Course unassigned'**
+  String get lectureTileUnassignedCourse;
 
   /// Fallback course title used in the rare case where the lecture's assigned course ID doesn't match any course currently loaded in memory (e.g. a sync race). Should practically never be visible to users.
   ///

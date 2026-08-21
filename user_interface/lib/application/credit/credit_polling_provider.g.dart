@@ -31,12 +31,15 @@ final class CreditPollingProvider
         $allTransitiveDependencies: <ProviderOrFamily>[
           CreditPollingProvider.$allTransitiveDependencies0,
           CreditPollingProvider.$allTransitiveDependencies1,
+          CreditPollingProvider.$allTransitiveDependencies2,
         ],
       );
 
   static final $allTransitiveDependencies0 = recordingControllerProvider;
   static final $allTransitiveDependencies1 =
       RecordingControllerProvider.$allTransitiveDependencies0;
+  static final $allTransitiveDependencies2 =
+      RecordingControllerProvider.$allTransitiveDependencies1;
 
   @override
   String debugGetCreateSourceHash() => _$creditPollingHash();

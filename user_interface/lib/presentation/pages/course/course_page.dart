@@ -21,7 +21,9 @@ import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.da
 import 'package:lefture/presentation/pages/course/widgets/course_details_sheet.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/presentation/widgets/orphan_delete_confirm.dart';
 import 'package:lefture/application/recording/recording_controller.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
@@ -1043,6 +1045,7 @@ class _CourseLectureListView extends ConsumerWidget {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: LectureTile(
                           lecture: lectures[index],
+                          showCourseLabel: false,
                           onEdit: () async {
                             await showModalBottomSheet<void>(
                               context: context,
@@ -1068,6 +1071,21 @@ class _CourseLectureListView extends ConsumerWidget {
                                 ),
                               );
                               return;
+                            }
+
+                            // 孤児録音(一度もアップロードされていない)の削除は
+                            // 論理削除ではなく物理削除になる
+                            // (RecordingRecoveryService.discard()経由)。普段の
+                            // 削除(即ゴミ箱行き、確認なし)と挙動が違うので、
+                            // この場合だけ明示的に確認する。
+                            final orphans =
+                                ref.read(orphanRecordingsProvider).value ?? const [];
+                            final isOrphan = orphans.any(
+                              (o) => o.lectureId == lectures[index].id,
+                            );
+                            if (isOrphan) {
+                              final confirmed = await confirmOrphanHardDelete(context);
+                              if (!confirmed) return;
                             }
 
                             await ref

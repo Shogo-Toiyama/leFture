@@ -59,7 +59,27 @@ class LectureSyncService {
 
     DateTime? maxUpdatedAt = cursor?.lastPulledAt;
     if (data.isNotEmpty) {
-      final companions = data.map((json) {
+      // ★ まだPushできていないローカルの変更(タイトル/コース変更・論理削除等)を
+      // サーバーの古い値で上書きしないためのガード。FunFactSync/AnnouncementSync/
+      // UserProfileSyncには元々あったが、LectureSyncだけ抜けていた。これが無いと、
+      // 「削除→Outbox送信の完了を待たずにPullが割り込む(オフライン・通信が遅い・
+      // 送信中にアプリを閉じた等)」場合に、サーバーはまだ削除を知らないため
+      // 古い(削除されていない)行でローカルのdeletedAtを上書きしてしまい、
+      // 「ゴミ箱に移動したはずの講義が再起動すると復活する」という壊れ方になる
+      // (実機で確認された不具合)。タイトル/コースは複数フィールドに跨るため、
+      // fun_factのようなフィールド単位の部分上書きではなく、pending中の講義は
+      // この回のPullでは一切書き込まない(次回、Pushが完了してpendingが外れて
+      // からのPullで正しい最終状態が反映される)。
+      final pendingIds = await _db.getPendingOutboxEntityIds(_entityType);
+
+      final companions = data.where((json) {
+        final id = json['id'] as String;
+        if (pendingIds.contains(id)) {
+          DevLog.add('⏭️ [LectureSync] Skipping pull overwrite for $id (has pending local changes).');
+          return false;
+        }
+        return true;
+      }).map((json) {
         final updatedAt = DateTime.parse(json['updated_at']);
         if (maxUpdatedAt == null || updatedAt.isAfter(maxUpdatedAt!)) {
           maxUpdatedAt = updatedAt;

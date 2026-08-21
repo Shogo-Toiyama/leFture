@@ -1266,19 +1266,9 @@ class _TranscriptPageContent extends HookConsumerWidget {
                   position.value = actualTarget;
                   await player.seek(actualTarget);
                 },
-                onChangeSpeed: () async {
-                  double nextSpeed = 1.0;
-                  if (playbackSpeed.value == 1.0) {
-                    nextSpeed = 1.25;
-                  } else if (playbackSpeed.value == 1.25) {
-                    nextSpeed = 1.5;
-                  } else if (playbackSpeed.value == 1.5) {
-                    nextSpeed = 2.0;
-                  } else {
-                    nextSpeed = 1.0;
-                  }
-                  playbackSpeed.value = nextSpeed;
-                  await player.setPlaybackRate(nextSpeed);
+                onSpeedSelected: (speed) async {
+                  playbackSpeed.value = speed;
+                  await player.setPlaybackRate(speed);
                 },
               ),
           ],

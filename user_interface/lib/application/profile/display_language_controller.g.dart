@@ -51,7 +51,7 @@ final class DisplayLanguageControllerProvider
 }
 
 String _$displayLanguageControllerHash() =>
-    r'a59c8b47362022117737c3b64a5b8f26b97eb52a';
+    r'743ea78ae025b93eb9c94f53bc56bf2a8e86eaac';
 
 /// アプリ画面表示言語（Display Language）の状態管理。
 /// 変更はすぐに [RecordingPreferences] に永続化され、[userProfileRepositoryProvider] 経由で

@@ -118,6 +118,16 @@ class NotStartedView extends HookConsumerWidget {
     final autoStartError =
         _parseInsufficientCreditsError(autoStartErrorRaw) == null ? autoStartErrorRaw : null;
 
+    // ★ 「分析開始の号砲(start_analysisジョブ)は既にローカルで鳴らしてある」場合、
+    // Start Analysisボタンを再び出してはいけない。lectureStateProvider(3秒
+    // ポーリング)がサーバー側のjob作成を検知するまでの数秒間、job==nullの
+    // ままnotStartedに落ちてこの画面が再描画されてしまうため
+    // (「アップロード完了後も数秒Start Analysisボタンが出続ける」というちらつき
+    // の原因だった)。'done'も含めて見る(既に発火成功していても同じ理由で
+    // 再表示を防ぎたいため)。
+    final isAnalysisStarting =
+        (ref.watch(startAnalysisJobsIncludingDoneProvider(lecture.id)).value ?? const []).isNotEmpty;
+
     // ★ 音声のアップロードが終わるまでStart Analysisを押させない。
     // 電波が弱い場所ではチャンク/マスター音声がリトライ待ちのまま残るが、この
     // 画面自体は「Ready to Analyze」を表示してしまうため、ユーザーが押せると
@@ -170,6 +180,10 @@ class NotStartedView extends HookConsumerWidget {
       );
     }
 
+    if (isAnalysisStarting) {
+      return _StartingCard(title: l10n.notStartedAnalysisStartingTitle, subtitle: l10n.notStartedAnalysisStartingSubtitle);
+    }
+
     // ★ このWidgetはもはや専用の全画面ルートではなく、LectureOverlayCardが
     // FullScreenRevealBlurの中央に置くコンパクトなカードの中身として使われる。
     // 背景のブラー自体は呼び出し元(_LectureViewerBody)が担うので、ここでは
@@ -218,6 +232,21 @@ class NotStartedView extends HookConsumerWidget {
                 l10n.notStartedReadySubtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              // コースが既に設定済みの場合、以前はタイトル・コースを編集する
+              // 導線がこの画面に無かった(下の警告バナーは!hasCourseの時しか
+              // 出ないため)。LectureEditSheet自体はどちらの用途にも対応
+              // しているので、常時使えるボタンとして出す。
+              TextButton.icon(
+                onPressed: assignCourse,
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: Text(l10n.notStartedEditTooltip),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.universe.textComet,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
               if (!hasCourse) ...[
                 const SizedBox(height: 24),
@@ -447,6 +476,64 @@ class NotStartedView extends HookConsumerWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// アップロード完了直後、サーバーが分析ジョブを作るまでの数秒間だけ挟む
+/// つなぎのカード。Start Analysisボタンを一瞬だけ再表示してしまう
+/// (=NotStartedView.buildの冒頭を参照)のを防ぐためのもの。
+class _StartingCard extends StatelessWidget {
+  const _StartingCard({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420),
+      child: Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: AppColors.universe.voidBackground.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: AppColors.universe.glassBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.starGold),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.universe.textStarlight,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
+            ),
+          ],
         ),
       ),
     );

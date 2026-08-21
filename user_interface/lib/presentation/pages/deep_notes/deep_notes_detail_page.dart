@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -1156,70 +1157,84 @@ class _NoteDetailContent extends HookWidget {
       onNotification: (notification) {
         if (isTransitioning.value) return false;
 
-        if (notification is ScrollStartNotification) {
-          final m = notification.metrics;
-          startedAtTop.value = m.pixels <= 0.0;
-          startedAtBottom.value = m.pixels >= m.maxScrollExtent;
-          shouldGoToNext.value = false;
-          shouldGoToPrev.value = false;
-        }
-
-        if (notification is ScrollEndNotification ||
-            (notification is ScrollUpdateNotification &&
-                notification.dragDetails == null)) {
-          overscrollTop.value = 0.0;
-          overscrollBottom.value = 0.0;
-          if (shouldGoToNext.value) {
-            shouldGoToNext.value = false;
-            shouldGoToPrev.value = false;
-            isTransitioning.value = true;
-            onNext();
-          } else if (shouldGoToPrev.value) {
-            shouldGoToNext.value = false;
-            shouldGoToPrev.value = false;
-            isTransitioning.value = true;
-            onPrev();
-          }
-        }
-
-        if (notification is ScrollUpdateNotification) {
-          final m = notification.metrics;
-          final isDragging = notification.dragDetails != null;
-
-          if (m.pixels < 0) {
-            overscrollTop.value = -m.pixels;
-            overscrollBottom.value = 0.0;
-          } else if (m.pixels > m.maxScrollExtent) {
-            overscrollTop.value = 0.0;
-            overscrollBottom.value = m.pixels - m.maxScrollExtent;
+        void safeUpdate(VoidCallback callback) {
+          if (SchedulerBinding.instance.schedulerPhase ==
+              SchedulerPhase.persistentCallbacks) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) callback();
+            });
           } else {
+            callback();
+          }
+        }
+
+        safeUpdate(() {
+          if (notification is ScrollStartNotification) {
+            final m = notification.metrics;
+            startedAtTop.value = m.pixels <= 0.0;
+            startedAtBottom.value = m.pixels >= m.maxScrollExtent;
+            shouldGoToNext.value = false;
+            shouldGoToPrev.value = false;
+          }
+
+          if (notification is ScrollEndNotification ||
+              (notification is ScrollUpdateNotification &&
+                  notification.dragDetails == null)) {
+            overscrollTop.value = 0.0;
+            overscrollBottom.value = 0.0;
+            if (shouldGoToNext.value) {
+              shouldGoToNext.value = false;
+              shouldGoToPrev.value = false;
+              isTransitioning.value = true;
+              onNext();
+            } else if (shouldGoToPrev.value) {
+              shouldGoToNext.value = false;
+              shouldGoToPrev.value = false;
+              isTransitioning.value = true;
+              onPrev();
+            }
+          }
+
+          if (notification is ScrollUpdateNotification) {
+            final m = notification.metrics;
+            final isDragging = notification.dragDetails != null;
+
+            if (m.pixels < 0) {
+              overscrollTop.value = -m.pixels;
+              overscrollBottom.value = 0.0;
+            } else if (m.pixels > m.maxScrollExtent) {
+              overscrollTop.value = 0.0;
+              overscrollBottom.value = m.pixels - m.maxScrollExtent;
+            } else {
+              overscrollTop.value = 0.0;
+              overscrollBottom.value = 0.0;
+            }
+
+            if (isDragging) {
+              final overscrollDown = m.pixels - m.maxScrollExtent;
+              final overscrollUp = m.minScrollExtent - m.pixels;
+
+              // 「完全に下の状態」なら50px（従来の半分）、途中からのドラッグでも120px（1.2倍）
+              final thresholdNext = startedAtBottom.value ? 50.0 : 120.0;
+              final thresholdPrev = startedAtTop.value ? 50.0 : 120.0;
+
+              shouldGoToNext.value =
+                  overscrollDown >= thresholdNext &&
+                  topicIndex < totalTopics - 1;
+              shouldGoToPrev.value =
+                  overscrollUp >= thresholdPrev &&
+                  topicIndex > 0;
+            }
+          }
+
+          if (notification is ScrollEndNotification) {
+            startedAtTop.value = false;
+            startedAtBottom.value = false;
             overscrollTop.value = 0.0;
             overscrollBottom.value = 0.0;
           }
+        });
 
-          if (isDragging) {
-            final overscrollDown = m.pixels - m.maxScrollExtent;
-            final overscrollUp = m.minScrollExtent - m.pixels;
-
-            // 「完全に下の状態」なら50px（従来の半分）、途中からのドラッグでも120px（1.2倍）
-            final thresholdNext = startedAtBottom.value ? 50.0 : 120.0;
-            final thresholdPrev = startedAtTop.value ? 50.0 : 120.0;
-
-            shouldGoToNext.value =
-                overscrollDown >= thresholdNext &&
-                topicIndex < totalTopics - 1;
-            shouldGoToPrev.value =
-                overscrollUp >= thresholdPrev &&
-                topicIndex > 0;
-          }
-        }
-
-        if (notification is ScrollEndNotification) {
-          startedAtTop.value = false;
-          startedAtBottom.value = false;
-          overscrollTop.value = 0.0;
-          overscrollBottom.value = 0.0;
-        }
         return false;
       },
       child: CustomScrollbar(

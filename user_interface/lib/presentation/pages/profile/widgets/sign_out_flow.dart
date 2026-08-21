@@ -19,6 +19,7 @@ import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/recording/recording_state.dart';
 import 'package:lefture/application/recording/recording_controller.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
@@ -64,10 +65,33 @@ Future<void> runSignOutFlow(BuildContext context, WidgetRef ref) async {
   final wipeService = LocalDataWipeService(ref.read(appDatabaseProvider));
   final lectureController = ref.read(lectureControllerProvider.notifier);
   final uploadManager = ref.read(uploadManagerProvider);
+  final recoveryService = ref.read(recordingRecoveryServiceProvider);
+
+  // ★ wipeService.countPending()はLocalLectureAssets(アップロードジョブが
+  // 一度でも作られた講義)しか見ないため、Recording Recoveryが検出する
+  // 「孤児」講義(キル/クラッシュでアップロードジョブが一度も作られていない
+  // 録音)は数に入らない。プレレコの孤児は該当アセット行が1件も無いので
+  // カウント0になり、Realtime孤児もマスター音声/未送信テール分が漏れる。
+  // これを直さないと、孤児が残っている状態でも「未同期データはありません」
+  // のまま確認無くwipeAll()(=lectures/を丸ごと削除)まで進んでしまう。
+  // 孤児はdrain(自動送信)の対象にしない(RecordingRecoveryはユーザーの
+  // 明示的な選択を必須にする設計のため)ので、ここでは件数の合算だけ行う。
+  Future<PendingSyncSummary> countPendingIncludingOrphans(String forUid) async {
+    final base = await wipeService.countPending(userId: forUid);
+    final orphans = await recoveryService.detectOrphans(userId: forUid);
+    if (orphans.isEmpty) return base;
+    // 既存のasset走査と孤児が同じ講義を指して重複しうるが(Realtime孤児で
+    // 一部チャンクは既にアップロード済みのケース等)、「消えるものを少なく
+    // 見せる」より「多めに見積もって警告する」方を安全側として選ぶ。
+    return PendingSyncSummary(
+      pendingChangeCount: base.pendingChangeCount,
+      pendingRecordingCount: base.pendingRecordingCount + orphans.length,
+    );
+  }
 
   var pending = uid == null
       ? const PendingSyncSummary.empty()
-      : await wipeService.countPending(userId: uid);
+      : await countPendingIncludingOrphans(uid);
   var isOnline = await isDeviceOnline();
 
   // 2. オンラインで未同期データがあるなら、まず送り切ることを試す。これが
@@ -85,7 +109,7 @@ Future<void> runSignOutFlow(BuildContext context, WidgetRef ref) async {
     } finally {
       progress.close();
     }
-    pending = await wipeService.countPending(userId: uid);
+    pending = await countPendingIncludingOrphans(uid);
     isOnline = await isDeviceOnline();
   }
 
@@ -154,6 +178,12 @@ Future<void> _drainPendingSync({
       DevLog.add('⚠️ [SignOut] Outbox push before sign-out failed: $e');
     }
 
+    // ★ ここは意図的に孤児(Recording Recovery)を含めない生のcountPendingを
+    // 使う。孤児はユーザーの明示的な選択(復旧カードでStart Analysis)なしに
+    // 自動でアップロードされることは無い設計のため、含めてしまうと
+    // pendingRecordingCountが常に0にならず、このループが「進捗が無い」判定
+    // (下記)に一生到達できず、_drainTimeout(20秒)いっぱいまで毎回待たされる
+    // ことになる。
     final pending = await wipeService.countPending(userId: uid);
     if (pending.isEmpty) return;
 

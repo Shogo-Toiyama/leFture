@@ -64,6 +64,8 @@ final class AppLifecycleSyncWatcherProvider
           AppLifecycleSyncWatcherProvider.$allTransitiveDependencies1,
           AppLifecycleSyncWatcherProvider.$allTransitiveDependencies2,
           AppLifecycleSyncWatcherProvider.$allTransitiveDependencies3,
+          AppLifecycleSyncWatcherProvider.$allTransitiveDependencies4,
+          AppLifecycleSyncWatcherProvider.$allTransitiveDependencies5,
         },
       );
 
@@ -72,7 +74,11 @@ final class AppLifecycleSyncWatcherProvider
       LectureControllerProvider.$allTransitiveDependencies0;
   static final $allTransitiveDependencies2 =
       LectureControllerProvider.$allTransitiveDependencies1;
-  static final $allTransitiveDependencies3 = appConfigControllerProvider;
+  static final $allTransitiveDependencies3 =
+      LectureControllerProvider.$allTransitiveDependencies2;
+  static final $allTransitiveDependencies4 =
+      LectureControllerProvider.$allTransitiveDependencies3;
+  static final $allTransitiveDependencies5 = appConfigControllerProvider;
 
   @override
   String debugGetCreateSourceHash() => _$appLifecycleSyncWatcherHash();

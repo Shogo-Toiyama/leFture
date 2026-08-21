@@ -114,6 +114,15 @@ class LocalLectureAssets extends Table {
 
   RealColumn get startTime => real().withDefault(const Constant(0.0))();
 
+  // このアセット(チャンク)がカバーする音声の絶対終端秒(startTime + 実データ長/32000)。
+  // onChunkReady/flush時点でチャンクのバイト長が判明しているため、そのまま書ける。
+  // 録音を最後まで正常に終えたセッションでは使わず、Recording Recoveryが
+  // 「クラッシュで失われたテール(AudioChunkerの未flushバッファ)をmaster_audio.raw
+  // から正しいバイト位置で切り出す」ために使う唯一の情報源。この列が欠けている
+  // (この変更より前に録られた)チャンクが1件でもあれば、Recoveryはテール回収を
+  // 諦めて末尾切れを許容する側にフォールバックする。
+  RealColumn get endTime => real().nullable()();
+
   IntColumn get sequenceIndex => integer().withDefault(const Constant(0))();
 
   TextColumn get localPath => text().nullable()();
@@ -508,7 +517,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -703,6 +712,19 @@ class AppDatabase extends _$AppDatabase {
           await m.drop(table);
         }
         await m.createAll();
+      }
+      if (from < 24) {
+        // バージョン24: LocalLectureAssets に endTime を追加(Recording Recovery
+        // がクラッシュ/キル後にmaster_audio.rawからテールチャンクを正しい
+        // バイト位置で切り出すために必要)。
+        //
+        // ★ ここから先、drop-all方式をやめる。理由: これまでの全バージョンは
+        // 「Supabaseから再Pullできるデータしかローカルに無い」前提でdrop-all
+        // していたが、Recording Recoveryが対象にする孤児講義(syncStatus:
+        // 'local_only')はサーバーに実体が無く、drop-allすると復旧対象ごと
+        // 消えてしまう。以後のスキーマ変更は addColumn/createTable 等の
+        // 非破壊マイグレーションで行うこと。
+        await m.addColumn(localLectureAssets, localLectureAssets.endTime);
       }
     },
   );
