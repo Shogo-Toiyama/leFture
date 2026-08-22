@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +27,15 @@ const googleWebServerClientId =
 
 void _logUncaughtError(Object error, StackTrace stack) {
   DevLog.add('🔴 [UNCAUGHT ERROR] $error\n$stack');
+}
+
+// バックグラウンド/終了状態でのFCM受信を処理するトップレベル関数。
+// 別Isolateで実行されるため、ここでUI更新やRiverpodへのアクセスはできない。
+// notificationフィールド付きメッセージはOSが自動でトレイ表示するため、
+// 現状は特に処理を追加せず、プラグインが要求するエントリポイントとしてのみ存在する。
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
 }
 
 Future<void> main() async {
@@ -53,6 +64,9 @@ Future<void> main() async {
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     );
+
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // GoogleSignIn.instance はこの初期化が完了するまで他のメソッドを
     // 呼んではいけない(公式ドキュメントの制約)ため、起動時に一度だけ実行する。

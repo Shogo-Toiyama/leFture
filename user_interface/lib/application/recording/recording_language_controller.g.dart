@@ -58,7 +58,7 @@ final class RecordingLanguageControllerProvider
 }
 
 String _$recordingLanguageControllerHash() =>
-    r'69a217ef0c5da539d555ea516e196a1485839c97';
+    r'22c41349f7f64ffcabc0e61c82fe046ab583d6a9';
 
 /// 録音言語(オンデバイスASRモデル選択)の設定。永続化と状態管理のみを行う。
 /// モデルのダウンロードはここでは行わない — Realtime Recordingが有効な

@@ -1,4 +1,13 @@
 import os
+
+# 本番(Cloud Run)は環境変数をランタイム側で直接注入するため.envを持たないが、
+# ローカル実行時はlefture_backend/.envから読み込む。GCP系クライアント
+# (CloudTasksClient, firebase_admin等)はこのモジュールの後続のimportで
+# 即座に構築されるため、他のimportより前にここで読み込む必要がある。
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 import json
 import time
 import uuid
@@ -2375,6 +2384,68 @@ async def email_send_notification(payload: SendNotificationEmailRequest):
     except Exception as e:
         print(f"❌ Failed to send notification email: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+# ---------------------------------------------------------
+# 📱 Push通知 — デバイストークン登録
+# ---------------------------------------------------------
+class RegisterDeviceRequest(BaseModel):
+    device_token: str
+    platform: str  # "ios" | "android"
+
+
+def _get_user_client_from_request(request: Request):
+    """AuthorizationヘッダのJWTを検証し、そのユーザー権限のSupabaseクライアントを返す (RLS適用)"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+
+    return user_client, user_res.user.id
+
+
+@app.post("/devices/register")
+async def register_device(payload: RegisterDeviceRequest, request: Request):
+    """FCMデバイストークンを登録する。device_tokenはUNIQUEなので、
+    別ユーザーが同じ端末で使っていた場合は所有者が自動的に付け替わる。"""
+    if payload.platform not in ("ios", "android"):
+        raise HTTPException(status_code=400, detail="platform must be 'ios' or 'android'")
+
+    user_client, user_id = _get_user_client_from_request(request)
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        user_client.table("user_devices").upsert({
+            "user_id": user_id,
+            "device_token": payload.device_token,
+            "platform": payload.platform,
+            "updated_at": now,
+            "last_used_at": now,
+        }, on_conflict="device_token").execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"❌ Failed to register device: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to register device: {str(e)}")
+
+
+@app.post("/devices/unregister")
+async def unregister_device(payload: RegisterDeviceRequest, request: Request):
+    """ログアウト時などにデバイストークンを削除する"""
+    user_client, user_id = _get_user_client_from_request(request)
+    try:
+        user_client.table("user_devices").delete().eq("device_token", payload.device_token).eq("user_id", user_id).execute()
+        return {"success": True}
+    except Exception as e:
+        print(f"❌ Failed to unregister device: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to unregister device: {str(e)}")
 
 
 # ---------------------------------------------------------

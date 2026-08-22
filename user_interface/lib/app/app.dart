@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/router.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
+import 'package:lefture/application/notifications/push_notification_service.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/application/sync/app_lifecycle_sync_watcher.dart';
@@ -23,6 +24,9 @@ class MyApp extends ConsumerWidget {
 
     // クレジット情報の自動ポーリング（録音中・バックエンド処理中・クレジットページ表示中）を監視
     ref.watch(creditPollingProvider);
+
+    // Push通知(FCM)のトークン登録・受信・タップ遷移を監視
+    ref.watch(pushNotificationServiceProvider);
 
 
     // ★ UploadManagerはkeepAlive:trueだが、誰かがこのProviderをwatch/readする

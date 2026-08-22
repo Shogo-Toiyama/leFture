@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,8 +16,7 @@ TopicMapRepositorySupabase topicMapRepository(Ref ref) {
 class TopicMapRepositorySupabase {
   static const _table = 'topic_maps';
 
-  // job_repository.dart と同じ値。共通定数化されていないのは既存の踏襲。
-  static const _cloudRunBaseUrl = 'https://lefture-511705914929.us-west1.run.app';
+  static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
   /// The course's topic map, or null if the pipeline hasn't generated one
   /// yet. One row per course is assumed; if that ever changes, the

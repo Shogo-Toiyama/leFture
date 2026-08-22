@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:http/http.dart' as http;
 
+import '../../core/config/app_config.dart';
 import '../../core/services/recording_preferences.dart';
 import '../../core/utils/dev_log.dart';
 import '../lecture/lecture_controller.dart';
@@ -259,7 +260,7 @@ class AuthController extends _$AuthController {
     if (jwt != null) {
       try {
         await http.post(
-          Uri.parse('https://lefture-511705914929.us-west1.run.app/auth/delete-account'),
+          Uri.parse('${AppConfig.backendBaseUrl}/auth/delete-account'),
           headers: {'Authorization': 'Bearer $jwt'},
         ).timeout(const Duration(seconds: 15));
         DevLog.add('🧹 [Auth] Deleted unauthorized new social Auth user on backend.');
@@ -491,7 +492,7 @@ class AuthController extends _$AuthController {
 
       // 2. バックエンドの特権削除エンドポイントを呼び出し
       final response = await http.post(
-        Uri.parse('https://lefture-511705914929.us-west1.run.app/auth/delete-account'),
+        Uri.parse('${AppConfig.backendBaseUrl}/auth/delete-account'),
         headers: {
           'Authorization': 'Bearer $jwt',
         },

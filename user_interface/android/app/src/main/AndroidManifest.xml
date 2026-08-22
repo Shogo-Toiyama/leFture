@@ -58,6 +58,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- バックグラウンド/終了状態で届くFCM通知が使うデフォルトチャンネル。
+             PushNotificationServiceが作成するチャンネルID(job_completed)と一致させる。 -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="job_completed" />
         <service
             android:name="de.julianassmann.flutter_background.IsolateHolderService"
             android:enabled="true"

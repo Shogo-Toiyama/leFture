@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/utils/network_constants.dart';
 import '../../domain/entities/asr_model_manifest.dart';
 
@@ -31,7 +32,7 @@ class AsrModelRepository {
 
   AsrModelRepository(this._supabase);
 
-  static const _cloudRunBaseUrl = 'https://lefture-511705914929.us-west1.run.app';
+  static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
   String _requireJwt() {
     final jwt = _supabase.auth.currentSession?.accessToken;
