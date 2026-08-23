@@ -2494,7 +2494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPermissionsNotifSubtitle =>
-      'Required to keep background recording active.';
+      'Helps keep background recording stable (optional).';
 
   @override
   String get onboardingPermissionsBackgroundTitle =>
@@ -2508,18 +2508,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPermissionsNotGrantedLabel => 'Tap to allow';
 
   @override
-  String get onboardingPermissionsOptionalDialogTitle =>
-      'Continue without all permissions?';
+  String get onboardingPermissionsOpenSettingsLabel => 'Open Settings';
 
   @override
-  String get onboardingPermissionsOptionalDialogMessage =>
-      'You can turn these on anytime later from Account settings.';
+  String get onboardingPermissionsMicDialogTitle =>
+      'Microphone access is required';
 
   @override
-  String get onboardingPermissionsOptionalDialogCancel => 'Go back';
+  String get onboardingPermissionsMicDialogMessage =>
+      'leFture can\'t record, transcribe, or generate study materials without microphone access. On the next screen, please respond to the permission request.';
 
   @override
-  String get onboardingPermissionsOptionalDialogContinue => 'Continue anyway';
+  String get onboardingPermissionsMicDialogCancel => 'Go back';
+
+  @override
+  String get onboardingPermissionsMicDialogContinue => 'Continue';
+
+  @override
+  String get recordingMicSettingsDialogTitle => 'Microphone access is off';
+
+  @override
+  String get recordingMicSettingsDialogMessage =>
+      'leFture can\'t record without microphone access. Turn it on in Settings to start recording.';
+
+  @override
+  String get recordingMicSettingsDialogLater => 'Later';
+
+  @override
+  String get recordingMicSettingsDialogOpenSettings => 'Open Settings';
 
   @override
   String get onboardingPermissionsRequiredDialogTitle =>

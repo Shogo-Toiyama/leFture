@@ -5,6 +5,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 
 import 'package:lefture/app/routes.dart';
@@ -332,9 +333,25 @@ class RecordingPage extends HookConsumerWidget {
     // (無効なら無駄なダウンロードを避ける)。
     useEffect(() {
       Future.microtask(() async {
-        ref
+        final micStatus = await ref
             .read(recordingControllerProvider.notifier)
             .requestMicPermissionEarly();
+        // permanentlyDenied/restrictedならOSは二度とダイアログを出さない
+        // (特にiOS)ため、request()だけでは何も起きない。設定画面へ誘導する。
+        if ((micStatus.isPermanentlyDenied || micStatus.isRestricted) &&
+            context.mounted) {
+          final openSettings = await showCustomDialog(
+            context: context,
+            title: l10n.recordingMicSettingsDialogTitle,
+            message: l10n.recordingMicSettingsDialogMessage,
+            cancelLabel: l10n.recordingMicSettingsDialogLater,
+            confirmLabel: l10n.recordingMicSettingsDialogOpenSettings,
+            icon: Icons.mic_off_rounded,
+          );
+          if (openSettings == true) {
+            await openAppSettings();
+          }
+        }
         if (RecordingPreferences().getRealtimeTranscribe()) {
           final lang = ref.read(recordingLanguageControllerProvider);
           final modelManager = ref.read(asrModelManagerProvider.notifier);

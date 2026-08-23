@@ -268,13 +268,16 @@ class RecordingController extends _$RecordingController {
 
   /// RecordingPageに入った瞬間に呼ぶ早期リクエスト。「授業が始まってしまった!」
   /// という時に録音開始がもたつかないよう、実際に録音ボタンを押すより前に
-  /// 済ませておく。結果を待たず、UI状態(RecordingPhaseなど)にも反映しない
-  /// ——実際の可否判定・エラー表示は_startRecordingSession側の既存フローに任せる。
-  /// 既にpermanentlyDeniedの場合は再プロンプトしても意味が無いのでスキップする。
-  Future<void> requestMicPermissionEarly() async {
+  /// 済ませておく。結果は呼び出し元(RecordingPage)に返すのみで、UI状態
+  /// (RecordingPhaseなど)には反映しない——実際の可否判定・エラー表示は
+  /// _startRecordingSession側の既存フローに任せる。
+  /// 既にpermanentlyDenied/restrictedの場合、OSはもう二度とダイアログを
+  /// 出さない(特にiOS)ので再プロンプトはせず、そのままステータスを返す。
+  /// 呼び出し元はその場合、設定画面への誘導ダイアログを出す判断に使う。
+  Future<PermissionStatus> requestMicPermissionEarly() async {
     final status = await Permission.microphone.status;
-    if (status.isGranted || status.isPermanentlyDenied) return;
-    await Permission.microphone.request();
+    if (status.isGranted || status.isPermanentlyDenied || status.isRestricted) return status;
+    return Permission.microphone.request();
   }
 
   Future<void> _startRecordingSession() async {

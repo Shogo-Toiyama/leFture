@@ -4517,7 +4517,7 @@ abstract class AppLocalizations {
   /// Notification permission row subtitle on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'Required to keep background recording active.'**
+  /// **'Helps keep background recording stable (optional).'**
   String get onboardingPermissionsNotifSubtitle;
 
   /// Battery-optimization-exemption permission row title on the onboarding permissions step. Android only.
@@ -4538,29 +4538,59 @@ abstract class AppLocalizations {
   /// **'Tap to allow'**
   String get onboardingPermissionsNotGrantedLabel;
 
-  /// Title of the confirmation dialog shown when microphone/notification permissions aren't granted and the user tries to continue past the onboarding permissions step.
+  /// Small tappable chip shown instead of onboardingPermissionsNotGrantedLabel once a permission is permanently denied/restricted — tapping opens app Settings instead of the (now unavailable) system prompt.
   ///
   /// In en, this message translates to:
-  /// **'Continue without all permissions?'**
-  String get onboardingPermissionsOptionalDialogTitle;
+  /// **'Open Settings'**
+  String get onboardingPermissionsOpenSettingsLabel;
 
-  /// Body of the optional-permissions confirmation dialog.
+  /// Title of the dialog shown before the system microphone permission prompt, when the user tries to continue past the onboarding permissions step without having been asked yet.
   ///
   /// In en, this message translates to:
-  /// **'You can turn these on anytime later from Account settings.'**
-  String get onboardingPermissionsOptionalDialogMessage;
+  /// **'Microphone access is required'**
+  String get onboardingPermissionsMicDialogTitle;
 
-  /// Dismiss button on the optional-permissions confirmation dialog — returns to the permissions screen so the user can grant via the row's retry chip.
+  /// Body of the pre-permission microphone dialog. Explains why mic access is essential; does not tell the user what to choose.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture can\'t record, transcribe, or generate study materials without microphone access. On the next screen, please respond to the permission request.'**
+  String get onboardingPermissionsMicDialogMessage;
+
+  /// Dismiss button on the pre-permission microphone dialog — returns to the permissions screen without triggering the system prompt.
   ///
   /// In en, this message translates to:
   /// **'Go back'**
-  String get onboardingPermissionsOptionalDialogCancel;
+  String get onboardingPermissionsMicDialogCancel;
 
-  /// Confirm button on the optional-permissions confirmation dialog — proceeds past the step despite missing grants.
+  /// Confirm button on the pre-permission microphone dialog. Deliberately neutral wording (not "Allow"/"Enable") — triggers the real system permission prompt next, never grants anything itself.
   ///
   /// In en, this message translates to:
-  /// **'Continue anyway'**
-  String get onboardingPermissionsOptionalDialogContinue;
+  /// **'Continue'**
+  String get onboardingPermissionsMicDialogContinue;
+
+  /// Title of the dialog shown on RecordingPage when microphone permission was already permanently denied, so the system prompt can no longer be shown — the only way forward is the Settings app.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is off'**
+  String get recordingMicSettingsDialogTitle;
+
+  /// Body of the RecordingPage microphone Settings-redirect dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture can\'t record without microphone access. Turn it on in Settings to start recording.'**
+  String get recordingMicSettingsDialogMessage;
+
+  /// Dismiss button on the RecordingPage microphone Settings-redirect dialog — just closes the dialog, no further nagging.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get recordingMicSettingsDialogLater;
+
+  /// Confirm button on the RecordingPage microphone Settings-redirect dialog — opens the OS app-settings screen via openAppSettings().
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get recordingMicSettingsDialogOpenSettings;
 
   /// Title of the blocking dialog shown when the required battery-optimization-exemption permission isn't granted.
   ///

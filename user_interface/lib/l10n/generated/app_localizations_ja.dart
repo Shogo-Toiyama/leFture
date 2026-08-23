@@ -2390,7 +2390,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingPermissionsNotifSubtitle =>
-      'バックグラウンドでの録音状態を維持するために使います。';
+      'バックグラウンド録音を安定させるために使います（任意）。';
 
   @override
   String get onboardingPermissionsBackgroundTitle => 'バックグラウンドでも安定して動作させる';
@@ -2403,17 +2403,33 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPermissionsNotGrantedLabel => 'タップして許可';
 
   @override
-  String get onboardingPermissionsOptionalDialogTitle => 'すべての許可なしで続けますか？';
+  String get onboardingPermissionsOpenSettingsLabel => '設定を開く';
 
   @override
-  String get onboardingPermissionsOptionalDialogMessage =>
-      'これらはあとでいつでもアカウント設定からオンにできます。';
+  String get onboardingPermissionsMicDialogTitle => 'マイクへのアクセスが必要です';
 
   @override
-  String get onboardingPermissionsOptionalDialogCancel => '戻る';
+  String get onboardingPermissionsMicDialogMessage =>
+      '録音・文字起こし・学習教材の生成には、マイクへのアクセスが必須です。次の画面で表示される許可のリクエストに回答してください。';
 
   @override
-  String get onboardingPermissionsOptionalDialogContinue => 'このまま続ける';
+  String get onboardingPermissionsMicDialogCancel => '戻る';
+
+  @override
+  String get onboardingPermissionsMicDialogContinue => '続ける';
+
+  @override
+  String get recordingMicSettingsDialogTitle => 'マイクへのアクセスがオフになっています';
+
+  @override
+  String get recordingMicSettingsDialogMessage =>
+      'マイクへのアクセスがないと録音できません。設定アプリでマイクを許可すると録音を開始できます。';
+
+  @override
+  String get recordingMicSettingsDialogLater => 'あとで';
+
+  @override
+  String get recordingMicSettingsDialogOpenSettings => '設定を開く';
 
   @override
   String get onboardingPermissionsRequiredDialogTitle => 'バックグラウンド権限が必要です';

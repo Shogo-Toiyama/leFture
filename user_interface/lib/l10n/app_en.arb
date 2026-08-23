@@ -3881,7 +3881,7 @@
   "@onboardingPermissionsNotifTitle": {
     "description": "Notification permission row title on the onboarding permissions step."
   },
-  "onboardingPermissionsNotifSubtitle": "Required to keep background recording active.",
+  "onboardingPermissionsNotifSubtitle": "Helps keep background recording stable (optional).",
   "@onboardingPermissionsNotifSubtitle": {
     "description": "Notification permission row subtitle on the onboarding permissions step."
   },
@@ -3897,21 +3897,41 @@
   "@onboardingPermissionsNotGrantedLabel": {
     "description": "Small tappable chip on a not-yet-granted permission row, on both the onboarding step and the account settings permissions page."
   },
-  "onboardingPermissionsOptionalDialogTitle": "Continue without all permissions?",
-  "@onboardingPermissionsOptionalDialogTitle": {
-    "description": "Title of the confirmation dialog shown when microphone/notification permissions aren't granted and the user tries to continue past the onboarding permissions step."
+  "onboardingPermissionsOpenSettingsLabel": "Open Settings",
+  "@onboardingPermissionsOpenSettingsLabel": {
+    "description": "Small tappable chip shown instead of onboardingPermissionsNotGrantedLabel once a permission is permanently denied/restricted — tapping opens app Settings instead of the (now unavailable) system prompt."
   },
-  "onboardingPermissionsOptionalDialogMessage": "You can turn these on anytime later from Account settings.",
-  "@onboardingPermissionsOptionalDialogMessage": {
-    "description": "Body of the optional-permissions confirmation dialog."
+  "onboardingPermissionsMicDialogTitle": "Microphone access is required",
+  "@onboardingPermissionsMicDialogTitle": {
+    "description": "Title of the dialog shown before the system microphone permission prompt, when the user tries to continue past the onboarding permissions step without having been asked yet."
   },
-  "onboardingPermissionsOptionalDialogCancel": "Go back",
-  "@onboardingPermissionsOptionalDialogCancel": {
-    "description": "Dismiss button on the optional-permissions confirmation dialog — returns to the permissions screen so the user can grant via the row's retry chip."
+  "onboardingPermissionsMicDialogMessage": "leFture can't record, transcribe, or generate study materials without microphone access. On the next screen, please respond to the permission request.",
+  "@onboardingPermissionsMicDialogMessage": {
+    "description": "Body of the pre-permission microphone dialog. Explains why mic access is essential; does not tell the user what to choose."
   },
-  "onboardingPermissionsOptionalDialogContinue": "Continue anyway",
-  "@onboardingPermissionsOptionalDialogContinue": {
-    "description": "Confirm button on the optional-permissions confirmation dialog — proceeds past the step despite missing grants."
+  "onboardingPermissionsMicDialogCancel": "Go back",
+  "@onboardingPermissionsMicDialogCancel": {
+    "description": "Dismiss button on the pre-permission microphone dialog — returns to the permissions screen without triggering the system prompt."
+  },
+  "onboardingPermissionsMicDialogContinue": "Continue",
+  "@onboardingPermissionsMicDialogContinue": {
+    "description": "Confirm button on the pre-permission microphone dialog. Deliberately neutral wording (not \"Allow\"/\"Enable\") — triggers the real system permission prompt next, never grants anything itself."
+  },
+  "recordingMicSettingsDialogTitle": "Microphone access is off",
+  "@recordingMicSettingsDialogTitle": {
+    "description": "Title of the dialog shown on RecordingPage when microphone permission was already permanently denied, so the system prompt can no longer be shown — the only way forward is the Settings app."
+  },
+  "recordingMicSettingsDialogMessage": "leFture can't record without microphone access. Turn it on in Settings to start recording.",
+  "@recordingMicSettingsDialogMessage": {
+    "description": "Body of the RecordingPage microphone Settings-redirect dialog."
+  },
+  "recordingMicSettingsDialogLater": "Later",
+  "@recordingMicSettingsDialogLater": {
+    "description": "Dismiss button on the RecordingPage microphone Settings-redirect dialog — just closes the dialog, no further nagging."
+  },
+  "recordingMicSettingsDialogOpenSettings": "Open Settings",
+  "@recordingMicSettingsDialogOpenSettings": {
+    "description": "Confirm button on the RecordingPage microphone Settings-redirect dialog — opens the OS app-settings screen via openAppSettings()."
   },
   "onboardingPermissionsRequiredDialogTitle": "Background permission needed",
   "@onboardingPermissionsRequiredDialogTitle": {

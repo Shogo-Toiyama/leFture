@@ -1,10 +1,33 @@
 // lib/presentation/widgets/permissions_panel.dart
+import 'dart:io';
+
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+
+/// Android exposes a documented public intent that jumps straight to an
+/// app's notification settings page (unlike other runtime permissions —
+/// mic/camera/location — which only have a general app-details page, no
+/// direct per-permission deep link). iOS has no equivalent public API
+/// reachable without extra native/SPM plugin work, so it falls back to the
+/// regular app-settings screen.
+Future<void> openNotificationSettings() async {
+  if (Platform.isAndroid) {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final intent = AndroidIntent(
+      action: 'android.settings.APP_NOTIFICATION_SETTINGS',
+      arguments: {'android.provider.extra.APP_PACKAGE': packageInfo.packageName},
+    );
+    await intent.launch();
+    return;
+  }
+  await openAppSettings();
+}
 
 /// One row's worth of copy/icon for a permission, shared between the
 /// onboarding Permissions step and the standalone Account > Permissions
@@ -76,6 +99,18 @@ class PermissionsStatusState {
 
   bool isGranted(Permission permission) => statuses[permission]?.isGranted ?? false;
   bool isAllGranted(List<OnboardingPermissionSpec> specs) => specs.every((s) => isGranted(s.permission));
+
+  /// True when the OS permission prompt hasn't been resolved yet for this
+  /// permission — i.e. calling `.request()` will actually surface it (or
+  /// re-surface it, on Android). False once it's granted, permanently
+  /// denied, or restricted, since `.request()` is then a no-op.
+  bool isUndetermined(Permission permission) => statuses[permission] == PermissionStatus.denied;
+
+  /// True once the OS will never show its own prompt again for this
+  /// permission — the row's tap target should open app Settings instead.
+  bool isPermanentlyDenied(Permission permission) =>
+      statuses[permission] == PermissionStatus.permanentlyDenied ||
+      statuses[permission] == PermissionStatus.restricted;
 }
 
 /// Custom flutter_hooks hook: checks + exposes live status for a fixed list
@@ -93,8 +128,25 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     loading.value = false;
   }
 
+  // permanentlyDenied/restrictedだとOS側は二度とダイアログを出さないので
+  // (特にiOS)、request()を呼んでも何も起きない。その場合はアプリの設定
+  // 画面を直接開く — permission_handlerのopenAppSettings()はiOS/Android
+  // 共通で使える。
+  Future<void> requestOrOpenSettings(Permission permission) async {
+    final current = statuses.value[permission];
+    if (current == PermissionStatus.permanentlyDenied || current == PermissionStatus.restricted) {
+      if (permission == Permission.notification) {
+        await openNotificationSettings();
+      } else {
+        await openAppSettings();
+      }
+    } else {
+      await permission.request();
+    }
+  }
+
   Future<void> requestOne(Permission permission) async {
-    await permission.request();
+    await requestOrOpenSettings(permission);
     await refresh();
   }
 
@@ -102,7 +154,7 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     for (final spec in specs) {
       final isAlreadyGranted = statuses.value[spec.permission]?.isGranted ?? false;
       if (!isAlreadyGranted) {
-        await spec.permission.request();
+        await requestOrOpenSettings(spec.permission);
         await refresh();
       }
     }
@@ -151,6 +203,7 @@ class PermissionsRows extends StatelessWidget {
           _PermissionRow(
             spec: specs[i],
             granted: state.isGranted(specs[i].permission),
+            permanentlyDenied: state.isPermanentlyDenied(specs[i].permission),
             onRetry: () => state.requestOne(specs[i].permission),
           ),
         ],
@@ -160,10 +213,16 @@ class PermissionsRows extends StatelessWidget {
 }
 
 class _PermissionRow extends StatelessWidget {
-  const _PermissionRow({required this.spec, required this.granted, required this.onRetry});
+  const _PermissionRow({
+    required this.spec,
+    required this.granted,
+    required this.permanentlyDenied,
+    required this.onRetry,
+  });
 
   final OnboardingPermissionSpec spec;
   final bool granted;
+  final bool permanentlyDenied;
   final VoidCallback onRetry;
 
   @override
@@ -221,10 +280,16 @@ class _PermissionRow extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.priority_high_rounded, color: AppColors.alertAmber, size: 13),
+                  Icon(
+                    permanentlyDenied ? Icons.settings_rounded : Icons.priority_high_rounded,
+                    color: AppColors.alertAmber,
+                    size: 13,
+                  ),
                   const SizedBox(width: 4),
                   Text(
-                    l10n.onboardingPermissionsNotGrantedLabel,
+                    permanentlyDenied
+                        ? l10n.onboardingPermissionsOpenSettingsLabel
+                        : l10n.onboardingPermissionsNotGrantedLabel,
                     style: const TextStyle(color: AppColors.alertAmber, fontSize: 10.5, fontWeight: FontWeight.bold),
                   ),
                 ],
