@@ -5,7 +5,7 @@ You will also perform one focused task at the end: identifying the single most p
 
 ### OUTPUT LANGUAGE
 ${LANGUAGE_INSTRUCTIONS}
-This applies to `summary`, `title`, `topics[].title`, `topics[].keywords`, `fun_fact_selection.concept_focus`, and `fun_fact_selection.concept_intro_line`. `concept_focus` must still be copied character-for-character from that topic's `keywords` list, including any parenthetical original-language term.
+This applies to `summary`, `title`, `topics[].title`, `topics[].keywords`, `topics[].concept_focus`, and `topics[].concept_intro_line`. `concept_focus` must still be copied character-for-character from that same topic's `keywords` list, including any parenthetical original-language term.
 
 ### INPUT FORMAT
 A plain text transcript where each line represents a sentence or utterance.
@@ -32,8 +32,9 @@ Before producing any output, internally perform the following stages. Do not sho
 - **Language Rule (CRITICAL):** `topics[].title` MUST be written in the specified output language per `OUTPUT LANGUAGE` above (e.g., in Japanese). Do NOT leave topic titles in English/transcript language. For `keywords`, write them in the output language, and include the original transcript term in parentheses when instructed by the bilingual rule.
 
 **Topic Types:**
-- `ACADEMIC`: substantive lecture content.
-- `LOGISTICS`: use ONLY if there is a large, continuous, sustained block discussing syllabus, grading, or course administration.
+- `ACADEMIC`: substantive lecture content — concepts, theories, mechanisms, problems, and solutions that a student would need to learn and could be tested on.
+- `LOGISTICS`: any sustained block about syllabus, grading, or course administration — regardless of how long, detailed, or specific it gets, and regardless of where in the lecture it appears. A lecture can have MORE THAN ONE `LOGISTICS` topic if administrative discussion happens in more than one place (e.g., once at the very start, and again later when exam format is explained) — do not force separate administrative stretches into a single chapter, and do not relabel a later administrative stretch as `ACADEMIC` just because an earlier one was already tagged `LOGISTICS`.
+  - **Common misclassification to avoid:** "which textbook edition/homework platform to buy," "how quizzes/exams are weighted or graded," "grading breakdown/curve," "attendance or late-work policy," and "calculator/device rules" are ALL `LOGISTICS`, never `ACADEMIC` — even when the professor spends significant time on them and they naturally form their own chapter. Do not extract `ACADEMIC`-style keywords (e.g., "Textbook", "Midterm exams") for this kind of content; tag the whole stretch `LOGISTICS` with `keywords: []` instead. The test is "would a student need to know this to understand the subject matter," not "did the professor spend a lot of time on it" or "does it get its own chapter."
 - `OFF_TOPIC`: use ONLY for a sustained non-academic stretch longer than 15 sentences (e.g., an extended tangent, a long break, unrelated conversation). Do not create an OFF_TOPIC segment for brief remarks — see Content Filtering Rule.
 
 **Content Filtering Rule:**
@@ -76,7 +77,7 @@ Before producing any output, internally perform the following stages. Do not sho
 
 ---
 
-**4. KEY CONCEPT SELECTION FOR FUN FACT (`fun_fact_selection`):**
+**4. KEY CONCEPT SELECTION FOR FUN FACT (`topics[].is_fun_fact_topic` / `concept_focus` / `concept_intro_line`):**
 
 Identify the single most pivotal academic concept taught in today's lecture to serve as the anchor for a future Fun Fact story.
 
@@ -85,7 +86,12 @@ Identify the single most pivotal academic concept taught in today's lecture to s
   - **Future Importance:** Prioritize the concept that is most essential for understanding subsequent topics or future lectures in this course/field — the foundational idea where understanding it deeply today pays the highest dividends in upcoming classes.
   - **Avoid Generic Prerequisites:** Do NOT choose baseline, background, or recurring prerequisite terms that appear in every lecture (e.g., in a Computer Systems class, do not pick generic "Memory" or "Variables" if today's actual focus was "Virtual Memory Page Tables").
   - **Avoid Minor Tangents:** Do NOT choose minor illustrative examples, side remarks, or isolated trivia mentioned in passing.
-  - **You only select from `ACADEMIC` topics.** `selected_topic_idx` MUST be that topic's own `idx` number as you numbered it in the `topics` list above (the sequential count among `ACADEMIC` topics only — `LOGISTICS`/`OFF_TOPIC` topics have no `idx` and can never be selected). Do NOT use that topic's position within the full `topics` array (which also counts `LOGISTICS`/`OFF_TOPIC` entries).
+
+- **How to record your choice (CRITICAL — write everything on the topic you picked, nothing anywhere else):**
+  - Every object in `topics[]` MUST include a boolean field `is_fun_fact_topic`. Set it to `true` on the ONE `ACADEMIC` topic you are choosing, and `false` on every other topic (including all `LOGISTICS`/`OFF_TOPIC` topics — they can never be `true`). Exactly one topic in the whole array has `is_fun_fact_topic: true`.
+  - On that SAME topic object — and ONLY on that topic object — also add two more fields: `concept_focus` and `concept_intro_line` (described below). Every other topic must NOT have these two fields at all.
+  - Do this all directly on the topic object itself, at the point where you write that topic. Do NOT put `concept_focus`/`concept_intro_line` in a separate top-level section, and do NOT reference the chosen topic by number or position from anywhere else — everything about your fun-fact choice lives in one place: that one topic object.
+  - `concept_focus` must be copied character-for-character from that SAME topic's own `keywords` list (never from a different topic's keywords).
 
 - **Write `concept_intro_line`:**
   - Write 2–3 concise sentences describing:
@@ -94,7 +100,7 @@ Identify the single most pivotal academic concept taught in today's lecture to s
     - This provides downstream tasks with the exact classroom context and establishes a clear negative list of examples NOT to repeat.
   - Keep it factual and neutral, matching the textbook tone used in `summary`.
 
-- **Language Rule:** Write `concept_intro_line` strictly in the specified output language per `OUTPUT LANGUAGE` above. Copy `concept_focus` character-for-character from that topic's `keywords` list.
+- **Language Rule:** Write `concept_intro_line` strictly in the specified output language per `OUTPUT LANGUAGE` above.
 
 ---
 
@@ -106,6 +112,15 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
   "topics": [
     {
       "idx": 1,
+      "title": "Syllabus and Grading Overview",
+      "topic_type": "LOGISTICS",
+      "keywords": [],
+      "start_sid": "s000001",
+      "end_sid": "s000042",
+      "is_fun_fact_topic": false
+    },
+    {
+      "idx": 2,
       "title": "Motivation for Virtual Memory",
       "topic_type": "ACADEMIC",
       "keywords": [
@@ -114,11 +129,12 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
         "Address space",
         "Memory fragmentation"
       ],
-      "start_sid": "s000001",
-      "end_sid": "s000118"
+      "start_sid": "s000043",
+      "end_sid": "s000118",
+      "is_fun_fact_topic": false
     },
     {
-      "idx": 2,
+      "idx": 3,
       "title": "Address Translation and Page Tables",
       "topic_type": "ACADEMIC",
       "keywords": [
@@ -129,10 +145,13 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
         "Physical address"
       ],
       "start_sid": "s000119",
-      "end_sid": "s000247"
+      "end_sid": "s000247",
+      "is_fun_fact_topic": true,
+      "concept_focus": "Address translation",
+      "concept_intro_line": "The professor explained address translation as the hardware mechanism mapping virtual addresses to physical RAM, enabling safe process isolation across shared memory. In class, the professor used an analogy of a hotel room keycard mapping to physical rooms and briefly referenced 1960s Atlas supercomputer hardware."
     },
     {
-      "idx": 3,
+      "idx": 4,
       "title": "TLB Performance Tradeoffs",
       "topic_type": "ACADEMIC",
       "keywords": [
@@ -142,14 +161,14 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
         "Page fault"
       ],
       "start_sid": "s000248",
-      "end_sid": "s000372"
+      "end_sid": "s000372",
+      "is_fun_fact_topic": false
     }
   ],
   "summary": "Virtual memory isolates processes by providing each with the illusion of a private, contiguous address space. The operating system, supported by hardware like the TLB, maps these virtual addresses to physical memory using page tables, balancing process isolation with translation performance.",
-  "title": "Virtual Memory and Address Translation",
-  "fun_fact_selection": {
-    "selected_topic_idx": 2,
-    "concept_focus": "Address translation",
-    "concept_intro_line": "The professor explained address translation as the hardware mechanism mapping virtual addresses to physical RAM, enabling safe process isolation across shared memory. In class, the professor used an analogy of a hotel room keycard mapping to physical rooms and briefly referenced 1960s Atlas supercomputer hardware."
-  }
+  "title": "Virtual Memory and Address Translation"
 }
+
+Notes on the example above:
+- `idx` is simply each topic's position in the array (1, 2, 3, 4, ...) — just number topics in order as you write them, no special counting rule needed.
+- Only the chosen topic ("Address Translation and Page Tables") has `is_fun_fact_topic: true` plus `concept_focus`/`concept_intro_line`. Every other topic has `is_fun_fact_topic: false` and no `concept_focus`/`concept_intro_line` fields at all. There is no separate top-level section for the fun fact choice — everything about it lives on that one topic object.

@@ -25,9 +25,12 @@ class FunFactGenerationService:
         )
         options_json = LLMOptions(output_type="json", temperature=0.7)
 
-        fun_fact_selection = core_data.get("fun_fact_selection") or {}
-        concept_focus = fun_fact_selection.get("concept_focus", "")
-        concept_intro_line = fun_fact_selection.get("concept_intro_line", "")
+        selected_topic = next(
+            (t for t in core_data.get("topics", []) if t.get("is_fun_fact_topic") is True),
+            {},
+        )
+        concept_focus = selected_topic.get("concept_focus", "")
+        concept_intro_line = selected_topic.get("concept_intro_line", "")
 
         if not seed_data:
             self.logger.log("   [Logic] ⚠️ No fun fact seed found from brainstorming. Continuing with empty seed.")

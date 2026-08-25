@@ -2258,15 +2258,12 @@ async def run_fun_fact_brainstorming_task(job_id: str, task_id: str):
         # 1. Core Extraction が選んだトピック/概念を読み込む
         core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
         core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
-        fun_fact_selection = core_data.get("fun_fact_selection", {})
-
-        selected_topic_idx = fun_fact_selection.get("selected_topic_idx")
-        concept_focus = fun_fact_selection.get("concept_focus", "")
-        concept_intro_line = fun_fact_selection.get("concept_intro_line", "")
         selected_topic = next(
-            (t for t in core_data.get("topics", []) if t.get("idx") == selected_topic_idx),
+            (t for t in core_data.get("topics", []) if t.get("is_fun_fact_topic") is True),
             {},
         )
+        concept_focus = selected_topic.get("concept_focus", "")
+        concept_intro_line = selected_topic.get("concept_intro_line", "")
         topic_title = selected_topic.get("title", "")
 
         course_title, _, _ = await asyncio.to_thread(_get_sentence_review_context, lecture_id)

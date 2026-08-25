@@ -137,7 +137,7 @@ class CoreExtractionService:
         This is intentionally strict because downstream tasks rely heavily on:
         - topics[].start_sid / end_sid
         - topics[].topic_type
-        - fun_fact_selection.selected_topic_idx / concept_focus
+        - topics[].is_fun_fact_topic / topics[].concept_focus
 
         If the LLM hallucinates a SID, we fail fast instead of silently producing
         missing blocks in later tasks.
@@ -149,7 +149,6 @@ class CoreExtractionService:
             "summary",
             "title",
             "topics",
-            "fun_fact_selection",
         ]
         missing_keys = [key for key in required_top_level_keys if key not in output]
         if missing_keys:
@@ -276,41 +275,51 @@ class CoreExtractionService:
 
         output["topics"] = normalized_topics
 
-        fun_fact_selection = output["fun_fact_selection"]
-        if not isinstance(fun_fact_selection, dict):
-            raise ValueError("Core extraction field 'fun_fact_selection' must be an object.")
+        # fun fact用トピックの選択は、番号や別セクションでクロス参照させず、
+        # 選んだトピック自身に is_fun_fact_topic / concept_focus / concept_intro_line
+        # を全て持たせる方式にしている。以前は concept_focus が別オブジェクト
+        # (fun_fact_selection) に分離していたため、「選んだつもりのトピック」と
+        # 「実際に書いたconcept_focusの由来トピック」がズレる事故が起きていた
+        # （例: is_fun_fact_topic=trueは topics[3] なのにconcept_focusはtopics[2]の
+        # keywordだった）。同じオブジェクトに同居させることでそのズレの余地自体をなくす。
+        flagged_topics = [
+            topic
+            for topic in normalized_topics
+            if topic["topic_type"] == "ACADEMIC" and topic.get("is_fun_fact_topic") is True
+        ]
 
-        # selected_topic_idx は正規化後のACADEMICトピックのidxと一致している必要がある
-        # （LOGISTICS/OFF_TOPICはidx=Noneなので選択対象にならない）。
-        academic_idxs = {
-            topic["idx"] for topic in normalized_topics if topic["topic_type"] == "ACADEMIC"
-        }
-
-        selected_topic_idx = fun_fact_selection.get("selected_topic_idx")
-        if not isinstance(selected_topic_idx, int) or isinstance(selected_topic_idx, bool):
-            raise ValueError("fun_fact_selection.selected_topic_idx must be an integer.")
-        if selected_topic_idx not in academic_idxs:
+        if not flagged_topics:
             raise ValueError(
-                f"fun_fact_selection.selected_topic_idx ({selected_topic_idx}) does not "
-                f"match any ACADEMIC topic idx: {sorted(academic_idxs)}"
+                "No ACADEMIC topic has is_fun_fact_topic=true "
+                "(fun fact topic selection is missing)."
             )
 
-        selected_topic = next(
-            topic for topic in normalized_topics if topic["idx"] == selected_topic_idx
-        )
+        if len(flagged_topics) > 1:
+            raise ValueError(
+                "Multiple ACADEMIC topics have is_fun_fact_topic=true, expected exactly one: "
+                f"{[t['title'] for t in flagged_topics]}"
+            )
 
-        concept_focus = fun_fact_selection.get("concept_focus")
+        selected_topic = flagged_topics[0]
+
+        concept_focus = selected_topic.get("concept_focus")
         if not isinstance(concept_focus, str) or not concept_focus.strip():
-            raise ValueError("fun_fact_selection.concept_focus must be a non-empty string.")
+            raise ValueError(
+                "The topic with is_fun_fact_topic=true must have a non-empty "
+                f"concept_focus (topic: {selected_topic.get('title')!r})."
+            )
         if concept_focus not in selected_topic["keywords"]:
             raise ValueError(
-                f"fun_fact_selection.concept_focus ({concept_focus!r}) must be one of the "
-                f"selected topic's keywords: {selected_topic['keywords']}"
+                f"concept_focus ({concept_focus!r}) must be one of the selected topic's "
+                f"own keywords: {selected_topic['keywords']}"
             )
 
-        concept_intro_line = fun_fact_selection.get("concept_intro_line")
+        concept_intro_line = selected_topic.get("concept_intro_line")
         if not isinstance(concept_intro_line, str) or not concept_intro_line.strip():
-            raise ValueError("fun_fact_selection.concept_intro_line must be a non-empty string.")
+            raise ValueError(
+                "The topic with is_fun_fact_topic=true must have a non-empty "
+                f"concept_intro_line (topic: {selected_topic.get('title')!r})."
+            )
 
         return output
 
