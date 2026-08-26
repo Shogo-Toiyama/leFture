@@ -2340,10 +2340,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingIntroStep3Desc => '録音とお知らせの権限を確認します';
 
   @override
-  String get onboardingIntroStep4Title => 'プラン選択';
+  String get onboardingIntroStep4Title => 'ウェルカムボーナス';
 
   @override
-  String get onboardingIntroStep4Desc => 'あなたに合ったプランを選んでください';
+  String get onboardingIntroStep4Desc => 'ウェルカムボーナスを受け取る';
 
   @override
   String get onboardingLanguageEyebrow => '言語';
@@ -2413,9 +2413,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '録音・文字起こし・学習教材の生成には、マイクへのアクセスが必須です。次の画面で表示される許可のリクエストに回答してください。';
 
   @override
-  String get onboardingPermissionsMicDialogCancel => '戻る';
-
-  @override
   String get onboardingPermissionsMicDialogContinue => '続ける';
 
   @override
@@ -2457,11 +2454,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPlanTitle => 'leFtureを体験する';
 
   @override
-  String get onboardingPlanBadge => '初回特典：1,500クレジット付き';
+  String get onboardingPlanBadge => 'ウェルカムボーナス：毎月1,500クレジット付与';
 
   @override
   String get onboardingPlanSubtitle =>
-      'まずは1,500クレジットでleFtureのすべての機能をお試しいただけます。定期プランは今後こちらに追加されます。';
+      'あなたのアカウントは「ウェルカムボーナス」プランでスタートします — 毎月1,500クレジットが無料で付与され、すべての機能をお使いいただけます。';
 
   @override
   String get onboardingPlanActiveTitle => 'すでにプランが有効です';

@@ -66,41 +66,42 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
       }
 
       // Microphone is core to the app: explain why before routing to the
-      // real system prompt. "Continue" never grants anything itself — it
-      // only ever triggers Permission.microphone.request() below.
+      // real system prompt. Apple's 5.1.1(iv) requires that a custom
+      // pre-permission message have no way to close it other than
+      // proceeding to the real system dialog — even a no-op "Go back" that
+      // grants nothing counts as "delaying" the request in their read of
+      // the guideline. So this dialog has exactly one button, no barrier
+      // dismiss, and no back-gesture dismiss; its only action is to trigger
+      // Permission.microphone.request() below.
       if (permState.isUndetermined(Permission.microphone)) {
-        final shouldContinue = await showDialog<bool>(
+        await showDialog<void>(
           context: context,
-          builder: (_) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1F29),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(
-              l10n.onboardingPermissionsMicDialogTitle,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            content: Text(
-              l10n.onboardingPermissionsMicDialogMessage,
-              style: const TextStyle(color: Colors.white70),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  l10n.onboardingPermissionsMicDialogCancel,
-                  style: TextStyle(color: AppColors.universe.textComet),
-                ),
+          barrierDismissible: false,
+          builder: (dialogContext) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF1E1F29),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                l10n.onboardingPermissionsMicDialogTitle,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(
-                  l10n.onboardingPermissionsMicDialogContinue,
-                  style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
-                ),
+              content: Text(
+                l10n.onboardingPermissionsMicDialogMessage,
+                style: const TextStyle(color: Colors.white70),
               ),
-            ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    l10n.onboardingPermissionsMicDialogContinue,
+                    style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
-        if (shouldContinue != true) return;
         await permState.requestOne(Permission.microphone);
       }
 

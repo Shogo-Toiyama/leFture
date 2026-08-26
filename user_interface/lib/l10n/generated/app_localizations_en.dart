@@ -2439,10 +2439,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingIntroStep3Desc => 'Allow recording and notifications';
 
   @override
-  String get onboardingIntroStep4Title => 'Plan';
+  String get onboardingIntroStep4Title => 'Welcome Bonus';
 
   @override
-  String get onboardingIntroStep4Desc => 'Pick the plan that fits you';
+  String get onboardingIntroStep4Desc => 'Claim your welcome bonus credits';
 
   @override
   String get onboardingLanguageEyebrow => 'Language';
@@ -2519,9 +2519,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'leFture can\'t record, transcribe, or generate study materials without microphone access. On the next screen, please respond to the permission request.';
 
   @override
-  String get onboardingPermissionsMicDialogCancel => 'Go back';
-
-  @override
   String get onboardingPermissionsMicDialogContinue => 'Continue';
 
   @override
@@ -2564,11 +2561,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPlanTitle => 'Get started with leFture';
 
   @override
-  String get onboardingPlanBadge => 'Welcome Gift: 1,500 credits included';
+  String get onboardingPlanBadge => 'Welcome Bonus: 1,500 credits every month';
 
   @override
   String get onboardingPlanSubtitle =>
-      'Explore all features with 1,500 welcome credits. Subscription plans will be available here later.';
+      'Your account starts on the Welcome Bonus plan — 1,500 credits every month, free, so you can use every feature.';
 
   @override
   String get onboardingPlanActiveTitle => 'You\'re already on a plan';

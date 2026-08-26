@@ -4418,16 +4418,16 @@ abstract class AppLocalizations {
   /// **'Allow recording and notifications'**
   String get onboardingIntroStep3Desc;
 
-  /// Title of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap.
+  /// Title of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap. Deliberately not "Plan"/"Pick a plan" — there is only one self-serve plan today, so wording must not imply a choice among several.
   ///
   /// In en, this message translates to:
-  /// **'Plan'**
+  /// **'Welcome Bonus'**
   String get onboardingIntroStep4Title;
 
-  /// Description of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap.
+  /// Description of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap.
   ///
   /// In en, this message translates to:
-  /// **'Pick the plan that fits you'**
+  /// **'Claim your welcome bonus credits'**
   String get onboardingIntroStep4Desc;
 
   /// Small eyebrow label above the title on the onboarding language step.
@@ -4556,13 +4556,7 @@ abstract class AppLocalizations {
   /// **'leFture can\'t record, transcribe, or generate study materials without microphone access. On the next screen, please respond to the permission request.'**
   String get onboardingPermissionsMicDialogMessage;
 
-  /// Dismiss button on the pre-permission microphone dialog — returns to the permissions screen without triggering the system prompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Go back'**
-  String get onboardingPermissionsMicDialogCancel;
-
-  /// Confirm button on the pre-permission microphone dialog. Deliberately neutral wording (not "Allow"/"Enable") — triggers the real system permission prompt next, never grants anything itself.
+  /// Sole button on the pre-permission microphone dialog — no cancel/dismiss option (Apple 5.1.1(iv) requires the only way past a custom pre-permission message be the real system prompt). Deliberately neutral wording (not "Allow"/"Enable") — triggers the system permission prompt next, never grants anything itself.
   ///
   /// In en, this message translates to:
   /// **'Continue'**
@@ -4640,16 +4634,16 @@ abstract class AppLocalizations {
   /// **'Get started with leFture'**
   String get onboardingPlanTitle;
 
-  /// Badge shown on the onboarding plan step indicating the initial welcome credit gift.
+  /// Badge shown on the onboarding plan step. Says "every month", not "included"/a one-time amount — the Welcome Bonus plan (subscription_plans row of that name) grants 1,500 credits on a recurring monthly basis, not a single up-front gift.
   ///
   /// In en, this message translates to:
-  /// **'Welcome Gift: 1,500 credits included'**
+  /// **'Welcome Bonus: 1,500 credits every month'**
   String get onboardingPlanBadge;
 
-  /// Subtitle on the onboarding plan step.
+  /// Subtitle on the onboarding plan step. Must make clear this is an ongoing monthly plan (not a one-time sign-up gift) and must not mention future subscription plans — this step claims the real Welcome Bonus plan, not a placeholder plan picker, so it must not read as unfinished to App Review.
   ///
   /// In en, this message translates to:
-  /// **'Explore all features with 1,500 welcome credits. Subscription plans will be available here later.'**
+  /// **'Your account starts on the Welcome Bonus plan — 1,500 credits every month, free, so you can use every feature.'**
   String get onboardingPlanSubtitle;
 
   /// Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview).

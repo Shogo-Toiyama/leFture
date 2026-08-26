@@ -780,8 +780,8 @@
   "onboardingIntroStep2Desc": "専攻・興味・将来の夢を教えてください",
   "onboardingIntroStep3Title": "権限許可",
   "onboardingIntroStep3Desc": "録音とお知らせの権限を確認します",
-  "onboardingIntroStep4Title": "プラン選択",
-  "onboardingIntroStep4Desc": "あなたに合ったプランを選んでください",
+  "onboardingIntroStep4Title": "ウェルカムボーナス",
+  "onboardingIntroStep4Desc": "ウェルカムボーナスを受け取る",
 
   "onboardingLanguageEyebrow": "言語",
   "onboardingLanguageTitle": "言語を設定しましょう",
@@ -805,7 +805,6 @@
   "onboardingPermissionsOpenSettingsLabel": "設定を開く",
   "onboardingPermissionsMicDialogTitle": "マイクへのアクセスが必要です",
   "onboardingPermissionsMicDialogMessage": "録音・文字起こし・学習教材の生成には、マイクへのアクセスが必須です。次の画面で表示される許可のリクエストに回答してください。",
-  "onboardingPermissionsMicDialogCancel": "戻る",
   "onboardingPermissionsMicDialogContinue": "続ける",
   "recordingMicSettingsDialogTitle": "マイクへのアクセスがオフになっています",
   "recordingMicSettingsDialogMessage": "マイクへのアクセスがないと録音できません。設定アプリでマイクを許可すると録音を開始できます。",
@@ -820,8 +819,8 @@
 
   "onboardingPlanEyebrow": "もうすぐ完了",
   "onboardingPlanTitle": "leFtureを体験する",
-  "onboardingPlanBadge": "初回特典：1,500クレジット付き",
-  "onboardingPlanSubtitle": "まずは1,500クレジットでleFtureのすべての機能をお試しいただけます。定期プランは今後こちらに追加されます。",
+  "onboardingPlanBadge": "ウェルカムボーナス：毎月1,500クレジット付与",
+  "onboardingPlanSubtitle": "あなたのアカウントは「ウェルカムボーナス」プランでスタートします — 毎月1,500クレジットが無料で付与され、すべての機能をお使いいただけます。",
   "onboardingPlanActiveTitle": "すでにプランが有効です",
   "onboardingPlanClaimError": "プランを有効化できませんでした。後ほどアカウントページから再度お試しください。",
 

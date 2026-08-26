@@ -3815,13 +3815,13 @@
   "@onboardingIntroStep3Desc": {
     "description": "Description of waypoint 3 (Permissions) on the onboarding intro/bridge step's roadmap."
   },
-  "onboardingIntroStep4Title": "Plan",
+  "onboardingIntroStep4Title": "Welcome Bonus",
   "@onboardingIntroStep4Title": {
-    "description": "Title of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap."
+    "description": "Title of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap. Deliberately not \"Plan\"/\"Pick a plan\" — there is only one self-serve plan today, so wording must not imply a choice among several."
   },
-  "onboardingIntroStep4Desc": "Pick the plan that fits you",
+  "onboardingIntroStep4Desc": "Claim your welcome bonus credits",
   "@onboardingIntroStep4Desc": {
-    "description": "Description of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap."
+    "description": "Description of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap."
   },
 
   "onboardingLanguageEyebrow": "Language",
@@ -3909,13 +3909,9 @@
   "@onboardingPermissionsMicDialogMessage": {
     "description": "Body of the pre-permission microphone dialog. Explains why mic access is essential; does not tell the user what to choose."
   },
-  "onboardingPermissionsMicDialogCancel": "Go back",
-  "@onboardingPermissionsMicDialogCancel": {
-    "description": "Dismiss button on the pre-permission microphone dialog — returns to the permissions screen without triggering the system prompt."
-  },
   "onboardingPermissionsMicDialogContinue": "Continue",
   "@onboardingPermissionsMicDialogContinue": {
-    "description": "Confirm button on the pre-permission microphone dialog. Deliberately neutral wording (not \"Allow\"/\"Enable\") — triggers the real system permission prompt next, never grants anything itself."
+    "description": "Sole button on the pre-permission microphone dialog — no cancel/dismiss option (Apple 5.1.1(iv) requires the only way past a custom pre-permission message be the real system prompt). Deliberately neutral wording (not \"Allow\"/\"Enable\") — triggers the system permission prompt next, never grants anything itself."
   },
   "recordingMicSettingsDialogTitle": "Microphone access is off",
   "@recordingMicSettingsDialogTitle": {
@@ -3969,13 +3965,13 @@
   "@onboardingPlanTitle": {
     "description": "Title on the onboarding plan step."
   },
-  "onboardingPlanBadge": "Welcome Gift: 1,500 credits included",
+  "onboardingPlanBadge": "Welcome Bonus: 1,500 credits every month",
   "@onboardingPlanBadge": {
-    "description": "Badge shown on the onboarding plan step indicating the initial welcome credit gift."
+    "description": "Badge shown on the onboarding plan step. Says \"every month\", not \"included\"/a one-time amount — the Welcome Bonus plan (subscription_plans row of that name) grants 1,500 credits on a recurring monthly basis, not a single up-front gift."
   },
-  "onboardingPlanSubtitle": "Explore all features with 1,500 welcome credits. Subscription plans will be available here later.",
+  "onboardingPlanSubtitle": "Your account starts on the Welcome Bonus plan — 1,500 credits every month, free, so you can use every feature.",
   "@onboardingPlanSubtitle": {
-    "description": "Subtitle on the onboarding plan step."
+    "description": "Subtitle on the onboarding plan step. Must make clear this is an ongoing monthly plan (not a one-time sign-up gift) and must not mention future subscription plans — this step claims the real Welcome Bonus plan, not a placeholder plan picker, so it must not read as unfinished to App Review."
   },
   "onboardingPlanActiveTitle": "You're already on a plan",
   "@onboardingPlanActiveTitle": {
