@@ -266,22 +266,43 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             },
         )
 
-    # 3.5 講義情報を取得し、course_id が存在するか検証する
+    # 3.5 講義がサーバーに存在するか、コースに紐付いているかを検証する。
+    #
+    # ★ 以前はここで`.single()`を使っていた。`.single()`は0行だと例外を投げるため、
+    # 「まだ同期されていない講義」がPostgRESTの内部エラー(PGRST116 "Cannot coerce
+    # the result to a single JSON object")として下のexceptに落ち、
+    # `Failed to verify lecture course association: {...}`という
+    # 実態と食い違うメッセージのままクライアントの画面に出ていた。
+    # 実際にはコース紐付け以前に講義行そのものが存在しないケースで、
+    # この文言のせいで原因の切り分けが丸1日遅れた。
+    #
+    # 「サーバーに講義が無い(404)」「講義はあるがコース未設定(400)」
+    # 「検証自体ができなかった(503)」を明確に区別する。
     try:
         lec_res = await asyncio.to_thread(
-            lambda: admin_client.table("lectures").select("course_id").eq("id", payload.lecture_id).single().execute()
+            lambda: admin_client.table("lectures").select("course_id").eq("id", payload.lecture_id).maybe_single().execute()
         )
-        if not lec_res.data or not lec_res.data.get("course_id"):
-            raise HTTPException(
-                status_code=400,
-                detail="Lecture must be assigned to a course before analysis can start."
-            )
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
+        # ここに来るのは通信断やDB障害など「待てば直るかもしれない」失敗だけ。
+        # 0行はmaybe_single()が例外ではなくNoneで返すため下の分岐で扱う。
+        print(f"❌ Failed to look up lecture {payload.lecture_id}: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not verify this lecture right now. Please try again in a moment."
+        )
+
+    lecture_row = lec_res.data if lec_res else None
+
+    if not lecture_row:
+        raise HTTPException(
+            status_code=404,
+            detail="This lecture hasn't reached the server yet. Its audio is still on your device — keep the app open until the upload finishes, then try again."
+        )
+
+    if not lecture_row.get("course_id"):
         raise HTTPException(
             status_code=400,
-            detail=f"Failed to verify lecture course association: {str(e)}"
+            detail="Lecture must be assigned to a course before analysis can start."
         )
 
     # 3.6 同じlecture_idの未完了(!=COMPLETED)jobが既にあるか確認する。

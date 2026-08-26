@@ -39,22 +39,42 @@ class RecordingRepositoryDrift {
     final now = DateTime.now().toUtc();
     final dt = (lectureDateTime ?? now).toUtc();
 
-    await db.into(db.localLectures).insertOnConflictUpdate(
-          LocalLecturesCompanion(
-            id: Value(lectureId),
-            userId: Value(userId),
-            courseId: Value(presetCourseId),
-            title: Value(presetTitle ?? ''),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-            lectureDatetime: Value(dt),
-            sortOrder: const Value(0),
-            autoStartAnalysis: Value(autoStartAnalysis),
-            isRealtime: Value(isRealtime),
-            recordingLanguage: Value(recordingLanguage),
-            displayLanguage: Value(displayLanguage),
-          ),
-        );
+    await db.transaction(() async {
+      await db.into(db.localLectures).insertOnConflictUpdate(
+            LocalLecturesCompanion(
+              id: Value(lectureId),
+              userId: Value(userId),
+              courseId: Value(presetCourseId),
+              title: Value(presetTitle ?? ''),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              lectureDatetime: Value(dt),
+              sortOrder: const Value(0),
+              autoStartAnalysis: Value(autoStartAnalysis),
+              isRealtime: Value(isRealtime),
+              recordingLanguage: Value(recordingLanguage),
+              displayLanguage: Value(displayLanguage),
+            ),
+          );
+
+      // ★ 講義の「新規作成」をOutboxに積む。
+      // 以前はここが抜けており、Outboxに`lecture`が積まれるのは削除
+      // (softDeleteLecture)と編集(updateLectureTitleAndCourse)の時だけだった。
+      // その穴を塞ぐために`upsertLecture`がUploadManagerのアップロードジョブの
+      // 前処理として差し込まれていたため、「音声アップロードジョブが動かない限り
+      // 講義そのものがSupabaseへ届かない」という状態になっていた。実際、保存処理が
+      // 途中で止まってジョブが1件も作られなかった講義は、ローカルにだけ存在する
+      // まま丸1日サーバーに現れなかった。
+      //
+      // 作成時点でOutboxに乗せておけば、音声パイプラインの成否とは無関係に
+      // 講義行がサーバーへ届く。Discardで物理削除された場合は
+      // [LectureOutboxPushHandler]がローカル行の不在を見て何も送らずに畳む。
+      await db.enqueueOutbox(
+        entityType: 'lecture',
+        entityId: lectureId,
+        op: 'create',
+      );
+    });
 
     return lectureId;
   }

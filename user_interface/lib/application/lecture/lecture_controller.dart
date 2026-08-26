@@ -33,6 +33,7 @@ import 'package:lefture/application/sync/keyword_outbox_push_handler.dart';
 import 'package:lefture/application/sync/user_profile_sync_service.dart';
 import 'package:lefture/application/sync/sync_progress.dart';
 import 'package:lefture/application/maintenance/local_retention_service.dart';
+import 'package:lefture/application/maintenance/orphaned_audio_salvage_service.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/application/job/job_providers.dart'; // jobRepository
 import 'package:lefture/application/recording/upload_manager.dart';
@@ -306,6 +307,25 @@ class LectureController extends _$LectureController {
                 total: bootstrapStepCount,
               ),
             );
+      }
+
+      // 取り残された録音のサルベージ。保存処理が
+      // enqueueMasterAudioUpload()に到達できずアップロードジョブが1件も
+      // 作られなかった講義を、端末に残っている音声から拾い直す。
+      // ★ 保守処理(LocalRetentionService)より必ず先に走らせること —— あちらは
+      // 条件次第でローカルの音声実体を消しにいくため、順序が逆だと救出できる
+      // はずの録音を取りこぼしうる。
+      try {
+        final uid = supabase.auth.currentUser?.id;
+        if (uid != null) {
+          final db = ref.read(appDatabaseProvider);
+          final recorder = ref.read(audioRecorderServiceProvider);
+          await OrphanedAudioSalvageService(db, recorder).run(userId: uid);
+        }
+      } catch (e, st) {
+        DevLog.add(
+          '⚠️ [LectureController] Orphaned audio salvage skipped: $e\n$st',
+        );
       }
 
       // ローカル保守処理(30日超の論理削除の物理削除・キャッシュ容量のLRU剥がし)。

@@ -24,6 +24,20 @@ class AudioRecorderService {
   IOSink? _masterSink;
   String? _masterSinkLectureId;
 
+  /// 録音セッションが進行中の講義ID。録音開始で立ち、保存/破棄の完了で下ろす。
+  /// ★ [OrphanedAudioSalvageService]が「中断された保存」と「進行中(一時停止中を
+  /// 含む)の録音」を取り違えないための判定材料。一時停止中は master_audio.raw への
+  /// 追記が止まるため、ファイルの更新時刻だけでは両者を区別できない。
+  /// アプリが強制終了された場合はnullに戻る —— その時は本当にセッションが
+  /// 失われているので、サルベージ対象として扱ってよい。
+  ///
+  /// staticにしているのは「アプリ全体で録音が動いているか」を問う値だから。
+  /// audioRecorderServiceProviderは`dependencies: []`のscoped providerで、
+  /// dev_tools/のTestタブがProviderScopeで差し替えると本物とテスト用で
+  /// インスタンスが分かれてしまう。インスタンス変数にすると、その状況で
+  /// サルベージ側が「録音していない」と誤判定しうる。
+  static String? activeLectureId;
+
   Future<void> _initBackgroundService() async {
     if (_isBackgroundInitialized) return;
 
@@ -110,15 +124,22 @@ class AudioRecorderService {
     }
   }
 
-  Future<String?> stop() async {
+  /// 録音を停止する。
+  ///
+  /// [releaseBackgroundService]をfalseにすると、Androidのforeground service
+  /// (録音中の常駐通知)を畳まずに残す。保存処理
+  /// ([RecordingController.upload])はこれをfalseで呼ぶこと —— Androidで
+  /// アプリを生かしているのはマイクではなくforeground serviceなので、ここで
+  /// 畳むと直後のFFmpegエンコード中にプロセスを止められうる。エンコードが
+  /// 終わってから[releaseBackgroundService]で明示的に畳む。
+  Future<String?> stop({bool releaseBackgroundService = true}) async {
     if (_disposed) return null;
 
     final recording = await _recorder.isRecording();
     final paused = await _recorder.isPaused();
 
-    // ★録音停止したら、バックグラウンド実行もオフにする（通知を消す）
-    if (Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
-      await FlutterBackground.disableBackgroundExecution();
+    if (releaseBackgroundService) {
+      await this.releaseBackgroundService();
     }
 
     // マスター音声への書き込みも確実に終わらせる(encodeMasterRawToM4aが
@@ -127,6 +148,16 @@ class AudioRecorderService {
 
     if (!recording && !paused) return null;
     return _recorder.stop();
+  }
+
+  /// Androidのforeground service(録音中の常駐通知)を畳む。
+  /// iOSでは何もしない —— あちらの実行猶予は[BackgroundTask]が受け持つ。
+  /// 何度呼んでも安全。
+  Future<void> releaseBackgroundService() async {
+    if (Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
+      DevLog.add('[AudioRecorderService] disabling Android foreground service.');
+      await FlutterBackground.disableBackgroundExecution();
+    }
   }
 
   Future<void> dispose() async {

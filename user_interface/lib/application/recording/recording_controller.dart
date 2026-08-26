@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:lefture/core/services/audio_record/audio_chunker.dart';
+import 'package:lefture/core/services/background_task.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -323,6 +324,11 @@ class RecordingController extends _$RecordingController {
       );
       DevLog.add('[StartSession] 5/8 draft lecture created: $lectureId');
 
+      // この講義は今このセッションが握っている、という印。
+      // [OrphanedAudioSalvageService]はこれを見て、進行中(一時停止中を含む)の
+      // 録音を「中断された保存」と誤認しないようにする。
+      AudioRecorderService.activeLectureId = lectureId;
+
       // コースが選択されていればWhisperコンテキストをフェッチして保存
       final courseId = state.courseId;
       if (courseId != null) {
@@ -579,14 +585,38 @@ class RecordingController extends _$RecordingController {
 
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
 
+    // ★ ここから「アップロードジョブを登録し終える」までは、OSに止められては
+    // いけない区間。stop()でオーディオセッションが終わると
+    // UIBackgroundModes:audio の保護が切れるため、直後のFFmpegエンコード中に
+    // 画面ロック・アプリ切替が起きるとiOSは数秒でアプリをサスペンドする。
+    // そうなるとenqueueMasterAudioUploadに到達せず、録音は端末に残ったまま
+    // サーバーへ一切送られない(テスターの講義3件がこれで丸1日取り残された)。
+    // iOSへ明示的に実行猶予(概ね30秒)を要求して、この区間を守る。
+    final bgTaskId = await BackgroundTask.begin('lefture.finalizeRecording');
+
     try {
       await _audioStreamSub?.cancel();
-      await _recorder.stop();
+      // Androidのforeground serviceはここでは畳まない。あちらでアプリを
+      // 生かしているのはマイクではなくサービスなので、エンコードが終わるまで
+      // 残す必要がある(下のfinallyで畳む)。
+      await _recorder.stop(releaseBackgroundService: false);
       await ref.read(liveAsrControllerProvider.notifier).stop();
       _timer?.cancel();
 
       // 1. マスター生PCMデータをAAC (M4A) に圧縮エンコード
+      // 実機での所要時間を測っておく(--dart-define=IS_TEST_MODE=true の
+      // ビルドならDevLogオーバーレイで確認できる)。iOSの実行猶予は概ね30秒
+      // なので、ここが何秒かかっているかが再発リスクの直接の指標になる。
+      final encodeStartedAt = DateTime.now();
       final masterM4aPath = await _recorder.encodeMasterRawToM4a(lecture.id);
+      final encodeMs = DateTime.now().difference(encodeStartedAt).inMilliseconds;
+      final encodedBytes = await File(masterM4aPath).length();
+      final remaining = await BackgroundTask.remainingSeconds();
+      DevLog.add(
+        '⏱️ [Upload] Master audio encoded in ${(encodeMs / 1000).toStringAsFixed(1)}s '
+        '(${(encodedBytes / (1024 * 1024)).toStringAsFixed(1)}MB m4a). '
+        'Background time left: ${BackgroundTask.formatRemaining(remaining)}',
+      );
 
       // 2. 最後のチャンクをフラッシュ（Realtime Transcribe が On の場合のみ）。
       // ここではまだDBに書き込まない — expectedChunksが確定してから
@@ -655,6 +685,15 @@ class RecordingController extends _$RecordingController {
         phase: RecordingPhase.error,
         errorMessage: 'Save failed: $e'
       );
+    } finally {
+      // 成否にかかわらずセッションは終了。失敗した場合はここで印を下ろすことで、
+      // 次回起動時に[OrphanedAudioSalvageService]が拾い直せるようになる。
+      AudioRecorderService.activeLectureId = null;
+
+      // 守るべき区間はここで終わり。Androidの常駐通知を畳み、iOSの実行猶予を
+      // 返上する。返上を忘れるとiOSはアプリを強制終了するため、必ずfinallyで。
+      await _recorder.releaseBackgroundService();
+      await BackgroundTask.end(bgTaskId);
     }
   }
 
@@ -710,6 +749,7 @@ class RecordingController extends _$RecordingController {
   }
 
   Future<void> cancelAndDiscard() async {
+    AudioRecorderService.activeLectureId = null;
     await _audioStreamSub?.cancel();
     await _recorder.stop();
     await ref.read(liveAsrControllerProvider.notifier).stop();
@@ -764,6 +804,11 @@ class RecordingController extends _$RecordingController {
     }
 
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
+
+    // 録音の保存([upload])と同じ理由でOSに止められては困る区間。大きめの
+    // 音声ファイルのコピーが挟まるうえ、途中で止まると講義行だけが作られて
+    // アップロードジョブが登録されない状態になりうる。
+    final bgTaskId = await BackgroundTask.begin('lefture.importAudioFile');
 
     try {
       // ★ file_pickerが返すpathは、Androidでは(content://のような直接開けない
@@ -821,6 +866,8 @@ class RecordingController extends _$RecordingController {
         phase: RecordingPhase.error,
         errorMessage: 'Upload failed: $e'
       );
+    } finally {
+      await BackgroundTask.end(bgTaskId);
     }
   }
 
