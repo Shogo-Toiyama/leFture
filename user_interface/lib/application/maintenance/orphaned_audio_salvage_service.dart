@@ -154,13 +154,21 @@ class OrphanedAudioSalvageService {
     final assets = await _db.getAssetsForLecture(lectureId);
     if (assets.any((a) => a.type == 'master_audio')) return false;
 
-    // 実体を用意する。m4aが既にあればそれを使い、rawしか無ければ作り直す。
+    // 実体を用意する。
+    // ★ rawがあれば常にそちらを優先してエンコードし直す(m4aが既にあっても
+    // 上書きする)。rawは`encodeMasterRawToM4a`がエンコードに成功した時にしか
+    // 削除されないため、両方存在する場合は「エンコード処理の途中でアプリが
+    // Killされた」ケースを意味しうる。M4A(MP4)はファイル末尾に索引(moov atom)
+    // を書く形式なので、書きかけのm4aは非0バイトでも再生・デコード不能なことが
+    // 多い。生PCMは末尾が欠けても途中までは確実に読めるため、常にこちらを
+    // 信頼できる実体として扱う。m4aしか無い(raw不在)場合に限り、過去に
+    // エンコードが成功済み(rawは成功時にのみ削除される)とみなしてそのまま使う。
     final String localPath;
-    if (hasM4a) {
-      localPath = m4aFile.path;
-    } else {
-      DevLog.add('🛟 [Salvage] $lectureId: re-encoding interrupted master audio...');
+    if (hasRaw) {
+      DevLog.add('🛟 [Salvage] $lectureId: re-encoding master audio from raw PCM...');
       localPath = await _recorder.encodeMasterRawToM4a(lectureId);
+    } else {
+      localPath = m4aFile.path;
     }
 
     // 中身が空のファイルを送っても分析は失敗するだけなので、ジョブにしない。

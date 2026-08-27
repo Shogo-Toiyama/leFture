@@ -30,6 +30,7 @@ import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
+import '../../../core/services/audio_record/audio_recorder_service.dart';
 import '../dev_tools/simulate_recording_tab.dart';
 import '../dev_tools/test_mode_flag.dart';
 import 'widgets/audio_waveform_visualizer.dart';
@@ -831,6 +832,15 @@ class RecordingPage extends HookConsumerWidget {
             if (isTestMode) Tab(icon: Icon(Icons.bug_report)),
           ],
         ),
+        // ★ テスト専用: 実機の短い録音でも「保存直後の画面ロックでOSに
+        // アプリを止められる」バグを再現できるよう、意図的にエンコードを
+        // 遅らせるスイッチ。実際の講義(90分)でもFFmpegエンコードは10秒未満
+        // なので、短い録音では保護の有無に関わらずエンコードが一瞬で終わり、
+        // バックグラウンド保護(BackgroundTask)が効いているかを検証できない。
+        // isTestModeでのみ表示され、本番ビルドではtree-shakingで消える。
+        actions: [
+          if (isTestMode) const _DebugSlowEncodeToggle(),
+        ],
       ),
       body: Stack(
         children: [
@@ -3190,6 +3200,41 @@ class _MicButton extends HookWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// テスト専用: 保存直後のエンコードに意図的な遅延を挟むトグル。
+/// [AudioRecorderService.debugEncodeDelayForTesting]参照。
+/// isTestModeでのみビルドに含まれ、本番ではtree-shakingで消える。
+class _DebugSlowEncodeToggle extends StatefulWidget {
+  const _DebugSlowEncodeToggle();
+
+  @override
+  State<_DebugSlowEncodeToggle> createState() => _DebugSlowEncodeToggleState();
+}
+
+class _DebugSlowEncodeToggleState extends State<_DebugSlowEncodeToggle> {
+  static const _delay = Duration(seconds: 20);
+
+  bool get _enabled => AudioRecorderService.debugEncodeDelayForTesting != null;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: _enabled
+          ? 'Slow encode ON (+${_delay.inSeconds}s) — tap to disable'
+          : 'Simulate slow encode (+${_delay.inSeconds}s)',
+      icon: Icon(
+        Icons.hourglass_bottom,
+        color: _enabled ? AppColors.starGold : Colors.white54,
+      ),
+      onPressed: () {
+        setState(() {
+          AudioRecorderService.debugEncodeDelayForTesting =
+              _enabled ? null : _delay;
+        });
+      },
     );
   }
 }

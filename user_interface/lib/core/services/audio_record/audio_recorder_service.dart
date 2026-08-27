@@ -7,6 +7,7 @@ import 'package:record/record.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/presentation/pages/dev_tools/test_mode_flag.dart';
 
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
@@ -253,8 +254,24 @@ class AudioRecorderService {
     _masterSink!.add(pcmData);
   }
 
+  /// テスト専用: [encodeMasterRawToM4a]の直前に人為的な遅延を挟むためのフック。
+  /// 実際の講義(90分)でもエンコード自体は10秒未満で終わるため、短い録音で
+  /// バックグラウンド保護(iOSのbeginBackgroundTask)が効いているかを検証するには、
+  /// この遅延で「iOSが本当にサスペンドを試みるまでアプリを起こしておく」必要がある。
+  /// isTestModeでのみ効果を持ち、tree-shakingで通常ビルドのバイナリからは
+  /// 消える(test_mode_flag.dartのコメント参照)。
+  static Duration? debugEncodeDelayForTesting;
+
   /// ローカルに貯めたPCM生データをFFmpegでM4A(AAC)にエンコードする
   Future<String> encodeMasterRawToM4a(String lectureId) async {
+    if (isTestMode && debugEncodeDelayForTesting != null) {
+      DevLog.add(
+        '🧪 [Test] Simulating slow encode: sleeping ${debugEncodeDelayForTesting!.inSeconds}s '
+        'before running FFmpeg...',
+      );
+      await Future<void>.delayed(debugEncodeDelayForTesting!);
+    }
+
     // 通常はstop()側で既に閉じられているはずだが、rawファイルを読む前に
     // バッファ済みの内容が確実にディスクへ反映されていることを保証するため、
     // 念のためここでも閉じる(既に閉じていれば何もしない)。

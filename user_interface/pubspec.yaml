@@ -1,7 +1,7 @@
 name: lefture
 description: "Your lecture is for your future. Let's have fun learning time with leFture."
 publish_to: "none"
-version: 1.0.0+0
+version: 1.0.1+0
 
 environment:
   sdk: ^3.8.0
