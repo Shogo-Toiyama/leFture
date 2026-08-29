@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
+from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, ClientOptions
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
@@ -85,6 +86,25 @@ from app.services.task_runners import (
 # ---------------------------------------------------------
 app = FastAPI(title="leFture Backend Worker", version="2.0.0")
 logger = logging.getLogger(__name__)
+
+# webapp(app.lefture.com)からブラウザ経由で直接叩けるようにするためのCORS許可。
+# モバイル(Flutter)はブラウザのCORS制約を受けないため、これはWeb版専用の設定。
+_WEBAPP_CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "WEBAPP_CORS_ORIGINS",
+        "https://app.lefture.com,http://localhost:3001,http://localhost:5173,http://localhost:3000",
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_WEBAPP_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
