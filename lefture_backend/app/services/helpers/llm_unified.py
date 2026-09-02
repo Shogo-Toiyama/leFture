@@ -19,6 +19,9 @@ PRICE_MATRIX = {
         "groq/openai/gpt-oss-120b": {"input": 0.15, "output": 0.60},
         "groq/openai/gpt-oss-20b": {"input": 0.075, "output": 0.30},
         "together_ai/openai/gpt-oss-120b": {"input": 0.15, "output": 0.60},
+        # WARNING: Prism-ML/Ternary-Bonsai-27B は現在 Together AI 上で無料/プレビュー枠の可能性がありますが、
+        # 将来の有料化・価格改定を見越して安全側に倒し、gpt-oss-20b と同額 ($0.05 / $0.20) に暫定設定しています。
+        "together_ai/Prism-ML/Ternary-Bonsai-27B": {"input": 0.05, "output": 0.20},
         "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "deepinfra/openai/gpt-oss-120b": {"input": 0.039, "output": 0.19},
         "deepinfra/deepseek-ai/DeepSeek-V3.2": {"input": 0.26, "output": 0.38},

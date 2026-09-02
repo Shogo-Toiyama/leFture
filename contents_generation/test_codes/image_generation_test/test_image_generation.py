@@ -114,13 +114,14 @@ def test_image_generation():
 
     # Models to test
     models = [
-        "together_ai/openai/gpt-oss-20b",
+        "together_ai/Prism-ML/Ternary-Bonsai-27B",
         "gemini/gemini-2.5-flash-lite",
         "gemini/gemini-3.1-flash-lite"
     ]
 
     # Model Pricing per 1,000,000 tokens
     PRICING_PER_1M = {
+        "together_ai/Prism-ML/Ternary-Bonsai-27B": {"input": 0.05, "output": 0.20},  # 暫定（gpt-oss-20b同額）
         "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
         "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},

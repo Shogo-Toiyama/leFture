@@ -8,7 +8,7 @@ class ImageGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "together_ai/openai/gpt-oss-20b"
+        self.model_alias = "together_ai/Prism-ML/Ternary-Bonsai-27B"
 
     async def run_from_memory(self, review_cards_results: List[Dict[str, Any]], core_data: Dict[str, Any]) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Image Prompt Generation")
