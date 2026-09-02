@@ -1761,23 +1761,56 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
 # ---------------------------------------------------------
 async def build_pending_addition_for_lecture(lecture_id: str) -> dict:
     """
-    Lectureが別Courseへ移動された時、そのLectureは既にCORE_EXTRACTION済みのはず。
+    Lectureが別Courseへ移動された時、そのLectureが既にCORE_EXTRACTION済みなら
     そのR2上の結果を読み直し、pending_additionsに積める形（run_topic_mapping_taskの
     todays_topics_list相当）に変換する。job_idは録音時のパイプラインのものをそのまま
     たどるだけで、LLMを再度呼ぶ必要はない。
+
+    このLectureがまだ解析を開始していない(processing_jobsが無い)、または解析中で
+    CORE_EXTRACTIONがまだ完了していない場合は、例外を投げずtopics=[]を返す。
+    呼び出し元のmark_topic_map_staleは元々「lecture_topicsが空ならis_stale化せず
+    スキップする」実装になっている(このLectureはそのCourseのTopic Mapにまだ何も
+    寄与していないので、staleにする意味が無いため)。取りこぼしは起きない —
+    解析が実際に完了する時点でTOPIC_MAPPINGタスク自身がそのときのcourse_idを
+    読み直して通常のパイプラインで追加するため、ここでスキップしても後で必ず
+    正しいCourseに着地する。
     """
     supabase = get_supabase_client()
 
-    def _sync():
+    def _find_job_id() -> str | None:
         job_res = supabase.table("processing_jobs").select("id")\
             .eq("lecture_id", lecture_id).order("created_at", desc=True).limit(1).execute()
         if not job_res.data:
-            raise ValueError(f"No processing_jobs row found for lecture_id={lecture_id}")
+            return None
         return job_res.data[0]["id"]
 
-    job_id = await asyncio.to_thread(_sync)
-    core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
-    core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
+    def _find_core_extraction_path(job_id: str) -> str | None:
+        # ★ 「タスク行が無い(DAGがまだそこまで進んでいない)」「タスクは存在するが
+        # まだCOMPLETEDでない」「完了はしているが期待した形のペイロードが無い
+        # (本来起きないはずの異常系)」の3つを"未解析/解析中"として同列に扱い、
+        # いずれもNoneを返す。それ以外の例外(Supabase接続エラー等の本物の異常)は
+        # ここでは握りつぶさずそのまま呼び出し元へ伝播させる。
+        res = supabase.table("processing_tasks").select("status, result_payload")\
+            .eq("job_id", job_id).eq("task_type", "CORE_EXTRACTION").execute()
+        if not res.data:
+            return None
+        row = res.data[0]
+        if row.get("status") != "COMPLETED":
+            return None
+        payload = row.get("result_payload") or {}
+        return payload.get("core_extraction_path")
+
+    empty_result = {"lecture_title": None, "topics": []}
+
+    job_id = await asyncio.to_thread(_find_job_id)
+    if job_id is None:
+        return empty_result
+
+    core_extraction_path = await asyncio.to_thread(_find_core_extraction_path, job_id)
+    if core_extraction_path is None:
+        return empty_result
+
+    core_data = await _download_from_r2_to_memory(core_extraction_path)
 
     academic_topics = [t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"]
     topics = []

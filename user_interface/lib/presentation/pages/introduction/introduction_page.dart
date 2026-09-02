@@ -354,7 +354,7 @@ class _Dots extends StatelessWidget {
   }
 }
 
-class _PrimaryButton extends StatefulWidget {
+class _PrimaryButton extends StatelessWidget {
   const _PrimaryButton({
     required this.label,
     required this.primary,
@@ -366,15 +366,53 @@ class _PrimaryButton extends StatefulWidget {
   final VoidCallback onPressed;
 
   @override
-  State<_PrimaryButton> createState() => _PrimaryButtonState();
+  Widget build(BuildContext context) {
+    final button = SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.starGold,
+          foregroundColor: const Color(0xFF221A00),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(17),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        child: Text(label, textAlign: TextAlign.center),
+      ),
+    );
+
+    if (!primary) return button;
+    return _GlowButtonWrapper(child: button);
+  }
 }
 
-class _PrimaryButtonState extends State<_PrimaryButton>
+class _GlowButtonWrapper extends StatefulWidget {
+  const _GlowButtonWrapper({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_GlowButtonWrapper> createState() => _GlowButtonWrapperState();
+}
+
+class _GlowButtonWrapperState extends State<_GlowButtonWrapper>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _glowController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2400),
-  )..repeat(reverse: true);
+  late final AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {
@@ -384,28 +422,6 @@ class _PrimaryButtonState extends State<_PrimaryButton>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.primary) {
-      return SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed: widget.onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.starGold,
-            foregroundColor: const Color(0xFF221A00),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(17),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          child: Text(widget.label),
-        ),
-      );
-    }
-
     return AnimatedBuilder(
       animation: _glowController,
       builder: (context, child) {
@@ -424,25 +440,7 @@ class _PrimaryButtonState extends State<_PrimaryButton>
           child: child,
         );
       },
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed: widget.onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.starGold,
-            foregroundColor: const Color(0xFF221A00),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(17),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          child: Text(widget.label, textAlign: TextAlign.center),
-        ),
-      ),
+      child: widget.child,
     );
   }
 }

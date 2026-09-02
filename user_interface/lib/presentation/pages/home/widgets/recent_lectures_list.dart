@@ -7,9 +7,11 @@ import 'package:lefture/presentation/widgets/lecture_tile.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/pages/home/widgets/tutorial_lecture_callout.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 
 import 'package:lefture/application/recording/recording_controller.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/presentation/widgets/orphan_delete_confirm.dart';
 
 class RecentLecturesList extends ConsumerWidget {
   const RecentLecturesList({super.key});
@@ -64,6 +66,17 @@ class RecentLecturesList extends ConsumerWidget {
                 ),
               );
               return;
+            }
+
+            // 孤児録音(一度もアップロードされていない)の削除は論理削除ではなく
+            // 物理削除になる(RecordingRecoveryService.discard()経由、
+            // LectureController.deleteLecture内で判定)。普段の削除(即ゴミ箱行き、
+            // 確認なし)と挙動が違うので、この場合だけ明示的に確認する。
+            final orphans = ref.read(orphanRecordingsProvider).value ?? const [];
+            final isOrphan = orphans.any((o) => o.lectureId == lecture.id);
+            if (isOrphan) {
+              final confirmed = await confirmOrphanHardDelete(context);
+              if (!confirmed) return;
             }
 
             await ref

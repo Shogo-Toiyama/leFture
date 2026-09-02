@@ -40,6 +40,41 @@ class AnnouncementRepositoryDrift {
     return query.watch().map((rows) => rows.map(_toDomain).toList());
   }
 
+  /// ユーザー全体のアナウンスメントを、状態/種類でDB側から絞り込んだ上で
+  /// ページ単位(limit/offset)で取得する(1回限りの取得。ストリームではない)。
+  ///
+  /// ホーム画面の無限スクロール用。フィルター後の該当件数が少ない場合でも、
+  /// クエリ自体が絞り込み済みのデータから返すため「読み込み済み件数の壁に
+  /// 阻まれてそれ以上読み込めない」ことがない([status]='completed'等で
+  /// 該当件数が少ないケースの対策)。
+  Future<List<Announcement>> fetchAnnouncementsPage({
+    required String userId,
+    required int limit,
+    required int offset,
+
+    /// 'active' = 未完了のみ / 'completed' = 完了済みのみ / 'all' = 両方。
+    required String status,
+    AnnouncementType? type,
+  }) async {
+    final query = _db.select(_db.localAnnouncements)
+      ..where((t) {
+        Expression<bool> cond = t.userId.equals(userId) & t.deletedAt.isNull();
+        if (status == 'active') {
+          cond = cond & t.completedAt.isNull();
+        } else if (status == 'completed') {
+          cond = cond & t.completedAt.isNotNull();
+        }
+        if (type != null) {
+          cond = cond & t.type.equals(type.name.toUpperCase());
+        }
+        return cond;
+      })
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+      ..limit(limit, offset: offset);
+    final rows = await query.get();
+    return rows.map(_toDomain).toList();
+  }
+
   /// 指定レクチャー群(コース内の全レクチャー等)に紐づく、未完了、または指定時間以降に完了したアナウンスメント一覧。
   Stream<List<Announcement>> watchActiveAnnouncementsForLectureIds(
     List<String> lectureIds, {

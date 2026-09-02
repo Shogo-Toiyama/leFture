@@ -4,6 +4,7 @@ import 'package:lefture/app/router.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/application/sync/app_lifecycle_sync_watcher.dart';
 import 'package:lefture/application/tutorial/tutorial_lecture_seed_provider.dart';
@@ -40,6 +41,13 @@ class MyApp extends ConsumerWidget {
     // ある状態を保証する。ここでwatchしない場合、この処理自体がどこからも
     // トリガーされない(uploadManagerProviderと同じ理由)。
     ref.watch(tutorialLectureSeedProvider);
+
+    // 起動時に一度、キル/クラッシュで取り残された録音(Recording Recovery)を
+    // 検出し、見つかればバックグラウンドでエンコードを開始する。AsyncNotifier
+    // のbuild()は非同期に走るのでここでの呼び出しは初回フレームをブロック
+    // しない(uploadManagerProvider/tutorialLectureSeedProviderと同じ理由で
+    // 明示的にwatchしないとインスタンス自体が作られない)。
+    ref.watch(orphanRecordingsProvider);
 
     final router = ref.watch(routerProvider);
     final displayLanguageCode = ref.watch(displayLanguageControllerProvider);

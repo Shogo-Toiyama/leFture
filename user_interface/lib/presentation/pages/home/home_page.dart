@@ -27,6 +27,7 @@ import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 import 'widgets/announcement_bar.dart';
+import 'widgets/recovery_banner.dart';
 import 'widgets/recent_lectures_list.dart';
 import 'widgets/combined_header.dart';
 import 'widgets/initial_sync_error_content.dart';
@@ -491,6 +492,11 @@ class HomePage extends HookConsumerWidget {
                         );
                       },
                     ),
+                    // 保存されていない録音があれば気づける唯一の入口。
+                    // スクロール領域内(SliverToBoxAdapter)なので、孤児0件で
+                    // 高さ0になっても固定ヘッダー側のtopAreaHeight計算(56+68)には
+                    // 影響しない。
+                    const SliverToBoxAdapter(child: RecoveryBanner()),
                     // 最近の講義リスト
                     const RecentLecturesList(),
                     // 下部余白（FABを避けるための高さ）

@@ -19,7 +19,7 @@ import 'package:lefture/application/sync/sync_progress.dart';
 
 /// サインアウト直後・起動直後の一瞬だけ表示するタイトル画面。
 ///
-/// 「lecture for the future」というタグラインが光とともに浮かび上がり、
+/// 「lectures for the futures」というタグラインが光とともに浮かび上がり、
 /// "le" / "f" / "ture" だけを残して他の文字が消え、"f"に向かって収束、
 /// 着弾で星が弾けて金色の「leFture」へ着地するアニメーションを再生してから
 /// ホームへ遷移する（裏でホーム用データをプレロードし、完了してから遷移する）。
@@ -229,10 +229,11 @@ class _Chunk {
 
 const _kChunks = [
   _Chunk('le', keep: true),
-  _Chunk('cture ', keep: false),
+  _Chunk('ctures ', keep: false),
   _Chunk('f', keep: true),
   _Chunk('or the fu', keep: false),
   _Chunk('ture', keep: true),
+  _Chunk('s', keep: false),
 ];
 
 const _kPhraseStyle = TextStyle(
@@ -266,7 +267,7 @@ class WelcomeRevealTiming {
   final int blackMs;
   /// 光が灯り、フレーズが浮かび上がる
   final int lightMs;
-  /// 「lecture for the future」を静止して見せる
+  /// 「lectures for the futures」を静止して見せる
   final int holdMs;
   /// le / ture が f へ突進
   final int rushMs;

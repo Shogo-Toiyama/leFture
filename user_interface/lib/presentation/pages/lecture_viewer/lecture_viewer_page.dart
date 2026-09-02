@@ -109,9 +109,18 @@ class LectureViewerPage extends HookConsumerWidget {
     final initialLecture = lectureAsync.asData?.value;
     final courseId = initialLecture?.courseId;
 
+    // courseId==null(コース未選択)の講義は「同じコース内で左右スワイプする
+    // ための兄弟講義リスト」自体が存在しない。以前はここをconst
+    // AsyncValue.loading()にしていたため、二度とdata状態に変わらず、
+    // コース未選択の講義を開くと永久にローディング画面のまま止まっていた
+    // (Recording Recoveryの検証で発覚: 孤児講義はコース未選択のまま
+    // クラッシュしたものが多く、この既存バグを高確率で踏む)。
+    // 「その講義1件だけのリスト」として即座にdata状態を確定させれば、
+    // 以降のsortedLectures/initialIndexロジックはinitialIndex=0で
+    // 自然に成立する(=隣が無いだけの、1件だけのスワイプ範囲)。
     final lecturesAsync = courseId != null
         ? ref.watch(lectureListStreamProvider(courseId))
-        : const AsyncValue<List<Lecture>>.loading();
+        : AsyncValue<List<Lecture>>.data(initialLecture != null ? [initialLecture] : const []);
 
     return lectureAsync.when(
       loading: () => Scaffold(

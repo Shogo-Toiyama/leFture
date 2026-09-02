@@ -4,11 +4,14 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:lefture/core/services/audio_record/audio_chunker.dart';
 import 'package:lefture/core/services/background_task.dart';
+import 'package:lefture/core/services/audio_record/pcm_duration_utils.dart';
+import 'package:lefture/application/recording/recovery/recording_finalize.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/application/job/job_providers.dart';
-import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
+import 'package:lefture/application/sync/outbox_provider.dart';
 import 'package:lefture/infrastructure/local_db/repositories/lecture_moment_repository_drift.dart';
 import 'package:lefture/application/asr/asr_model_manager.dart';
 import 'package:lefture/application/asr/live_asr_controller.dart';
@@ -144,7 +147,16 @@ Future<String> _buildWhisperContext({
 @Riverpod(keepAlive: true, dependencies: [])
 AudioRecorderService audioRecorderService(Ref ref) {
   final svc = AudioRecorderService();
-  ref.onDispose(svc.dispose);
+  // ★ 調査用: 録音中にこのproviderが想定外に作り直されていないかを追う。
+  // keepAlive:trueなので通常は録音セッション中に再生成されないはずだが、
+  // もし何かのinvalidateで再生成されると、録音中の_masterSinkを持つ古い
+  // インスタンスがdispose()され(=そのsinkがclose)、以降ChunkerからのGetterは
+  // 新しい(何も開いていない)インスタンスを指してしまう。
+  DevLog.add('🆕 [AudioRecorder] provider created new instance=${identityHashCode(svc)}');
+  ref.onDispose(() {
+    DevLog.add('♻️ [AudioRecorder] provider disposing instance=${identityHashCode(svc)}');
+    svc.dispose();
+  });
   return svc;
 }
 
@@ -152,7 +164,11 @@ AudioRecorderService audioRecorderService(Ref ref) {
 // ProviderScopeを使ってaudioRecorderServiceProviderをオーバーライドしても
 // このControllerには一切伝播しない(常にルートコンテナの本物のマイクを使う
 // インスタンスを参照し続ける)。Riverpodの仕様上、これが必須。
-@Riverpod(keepAlive: true, dependencies: [audioRecorderService])
+// recordingRecoveryServiceにも依存していることを明示する(setActiveRecordingLectureId
+// 呼び出しのため)。recordingRecoveryServiceProvider自身はaudioRecorderServiceにしか
+// 依存しておらずRecordingControllerを参照し返さないので、循環にはならない
+// (LectureControllerの時のような相互参照とは違う一方向の依存)。
+@Riverpod(keepAlive: true, dependencies: [audioRecorderService, recordingRecoveryService])
 class RecordingController extends _$RecordingController {
   StreamSubscription? _dbSubscription;
   Timer? _timer;
@@ -230,6 +246,7 @@ class RecordingController extends _$RecordingController {
             localPath: path,
             sequenceIndex: _currentChunkIndex,
             startTime: flushed.startTimeSec,
+            endTime: flushed.startTimeSec + flushed.data.length / kMasterPcmBytesPerSecond,
           );
           _currentChunkIndex++;
         }
@@ -324,11 +341,6 @@ class RecordingController extends _$RecordingController {
       );
       DevLog.add('[StartSession] 5/8 draft lecture created: $lectureId');
 
-      // この講義は今このセッションが握っている、という印。
-      // [OrphanedAudioSalvageService]はこれを見て、進行中(一時停止中を含む)の
-      // 録音を「中断された保存」と誤認しないようにする。
-      AudioRecorderService.activeLectureId = lectureId;
-
       // コースが選択されていればWhisperコンテキストをフェッチして保存
       final courseId = state.courseId;
       if (courseId != null) {
@@ -340,6 +352,9 @@ class RecordingController extends _$RecordingController {
 
       state = state.copyWith(currentLectureId: lectureId);
       _startWatchingLecture(lectureId);
+      // Recording Recoveryの誤検出防止(このIDは今録音中なので孤児ではない)。
+      // 理由はRecordingRecoveryService.setActiveRecordingLectureIdのコメントを参照。
+      ref.read(recordingRecoveryServiceProvider).setActiveRecordingLectureId(lectureId);
 
       _currentChunkIndex = 0;
 
@@ -368,16 +383,30 @@ class RecordingController extends _$RecordingController {
             localPath: path,
             sequenceIndex: chunkIndex,
             startTime: startTimeSec,
+            endTime: startTimeSec + chunkData.length / kMasterPcmBytesPerSecond,
           );
 
           _uploadMgr.tryProcessQueue();
         },
         onMasterDataReady: (Uint8List masterData) async {
-          await _recorder.appendMasterRawData(masterData, lectureId);
-          // マスター音声への追記と並行して、オンデバイスASRエンジンにも同じ
-          // 生PCMを流し込む(Realtime Transcribe OFF、またはモデル未準備の
-          // 場合はLiveAsrController側が何もしないので安全)。
-          ref.read(liveAsrControllerProvider.notifier).acceptPcm16(masterData);
+          // ★ 調査用: このコールバックはAudioChunkerからawaitされずに呼ばれる
+          // (fire-and-forget)ため、中で投げた例外は誰にも捕まらず「録音の
+          // 途中から音声ファイルが伸びなくなる」のに何もログが残らない、
+          // という壊れ方をしうる。原因調査のため一時的に全体をtry/catchし、
+          // _recorderが録音開始時と同じインスタンスを指し続けているかも
+          // 突き合わせられるようにログを残す。
+          try {
+            await _recorder.appendMasterRawData(masterData, lectureId);
+            // マスター音声への追記と並行して、オンデバイスASRエンジンにも同じ
+            // 生PCMを流し込む(Realtime Transcribe OFF、またはモデル未準備の
+            // 場合はLiveAsrController側が何もしないので安全)。
+            ref.read(liveAsrControllerProvider.notifier).acceptPcm16(masterData);
+          } catch (e, st) {
+            DevLog.add(
+              '🔴 [StartSession] onMasterDataReady FAILED for lecture $lectureId '
+              '(recorder instance=${identityHashCode(_recorder)}): $e\n$st',
+            );
+          }
         },
       );
 
@@ -530,7 +559,7 @@ class RecordingController extends _$RecordingController {
       momentType: momentType,
       timestampSec: state.elapsedSeconds,
     );
-    ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+    ref.read(outboxSyncServiceProvider).pushAll();
   }
 
   Future<void> addNote(String text) async {
@@ -542,12 +571,12 @@ class RecordingController extends _$RecordingController {
       noteText: text,
       timestampSec: state.elapsedSeconds,
     );
-    ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+    ref.read(outboxSyncServiceProvider).pushAll();
   }
 
   Future<void> deleteMoment(String id) async {
     await _momentRepo.deleteMoment(id);
-    ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+    ref.read(outboxSyncServiceProvider).pushAll();
   }
 
   Future<void> setTitle(String newTitle) async {
@@ -584,6 +613,9 @@ class RecordingController extends _$RecordingController {
     if (lecture == null) return;
 
     state = state.copyWith(phase: RecordingPhase.uploading, clearErrorMessage: true);
+    // ここから先はもう「録音中」ではない(結果の成否によらず)。Recording
+    // Recoveryの誤検出防止フラグを早めに下ろしておく。
+    ref.read(recordingRecoveryServiceProvider).setActiveRecordingLectureId(null);
 
     // ★ ここから「アップロードジョブを登録し終える」までは、OSに止められては
     // いけない区間。stop()でオーディオセッションが終わると
@@ -623,62 +655,53 @@ class RecordingController extends _$RecordingController {
       // ジョブを登録する必要があるため(下記3を参照)。
       String? finalChunkPath;
       double? finalChunkStartTime;
+      double? finalChunkEndTime;
       if (state.realtimeTranscribe) {
         final finalFlushed = _chunker?.flush();
         if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
           DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
           finalChunkPath = await _recorder.savePcmAsM4a(finalFlushed.data, lecture.id);
           finalChunkStartTime = finalFlushed.startTimeSec;
+          finalChunkEndTime = finalFlushed.startTimeSec + finalFlushed.data.length / kMasterPcmBytesPerSecond;
         }
       } else {
         DevLog.add('[Upload] Realtime Transcribe is OFF, skipping final chunk upload');
         _chunker?.flush(); // メモリ解放のためflushは呼ぶが結果は使わない
       }
       final totalChunks = finalChunkPath != null ? _currentChunkIndex + 1 : _currentChunkIndex;
+      final nextChunkSequenceIndex = _currentChunkIndex;
 
-      // 3. expectedChunksを、最終チャンクのアップロードジョブを登録するより先に確定させる。
-      // ★ 以前はこれを最後(ジョブ登録の後)に書いていたため、最終チャンクの
+      // 3〜6. expectedChunks確定→最終チャンク登録→マスター登録→自動分析予約、
+      // の順序が重要な一連の処理はfinalizeRecordingUploadに切り出してある
+      // (Recording Recoveryの確定フローとも共有するため)。
+      // ★ expectedChunksを最終チャンクのジョブ登録より先に確定させる理由:
+      // 以前はこれを最後(ジョブ登録の後)に書いていたため、最終チャンクの
       // ジョブ挿入(→UploadManagerがDB監視で即座に処理を開始)がexpectedChunksの
       // コミットより先に完了してしまうことがあった。その場合UploadManagerは
       // expectedChunks==nullのまま自動分析発火の判定をスキップし、以降二度と
       // 再判定されない(=自動分析が永久に発火しない)バグがあった。
-      await _repo.finishLectureRecording(
-        lectureId: lecture.id,
-        expectedChunks: totalChunks,
+      //
+      // ★ 自動分析の予約が必要な理由: 最後のチャンクは「一時停止した瞬間」
+      // (toggleStartStopResumeのpause分岐)にエンキューされ、多くの場合その
+      // まま数秒で送信完了してしまう。ところがexpectedChunksが書かれるのは
+      // ユーザーが保存を押したこの時点なので、UploadManager側の「最後の
+      // チャンク完了時に発火」判定はexpectedChunks==nullのまま素通りし、
+      // 以降その講義では二度とaudio_uploadジョブが完了しないため再判定される
+      // 機会が無かった(保存画面で数分悩んでから保存した場合は必ずこれに該当する)。
+      await finalizeRecordingUpload(
+        repo: _repo,
+        uploadManager: _uploadMgr,
+        lecture: lecture,
+        masterM4aPath: masterM4aPath,
+        totalChunks: totalChunks,
+        finalChunkPath: finalChunkPath,
+        finalChunkStartTime: finalChunkStartTime,
+        finalChunkEndTime: finalChunkEndTime,
+        nextChunkSequenceIndex: nextChunkSequenceIndex,
       );
-
-      // 4. 最後のチャンクのアップロードジョブを登録
-      if (finalChunkPath != null) {
-        await _repo.attachAudioAndEnqueueUpload(
-          userId: lecture.userId,
-          lectureId: lecture.id,
-          localPath: finalChunkPath,
-          sequenceIndex: _currentChunkIndex,
-          startTime: finalChunkStartTime!,
-        );
-        _currentChunkIndex++;
-      }
-
-      // 5. マスターオーディオのアップロードジョブを登録
-      await _repo.enqueueMasterAudioUpload(
-        userId: lecture.userId,
-        lectureId: lecture.id,
-        localPath: masterM4aPath,
-      );
-
-      // 6. リアルタイム収録の自動分析を、保存したこの瞬間に予約する。
-      // ★ ここが無いと自動分析が永久に発火しないケースがある:
-      // 最後のチャンクは「一時停止した瞬間」(toggleStartStopResumeのpause分岐)に
-      // エンキューされ、多くの場合そのまま数秒で送信完了してしまう。ところが
-      // expectedChunksが書かれるのはユーザーが保存を押したこの時点なので、
-      // UploadManager側の「最後のチャンク完了時に発火」判定は
-      // expectedChunks==nullのまま素通りし、以降その講義では二度と
-      // audio_uploadジョブが完了しないため再判定される機会が無かった。
-      // (保存画面で数分悩んでから保存した場合は必ずこれに該当する)
-      await _maybeEnqueueStartAnalysis(lecture.id);
+      if (finalChunkPath != null) _currentChunkIndex++;
 
       state = state.copyWith(phase: RecordingPhase.queued);
-      _uploadMgr.tryProcessQueue();
 
     } catch (e) {
       state = state.copyWith(
@@ -686,10 +709,6 @@ class RecordingController extends _$RecordingController {
         errorMessage: 'Save failed: $e'
       );
     } finally {
-      // 成否にかかわらずセッションは終了。失敗した場合はここで印を下ろすことで、
-      // 次回起動時に[OrphanedAudioSalvageService]が拾い直せるようになる。
-      AudioRecorderService.activeLectureId = null;
-
       // 守るべき区間はここで終わり。Androidの常駐通知を畳み、iOSの実行猶予を
       // 返上する。返上を忘れるとiOSはアプリを強制終了するため、必ずfinallyで。
       await _recorder.releaseBackgroundService();
@@ -697,59 +716,8 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  /// 保存時に、リアルタイム収録の自動分析(start_analysis号砲)を予約する。
-  /// 未送信チャンクが残っている場合はここでは鳴らさず、UploadManagerが
-  /// 最後のチャンク完了時に鳴らす方に任せる(この時点でexpectedChunksは
-  /// 既に確定済みなので、そちらの判定も正しく通るようになっている)。
-  Future<void> _maybeEnqueueStartAnalysis(String lectureId) async {
-    // state.lectureはwatch経由で古い可能性があるため、DBから読み直す。
-    final fresh = await _repo.getLecture(lectureId);
-    if (fresh == null) return;
-
-    if (fresh.isRealtime != true) {
-      // プレレコーデッドはマスター音声の送信完了時にUploadManagerが発火する。
-      return;
-    }
-    if (fresh.autoStartAnalysis == false) {
-      DevLog.add('⏸️ [Upload] 自動分析がOFFのため、号砲は鳴らしません（手動でStart Analysisが必要）。');
-      return;
-    }
-    if (fresh.courseId == null) {
-      DevLog.add('⏸️ [Upload] コース未選択のため、自動分析はスキップします（手動でStart Analysisが必要）。');
-      return;
-    }
-
-    // 二重発火ガード。保存時(ここ)と最終チャンク完了時(UploadManager)の
-    // 両方が候補になるため、既に号砲があるなら何もしない。
-    if (await _repo.hasStartAnalysisJobForLecture(lectureId)) {
-      DevLog.add('⏭️ [Upload] start_analysisジョブが既に存在するため、二重発火を回避します。');
-      return;
-    }
-
-    final pendingChunks = await _repo.getPendingChunkJobsForLecture(lectureId);
-    if (pendingChunks.isNotEmpty) {
-      DevLog.add(
-        '⏳ [Upload] 未送信チャンクが${pendingChunks.length}件残っています。全て完了した時点でUploadManagerが分析を開始します。',
-      );
-      return;
-    }
-
-    final assetId = await _repo.getAnyAssetIdForLecture(lectureId);
-    if (assetId == null) {
-      DevLog.add('⚠️ [Upload] アセットが1件も見つからないため、号砲を鳴らせませんでした。');
-      return;
-    }
-
-    DevLog.add('🎉 [Upload] 全チャンク送信済み。保存と同時に分析開始の号砲を鳴らします！');
-    await _repo.enqueueStartAnalysis(
-      userId: fresh.userId,
-      lectureId: lectureId,
-      assetId: assetId,
-    );
-  }
-
   Future<void> cancelAndDiscard() async {
-    AudioRecorderService.activeLectureId = null;
+    ref.read(recordingRecoveryServiceProvider).setActiveRecordingLectureId(null);
     await _audioStreamSub?.cancel();
     await _recorder.stop();
     await ref.read(liveAsrControllerProvider.notifier).stop();

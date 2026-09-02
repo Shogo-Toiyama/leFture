@@ -40,6 +40,19 @@ final startAnalysisJobsProvider =
   return ref.watch(recordingRepositoryDriftProvider).watchStartAnalysisJobsForLecture(lectureId);
 });
 
+/// UIが「分析開始の号砲は既に鳴らしてある」ことを表示するためのwatch。
+/// 上のstartAnalysisJobsProviderと違い'done'も含む — 詳細は
+/// RecordingRepositoryDrift.watchStartAnalysisJobsIncludingDoneForLectureの
+/// コメントを参照(アップロード完了直後、サーバーのjob作成をポーリングで
+/// 検知するまでの数秒間だけStart Analysisボタンが再表示される「ちらつき」
+/// を埋めるためのもの)。
+final startAnalysisJobsIncludingDoneProvider =
+    StreamProvider.family<List<LocalUploadJob>, String>((ref, lectureId) {
+  return ref
+      .watch(recordingRepositoryDriftProvider)
+      .watchStartAnalysisJobsIncludingDoneForLecture(lectureId);
+});
+
 /// この講義の音声アップロード(チャンク/マスター)がまだ残っているかのwatch。
 /// 空でない間は音声がクラウドに揃っていないため、UIはStart Analysisを
 /// 押させてはいけない(押せてしまうと、audio_path未設定のまま

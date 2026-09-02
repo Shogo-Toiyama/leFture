@@ -53,6 +53,13 @@ class AnnouncementsSheet extends HookConsumerWidget {
       return null;
     }, [statusFilter.value]);
 
+    final bool isGlobalScope = lectureId == null && courseId == null;
+
+    // ホーム画面(全コース横断)スコープは無制限に貯まりうるため、状態/種類
+    // フィルターごとにDB側で絞り込んだ上で20件ずつページングして読み込む。
+    // lectureId/courseId指定時は元々件数が有限なので従来通り全件購読。
+    final announcementsPageArgs = (status: statusFilter.value, type: selectedType.value);
+
     // データソースの分岐
     final AsyncValue<List<Announcement>> announcementsAsync;
     if (lectureId != null) {
@@ -60,10 +67,39 @@ class AnnouncementsSheet extends HookConsumerWidget {
     } else if (courseId != null) {
       announcementsAsync = ref.watch(allAnnouncementsForCourseProvider(courseId!));
     } else {
-      announcementsAsync = ref.watch(allAnnouncementsProvider);
+      announcementsAsync = ref.watch(
+        announcementsPageProvider(
+          status: announcementsPageArgs.status,
+          type: announcementsPageArgs.type,
+        ),
+      );
     }
 
     final sheetScrollControllerRef = useRef<ScrollController?>(null);
+
+    // 下端に近づいたら次のページを読み込む(無限スクロール、ホーム画面スコープのみ)。
+    useEffect(() {
+      if (!isGlobalScope) return null;
+
+      void onScroll() {
+        final sc = sheetScrollControllerRef.value;
+        if (sc == null || !sc.hasClients) return;
+        if (sc.position.pixels >= sc.position.maxScrollExtent - 300) {
+          ref
+              .read(
+                announcementsPageProvider(
+                  status: announcementsPageArgs.status,
+                  type: announcementsPageArgs.type,
+                ).notifier,
+              )
+              .loadMore();
+        }
+      }
+
+      final sc = sheetScrollControllerRef.value;
+      sc?.addListener(onScroll);
+      return () => sc?.removeListener(onScroll);
+    }, [sheetScrollControllerRef.value, announcementsPageArgs.status, announcementsPageArgs.type]);
 
     // targetAnnouncementId が指定されている場合、完了済みならタブを切り替え、ターゲット位置へスクロール
     useEffect(() {
@@ -124,7 +160,6 @@ class AnnouncementsSheet extends HookConsumerWidget {
             : l10n.homeAnnouncementsSheetTitle);
 
     // 全コース表示時のコース情報ルックアップテーブル
-    final bool isGlobalScope = lectureId == null && courseId == null;
     final lectures = isGlobalScope
         ? (ref.watch(allLecturesStreamProvider).asData?.value ?? const [])
         : const [];
@@ -341,6 +376,18 @@ class AnnouncementsSheet extends HookConsumerWidget {
                                 .read(announcementRepositoryDriftProvider)
                                 .toggleComplete(id: a.id, completed: nextState);
                             ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                            // ページングstateはストリームで自動反映されないため、
+                            // ローカルで即時反映する(DB再取得はしない=スクロール位置を保つ)。
+                            if (isGlobalScope) {
+                              ref
+                                  .read(
+                                    announcementsPageProvider(
+                                      status: announcementsPageArgs.status,
+                                      type: announcementsPageArgs.type,
+                                    ).notifier,
+                                  )
+                                  .applyLocalToggle(a.id, nextState);
+                            }
                           },
                           onEdit: () async {
                             await showModalBottomSheet<void>(
@@ -349,12 +396,32 @@ class AnnouncementsSheet extends HookConsumerWidget {
                               backgroundColor: Colors.transparent,
                               builder: (_) => AnnouncementEditSheet(announcement: announcement),
                             );
+                            if (isGlobalScope) {
+                              await ref
+                                  .read(
+                                    announcementsPageProvider(
+                                      status: announcementsPageArgs.status,
+                                      type: announcementsPageArgs.type,
+                                    ).notifier,
+                                  )
+                                  .refresh();
+                            }
                           },
                           onDelete: (Announcement a) async {
                             await ref
                                 .read(announcementRepositoryDriftProvider)
                                 .softDeleteAnnouncement(id: a.id);
                             ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+                            if (isGlobalScope) {
+                              ref
+                                  .read(
+                                    announcementsPageProvider(
+                                      status: announcementsPageArgs.status,
+                                      type: announcementsPageArgs.type,
+                                    ).notifier,
+                                  )
+                                  .applyLocalDelete(a.id);
+                            }
                           },
                         );
 

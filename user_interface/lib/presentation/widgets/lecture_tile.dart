@@ -22,16 +22,20 @@ class LectureTile extends ConsumerWidget {
     super.key,
     required this.lecture,
     this.courseCode,
+    this.showCourseLabel = true,
     this.useRelativeTime = false,
     this.showChevron = true,
+    this.onTap,
     this.onEdit,
     this.onDelete,
   });
 
   final Lecture lecture;
   final String? courseCode;
+  final bool showCourseLabel;
   final bool useRelativeTime;
   final bool showChevron;
+  final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -96,8 +100,19 @@ class LectureTile extends ConsumerWidget {
               ? lecture.titleGenerated!
               : l10n.lectureViewerUntitledLecture);
 
-    final code = courseCode?.trim();
-    final hasCourseCode = code != null && code.isNotEmpty;
+    final String? resolvedCourseLabel;
+    if (!showCourseLabel) {
+      resolvedCourseLabel = null;
+    } else if (courseCode?.trim().isNotEmpty == true) {
+      resolvedCourseLabel = courseCode!.trim();
+    } else if (parentCourse?.courseCode?.trim().isNotEmpty == true) {
+      resolvedCourseLabel = parentCourse!.courseCode!.trim();
+    } else if (parentCourse?.courseTitle?.trim().isNotEmpty == true) {
+      resolvedCourseLabel = parentCourse!.courseTitle!.trim();
+    } else {
+      resolvedCourseLabel = l10n.lectureTileUnassignedCourse;
+    }
+    final hasCourseLabel = resolvedCourseLabel != null && resolvedCourseLabel.isNotEmpty;
 
     // チュートリアル講義は削除できないため、長押しメニューに削除の選択肢自体を出さない。
     final isTutorial = lecture.metadata?['is_tutorial'] == true;
@@ -108,9 +123,10 @@ class LectureTile extends ConsumerWidget {
         : (imageFile != null ? FileImage(imageFile) : null);
 
     return GestureDetector(
-      onTap: () => isActivelyRecording
-          ? context.push(AppRoutes.recording)
-          : context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
+      onTap: onTap ??
+          () => isActivelyRecording
+              ? context.push(AppRoutes.recording)
+              : context.push('${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}'),
       onLongPress: (onEdit != null || effectiveOnDelete != null)
           ? () => showTileActionsSheet(
                 context: context,
@@ -218,17 +234,19 @@ class LectureTile extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (hasCourseCode) ...[
+                      if (hasCourseLabel) ...[
                         const SizedBox(width: 8),
-                        Text(
-                          code,
-                          style: TextStyle(
-                            color: themeColor.withValues(alpha: 0.6),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            resolvedCourseLabel,
+                            style: TextStyle(
+                              color: themeColor.withValues(alpha: 0.6),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],
