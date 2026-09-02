@@ -45,10 +45,11 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
       try {
         for (final spec in specs) {
           final status = await spec.permission.status;
-          if (!status.isGranted) {
-            await permState.requestOne(spec.permission);
+          if (!status.isGranted && !status.isPermanentlyDenied && !status.isRestricted) {
+            await spec.permission.request();
           }
         }
+        await permState.refresh();
 
         for (final spec in specs.where((s) => s.required)) {
           final status = await spec.permission.status;
@@ -105,6 +106,8 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
                     subtitle: l10n.onboardingPermissionsSubtitle,
                     onBack: onBack,
                   ),
+                  const SizedBox(height: 28),
+                  PermissionsRows(specs: specs, state: permState, isOnboarding: true),
                   const Spacer(),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -116,7 +119,7 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: isRequesting.value ? null : handleContinue,
+                      onPressed: (isRequesting.value || permState.loading) ? null : handleContinue,
                       child: isRequesting.value
                           ? const SizedBox(
                               width: 20,

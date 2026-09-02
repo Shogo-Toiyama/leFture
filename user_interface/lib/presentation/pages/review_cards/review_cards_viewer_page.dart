@@ -222,26 +222,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     final animationController = useAnimationController(
       duration: const Duration(milliseconds: 350),
     );
-    final progressPulseController = useAnimationController(
-      duration: const Duration(milliseconds: 400),
-    );
-    final pulseAnimation = useAnimation(
-      useMemoized(
-        () => TweenSequence<double>([
-          TweenSequenceItem(
-            tween: Tween<double>(begin: 0.0, end: 1.0)
-                .chain(CurveTween(curve: Curves.easeOutCubic)),
-            weight: 35,
-          ),
-          TweenSequenceItem(
-            tween: Tween<double>(begin: 1.0, end: 0.0)
-                .chain(CurveTween(curve: Curves.easeInOutCubic)),
-            weight: 65,
-          ),
-        ]).animate(progressPulseController),
-        [progressPulseController],
-      ),
-    );
+
     // committedIndex: タイトル/カウンター/カード別ツールバー/進捗バーの塗り/
     // useEffectを駆動する「確定した」カード。ジェスチャーが確定した瞬間にだけ
     // 更新する(ドラッグ/スクラブの途中で更新すると他のUIがチラつくため)。
@@ -616,6 +597,17 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           groupStartIndex[topicIdx] +
           within * (groups[topicIdx].cards.length + 1);
       return pos.clamp(0.0, (totalCards - 1).toDouble());
+    }
+
+    int cardIndexFromDx(double dx, double width) {
+      if (width <= 0 || groups.isEmpty) return 0;
+      final slot = (dx / width).clamp(0.0, 0.999999) * groups.length;
+      final topicIdx = slot.floor().clamp(0, groups.length - 1);
+      final within = (slot - topicIdx).clamp(0.0, 0.999999);
+      final count = groups[topicIdx].cards.length + 1;
+      final cardIdx = (within * count).floor().clamp(0, count - 1);
+      final absIdx = groupStartIndex[topicIdx] + cardIdx;
+      return absIdx.clamp(0, totalCards - 1);
     }
 
     void updateScrub(Offset globalPosition) {
@@ -1183,8 +1175,17 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
               // topic; the vertical padding just makes the 3px bar grabbable.
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  progressPulseController.forward(from: 0.0);
+                onTapUp: (details) {
+                  final box =
+                      progressBarKey.currentContext?.findRenderObject()
+                          as RenderBox?;
+                  if (box == null) return;
+                  final localX =
+                      box.globalToLocal(details.globalPosition).dx;
+                  final target = cardIndexFromDx(localX, box.size.width);
+                  if (target != committedIndex.value) {
+                    navigateTo(target);
+                  }
                 },
                 onHorizontalDragStart: (d) => beginScrub(d.globalPosition),
                 onHorizontalDragUpdate: (d) {
@@ -1214,9 +1215,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                               final absIdx = groupStart + cardIdx;
                               final isFilled = absIdx <= displayIndex;
                               final isActive = absIdx == displayIndex;
-                              final double highlightFactor = (isScrubbing.value || isDragging.value)
-                                  ? 1.0
-                                  : pulseAnimation;
+                              final double highlightFactor =
+                                  (isScrubbing.value || isDragging.value)
+                                      ? 1.0
+                                      : 0.0;
                               final double barHeight = isActive
                                   ? 3.0 + 4.0 * highlightFactor
                                   : 3.0;

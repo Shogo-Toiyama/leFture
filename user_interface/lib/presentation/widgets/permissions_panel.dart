@@ -29,6 +29,14 @@ Future<void> openNotificationSettings() async {
   await openAppSettings();
 }
 
+Future<void> openSpecificSettings(Permission permission) async {
+  if (permission == Permission.notification) {
+    await openNotificationSettings();
+  } else {
+    await openAppSettings();
+  }
+}
+
 /// One row's worth of copy/icon for a permission, shared between the
 /// onboarding Permissions step and the standalone Account > Permissions
 /// settings page so both show identical rows and copy.
@@ -88,12 +96,14 @@ class PermissionsStatusState {
     required this.loading,
     required this.refresh,
     required this.requestOne,
+    required this.openSettings,
   });
 
   final Map<Permission, PermissionStatus> statuses;
   final bool loading;
   final Future<void> Function() refresh;
   final Future<void> Function(Permission) requestOne;
+  final Future<void> Function(Permission) openSettings;
 
   bool isGranted(Permission permission) => statuses[permission]?.isGranted ?? false;
 
@@ -108,10 +118,14 @@ class PermissionsStatusState {
   bool isPermanentlyDenied(Permission permission) =>
       statuses[permission] == PermissionStatus.permanentlyDenied ||
       statuses[permission] == PermissionStatus.restricted;
+
+  /// True when the permission status is determined (either granted or permanently denied/restricted).
+  bool isDetermined(Permission permission) =>
+      isGranted(permission) || isPermanentlyDenied(permission);
 }
 
 /// Custom flutter_hooks hook: checks + exposes live status for a fixed list
-/// of permissions, plus a way to (re-)request a single one or all at once.
+/// of permissions, plus a way to (re-)request a single one or open settings.
 PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
   final statuses = useState<Map<Permission, PermissionStatus>>({});
   final loading = useState(true);
@@ -125,6 +139,10 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     loading.value = false;
   }
 
+  Future<void> openSettings(Permission permission) async {
+    await openSpecificSettings(permission);
+  }
+
   // permanentlyDenied/restrictedだとOS側は二度とダイアログを出さないので
   // (特にiOS)、request()を呼んでも何も起きない。その場合はアプリの設定
   // 画面を直接開く — permission_handlerのopenAppSettings()はiOS/Android
@@ -132,11 +150,7 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
   Future<void> requestOrOpenSettings(Permission permission) async {
     final current = statuses.value[permission];
     if (current == PermissionStatus.permanentlyDenied || current == PermissionStatus.restricted) {
-      if (permission == Permission.notification) {
-        await openNotificationSettings();
-      } else {
-        await openAppSettings();
-      }
+      await openSpecificSettings(permission);
     } else {
       await permission.request();
     }
@@ -146,6 +160,12 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     await requestOrOpenSettings(permission);
     await refresh();
   }
+
+  useOnAppLifecycleStateChange((previous, current) {
+    if (current == AppLifecycleState.resumed) {
+      refresh();
+    }
+  });
 
   useEffect(() {
     refresh();
@@ -157,21 +177,22 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     loading: loading.value,
     refresh: refresh,
     requestOne: requestOne,
+    openSettings: openSettings,
   );
 }
 
-/// Renders the permission rows themselves — granted ones show a checkmark,
-/// not-yet-granted ones show a tappable "not granted" chip that re-requests
-/// just that permission.
+/// Renders the permission rows.
 class PermissionsRows extends StatelessWidget {
   const PermissionsRows({
     super.key,
     required this.specs,
     required this.state,
+    this.isOnboarding = false,
   });
 
   final List<OnboardingPermissionSpec> specs;
   final PermissionsStatusState state;
+  final bool isOnboarding;
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +211,9 @@ class PermissionsRows extends StatelessWidget {
             spec: specs[i],
             granted: state.isGranted(specs[i].permission),
             permanentlyDenied: state.isPermanentlyDenied(specs[i].permission),
-            onRetry: () => state.requestOne(specs[i].permission),
+            isOnboarding: isOnboarding,
+            onOpenSettings: () => state.openSettings(specs[i].permission),
+            onRequest: () => state.requestOne(specs[i].permission),
           ),
         ],
       ],
@@ -203,17 +226,40 @@ class _PermissionRow extends StatelessWidget {
     required this.spec,
     required this.granted,
     required this.permanentlyDenied,
-    required this.onRetry,
+    required this.isOnboarding,
+    required this.onOpenSettings,
+    required this.onRequest,
   });
 
   final OnboardingPermissionSpec spec;
   final bool granted;
   final bool permanentlyDenied;
-  final VoidCallback onRetry;
+  final bool isOnboarding;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onRequest;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final isDetermined = granted || permanentlyDenied;
+
+    // 「権限が許可・無許可のどちらかに確定してる」状態なら設定ページに飛ぶ。
+    // 確定していない時：
+    // - オンボーディング時はタップ無効（下のContinueボタンのみ）。
+    // - 設定画面時はタップでリクエスト。
+    final VoidCallback? onTap = isDetermined
+        ? onOpenSettings
+        : (isOnboarding ? null : onRequest);
+
+    Widget? trailingWidget;
+    if (granted) {
+      trailingWidget = const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 22);
+    } else if (permanentlyDenied) {
+      trailingWidget = Icon(Icons.settings_outlined, color: AppColors.universe.textComet, size: 20);
+    } else {
+      if (!isOnboarding) {
+        trailingWidget = Icon(Icons.arrow_forward_ios_rounded, color: AppColors.universe.textComet, size: 14);
+      }
+    }
 
     final cardContent = Container(
       padding: const EdgeInsets.all(14),
@@ -252,48 +298,23 @@ class _PermissionRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          if (granted)
-            const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 22)
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.alertAmber.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: AppColors.alertAmber.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    permanentlyDenied ? Icons.settings_rounded : Icons.priority_high_rounded,
-                    color: AppColors.alertAmber,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    permanentlyDenied
-                        ? l10n.onboardingPermissionsOpenSettingsLabel
-                        : l10n.onboardingPermissionsNotGrantedLabel,
-                    style: const TextStyle(color: AppColors.alertAmber, fontSize: 10.5, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
+          if (trailingWidget != null) ...[
+            const SizedBox(width: 8),
+            trailingWidget,
+          ],
         ],
       ),
     );
 
-    if (granted) return cardContent;
+    if (onTap == null) return cardContent;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onRetry,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        splashColor: AppColors.alertAmber.withValues(alpha: 0.15),
-        highlightColor: AppColors.alertAmber.withValues(alpha: 0.08),
+        splashColor: AppColors.universe.glassWhiteLow,
+        highlightColor: AppColors.universe.glassWhiteLow,
         child: cardContent,
       ),
     );
