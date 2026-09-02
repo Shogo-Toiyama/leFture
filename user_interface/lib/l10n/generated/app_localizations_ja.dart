@@ -649,6 +649,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notStartedChooseCourseButton => 'コースを選択';
 
   @override
+  String get notStartedEditTooltip => 'タイトル・コースを編集';
+
+  @override
   String get notStartedUploadingWarning => '音声をアップロード中です。完了すると自動的に解析が始まります。';
 
   @override
@@ -687,6 +690,134 @@ class AppLocalizationsJa extends AppLocalizations {
   String notStartedAutoStartFailedWarning(String error) {
     return 'アップロード後の自動解析開始を試みましたが失敗し、バックグラウンドで再試行中です: $error\n下のボタンから手動で開始することもできます。';
   }
+
+  @override
+  String get notStartedAnalysisStartingTitle => '解析を開始しています...';
+
+  @override
+  String get notStartedAnalysisStartingSubtitle => 'まもなく始まります。';
+
+  @override
+  String recoveryBannerTitle(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '保存されていない録音が$countString件あります',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recoveryBannerSubtitle => '音声は端末に残っています。タップして確認してください。';
+
+  @override
+  String recoveryListSheetTitle(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '保存されていない録音($countString件)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recoverySafeTitle => '録音は無事に残っています';
+
+  @override
+  String get recoverySafeSubtitle =>
+      '前回、この録音は最後まで保存されませんでした(アプリの終了またはクラッシュが原因と考えられます)。データは失われていません — 下で再生して内容を確認してから、どうするか選んでください。';
+
+  @override
+  String recoveryStartedAtLabel(String datetime) {
+    return '開始: $datetime';
+  }
+
+  @override
+  String recoveryDurationLabel(String duration) {
+    return '長さ: $duration';
+  }
+
+  @override
+  String get recoveryRealtimeOnLabel => 'リアルタイム文字起こし: オン';
+
+  @override
+  String get recoveryRealtimeOffLabel => 'リアルタイム文字起こし: オフ';
+
+  @override
+  String get recoveryViewDetails => '詳細を見る';
+
+  @override
+  String get recoveryHideDetails => '詳細を閉じる';
+
+  @override
+  String get recoveryDetailStartedAt => '開始日時';
+
+  @override
+  String get recoveryDetailDuration => '録音時間';
+
+  @override
+  String get recoveryDetailLanguage => '録音言語';
+
+  @override
+  String get recoveryDetailRealtime => 'リアルタイム文字起こし';
+
+  @override
+  String get recoveryStatusOn => 'オン';
+
+  @override
+  String get recoveryStatusOff => 'オフ';
+
+  @override
+  String recoveryEncodingLabel(int percent) {
+    return '再生の準備中... $percent%';
+  }
+
+  @override
+  String get recoveryEncodingFailedTitle => 'この録音を準備できませんでした';
+
+  @override
+  String get recoveryEncodingFailedRetryButton => '再試行';
+
+  @override
+  String get recoveryTranscriptSectionTitle => '文字起こし';
+
+  @override
+  String get recoveryMomentsSectionTitle => 'リアクション';
+
+  @override
+  String get recoveryStartAnalysisButton => '解析を開始';
+
+  @override
+  String get recoveryDeleteButton => '削除';
+
+  @override
+  String get recoveryUploadOnlyButton => 'アップロードのみ';
+
+  @override
+  String get recoveryEditTooltip => 'タイトル・コースを編集';
+
+  @override
+  String get recoveryDeleteConfirmTitle => 'この録音を削除しますか？';
+
+  @override
+  String get recoveryDeleteConfirmMessage =>
+      'この操作は取り消せません。この音声は一度もアップロードされていないため、ここで削除すると完全に失われます。';
+
+  @override
+  String get recoveryDeleteConfirmButton => '削除';
+
+  @override
+  String get recoveryCancelButton => 'キャンセル';
 
   @override
   String get topicPreviewSaveTooltip => '保存';
@@ -1598,6 +1729,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get lectureEditSheetNoCourseLabel => 'コース未設定';
+
+  @override
+  String get lectureTileUnassignedCourse => 'コース未選択';
 
   @override
   String get lectureEditSheetUnknownCourseFallback => '不明なコース';

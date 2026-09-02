@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:lefture/application/sync/lecture_outbox_push_handler.dart';
 import 'package:lefture/application/sync/outbox_sync_service.dart';
 import 'package:lefture/core/utils/network_constants.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
@@ -46,6 +47,16 @@ class LectureMomentOutboxPushHandler implements OutboxPushHandler {
           ..where((t) => t.id.equals(existing.lectureId) & t.userId.equals(existing.userId)))
         .getSingleOrNull();
     if (lecture == null || lecture.deletedAt != null) return;
+
+    // ★ 親講義がローカルには存在していても、サーバー側にまだ1行も無い
+    // ケースがある(この講義自身のOutbox行がまだpushされていない/直前の
+    // 失敗でバックオフ待ちになっている等)。その状態でこのMomentだけ先に
+    // pushされると`lecture_moments_lecture_id_fkey`のFK違反(23503)になる
+    // (録音中にリアクションを押した直後の即時push経路で実際に発生した)。
+    // LectureOutboxPushHandler.pushはSupabase側の最新行から都度組み立てる
+    // 冪等なupsertなので、念のため先に実行しておいても無害 — 既に同期済み
+    // なら無駄なupsertが1回増えるだけで済む。
+    await LectureOutboxPushHandler().push(db, existing.lectureId);
 
     final payload = {
       'id': existing.id,

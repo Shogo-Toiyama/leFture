@@ -146,6 +146,12 @@ class RecordingRepositoryDrift {
     required String lectureId,
     required String localPath,
     required double startTime,
+    // このチャンクがカバーする音声の絶対終端秒(startTime + 実データ長/32000)。
+    // Recording Recoveryがクラッシュ後にテールを正しい位置で切り出すために
+    // 使う唯一の情報源。呼び出し側(RecordingController)が渡さない(既存の
+    // 呼び出し箇所)場合はnullのままで、その場合はテール回収が自動的に
+    // スキップされるだけで他の挙動に影響しない。
+    double? endTime,
     String? presetAssetId,
     int sequenceIndex = 0,
   }) async {
@@ -175,6 +181,7 @@ class RecordingRepositoryDrift {
               storageBucket: const Value(audioBucket),
               storagePath: Value(storagePath),
               startTime: Value(startTime),
+              endTime: Value(endTime),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -357,6 +364,17 @@ class RecordingRepositoryDrift {
         .get();
   }
 
+  // Recording Recovery用: この講義の音声チャンク資産(master_audioは除く、
+  // sequenceIndex順)を取得する。テール回収の可否判定(全チャンクのendTimeが
+  // 揃っているか)と、次に採番すべきsequenceIndexの算出の両方に使う。
+  Future<List<LocalLectureAsset>> getChunkAssetsForLecture(String lectureId) {
+    return (db.select(db.localLectureAssets)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.type.equals('audio'))
+          ..orderBy([(t) => OrderingTerm(expression: t.sequenceIndex)]))
+        .get();
+  }
+
   // マスターオーディオ用のアップロードジョブをエンキューする
   Future<String> enqueueMasterAudioUpload({
     required String userId,
@@ -473,6 +491,20 @@ class RecordingRepositoryDrift {
     return rows.isNotEmpty;
   }
 
+  // Recording Recovery用: この講義に指定kindのアップロードジョブが
+  // (ステータス問わず)1件でも存在するかを判定する。「master_audio_uploadが
+  // 存在する = 通常の保存/確定フローを一度でも通過した」という判定に使う
+  // (孤児検出は「このジョブが無い」ことそのものが条件なので、statusで
+  // 絞り込まない — doneでもcancelledでも「一度は通した」事実に変わりはない)。
+  Future<bool> hasAnyUploadJobOfKindForLecture(String lectureId, String kind) async {
+    final rows = await (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.equals(kind))
+          ..limit(1))
+        .get();
+    return rows.isNotEmpty;
+  }
+
   // UI側(NotStartedView)が「まだ音声のアップロードが終わっていないので
   // Start Analysisを押させてはいけない」を判定するためのwatch。
   // start_analysisジョブ(実ファイルを持たない号砲)は対象外 —— これ自体は
@@ -566,12 +598,82 @@ class RecordingRepositoryDrift {
     DevLog.add('▶️ [RecordingRepo] resumePendingUploadsForLecture($lectureId): $resumed job(s) → queued');
   }
 
+  /// 録音を確定した(保存 or 復旧からの確定)瞬間に、リアルタイム収録の
+  /// 自動分析(start_analysis号砲)を予約する。呼び出し元はRecordingController.
+  /// upload()とRecording Recoveryの確定フローの両方(元は前者にだけ存在した
+  /// private methodだったが、両方から同じ判定を使うためrepo層へ移動した)。
+  /// 未送信チャンクが残っている場合はここでは鳴らさず、UploadManagerが
+  /// 最後のチャンク完了時に鳴らす方に任せる(この時点でexpectedChunksは
+  /// 既に確定済みなので、そちらの判定も正しく通るようになっている)。
+  Future<void> maybeEnqueueStartAnalysisForRealtimeLecture(String lectureId) async {
+    // 呼び出し元が保持している講義データは古い可能性があるため、DBから読み直す。
+    final fresh = await getLecture(lectureId);
+    if (fresh == null) return;
+
+    if (fresh.isRealtime != true) {
+      // プレレコーデッドはマスター音声の送信完了時にUploadManagerが発火する。
+      return;
+    }
+    if (fresh.autoStartAnalysis == false) {
+      DevLog.add('⏸️ [Upload] 自動分析がOFFのため、号砲は鳴らしません（手動でStart Analysisが必要）。');
+      return;
+    }
+    if (fresh.courseId == null) {
+      DevLog.add('⏸️ [Upload] コース未選択のため、自動分析はスキップします（手動でStart Analysisが必要）。');
+      return;
+    }
+
+    // 二重発火ガード。保存時(ここ)と最終チャンク完了時(UploadManager)の
+    // 両方が候補になるため、既に号砲があるなら何もしない。
+    if (await hasStartAnalysisJobForLecture(lectureId)) {
+      DevLog.add('⏭️ [Upload] start_analysisジョブが既に存在するため、二重発火を回避します。');
+      return;
+    }
+
+    final pendingChunks = await getPendingChunkJobsForLecture(lectureId);
+    if (pendingChunks.isNotEmpty) {
+      DevLog.add(
+        '⏳ [Upload] 未送信チャンクが${pendingChunks.length}件残っています。全て完了した時点でUploadManagerが分析を開始します。',
+      );
+      return;
+    }
+
+    final assetId = await getAnyAssetIdForLecture(lectureId);
+    if (assetId == null) {
+      DevLog.add('⚠️ [Upload] アセットが1件も見つからないため、号砲を鳴らせませんでした。');
+      return;
+    }
+
+    DevLog.add('🎉 [Upload] 全チャンク送信済み。保存と同時に分析開始の号砲を鳴らします！');
+    await enqueueStartAnalysis(
+      userId: fresh.userId,
+      lectureId: lectureId,
+      assetId: assetId,
+    );
+  }
+
   // UI側(NotStartedView等)がstart_analysisジョブの失敗状況を表示するためのwatch。
   Stream<List<LocalUploadJob>> watchStartAnalysisJobsForLecture(String lectureId) {
     return (db.select(db.localUploadJobs)
           ..where((t) => t.lectureId.equals(lectureId))
           ..where((t) => t.kind.equals('start_analysis'))
           ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+        .watch();
+  }
+
+  // UI側(NotStartedView/LectureOverlayCard)が「分析開始の号砲は既に鳴らして
+  // ある(サーバー側のジョブ作成をポーリングで検知するまでの数秒の隙間)」を
+  // 判定するためのwatch。上のwatchStartAnalysisJobsForLectureと違い'done'も
+  // 含める — 号砲が成功してサーバーにprocessing_jobsが作られた直後は、
+  // watchJob(3秒ポーリング)がそれを拾うまでの間job==nullのままになり、
+  // その隙間だけStart Analysisボタンが再び表示される「ちらつき」の原因に
+  // なっていた。'done'を含めることで、その隙間もこのwatchが埋める。
+  // hasStartAnalysisJobForLectureが'done'を含めているのと同じ理由。
+  Stream<List<LocalUploadJob>> watchStartAnalysisJobsIncludingDoneForLecture(String lectureId) {
+    return (db.select(db.localUploadJobs)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.kind.equals('start_analysis'))
+          ..where((t) => t.status.isNotValue('cancelled')))
         .watch();
   }
 }

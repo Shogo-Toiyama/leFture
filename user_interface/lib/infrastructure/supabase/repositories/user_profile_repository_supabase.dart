@@ -14,8 +14,7 @@ import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
 import 'package:lefture/domain/entities/app_language.dart';
-import 'package:lefture/application/sync/outbox_sync_service.dart';
-import 'package:lefture/application/sync/user_profile_outbox_push_handler.dart';
+import 'package:lefture/application/sync/outbox_provider.dart';
 
 part 'user_profile_repository_supabase.g.dart';
 
@@ -622,10 +621,14 @@ class UserProfileRepositorySupabase {
 
   Future<void> _pushOutboxImmediately() async {
     try {
-      final syncService = OutboxSyncService(_db, {
-        'user_profile': UserProfileOutboxPushHandler(),
-      });
-      await syncService.pushAll();
+      // ★ 以前はここでuser_profileハンドラだけを持つ「狭い」OutboxSyncService
+      // をその場で作っていた。pushAll()はentityTypeを問わず保留中の全Outbox行
+      // (lecture_moment等)をまとめて処理してしまうため、そのタイミングで他の
+      // 種別の行が残っていると「ハンドラが無い」失敗として記録され、実際には
+      // ハンドラが存在する本来のpush(outboxSyncServiceProvider経由)より前に
+      // 誤った失敗履歴を残してしまっていた。共通providerを使い、常に全ハンドラ
+      // が揃った状態でpushする。
+      await _ref.read(outboxSyncServiceProvider).pushAll();
     } catch (e) {
       DevLog.add('⚠️ [UserProfileRepo] Failed to push user_profile outbox immediately: $e');
     }

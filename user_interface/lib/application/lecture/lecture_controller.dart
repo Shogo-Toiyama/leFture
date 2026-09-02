@@ -22,18 +22,11 @@ import 'package:lefture/application/sync/review_card_sync_service.dart';
 import 'package:lefture/application/sync/deep_note_sync_service.dart';
 import 'package:lefture/application/sync/topic_map_sync_service.dart';
 import 'package:lefture/application/sync/outbox_sync_service.dart';
+import 'package:lefture/application/sync/outbox_provider.dart';
 import 'package:lefture/application/sync/lecture_outbox_push_handler.dart';
-import 'package:lefture/application/sync/lecture_moment_outbox_push_handler.dart';
-import 'package:lefture/application/sync/fun_fact_outbox_push_handler.dart';
-import 'package:lefture/application/sync/announcement_outbox_push_handler.dart';
-import 'package:lefture/application/sync/review_card_outbox_push_handler.dart';
-import 'package:lefture/application/sync/deep_note_outbox_push_handler.dart';
-import 'package:lefture/application/sync/user_profile_outbox_push_handler.dart';
-import 'package:lefture/application/sync/keyword_outbox_push_handler.dart';
 import 'package:lefture/application/sync/user_profile_sync_service.dart';
 import 'package:lefture/application/sync/sync_progress.dart';
 import 'package:lefture/application/maintenance/local_retention_service.dart';
-import 'package:lefture/application/maintenance/orphaned_audio_salvage_service.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/application/job/job_providers.dart'; // jobRepository
 import 'package:lefture/application/recording/upload_manager.dart';
@@ -43,6 +36,7 @@ import 'package:lefture/infrastructure/supabase/repositories/fun_fact_repository
 import 'package:lefture/infrastructure/supabase/repositories/lecture_topic_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/repositories/deep_note_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/repositories/keyword_repository_supabase.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 
 part 'lecture_controller.g.dart';
@@ -52,7 +46,14 @@ part 'lecture_controller.g.dart';
 // ごと(_lastBootstrapAttemptAtの記憶も)消えてしまう。すると直後のHome表示時に
 // もう一度bootstrapIfNeededを呼んだ時、15分スロットルが効かず全データを
 // 再度Pullし直してしまっていた。セッション中は保持し続けることでこれを防ぐ。
-@Riverpod(keepAlive: true, dependencies: [RecordingController])
+// deleteLecture()がorphanRecordingsProvider/recordingRecoveryServiceProviderを
+// 読む(孤児録音を物理削除するため)ため、これらもdependenciesに明示する必要が
+// ある。無いとref.read()がAsyncValue.guard()の中で例外を投げ、その例外が
+// guardに握りつぶされて「削除ボタンを押しても何も起きない(ローカルDBへの
+// 書き込みが一切実行されない)」という無言の失敗になる(実機で確認済み)。
+// 循環参照にはならない(OrphanRecordings/recordingRecoveryServiceのどちらも
+// LectureControllerを参照し返さない一方向の依存)。
+@Riverpod(keepAlive: true, dependencies: [RecordingController, recordingRecoveryService, OrphanRecordings])
 class LectureController extends _$LectureController {
   /// [_runBootstrapLectures]内でPullするエンティティの数(下の`pulls`マップの
   /// エントリ数と一致させる)。syncProgressProviderの母数をWelcomePage側からも
@@ -74,21 +75,11 @@ class LectureController extends _$LectureController {
   }
 
   /// entityTypeごとのPushハンドラを登録した汎用Outbox送信サービス。
-  /// フェーズ2/3でFunFact/Announcement用のハンドラもここに追加していく。
-  OutboxSyncService _outbox() {
-    final db = ref.read(appDatabaseProvider);
-    final appConfig = ref.read(appConfigControllerProvider);
-    return OutboxSyncService(db, {
-      'lecture': LectureOutboxPushHandler(),
-      'lecture_moment': LectureMomentOutboxPushHandler(),
-      'fun_fact': FunFactOutboxPushHandler(),
-      'announcement': AnnouncementOutboxPushHandler(),
-      'review_card': ReviewCardOutboxPushHandler(),
-      'deep_note': DeepNoteOutboxPushHandler(),
-      'keyword': KeywordOutboxPushHandler(),
-      'user_profile': UserProfileOutboxPushHandler(),
-    }, syncBlocked: appConfig.isSyncBlocked);
-  }
+  /// 実体はoutboxSyncServiceProvider(application/sync/outbox_provider.dart)
+  /// に切り出してある — RecordingControllerも同じサービスを必要とするが、
+  /// このLectureController経由(dependencies循環)にはできない理由はそちらの
+  /// ファイルのコメントを参照。
+  OutboxSyncService _outbox() => ref.read(outboxSyncServiceProvider);
 
   /// コース一覧はローカルDB(Drift)のStreamをそのまま表示に使っているため、
   /// オンラインでコースを作成/更新/削除/復元した直後は、次回の定期Pullを
@@ -315,24 +306,12 @@ class LectureController extends _$LectureController {
             );
       }
 
-      // 取り残された録音のサルベージ。保存処理が
-      // enqueueMasterAudioUpload()に到達できずアップロードジョブが1件も
-      // 作られなかった講義を、端末に残っている音声から拾い直す。
-      // ★ 保守処理(LocalRetentionService)より必ず先に走らせること —— あちらは
-      // 条件次第でローカルの音声実体を消しにいくため、順序が逆だと救出できる
-      // はずの録音を取りこぼしうる。
-      try {
-        final uid = supabase.auth.currentUser?.id;
-        if (uid != null) {
-          final db = ref.read(appDatabaseProvider);
-          final recorder = ref.read(audioRecorderServiceProvider);
-          await OrphanedAudioSalvageService(db, recorder).run(userId: uid);
-        }
-      } catch (e, st) {
-        DevLog.add(
-          '⚠️ [LectureController] Orphaned audio salvage skipped: $e\n$st',
-        );
-      }
+      // 取り残された録音の検出・救出は[RecordingRecoveryService]
+      // (application/recording/recovery/)が担う。app.dartが起動時に
+      // orphanRecordingsProviderをwatchすることでバックグラウンドエンコードが
+      // 走り、Home画面のRecoveryBanner/RecoveryListSheetからユーザーが確認・
+      // アップロード・破棄を行える(旧OrphanedAudioSalvageServiceの黙って
+      // 再アップロードするだけの挙動を置き換えたもの)。
 
       // ローカル保守処理(30日超の論理削除の物理削除・キャッシュ容量のLRU剥がし)。
       // Push/Pullとは独立した処理なので、失敗してもSync自体は成功として扱う。
@@ -614,7 +593,24 @@ class LectureController extends _$LectureController {
     final link = ref.keepAlive();
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      // 0. まずローカルのアップロードキューを止める。
+      // 0. 未保存の孤児録音(クラッシュ・キル等で取り残され、一度もサーバーに
+      //    アップロードされていない録音)の場合、論理削除ではなくRecoveryPageと
+      //    同じ物理削除(ローカル音声ファイル掃除 + 物理削除)を行う。
+      //    これをしないと、未削除のmaster_audioがディスクに残り、OrphanRecordingsが
+      //    新しいDraft講義を再生成してゾンビのように復活してしまう。
+      final orphans = ref.read(orphanRecordingsProvider).value ?? const [];
+      if (orphans.any((o) => o.lectureId == lectureId)) {
+        DevLog.add(
+          '🗑️ [LectureController] Lecture $lectureId is an orphaned recording. Discarding completely via RecordingRecoveryService.',
+        );
+        await _cancelPendingUploads(lectureId);
+        final recoveryService = ref.read(recordingRecoveryServiceProvider);
+        await recoveryService.discard(lectureId);
+        await ref.read(orphanRecordingsProvider.notifier).refresh();
+        return;
+      }
+
+      // 0.5. まずローカルのアップロードキューを止める。
       // ★ 論理削除より先に行うこと。UploadManagerは_performUpload内で
       // upsertLectureを呼ぶため、削除済み講義のジョブが残っていると、リトライの
       // たびにSupabaseのlectures行が書き戻され、さらに完了時にstart_analysisまで

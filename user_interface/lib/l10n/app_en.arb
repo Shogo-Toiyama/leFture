@@ -1077,6 +1077,11 @@
     "description": "Button inside the no-course warning banner that opens the lecture-edit sheet so the user can assign a course."
   },
 
+  "notStartedEditTooltip": "Edit title & course",
+  "@notStartedEditTooltip": {
+    "description": "Tooltip/label on the edit (pencil) icon button on the 'Ready to Analyze' screen, opening LectureEditSheet so the user can rename the lecture or change its course even when a course is already assigned (the no-course warning banner only appears when there is none)."
+  },
+
   "notStartedUploadingWarning": "Still uploading the audio. Analysis will start automatically once the upload finishes.",
   "@notStartedUploadingWarning": {
     "description": "Banner shown on the 'Ready to Analyze' screen while chunk/master audio uploads are still queued or retrying. The Start Analysis button is disabled in this state because the backend would fail with a missing-audio error."
@@ -1148,6 +1153,198 @@
         "example": "Cloud Run error (402): Insufficient credits"
       }
     }
+  },
+
+  "notStartedAnalysisStartingTitle": "Starting analysis...",
+  "@notStartedAnalysisStartingTitle": {
+    "description": "Headline shown in place of the Start Analysis button for a brief window after the analysis request has been sent locally but the server hasn't confirmed the job yet (closes a few-second gap that used to flash the Start Analysis button again right after upload finished)."
+  },
+
+  "notStartedAnalysisStartingSubtitle": "This should only take a moment.",
+  "@notStartedAnalysisStartingSubtitle": {
+    "description": "Subtitle under notStartedAnalysisStartingTitle."
+  },
+
+  "recoveryBannerTitle": "{count, plural, one{1 recording wasn't saved} other{{count} recordings weren't saved}}",
+  "@recoveryBannerTitle": {
+    "description": "Home screen banner title telling the user that one or more recordings were left on the device because the app was closed or crashed before they were saved. Tapping it opens the affected lecture. {count} is the number of such recordings.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact",
+        "example": "1"
+      }
+    }
+  },
+
+  "recoveryBannerSubtitle": "The audio is still on your device. Tap to review it.",
+  "@recoveryBannerSubtitle": {
+    "description": "Subtitle under recoveryBannerTitle on the Home screen recovery banner."
+  },
+
+  "recoveryListSheetTitle": "{count, plural, one{1 unsaved recording} other{{count} unsaved recordings}}",
+  "@recoveryListSheetTitle": {
+    "description": "Title of the bottom sheet listing every unsaved recording, shown when the Home recovery banner is tapped and there is more than one. {count} is the number of recordings.",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact",
+        "example": "1"
+      }
+    }
+  },
+
+  "recoverySafeTitle": "Your recording is safe",
+  "@recoverySafeTitle": {
+    "description": "Reassuring headline at the top of the recovery card, shown for a recording that was left on the device after the app was closed or crashed before it could be saved normally. Meant to immediately dispel the worry that the data is corrupted."
+  },
+
+  "recoverySafeSubtitle": "leFture didn't finish saving this recording last time — probably the app was closed or crashed. Nothing is lost: listen to it below, then choose what to do.",
+  "@recoverySafeSubtitle": {
+    "description": "Body text under recoverySafeTitle, explaining what happened in plain terms and that the audio itself is intact."
+  },
+
+  "recoveryStartedAtLabel": "Started {datetime}",
+  "@recoveryStartedAtLabel": {
+    "description": "Label showing when the recovered recording started, using the device's local date/time/weekday. {datetime} is a pre-formatted localized string (e.g. 'Thu, Aug 20, 2026 14:30').",
+    "placeholders": {
+      "datetime": {
+        "type": "String",
+        "example": "Thu, Aug 20, 2026 14:30"
+      }
+    }
+  },
+
+  "recoveryDurationLabel": "Length: {duration}",
+  "@recoveryDurationLabel": {
+    "description": "Label showing the recovered recording's duration (mm:ss or h:mm:ss). {duration} is a pre-formatted string.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "48:12"
+      }
+    }
+  },
+
+  "recoveryRealtimeOnLabel": "Realtime transcription was on",
+  "@recoveryRealtimeOnLabel": {
+    "description": "Metadata chip on the recovery card indicating Realtime Transcribe was enabled during this recording."
+  },
+
+  "recoveryRealtimeOffLabel": "Realtime transcription was off",
+  "@recoveryRealtimeOffLabel": {
+    "description": "Metadata chip on the recovery card indicating Realtime Transcribe was disabled during this recording."
+  },
+
+  "recoveryViewDetails": "View details",
+  "@recoveryViewDetails": {
+    "description": "Button to expand the metadata accordion on the recovery card."
+  },
+
+  "recoveryHideDetails": "Hide details",
+  "@recoveryHideDetails": {
+    "description": "Button to collapse the metadata accordion on the recovery card."
+  },
+
+  "recoveryDetailStartedAt": "Started",
+  "@recoveryDetailStartedAt": {
+    "description": "Label for the recording start date/time row in the recovery details accordion (first row, above Duration). The value is a pre-formatted localized datetime string."
+  },
+
+  "recoveryDetailDuration": "Duration",
+  "@recoveryDetailDuration": {
+    "description": "Label for the duration row in the recovery details accordion."
+  },
+
+  "recoveryDetailLanguage": "Language",
+  "@recoveryDetailLanguage": {
+    "description": "Label for the language row in the recovery details accordion."
+  },
+
+  "recoveryDetailRealtime": "Realtime transcription",
+  "@recoveryDetailRealtime": {
+    "description": "Label for the realtime transcription row in the recovery details accordion."
+  },
+
+  "recoveryStatusOn": "On",
+  "@recoveryStatusOn": {
+    "description": "Status text indicating a feature is enabled."
+  },
+
+  "recoveryStatusOff": "Off",
+  "@recoveryStatusOff": {
+    "description": "Status text indicating a feature is disabled."
+  },
+
+  "recoveryEncodingLabel": "Preparing playback... {percent}%",
+  "@recoveryEncodingLabel": {
+    "description": "Progress label shown while the recovered recording is being converted from raw audio to a playable file. {percent} is 0-100, updated continuously so the user can see it isn't stuck.",
+    "placeholders": {
+      "percent": {
+        "type": "int",
+        "example": "42"
+      }
+    }
+  },
+
+  "recoveryEncodingFailedTitle": "Couldn't prepare this recording",
+  "@recoveryEncodingFailedTitle": {
+    "description": "Headline shown when converting the recovered raw audio to a playable file failed (e.g. the file is genuinely corrupted or too short). Distinct from a merely-slow encode — this means it did not succeed."
+  },
+
+  "recoveryEncodingFailedRetryButton": "Try Again",
+  "@recoveryEncodingFailedRetryButton": {
+    "description": "Button to retry preparing (encoding) a recovered recording after a failure."
+  },
+
+  "recoveryTranscriptSectionTitle": "Transcript",
+  "@recoveryTranscriptSectionTitle": {
+    "description": "Section header above the transcript shown on the recovery card."
+  },
+
+  "recoveryMomentsSectionTitle": "Reactions",
+  "@recoveryMomentsSectionTitle": {
+    "description": "Section header above the reactions shown on the recovery card when there are only moments/reactions recorded."
+  },
+
+  "recoveryStartAnalysisButton": "Start Analysis",
+  "@recoveryStartAnalysisButton": {
+    "description": "Primary button on the recovery card that uploads the recovered recording and starts AI analysis, same outcome as the normal Start Analysis button elsewhere."
+  },
+
+  "recoveryDeleteButton": "Delete",
+  "@recoveryDeleteButton": {
+    "description": "Button on the recovery card that permanently discards the recovered recording (audio file and local records)."
+  },
+
+  "recoveryUploadOnlyButton": "Upload Only",
+  "@recoveryUploadOnlyButton": {
+    "description": "Secondary button on the recovery card that uploads the recovered recording to the server without starting AI analysis. Sets autoStartAnalysis to false so the lecture lands on the normal 'Ready to Analyze' screen with a manual Start Analysis button, instead of firing analysis automatically."
+  },
+
+  "recoveryEditTooltip": "Edit title & course",
+  "@recoveryEditTooltip": {
+    "description": "Tooltip/label on the edit (pencil) icon button on the recovery card, opening the same LectureEditSheet used elsewhere in the app to set the lecture's title and course before deciding what to do with the recording."
+  },
+
+  "recoveryDeleteConfirmTitle": "Delete this recording?",
+  "@recoveryDeleteConfirmTitle": {
+    "description": "Confirmation dialog title before permanently discarding a recovered recording."
+  },
+
+  "recoveryDeleteConfirmMessage": "This can't be undone. The audio was never uploaded, so deleting it here removes it for good.",
+  "@recoveryDeleteConfirmMessage": {
+    "description": "Confirmation dialog body warning that deleting a recovered recording is permanent (it was never uploaded, so there's no server copy to fall back on)."
+  },
+
+  "recoveryDeleteConfirmButton": "Delete",
+  "@recoveryDeleteConfirmButton": {
+    "description": "Destructive confirm button on the recovery delete confirmation dialog."
+  },
+
+  "recoveryCancelButton": "Cancel",
+  "@recoveryCancelButton": {
+    "description": "Cancel button on the recovery delete confirmation dialog."
   },
 
   "topicPreviewSaveTooltip": "Save",
@@ -2705,6 +2902,11 @@
   "lectureEditSheetNoCourseLabel": "No Course (Unassigned)",
   "@lectureEditSheetNoCourseLabel": {
     "description": "Placeholder text shown inside the course-selector row on the Lecture Edit sheet when the lecture currently has no course assigned."
+  },
+
+  "lectureTileUnassignedCourse": "Course unassigned",
+  "@lectureTileUnassignedCourse": {
+    "description": "Label displayed on a lecture tile when the lecture has no course assigned."
   },
 
   "lectureEditSheetUnknownCourseFallback": "Unknown Course",

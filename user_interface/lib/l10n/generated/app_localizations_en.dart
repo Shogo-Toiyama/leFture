@@ -690,6 +690,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notStartedChooseCourseButton => 'Choose Course';
 
   @override
+  String get notStartedEditTooltip => 'Edit title & course';
+
+  @override
   String get notStartedUploadingWarning =>
       'Still uploading the audio. Analysis will start automatically once the upload finishes.';
 
@@ -729,6 +732,138 @@ class AppLocalizationsEn extends AppLocalizations {
   String notStartedAutoStartFailedWarning(String error) {
     return 'We tried to start analysis automatically after upload, but it failed and will keep retrying in the background: $error\nYou can also start it manually below.';
   }
+
+  @override
+  String get notStartedAnalysisStartingTitle => 'Starting analysis...';
+
+  @override
+  String get notStartedAnalysisStartingSubtitle =>
+      'This should only take a moment.';
+
+  @override
+  String recoveryBannerTitle(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString recordings weren\'t saved',
+      one: '1 recording wasn\'t saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recoveryBannerSubtitle =>
+      'The audio is still on your device. Tap to review it.';
+
+  @override
+  String recoveryListSheetTitle(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString unsaved recordings',
+      one: '1 unsaved recording',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recoverySafeTitle => 'Your recording is safe';
+
+  @override
+  String get recoverySafeSubtitle =>
+      'leFture didn\'t finish saving this recording last time — probably the app was closed or crashed. Nothing is lost: listen to it below, then choose what to do.';
+
+  @override
+  String recoveryStartedAtLabel(String datetime) {
+    return 'Started $datetime';
+  }
+
+  @override
+  String recoveryDurationLabel(String duration) {
+    return 'Length: $duration';
+  }
+
+  @override
+  String get recoveryRealtimeOnLabel => 'Realtime transcription was on';
+
+  @override
+  String get recoveryRealtimeOffLabel => 'Realtime transcription was off';
+
+  @override
+  String get recoveryViewDetails => 'View details';
+
+  @override
+  String get recoveryHideDetails => 'Hide details';
+
+  @override
+  String get recoveryDetailStartedAt => 'Started';
+
+  @override
+  String get recoveryDetailDuration => 'Duration';
+
+  @override
+  String get recoveryDetailLanguage => 'Language';
+
+  @override
+  String get recoveryDetailRealtime => 'Realtime transcription';
+
+  @override
+  String get recoveryStatusOn => 'On';
+
+  @override
+  String get recoveryStatusOff => 'Off';
+
+  @override
+  String recoveryEncodingLabel(int percent) {
+    return 'Preparing playback... $percent%';
+  }
+
+  @override
+  String get recoveryEncodingFailedTitle => 'Couldn\'t prepare this recording';
+
+  @override
+  String get recoveryEncodingFailedRetryButton => 'Try Again';
+
+  @override
+  String get recoveryTranscriptSectionTitle => 'Transcript';
+
+  @override
+  String get recoveryMomentsSectionTitle => 'Reactions';
+
+  @override
+  String get recoveryStartAnalysisButton => 'Start Analysis';
+
+  @override
+  String get recoveryDeleteButton => 'Delete';
+
+  @override
+  String get recoveryUploadOnlyButton => 'Upload Only';
+
+  @override
+  String get recoveryEditTooltip => 'Edit title & course';
+
+  @override
+  String get recoveryDeleteConfirmTitle => 'Delete this recording?';
+
+  @override
+  String get recoveryDeleteConfirmMessage =>
+      'This can\'t be undone. The audio was never uploaded, so deleting it here removes it for good.';
+
+  @override
+  String get recoveryDeleteConfirmButton => 'Delete';
+
+  @override
+  String get recoveryCancelButton => 'Cancel';
 
   @override
   String get topicPreviewSaveTooltip => 'Save';
@@ -1664,6 +1799,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lectureEditSheetNoCourseLabel => 'No Course (Unassigned)';
+
+  @override
+  String get lectureTileUnassignedCourse => 'Course unassigned';
 
   @override
   String get lectureEditSheetUnknownCourseFallback => 'Unknown Course';

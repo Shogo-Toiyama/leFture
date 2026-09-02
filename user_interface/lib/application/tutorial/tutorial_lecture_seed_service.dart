@@ -147,6 +147,16 @@ class TutorialLectureSeedService {
               ),
             );
 
+            // 再シードで作り直すとcompletedAt(Done状態)が失われてしまうため、
+            // 削除前に既存の完了状態をid([ann_1]等の固定id)ごとに退避しておき、
+            // 再挿入時に引き継ぐ。
+            final existingAnnouncements = await (_db.select(_db.localAnnouncements)
+                  ..where((t) => t.lectureId.equals(existing.id) & t.userId.equals(userId)))
+                .get();
+            final existingCompletedAt = {
+              for (final a in existingAnnouncements) a.id: a.completedAt,
+            };
+
             // 以前のサブ要素を削除
             await (_db.delete(_db.localLectureTopics)..where((t) => t.lectureId.equals(existing.id))).go();
             await (_db.delete(_db.localDeepNotes)..where((t) => t.lectureId.equals(existing.id))).go();
@@ -166,6 +176,7 @@ class TutorialLectureSeedService {
               // 最古のままなのにアナウンスだけ最新扱いになり、一覧の先頭に
               // 浮上してしまう(_insertSubContentのコメント参照)。
               announcementBaseAt: existing.createdAt,
+              existingCompletedAt: existingCompletedAt,
             );
           });
           return;
@@ -281,6 +292,11 @@ class TutorialLectureSeedService {
     /// チュートリアルのアナウンスが実際の講義のものより上に居座ってしまう。
     /// そのため講義のcreatedAtを渡してもらう。
     required DateTime announcementBaseAt,
+
+    /// 再シード前に退避しておいた、アナウンスid([ann_1]等の固定id)ごとの
+    /// 完了日時。再シードで作り直してもDone状態を引き継ぐために使う。
+    /// 初回シード時は空マップでよい。
+    Map<String, DateTime?> existingCompletedAt = const {},
   }) async {
     final topicCompanions = <LocalLectureTopicsCompanion>[];
     final deepNoteCompanions = <LocalDeepNotesCompanion>[];
@@ -356,8 +372,11 @@ class TutorialLectureSeedService {
       hook: content.funFact.hook,
       body: content.funFact.body,
       metadataJson: Value(jsonEncode({'sources': content.funFact.sources})),
-      createdAt: now,
-      updatedAt: now,
+      // アナウンスメントと同様、講義のcreatedAt基準に固定する。nowのままだと
+      // 講義自体は最古のままなのにFunFactだけ最新扱いになり、ホーム画面の
+      // 「最近のFunFact」一覧の先頭に浮上してしまう。
+      createdAt: announcementBaseAt,
+      updatedAt: announcementBaseAt,
     );
 
     // 降順ソートされる一覧で上から ann_1, ann_2, ann_3 の順で並ぶよう、
@@ -376,6 +395,9 @@ class TutorialLectureSeedService {
           description: Value(a.description),
           createdAt: Value(announcementBaseAt.add(Duration(seconds: total - i))),
           updatedAt: Value(now),
+          completedAt: existingCompletedAt[a.id] != null
+              ? Value(existingCompletedAt[a.id])
+              : const Value.absent(),
         ),
       );
     }

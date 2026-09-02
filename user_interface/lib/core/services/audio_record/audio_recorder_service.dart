@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -5,7 +6,10 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:record/record.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_session.dart';
+import 'package:ffmpeg_kit_flutter_new_audio/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
+import 'package:lefture/core/services/audio_record/pcm_duration_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/presentation/pages/dev_tools/test_mode_flag.dart';
 
@@ -25,19 +29,10 @@ class AudioRecorderService {
   IOSink? _masterSink;
   String? _masterSinkLectureId;
 
-  /// 録音セッションが進行中の講義ID。録音開始で立ち、保存/破棄の完了で下ろす。
-  /// ★ [OrphanedAudioSalvageService]が「中断された保存」と「進行中(一時停止中を
-  /// 含む)の録音」を取り違えないための判定材料。一時停止中は master_audio.raw への
-  /// 追記が止まるため、ファイルの更新時刻だけでは両者を区別できない。
-  /// アプリが強制終了された場合はnullに戻る —— その時は本当にセッションが
-  /// 失われているので、サルベージ対象として扱ってよい。
-  ///
-  /// staticにしているのは「アプリ全体で録音が動いているか」を問う値だから。
-  /// audioRecorderServiceProviderは`dependencies: []`のscoped providerで、
-  /// dev_tools/のTestタブがProviderScopeで差し替えると本物とテスト用で
-  /// インスタンスが分かれてしまう。インスタンス変数にすると、その状況で
-  /// サルベージ側が「録音していない」と誤判定しうる。
-  static String? activeLectureId;
+  // ★ 調査用(録音言語変更などの設定変更直後に音声ファイルが伸びなくなる
+  // 不具合の切り分け用)。原因が特定でき次第削除すること。
+  int _masterWriteCallCount = 0;
+  int _masterWriteByteTotal = 0;
 
   Future<void> _initBackgroundService() async {
     if (_isBackgroundInitialized) return;
@@ -180,6 +175,15 @@ class AudioRecorderService {
   Future<void> _closeMasterSink() async {
     final sink = _masterSink;
     if (sink == null) return;
+    // ★ 調査用: 誰がこのsinkを閉じたか(録音中に想定外のタイミングで
+    // 呼ばれていないか)を追えるようにする。stack traceを添えることで
+    // 「stop()からの正常な呼び出し」か「別経路からの想定外の呼び出し」かを
+    // 区別できるようにする。
+    DevLog.add(
+      '🔒 [AudioRecorder] _closeMasterSink() closing sink for lectureId=$_masterSinkLectureId '
+      '(wrote $_masterWriteByteTotal bytes over $_masterWriteCallCount calls). '
+      'Caller:\n${StackTrace.current}',
+    );
     _masterSink = null;
     _masterSinkLectureId = null;
     await sink.flush();
@@ -223,35 +227,91 @@ class AudioRecorderService {
     return m4aPath; // 保存したファイルのパスを返す
   }
 
-  /// 指定されたレクチャーIDの一時PCMファイルパスを返す
-  Future<String> _getMasterRawPath(String lectureId) async {
+  /// 指定されたレクチャーIDの一時PCMファイルパスを返す。
+  /// RecordingRecoveryServiceが孤児検出のためにも参照するのでpublic。
+  Future<String> getMasterRawPath(String lectureId) async {
     final Directory dir = await getApplicationDocumentsDirectory();
     return '${dir.path}/lectures/$lectureId/master_audio.raw';
   }
 
-  /// 指定されたレクチャーIDの圧縮M4Aファイルパスを返す
-  Future<String> _getMasterM4aPath(String lectureId) async {
+  /// 指定されたレクチャーIDの圧縮M4Aファイルパスを返す。
+  /// RecordingRecoveryServiceが孤児検出のためにも参照するのでpublic。
+  Future<String> getMasterM4aPath(String lectureId) async {
     final Directory dir = await getApplicationDocumentsDirectory();
     return '${dir.path}/lectures/$lectureId/master_audio.m4a';
   }
+
+  // appendMasterRawDataの実行を直列化するための待ち行列。録音開始直後、
+  // マイクの最初のデータが立て続けに届くと、複数の呼び出しがほぼ同時に
+  // 「_masterSinkがまだnull」を見てしまい、それぞれが別々にIOSinkを開こうと
+  // する競合が実機で確認された(1回の録音開始で複数のIOSinkが同じファイルに
+  // 対して開かれ、後から開いた方だけが_masterSinkに残る。それ以前に別の
+  // IOSinkへadd()された分はflush/closeされないまま孤立し、消える可能性が
+  // あった)。IOSink自体は「開いた後の直列化」しか保証しないため、
+  // 「開くかどうかの判定」自体もここで直列化する。
+  Future<void> _pendingMasterWrite = Future.value();
 
   /// 録音中の生PCMデータをローカルファイルに追記する。
   /// マイクからのコールバック頻度で呼ばれ続けるため、呼び出しごとにファイルを
   /// 開閉するのではなく、同じlectureIdの間は1つの`IOSink`を使い続けて直列に
   /// 書き込む(呼び出しが重なってもIOSink内部のキューが順序と欠落無しを保証する)。
-  Future<void> appendMasterRawData(Uint8List pcmData, String lectureId) async {
+  Future<void> appendMasterRawData(Uint8List pcmData, String lectureId) {
+    // ★ 1回の書き込み失敗が以降ずっと直列化を止めてしまわないよう、待ち行列
+    // 用のfutureは常に「成功扱い」にしてから次につなぐ(実際のエラーは
+    // resultFuture側でこの呼び出し元にそのまま伝える。呼び出し元
+    // (AudioChunker経由・fire-and-forget)は_appendMasterRawDataSerial内で
+    // 既にDevLogへ明示的にログしているので、ここで握りつぶしても消えはしない)。
+    final resultFuture = _pendingMasterWrite.catchError((_) {}).then(
+      (_) => _appendMasterRawDataSerial(pcmData, lectureId),
+    );
+    _pendingMasterWrite = resultFuture.catchError((_) {});
+    return resultFuture;
+  }
+
+  Future<void> _appendMasterRawDataSerial(Uint8List pcmData, String lectureId) async {
     if (_masterSink == null || _masterSinkLectureId != lectureId) {
+      // ★ 調査用: 想定外の再オープン(録音中に本来起きないはず)を検出する。
+      DevLog.add(
+        '🔓 [AudioRecorder] Opening/reopening master sink for lectureId=$lectureId '
+        '(was: $_masterSinkLectureId, disposed=$_disposed, instance=${identityHashCode(this)})',
+      );
+
       // 別のlectureId用のsinkが開いたままだった場合に備えて、念のため閉じる。
       await _closeMasterSink();
 
-      final String rawPath = await _getMasterRawPath(lectureId);
+      final String rawPath = await getMasterRawPath(lectureId);
       final File file = File(rawPath);
       await file.parent.create(recursive: true);
       _masterSink = file.openWrite(mode: FileMode.append);
       _masterSinkLectureId = lectureId;
+      _masterWriteCallCount = 0;
+      _masterWriteByteTotal = 0;
     }
 
-    _masterSink!.add(pcmData);
+    try {
+      _masterSink!.add(pcmData);
+      _masterWriteCallCount++;
+      _masterWriteByteTotal += pcmData.length;
+      // ★ 調査用: 高頻度で呼ばれるため、間引いて定期的に「まだ書けている」
+      // ことを可視化する(何も出なくなった瞬間 = 書き込みが止まった瞬間)。
+      if (_masterWriteCallCount % 50 == 0) {
+        DevLog.add(
+          '✍️ [AudioRecorder] master sink alive: lectureId=$lectureId '
+          '$_masterWriteCallCount writes, $_masterWriteByteTotal bytes total '
+          '(instance=${identityHashCode(this)})',
+        );
+      }
+    } catch (e, st) {
+      // ★ これが本命の疑い: この関数はChunker側からawaitされずに呼ばれる
+      // (fire-and-forget)ため、ここで投げた例外は誰にも捕まらない
+      // 「Unhandled exception」としてどこにも見える形で残らず消えていた
+      // 可能性がある。明示的にログへ出す。
+      DevLog.add(
+        '🔴 [AudioRecorder] appendMasterRawData FAILED for lectureId=$lectureId '
+        'after $_masterWriteCallCount successful writes ($_masterWriteByteTotal bytes): $e\n$st',
+      );
+      rethrow;
+    }
   }
 
   /// テスト専用: [encodeMasterRawToM4a]の直前に人為的な遅延を挟むためのフック。
@@ -277,8 +337,8 @@ class AudioRecorderService {
     // 念のためここでも閉じる(既に閉じていれば何もしない)。
     await _closeMasterSink();
 
-    final String rawPath = await _getMasterRawPath(lectureId);
-    final String m4aPath = await _getMasterM4aPath(lectureId);
+    final String rawPath = await getMasterRawPath(lectureId);
+    final String m4aPath = await getMasterM4aPath(lectureId);
 
     final rawFile = File(rawPath);
     if (!await rawFile.exists()) {
@@ -321,19 +381,165 @@ class AudioRecorderService {
     await _closeMasterSink();
 
     try {
-      final String rawPath = await _getMasterRawPath(lectureId);
+      final String rawPath = await getMasterRawPath(lectureId);
       final rawFile = File(rawPath);
       if (await rawFile.exists()) {
         await rawFile.delete();
       }
 
-      final String m4aPath = await _getMasterM4aPath(lectureId);
+      final String m4aPath = await getMasterM4aPath(lectureId);
       final m4aFile = File(m4aPath);
       if (await m4aFile.exists()) {
         await m4aFile.delete();
       }
     } catch (e) {
       debugPrint('⚠️ Failed to clean up master audio files for lecture $lectureId: $e');
+    }
+  }
+
+  // ===== Recording Recovery 用 =====
+  //
+  // 通常経路(stop→encodeMasterRawToM4a)と違い、復旧対象は既にプロセスが
+  // 死んでいるため_masterSinkが存在しない・stop()を経由していない状態から
+  // 始まる。rawファイルパスを直接渡して動く独立した経路として持つ。
+
+  /// 復旧用: 生PCMをM4Aへ「進捗コールバック付き」で非同期エンコードする。
+  /// 通常の[encodeMasterRawToM4a]([FFmpegKit.execute]で同期・進捗なし)とは
+  /// 別に、[FFmpegKit.executeAsync]の`statisticsCallback`から処理済み
+  /// メディア時間(ms)を受け取り、rawファイルのバイト数から算出した総尺で
+  /// 割って0.0〜1.0の進捗率を[onProgress]へ継続通知する。
+  ///
+  /// 「0%で固まらない」ための3段ガード:
+  ///   1. rawが1秒未満ならFFmpegを起動せず即座に[StateError]を投げる
+  ///   2. [watchdogTimeout]の間`statisticsCallback`が一度も来なければ
+  ///      セッションを強制キャンセルする(壊れたファイル・OS側のffmpeg
+  ///      プロセスハング等で永久に0%のまま止まるのを防ぐ)
+  ///   3. 完了時に[ReturnCode.isSuccess]を確認し、失敗ならffmpegログ付きで
+  ///      例外を投げる
+  ///
+  /// rawファイルの削除は呼び出し側(RecordingRecoveryService)の責務。
+  /// 通常経路と違い、復旧ではエンコード成功=「もう一度見せられる状態に
+  /// なった」だけで、ユーザーがまだ分析/削除のどちらも選んでいないため。
+  Future<String> encodeRawToM4aWithProgress({
+    required String rawPath,
+    required String m4aPath,
+    required void Function(double progress) onProgress,
+    Duration watchdogTimeout = const Duration(seconds: 20),
+  }) async {
+    final rawFile = File(rawPath);
+    if (!await rawFile.exists()) {
+      throw StateError('Raw audio file does not exist at $rawPath');
+    }
+
+    final rawLength = await rawFile.length();
+    if (rawLength < kMasterPcmBytesPerSecond) {
+      // 1秒未満: 意味のある音声として扱えない。FFmpegを起動する意味が無い上、
+      // 起動してしまうと「0%のまま何も起きていないように見える」区間が
+      // 生まれるため、ここで即座に失敗させる。
+      throw StateError('Raw audio is too short to recover ($rawLength bytes).');
+    }
+    final totalDurationMs = pcmBytesToDuration(rawLength).inMilliseconds;
+
+    final m4aFile = File(m4aPath);
+    await m4aFile.parent.create(recursive: true);
+    if (await m4aFile.exists()) {
+      await m4aFile.delete();
+    }
+
+    final command = '-y -f s16le -ar 16000 -ac 1 -i "$rawPath" -c:a aac -b:a 64k "$m4aPath"';
+
+    final completer = Completer<FFmpegSession>();
+    Timer? watchdog;
+    int? sessionId;
+
+    void armWatchdog() {
+      watchdog?.cancel();
+      watchdog = Timer(watchdogTimeout, () {
+        DevLog.add(
+          '⏱️ [Recovery] FFmpeg encode watchdog fired (no progress for ${watchdogTimeout.inSeconds}s), '
+          'cancelling session $sessionId',
+        );
+        if (sessionId != null) {
+          FFmpegKit.cancel(sessionId);
+        }
+      });
+    }
+
+    armWatchdog();
+
+    final session = await FFmpegKit.executeAsync(
+      command,
+      (completedSession) {
+        watchdog?.cancel();
+        if (!completer.isCompleted) completer.complete(completedSession);
+      },
+      null,
+      (stats) {
+        armWatchdog();
+        final progress = computeEncodeProgress(
+          processedMs: stats.getTime(),
+          totalDurationMs: totalDurationMs,
+        );
+        if (progress != null) onProgress(progress);
+      },
+    );
+    sessionId = session.getSessionId();
+
+    final completedSession = await completer.future;
+    final returnCode = await completedSession.getReturnCode();
+
+    if (!ReturnCode.isSuccess(returnCode)) {
+      final logs = await completedSession.getLogs();
+      final errorMsg = logs.map((l) => l.getMessage()).join('\n');
+      throw Exception(
+        'FFmpeg recovery encoding failed. ReturnCode: $returnCode.\nLogs:\n$errorMsg',
+      );
+    }
+
+    onProgress(1.0);
+    return m4aPath;
+  }
+
+  /// 復旧用: rawが既に失われ、m4aだけが残っているケースの再生時間取得。
+  /// 通常はraw(バイト数から誤差なく算出できる)を優先して使うべきで、これは
+  /// あくまでフォールバック — 旧経路(encodeMasterRawToM4aは成功時にrawを
+  /// 削除する)がDB書き込みの前に死んだ場合だけ、rawが失われてこちらに頼る
+  /// ことになる。取得できなければnullを返す(呼び出し側は0扱いにする)。
+  Future<Duration?> probeAudioDuration(String path) async {
+    try {
+      final session = await FFprobeKit.getMediaInformation(path);
+      final durationStr = session.getMediaInformation()?.getDuration();
+      if (durationStr == null) return null;
+      final seconds = double.tryParse(durationStr);
+      if (seconds == null) return null;
+      return Duration(milliseconds: (seconds * 1000).round());
+    } catch (e) {
+      DevLog.add('⚠️ [Recovery] Failed to probe audio duration for $path: $e');
+      return null;
+    }
+  }
+
+  /// Realtimeテール回収用: master_audio.rawの[fromSeconds]以降だけを読み出す。
+  /// ファイル全体をメモリに載せず、必要な範囲だけをシークして読む。
+  Future<Uint8List> readMasterRawTail({
+    required String lectureId,
+    required double fromSeconds,
+  }) async {
+    final rawPath = await getMasterRawPath(lectureId);
+    final rawFile = File(rawPath);
+    if (!await rawFile.exists()) {
+      throw StateError('Master raw audio file does not exist at $rawPath');
+    }
+
+    final offset = pcmSecondsToByteOffset(fromSeconds);
+    final raf = await rawFile.open();
+    try {
+      final length = await raf.length();
+      if (offset >= length) return Uint8List(0);
+      await raf.setPosition(offset);
+      return await raf.read(length - offset);
+    } finally {
+      await raf.close();
     }
   }
 }

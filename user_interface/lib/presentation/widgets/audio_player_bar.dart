@@ -7,6 +7,7 @@ import 'package:lefture/domain/entities/lecture_moment.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/playback_speed_menu.dart';
 
 class TopicProgressRange {
   const TopicProgressRange({
@@ -34,7 +35,8 @@ class AudioPlayerBar extends StatefulWidget {
     required this.onSeek,
     required this.onRewind10,
     required this.onForward10,
-    required this.onChangeSpeed,
+    this.onChangeSpeed,
+    this.onSpeedSelected,
     this.topics,
     this.currentTopic,
     this.moments,
@@ -58,7 +60,8 @@ class AudioPlayerBar extends StatefulWidget {
   final ValueChanged<Duration> onSeek;
   final VoidCallback onRewind10;
   final VoidCallback onForward10;
-  final VoidCallback onChangeSpeed;
+  final VoidCallback? onChangeSpeed;
+  final ValueChanged<double>? onSpeedSelected;
 
   final List<LectureTopic>? topics;
   final LectureTopic? currentTopic;
@@ -94,23 +97,24 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
     final hasTopics = widget.topics != null && widget.topics!.isNotEmpty;
     final currentTopic = widget.currentTopic;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.paper.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.paper.line, width: 1.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+    return MediaQuery.withNoTextScaling(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.paper.surface,
+          border: Border(
+            top: BorderSide(color: AppColors.paper.line, width: 1.5),
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // ── 上向き（ポップアップ）トピック目次メニュー ────────────
           if (hasTopics)
             AnimatedCrossFade(
@@ -341,7 +345,8 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildPlayerContent(BuildContext context, bool hasTopics) {
@@ -408,168 +413,188 @@ class _AudioPlayerBarState extends State<AudioPlayerBar> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ── セグメント化プログレスバー ＆ 時間情報 ─────────────────
-        Row(
-          children: [
-            Text(
-              AudioPlayerBar.formatDuration(widget.position),
-              style: TextStyle(
-                color: AppColors.paper.textPencil,
-                fontSize: 11.5,
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: CustomAudioProgressBar(
-                  position: widget.position,
-                  duration: widget.duration,
-                  onSeek: widget.onSeek,
-                  moments: widget.moments,
-                  topicProgresses: widget.topicProgresses,
-                  topicRanges: widget.topicRanges,
-                  topicColors: widget.topicColors,
-                ),
-              ),
-            ),
-            Text(
-              AudioPlayerBar.formatDuration(widget.duration),
-              style: TextStyle(
-                color: AppColors.paper.textPencil,
-                fontSize: 11.5,
-              ),
-            ),
-          ],
+        // ── セグメント化プログレスバー (全幅) ─────────────────
+        CustomAudioProgressBar(
+          position: widget.position,
+          duration: widget.duration,
+          onSeek: widget.onSeek,
+          moments: widget.moments,
+          topicProgresses: widget.topicProgresses,
+          topicRanges: widget.topicRanges,
+          topicColors: widget.topicColors,
         ),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
 
-        // ── コントロール群 (完璧な左右対称レイアウト) ─────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // 左端: 再生速度ボタン (固定幅 44px)
-            SizedBox(
-              width: 44,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(44, 36),
-                  padding: EdgeInsets.zero,
-                ),
-                onPressed: widget.onChangeSpeed,
-                child: Text(
-                  '${widget.playbackSpeed}x',
-                  style: const TextStyle(
-                    color: AppColors.deepGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
+        // ── 時間情報 (左右両端) ───────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AudioPlayerBar.formatDuration(widget.position),
+                style: TextStyle(
+                  color: AppColors.paper.textPencil,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
-
-            // 左側アクション: 前トピック ＆ 10秒戻る
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.skip_previous_rounded,
-                    color: AppColors.deepGold,
-                    size: 26,
-                  ),
-                  onPressed: widget.onPreviousTopic,
-                  tooltip: l10n.audioPlayerBarPreviousTopicTooltip,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(
-                    Icons.replay_10_outlined,
-                    color: AppColors.deepGold,
-                    size: 25,
-                  ),
-                  onPressed: widget.onRewind10,
-                  tooltip: l10n.audioPlayerBarRewindTooltip,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                ),
-              ],
-            ),
-
-            // 中央: 再生 / 一時停止ボタン (52x52)
-            GestureDetector(
-              onTap: widget.onPlayPause,
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: AppColors.deepGold,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  widget.isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 32,
+              Text(
+                AudioPlayerBar.formatDuration(widget.duration),
+                style: TextStyle(
+                  color: AppColors.paper.textPencil,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
 
-            // 右側アクション: 10秒進む ＆ 次トピック
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.forward_10_outlined,
-                    color: AppColors.deepGold,
-                    size: 25,
-                  ),
-                  onPressed: widget.onForward10,
-                  tooltip: l10n.audioPlayerBarForwardTooltip,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(
-                    Icons.skip_next_rounded,
-                    color: AppColors.deepGold,
-                    size: 26,
-                  ),
-                  onPressed: widget.onNextTopic,
-                  tooltip: l10n.audioPlayerBarNextTopicTooltip,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                ),
-              ],
-            ),
+        const SizedBox(height: 4),
 
-            // 右端: トピック目次アイコン / バランスSpacer (固定幅 44px)
-            SizedBox(
-              width: 44,
-              child: hasTopics
-                  ? IconButton(
-                      icon: Icon(
-                        _isMenuExpanded
-                            ? Icons.format_list_bulleted_rounded
-                            : Icons.list_rounded,
-                        color: AppColors.deepGold,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isMenuExpanded = !_isMenuExpanded;
-                        });
-                      },
-                      tooltip: l10n.audioPlayerBarTopicIndexMenuTooltip,
+        // ── コントロール群 (FittedBox で極小画面でも Overflow を完全防止) ──
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 左端: 再生速度ドロップダウン
+              PlaybackSpeedMenu(
+                speed: widget.playbackSpeed,
+                onSpeedSelected: (s) {
+                  if (widget.onSpeedSelected != null) {
+                    widget.onSpeedSelected!(s);
+                  } else if (widget.onChangeSpeed != null) {
+                    widget.onChangeSpeed!();
+                  }
+                },
+                isDark: false,
+              ),
+              const SizedBox(width: 10),
+
+              // 左側アクション: 前トピック ＆ 10秒戻る
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.skip_previous_rounded,
+                      color: AppColors.deepGold,
+                      size: 24,
+                    ),
+                    onPressed: widget.onPreviousTopic,
+                    tooltip: l10n.audioPlayerBarPreviousTopicTooltip,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 44, minHeight: 36),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.replay_10_outlined,
+                      color: AppColors.deepGold,
+                      size: 23,
+                    ),
+                    onPressed: widget.onRewind10,
+                    tooltip: l10n.audioPlayerBarRewindTooltip,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+
+              // 中央: 再生 / 一時停止ボタン (48x48)
+              GestureDetector(
+                onTap: widget.onPlayPause,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: AppColors.deepGold,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    widget.isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // 右側アクション: 10秒進む ＆ 次トピック
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.forward_10_outlined,
+                      color: AppColors.deepGold,
+                      size: 23,
+                    ),
+                    onPressed: widget.onForward10,
+                    tooltip: l10n.audioPlayerBarForwardTooltip,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.skip_next_rounded,
+                      color: AppColors.deepGold,
+                      size: 24,
+                    ),
+                    onPressed: widget.onNextTopic,
+                    tooltip: l10n.audioPlayerBarNextTopicTooltip,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 10),
+
+              // 右端: トピック目次アイコン / バランスSpacer
+              SizedBox(
+                width: 44,
+                child: hasTopics
+                    ? IconButton(
+                        icon: Icon(
+                          _isMenuExpanded
+                              ? Icons.format_list_bulleted_rounded
+                              : Icons.list_rounded,
+                          color: AppColors.deepGold,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isMenuExpanded = !_isMenuExpanded;
+                          });
+                        },
+                        tooltip: l10n.audioPlayerBarTopicIndexMenuTooltip,
+                        style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(36, 36),
+                        ),
+                      )
+                    : const SizedBox(width: 44),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -587,6 +612,8 @@ class CustomAudioProgressBar extends StatelessWidget {
     this.topicProgresses,
     this.topicRanges,
     this.topicColors,
+    this.activeColor,
+    this.inactiveColor,
   });
 
   final Duration position;
@@ -596,12 +623,16 @@ class CustomAudioProgressBar extends StatelessWidget {
   final List<double>? topicProgresses;
   final List<TopicProgressRange>? topicRanges;
   final List<Color>? topicColors;
+  final Color? activeColor;
+  final Color? inactiveColor;
 
   @override
   Widget build(BuildContext context) {
     final double percent = duration.inMilliseconds > 0
         ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
         : 0.0;
+    final effectiveActiveColor = activeColor ?? AppColors.deepGold;
+    final effectiveInactiveColor = inactiveColor ?? AppColors.paper.line;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -629,8 +660,8 @@ class CustomAudioProgressBar extends StatelessWidget {
               child: CustomPaint(
                 painter: _ProgressBarPainter(
                   percent: percent,
-                  activeColor: AppColors.deepGold,
-                  inactiveColor: AppColors.paper.line,
+                  activeColor: effectiveActiveColor,
+                  inactiveColor: effectiveInactiveColor,
                   durationInSeconds: duration.inSeconds,
                   moments: moments,
                   topicProgresses: topicProgresses,
@@ -781,10 +812,10 @@ class _ProgressBarPainter extends CustomPainter {
       final bool isTopic = seg.color != null;
       final Color segInactiveColor = isTopic
           ? seg.color!.withValues(alpha: 0.28)
-          : AppColors.paper.line;
+          : inactiveColor;
       final Color segActiveColor = isTopic
           ? seg.color!
-          : AppColors.paper.textPencil;
+          : activeColor;
 
       // 未再生セグメントの描画
       final Paint inactivePaint = Paint()
@@ -823,6 +854,10 @@ class _ProgressBarPainter extends CustomPainter {
 
     // ── モーメントアイコンの描画 (ピンではなくアイコンそのまま) ──────────────
     if (moments != null && moments!.isNotEmpty && durationInSeconds > 0) {
+      final Color momentBgColor = activeColor == AppColors.starGold
+          ? const Color(0xFF161922)
+          : AppColors.paper.surface;
+
       for (final m in moments!) {
         final double ratio = (m.timestampSec / durationInSeconds).clamp(0.0, 1.0);
         final double x = totalWidth * ratio;
@@ -831,7 +866,7 @@ class _ProgressBarPainter extends CustomPainter {
 
         const double momentRadius = 7.5;
         final Paint bgPaint = Paint()
-          ..color = AppColors.paper.surface
+          ..color = momentBgColor
           ..style = PaintingStyle.fill;
         final Paint borderPaint = Paint()
           ..color = color

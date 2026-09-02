@@ -148,3 +148,175 @@ final class AllAnnouncementsProvider
 }
 
 String _$allAnnouncementsHash() => r'fa69da6ba084194f72eece5afef09e9977fd4286';
+
+/// ホーム画面(全コース横断)のアナウンス一覧を、状態/種類フィルターごとに
+/// ページ単位(20件ずつ)で読み込む。
+///
+/// [allAnnouncements]と違い全件を1本のストリームで購読するのではなく、
+/// フィルター済みのデータをDBから直接ページ取得するAsyncNotifier。
+/// - 1講義に10件前後アナウンスが溜まることも珍しくなく、それが何年も
+///   積み重なると際限なく肥大化するため、初期表示は20件までに制限する。
+/// - フィルター後の該当件数が少ないケース(例: 完了済みのみ)でも、絞り込み
+///   済みのクエリ結果をそのままページングするため、正しく追加読み込みできる。
+/// - `loadMore()`は既存のstateへ追記するだけで置き換えないため、
+///   ListViewの位置(スクロール量)を保ったまま件数だけ増える。
+
+@ProviderFor(AnnouncementsPage)
+final announcementsPageProvider = AnnouncementsPageFamily._();
+
+/// ホーム画面(全コース横断)のアナウンス一覧を、状態/種類フィルターごとに
+/// ページ単位(20件ずつ)で読み込む。
+///
+/// [allAnnouncements]と違い全件を1本のストリームで購読するのではなく、
+/// フィルター済みのデータをDBから直接ページ取得するAsyncNotifier。
+/// - 1講義に10件前後アナウンスが溜まることも珍しくなく、それが何年も
+///   積み重なると際限なく肥大化するため、初期表示は20件までに制限する。
+/// - フィルター後の該当件数が少ないケース(例: 完了済みのみ)でも、絞り込み
+///   済みのクエリ結果をそのままページングするため、正しく追加読み込みできる。
+/// - `loadMore()`は既存のstateへ追記するだけで置き換えないため、
+///   ListViewの位置(スクロール量)を保ったまま件数だけ増える。
+final class AnnouncementsPageProvider
+    extends $AsyncNotifierProvider<AnnouncementsPage, List<Announcement>> {
+  /// ホーム画面(全コース横断)のアナウンス一覧を、状態/種類フィルターごとに
+  /// ページ単位(20件ずつ)で読み込む。
+  ///
+  /// [allAnnouncements]と違い全件を1本のストリームで購読するのではなく、
+  /// フィルター済みのデータをDBから直接ページ取得するAsyncNotifier。
+  /// - 1講義に10件前後アナウンスが溜まることも珍しくなく、それが何年も
+  ///   積み重なると際限なく肥大化するため、初期表示は20件までに制限する。
+  /// - フィルター後の該当件数が少ないケース(例: 完了済みのみ)でも、絞り込み
+  ///   済みのクエリ結果をそのままページングするため、正しく追加読み込みできる。
+  /// - `loadMore()`は既存のstateへ追記するだけで置き換えないため、
+  ///   ListViewの位置(スクロール量)を保ったまま件数だけ増える。
+  AnnouncementsPageProvider._({
+    required AnnouncementsPageFamily super.from,
+    required ({String status, AnnouncementType? type}) super.argument,
+  }) : super(
+         retry: null,
+         name: r'announcementsPageProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$announcementsPageHash();
+
+  @override
+  String toString() {
+    return r'announcementsPageProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  AnnouncementsPage create() => AnnouncementsPage();
+
+  @override
+  bool operator ==(Object other) {
+    return other is AnnouncementsPageProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$announcementsPageHash() => r'f97ae739699a9f01d0d5e225d749f58fdde1f2e5';
+
+/// ホーム画面(全コース横断)のアナウンス一覧を、状態/種類フィルターごとに
+/// ページ単位(20件ずつ)で読み込む。
+///
+/// [allAnnouncements]と違い全件を1本のストリームで購読するのではなく、
+/// フィルター済みのデータをDBから直接ページ取得するAsyncNotifier。
+/// - 1講義に10件前後アナウンスが溜まることも珍しくなく、それが何年も
+///   積み重なると際限なく肥大化するため、初期表示は20件までに制限する。
+/// - フィルター後の該当件数が少ないケース(例: 完了済みのみ)でも、絞り込み
+///   済みのクエリ結果をそのままページングするため、正しく追加読み込みできる。
+/// - `loadMore()`は既存のstateへ追記するだけで置き換えないため、
+///   ListViewの位置(スクロール量)を保ったまま件数だけ増える。
+
+final class AnnouncementsPageFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          AnnouncementsPage,
+          AsyncValue<List<Announcement>>,
+          List<Announcement>,
+          FutureOr<List<Announcement>>,
+          ({String status, AnnouncementType? type})
+        > {
+  AnnouncementsPageFamily._()
+    : super(
+        retry: null,
+        name: r'announcementsPageProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// ホーム画面(全コース横断)のアナウンス一覧を、状態/種類フィルターごとに
+  /// ページ単位(20件ずつ)で読み込む。
+  ///
+  /// [allAnnouncements]と違い全件を1本のストリームで購読するのではなく、
+  /// フィルター済みのデータをDBから直接ページ取得するAsyncNotifier。
+  /// - 1講義に10件前後アナウンスが溜まることも珍しくなく、それが何年も
+  ///   積み重なると際限なく肥大化するため、初期表示は20件までに制限する。
+  /// - フィルター後の該当件数が少ないケース(例: 完了済みのみ)でも、絞り込み
+  ///   済みのクエリ結果をそのままページングするため、正しく追加読み込みできる。
+  /// - `loadMore()`は既存のstateへ追記するだけで置き換えないため、
+  ///   ListViewの位置(スクロール量)を保ったまま件数だけ増える。
+
+  AnnouncementsPageProvider call({
+    String status = 'active',
+    AnnouncementType? type,
+  }) => AnnouncementsPageProvider._(
+    argument: (status: status, type: type),
+    from: this,
+  );
+
+  @override
+  String toString() => r'announcementsPageProvider';
+}
+
+/// ホーム画面(全コース横断)のアナウンス一覧を、状態/種類フィルターごとに
+/// ページ単位(20件ずつ)で読み込む。
+///
+/// [allAnnouncements]と違い全件を1本のストリームで購読するのではなく、
+/// フィルター済みのデータをDBから直接ページ取得するAsyncNotifier。
+/// - 1講義に10件前後アナウンスが溜まることも珍しくなく、それが何年も
+///   積み重なると際限なく肥大化するため、初期表示は20件までに制限する。
+/// - フィルター後の該当件数が少ないケース(例: 完了済みのみ)でも、絞り込み
+///   済みのクエリ結果をそのままページングするため、正しく追加読み込みできる。
+/// - `loadMore()`は既存のstateへ追記するだけで置き換えないため、
+///   ListViewの位置(スクロール量)を保ったまま件数だけ増える。
+
+abstract class _$AnnouncementsPage extends $AsyncNotifier<List<Announcement>> {
+  late final _$args = ref.$arg as ({String status, AnnouncementType? type});
+  String get status => _$args.status;
+  AnnouncementType? get type => _$args.type;
+
+  FutureOr<List<Announcement>> build({
+    String status = 'active',
+    AnnouncementType? type,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Announcement>>, List<Announcement>>,
+              AsyncValue<List<Announcement>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(
+      ref,
+      () => build(status: _$args.status, type: _$args.type),
+    );
+  }
+}

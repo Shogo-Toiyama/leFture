@@ -15,10 +15,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture/lecture_state_providers.dart';
+import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/views/not_started_view.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/views/processing_view.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/views/recovered_recording_view.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
 class LectureOverlayCard extends ConsumerWidget {
@@ -31,6 +33,15 @@ class LectureOverlayCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     switch (uiState) {
       case LectureUIState.notStarted:
+        // Recording Recoveryが検出した「取り残された録音」なら、通常の
+        // Start Analysisボタン(押すと音声未アップロードのままTRANSCRIBE_MASTER
+        // が失敗する)の代わりに、聴いて確認してから選べる復旧カードを出す。
+        final orphans = ref.watch(orphanRecordingsProvider).value ?? const [];
+        for (final orphan in orphans) {
+          if (orphan.lectureId == lecture.id) {
+            return RecoveredRecordingView(orphan: orphan);
+          }
+        }
         return NotStartedView(lecture: lecture);
 
       case LectureUIState.processing:
