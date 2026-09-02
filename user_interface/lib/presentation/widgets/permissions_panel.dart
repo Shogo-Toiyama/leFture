@@ -88,17 +88,14 @@ class PermissionsStatusState {
     required this.loading,
     required this.refresh,
     required this.requestOne,
-    required this.requestAll,
   });
 
   final Map<Permission, PermissionStatus> statuses;
   final bool loading;
   final Future<void> Function() refresh;
   final Future<void> Function(Permission) requestOne;
-  final Future<void> Function(List<OnboardingPermissionSpec>) requestAll;
 
   bool isGranted(Permission permission) => statuses[permission]?.isGranted ?? false;
-  bool isAllGranted(List<OnboardingPermissionSpec> specs) => specs.every((s) => isGranted(s.permission));
 
   /// True when the OS permission prompt hasn't been resolved yet for this
   /// permission — i.e. calling `.request()` will actually surface it (or
@@ -150,16 +147,6 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     await refresh();
   }
 
-  Future<void> requestAll(List<OnboardingPermissionSpec> specs) async {
-    for (final spec in specs) {
-      final isAlreadyGranted = statuses.value[spec.permission]?.isGranted ?? false;
-      if (!isAlreadyGranted) {
-        await requestOrOpenSettings(spec.permission);
-        await refresh();
-      }
-    }
-  }
-
   useEffect(() {
     refresh();
     return null;
@@ -170,7 +157,6 @@ PermissionsStatusState usePermissionsStatus(List<Permission> permissions) {
     loading: loading.value,
     refresh: refresh,
     requestOne: requestOne,
-    requestAll: requestAll,
   );
 }
 
@@ -314,95 +300,3 @@ class _PermissionRow extends StatelessWidget {
   }
 }
 
-/// Renders an "Allow All" button that sequentially requests all ungranted permissions.
-class AllowAllPermissionsButton extends HookWidget {
-  const AllowAllPermissionsButton({
-    super.key,
-    required this.specs,
-    required this.state,
-    this.onCompleted,
-  });
-
-  final List<OnboardingPermissionSpec> specs;
-  final PermissionsStatusState state;
-  final VoidCallback? onCompleted;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final isRequesting = useState(false);
-    final allGranted = state.isAllGranted(specs);
-
-    Future<void> handleAllowAll() async {
-      if (isRequesting.value || allGranted) return;
-      isRequesting.value = true;
-      try {
-        await state.requestAll(specs);
-        if (state.isAllGranted(specs)) {
-          onCompleted?.call();
-        }
-      } finally {
-        isRequesting.value = false;
-      }
-    }
-
-    if (allGranted) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.growthGreen.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.growthGreen.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle_rounded, color: AppColors.growthGreen, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                l10n.onboardingPermissionsAllGranted,
-                style: const TextStyle(
-                  color: AppColors.growthGreen,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.starGold,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 0,
-        ),
-        onPressed: (state.loading || isRequesting.value) ? null : handleAllowAll,
-        icon: isRequesting.value
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-              )
-            : const Icon(Icons.done_all_rounded, size: 20),
-        label: Text(
-          isRequesting.value
-              ? l10n.onboardingPermissionsRequesting
-              : l10n.onboardingPermissionsAllowAll,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}

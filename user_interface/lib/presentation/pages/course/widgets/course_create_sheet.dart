@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
-import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/course_attribute.dart';
 import 'package:lefture/infrastructure/supabase/repositories/course_attribute_repository_supabase.dart';
@@ -161,23 +160,11 @@ class CourseCreateSheet extends HookConsumerWidget {
               );
 
         if (context.mounted) {
-          // このシートを閉じる前にref.invalidate()を何件も同期実行すると、
-          // それらが引き起こすリビルドのスケジューリングとNavigator.pop()に
-          // よるルート破棄が同一フレーム内で競合し、Navigatorのロック違反
-          // (`_debugLocked`)で背後の画面が真っ黒なまま固まることがあった。
-          // 先にシートを閉じてから、Providerの再フェッチは次のフレームへ
-          // 遅らせることでこの競合を避ける。
-          final container = ProviderScope.containerOf(context, listen: false);
+          // ローカルDBへの反映(Pull)は呼び出し元(このシートをshowModalBottomSheetで
+          // 開いた画面)の責務。ここで呼ぶと、呼び出し元によっては呼び出し元自身も
+          // 同じPullを行っていて二重に走り、Pull同士が競合するおそれがあるため
+          // 呼ばない([refreshCoursesAfterEdit]を参照)。
           Navigator.of(context).pop(course);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            container.read(lectureControllerProvider.notifier).pullCoursesNow();
-            container.invalidate(courseListProvider);
-            container.invalidate(yearAttributesProvider);
-            container.invalidate(termAttributesProvider);
-            container.invalidate(professorAttributesProvider);
-            container.invalidate(schoolAttributesProvider);
-            container.invalidate(subjectAttributesProvider);
-          });
         }
       } catch (e) {
         errorMsg.value = e.toString();

@@ -6,6 +6,7 @@ import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 
@@ -27,6 +28,7 @@ class CoursePickerSheet extends HookConsumerWidget {
     final selectedId = useState<String?>(initialSelectedCourseId);
     final searchCtl = useTextEditingController();
     useListenable(searchCtl);
+    final isRefreshingCourses = useState(false);
 
     final coursesAsync = ref.watch(courseListProvider);
 
@@ -121,22 +123,56 @@ class CoursePickerSheet extends HookConsumerWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () async {
-                        final newCourse = await showModalBottomSheet<Course>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => const CourseCreateSheet(),
-                        );
-                        if (newCourse != null) {
-                          selectedId.value = newCourse.id;
-                        }
-                      },
-                      child: const Icon(
-                        Icons.add,
-                        color: AppColors.starGold,
-                        size: 20,
-                      ),
+                      onTap: isRefreshingCourses.value
+                          ? null
+                          : () async {
+                              final newCourse = await showModalBottomSheet<Course>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const CourseCreateSheet(),
+                              );
+                              if (newCourse == null) return;
+                              selectedId.value = newCourse.id;
+
+                              // コース作成自体はCourseCreateSheet内でSupabaseへ
+                              // 書き込み済み。ここでローカルDBへのPull(反映)を
+                              // 1回だけ行う — 呼び出し元がここだけなので他の
+                              // Pullと競合しない。失敗時はローカルにまだ
+                              // 反映されていないので、ユーザーに見える形で
+                              // エラーを出す(黙って失敗させない)。
+                              isRefreshingCourses.value = true;
+                              try {
+                                await refreshCoursesAfterEdit(ref);
+                              } catch (e) {
+                                if (context.mounted) {
+                                  AppErrorDialog.showSmart(
+                                    context,
+                                    e,
+                                    actionName: 'refreshing your courses',
+                                  );
+                                }
+                              } finally {
+                                isRefreshingCourses.value = false;
+                              }
+                            },
+                      child: isRefreshingCourses.value
+                          ? const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.starGold,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.add,
+                              color: AppColors.starGold,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ),

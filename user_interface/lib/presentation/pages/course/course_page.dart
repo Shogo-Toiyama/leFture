@@ -123,12 +123,20 @@ class _CourseTreeView extends ConsumerWidget {
   }
 
   Future<void> _openCreateSheet(BuildContext context, WidgetRef ref) async {
-    await showModalBottomSheet<Course>(
+    final newCourse = await showModalBottomSheet<Course>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const CourseCreateSheet(),
     );
+    if (newCourse == null) return;
+    try {
+      await refreshCoursesAfterEdit(ref);
+    } catch (e) {
+      if (context.mounted) {
+        AppErrorDialog.showSmart(context, e, actionName: 'refreshing your courses');
+      }
+    }
   }
 
   /// courses → { yearName → { termName → [Course] } }
@@ -415,12 +423,24 @@ class _TermSectionState extends ConsumerState<_TermSection> {
               (course) => CourseTile(
                 course: course,
                 onEdit: () async {
-                  await showModalBottomSheet<Course>(
+                  final edited = await showModalBottomSheet<Course>(
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => CourseCreateSheet(existingCourse: course),
                   );
+                  if (edited == null) return;
+                  try {
+                    await refreshCoursesAfterEdit(ref);
+                  } catch (e) {
+                    if (context.mounted) {
+                      AppErrorDialog.showSmart(
+                        context,
+                        e,
+                        actionName: 'refreshing your courses',
+                      );
+                    }
+                  }
                 },
                 onDelete: () async {
                   if (course.metadata?['is_default'] == true) return;
@@ -735,7 +755,7 @@ class _CourseLectureListView extends ConsumerWidget {
                             Icons.edit_outlined,
                             color: Colors.white70,
                           ),
-                          onPressed: () => _openEditSheet(context, course),
+                          onPressed: () => _openEditSheet(context, ref, course),
                         ),
                       ],
                     ),
@@ -1099,13 +1119,21 @@ class _CourseLectureListView extends ConsumerWidget {
   );
 }
 
-  Future<void> _openEditSheet(BuildContext context, Course course) async {
-    await showModalBottomSheet<Course>(
+  Future<void> _openEditSheet(BuildContext context, WidgetRef ref, Course course) async {
+    final edited = await showModalBottomSheet<Course>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => CourseCreateSheet(existingCourse: course),
     );
+    if (edited == null) return;
+    try {
+      await refreshCoursesAfterEdit(ref);
+    } catch (e) {
+      if (context.mounted) {
+        AppErrorDialog.showSmart(context, e, actionName: 'refreshing your courses');
+      }
+    }
   }
 
   Future<void> _openAnnouncementsSheet(BuildContext context) async {

@@ -94,6 +94,11 @@ class LectureController extends _$LectureController {
   /// オンラインでコースを作成/更新/削除/復元した直後は、次回の定期Pullを
   /// 待たずにこれを呼んで即座にローカルへ反映させる(コース作成・編集・削除・
   /// ゴミ箱からの復元の各画面から呼ぶ想定)。
+  ///
+  /// 失敗時は例外をそのまま呼び出し元へ投げる(以前はここで握り潰していたが、
+  /// それだとSupabaseへの書き込みは成功しているのにローカルへの反映だけ
+  /// 静かに失敗し、UIが更新されないまま何のエラーも出ないバグになっていた)。
+  /// 呼び出し元でユーザーに見えるエラー表示をすること。
   Future<void> pullCoursesNow() async {
     final db = ref.read(appDatabaseProvider);
     try {
@@ -101,6 +106,7 @@ class LectureController extends _$LectureController {
       await CourseAttributeSyncService(db).pull();
     } catch (e, st) {
       DevLog.add('⚠️ [LectureController] pullCoursesNow failed: $e\n$st');
+      rethrow;
     }
   }
 

@@ -1,4 +1,6 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/course_attribute.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
@@ -79,3 +81,24 @@ Stream<List<CourseAttribute>> schoolAttributes(Ref ref) =>
 @riverpod
 Stream<List<CourseAttribute>> subjectAttributes(Ref ref) =>
     _watchAttributes(ref, 'subject');
+
+/// コースの作成/編集シートを閉じた直後に呼ぶ。Supabaseへの書き込み自体は
+/// シート側で完了済みなので、ここではローカルDB(Drift)への反映(Pull)と、
+/// それを見ているProviderたちの再購読だけを行う。
+///
+/// 呼び出しは各呼び出し元(コース作成/編集を開いた画面)が1箇所だけ行うこと。
+/// [CourseCreateSheet]自身では呼ばない設計にしている — シートを閉じる処理と
+/// このPullを同じ場所から両方呼ぶと、Pullが重複して競合する呼び出し元が
+/// 増えるたびにレースが起きやすくなるため。
+///
+/// pullCoursesNow()が失敗した場合はそのまま例外を投げるので、呼び出し元は
+/// try/catchでユーザーに見えるエラー表示をすること。
+Future<void> refreshCoursesAfterEdit(WidgetRef ref) async {
+  await ref.read(lectureControllerProvider.notifier).pullCoursesNow();
+  ref.invalidate(courseListProvider);
+  ref.invalidate(yearAttributesProvider);
+  ref.invalidate(termAttributesProvider);
+  ref.invalidate(professorAttributesProvider);
+  ref.invalidate(schoolAttributesProvider);
+  ref.invalidate(subjectAttributesProvider);
+}

@@ -11,9 +11,11 @@ import 'package:lefture/presentation/widgets/permissions_panel.dart';
 
 /// Lets a user re-check/re-grant permissions any time after onboarding —
 /// reachable from Account > Settings, right under the language tiles.
-/// Reuses the exact same rows/copy as the onboarding Permissions step, just
+/// Reuses the same per-permission rows as the onboarding Permissions step
+/// (each tile is independently tappable to re-request or open Settings),
 /// without the continue-gating dialogs (there's nothing to advance past
-/// here).
+/// here) and without a bulk "Allow all" action — this page is for revisiting
+/// one permission at a time, not a first-run flow to rush through.
 class PermissionsSettingsPage extends HookConsumerWidget {
   const PermissionsSettingsPage({super.key});
 
@@ -49,8 +51,6 @@ class PermissionsSettingsPage extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
               PermissionsRows(specs: specs, state: permState),
-              const SizedBox(height: 32),
-              AllowAllPermissionsButton(specs: specs, state: permState),
             ],
           ),
         ),

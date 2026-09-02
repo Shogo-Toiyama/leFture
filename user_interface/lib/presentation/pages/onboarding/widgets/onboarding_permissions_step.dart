@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -10,18 +11,21 @@ import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_step_he
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/permissions_panel.dart';
 
-/// Continue only advances once every permission below has actually been
-/// through the real OS prompt at least once (granted, denied, or
-/// permanently denied all count — "denied" from a status the app has never
-/// requested is the one state that blocks progress). Microphone is core to
-/// the app, so an undetermined mic permission gets a short explanation
-/// dialog first ("Continue" only ever triggers the system prompt — never
-/// bypasses it, and never grants anything itself). Notification is a nice-
-/// to-have, so an undetermined notification permission is requested
-/// directly with no dialog in front of it. Battery-optimization exemption
-/// (Android only) is mandatory — the app can otherwise get killed
-/// mid-recording in the background with no visible error — so that dialog
-/// only dismisses, it never offers a way past.
+/// Apple's 5.1.1(iv) forbids a custom message in front of a permission
+/// request when the button that dismisses it doesn't say "Continue" or
+/// "Next" — so this step no longer shows any custom pre-permission copy or
+/// per-permission tiles at all. The single "Continue" button below is the
+/// entire UI: tapping it walks through each OS permission prompt directly
+/// (mic, notification, and — Android only — the battery-optimization
+/// exemption), in order, with no explanatory dialog in front of any of
+/// them. Already-granted permissions are skipped.
+///
+/// Battery-optimization exemption (Android only) is mandatory — the app can
+/// otherwise get killed mid-recording in the background with no visible
+/// error — so if it's still missing after the request above, a dialog
+/// blocks progress until it's granted. That dialog only dismisses; it never
+/// offers a way past. (This one isn't a pre-permission message — it's shown
+/// after the real OS prompt has already run, so 5.1.1(iv) doesn't apply.)
 class OnboardingPermissionsStep extends HookConsumerWidget {
   const OnboardingPermissionsStep({super.key, required this.onNext, required this.onBack});
 
@@ -33,85 +37,56 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final specs = buildPermissionSpecs(l10n, isAndroid: Platform.isAndroid);
     final permState = usePermissionsStatus(specs.map((s) => s.permission).toList());
+    final isRequesting = useState(false);
 
     Future<void> handleContinue() async {
-      final missingRequired = specs.where((s) => s.required && !permState.isGranted(s.permission));
+      if (isRequesting.value) return;
+      isRequesting.value = true;
+      try {
+        for (final spec in specs) {
+          final status = await spec.permission.status;
+          if (!status.isGranted) {
+            await permState.requestOne(spec.permission);
+          }
+        }
 
-      if (missingRequired.isNotEmpty) {
-        await showDialog<void>(
-          context: context,
-          builder: (_) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1F29),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(
-              l10n.onboardingPermissionsRequiredDialogTitle,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            content: Text(
-              l10n.onboardingPermissionsRequiredDialogMessage,
-              style: const TextStyle(color: Colors.white70),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  l10n.onboardingPermissionsRequiredDialogButton,
-                  style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-
-      // Microphone is core to the app: explain why before routing to the
-      // real system prompt. Apple's 5.1.1(iv) requires that a custom
-      // pre-permission message have no way to close it other than
-      // proceeding to the real system dialog — even a no-op "Go back" that
-      // grants nothing counts as "delaying" the request in their read of
-      // the guideline. So this dialog has exactly one button, no barrier
-      // dismiss, and no back-gesture dismiss; its only action is to trigger
-      // Permission.microphone.request() below.
-      if (permState.isUndetermined(Permission.microphone)) {
-        await showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => PopScope(
-            canPop: false,
-            child: AlertDialog(
-              backgroundColor: const Color(0xFF1E1F29),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text(
-                l10n.onboardingPermissionsMicDialogTitle,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              content: Text(
-                l10n.onboardingPermissionsMicDialogMessage,
-                style: const TextStyle(color: Colors.white70),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(
-                    l10n.onboardingPermissionsMicDialogContinue,
-                    style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
+        for (final spec in specs.where((s) => s.required)) {
+          final status = await spec.permission.status;
+          if (!status.isGranted) {
+            if (context.mounted) {
+              await showDialog<void>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  backgroundColor: const Color(0xFF1E1F29),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Text(
+                    l10n.onboardingPermissionsRequiredDialogTitle,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
+                  content: Text(
+                    l10n.onboardingPermissionsRequiredDialogMessage,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        l10n.onboardingPermissionsRequiredDialogButton,
+                        style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        );
-        await permState.requestOne(Permission.microphone);
-      }
+              );
+            }
+            return;
+          }
+        }
 
-      // Notification is optional, so it's requested directly with no
-      // explanation dialog in front of it.
-      if (permState.isUndetermined(Permission.notification)) {
-        await permState.requestOne(Permission.notification);
+        onNext();
+      } finally {
+        isRequesting.value = false;
       }
-
-      onNext();
     }
 
     return LayoutBuilder(
@@ -130,10 +105,6 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
                     subtitle: l10n.onboardingPermissionsSubtitle,
                     onBack: onBack,
                   ),
-                  const SizedBox(height: 28),
-                  PermissionsRows(specs: specs, state: permState),
-                  const SizedBox(height: 20),
-                  AllowAllPermissionsButton(specs: specs, state: permState),
                   const Spacer(),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -145,8 +116,14 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: permState.loading ? null : handleContinue,
-                      child: Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      onPressed: isRequesting.value ? null : handleContinue,
+                      child: isRequesting.value
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                            )
+                          : Text(l10n.onboardingContinueButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
                   ),
                 ],
