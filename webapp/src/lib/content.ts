@@ -1,8 +1,10 @@
 import { supabase } from './supabase';
 import type {
+  Announcement,
   ContentMetadata,
   DeepNote,
   FunFact,
+  Keyword,
   LectureTopic,
   Reaction,
   ReviewCard,
@@ -50,6 +52,38 @@ export async function listFunFacts(lectureId: string): Promise<FunFact[]> {
   return data as FunFact[];
 }
 
+export async function listAnnouncements(
+  lectureId?: string,
+  courseId?: string
+): Promise<Announcement[]> {
+  let query = supabase
+    .from('announcements')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (lectureId) {
+    query = query.eq('lecture_id', lectureId);
+  } else if (courseId) {
+    query = query.eq('course_id', courseId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as Announcement[];
+}
+
+export async function listKeywords(lectureId: string): Promise<Keyword[]> {
+  const { data, error } = await supabase
+    .from('keywords')
+    .select('*')
+    .eq('lecture_id', lectureId)
+    .is('deleted_at', null)
+    .order('topic_number', { ascending: true });
+  if (error) throw error;
+  return data as Keyword[];
+}
+
 export async function getTopicMap(courseId: string): Promise<{ map: TopicMapData; isStale: boolean } | null> {
   const { data, error } = await supabase
     .from('topic_maps')
@@ -83,3 +117,37 @@ export const updateDeepNoteReaction = (id: string, currentMetadata: ContentMetad
 
 export const updateFunFactReaction = (id: string, currentMetadata: ContentMetadata | null, reaction: Reaction) =>
   updateReaction('fun_facts', id, currentMetadata, reaction);
+
+export async function updateKeyword(
+  id: string,
+  updates: {
+    keyword?: string;
+    definition?: string;
+    isSaved?: boolean;
+    existingMetadata?: Record<string, unknown> | null;
+  }
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (updates.keyword !== undefined) payload.keyword = updates.keyword;
+  if (updates.definition !== undefined) payload.definition = updates.definition;
+  if (updates.isSaved !== undefined) {
+    payload.metadata = {
+      ...(updates.existingMetadata ?? {}),
+      saved: updates.isSaved,
+    };
+  }
+
+  const { error } = await supabase.from('keywords').update(payload).eq('id', id);
+  if (error) throw error;
+}
+
+export async function toggleAnnouncementCompleted(id: string, isCompleted: boolean): Promise<void> {
+  const payload = {
+    completed_at: isCompleted ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('announcements').update(payload).eq('id', id);
+  if (error) throw error;
+}

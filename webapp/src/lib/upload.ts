@@ -29,6 +29,30 @@ interface StartAnalysisResponse {
 
 export interface UploadProgress {
   step: 'requesting-url' | 'uploading' | 'finalizing' | 'starting-analysis' | 'done';
+  /** uploadingステップのときのみ 0〜1。 */
+  ratio?: number;
+}
+
+/**
+ * R2へのPUT。講義音声は数百MBになり得るので、fetchではなくXHRを使って
+ * 実際の転送量を進捗として出せるようにしている。
+ */
+function putToR2(uploadUrl: string, file: File, onRatio: (ratio: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', R2_UPLOAD_CONTENT_TYPE);
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) onRatio(event.loaded / event.total);
+    });
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Failed to upload audio file to storage (status ${xhr.status})`));
+    });
+    xhr.addEventListener('error', () => reject(new Error('Network error while uploading the audio file')));
+    xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+    xhr.send(file);
+  });
 }
 
 export async function uploadRecordingAndAnalyze(
@@ -42,15 +66,8 @@ export async function uploadRecordingAndAnalyze(
     { method: 'POST', body: JSON.stringify({ lecture_id: lectureId }) }
   );
 
-  onProgress?.({ step: 'uploading' });
-  const putResponse = await fetch(upload_url, {
-    method: 'PUT',
-    headers: { 'Content-Type': R2_UPLOAD_CONTENT_TYPE },
-    body: file,
-  });
-  if (!putResponse.ok) {
-    throw new Error(`Failed to upload audio file to storage (status ${putResponse.status})`);
-  }
+  onProgress?.({ step: 'uploading', ratio: 0 });
+  await putToR2(upload_url, file, (ratio) => onProgress?.({ step: 'uploading', ratio }));
 
   onProgress?.({ step: 'finalizing' });
   await apiFetch('/worker/complete-master-audio-upload', {

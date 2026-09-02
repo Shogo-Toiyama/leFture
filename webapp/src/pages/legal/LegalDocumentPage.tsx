@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Link, useParams } from 'react-router-dom';
 import { getLegalDocument, type LegalDocument } from '../../lib/legal';
+import { PageState } from '../../components/PageState';
 
 export const LegalDocumentPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -21,14 +22,18 @@ export const LegalDocumentPage: React.FC = () => {
 
   return (
     <div>
-      <Link to="/account">← Account</Link>
-      {loading && <p>Loading…</p>}
-      {error && <p className="auth-error">{error}</p>}
+      <Link to="/account" className="back-link">
+        ← Account
+      </Link>
+      {loading && <PageState kind="loading" />}
+      {error && <PageState kind="error" message={error} />}
       {doc && (
-        <div className="deep-note-body">
-          <h1>{doc.title}</h1>
-          <p>Effective {new Date(doc.effectiveDate).toLocaleDateString()}</p>
-          <ReactMarkdown>{doc.contentMarkdown}</ReactMarkdown>
+        <div className="deep-note-page">
+          <div className="deep-note-body">
+            <h1>{doc.title}</h1>
+            <p className="deep-note-summary">Effective {new Date(doc.effectiveDate).toLocaleDateString()}</p>
+            <ReactMarkdown>{doc.contentMarkdown}</ReactMarkdown>
+          </div>
         </div>
       )}
     </div>

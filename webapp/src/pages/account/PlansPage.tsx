@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { usePlans } from '../../hooks/usePlans';
 import { toDisplayCredits } from '../../types/billing';
+import { PageState } from '../../components/PageState';
 
 /**
  * mobile版のplans_page.dartは実データではなく固定文言のマーケティング表示だが
@@ -14,25 +15,27 @@ export const PlansPage: React.FC = () => {
 
   return (
     <div>
-      <Link to="/account">← Account</Link>
+      <Link to="/account" className="back-link">
+        ← Account
+      </Link>
       <h1>Plans</h1>
 
-      {loading && <p>Loading…</p>}
-      {error && <p className="auth-error">{error}</p>}
+      {loading && <PageState kind="loading" />}
+      {error && <PageState kind="error" message={error} />}
 
-      <ul className="course-list">
+      <ul className="plan-list">
         {plans.map((plan) => (
-          <li key={plan.id} className="course-list-item">
-            <span>
-              {plan.name} — {toDisplayCredits(plan.monthly_credit_amount)} credits / {plan.billing_interval_months}
-              mo
+          <li key={plan.id} className="plan-row">
+            <span className="plan-row-name">{plan.name}</span>
+            <span className="muted">
+              {toDisplayCredits(plan.monthly_credit_amount)} credits / {plan.billing_interval_months}mo
               {plan.price_usd != null && ` · $${plan.price_usd}`}
             </span>
           </li>
         ))}
       </ul>
 
-      <p>
+      <p style={{ marginTop: '1.25rem' }}>
         <Link to="/account/credits">Go claim a plan →</Link>
       </p>
     </div>

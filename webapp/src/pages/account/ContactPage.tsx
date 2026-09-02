@@ -34,7 +34,9 @@ export const ContactPage: React.FC = () => {
       <div>
         <h1>Thanks!</h1>
         <p>Your ticket has been submitted. Reference code: {ticketCode}</p>
-        <Link to="/account">← Account</Link>
+        <Link to="/account" className="back-link">
+          ← Account
+        </Link>
       </div>
     );
   }

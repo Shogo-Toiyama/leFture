@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthProvider';
+import { LanguageProvider } from './i18n/LanguageContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { RequireOnboarding } from './auth/RequireOnboarding';
 import { Layout } from './components/Layout';
@@ -28,40 +29,42 @@ import { LegalDocumentPage } from './pages/legal/LegalDocumentPage';
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/sign-in" element={<SignInPage />} />
-          <Route path="/sign-up" element={<SignUpPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <LanguageProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/sign-in" element={<SignInPage />} />
+            <Route path="/sign-up" element={<SignUpPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          <Route element={<ProtectedRoute />}>
-            <Route path="onboarding" element={<OnboardingWizard />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="onboarding" element={<OnboardingWizard />} />
 
-            <Route element={<RequireOnboarding />}>
-              <Route element={<Layout />}>
-                <Route index element={<HomePage />} />
-                <Route path="courses" element={<CourseListPage />} />
-                <Route path="courses/:courseId" element={<CourseDetailPage />} />
-                <Route path="courses/:courseId/upload" element={<UploadPage />} />
-                <Route path="courses/:courseId/topic-map" element={<TopicMapPage />} />
-                <Route path="lectures/:lectureId" element={<LectureViewerPage />} />
-                <Route path="lectures/:lectureId/review-cards" element={<ReviewCardsPage />} />
-                <Route path="lectures/:lectureId/deep-notes" element={<DeepNotesListPage />} />
-                <Route path="lectures/:lectureId/deep-notes/:topicIndex" element={<DeepNotesDetailPage />} />
-                <Route path="lectures/:lectureId/transcript" element={<TranscriptPage />} />
-                <Route path="account" element={<AccountPage />} />
-                <Route path="account/profile" element={<ProfilePage />} />
-                <Route path="account/credits" element={<CreditsPage />} />
-                <Route path="account/plans" element={<PlansPage />} />
-                <Route path="account/contact" element={<ContactPage />} />
-                <Route path="legal/:slug" element={<LegalDocumentPage />} />
+              <Route element={<RequireOnboarding />}>
+                <Route element={<Layout />}>
+                  <Route index element={<HomePage />} />
+                  <Route path="courses" element={<CourseListPage />} />
+                  <Route path="courses/:courseId" element={<CourseDetailPage />} />
+                  <Route path="courses/:courseId/upload" element={<UploadPage />} />
+                  <Route path="courses/:courseId/topic-map" element={<TopicMapPage />} />
+                  <Route path="lectures/:lectureId" element={<LectureViewerPage />} />
+                  <Route path="lectures/:lectureId/review-cards" element={<ReviewCardsPage />} />
+                  <Route path="lectures/:lectureId/deep-notes" element={<DeepNotesListPage />} />
+                  <Route path="lectures/:lectureId/deep-notes/:topicIndex" element={<DeepNotesDetailPage />} />
+                  <Route path="lectures/:lectureId/transcript" element={<TranscriptPage />} />
+                  <Route path="account" element={<AccountPage />} />
+                  <Route path="account/profile" element={<ProfilePage />} />
+                  <Route path="account/credits" element={<CreditsPage />} />
+                  <Route path="account/plans" element={<PlansPage />} />
+                  <Route path="account/contact" element={<ContactPage />} />
+                  <Route path="legal/:slug" element={<LegalDocumentPage />} />
+                </Route>
               </Route>
             </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </LanguageProvider>
   );
 };

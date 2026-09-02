@@ -6,6 +6,7 @@ import { usePlans } from '../../hooks/usePlans';
 import { claimPlan } from '../../lib/billing';
 import { toDisplayCredits } from '../../types/billing';
 import { ApiError } from '../../lib/api';
+import { PageState } from '../../components/PageState';
 
 export const CreditsPage: React.FC = () => {
   const { summary, loading, error, refetch } = useCreditSummary(true);
@@ -27,8 +28,8 @@ export const CreditsPage: React.FC = () => {
     }
   };
 
-  if (loading) return <p>Loading…</p>;
-  if (error) return <p className="auth-error">{error}</p>;
+  if (loading) return <PageState kind="loading" />;
+  if (error) return <PageState kind="error" message={error} />;
   if (!summary) return null;
 
   const balance = toDisplayCredits(summary.credit_balance);
@@ -38,33 +39,44 @@ export const CreditsPage: React.FC = () => {
 
   return (
     <div>
-      <Link to="/account">← Account</Link>
+      <Link to="/account" className="back-link">
+        ← Account
+      </Link>
       <h1>Credits</h1>
 
       {summary.has_active_plan ? (
-        <div className="status-banner">
-          <strong>
-            {balance} / {allocation} credits
-          </strong>
+        <section className="glass-card" style={{ padding: '1rem 1.1rem' }}>
+          <div className="credit-hero">
+            <span className="credit-hero-value">{balance}</span>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                of {allocation} monthly credits
+              </p>
+              {extra > 0 && <p className="muted" style={{ margin: 0 }}>+{extra} bonus credits</p>}
+            </div>
+          </div>
           <div className="credit-progress-track">
             <div className="credit-progress-fill" style={{ width: `${progress}%` }} />
           </div>
-          {extra > 0 && <p>+{extra} bonus credits</p>}
           {summary.current_period_end && (
-            <p>Resets on {new Date(summary.current_period_end).toLocaleDateString()}</p>
+            <p className="muted" style={{ margin: 0 }}>
+              Resets on {new Date(summary.current_period_end).toLocaleDateString()}
+            </p>
           )}
-        </div>
+        </section>
       ) : (
-        <div>
-          <p>You don't have an active plan yet. Claim one below to start analyzing lectures.</p>
-          {claimError && <p className="auth-error">{claimError}</p>}
-          {plansLoading && <p>Loading plans…</p>}
-          <ul className="course-list">
+        <section className="glass-card" style={{ padding: '1rem 1.1rem' }}>
+          <h2>Choose a plan</h2>
+          <p className="muted">You don't have an active plan yet. Claim one below to start analysing lectures.</p>
+          {claimError && <p className="notice notice-error">{claimError}</p>}
+          {plansLoading && <PageState kind="loading" />}
+          <ul className="plan-list">
             {plans.map((plan) => (
-              <li key={plan.id} className="course-list-item">
-                <span>
-                  {plan.name} — {toDisplayCredits(plan.monthly_credit_amount)} credits/mo
-                  {plan.price_usd != null && ` ($${plan.price_usd})`}
+              <li key={plan.id} className="plan-row">
+                <span className="plan-row-name">{plan.name}</span>
+                <span className="muted">
+                  {toDisplayCredits(plan.monthly_credit_amount)} credits/mo
+                  {plan.price_usd != null && ` · $${plan.price_usd}`}
                 </span>
                 <button type="button" onClick={() => handleClaim(plan.id)} disabled={claimingId === plan.id}>
                   {claimingId === plan.id ? 'Claiming…' : 'Claim'}
@@ -72,24 +84,26 @@ export const CreditsPage: React.FC = () => {
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
-      <h2>History</h2>
-      {historyLoading && <p>Loading…</p>}
-      <ul className="credit-history-list">
-        {history
-          .slice()
-          .reverse()
-          .map((item) => (
-            <li key={item.id} className={item.is_positive ? 'credit-history-positive' : ''}>
-              <span>{new Date(item.timestamp).toLocaleString()}</span>
-              <span>{item.reason_summary}</span>
-              <span>{item.formatted_delta}</span>
-            </li>
-          ))}
-      </ul>
-      {!historyLoading && history.length === 0 && <p>No credit activity yet.</p>}
+      <section>
+        <h2>History</h2>
+        {historyLoading && <PageState kind="loading" />}
+        {!historyLoading && history.length === 0 && <p className="muted">No credit activity yet.</p>}
+        <ul className="credit-history-list">
+          {history
+            .slice()
+            .reverse()
+            .map((item) => (
+              <li key={item.id} className={item.is_positive ? 'credit-history-positive' : ''}>
+                <span className="credit-history-time">{new Date(item.timestamp).toLocaleString()}</span>
+                <span>{item.reason_summary}</span>
+                <span className="credit-history-delta">{item.formatted_delta}</span>
+              </li>
+            ))}
+        </ul>
+      </section>
     </div>
   );
 };

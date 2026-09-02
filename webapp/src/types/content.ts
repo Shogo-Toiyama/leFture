@@ -1,9 +1,12 @@
+import type { Annotation } from './annotation';
+
 export type Reaction = 'like' | 'dislike' | null;
 
 export interface ContentMetadata {
   reaction?: Reaction;
   saved?: boolean;
   sources?: string[];
+  annotations?: Annotation[];
   [key: string]: unknown;
 }
 
@@ -51,6 +54,33 @@ export interface FunFact {
   hook: string;
   body: string;
   metadata: ContentMetadata | null;
+  deleted_at: string | null;
+}
+
+export type AnnouncementType = 'TODO' | 'EVENT' | 'HINT' | 'INFO' | 'UNKNOWN';
+
+export interface Announcement {
+  id: string;
+  lecture_id: string;
+  type: AnnouncementType;
+  title: string | null;
+  description: string | null;
+  location: string | null;
+  related_topic_title: string | null;
+  completed_at: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface Keyword {
+  id: string;
+  lecture_id: string;
+  topic_number: number;
+  keyword: string | null;
+  definition: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
   deleted_at: string | null;
 }
 

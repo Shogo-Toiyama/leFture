@@ -6,6 +6,7 @@ import { updateProfileFields, setLanguagePreferences, uploadAvatar } from '../..
 import { deleteAccount, hasEmailIdentity } from '../../lib/account';
 import { AvatarImage } from '../../components/AvatarImage';
 import { Modal } from '../../components/Modal';
+import { PageState } from '../../components/PageState';
 import type { User } from '@supabase/supabase-js';
 
 export const ProfilePage: React.FC = () => {
@@ -127,12 +128,14 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  if (loading) return <p>Loading…</p>;
+  if (loading) return <PageState kind="loading" />;
 
   return (
     <div>
-      <Link to="/account">← Account</Link>
-      <h1>Profile & preferences</h1>
+      <Link to="/account" className="back-link">
+        ← Account
+      </Link>
+      <h1>Profile &amp; preferences</h1>
 
       <div className="account-header">
         <AvatarImage avatarUrl={profile?.avatar_url ?? null} size={64} />
@@ -202,8 +205,8 @@ export const ProfilePage: React.FC = () => {
         </button>
       </form>
 
-      <div className="status-banner status-banner-error">
-        <h2>Danger zone</h2>
+      <p className="glass-section-label">Danger zone</p>
+      <div className="glass-card" style={{ padding: '1rem' }}>
         <button type="button" className="danger" onClick={() => setDeleteOpen(true)}>
           Delete account
         </button>

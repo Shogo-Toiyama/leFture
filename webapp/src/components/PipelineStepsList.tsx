@@ -8,22 +8,13 @@ interface PipelineStepsListProps {
   onRetried: () => void;
 }
 
-function statusIcon(status: ProcessingTask['status']): string {
-  switch (status) {
-    case 'COMPLETED':
-      return '✓';
-    case 'RUNNING':
-    case 'QUEUED':
-    case 'WAITING':
-      return '◐';
-    case 'CANCELLED':
-      return '⊘';
-    case 'FAILED':
-    case 'ERROR':
-      return '✕';
-    default:
-      return '○';
-  }
+const TERMINAL = new Set(['COMPLETED', 'FAILED', 'ERROR', 'CANCELLED']);
+
+function statusGlyph(status: ProcessingTask['status'], isCurrent: boolean): string {
+  if (status === 'COMPLETED') return '✓';
+  if (status === 'CANCELLED') return '⊘';
+  if (status === 'FAILED' || status === 'ERROR') return '!';
+  return isCurrent ? '◆' : '○';
 }
 
 const RetryButton: React.FC<{ taskId: string; onRetried: () => void }> = ({ taskId, onRetried }) => {
@@ -50,18 +41,25 @@ export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, onR
   const ordered = [...tasks].sort(
     (a, b) => PROCESSING_TASK_ORDER.indexOf(a.task_type) - PROCESSING_TASK_ORDER.indexOf(b.task_type)
   );
+  // 進行中のステップ = 順序上いちばん手前の未終了タスク(pipeline_steps_list.dartと同じ判定)。
+  const currentId = ordered.find((task) => !TERMINAL.has(task.status))?.id;
 
   return (
-    <ul className="pipeline-steps">
-      {ordered.map((task) => (
-        <li key={task.id} className={`pipeline-step pipeline-step-${task.status.toLowerCase()}`}>
-          <span className="pipeline-step-icon">{statusIcon(task.status)}</span>
-          <span className="pipeline-step-label">{taskLabel(task.task_type)}</span>
-          {(task.status === 'FAILED' || task.status === 'ERROR') && (
-            <RetryButton taskId={task.id} onRetried={onRetried} />
-          )}
-        </li>
-      ))}
-    </ul>
+    <ol className="pipeline-steps">
+      {ordered.map((task) => {
+        const isCurrent = task.id === currentId;
+        return (
+          <li key={task.id} className={`pipeline-step is-${task.status.toLowerCase()} ${isCurrent ? 'is-current' : ''}`}>
+            <span className="pipeline-step-glyph" aria-hidden="true">
+              {statusGlyph(task.status, isCurrent)}
+            </span>
+            <span className="pipeline-step-label">{taskLabel(task.task_type)}</span>
+            {(task.status === 'FAILED' || task.status === 'ERROR') && (
+              <RetryButton taskId={task.id} onRetried={onRetried} />
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 };

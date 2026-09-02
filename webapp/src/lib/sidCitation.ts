@@ -71,6 +71,31 @@ export function parseSidCitations(text: string): SidCitation[] {
   return citations;
 }
 
+/**
+ * 選択箇所の「直後」にある引用を探す。モバイル版のfindSourceCitationは
+ * フラット化テキストと生Markdownの完全な相互インデックスマップを構築するが、
+ * Web側では選択テキストの先頭を生Markdown内で検索する近似で十分
+ * (引用マーカーは文の切れ目に置かれるため、先頭30文字が引用を跨ぐことは稀)。
+ * 見つからない場合はブロック内の全引用を返して呼び出し側にフォールバックさせる。
+ */
+export function findCitationAfterSelection(rawText: string, selectedText: string): SidCitation[] {
+  const citations = parseSidCitations(rawText);
+  if (citations.length === 0) return [];
+
+  const probe = selectedText.slice(0, 30);
+  const probeIdx = probe ? rawText.indexOf(probe) : -1;
+  if (probeIdx < 0) return citations;
+
+  const selectionEnd = probeIdx + Math.max(probe.length, selectedText.length);
+  let cursor = 0;
+  for (const citation of citations) {
+    const start = rawText.indexOf(citation.raw, cursor);
+    cursor = start >= 0 ? start + citation.raw.length : cursor;
+    if (start >= 0 && start >= selectionEnd - probe.length) return [citation];
+  }
+  return citations;
+}
+
 export function stripSidCitations(text: string): string {
   return text.replace(CITATION_PATTERN, '').replace(/[ \t]{2,}/g, ' ').trim();
 }

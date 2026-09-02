@@ -52,6 +52,31 @@ export async function createDraftLecture(input: DraftLectureInput): Promise<Lect
   return data as Lecture;
 }
 
+export async function updateLecture(
+  lectureId: string,
+  updates: {
+    title?: string | null;
+    course_id?: string | null;
+    lecture_datetime?: string;
+  }
+): Promise<Lecture> {
+  const payload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (updates.title !== undefined) payload.title = updates.title;
+  if (updates.course_id !== undefined) payload.course_id = updates.course_id;
+  if (updates.lecture_datetime !== undefined) payload.lecture_datetime = updates.lecture_datetime;
+
+  const { data, error } = await supabase
+    .from('lectures')
+    .update(payload)
+    .eq('id', lectureId)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Lecture;
+}
+
 export async function softDeleteLecture(lectureId: string): Promise<void> {
   const { error } = await supabase
     .from('lectures')
