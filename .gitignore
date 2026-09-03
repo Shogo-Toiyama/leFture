@@ -9,6 +9,10 @@ __pycache__/
 !website/public/**/*.jpg
 !website/public/*.png
 !website/public/*.jpg
+!user_interface/assets/**/*.png
+!user_interface/assets/**/*.jpg
+!user_interface/assets/*.png
+user_interface/assets/icon_foreground 2*.png
 *.wav
 *.m4a
 *.mp3
