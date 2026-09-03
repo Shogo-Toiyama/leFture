@@ -47,6 +47,8 @@ dependencies:
   flutter_background: ^1.3.0+1
   ffmpeg_kit_flutter_new_audio: ^2.0.0
   audioplayers: ^6.1.2
+  ffi: ^2.1.4
+  background_downloader: ^9.5.9
 
   freezed_annotation: ^3.0.0 
   json_annotation: ^4.9.0

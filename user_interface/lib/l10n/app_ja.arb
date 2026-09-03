@@ -205,6 +205,8 @@
   "notStartedViewCreditsButton": "クレジットを見る",
   "notStartedReadyTitle": "解析の準備ができました",
   "notStartedReadySubtitle": "音声の準備ができています。AIで文字起こし・要約・ノートを生成しましょう。",
+  "notStartedAudioPreviewLoading": "音声を読み込み中...",
+  "notStartedAudioPreviewFailed": "音声のプレビューを読み込めませんでした。",
   "notStartedNoCourseWarning": "この講義にはまだコースが割り当てられていません。コースを設定するまで解析を開始できません。",
   "notStartedChooseCourseButton": "コースを選択",
   "notStartedEditTooltip": "タイトル・コースを編集",

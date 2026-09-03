@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'package:ffi/ffi.dart' as pffi;
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +14,24 @@ import 'package:ffmpeg_kit_flutter_new_audio/return_code.dart';
 import 'package:lefture/core/services/audio_record/pcm_duration_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/presentation/pages/dev_tools/test_mode_flag.dart';
+
+typedef _MkfifoNative = ffi.Int32 Function(ffi.Pointer<pffi.Utf8> path, ffi.Uint32 mode);
+typedef _MkfifoDart = int Function(ffi.Pointer<pffi.Utf8> path, int mode);
+
+/// dart:io にmkfifo(2)相当のAPIが無いため、libcを直接叩く。iOSは
+/// Process.run自体が使えない(サンドボックスでshell実行不可)ため、
+/// クロスプラットフォームで動く手段はこのFFI経由のみ
+/// (dev_tools/pipe_encode_prototype_tab.dartでの実機検証済み)。
+int _mkfifo(String path) {
+  final lib = ffi.DynamicLibrary.process();
+  final fn = lib.lookupFunction<_MkfifoNative, _MkfifoDart>('mkfifo');
+  final pathPtr = path.toNativeUtf8();
+  try {
+    return fn(pathPtr, 0x1B6); // 0666
+  } finally {
+    pffi.calloc.free(pathPtr);
+  }
+}
 
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
@@ -241,6 +261,12 @@ class AudioRecorderService {
     return '${dir.path}/lectures/$lectureId/master_audio.m4a';
   }
 
+  /// 指定されたレクチャーIDの継続エンコード用named pipeパスを返す。
+  Future<String> getMasterPipePath(String lectureId) async {
+    final Directory dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}/lectures/$lectureId/master_audio.pipe';
+  }
+
   // appendMasterRawDataの実行を直列化するための待ち行列。録音開始直後、
   // マイクの最初のデータが立て続けに届くと、複数の呼び出しがほぼ同時に
   // 「_masterSinkがまだnull」を見てしまい、それぞれが別々にIOSinkを開こうと
@@ -392,8 +418,198 @@ class AudioRecorderService {
       if (await m4aFile.exists()) {
         await m4aFile.delete();
       }
+
+      final String pipePath = await getMasterPipePath(lectureId);
+      final pipeFile = File(pipePath);
+      if (await pipeFile.exists()) {
+        await pipeFile.delete();
+      }
     } catch (e) {
       debugPrint('⚠️ Failed to clean up master audio files for lecture $lectureId: $e');
+    }
+  }
+
+  // ===== マスター音声の継続エンコード(パイプ方式) =====
+  //
+  // 生PCMを丸ごと貯めてから保存時に一括バッチ変換する方式(上のencodeMasterRawToM4a)
+  // は、90分の講義でも通常10秒未満で終わるが、iOSのバックグラウンド実行猶予
+  // (BackgroundTask, 概ね30秒)ぎりぎりのタイミングで画面ロック等が起きると
+  // 間に合わないことがあった。
+  //
+  // 対策として、録音中にPCMが届くたびnamed pipe経由でFFmpegへ継続的に流し込み、
+  // fragmented MP4として都度ディスクへflushする。録音が終わった瞬間には
+  // ほぼ全てエンコード済みのため、保存時([finalizeContinuousMasterEncode])に
+  // 残る作業は「最後の数秒をフラッシュしてファイルを閉じる」だけになる。
+  //
+  // -frag_duration(2秒毎に強制的にフラグメントを確定) + -flush_packets 1
+  // (ffmpeg内部バッファに溜め込まず即ディスクへ書き出す)が無いと、強制終了時に
+  // ファイルが壊れる(dev_tools/pipe_encode_prototype_tab.dartでの実機検証・
+  // Mac上でのffmpeg単体検証の両方で確認済み)。この2つのフラグは省略しないこと。
+
+  IOSink? _pipeSink;
+  String? _pipeSinkLectureId;
+  FFmpegSession? _pipeFfmpegSession;
+  Completer<FFmpegSession>? _pipeCompleter;
+
+  // writeContinuousMasterDataの実行を直列化するための待ち行列。
+  // appendMasterRawDataと同じ理由(連続する呼び出しが競合しないようにするため。
+  // 上のコメント参照)。
+  Future<void> _pendingPipeWrite = Future.value();
+
+  /// 継続エンコードセッションを開始する。[RecordingController]は
+  /// [AudioRecorderService.startStream]でマイクを起動する前に呼ぶこと
+  /// (ffmpegが読み手としてpipeを開いて待っていないと、後続の書き込みが
+  /// ブロックしたままになる)。
+  Future<void> startContinuousMasterEncode(String lectureId) async {
+    final pipePath = await getMasterPipePath(lectureId);
+    final m4aPath = await getMasterM4aPath(lectureId);
+
+    final pipeFile = File(pipePath);
+    await pipeFile.parent.create(recursive: true);
+    if (await pipeFile.exists()) await pipeFile.delete();
+    final m4aFile = File(m4aPath);
+    if (await m4aFile.exists()) await m4aFile.delete();
+
+    final mkfifoResult = _mkfifo(pipePath);
+    if (mkfifoResult != 0) {
+      throw StateError('mkfifo failed (result=$mkfifoResult) at $pipePath');
+    }
+
+    final command =
+        '-y -f s16le -ar 16000 -ac 1 -i "$pipePath" -c:a aac -b:a 64k '
+        '-movflags +frag_keyframe+empty_moov+default_base_moof -frag_duration 2000000 '
+        '-flush_packets 1 "$m4aPath"';
+
+    final completer = Completer<FFmpegSession>();
+    _pipeCompleter = completer;
+
+    DevLog.add('▶️ [ContinuousEncode] starting for $lectureId: $command');
+    final session = await FFmpegKit.executeAsync(
+      command,
+      (completedSession) {
+        if (!completer.isCompleted) completer.complete(completedSession);
+      },
+      null,
+      (stats) {
+        DevLog.add('📊 [ContinuousEncode] $lectureId: time=${stats.getTime()}ms size=${stats.getSize()}bytes');
+      },
+    );
+    _pipeFfmpegSession = session;
+
+    // named pipeへのopenWrite()は、読み手(上のffmpeg)が既にpipeをopenして
+    // 待っていないとブロックする。executeAsyncは非同期にffmpegプロセスを
+    // 起動するだけで、ここで即座に読み手の準備が整っている保証は無いが、
+    // File.openWrite()自体は遅延オープンなDartの非同期IOなのでUIスレッドは
+    // ブロックしない。
+    _pipeSink = File(pipePath).openWrite();
+    _pipeSinkLectureId = lectureId;
+  }
+
+  /// 録音中の生PCMデータを継続エンコード中のパイプへ書き込む。
+  /// [appendMasterRawData]と同じ直列化パターンを使う。
+  Future<void> writeContinuousMasterData(Uint8List pcmData, String lectureId) {
+    final resultFuture = _pendingPipeWrite.catchError((_) {}).then(
+          (_) => _writeContinuousMasterDataSerial(pcmData, lectureId),
+        );
+    _pendingPipeWrite = resultFuture.catchError((_) {});
+    return resultFuture;
+  }
+
+  Future<void> _writeContinuousMasterDataSerial(Uint8List pcmData, String lectureId) async {
+    final sink = _pipeSink;
+    if (sink == null || _pipeSinkLectureId != lectureId) {
+      // startContinuousMasterEncodeを経ずに呼ばれた(想定外)。データを
+      // 静かに失うよりは分かる形で落とす。
+      throw StateError(
+        'writeContinuousMasterData called before startContinuousMasterEncode for $lectureId',
+      );
+    }
+    sink.add(pcmData);
+    await sink.flush();
+  }
+
+  /// 継続エンコードを確定する。パイプを閉じてffmpegへ入力終端(EOF)を伝え、
+  /// 最後のフラグメントが確定するのを待ってからM4Aパスを返す。録音中ずっと
+  /// エンコードし続けてきたため、通常はほぼ一瞬で完了する。
+  Future<String> finalizeContinuousMasterEncode(
+    String lectureId, {
+    Duration watchdogTimeout = const Duration(seconds: 20),
+  }) async {
+    final completer = _pipeCompleter;
+    final session = _pipeFfmpegSession;
+    if (completer == null || session == null) {
+      throw StateError(
+        'finalizeContinuousMasterEncode called without an active session for $lectureId',
+      );
+    }
+
+    // 直列化キューに溜まっている書き込みが全て完了してからパイプを閉じる。
+    await _pendingPipeWrite.catchError((_) {});
+    await _pipeSink?.close();
+    _pipeSink = null;
+    _pipeSinkLectureId = null;
+
+    final watchdog = Timer(watchdogTimeout, () {
+      DevLog.add(
+        '⏱️ [ContinuousEncode] finalize watchdog fired (no completion for ${watchdogTimeout.inSeconds}s), '
+        'cancelling session for $lectureId',
+      );
+      final sessionId = session.getSessionId();
+      if (sessionId != null) FFmpegKit.cancel(sessionId);
+    });
+
+    final FFmpegSession completedSession;
+    try {
+      completedSession = await completer.future;
+    } finally {
+      watchdog.cancel();
+    }
+
+    _pipeFfmpegSession = null;
+    _pipeCompleter = null;
+
+    final returnCode = await completedSession.getReturnCode();
+    if (!ReturnCode.isSuccess(returnCode)) {
+      final logs = await completedSession.getLogs();
+      final errorMsg = logs.map((l) => l.getMessage()).join('\n');
+      throw Exception(
+        'Continuous master encode failed. ReturnCode: $returnCode.\nLogs:\n$errorMsg',
+      );
+    }
+
+    final pipePath = await getMasterPipePath(lectureId);
+    try {
+      final pipeFile = File(pipePath);
+      if (await pipeFile.exists()) await pipeFile.delete();
+    } catch (e) {
+      debugPrint('⚠️ Failed to delete pipe file after finalize: $e');
+    }
+
+    return getMasterM4aPath(lectureId);
+  }
+
+  /// 録音の破棄([RecordingController.cancelAndDiscard])用。進行中の
+  /// ffmpegセッションをキャンセルし、パイプ/sinkを破棄する。
+  Future<void> abortContinuousMasterEncode(String lectureId) async {
+    final session = _pipeFfmpegSession;
+    if (session != null) {
+      final sessionId = session.getSessionId();
+      if (sessionId != null) {
+        await FFmpegKit.cancel(sessionId);
+      }
+    }
+    await _pipeSink?.close();
+    _pipeSink = null;
+    _pipeSinkLectureId = null;
+    _pipeFfmpegSession = null;
+    _pipeCompleter = null;
+
+    try {
+      final pipePath = await getMasterPipePath(lectureId);
+      final pipeFile = File(pipePath);
+      if (await pipeFile.exists()) await pipeFile.delete();
+    } catch (e) {
+      debugPrint('⚠️ Failed to delete pipe file on abort: $e');
     }
   }
 

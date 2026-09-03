@@ -642,6 +642,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notStartedReadySubtitle => '音声の準備ができています。AIで文字起こし・要約・ノートを生成しましょう。';
 
   @override
+  String get notStartedAudioPreviewLoading => '音声を読み込み中...';
+
+  @override
+  String get notStartedAudioPreviewFailed => '音声のプレビューを読み込めませんでした。';
+
+  @override
   String get notStartedNoCourseWarning =>
       'この講義にはまだコースが割り当てられていません。コースを設定するまで解析を開始できません。';
 

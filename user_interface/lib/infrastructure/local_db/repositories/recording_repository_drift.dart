@@ -321,6 +321,12 @@ class RecordingRepositoryDrift {
      return (db.select(db.localLectureAssets)..where((t) => t.id.equals(assetId))).getSingleOrNull();
   }
 
+  // マスター音声のバックグラウンド転送(background_downloader)の完了/失敗
+  // コールバックが、taskId(=job.id)からジョブ本体を引き当てるために使う。
+  Future<LocalUploadJob?> getJobById(String jobId) {
+    return (db.select(db.localUploadJobs)..where((t) => t.id.equals(jobId))).getSingleOrNull();
+  }
+
   Future<void> saveWhisperContext({
     required String lectureId,
     required String whisperContext,
@@ -513,8 +519,30 @@ class RecordingRepositoryDrift {
     return (db.select(db.localUploadJobs)
           ..where((t) => t.lectureId.equals(lectureId))
           ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
-          ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+          // 'uploading_background'はマスター音声のPUTをOSのバックグラウンド
+          // 転送(background_downloader)へ引き渡し済みの状態。転送はまだ
+          // 完了していないので、'queued'/'retry_wait'と同じく「アップロード中」
+          // として扱う必要がある(でないとaudio_pathがまだ無いのに
+          // Start Analysis/音声プレビューを試みてしまう)。
+          ..where((t) => t.status.isIn(['queued', 'retry_wait', 'uploading_background'])))
         .watch();
+  }
+
+  // UI側(NotStartedView)の音声プレビュー用watch。マスター音声アセット行
+  // (type: 'master_audio')を直接見る。
+  //
+  // ★ lecture.audioPath(lecturesテーブルのSupabase側の列)は使わない —
+  // これはCloud Run側がSupabaseへ直接書き込むフィールドで、ローカルDBへは
+  // 差分pull同期が走って初めて反映される。アップロード自体はローカルの
+  // ジョブ成功時(UploadManager._onJobSucceeded)に即座にupdateAssetUploaded
+  // でこの行のuploadStatusを'uploaded'にしているため、そちらを見れば
+  // pull同期を待たずに「本当に今アップロードが終わったか」を即座に判定できる
+  // (isUploadingが同じタイミングでfalseになるのと足並みを揃えられる)。
+  Stream<LocalLectureAsset?> watchMasterAudioAsset(String lectureId) {
+    return (db.select(db.localLectureAssets)
+          ..where((t) => t.lectureId.equals(lectureId))
+          ..where((t) => t.type.equals('master_audio')))
+        .watchSingleOrNull();
   }
 
   // UI側(NotStartedView)が「アップロードをユーザーが自分で止めた」ことを
@@ -554,7 +582,12 @@ class RecordingRepositoryDrift {
       final cancelledUploads = await (db.update(db.localUploadJobs)
             ..where((t) => t.lectureId.equals(lectureId))
             ..where((t) => t.kind.isIn(['audio_upload', 'master_audio_upload']))
-            ..where((t) => t.status.isIn(['queued', 'retry_wait'])))
+            // 'uploading_background'(OSのバックグラウンド転送に引き渡し済み)も
+            // 対象に含める。進行中のPUT自体は止められない(既に投げたHTTP
+            // リクエストは取り消せない)ため、ここでは今までと同じ方針で
+            // 「そのまま完走させるが、後始末(analysis自動発火)は止める」
+            // — 完走時のhasCancelledUploadJobsForLecture判定に乗せる。
+            ..where((t) => t.status.isIn(['queued', 'retry_wait', 'uploading_background'])))
           .write(LocalUploadJobsCompanion(
         status: const Value('cancelled'),
         updatedAt: Value(now),

@@ -1067,6 +1067,16 @@
     "description": "Subtitle under the 'Ready to Analyze' headline, briefly explaining what starting analysis will produce."
   },
 
+  "notStartedAudioPreviewLoading": "Loading audio preview...",
+  "@notStartedAudioPreviewLoading": {
+    "description": "Small inline label shown on the 'Ready to Analyze' screen while the uploaded audio is being fetched for playback preview."
+  },
+
+  "notStartedAudioPreviewFailed": "Couldn't load audio preview.",
+  "@notStartedAudioPreviewFailed": {
+    "description": "Small inline label shown on the 'Ready to Analyze' screen when fetching the uploaded audio for playback preview fails (e.g. offline). Does not block starting analysis."
+  },
+
   "notStartedNoCourseWarning": "This lecture isn't assigned to a course yet. Analysis can't start until it is.",
   "@notStartedNoCourseWarning": {
     "description": "Warning banner shown on the 'Ready to Analyze' screen when the lecture has no course assigned yet, explaining analysis is blocked until one is chosen."

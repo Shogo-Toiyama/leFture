@@ -396,7 +396,7 @@ class RecordingController extends _$RecordingController {
           // _recorderが録音開始時と同じインスタンスを指し続けているかも
           // 突き合わせられるようにログを残す。
           try {
-            await _recorder.appendMasterRawData(masterData, lectureId);
+            await _recorder.writeContinuousMasterData(masterData, lectureId);
             // マスター音声への追記と並行して、オンデバイスASRエンジンにも同じ
             // 生PCMを流し込む(Realtime Transcribe OFF、またはモデル未準備の
             // 場合はLiveAsrController側が何もしないので安全)。
@@ -442,6 +442,12 @@ class RecordingController extends _$RecordingController {
         DevLog.add('[StartSession] Realtime Transcribe disabled due to insufficient credits.');
         state = state.copyWith(realtimeTranscribe: false);
       }
+
+      // マスター音声の継続エンコード(named pipe + fragmented MP4)を、マイクを
+      // 起動するより先に開始する。ffmpegが読み手としてpipeを開いて待っている
+      // 状態を作ってから書き込みを始めないと、後続の書き込みがブロックする。
+      DevLog.add('[StartSession] 5.5/8 starting continuous master encode...');
+      await _recorder.startContinuousMasterEncode(lectureId);
 
       DevLog.add('[StartSession] 6/8 calling _recorder.startStream()...');
       final audioStream = await _recorder.startStream();
@@ -635,17 +641,19 @@ class RecordingController extends _$RecordingController {
       await ref.read(liveAsrControllerProvider.notifier).stop();
       _timer?.cancel();
 
-      // 1. マスター生PCMデータをAAC (M4A) に圧縮エンコード
-      // 実機での所要時間を測っておく(--dart-define=IS_TEST_MODE=true の
-      // ビルドならDevLogオーバーレイで確認できる)。iOSの実行猶予は概ね30秒
-      // なので、ここが何秒かかっているかが再発リスクの直接の指標になる。
+      // 1. マスター音声は録音中ずっと継続エンコードされてきている(named pipe +
+      // fragmented MP4)。ここでは最後のフラグメントを確定させてファイルを
+      // 閉じるだけなので、通常はほぼ一瞬で終わる。実機での所要時間を測って
+      // おく(--dart-define=IS_TEST_MODE=true のビルドならDevLogオーバーレイで
+      // 確認できる)。iOSの実行猶予は概ね30秒なので、ここが何秒かかっているかが
+      // 再発リスクの直接の指標になる。
       final encodeStartedAt = DateTime.now();
-      final masterM4aPath = await _recorder.encodeMasterRawToM4a(lecture.id);
+      final masterM4aPath = await _recorder.finalizeContinuousMasterEncode(lecture.id);
       final encodeMs = DateTime.now().difference(encodeStartedAt).inMilliseconds;
       final encodedBytes = await File(masterM4aPath).length();
       final remaining = await BackgroundTask.remainingSeconds();
       DevLog.add(
-        '⏱️ [Upload] Master audio encoded in ${(encodeMs / 1000).toStringAsFixed(1)}s '
+        '⏱️ [Upload] Master audio finalized in ${(encodeMs / 1000).toStringAsFixed(1)}s '
         '(${(encodedBytes / (1024 * 1024)).toStringAsFixed(1)}MB m4a). '
         'Background time left: ${BackgroundTask.formatRemaining(remaining)}',
       );
@@ -726,6 +734,7 @@ class RecordingController extends _$RecordingController {
 
     if (state.currentLectureId != null) {
       final lectureId = state.currentLectureId!;
+      await _recorder.abortContinuousMasterEncode(lectureId);
       await _recorder.cleanUpMasterAudioFiles(lectureId);
 
       // 1. Supabase側の未完了ジョブをキャンセル

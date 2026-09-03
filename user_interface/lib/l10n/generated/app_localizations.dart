@@ -1289,6 +1289,18 @@ abstract class AppLocalizations {
   /// **'The audio is ready. Generate transcript, summary, and notes with AI.'**
   String get notStartedReadySubtitle;
 
+  /// Small inline label shown on the 'Ready to Analyze' screen while the uploaded audio is being fetched for playback preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading audio preview...'**
+  String get notStartedAudioPreviewLoading;
+
+  /// Small inline label shown on the 'Ready to Analyze' screen when fetching the uploaded audio for playback preview fails (e.g. offline). Does not block starting analysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load audio preview.'**
+  String get notStartedAudioPreviewFailed;
+
   /// Warning banner shown on the 'Ready to Analyze' screen when the lecture has no course assigned yet, explaining analysis is blocked until one is chosen.
   ///
   /// In en, this message translates to:

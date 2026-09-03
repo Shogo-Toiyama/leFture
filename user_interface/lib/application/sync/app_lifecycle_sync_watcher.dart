@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lefture/application/app_config/app_config_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_lifecycle_sync_watcher.g.dart';
@@ -45,6 +46,16 @@ class AppLifecycleSyncWatcher {
       onResume: () {
         _triggerBootstrap();
         _triggerAppConfigRefresh();
+      },
+      // ★ デバッグ用: バックグラウンド転送(継続エンコード/background_downloader
+      // のアップロード)が「本当にロック/バックグラウンド中も裏で動き続けて
+      // いるか」を、他のログと突き合わせて確認できるようにする。
+      // resumed: フォアグラウンド表示中。inactive: フォアグラウンドだが
+      // 一時的に非アクティブ(通知センターを開いた・電話がかかってきた等、
+      // 画面ロックの一瞬もここを通る)。paused: バックグラウンドへ完全に
+      // 退避(画面ロック・ホームに戻る等はここに落ち着く)。
+      onStateChange: (state) {
+        DevLog.add('📱 [AppLifecycle] $state');
       },
     );
 

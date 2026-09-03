@@ -31,6 +31,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
 import '../../../core/services/audio_record/audio_recorder_service.dart';
+import '../dev_tools/pipe_encode_prototype_tab.dart';
 import '../dev_tools/simulate_recording_tab.dart';
 import '../dev_tools/test_mode_flag.dart';
 import 'widgets/audio_waveform_visualizer.dart';
@@ -268,8 +269,8 @@ class RecordingPage extends HookConsumerWidget {
       return null;
     }, []);
 
-    // タブコントローラー (Voice / Live、isTestModeの時だけTestタブが加わる)
-    final tabController = useTabController(initialLength: isTestMode ? 3 : 2);
+    // タブコントローラー (Voice / Live、isTestModeの時だけTest/Pipeタブが加わる)
+    final tabController = useTabController(initialLength: isTestMode ? 4 : 2);
 
     // Liveタブ(index 1)が表示中かどうかをLiveAsrControllerへ通知する。
     // Liveタブを見ていない間はオンデバイスASRの重い処理(VAD推論・デコード)を
@@ -830,6 +831,7 @@ class RecordingPage extends HookConsumerWidget {
             Tab(icon: Icon(Icons.mic)),
             Tab(icon: Icon(Icons.forum_outlined)),
             if (isTestMode) Tab(icon: Icon(Icons.bug_report)),
+            if (isTestMode) Tab(icon: Icon(Icons.science_outlined)),
           ],
         ),
         // ★ テスト専用: 実機の短い録音でも「保存直後の画面ロックでOSに
@@ -1980,6 +1982,17 @@ class RecordingPage extends HookConsumerWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 640),
                     child: const SimulateRecordingTab(),
+                  ),
+                ),
+
+              // ==========================================
+              // Tab 4: Pipe encode prototype (部分MP3化ステップ1の検証用、isTestMode only)
+              // ==========================================
+              if (isTestMode)
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: const PipeEncodePrototypeTab(),
                   ),
                 ),
             ],

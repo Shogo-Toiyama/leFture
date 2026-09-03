@@ -683,6 +683,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'The audio is ready. Generate transcript, summary, and notes with AI.';
 
   @override
+  String get notStartedAudioPreviewLoading => 'Loading audio preview...';
+
+  @override
+  String get notStartedAudioPreviewFailed => 'Couldn\'t load audio preview.';
+
+  @override
   String get notStartedNoCourseWarning =>
       'This lecture isn\'t assigned to a course yet. Analysis can\'t start until it is.';
 

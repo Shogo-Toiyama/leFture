@@ -1,9 +1,13 @@
+import 'dart:io';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
@@ -11,6 +15,7 @@ import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/compact_audio_player.dart';
 
 class NotStartedView extends HookConsumerWidget {
   const NotStartedView({super.key, required this.lecture});
@@ -147,6 +152,57 @@ class NotStartedView extends HookConsumerWidget {
         ref.watch(cancelledAudioUploadJobsProvider(lecture.id)).value ?? const [];
     final isUploadCancelled = !isUploading && cancelledUploadJobs.isNotEmpty;
 
+    // ── 音声プレビュー ──────────────────────────────────
+    // ★ lecture.audioPath(Supabaseのlecturesテーブルの列)は使わない —
+    // これはCloud Run側が直接Supabaseへ書き込むフィールドで、ローカルDBへは
+    // 差分pull同期が走って初めて反映される。「アップロードは成功しているのに
+    // 数分〜次回起動までプレイヤーが出ない」という実機バグの原因だった。
+    // 代わりにローカルのマスター音声アセット行(uploadStatus)を直接見る——
+    // これはUploadManager._onJobSucceededがジョブ成功と同時に即座に書くため、
+    // isUploading==falseになるのと同じタイミングで反映される。
+    final masterAsset = ref.watch(masterAudioAssetProvider(lecture.id)).value;
+    final audioPath = (masterAsset?.uploadStatus == 'uploaded') ? masterAsset?.storagePath : null;
+    final canPreviewAudio = audioPath != null && !isUploading && !isUploadCancelled;
+    final audioFileAsync = canPreviewAudio
+        ? ref.watch(artifactFileProvider(audioPath))
+        : const AsyncValue<File?>.data(null);
+
+    final player = useMemoized(() => AudioPlayer());
+    final playerDuration = useState<Duration>(Duration.zero);
+    final playerPosition = useState<Duration>(Duration.zero);
+    final playerState = useState<PlayerState>(PlayerState.stopped);
+    final playbackSpeed = useState<double>(1.0);
+    final isAudioLoaded = useState<bool>(false);
+
+    useEffect(() {
+      if (audioFileAsync.hasValue && audioFileAsync.value != null) {
+        final file = audioFileAsync.value!;
+        player
+            .setReleaseMode(ReleaseMode.stop)
+            .then((_) => player.setSource(DeviceFileSource(file.path)))
+            .then((_) => isAudioLoaded.value = true);
+      }
+      return null;
+    }, [audioFileAsync.value, player]);
+
+    useEffect(() {
+      final dSub = player.onDurationChanged.listen((d) => playerDuration.value = d);
+      final pSub = player.onPositionChanged.listen((p) => playerPosition.value = p);
+      final sSub = player.onPlayerStateChanged.listen((s) {
+        playerState.value = s;
+        if (s == PlayerState.completed) {
+          player.stop();
+          playerPosition.value = Duration.zero;
+        }
+      });
+      return () {
+        dSub.cancel();
+        pSub.cancel();
+        sSub.cancel();
+        player.dispose();
+      };
+    }, [player]);
+
     // Cancel/Resumeボタン専用のローディング状態。lectureControllerProviderの
     // 共有状態(isLoading)を使うと、Start Analysisボタンの「開始しています...」
     // 表示と誤って連動してしまうため、ここだけ独立させる。
@@ -233,6 +289,69 @@ class NotStartedView extends HookConsumerWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
               ),
+              if (canPreviewAudio) ...[
+                const SizedBox(height: 20),
+                audioFileAsync.when(
+                  data: (file) => file == null
+                      ? const SizedBox.shrink()
+                      : CompactAudioPlayer(
+                          position: playerPosition.value,
+                          duration: playerDuration.value,
+                          isPlaying: playerState.value == PlayerState.playing,
+                          playbackSpeed: playbackSpeed.value,
+                          onPlayPause: () async {
+                            if (playerState.value == PlayerState.playing) {
+                              await player.pause();
+                            } else {
+                              await player.resume();
+                            }
+                          },
+                          onSeek: (value) async {
+                            playerPosition.value = value;
+                            await player.seek(value);
+                          },
+                          onRewind10: () async {
+                            final target = playerPosition.value - const Duration(seconds: 10);
+                            final actualTarget = target < Duration.zero ? Duration.zero : target;
+                            playerPosition.value = actualTarget;
+                            await player.seek(actualTarget);
+                          },
+                          onForward10: () async {
+                            final target = playerPosition.value + const Duration(seconds: 10);
+                            final actualTarget =
+                                target > playerDuration.value ? playerDuration.value : target;
+                            playerPosition.value = actualTarget;
+                            await player.seek(actualTarget);
+                          },
+                          onSpeedSelected: (speed) async {
+                            playbackSpeed.value = speed;
+                            await player.setPlaybackRate(speed);
+                          },
+                        ),
+                  loading: () => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.starGold),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.notStartedAudioPreviewLoading,
+                          style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  error: (_, _) => Text(
+                    l10n.notStartedAudioPreviewFailed,
+                    style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               // コースが既に設定済みの場合、以前はタイトル・コースを編集する
               // 導線がこの画面に無かった(下の警告バナーは!hasCourseの時しか
