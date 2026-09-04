@@ -99,6 +99,27 @@ export const translations = {
     analysisStopped: 'Analysis stopped',
     retryOrStartOver: 'Retry the failed step, or start over.',
     startOver: 'Start over',
+
+    // Account Deletion (matching Flutter)
+    deleteAccountTitle: 'Delete Account',
+    deleteAccountSubtitle: 'Permanent removal of your account and personal data',
+    deleteAccountWarningMessage:
+      'Are you absolutely sure you want to delete your account? All your recorded lectures, transcripts, and personal profile data will be permanently deleted. This action cannot be undone.',
+    deleteAccountWakingBackendStatus: 'Waking up backend service…',
+    deleteAccountDeletingStatus: 'Deleting account…',
+    deleteAccountSlowBackendError:
+      'The backend service is taking longer than usual to start. Please try again in a moment.',
+    deleteAccountPasswordPrompt: 'Enter your password to confirm:',
+    deleteAccountPasswordLabel: 'Password',
+    deleteAccountPasswordPlaceholder: 'Enter your password',
+    deleteAccountUsernamePrompt: 'Type your username to confirm ({username}):',
+    deleteAccountUsernameLabel: 'Username',
+    deleteAccountUsernamePlaceholder: 'Type your username',
+    deleteAccountConfirmButton: 'Delete Account',
+    deleteAccountCancelButton: 'Cancel',
+    accountDeletedTitle: 'Account deleted',
+    accountDeletedMessage:
+      'Your account and all associated data have been permanently deleted. Thank you for using leFture.',
   },
   ja: {
     // Brand & Common
@@ -198,6 +219,27 @@ export const translations = {
     analysisStopped: '解析が停止しました',
     retryOrStartOver: '失敗したステップを再試行するか、最初からやり直してください。',
     startOver: '最初からやり直す',
+
+    // Account Deletion (matching Flutter)
+    deleteAccountTitle: 'アカウントを削除',
+    deleteAccountSubtitle: 'アカウントおよび個人データの完全削除',
+    deleteAccountWarningMessage:
+      '本当にアカウントを削除してもよろしいですか？録音した講義、文字起こし、プロフィールデータはすべて完全に削除されます。この操作は取り消せません。',
+    deleteAccountWakingBackendStatus: 'バックエンドサービスを起動しています…',
+    deleteAccountDeletingStatus: 'アカウントを削除しています…',
+    deleteAccountSlowBackendError:
+      'バックエンドサービスの起動に通常より時間がかかっています。しばらくしてからもう一度お試しください。',
+    deleteAccountPasswordPrompt: '確認のためパスワードを入力してください:',
+    deleteAccountPasswordLabel: 'パスワード',
+    deleteAccountPasswordPlaceholder: 'パスワードを入力',
+    deleteAccountUsernamePrompt: '確認のためユーザーネーム（{username}）を入力してください:',
+    deleteAccountUsernameLabel: 'ユーザーネーム',
+    deleteAccountUsernamePlaceholder: 'ユーザーネームを入力',
+    deleteAccountConfirmButton: 'アカウントを削除',
+    deleteAccountCancelButton: 'キャンセル',
+    accountDeletedTitle: 'アカウントを削除しました',
+    accountDeletedMessage:
+      'アカウントと関連するすべてのデータが完全に削除されました。leFtureをご利用いただきありがとうございました。',
   },
 } as const;
 

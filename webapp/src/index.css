@@ -3866,6 +3866,11 @@ a.glass-row:hover {
   color: #ffffff;
 }
 
+.auth-glow-icon.danger {
+  background: linear-gradient(135deg, #ef5350 0%, #c62828 100%);
+  box-shadow: 0 0 32px rgba(239, 83, 80, 0.45);
+}
+
 .auth-glow-icon svg {
   width: 34px;
   height: 34px;
