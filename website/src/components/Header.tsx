@@ -19,7 +19,7 @@ export const Header: React.FC = () => {
         {/* Logo */}
         <Link to="/" className="header-logo-link" aria-label="leFture Home">
           <img
-            src="/img/app-icon.webp"
+            src="/img/app-icon.webp?v=2"
             alt="leFture"
             width="34"
             height="34"
