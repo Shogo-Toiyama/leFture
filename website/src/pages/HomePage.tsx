@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Quote, Sparkles } from 'lucide-react';
+import { ArrowRight, Quote, Sparkles, Smartphone } from 'lucide-react';
 import { useTranslation } from '../i18n/LanguageContext';
+import { useDownloadModal } from '../context/DownloadModalContext';
 import { clamp01, subscribeScroll } from '../lib/scrollBus';
 import { subscribeMouse } from '../lib/mouseBus';
-import { APP_STORE_URL } from '../lib/links';
-import { AppleLogo } from '../components/AppleLogo';
 import { GalaxyCanvas } from '../components/home/GalaxyCanvas';
 import { ClayField } from '../components/home/ClayField';
 import { Waveform } from '../components/home/Waveform';
@@ -96,6 +95,7 @@ const FactRotator: React.FC<{
 
 export const HomePage: React.FC = () => {
   const { t, locale } = useTranslation();
+  const { openModal } = useDownloadModal();
   const home = t.home;
 
   usePageMeta({
@@ -158,15 +158,14 @@ export const HomePage: React.FC = () => {
           <p className="hero-sub">{home.hero.subtitle}</p>
 
           <div className="hero-actions">
-            <a
-              href={APP_STORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={openModal}
               className="btn-primary"
             >
-              <AppleLogo size={18} />
+              <Smartphone size={18} />
               <span>{home.hero.primaryCta}</span>
-            </a>
+            </button>
             <a href="#how" className="btn-secondary">
               <span>{home.hero.secondaryCta}</span>
               <ArrowRight size={16} />
@@ -420,16 +419,15 @@ export const HomePage: React.FC = () => {
               <p className="cta-sub">{home.cta.sub}</p>
 
               <div className="cta-actions">
-                <a
-                  href={APP_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={openModal}
                   className="btn-primary"
                   style={{ padding: '14px 30px' }}
                 >
-                  <AppleLogo size={19} />
+                  <Smartphone size={19} />
                   <span>{home.cta.button}</span>
-                </a>
+                </button>
                 <Link to="/contact" className="btn-secondary" style={{ padding: '14px 26px' }}>
                   <span>{home.cta.secondary}</span>
                 </Link>

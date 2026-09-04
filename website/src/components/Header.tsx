@@ -1,16 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n/LanguageContext';
+import { useDownloadModal } from '../context/DownloadModalContext';
 import { LanguageDropdown } from './LanguageDropdown';
-import { AppleLogo } from './AppleLogo';
-import { APP_STORE_URL } from '../lib/links';
+import { Smartphone } from 'lucide-react';
 import './header.css';
 
 export const Header: React.FC = () => {
   const { t, locale } = useTranslation();
+  const { openModal } = useDownloadModal();
 
-  const ctaLine1 = locale === 'ja' ? '近日' : 'Coming';
-  const ctaLine2 = locale === 'ja' ? '公開' : 'Soon';
+  const ctaLine1 = locale === 'ja' ? 'アプリ' : 'Try';
+  const ctaLine2 = locale === 'ja' ? '試す' : 'App';
 
   return (
     <header className="site-header">
@@ -32,26 +33,25 @@ export const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* Header Right Actions (Custom Language Dropdown & App Store CTA Button) */}
+        {/* Header Right Actions (Custom Language Dropdown & Download App CTA Button) */}
         <div className="header-actions">
           <LanguageDropdown />
 
-          <a
-            href={APP_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={openModal}
             className="btn-primary header-cta-btn"
             aria-label={t.nav.downloadApp}
           >
-            <AppleLogo size={16} />
+            <Smartphone size={15} />
             {/* >400px: 1-line horizontal text */}
             <span className="header-cta-text-single">{t.nav.downloadApp}</span>
-            {/* <=400px: 2-tier stacked text (Coming / Soon) */}
+            {/* <=400px: 2-tier stacked text */}
             <span className="header-cta-text-stacked">
               <span className="header-cta-line1">{ctaLine1}</span>
               <span className="header-cta-line2">{ctaLine2}</span>
             </span>
-          </a>
+          </button>
         </div>
       </div>
     </header>

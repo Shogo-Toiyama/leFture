@@ -181,6 +181,10 @@ footer {
   box-shadow: 0 4px 20px rgba(255, 179, 0, 0.3);
   touch-action: manipulation;
   min-height: 48px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
 }
 
 .btn-primary:active {

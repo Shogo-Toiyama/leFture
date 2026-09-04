@@ -78,7 +78,7 @@
 }
 
 /* CTA Button (Scoped selector to override global .btn-primary min-height) */
-.site-header a.header-cta-btn {
+.site-header .header-cta-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -89,6 +89,9 @@
   height: 38px;
   white-space: nowrap;
   box-sizing: border-box;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .header-cta-text-stacked {
@@ -143,7 +146,7 @@
   }
 
   /* CTA ボタン（401px〜640px: アイコンと同じ高さ 30px に厳格指定） */
-  .site-header a.header-cta-btn {
+  .site-header .header-cta-btn {
     padding: 0 10px;
     height: 30px;
     min-height: 30px;
@@ -167,7 +170,7 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 400px) {
-  .site-header a.header-cta-btn {
+  .site-header .header-cta-btn {
     padding: 0 8px;
     height: 30px;
     min-height: 30px;

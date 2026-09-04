@@ -5,8 +5,21 @@ export const en: Translations = {
     home: 'Home',
     terms: 'Terms of Service',
     privacy: 'Privacy Policy',
+    faq: 'FAQ',
     contact: 'Contact',
-    downloadApp: 'Coming Soon',
+    downloadApp: 'Try leFture',
+  },
+  downloadModal: {
+    title: 'Try leFture',
+    subtitle: 'Select your device operating system.',
+    iosTitle: 'iOS (iPhone / iPad)',
+    iosDesc: 'Public beta is now available on Apple TestFlight. Tap to join the beta test.',
+    iosBadge: 'Beta Available',
+    iosButton: 'Get via TestFlight',
+    androidTitle: 'Android',
+    androidDesc: 'Closed beta testing is in preparation. Stay tuned for upcoming availability.',
+    androidBadge: 'Coming Soon',
+    note: '* Testing on iOS requires Apple’s free "TestFlight" app.',
   },
   home: {
     hero: {
@@ -15,7 +28,7 @@ export const en: Translations = {
       titleGlow: 'Just focus.',
       subtitle:
         'leFture turns lecture recordings into bite-sized review cards, deep notes, and personalized fun facts. Free yourself from the stress of falling behind, and turn every class into an exciting, future-shaping journey.',
-      primaryCta: 'Coming Soon on App Store',
+      primaryCta: 'Try leFture',
       secondaryCta: 'See how it works',
       scrollHint: 'Scroll',
     },
@@ -220,7 +233,7 @@ export const en: Translations = {
     cta: {
       heading: 'Here is to looking forward to tomorrow’s lecture.',
       sub: 'leFture stands for "Lectures for the Futures." We hope the classes you attend every day start to feel like they are genuinely shaping your own future. We are cheering for you.',
-      button: 'Coming Soon on App Store',
+      button: 'Try leFture',
       secondary: 'Contact us',
     },
   },
@@ -241,6 +254,42 @@ export const en: Translations = {
     errorDesc: 'Please check your connection and try again.',
     retry: 'Retry',
     effectiveDate: 'Last Updated',
+  },
+  faq: {
+    title: 'Frequently Asked Questions',
+    subtitle: 'Everything you need to know about leFture',
+    badge: 'FAQ',
+    items: [
+      {
+        id: 'account-deletion',
+        question: 'How can I delete my account and data?',
+        answer:
+          'You can permanently delete your leFture account and all associated personal data (recorded lectures, transcripts, detailed notes, and profile data) at any time through our web application.\nPlease click the button below to access the web app, sign in to your account, and proceed with account deletion.',
+        action: {
+          label: 'Open Account Deletion (app.lefture.com)',
+          url: 'https://app.lefture.com',
+        },
+        note: '* Note: Email accounts require password re-verification, while Google/Apple sign-in requires confirming your username. All deletions are immediate and irreversible.',
+      },
+      {
+        id: 'about-app',
+        question: 'What is leFture?',
+        answer:
+          'leFture is an AI-powered smart study companion that automatically transforms your recorded lectures into review cards, deep notes, and personalized fun facts. It allows you to put your phone down and fully immerse yourself in class without the stress of manual note-taking.',
+      },
+      {
+        id: 'privacy-data',
+        question: 'How is my recording and personal data protected?',
+        answer:
+          'Your audio and study data are strictly encrypted in transit and at rest with robust access control. We never share your personal information with third parties without your explicit consent. For more details, please review our Privacy Policy.',
+        action: {
+          label: 'View Privacy Policy',
+          url: '/privacy',
+        },
+      },
+    ],
+    stillHaveQuestions: 'Still have questions or need assistance? Feel free to reach out to us.',
+    contactLink: 'Contact Support',
   },
   contact: {
     title: 'Contact Support',

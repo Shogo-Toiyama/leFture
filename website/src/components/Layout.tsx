@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { ScrollToTop } from './ScrollToTop';
+import { DownloadModalProvider } from '../context/DownloadModalContext';
 
 export const Layout: React.FC = () => {
   const { pathname } = useLocation();
@@ -10,18 +11,20 @@ export const Layout: React.FC = () => {
   const isHome = pathname === '/';
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative'
-    }}>
-      <Header />
-      <main className={`site-main${isHome ? ' site-main--flush' : ''}`}>
-        <Outlet />
-      </main>
-      <Footer />
-      <ScrollToTop />
-    </div>
+    <DownloadModalProvider>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative'
+      }}>
+        <Header />
+        <main className={`site-main${isHome ? ' site-main--flush' : ''}`}>
+          <Outlet />
+        </main>
+        <Footer />
+        <ScrollToTop />
+      </div>
+    </DownloadModalProvider>
   );
 };

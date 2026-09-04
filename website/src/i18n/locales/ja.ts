@@ -5,8 +5,21 @@ export const ja: Translations = {
     home: 'ホーム',
     terms: '利用規約',
     privacy: 'プライバシーポリシー',
+    faq: 'よくある質問',
     contact: 'お問い合わせ',
-    downloadApp: '近日公開',
+    downloadApp: 'アプリを試す',
+  },
+  downloadModal: {
+    title: 'アプリを試す',
+    subtitle: 'ご利用の端末をお選びください。',
+    iosTitle: 'iOS (iPhone / iPad)',
+    iosDesc: 'Apple TestFlightにて先行ベータ版を配信中。タップしてテストに参加できます。',
+    iosBadge: 'Beta 配布中',
+    iosButton: 'TestFlightで入手',
+    androidTitle: 'Android',
+    androidDesc: '現在クローズドテストの準備中です。一般公開までもう少々お待ちください。',
+    androidBadge: '近日対応予定',
+    note: '※ iOSベータ版のテストにはApple公式の「TestFlight」アプリ（無料）が必要です。',
   },
   home: {
     hero: {
@@ -15,7 +28,7 @@ export const ja: Translations = {
       titleGlow: '講義に集中するだけ。',
       subtitle:
         'leFtureは、講義の録音から復習カード・詳細ノート・あなただけのファンファクトを自動生成するAI学習アプリ。授業中のノート取りや置いてけぼりのストレスから解放され、毎日の学びがワクワクする未来の知識へ変わります。',
-      primaryCta: 'App Storeで近日公開',
+      primaryCta: 'アプリを試す',
       secondaryCta: 'どんなアプリ？',
       scrollHint: 'Scroll',
     },
@@ -220,7 +233,7 @@ export const ja: Translations = {
     cta: {
       heading: '明日の講義が、楽しみになりますように。',
       sub: 'leFture は "Lectures for the Futures" の略。あなたが毎日通う講義が、ちゃんとあなたの未来を形づくっていると感じられますように。心から応援しています。',
-      button: 'App Storeで近日公開',
+      button: 'アプリを試す',
       secondary: 'お問い合わせ',
     },
   },
@@ -241,6 +254,42 @@ export const ja: Translations = {
     errorDesc: 'ネットワーク環境をご確認いただくか、時間をおいて再試行してください。',
     retry: '再読み込み',
     effectiveDate: '最終更新日',
+  },
+  faq: {
+    title: 'よくある質問',
+    subtitle: 'Frequently Asked Questions',
+    badge: 'FAQ',
+    items: [
+      {
+        id: 'account-deletion',
+        question: 'アカウントの削除方法を教えてください',
+        answer:
+          'leFtureのアカウントおよびすべての関連データ（録音講義、文字起こし、要約ノート、プロフィール情報など）の削除は、Webアプリ（アカウント削除ページ）よりお手続きいただけます。\n下記のボタンからWebアプリにアクセスし、ログインした上で「アカウントを削除」を実行してください。',
+        action: {
+          label: 'アカウント削除ページを開く (app.lefture.com)',
+          url: 'https://app.lefture.com',
+        },
+        note: '※ メールアドレスでご登録の方はパスワードの再入力、Google/Appleでご登録の方はユーザーネームの入力が必要です。削除されたデータは永久に消去され復元できませんのでご注意ください。',
+      },
+      {
+        id: 'about-app',
+        question: 'leFtureとはどのようなアプリですか？',
+        answer:
+          'leFtureは、講義を録音するだけでAIが復習カード・詳細ノート・あなただけのファンファクト（興味と講義を結ぶ雑学）を自動生成するスマート学習コンパニオンです。授業中のメモ取りに追われることなく、講義そのものに集中できます。',
+      },
+      {
+        id: 'privacy-data',
+        question: '録音データや個人情報は安全に保護されますか？',
+        answer:
+          'はい。お客様の音声データや学習データは厳格な暗号化通信およびアクセス制御によって保護されています。お客様の同意なしに第三者へ提供されることはありません。詳しくはプライバシーポリシーをご覧ください。',
+        action: {
+          label: 'プライバシーポリシーを見る',
+          url: '/privacy',
+        },
+      },
+    ],
+    stillHaveQuestions: '解決しない疑問やご質問がございましたら、お気軽にお問い合わせください。',
+    contactLink: 'お問い合わせはこちら',
   },
   contact: {
     title: 'お問い合わせ',

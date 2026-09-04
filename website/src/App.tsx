@@ -14,6 +14,9 @@ const PrivacyPage = lazy(() =>
 const ContactPage = lazy(() =>
   import('./pages/ContactPage').then((m) => ({ default: m.ContactPage }))
 );
+const FaqPage = lazy(() =>
+  import('./pages/FaqPage').then((m) => ({ default: m.FaqPage }))
+);
 const GalaxyScreenshotPage = lazy(() =>
   import('./pages/GalaxyScreenshotPage').then((m) => ({ default: m.GalaxyScreenshotPage }))
 );
@@ -83,6 +86,14 @@ export const App: React.FC = () => {
               element={
                 <Suspense fallback={<PageLoader />}>
                   <ContactPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="faq"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <FaqPage />
                 </Suspense>
               }
             />

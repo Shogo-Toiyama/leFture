@@ -38,6 +38,9 @@ export const Footer: React.FC = () => {
           </div>
 
           <nav style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', fontSize: '0.875rem' }}>
+            <Link to="/faq" style={{ color: 'var(--text-comet)' }}>
+              {t.nav.faq}
+            </Link>
             <Link to="/terms" style={{ color: 'var(--text-comet)' }}>
               {t.nav.terms}
             </Link>

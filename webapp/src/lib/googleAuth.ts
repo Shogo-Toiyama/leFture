@@ -12,6 +12,14 @@ function generateRandomString(length = 32): string {
   return result;
 }
 
+async function sha256Hex(plain: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  const hash = await window.crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hash));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 /**
  * Google OAuth 2.0 のポップアップウィンドウを開いて直接 ID Token を取得し、
  * supabase.auth.signInWithIdToken に渡してセッションを確立する。
@@ -19,9 +27,14 @@ function generateRandomString(length = 32): string {
  * 特徴:
  * 1. Supabase のリダイレクトURLを経由しないため「...supabase.co に続行」が表示されない。
  * 2. One Tap ではなく中央ポップアップウィンドウのため、何度閉じてもボタンを押せば毎回確実に開く。
+ *
+ * ノンス仕様 (auth_provider.dart:44-48 と同等):
+ * - Google OAuth の URL には SHA-256 ハッシュ済みの nonce を渡す (IDトークンの nonce クレームに格納される)。
+ * - Supabase の signInWithIdToken には生の rawNonce を渡す (Supabase側がハッシュ化してトークン内クレームと照合する)。
  */
 export async function signInWithGoogleDirect(): Promise<void> {
-  const nonce = generateRandomString();
+  const rawNonce = generateRandomString();
+  const hashedNonce = await sha256Hex(rawNonce);
   const state = generateRandomString();
   const redirectUri = window.location.origin;
 
@@ -31,7 +44,7 @@ export async function signInWithGoogleDirect(): Promise<void> {
   authUrl.searchParams.set('redirect_uri', redirectUri);
   authUrl.searchParams.set('response_type', 'id_token');
   authUrl.searchParams.set('scope', 'openid email profile');
-  authUrl.searchParams.set('nonce', nonce);
+  authUrl.searchParams.set('nonce', hashedNonce);
   authUrl.searchParams.set('state', state);
   authUrl.searchParams.set('prompt', 'select_account');
 
@@ -81,11 +94,11 @@ export async function signInWithGoogleDirect(): Promise<void> {
               clearInterval(interval);
               popup.close();
 
-              // Supabase に ID Token と Nonce を渡してセッション確立
+              // Supabase に ID Token と生の Nonce を渡してセッション確立
               const { error: signInError } = await supabase.auth.signInWithIdToken({
                 provider: 'google',
                 token: idToken,
-                nonce,
+                nonce: rawNonce,
               });
 
               if (signInError) {

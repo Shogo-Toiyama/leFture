@@ -1,0 +1,353 @@
+/* Download Modal Styles */
+.download-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(6, 8, 16, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 20px;
+  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.download-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  background: rgba(21, 25, 40, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 
+    0 24px 60px -12px rgba(0, 0, 0, 0.75),
+    0 0 40px rgba(255, 179, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 32px 28px 24px;
+  animation: modalCardPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes modalCardPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Ambient glow accent behind the header */
+.download-modal-card::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 160px;
+  background: radial-gradient(ellipse, rgba(255, 179, 0, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+/* Mobile drag pill / sheet indicator (visible on small screens) */
+.download-modal-sheet-bar {
+  display: none;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 auto 16px;
+}
+
+/* Close Button */
+.download-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-comet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  z-index: 2;
+}
+
+.download-modal-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-starlight);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.06);
+}
+
+.download-modal-close:focus-visible {
+  outline: 2px solid var(--color-star-gold);
+  outline-offset: 2px;
+}
+
+/* Header */
+.download-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.download-modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-starlight);
+  margin-bottom: 6px;
+}
+
+.download-modal-subtitle {
+  font-size: 0.92rem;
+  color: var(--text-comet);
+  line-height: 1.5;
+}
+
+/* Platforms list */
+.download-modal-platforms {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Base Platform Card */
+.platform-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  position: relative;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+/* Icon box */
+.platform-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.platform-card-icon--ios {
+  background: linear-gradient(135deg, #1f273d 0%, #2b3552 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.platform-card-icon--android {
+  background: linear-gradient(135deg, #18222b 0%, #1e2c38 100%);
+  border: 1px solid rgba(61, 220, 132, 0.2);
+  color: #3DDC84; /* Official Android Green */
+}
+
+/* Platform content */
+.platform-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.platform-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.platform-card-name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-starlight);
+}
+
+.platform-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+}
+
+.platform-badge--active {
+  background: rgba(255, 179, 0, 0.14);
+  color: var(--color-star-gold);
+  border: 1px solid rgba(255, 179, 0, 0.35);
+  box-shadow: 0 0 10px rgba(255, 179, 0, 0.15);
+}
+
+.platform-badge--inactive {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.platform-card-desc {
+  font-size: 0.84rem;
+  color: var(--text-comet);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Action indicator */
+.platform-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-comet);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+/* iOS active interactive card */
+.platform-card--ios {
+  cursor: pointer;
+}
+
+.platform-card--ios:hover {
+  background: rgba(255, 179, 0, 0.07);
+  border-color: rgba(255, 179, 0, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 10px 24px -6px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 179, 0, 0.15);
+}
+
+.platform-card--ios:hover .platform-card-icon {
+  transform: scale(1.05);
+  border-color: rgba(255, 179, 0, 0.5);
+}
+
+.platform-card--ios:hover .platform-card-action {
+  background: var(--gradient-gold);
+  color: #121624;
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(255, 179, 0, 0.3);
+}
+
+.platform-card--ios:focus-visible {
+  outline: 2px solid var(--color-star-gold);
+  outline-offset: 2px;
+}
+
+/* Android disabled card */
+.platform-card--android-disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  background: rgba(255, 255, 255, 0.02);
+  border-style: dashed;
+}
+
+.platform-card--android-disabled .platform-card-name {
+  color: var(--text-comet);
+}
+
+.platform-card--android-disabled:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Note footer */
+.download-modal-note {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.45;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Responsive: Bottom sheet on mobile screens */
+@media (max-width: 640px) {
+  .download-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .download-modal-card {
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    animation: modalSheetSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes modalSheetSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .download-modal-sheet-bar {
+    display: block;
+  }
+
+  .download-modal-close {
+    top: 16px;
+    right: 16px;
+  }
+
+  .download-modal-title {
+    font-size: 1.3rem;
+  }
+
+  .platform-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .platform-card-icon {
+    width: 44px;
+    height: 44px;
+  }
+}

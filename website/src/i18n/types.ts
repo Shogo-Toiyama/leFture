@@ -99,14 +99,49 @@ export interface HomeTranslations {
   };
 }
 
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  action?: {
+    label: string;
+    url: string;
+  };
+  note?: string;
+}
+
+export interface FaqTranslations {
+  title: string;
+  subtitle: string;
+  badge: string;
+  items: FaqItem[];
+  stillHaveQuestions: string;
+  contactLink: string;
+}
+
+export interface DownloadModalTranslations {
+  title: string;
+  subtitle: string;
+  iosTitle: string;
+  iosDesc: string;
+  iosBadge: string;
+  iosButton: string;
+  androidTitle: string;
+  androidDesc: string;
+  androidBadge: string;
+  note: string;
+}
+
 export interface Translations {
   nav: {
     home: string;
     terms: string;
     privacy: string;
+    faq: string;
     contact: string;
     downloadApp: string;
   };
+  downloadModal: DownloadModalTranslations;
   home: HomeTranslations;
   terms: {
     title: string;
@@ -126,6 +161,7 @@ export interface Translations {
     retry: string;
     effectiveDate: string;
   };
+  faq: FaqTranslations;
   contact: {
     title: string;
     subtitle: string;
@@ -159,3 +195,4 @@ export interface Translations {
     audience: string;
   };
 }
+

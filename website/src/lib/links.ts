@@ -6,7 +6,7 @@
  * It is referenced by the header CTA, the hero CTA, and the closing CTA, so
  * changing it here updates all three.
  */
-export const APP_STORE_URL = 'https://apps.apple.com';
+export const APP_STORE_URL = 'https://testflight.apple.com/join/8bpTxR8F';
 
 /**
  * TODO(shogo): set this to the production origin (no trailing slash) so the
@@ -14,3 +14,7 @@ export const APP_STORE_URL = 'https://apps.apple.com';
  * relative og:image paths.
  */
 export const SITE_ORIGIN = 'https://lefture.com';
+
+/** Web app URL for account management and deletion */
+export const WEBAPP_URL = 'https://app.lefture.com';
+
