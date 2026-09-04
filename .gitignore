@@ -17,6 +17,7 @@ user_interface/assets/icon_foreground 2*.png
 *.m4a
 *.mp3
 supabase/.temp/
+contents_generation/.venv/
 contents_generation/test_codes/deberta/labeled_transcripts/
 contents_generation/test_codes/deberta/labeled_transcripts_multilingual/
 contents_generation/test_codes/deberta/version1/
@@ -35,3 +36,7 @@ dist/
 .vite/
 *.local
 .env.example
+contents_generation/test_codes/review_card_generation_test/output/
+contents_generation/test_codes/deep_notes_generation_test/output/
+contents_generation/test_codes/deep_notes_generation_test/*.json
+contents_generation/test_codes/review_card_generation_test/*.json
