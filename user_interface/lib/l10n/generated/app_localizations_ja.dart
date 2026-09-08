@@ -2743,6 +2743,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get maintenanceBannerMessage => 'メンテナンス中：一部機能が利用できません';
 
   @override
+  String get signOutConfirmTitle => 'サインアウトしますか？';
+
+  @override
+  String get signOutConfirmMessage => '再度使うには、もう一度サインインする必要があります。';
+
+  @override
+  String get signOutConfirmButton => 'サインアウト';
+
+  @override
+  String get signOutConfirmCancelButton => 'キャンセル';
+
+  @override
   String get signOutBlockedByRecordingTitle => '録音中です';
 
   @override

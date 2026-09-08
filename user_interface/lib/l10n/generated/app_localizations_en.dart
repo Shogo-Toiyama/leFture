@@ -2862,6 +2862,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Under maintenance — some features unavailable';
 
   @override
+  String get signOutConfirmTitle => 'Sign out?';
+
+  @override
+  String get signOutConfirmMessage =>
+      'You\'ll need to sign in again to use the app.';
+
+  @override
+  String get signOutConfirmButton => 'Sign Out';
+
+  @override
+  String get signOutConfirmCancelButton => 'Cancel';
+
+  @override
   String get signOutBlockedByRecordingTitle => 'Recording in progress';
 
   @override

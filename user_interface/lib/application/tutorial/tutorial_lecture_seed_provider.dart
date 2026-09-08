@@ -28,9 +28,9 @@ part 'tutorial_lecture_seed_provider.g.dart';
 /// 切り替えのたびに再評価され、冪等チェックも都度やり直される。
 ///
 /// チュートリアル講義の実体は`/seed-tutorial`(lefture_backend)がユーザーの
-/// 最初のDisplay言語に合わせてSupabaseへ投入する。既にローカルに(旧ローカル
-/// 生成方式で)チュートリアル講義を持つ既存ユーザーには何もしない —
-/// そのユーザーは従来通りローカル限定のチュートリアルを使い続ける。
+/// 最初のDisplay言語に合わせてSupabaseへ投入する。既存ユーザー(移行前から
+/// このアプリを使っている、またはローカルに旧ローカル生成方式のチュートリアル
+/// を持つ)には新規作成しない — 判定方法は下記コメント参照。
 ///
 /// 既定コースの確保・チュートリアル投入・Pull同期はいずれもネットワーク呼び
 /// 出しを伴うため、オフライン時は今回の起動では諦める。この場合チュートリアル
@@ -48,11 +48,6 @@ Future<void> tutorialLectureSeed(Ref ref) async {
 
   await TutorialLectureSeedService(db).cleanupOrphanedLocalTutorialCourses(user.id);
 
-  // 既存ユーザー(旧ローカル生成方式で既にチュートリアル講義を持つ)には
-  // 何もしない。新規ユーザーのみCloud化する。
-  final existingTutorial = await db.findTutorialLecture(user.id);
-  if (existingTutorial != null) return;
-
   final courseId = await DefaultCourseService(courseRepo).ensureDefaultCourse(
     defaultCourseTitle: TutorialLectureSeedService.defaultCourseTitle(languageCode),
     defaultCourseSummary: TutorialLectureSeedService.defaultCourseSummary(languageCode),
@@ -64,13 +59,29 @@ Future<void> tutorialLectureSeed(Ref ref) async {
   // courseListProviderから既定コースが正しく取得・表示される。
   await CourseSyncService(db).pull();
 
-  final tutorialCreatedAt = await userProfileRepo.ensureTutorialCreatedAt();
+  // 既にローカルにチュートリアル講義があるなら(旧ローカル生成方式の既存
+  // ユーザー、または既にCloudから同期済み)何もしない。
+  //
+  // ★ これだけでは「既存ユーザー判定」として不十分 —— サインアウトは
+  // ローカルDBを丸ごとwipeするため(sign_out_flow.dart)、旧ローカル限定の
+  // チュートリアルしか持たない既存ユーザーがサインアウト後に再サインインすると
+  // ここは必ずnullになり、Cloud新規作成の対象に見えてしまう(実際に発生した
+  // 不具合)。そこで下のtutorial_created_atの判定を本当のゲートとして使う。
+  final existingTutorial = await db.findTutorialLecture(user.id);
+  if (existingTutorial != null) return;
+
+  // tutorial_created_atは移行前からこのメソッドで発行され続けているため、
+  // 「今回初めて発行された(wasAlreadySet == false)」場合だけが真に新規
+  // ユーザー。既存ユーザーは(ローカルDBがwipe済みでも)ほぼ確実にtrueになり、
+  // その場合はCloudにも新規作成しない。
+  final tutorialTiming = await userProfileRepo.ensureTutorialCreatedAt();
+  if (tutorialTiming.wasAlreadySet) return;
 
   try {
     await ref.watch(jobRepositoryProvider).seedTutorial(
           courseId: courseId,
           displayLanguageCode: languageCode,
-          lectureDatetime: tutorialCreatedAt,
+          lectureDatetime: tutorialTiming.createdAt,
         );
   } catch (e, stack) {
     DevLog.add('⚠️ [TutorialSeed] Cloud seed failed: $e\n$stack');

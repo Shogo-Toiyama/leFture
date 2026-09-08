@@ -5132,6 +5132,30 @@ abstract class AppLocalizations {
   /// **'Under maintenance — some features unavailable'**
   String get maintenanceBannerMessage;
 
+  /// Title of the lightweight confirmation dialog shown every time the user taps Sign Out on the My Account page, before any of the more detailed unsynced-data/offline warnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get signOutConfirmTitle;
+
+  /// Body of the lightweight sign-out confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need to sign in again to use the app.'**
+  String get signOutConfirmMessage;
+
+  /// Confirm button of the lightweight sign-out confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get signOutConfirmButton;
+
+  /// Cancel button of the lightweight sign-out confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get signOutConfirmCancelButton;
+
   /// Title of the dialog shown when the user taps Sign Out while a recording is active or paused. Signing out wipes this device's local data, so it must not happen mid-recording.
   ///
   /// In en, this message translates to:

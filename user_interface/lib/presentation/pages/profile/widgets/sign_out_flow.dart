@@ -7,8 +7,9 @@
 // [LocalDataWipeService]のヘッダコメントを参照。ここでは「消す前に、ユーザーの
 // 意思確認と救済(送信のリトライ)を必ず通す」ことを担保する。
 //
-// 設計方針: ダイアログは本当に危ない時だけ出す。オンラインで未同期データが無い
-// 大多数のケースでは、確認ダイアログは1枚も増えない。
+// 設計方針: 誤タップ防止の軽い確認は毎回1枚出す。それとは別に、未同期データが
+// 消える/オフラインで再サインインできないといった「本当に危ない」場合だけ、
+// 詳細な警告ダイアログを追加でもう1枚出す。
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -55,6 +56,20 @@ Future<void> runSignOutFlow(BuildContext context, WidgetRef ref) async {
     );
     return;
   }
+
+  // 1.5. 誤タップ防止の軽い確認。未同期データの有無に関わらず必ず一度だけ出す
+  //    (このあとの3.は「消えるものがある/オフライン」の時だけ追加で出る、より
+  //    強い警告なので、両方出ても内容が重複することはない)。
+  if (!context.mounted) return;
+  final wantsToSignOut = await showCustomDialog(
+    context: context,
+    title: l10n.signOutConfirmTitle,
+    message: l10n.signOutConfirmMessage,
+    confirmLabel: l10n.signOutConfirmButton,
+    cancelLabel: l10n.signOutConfirmCancelButton,
+    icon: Icons.logout_rounded,
+  );
+  if (wantsToSignOut != true) return;
 
   // Providerへの参照は「まだウィジェットがmountされている今」のうちに取り出す。
   // WidgetRefはBuildContextに紐づくため、await後(=サインアウトでWelcomeへ

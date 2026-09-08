@@ -4355,6 +4355,26 @@
     "description": "Persistent top banner shown (in place of the offline banner) while the device is online but the app is in maintenance mode and the user has dismissed the full-screen maintenance overlay to keep browsing. Reminds them why some features aren't working, without falsely claiming they're offline."
   },
 
+  "signOutConfirmTitle": "Sign out?",
+  "@signOutConfirmTitle": {
+    "description": "Title of the lightweight confirmation dialog shown every time the user taps Sign Out on the My Account page, before any of the more detailed unsynced-data/offline warnings."
+  },
+
+  "signOutConfirmMessage": "You'll need to sign in again to use the app.",
+  "@signOutConfirmMessage": {
+    "description": "Body of the lightweight sign-out confirmation dialog."
+  },
+
+  "signOutConfirmButton": "Sign Out",
+  "@signOutConfirmButton": {
+    "description": "Confirm button of the lightweight sign-out confirmation dialog."
+  },
+
+  "signOutConfirmCancelButton": "Cancel",
+  "@signOutConfirmCancelButton": {
+    "description": "Cancel button of the lightweight sign-out confirmation dialog."
+  },
+
   "signOutBlockedByRecordingTitle": "Recording in progress",
   "@signOutBlockedByRecordingTitle": {
     "description": "Title of the dialog shown when the user taps Sign Out while a recording is active or paused. Signing out wipes this device's local data, so it must not happen mid-recording."

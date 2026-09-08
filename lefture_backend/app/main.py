@@ -548,7 +548,7 @@ async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
         content = get_tutorial_content(payload.display_language)
         lecture_id = str(uuid.uuid4())
 
-        def _seed_sync():
+        def _insert_lecture_row():
             admin_client.table("lectures").insert({
                 "id": lecture_id,
                 "user_id": user_id,
@@ -562,6 +562,31 @@ async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
                 "metadata": {"is_tutorial": True, "tutorial_version": 1},
             }).execute()
 
+        try:
+            # このinsertは`lectures_one_tutorial_per_user`部分ユニークインデックス
+            # (migrations/20260908220000_...)で守られている。上のSELECTと
+            # このINSERTの間には原理的にレースウィンドウがあり(クライアント側の
+            # ほぼ同時の二重呼び出しで実際に発生した)、後から来たリクエストは
+            # ここで一意制約違反になる。その場合は先勝ちしたリクエストが作った
+            # 行を再取得して冪等応答するだけで、サブコンテンツは一切作らない
+            # (=重複したlecture_topics/deep_notes等が生まれない)。
+            await asyncio.to_thread(_insert_lecture_row)
+        except Exception as e:
+            error_str = str(e)
+            if "duplicate key" in error_str or "23505" in error_str:
+                existing_res = await asyncio.to_thread(
+                    lambda: admin_client.table("lectures")
+                    .select("id")
+                    .eq("user_id", user_id)
+                    .contains("metadata", {"is_tutorial": True})
+                    .limit(1)
+                    .execute()
+                )
+                if existing_res.data:
+                    return {"lecture_id": existing_res.data[0]["id"], "created": False}
+            raise
+
+        def _seed_sub_content():
             for topic in content["topics"]:
                 # 固定のトピック画像を、Flutterアプリ同梱アセットではなくこの
                 # ユーザー自身のR2領域({uid}/{lecture_id}/images/...)へ複製する。
@@ -638,7 +663,7 @@ async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
                     "metadata": {"is_completed": False},
                 }).execute()
 
-        await asyncio.to_thread(_seed_sync)
+        await asyncio.to_thread(_seed_sub_content)
         return {"lecture_id": lecture_id, "created": True}
     except HTTPException:
         raise

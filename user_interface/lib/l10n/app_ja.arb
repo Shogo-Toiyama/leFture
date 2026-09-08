@@ -906,6 +906,10 @@
   "appGateOpenStoreFailedSnackbar": "App Storeを開けませんでした。App Storeアプリから直接アップデートしてください。",
   "maintenanceBannerMessage": "メンテナンス中：一部機能が利用できません",
 
+  "signOutConfirmTitle": "サインアウトしますか？",
+  "signOutConfirmMessage": "再度使うには、もう一度サインインする必要があります。",
+  "signOutConfirmButton": "サインアウト",
+  "signOutConfirmCancelButton": "キャンセル",
   "signOutBlockedByRecordingTitle": "録音中です",
   "signOutBlockedByRecordingMessage": "サインアウトする前に、録音を停止して保存してください。",
   "signOutBlockedByRecordingConfirmButton": "OK",

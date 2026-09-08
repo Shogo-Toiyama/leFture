@@ -376,14 +376,18 @@ class UserProfileRepositorySupabase {
   /// 記録してサーバーにも同期したうえで返す(初回シード時に一度だけ書き込みが
   /// 走り、以降は既存値を読むだけになる)。
   ///
-  /// ★ tutorial_completed_at(閲覧完了日時)とは別の概念。チュートリアル講義
-  /// 自体はローカル限定でSupabaseに書き込まれないため、サインアウトの
-  /// ローカルデータwipeでlocal_lectures行ごと消えてしまう。再シード時に
-  /// 「今日できたばかりの新規講義」に見えてしまわないよう、真の作成日を
-  /// このmetadata(user_profiles、サインアウトでも生き残る)に固定し、
-  /// TutorialLectureSeedServiceはここから読んだ日時を講義のcreatedAtとして
-  /// 使う。
-  Future<DateTime> ensureTutorialCreatedAt() async {
+  /// ★ tutorial_completed_at(閲覧完了日時)とは別の概念。旧ローカル限定
+  /// チュートリアルの講義行はサインアウトのローカルデータwipeでlocal_lectures
+  /// ごと消えてしまうため、真の作成日をこのmetadata(user_profiles、
+  /// サインアウトでも生き残る)に固定し、再シード時に「今日できたばかりの
+  /// 新規講義」に見えてしまわないようにする。
+  ///
+  /// [wasAlreadySet]がfalseなのは、このユーザーが今まさに初めてこの値を
+  /// 発行された場合だけ — つまり移行前からこのメソッド自体は呼ばれ続けて
+  /// いるため、移行前から使っている既存ユーザーは(ローカルDBがサインアウトで
+  /// 消えていても)ほぼ確実にtrueになる。tutorial_lecture_seed_provider.dartが
+  /// この真偽値を「Cloudチュートリアルを新規作成して良いか」の判定に使う。
+  Future<({DateTime createdAt, bool wasAlreadySet})> ensureTutorialCreatedAt() async {
     final uid = _requireUid();
     var existing = await _db.getUserProfile(uid);
     if (existing?.metadataJson == null) {
@@ -401,7 +405,7 @@ class UserProfileRepositorySupabase {
 
     final raw = metadata[_tutorialCreatedMetadataKey] as String?;
     final parsed = raw != null ? DateTime.tryParse(raw) : null;
-    if (parsed != null) return parsed;
+    if (parsed != null) return (createdAt: parsed, wasAlreadySet: true);
 
     final now = DateTime.now().toUtc();
     metadata[_tutorialCreatedMetadataKey] = now.toIso8601String();
@@ -421,7 +425,7 @@ class UserProfileRepositorySupabase {
     );
     DevLog.add('🎓 [UserProfileRepo] Recorded tutorial_created_at=$now and enqueued to outbox');
 
-    return now;
+    return (createdAt: now, wasAlreadySet: false);
   }
 
   /// オンボーディング完了をmetadataにマージして記録し、サーバーにも同期する。
