@@ -60,8 +60,13 @@ DEAD_JOB_STATUSES = ("FAILED", "ERROR", "CANCELLED")
 CANCELLABLE_TASK_STATUSES = ["PENDING", "QUEUED", "WAITING", "RUNNING", "FAILED"]
 
 from app.core.supabase import get_supabase_client
+from app.core.r2_storage import storage_service
 from app.services.helpers.credits import CREDITS_PER_USD
 from app.services.tutorial_content import get_tutorial_content
+
+# チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
+# R2の自分専用領域へ複製する(共有フォルダにはできない事情はseed_tutorial参照)。
+_TUTORIAL_IMAGES_DIR = Path(__file__).resolve().parent / "assets" / "tutorial_images"
 from app.services.email_service import (
     send_verification_email,
     send_password_reset_email,
@@ -558,6 +563,24 @@ async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
             }).execute()
 
             for topic in content["topics"]:
+                # 固定のトピック画像を、Flutterアプリ同梱アセットではなくこの
+                # ユーザー自身のR2領域({uid}/{lecture_id}/images/...)へ複製する。
+                # webapp(app.lefture.com)はFlutterアセットを参照できないため、
+                # マルチプラットフォームで同じ画像を見せるにはR2実体が必要。
+                # artifact worker(lefture-artifact-worker)がkeyの先頭セグメントと
+                # リクエストユーザーのuidの一致を必須にしているため、共有フォルダ
+                # ではなく必ずこのユーザー自身のprefix配下に置く。
+                image_bytes = (
+                    _TUTORIAL_IMAGES_DIR / f"topic_{topic['topic_index']}.jpg"
+                ).read_bytes()
+                image_path = storage_service.save_binary(
+                    user_id,
+                    lecture_id,
+                    f"images/topic_{topic['topic_index']}.jpg",
+                    image_bytes,
+                    content_type="image/jpeg",
+                )
+
                 admin_client.table("lecture_topics").insert({
                     "user_id": user_id,
                     "lecture_id": lecture_id,
@@ -565,11 +588,7 @@ async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
                     "topic_title": topic["title"],
                     "topic_type": "ACADEMIC",
                     "summary": topic["summary"],
-                    # R2ではなくFlutterアプリ同梱アセットを直接参照する固定画像。
-                    # クライアント側はimage_pathが'assets/'始まりならImage.assetで
-                    # 描画し、R2/artifact workerを一切経由しない
-                    # (lecture_hero_collage.dart等の分岐)。
-                    "image_path": f"assets/images/tutorial/topic_{topic['topic_index']}.jpg",
+                    "image_path": image_path,
                 }).execute()
 
                 admin_client.table("deep_notes").insert({
