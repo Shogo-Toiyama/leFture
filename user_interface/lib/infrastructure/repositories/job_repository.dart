@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/config/app_config.dart';
 import '../../core/utils/network_constants.dart';
 import '../../domain/entities/processing_jobs.dart';
 import '../../domain/entities/processing_task.dart';
@@ -13,8 +14,7 @@ class JobRepository {
 
   JobRepository(this._supabase);
 
-  static const _cloudRunBaseUrl =
-      'https://lefture-511705914929.us-west1.run.app';
+  static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
   // 分析進捗の表示は12ステップ中どこまで進んだかという粗い比率のみで、
   // 秒単位の追従は不要(講義全体の分析は数分〜十数分規模)。以前はSupabase

@@ -1,6 +1,8 @@
 import 'package:http/http.dart' as http;
 
-const _cloudRunBaseUrl = 'https://lefture-511705914929.us-west1.run.app';
+import '../../core/config/app_config.dart';
+
+const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
 /// Supabase の Send Email Hook は、バックエンド(Cloud Run)からの応答を
 /// 5秒以内に受け取れないと失敗する(ErrorCodeHookTimeout)。Cloud Runは

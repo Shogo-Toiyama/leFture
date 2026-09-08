@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "511705914929",
+    "project_id": "gen-lang-client-0682456679",
+    "storage_bucket": "gen-lang-client-0682456679.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:511705914929:android:7d7da229da24e27bc5ff10",
+        "android_client_info": {
+          "package_name": "com.lefture.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "511705914929-t0vvqbco2e60rh8gjhpb3qusbvbbrp2o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvOR91EcgkhWb-E899jycHgFvViucibSM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "511705914929-t0vvqbco2e60rh8gjhpb3qusbvbbrp2o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "511705914929-omh4h6phcvvldef0ssc6jb6o1ep8ijke.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.lefture.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

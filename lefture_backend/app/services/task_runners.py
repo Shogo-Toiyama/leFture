@@ -15,6 +15,7 @@ from app.core.r2_storage import storage_service
 from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_content_language_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
 from app.services.helpers.credits import charge_credits_for_task
+from app.services.push_notification_service import send_push_notification
 
 from app.services.logic.transcription import TranscriptionService, ModalTranscriptionService
 from app.services.logic.assemble_transcript import AssembleTranscriptService
@@ -2628,6 +2629,21 @@ async def run_finalize_job_task(job_id: str, task_id: str):
         await _update_task_status(task_id, "COMPLETED", payload={"report_path": report_storage_path})
         logger.log("🏁 Job finalized and cost report archived.")
         logger.save_to_r2(storage_service)
+
+        # 5. Push通知 (失敗してもJob自体は完了扱いのまま進める)
+        try:
+            lecture_res = await asyncio.to_thread(
+                lambda: supabase.table("lectures").select("title").eq("id", lecture_id).single().execute()
+            )
+            lecture_title = (lecture_res.data or {}).get("title") or "講義"
+            await send_push_notification(
+                user_id=uid,
+                title="分析が完了しました",
+                body=f"「{lecture_title}」の分析が完了しました。",
+                data={"type": "job_completed", "job_id": job_id, "lecture_id": lecture_id},
+            )
+        except Exception as push_error:
+            logger.log(f"⚠️ Failed to send push notification: {push_error}")
         
     except Exception as e:
         import traceback

@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lefture/application/lecture/lecture_controller.dart';
+import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/core/utils/text_preview.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
@@ -445,8 +446,7 @@ class TrashController {
     ref.invalidate(activityRecordsProvider(ActivityType.trash));
   }
 
-  static const _backendBaseUrl =
-      'https://lefture-511705914929.us-west1.run.app';
+  static const _backendBaseUrl = AppConfig.backendBaseUrl;
 
   static String _requireJwt() {
     final jwt = supabase.auth.currentSession?.accessToken;

@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:background_downloader/background_downloader.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/core/services/background_task.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
@@ -596,7 +597,7 @@ class UploadManager {
     String whisperContext = '',
   }) async {
     // Cloud RunのURL
-    final uri = Uri.parse('https://lefture-511705914929.us-west1.run.app/worker/transcribe-chunk');
+    final uri = Uri.parse('${AppConfig.backendBaseUrl}/worker/transcribe-chunk');
 
     final request = http.MultipartRequest('POST', uri);
 
@@ -642,7 +643,7 @@ class UploadManager {
   /// ①署名付きアップロードURLをCloud Runから取得する。
   Future<String> _requestMasterAudioUploadUrl({required String lectureId}) async {
     final requestUrlUri = Uri.parse(
-      'https://lefture-511705914929.us-west1.run.app/worker/request-master-audio-upload-url',
+      '${AppConfig.backendBaseUrl}/worker/request-master-audio-upload-url',
     );
     final requestUrlResponse = await http
         .post(
@@ -724,7 +725,7 @@ class UploadManager {
   /// ③アップロード完了をCloud Runに通知し、lectures.audio_pathを更新してもらう。
   Future<void> _completeMasterAudioUpload({required String lectureId}) async {
     final completeUri = Uri.parse(
-      'https://lefture-511705914929.us-west1.run.app/worker/complete-master-audio-upload',
+      '${AppConfig.backendBaseUrl}/worker/complete-master-audio-upload',
     );
 
     final completeResponse = await http
@@ -868,7 +869,7 @@ class UploadManager {
       throw Exception('ログインしていません。分析を開始できません。');
     }
 
-    final url = Uri.parse('https://lefture-511705914929.us-west1.run.app/start-analysis');
+    final url = Uri.parse('${AppConfig.backendBaseUrl}/start-analysis');
 
     final response = await http.post(
       url,

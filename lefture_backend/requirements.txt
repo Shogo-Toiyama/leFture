@@ -16,3 +16,4 @@ litellm
 tenacity
 resend
 standardwebhooks
+firebase-admin
