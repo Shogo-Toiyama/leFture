@@ -2461,10 +2461,16 @@ async def register_device(payload: RegisterDeviceRequest, request: Request):
     if payload.platform not in ("ios", "android"):
         raise HTTPException(status_code=400, detail="platform must be 'ios' or 'android'")
 
-    user_client, user_id = _get_user_client_from_request(request)
+    _, user_id = _get_user_client_from_request(request)
     try:
+        # UPSERTでdevice_tokenが別ユーザーの既存行と衝突する場合、そのUPDATEは
+        # 「今のユーザーが既に所有する行」しか許さないRLS(user_devices_update_own)
+        # に阻まれてしまう。所有者の付け替えは正規の挙動なので、JWT検証はユーザー
+        # クライアントで行った上で、実際の書き込みは管理者クライアントで行う
+        # (他のエンドポイントと同じパターン)。
+        admin_client = get_supabase_client()
         now = datetime.now(timezone.utc).isoformat()
-        user_client.table("user_devices").upsert({
+        admin_client.table("user_devices").upsert({
             "user_id": user_id,
             "device_token": payload.device_token,
             "platform": payload.platform,

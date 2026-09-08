@@ -16,6 +16,7 @@ from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _me
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
 from app.services.helpers.credits import charge_credits_for_task
 from app.services.push_notification_service import send_push_notification
+from app.services.push_notification_content import get_push_content
 
 from app.services.logic.transcription import TranscriptionService, ModalTranscriptionService
 from app.services.logic.assemble_transcript import AssembleTranscriptService
@@ -2635,11 +2636,25 @@ async def run_finalize_job_task(job_id: str, task_id: str):
             lecture_res = await asyncio.to_thread(
                 lambda: supabase.table("lectures").select("title").eq("id", lecture_id).single().execute()
             )
-            lecture_title = (lecture_res.data or {}).get("title") or "講義"
+
+            # ユーザーの表示言語(display_language)を取得し、文言をその言語で組み立てる
+            # (メール通知の言語切り替えと同じ user_profiles.metadata.display_language を参照)
+            display_lang = "en"
+            try:
+                user_prof_res = await asyncio.to_thread(
+                    lambda: supabase.table("user_profiles").select("metadata").eq("id", uid).maybe_single().execute()
+                )
+                if user_prof_res and user_prof_res.data and isinstance(user_prof_res.data.get("metadata"), dict):
+                    display_lang = user_prof_res.data["metadata"].get("display_language", "en")
+            except Exception as lang_error:
+                logger.log(f"⚠️ Failed to fetch display_language for push notification: {lang_error}")
+
+            content = get_push_content(display_lang)
+            lecture_title = (lecture_res.data or {}).get("title") or content.UNTITLED_LECTURE
             await send_push_notification(
                 user_id=uid,
-                title="分析が完了しました",
-                body=f"「{lecture_title}」の分析が完了しました。",
+                title=content.JOB_COMPLETED_TITLE,
+                body=content.JOB_COMPLETED_BODY.format(lecture_title=lecture_title),
                 data={"type": "job_completed", "job_id": job_id, "lecture_id": lecture_id},
             )
         except Exception as push_error:
