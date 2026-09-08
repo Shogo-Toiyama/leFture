@@ -414,13 +414,11 @@ class TrashController {
           updatedAt: Value(DateTime.now()),
         ),
       );
-      if (!await db.isTutorialLecture(record.id)) {
-        await db.enqueueOutbox(
-          entityType: 'lecture',
-          entityId: record.id,
-          op: 'update',
-        );
-      }
+      await db.enqueueOutbox(
+        entityType: 'lecture',
+        entityId: record.id,
+        op: 'update',
+      );
     } else if (record.type == ActivityRecordType.announcement) {
       await (db.update(
         db.localAnnouncements,
@@ -433,7 +431,7 @@ class TrashController {
       final ann = await (db.select(
         db.localAnnouncements,
       )..where((t) => t.id.equals(record.id))).getSingleOrNull();
-      if (ann == null || !await db.isTutorialLecture(ann.lectureId)) {
+      if (ann != null) {
         await db.enqueueOutbox(
           entityType: 'announcement',
           entityId: record.id,

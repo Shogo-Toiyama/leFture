@@ -219,6 +219,48 @@ class JobRepository {
     }
   }
 
+  /// チュートリアル講義をCloud側(Supabase)へ初回投入する。固定文言の挿入
+  /// のみでLLM/クレジットは絡まない軽量エンドポイント。サーバー側で
+  /// ユーザーごとに冪等(既にあれば何もせず既存IDを返す)なので、複数端末や
+  /// 複数回の呼び出しでも安全。
+  ///
+  /// 戻り値は作成/既存いずれかのlectureId。呼び出し後は通常講義と同じPull
+  /// 同期で初めてローカルに反映されるため、呼び出し元でPullをトリガーすること。
+  Future<String> seedTutorial({
+    required String courseId,
+    required String displayLanguageCode,
+    required DateTime lectureDatetime,
+  }) async {
+    final jwt = _supabase.auth.currentSession?.accessToken;
+    if (jwt == null) {
+      throw Exception('Not logged in. Cannot seed tutorial.');
+    }
+
+    final response = await http
+        .post(
+          Uri.parse('$_cloudRunBaseUrl/seed-tutorial'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jwt',
+          },
+          body: jsonEncode({
+            'course_id': courseId,
+            'display_language': displayLanguageCode,
+            'lecture_datetime': lectureDatetime.toUtc().toIso8601String(),
+          }),
+        )
+        .timeout(networkTimeout);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to seed tutorial (${response.statusCode}): ${response.body}',
+      );
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['lecture_id'] as String;
+  }
+
   /// 指定講義の未完了ジョブ・タスクをサーバー側でCANCELLEDにする。
   /// 講義をゴミ箱に入れた直後にbest-effortで呼ぶ — これをしないと削除済み講義の
   /// パイプラインが走り続け、削除のカスケードをすり抜けたコンテンツが後から

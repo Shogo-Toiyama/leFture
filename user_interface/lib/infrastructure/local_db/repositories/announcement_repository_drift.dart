@@ -128,9 +128,8 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      // 自分の行が無い(=上のUPDATEも0件)場合と、チュートリアル講義
-      // (ローカル完結)のデータはOutboxに入れない。
-      if (current == null || await _db.isTutorialLecture(current.lectureId)) {
+      // 自分の行が無い(=上のUPDATEも0件)場合はOutboxに入れない。
+      if (current == null) {
         return;
       }
 
@@ -160,9 +159,8 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      // 自分の行が無い(=上のUPDATEも0件)場合と、チュートリアル講義
-      // (ローカル完結)のデータはOutboxに入れない。
-      if (current == null || await _db.isTutorialLecture(current.lectureId)) {
+      // 自分の行が無い(=上のUPDATEも0件)場合はOutboxに入れない。
+      if (current == null) {
         return;
       }
 
@@ -199,9 +197,8 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      // 自分の行が無い(=上のUPDATEも0件)場合と、チュートリアル講義
-      // (ローカル完結)のデータはOutboxに入れない。
-      if (current == null || await _db.isTutorialLecture(current.lectureId)) {
+      // 自分の行が無い(=上のUPDATEも0件)場合はOutboxに入れない。
+      if (current == null) {
         return;
       }
 

@@ -57,10 +57,6 @@ class LectureRepositoryDrift {
       ));
 
       // 2. Outboxに登録
-      if (await _db.isTutorialLecture(lectureId)) {
-        return; // チュートリアル講義のデータはOutboxに入れない
-      }
-
       await _db.enqueueOutbox(
         entityType: 'lecture',
         entityId: lectureId,
@@ -79,13 +75,11 @@ class LectureRepositoryDrift {
 
     // 2. Supabaseから物理削除
     try {
-      if (!await _db.isTutorialLecture(lectureId)) {
-        await supabase
-            .from('lectures')
-            .delete()
-            .eq('id', lectureId)
-            .timeout(networkTimeout);
-      }
+      await supabase
+          .from('lectures')
+          .delete()
+          .eq('id', lectureId)
+          .timeout(networkTimeout);
     } catch (e) {
       DevLog.add('⚠️ [LectureRepo] SupabaseからのHardDelete処理(未登録または通信エラー): $e');
     }
@@ -128,10 +122,6 @@ class LectureRepositoryDrift {
       ));
 
       // 2. Outboxに登録(softDeleteLectureと同様、entityIdのみでよい)
-      if (await _db.isTutorialLecture(lectureId)) {
-        return; // チュートリアル講義のデータはOutboxに入れない
-      }
-
       await _db.enqueueOutbox(
         entityType: 'lecture',
         entityId: lectureId,

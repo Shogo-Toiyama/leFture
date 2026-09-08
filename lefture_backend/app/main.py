@@ -61,6 +61,7 @@ CANCELLABLE_TASK_STATUSES = ["PENDING", "QUEUED", "WAITING", "RUNNING", "FAILED"
 
 from app.core.supabase import get_supabase_client
 from app.services.helpers.credits import CREDITS_PER_USD
+from app.services.tutorial_content import get_tutorial_content
 from app.services.email_service import (
     send_verification_email,
     send_password_reset_email,
@@ -197,6 +198,13 @@ class StartAnalysisRequest(BaseModel):
     # True: 「Start Over」ボタンなど、ユーザーが明示的に選んだ再実行専用。
     # 既存の未完了Jobをすべてキャンセルしてから新しいJobを作り直す(従来通りの挙動)。
     force: bool = False
+
+class SeedTutorialRequest(BaseModel):
+    """チュートリアル講義の初回投入用。固定文言を挿入するだけでLLM/クレジット
+    は一切絡まない — /start-analysisとは完全に別の軽量経路。"""
+    course_id: str
+    display_language: str
+    lecture_datetime: str  # ISO8601。ユーザーごとに一度だけ確定する日時をクライアントから受け取る
 
 class RetryTaskRequest(BaseModel):
     task_id: str
@@ -493,6 +501,126 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
     # 大成功！
     return {"message": "Analysis started successfully", "job_id": job_id}
+
+
+# ---------------------------------------------------------
+# 🎓 チュートリアル講義の初回投入(固定文言、LLM/クレジット不使用)
+# ---------------------------------------------------------
+@app.post("/seed-tutorial")
+async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+    user_id = user_res.user.id
+
+    admin_client = get_supabase_client()
+
+    try:
+        # 冪等チェック: このユーザーが既にチュートリアル講義を持っていれば
+        # 何も作らず既存のIDを返す(複数端末からの重複呼び出しにも安全)。
+        existing_res = await asyncio.to_thread(
+            lambda: admin_client.table("lectures")
+            .select("id")
+            .eq("user_id", user_id)
+            .contains("metadata", {"is_tutorial": True})
+            .limit(1)
+            .execute()
+        )
+        if existing_res.data:
+            return {"lecture_id": existing_res.data[0]["id"], "created": False}
+
+        content = get_tutorial_content(payload.display_language)
+        lecture_id = str(uuid.uuid4())
+
+        def _seed_sync():
+            admin_client.table("lectures").insert({
+                "id": lecture_id,
+                "user_id": user_id,
+                "course_id": payload.course_id,
+                "title": content["lecture_title"],
+                "summary": content["lecture_summary"],
+                "lecture_datetime": payload.lecture_datetime,
+                "sort_order": 0,
+                "display_language": payload.display_language,
+                "recording_language": payload.display_language,
+                "metadata": {"is_tutorial": True, "tutorial_version": 1},
+            }).execute()
+
+            for topic in content["topics"]:
+                admin_client.table("lecture_topics").insert({
+                    "user_id": user_id,
+                    "lecture_id": lecture_id,
+                    "index": topic["topic_index"],
+                    "topic_title": topic["title"],
+                    "topic_type": "ACADEMIC",
+                    "summary": topic["summary"],
+                }).execute()
+
+                admin_client.table("deep_notes").insert({
+                    "user_id": user_id,
+                    "lecture_id": lecture_id,
+                    "topic_number": topic["topic_index"],
+                    "note_contents": topic["deep_note_markdown"],
+                }).execute()
+
+                for card in topic["review_cards"]:
+                    admin_client.table("review_cards").insert({
+                        "user_id": user_id,
+                        "lecture_id": lecture_id,
+                        "topic_number": topic["topic_index"],
+                        "title": card["title"],
+                        "hero_emoji": card["hero_emoji"],
+                        "card_type": card["card_type"],
+                        "card_content": card["content_blocks"],
+                    }).execute()
+
+            for kw in content["keywords"]:
+                admin_client.table("keywords").insert({
+                    "user_id": user_id,
+                    "lecture_id": lecture_id,
+                    "topic_number": kw["topic_number"],
+                    "keyword": kw["keyword"],
+                    "definition": kw.get("definition"),
+                }).execute()
+
+            fun_fact = content["fun_fact"]
+            admin_client.table("fun_facts").insert({
+                "user_id": user_id,
+                "lecture_id": lecture_id,
+                "title": fun_fact["title"],
+                "hook": fun_fact["hook"],
+                "body": fun_fact["body"],
+                "metadata": {"sources": fun_fact["sources"]} if fun_fact.get("sources") else None,
+            }).execute()
+
+            for ann in content["announcements"]:
+                admin_client.table("announcements").insert({
+                    "user_id": user_id,
+                    "lecture_id": lecture_id,
+                    "type": ann["type"],
+                    "title": ann["title"],
+                    "description": ann.get("description"),
+                    "metadata": {"is_completed": False},
+                }).execute()
+
+        await asyncio.to_thread(_seed_sync)
+        return {"lecture_id": lecture_id, "created": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"seed_tutorial failed for user {user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail=f"Failed to seed tutorial: {e}")
 
 
 # ---------------------------------------------------------

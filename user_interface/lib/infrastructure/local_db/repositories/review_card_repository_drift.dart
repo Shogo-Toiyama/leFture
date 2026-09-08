@@ -196,10 +196,6 @@ class ReviewCardRepositoryDrift {
         LocalReviewCardsCompanion(metadataJson: Value(jsonEncode(metadata))),
       );
 
-      if (await _db.isTutorialLecture(existing.lectureId)) {
-        return; // チュートリアル講義のデータはOutboxに入れない
-      }
-
       await _db.enqueueOutbox(
         entityType: 'review_card',
         entityId: id,
