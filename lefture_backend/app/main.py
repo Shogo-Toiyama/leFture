@@ -565,6 +565,11 @@ async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
                     "topic_title": topic["title"],
                     "topic_type": "ACADEMIC",
                     "summary": topic["summary"],
+                    # R2ではなくFlutterアプリ同梱アセットを直接参照する固定画像。
+                    # クライアント側はimage_pathが'assets/'始まりならImage.assetで
+                    # 描画し、R2/artifact workerを一切経由しない
+                    # (lecture_hero_collage.dart等の分岐)。
+                    "image_path": f"assets/images/tutorial/topic_{topic['topic_index']}.jpg",
                 }).execute()
 
                 admin_client.table("deep_notes").insert({
