@@ -39,29 +39,15 @@ class LectureTile extends ConsumerWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
-  String _relativeTime(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
+  String _formatLectureDateTime(DateTime dateTime, String locale) {
+    final local = dateTime.toLocal();
+    final isCurrentYear = local.year == DateTime.now().year;
 
-    if (diff.inSeconds < 60) return 'Just now';
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} min${diff.inMinutes == 1 ? '' : 's'} ago';
-    }
-    if (diff.inHours < 24) {
-      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
-    }
-    if (diff.inDays < 7) {
-      return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
-    }
-    if (diff.inDays < 30) {
-      final weeks = (diff.inDays / 7).floor();
-      return '$weeks week${weeks == 1 ? '' : 's'} ago';
-    }
-    if (diff.inDays < 365) {
-      final months = (diff.inDays / 30).floor();
-      return '$months month${months == 1 ? '' : 's'} ago';
-    }
-    final years = (diff.inDays / 365).floor();
-    return '$years year${years == 1 ? '' : 's'} ago';
+    final formatter = isCurrentYear
+        ? DateFormat.MMMEd(locale)
+        : DateFormat.yMMMEd(locale);
+
+    return formatter.add_Hm().format(local);
   }
 
   @override
@@ -224,7 +210,7 @@ class LectureTile extends ConsumerWidget {
                       Flexible(
                         child: Text(
                           useRelativeTime
-                              ? _relativeTime(lecture.lectureDatetime)
+                              ? _formatLectureDateTime(lecture.lectureDatetime, l10n.localeName)
                               : DateFormat.yMMMd(l10n.localeName).format(lecture.lectureDatetime.toLocal()),
                           style: TextStyle(
                             color: AppColors.universe.textComet,

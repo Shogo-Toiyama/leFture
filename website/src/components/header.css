@@ -45,10 +45,10 @@
 }
 
 .header-logo-text {
-  font-family: var(--font-heading);
+  font-family: var(--font-brand);
   font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   color: var(--text-starlight);
   line-height: 1;
 }

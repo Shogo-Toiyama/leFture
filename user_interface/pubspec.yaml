@@ -99,6 +99,11 @@ flutter:
     - assets/images/logo/
     - lib/presentation/pages/ai_chat/test_topic_map.json
 
+  fonts:
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron-VariableFont_wght.ttf
+
 flutter_launcher_icons:
   ios: true
   android: true

@@ -30,6 +30,7 @@
   --gradient-glow: radial-gradient(circle at 50% 0%, rgba(255, 179, 0, 0.15) 0%, rgba(66, 165, 245, 0.05) 50%, transparent 80%);
 
   /* Typography */
+  --font-brand: 'Orbitron', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
 

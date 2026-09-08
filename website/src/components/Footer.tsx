@@ -24,9 +24,10 @@ export const Footer: React.FC = () => {
         }}>
           <div>
             <div style={{
-              fontFamily: 'var(--font-heading)',
+              fontFamily: 'var(--font-brand)',
               fontSize: '1.25rem',
-              fontWeight: 700,
+              fontWeight: 800,
+              letterSpacing: '0.05em',
               color: 'var(--text-starlight)',
               marginBottom: '4px'
             }}>

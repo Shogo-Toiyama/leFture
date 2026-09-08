@@ -102,9 +102,10 @@ class _IntroCtaSlideState extends State<IntroCtaSlide>
                       child: const Text(
                         'leFture',
                         style: TextStyle(
+                          fontFamily: 'Orbitron',
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
+                          letterSpacing: 1.5,
                           color: Colors.white,
                           shadows: [
                             Shadow(color: Color(0x59FFB300), blurRadius: 26),

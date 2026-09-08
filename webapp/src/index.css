@@ -34,6 +34,7 @@
   --pencil: #8d8d8d;
   --paper-line: #e6ded0;
 
+  --font-brand: 'Orbitron', var(--font-display);
   --font-display: 'Outfit', 'Noto Sans JP', system-ui, sans-serif;
   --font-body: 'Inter', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
 
@@ -310,7 +311,7 @@ label {
   justify-content: center;
   background: var(--glass-low);
   border: 1px solid var(--glass-border);
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   font-weight: 800;
   color: var(--gold);
 }

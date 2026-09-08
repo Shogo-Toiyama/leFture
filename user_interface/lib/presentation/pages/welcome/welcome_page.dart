@@ -243,8 +243,16 @@ const _kPhraseStyle = TextStyle(
   height: 1.0,
 );
 
-const _kGapLe = 0.5; // 着地後、le と F の間に残すすき間（詰め気味でバランス最適化）
-const _kGapTure = 0.2; // 着地後、F と ture の間に残すすき間
+const _kWordmarkStyle = TextStyle(
+  fontFamily: 'Orbitron',
+  fontSize: 22,
+  fontWeight: FontWeight.w800,
+  letterSpacing: 1.0,
+  height: 1.0,
+);
+
+const _kGapLe = 1.6; // 着地後、le と F の間に残すすき間（Orbitronの文字間に合わせて調整）
+const _kGapTure = 1.4; // 着地後、F と ture の間に残すすき間
 
 /// タイトル演出の各フェーズの所要時間(ms)のプリセット。
 ///
@@ -345,7 +353,8 @@ class _Metrics {
   /// 光る演出で中央の文字から順に浮かび上がらせるために使う。
   final List<List<double>> charDistNorm;
 
-  static _Metrics compute(TextStyle style) {
+  static _Metrics compute(TextStyle phraseStyle, {TextStyle? wordmarkStyle}) {
+    final wStyle = wordmarkStyle ?? phraseStyle;
     final widths = <double>[];
     var cursor = 0.0;
     final naturalLeft = <double>[];
@@ -354,7 +363,7 @@ class _Metrics {
 
     for (final chunk in _kChunks) {
       final painter = TextPainter(
-        text: TextSpan(text: chunk.text, style: style),
+        text: TextSpan(text: chunk.text, style: phraseStyle),
         textDirection: ui.TextDirection.ltr,
       )..layout();
       widths.add(painter.width);
@@ -366,7 +375,7 @@ class _Metrics {
       var localCursor = 0.0;
       for (final char in chunk.text.split('')) {
         final charPainter = TextPainter(
-          text: TextSpan(text: char, style: style),
+          text: TextSpan(text: char, style: phraseStyle),
           textDirection: ui.TextDirection.ltr,
         )..layout();
         centers.add(localCursor + charPainter.width / 2);
@@ -391,12 +400,23 @@ class _Metrics {
 
     final fLeft = naturalLeft[fIndex];
     final fWidth = widths[fIndex];
-    final leWidth = widths[leIndex];
-    final tureWidth = widths[tureIndex];
 
-    // 大文字 F の幅を正確に計測
+    // 着弾後の文字幅（Orbitronスタイル）を正確に計測
+    final leWordmarkPainter = TextPainter(
+      text: TextSpan(text: 'le', style: wStyle),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    final leWidth = leWordmarkPainter.width;
+
+    final tureWordmarkPainter = TextPainter(
+      text: TextSpan(text: 'ture', style: wStyle),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    final tureWidth = tureWordmarkPainter.width;
+
+    // 大文字 F の幅を正確に計測（Orbitronスタイル）
     final fUpperPainter = TextPainter(
-      text: TextSpan(text: 'F', style: style),
+      text: TextSpan(text: 'F', style: wStyle),
       textDirection: ui.TextDirection.ltr,
     )..layout();
     final fUpperWidth = fUpperPainter.width;
@@ -460,7 +480,7 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
   @override
   void initState() {
     super.initState();
-    _metrics = _Metrics.compute(_kPhraseStyle);
+    _metrics = _Metrics.compute(_kPhraseStyle, wordmarkStyle: _kWordmarkStyle);
     _particles = _generateParticles();
 
     _controller = AnimationController(
@@ -698,13 +718,15 @@ class _TitleRevealAnimationState extends State<_TitleRevealAnimation>
         }
 
         final isF = chunk.text == 'f';
-        final displayText = isF && t > _timing.p3 ? 'F' : chunk.text;
+        final isImpacted = t > _timing.p3;
+        final displayText = isF && isImpacted ? 'F' : chunk.text;
+        final baseStyle = isImpacted ? _kWordmarkStyle : _kPhraseStyle;
 
         Widget textWidget = Text(
           displayText,
-          style: _kPhraseStyle.copyWith(
-            color: isF && t > _timing.p3 ? AppColors.starGold : keepColor,
-            shadows: isF && t > _timing.p3
+          style: baseStyle.copyWith(
+            color: isF && isImpacted ? AppColors.starGold : keepColor,
+            shadows: isF && isImpacted
                 ? [
                     Shadow(
                       color: AppColors.starGold.withValues(alpha: 0.85),
@@ -858,7 +880,7 @@ class _StaticWordmark extends StatelessWidget {
     }).join();
     return Text(
       text,
-      style: _kPhraseStyle.copyWith(fontSize: 34, color: AppColors.starGold),
+      style: _kWordmarkStyle.copyWith(fontSize: 34, color: AppColors.starGold),
     );
   }
 }
