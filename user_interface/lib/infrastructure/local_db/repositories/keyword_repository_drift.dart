@@ -56,6 +56,13 @@ class KeywordRepositoryDrift {
       metadataJson: newMetadataJson,
     );
 
+    // 旧ローカル限定チュートリアル講義配下のキーワードはpushしない
+    // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+    final current = await (_db.select(_db.localKeywords)..where((t) => t.id.equals(keywordId))).getSingleOrNull();
+    if (current != null && await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
+      return;
+    }
+
     // Queue outbox for background sync to Supabase
     await _db.enqueueOutbox(
       entityType: 'keyword',
@@ -76,6 +83,11 @@ class KeywordRepositoryDrift {
       keyword: keyword,
       definition: definition,
     );
+
+    final current = await (_db.select(_db.localKeywords)..where((t) => t.id.equals(keywordId))).getSingleOrNull();
+    if (current != null && await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
+      return;
+    }
 
     await _db.enqueueOutbox(
       entityType: 'keyword',

@@ -35,6 +35,10 @@ class LectureOutboxPushHandler implements OutboxPushHandler {
     // ローカルにもう存在しない(何らかの理由で消えた) -> 送るものが無い
     if (existing == null) return;
 
+    // 旧ローカル限定チュートリアル講義はSupabaseへは一切pushしない
+    // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+    if (await db.isLegacyLocalOnlyTutorialLecture(entityId)) return;
+
     // 論理削除のpushの場合のみ、送信直前にSupabase側の実在を確認する。
     // 録音中にDiscardされた講義など、一度もSupabaseに登録されないまま
     // 削除されるケースでは、わざわざdeleted_at付きの新規行を作る必要が

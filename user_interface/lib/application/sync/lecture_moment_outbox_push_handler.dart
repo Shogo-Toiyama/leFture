@@ -31,6 +31,10 @@ class LectureMomentOutboxPushHandler implements OutboxPushHandler {
     final uid = supabase.auth.currentUser?.id;
     if (uid != null && existing.userId != uid) return;
 
+    // 旧ローカル限定チュートリアル講義配下のモーメントはpushしない
+    // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+    if (await db.isLegacyLocalOnlyTutorialLecture(existing.lectureId)) return;
+
     // 親講義がローカルから消えている/論理削除済みなら、pushしても
     // `lecture_moments_lecture_id_fkey`のFK違反(23503)になるだけなので送らない。
     //

@@ -187,6 +187,12 @@ class DeepNoteRepositoryDrift {
         LocalDeepNotesCompanion(metadataJson: Value(jsonEncode(metadata))),
       );
 
+      // 旧ローカル限定チュートリアル講義配下のノートはpushしない
+      // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+      if (await _db.isLegacyLocalOnlyTutorialLecture(existing.lectureId)) {
+        return;
+      }
+
       await _db.enqueueOutbox(
         entityType: 'deep_note',
         entityId: id,

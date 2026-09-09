@@ -74,8 +74,14 @@ Future<void> tutorialLectureSeed(Ref ref) async {
   // 「今回初めて発行された(wasAlreadySet == false)」場合だけが真に新規
   // ユーザー。既存ユーザーは(ローカルDBがwipe済みでも)ほぼ確実にtrueになり、
   // その場合はCloudにも新規作成しない。
+  //
+  // ★ nullは「サーバーに確認できなかった(オフライン/タイムアウト)ので、
+  // 新規かどうか分からない」という意味。ここで作成に進んでしまうと、旧
+  // ローカル限定チュートリアルしか持たない既存ユーザーが接続不良の別端末で
+  // 誤ってCloud新規作成の対象になり得るため、フェイルセーフとして今回は
+  // 何もせず諦める(次回起動時、接続が戻っていれば再評価される)。
   final tutorialTiming = await userProfileRepo.ensureTutorialCreatedAt();
-  if (tutorialTiming.wasAlreadySet) return;
+  if (tutorialTiming == null || tutorialTiming.wasAlreadySet) return;
 
   try {
     await ref.watch(jobRepositoryProvider).seedTutorial(

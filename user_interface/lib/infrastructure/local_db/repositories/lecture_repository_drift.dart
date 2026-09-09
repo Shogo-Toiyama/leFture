@@ -47,6 +47,10 @@ class LectureRepositoryDrift {
     final now = DateTime.now();
 
     await _db.transaction(() async {
+      // 下の更新でsyncStatusが'needs_sync'に変わってしまう前に判定しておく
+      // (isLegacyLocalOnlyTutorialLectureはsyncStatus=='local_only'を見るため)。
+      final isLegacyTutorial = await _db.isLegacyLocalOnlyTutorialLecture(lectureId);
+
       // 1. ローカルDBで論理削除
       await (_db.update(_db.localLectures)
             ..where((t) => t.id.equals(lectureId)))
@@ -56,7 +60,8 @@ class LectureRepositoryDrift {
         updatedAt: Value(now),
       ));
 
-      // 2. Outboxに登録
+      // 2. Outboxに登録(旧ローカル限定チュートリアル講義はpushしない)
+      if (isLegacyTutorial) return;
       await _db.enqueueOutbox(
         entityType: 'lecture',
         entityId: lectureId,
@@ -70,10 +75,15 @@ class LectureRepositoryDrift {
     final uid = supabase.auth.currentUser?.id;
     if (uid == null) return;
 
+    // ローカルから消す前に判定しておく(削除後は行を引けない)。
+    final isLegacyTutorial = await _db.isLegacyLocalOnlyTutorialLecture(lectureId);
+
     // 1. ローカルDBから物理削除
     await _db.hardDeleteLectureCascade(lectureId);
 
-    // 2. Supabaseから物理削除
+    // 2. Supabaseから物理削除(旧ローカル限定チュートリアル講義は一度も
+    //    Supabaseに存在しないため送らない)
+    if (isLegacyTutorial) return;
     try {
       await supabase
           .from('lectures')
@@ -107,6 +117,9 @@ class LectureRepositoryDrift {
     final isMove = courseId != previousCourseId;
 
     await _db.transaction(() async {
+      // 下の更新でsyncStatusが変わってしまう前に判定しておく。
+      final isLegacyTutorial = await _db.isLegacyLocalOnlyTutorialLecture(lectureId);
+
       // 1. ローカルDBを更新
       await (_db.update(_db.localLectures)
             ..where((t) => t.id.equals(lectureId)))
@@ -122,6 +135,7 @@ class LectureRepositoryDrift {
       ));
 
       // 2. Outboxに登録(softDeleteLectureと同様、entityIdのみでよい)
+      if (isLegacyTutorial) return;
       await _db.enqueueOutbox(
         entityType: 'lecture',
         entityId: lectureId,

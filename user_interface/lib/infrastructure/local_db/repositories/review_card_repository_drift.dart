@@ -196,6 +196,12 @@ class ReviewCardRepositoryDrift {
         LocalReviewCardsCompanion(metadataJson: Value(jsonEncode(metadata))),
       );
 
+      // 旧ローカル限定チュートリアル講義配下の復習カードはpushしない
+      // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+      if (await _db.isLegacyLocalOnlyTutorialLecture(existing.lectureId)) {
+        return;
+      }
+
       await _db.enqueueOutbox(
         entityType: 'review_card',
         entityId: id,

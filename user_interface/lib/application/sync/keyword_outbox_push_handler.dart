@@ -18,6 +18,10 @@ class KeywordOutboxPushHandler implements OutboxPushHandler {
         .getSingleOrNull();
     if (existing == null) return;
 
+    // 旧ローカル限定チュートリアル講義配下のキーワードはpushしない
+    // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+    if (await db.isLegacyLocalOnlyTutorialLecture(existing.lectureId)) return;
+
     final metadata = existing.metadataJson != null
         ? Map<String, dynamic>.from(jsonDecode(existing.metadataJson!) as Map)
         : <String, dynamic>{};

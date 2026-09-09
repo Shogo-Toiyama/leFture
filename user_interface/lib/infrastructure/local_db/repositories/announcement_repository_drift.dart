@@ -128,8 +128,10 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      // 自分の行が無い(=上のUPDATEも0件)場合はOutboxに入れない。
-      if (current == null) {
+      // 自分の行が無い(=上のUPDATEも0件)場合と、旧ローカル限定チュートリアル
+      // 講義配下の行(isLegacyLocalOnlyTutorialLectureのコメント参照)は
+      // Outboxに入れない。
+      if (current == null || await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
         return;
       }
 
@@ -159,8 +161,10 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      // 自分の行が無い(=上のUPDATEも0件)場合はOutboxに入れない。
-      if (current == null) {
+      // 自分の行が無い(=上のUPDATEも0件)場合と、旧ローカル限定チュートリアル
+      // 講義配下の行(isLegacyLocalOnlyTutorialLectureのコメント参照)は
+      // Outboxに入れない。
+      if (current == null || await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
         return;
       }
 
@@ -197,8 +201,10 @@ class AnnouncementRepositoryDrift {
         ),
       );
 
-      // 自分の行が無い(=上のUPDATEも0件)場合はOutboxに入れない。
-      if (current == null) {
+      // 自分の行が無い(=上のUPDATEも0件)場合と、旧ローカル限定チュートリアル
+      // 講義配下の行(isLegacyLocalOnlyTutorialLectureのコメント参照)は
+      // Outboxに入れない。
+      if (current == null || await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
         return;
       }
 

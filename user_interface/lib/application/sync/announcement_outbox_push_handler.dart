@@ -17,6 +17,10 @@ class AnnouncementOutboxPushHandler implements OutboxPushHandler {
         .getSingleOrNull();
     if (existing == null) return;
 
+    // 旧ローカル限定チュートリアル講義配下のアナウンスメントはpushしない
+    // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+    if (await db.isLegacyLocalOnlyTutorialLecture(existing.lectureId)) return;
+
     await supabase
         .from('announcements')
         .update({

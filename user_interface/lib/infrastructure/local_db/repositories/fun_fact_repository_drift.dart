@@ -42,9 +42,17 @@ class FunFactRepositoryDrift {
     if (uid == null) return;
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localFunFacts)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localFunFacts)..where((t) => t.id.equals(id))).write(
         LocalFunFactsCompanion(reaction: Value(reaction)),
       );
+
+      // 旧ローカル限定チュートリアル講義配下のFunFactはpushしない
+      // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+      if (current != null && await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
+        return;
+      }
 
       await _db.enqueueOutbox(
         entityType: 'fun_fact',

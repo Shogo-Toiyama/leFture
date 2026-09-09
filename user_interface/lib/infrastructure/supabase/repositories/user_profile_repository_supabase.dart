@@ -387,21 +387,43 @@ class UserProfileRepositorySupabase {
   /// いるため、移行前から使っている既存ユーザーは(ローカルDBがサインアウトで
   /// 消えていても)ほぼ確実にtrueになる。tutorial_lecture_seed_provider.dartが
   /// この真偽値を「Cloudチュートリアルを新規作成して良いか」の判定に使う。
-  Future<({DateTime createdAt, bool wasAlreadySet})> ensureTutorialCreatedAt() async {
+  ///
+  /// ★ フェイルセーフ設計: ローカルに値が無い場合、「本当に無い」のか
+  /// 「サーバーには有るが今は確認できない(オフライン/タイムアウト/別端末で
+  /// ストレージが空)」のかを区別できないと、後者を誤って前者と判定して
+  /// チュートリアルを二重作成してしまう(旧ローカル限定チュートリアルしか
+  /// 持たない既存ユーザーが、接続不良の別端末でこれに該当し得る)。そのため
+  /// サーバー確認が失敗した場合は「分からない」を意味する`null`を返す —
+  /// 呼び出し元はこれを「今回は何もしない(作らない)」として扱うこと。
+  /// 確認できた場合のみ、新規作成の判定・書き込みを行う。
+  Future<({DateTime createdAt, bool wasAlreadySet})?> ensureTutorialCreatedAt() async {
     final uid = _requireUid();
-    var existing = await _db.getUserProfile(uid);
-    if (existing?.metadataJson == null) {
-      // ローカルにまだ何も無い(新規端末での初回サインイン等)場合のみ、
-      // 他デバイスで既に確定済みの値が無いかサーバーに確認する。
-      try {
-        await getCurrentProfile().timeout(const Duration(seconds: 6));
-      } catch (_) {}
-      existing = await _db.getUserProfile(uid);
-    }
+    final existing = await _db.getUserProfile(uid);
 
-    final metadata = existing?.metadataJson != null
+    Map<String, dynamic>? metadata = existing?.metadataJson != null
         ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
-        : <String, dynamic>{};
+        : null;
+
+    if (metadata == null) {
+      // ローカルにまだ何も無い(新規端末での初回サインイン等)場合のみ、
+      // 他デバイスで既に確定済みの値が無いかサーバーに確認する。取得した
+      // プロフィールをそのまま使う(再度ローカルを読み直さない) —
+      // getCurrentProfile()はOutbox未送信の変更がある場合ローカルキャッシュを
+      // 更新しないことがあり、読み直すとその変更を見落とすため。
+      UserProfile? profile;
+      try {
+        profile = await getCurrentProfile().timeout(const Duration(seconds: 6));
+      } catch (e) {
+        DevLog.add(
+          '⚠️ [UserProfileRepo] Could not confirm tutorial_created_at from '
+          'server (offline/timeout?) — treating as unknown, not creating: $e',
+        );
+        return null;
+      }
+      metadata = profile?.metadata != null
+          ? Map<String, dynamic>.from(profile!.metadata!)
+          : <String, dynamic>{};
+    }
 
     final raw = metadata[_tutorialCreatedMetadataKey] as String?;
     final parsed = raw != null ? DateTime.tryParse(raw) : null;

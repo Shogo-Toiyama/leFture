@@ -54,6 +54,10 @@ class LectureMomentRepositoryDrift {
             ),
           );
 
+      // 旧ローカル限定チュートリアル講義配下のモーメントはpushしない
+      // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+      if (await _db.isLegacyLocalOnlyTutorialLecture(lectureId)) return;
+
       await _db.enqueueOutbox(
         entityType: 'lecture_moment',
         entityId: id,
@@ -67,12 +71,20 @@ class LectureMomentRepositoryDrift {
     final now = DateTime.now().toUtc();
 
     await _db.transaction(() async {
+      final current = await (_db.select(_db.localLectureMoments)..where((t) => t.id.equals(id))).getSingleOrNull();
+
       await (_db.update(_db.localLectureMoments)..where((t) => t.id.equals(id))).write(
         LocalLectureMomentsCompanion(
           deletedAt: Value(now),
           updatedAt: Value(now),
         ),
       );
+
+      // 旧ローカル限定チュートリアル講義配下のモーメントはpushしない
+      // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+      if (current != null && await _db.isLegacyLocalOnlyTutorialLecture(current.lectureId)) {
+        return;
+      }
 
       await _db.enqueueOutbox(
         entityType: 'lecture_moment',

@@ -405,6 +405,10 @@ class TrashController {
       await courseRepo.restoreCourse(record.id);
       await ref.read(lectureControllerProvider.notifier).pullCoursesNow();
     } else if (record.type == ActivityRecordType.lecture) {
+      // 下の更新でsyncStatusが変わってしまう前に判定しておく
+      // (isLegacyLocalOnlyTutorialLectureのコメント参照)。
+      final isLegacyTutorial = await db.isLegacyLocalOnlyTutorialLecture(record.id);
+
       await (db.update(
         db.localLectures,
       )..where((t) => t.id.equals(record.id))).write(
@@ -414,11 +418,13 @@ class TrashController {
           updatedAt: Value(DateTime.now()),
         ),
       );
-      await db.enqueueOutbox(
-        entityType: 'lecture',
-        entityId: record.id,
-        op: 'update',
-      );
+      if (!isLegacyTutorial) {
+        await db.enqueueOutbox(
+          entityType: 'lecture',
+          entityId: record.id,
+          op: 'update',
+        );
+      }
     } else if (record.type == ActivityRecordType.announcement) {
       await (db.update(
         db.localAnnouncements,
@@ -431,7 +437,7 @@ class TrashController {
       final ann = await (db.select(
         db.localAnnouncements,
       )..where((t) => t.id.equals(record.id))).getSingleOrNull();
-      if (ann != null) {
+      if (ann != null && !await db.isLegacyLocalOnlyTutorialLecture(ann.lectureId)) {
         await db.enqueueOutbox(
           entityType: 'announcement',
           entityId: record.id,

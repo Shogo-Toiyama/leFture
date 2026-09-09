@@ -896,6 +896,34 @@ class AppDatabase extends _$AppDatabase {
     return null;
   }
 
+  /// 指定された [lectureId] が「旧ローカル限定方式」のチュートリアル講義かを
+  /// 判定する。
+  ///
+  /// チュートリアルには2種類ある:
+  /// - 旧方式: `is_tutorial: true`だがSupabaseには一度も存在しない
+  ///   (syncStatusが常に'local_only'のまま)。既存ユーザー向けにこのまま
+  ///   残り続ける。
+  /// - 新方式: `/seed-tutorial`がSupabaseへ実際に作成し、Pull同期で
+  ///   ローカルへ落ちてくる(syncStatusは'synced')。本物の講義と同じくOutbox
+  ///   pushの対象にしてよい。
+  ///
+  /// この2つを`is_tutorial`だけで区別すると新方式まで巻き込んでpushを止めて
+  /// しまうため、`syncStatus == 'local_only'`も併せて見る必要がある。
+  Future<bool> isLegacyLocalOnlyTutorialLecture(String? lectureId) async {
+    if (lectureId == null || lectureId.isEmpty) return false;
+    final lecture = await (select(
+      localLectures,
+    )..where((t) => t.id.equals(lectureId))).getSingleOrNull();
+    if (lecture == null || lecture.metadataJson == null) return false;
+    if (lecture.syncStatus != 'local_only') return false;
+    try {
+      final decoded = jsonDecode(lecture.metadataJson!);
+      return decoded is Map && decoded['is_tutorial'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // --- Outbox ---
 
   /// [payloadJson]は基本的に不要(OutboxPushHandlerがpush実行時に対応する
