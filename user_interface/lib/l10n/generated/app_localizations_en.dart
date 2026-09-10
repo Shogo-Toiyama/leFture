@@ -381,9 +381,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingUploadButtonLabel => 'Upload Recording';
 
   @override
-  String get recordingDoneOverlayTitle => 'Recording Done!';
-
-  @override
   String get recordingRequestingPermissionStatus =>
       'Requesting microphone permission...';
 

@@ -794,12 +794,6 @@ abstract class AppLocalizations {
   /// **'Upload Recording'**
   String get recordingUploadButtonLabel;
 
-  /// Headline shown in a full-screen success overlay right after the recording/upload flow completes. Celebratory, brief, exclamation intended.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording Done!'**
-  String get recordingDoneOverlayTitle;
-
   /// Status text shown while the app is waiting on the OS's microphone-permission prompt, before recording can start.
   ///
   /// In en, this message translates to:

@@ -709,7 +709,7 @@ class RecordingController extends _$RecordingController {
       );
       if (finalChunkPath != null) _currentChunkIndex++;
 
-      state = state.copyWith(phase: RecordingPhase.queued);
+      _enterQueuedPhase();
 
     } catch (e) {
       state = state.copyWith(
@@ -835,7 +835,7 @@ class RecordingController extends _$RecordingController {
         expectedChunks: 0, // プレレコなので expectedChunks=0
       );
 
-      state = state.copyWith(phase: RecordingPhase.queued);
+      _enterQueuedPhase();
       _uploadMgr.tryProcessQueue();
 
     } catch (e) {
@@ -846,6 +846,20 @@ class RecordingController extends _$RecordingController {
     } finally {
       await BackgroundTask.end(bgTaskId);
     }
+  }
+
+  /// queuedはマイクボタンの「完了」アニメーション表示専用の一時状態。
+  /// 以前はこの後idleへ戻す処理をRecordingPage側のFuture.delayed+pop
+  /// に任せていたため、アニメーション中に画面を閉じられるとcontext.mounted
+  /// がfalseになりidleへ戻れず、録音ボタンが永久に無効化されたままになる
+  /// バグがあった。ページの生死に関係なくController自身が責任を持って戻す。
+  void _enterQueuedPhase() {
+    state = state.copyWith(phase: RecordingPhase.queued);
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (ref.mounted && state.phase == RecordingPhase.queued) {
+        ref.invalidateSelf();
+      }
+    });
   }
 
   /// file_pickerが返したpath(Androidではアプリのキャッシュ領域を指す)を、

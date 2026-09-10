@@ -487,20 +487,6 @@ class RecordingPage extends HookConsumerWidget {
         ? CourseStyleHelper.getIcon(selectedCourse.icon)
         : Icons.folder_outlined;
 
-    // 録音完了時の自動クローズ監視
-    ref.listen<RecordingState>(recordingControllerProvider, (previous, next) {
-      final isDone = next.phase == RecordingPhase.queued;
-      final wasDone = previous?.phase == RecordingPhase.queued;
-      if (isDone && !wasDone) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (context.mounted) {
-            context.pop();
-            ref.invalidate(recordingControllerProvider);
-          }
-        });
-      }
-    });
-
     // フェーズを変えない一回きりの通知(例: モデルダウンロード中に録音を
     // 始めた場合の案内)をSnackBarで表示する。
     ref.listen<RecordingState>(recordingControllerProvider, (previous, next) {
@@ -809,7 +795,6 @@ class RecordingPage extends HookConsumerWidget {
     }
 
     final isBusy = state.isBusy;
-    final isDonePhase = state.phase == RecordingPhase.queued;
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground, // 宇宙背景
@@ -1997,35 +1982,6 @@ class RecordingPage extends HookConsumerWidget {
                 ),
             ],
           ),
-
-          // 完了時のオーバーレイ (Upload完了時など)
-          if (isDonePhase)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black87,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: AppColors.growthGreen,
-                        size: 64,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.recordingDoneOverlayTitle,
-                        style: TextStyle(
-                          color: AppColors.universe.textStarlight,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -3125,6 +3081,7 @@ class _MicButton extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final isRecording = state.isRecording;
+    final isQueued = state.phase == RecordingPhase.queued;
     final pulse = useAnimationController(
       duration: const Duration(milliseconds: 1600),
     );
@@ -3139,15 +3096,18 @@ class _MicButton extends HookWidget {
       return null;
     }, [isRecording]);
 
+    // queued中はタップ不可(押しても意味がないため)。保存完了アニメーションが
+    // 終わるとController側が自動でidleへ戻すので、ユーザーが操作すること
+    // なくすぐまたタップ可能になる。
     final canTap =
         !isBusy &&
         (state.phase == RecordingPhase.idle ||
             state.phase == RecordingPhase.recording ||
             state.phase == RecordingPhase.paused);
 
-    final accentColor = isRecording
-        ? AppColors.correctionRed
-        : AppColors.starGold;
+    final accentColor = isQueued
+        ? AppColors.growthGreen
+        : (isRecording ? AppColors.correctionRed : AppColors.starGold);
 
     return GestureDetector(
       onTap: canTap ? () => controller.toggleStartStopResume() : null,
@@ -3200,14 +3160,24 @@ class _MicButton extends HookWidget {
                   ),
                 ],
               ),
-              child: Icon(
-                isRecording
-                    ? Icons.stop_rounded
-                    : (state.phase == RecordingPhase.paused
-                          ? Icons.fiber_manual_record
-                          : Icons.mic),
-                size: 64,
-                color: accentColor,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+                child: Icon(
+                  isQueued
+                      ? Icons.check_rounded
+                      : (isRecording
+                            ? Icons.stop_rounded
+                            : (state.phase == RecordingPhase.paused
+                                  ? Icons.fiber_manual_record
+                                  : Icons.mic)),
+                  key: ValueKey(isQueued ? 'queued' : state.phase),
+                  size: 64,
+                  color: accentColor,
+                ),
               ),
             ),
           ],

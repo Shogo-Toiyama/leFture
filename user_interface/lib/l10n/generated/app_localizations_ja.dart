@@ -368,9 +368,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recordingUploadButtonLabel => '録音をアップロード';
 
   @override
-  String get recordingDoneOverlayTitle => '録音完了！';
-
-  @override
   String get recordingRequestingPermissionStatus => 'マイクの許可をリクエストしています...';
 
   @override

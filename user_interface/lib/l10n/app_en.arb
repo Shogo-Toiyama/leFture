@@ -593,11 +593,6 @@
     "description": "Primary call-to-action button label that submits/uploads the finished recording (or a selected local audio file)."
   },
 
-  "recordingDoneOverlayTitle": "Recording Done!",
-  "@recordingDoneOverlayTitle": {
-    "description": "Headline shown in a full-screen success overlay right after the recording/upload flow completes. Celebratory, brief, exclamation intended."
-  },
-
   "recordingRequestingPermissionStatus": "Requesting microphone permission...",
   "@recordingRequestingPermissionStatus": {
     "description": "Status text shown while the app is waiting on the OS's microphone-permission prompt, before recording can start."

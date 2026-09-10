@@ -119,7 +119,6 @@
   "recordingSelectCourseBeforeUploadSnackbar": "アップロードする前にコースを選択してください",
   "recordingUploadingStatus": "アップロード中...",
   "recordingUploadButtonLabel": "録音をアップロード",
-  "recordingDoneOverlayTitle": "録音完了！",
   "recordingRequestingPermissionStatus": "マイクの許可をリクエストしています...",
   "recordingGenericErrorFallback": "エラー",
   "recordingOpenSettingsButton": "設定を開く",
