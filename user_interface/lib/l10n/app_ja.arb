@@ -296,6 +296,8 @@
   "creditDetailResetsOn": "{date}にリセット",
   "creditDetailNoActivePlanTitle": "有効なプランがありません",
   "creditDetailNoActivePlanSubtitle": "下のプランから選んで、講義資料の生成を始めましょう。",
+  "creditDetailViewPlansButton": "プランを見る・変更する",
+  "creditDetailViewPaidPlansButton": "有料プランを見る",
   "creditDetailPlansLoadError": "プランを読み込めませんでした。下に引っ張って再読み込みしてください。",
   "creditDetailPlanActivatedSnackbar": "{planName}が有効になりました！",
   "creditDetailActivateErrorTitle": "プランを有効にできませんでした",

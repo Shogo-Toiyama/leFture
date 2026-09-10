@@ -1805,6 +1805,18 @@ abstract class AppLocalizations {
   /// **'Choose a plan below to start generating lecture materials.'**
   String get creditDetailNoActivePlanSubtitle;
 
+  /// Button on the Current Plan card (shown to users who already have an active plan) that navigates to the full Plans page, where paid App Store subscription tiers can be purchased.
+  ///
+  /// In en, this message translates to:
+  /// **'View & Change Plans'**
+  String get creditDetailViewPlansButton;
+
+  /// Link/button shown below the free self-serve plan tile (for users with no active plan yet) that navigates to the full Plans page to see the paid App Store subscription tiers.
+  ///
+  /// In en, this message translates to:
+  /// **'View Paid Plans'**
+  String get creditDetailViewPaidPlansButton;
+
   /// Error text shown in the plan-picker section if the list of claimable plans fails to load.
   ///
   /// In en, this message translates to:

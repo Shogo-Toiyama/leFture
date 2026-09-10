@@ -19,7 +19,7 @@ const supabaseAnonKey = 'sb_publishable_LUfg9T2f-zvargd7GgR7Cw_KAl86N8c';
 // RevenueCatダッシュボード(Project settings > API keys)のiOS public SDK key。
 // Supabaseのanon keyと同じく、クライアント埋め込み前提の公開鍵であり秘密情報ではない。
 // TODO: 実際のキーに置き換える。
-const revenueCatIosApiKey = 'appl_REPLACE_ME';
+const revenueCatIosApiKey = 'appl_NXiKgnvyoSUoYmHIBuNXkCEiahh';
 
 // Google Cloud Console で作成した2種類のOAuthクライアントID。
 // - googleIosClientId: iOSアプリ用クライアント(ネイティブSDKがこのIDで認証する)

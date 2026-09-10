@@ -1005,6 +1005,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a plan below to start generating lecture materials.';
 
   @override
+  String get creditDetailViewPlansButton => 'View & Change Plans';
+
+  @override
+  String get creditDetailViewPaidPlansButton => 'View Paid Plans';
+
+  @override
   String get creditDetailPlansLoadError =>
       'Could not load plans. Pull to refresh and try again.';
 

@@ -954,6 +954,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get creditDetailNoActivePlanSubtitle => '下のプランから選んで、講義資料の生成を始めましょう。';
 
   @override
+  String get creditDetailViewPlansButton => 'プランを見る・変更する';
+
+  @override
+  String get creditDetailViewPaidPlansButton => '有料プランを見る';
+
+  @override
   String get creditDetailPlansLoadError => 'プランを読み込めませんでした。下に引っ張って再読み込みしてください。';
 
   @override

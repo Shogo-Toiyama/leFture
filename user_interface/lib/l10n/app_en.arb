@@ -1580,6 +1580,16 @@
     "description": "Subtitle under the 'No active plan' headline, prompting the user to pick one of the plan tiles below."
   },
 
+  "creditDetailViewPlansButton": "View & Change Plans",
+  "@creditDetailViewPlansButton": {
+    "description": "Button on the Current Plan card (shown to users who already have an active plan) that navigates to the full Plans page, where paid App Store subscription tiers can be purchased."
+  },
+
+  "creditDetailViewPaidPlansButton": "View Paid Plans",
+  "@creditDetailViewPaidPlansButton": {
+    "description": "Link/button shown below the free self-serve plan tile (for users with no active plan yet) that navigates to the full Plans page to see the paid App Store subscription tiers."
+  },
+
   "creditDetailPlansLoadError": "Could not load plans. Pull to refresh and try again.",
   "@creditDetailPlansLoadError": {
     "description": "Error text shown in the plan-picker section if the list of claimable plans fails to load."

@@ -4,8 +4,10 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lefture/app/routes.dart';
 // import 'package:go_router/go_router.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
@@ -203,26 +205,26 @@ class _CurrentPlanCard extends ConsumerWidget {
                 fontSize: 12.5,
               ),
             ),
-            // const SizedBox(height: 16),
-            // SizedBox(
-            //   width: double.infinity,
-            //   child: OutlinedButton.icon(
-            //     onPressed: () => context.push(AppRoutes.plans),
-            //     style: OutlinedButton.styleFrom(
-            //       foregroundColor: Colors.white,
-            //       side: const BorderSide(color: Color(0x40FFFFFF)),
-            //       padding: const EdgeInsets.symmetric(vertical: 12),
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(12),
-            //       ),
-            //     ),
-            //     icon: const Icon(Icons.stars_rounded, size: 18, color: AppColors.starGold),
-            //     label: const Text(
-            //       'View & Change Plans',
-            //       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-            //     ),
-            //   ),
-            // ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(AppRoutes.plans),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0x40FFFFFF)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.stars_rounded, size: 18, color: AppColors.starGold),
+                label: Text(
+                  l10n.creditDetailViewPlansButton,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -428,6 +430,16 @@ class _PlanPickerSection extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 12),
               ],
+              // 有料(store_purchase)プランはここではclaimできないため、
+              // 実際の購入導線であるPlansPageへのリンクを添えておく。
+              TextButton.icon(
+                onPressed: () => context.push(AppRoutes.plans),
+                icon: const Icon(Icons.stars_rounded, size: 18, color: AppColors.starGold),
+                label: Text(
+                  l10n.creditDetailViewPaidPlansButton,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+              ),
             ],
           ),
         ),
