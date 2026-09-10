@@ -71,7 +71,9 @@ export const CreditsPage: React.FC = () => {
           {claimError && <p className="notice notice-error">{claimError}</p>}
           {plansLoading && <PageState kind="loading" />}
           <ul className="plan-list">
-            {plans.map((plan) => (
+            {/* store_purchaseプランはWeb版に購入導線が無い(iOSのみ実装済み)ため、
+                ここではself_serveプラン(Free Plan)だけをclaim対象として出す。 */}
+            {plans.filter((plan) => plan.claim_mode === 'self_serve').map((plan) => (
               <li key={plan.id} className="plan-row">
                 <span className="plan-row-name">{plan.name}</span>
                 <span className="muted">

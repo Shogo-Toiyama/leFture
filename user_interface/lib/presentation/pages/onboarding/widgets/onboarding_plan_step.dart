@@ -27,7 +27,9 @@ class OnboardingPlanStep extends HookConsumerWidget {
     final claimError = useState<String?>(null);
 
     final hasActivePlan = summaryAsync.asData?.value.hasActivePlan ?? false;
-    final plans = plansAsync.asData?.value ?? const [];
+    // /billing/plansはstore_purchaseプランも含むようになったため、オンボーディングで
+    // claimできるself_serveプラン(Free Plan)だけに絞る。
+    final plans = (plansAsync.asData?.value ?? const []).where((p) => p.isSelfServe).toList();
     final plan = plans.isNotEmpty ? plans.first : null;
 
     Future<void> handleContinue() async {

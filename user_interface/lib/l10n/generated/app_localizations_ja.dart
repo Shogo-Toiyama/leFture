@@ -1334,128 +1334,43 @@ class AppLocalizationsJa extends AppLocalizations {
       '学習ペースに合ったプランを選びましょう。アップグレード・ダウングレードはいつでも可能です。';
 
   @override
-  String get plansBillingToggleMonthly => '月額';
-
-  @override
-  String get plansBillingToggleYearly => '年額';
-
-  @override
-  String get plansBillingToggleSaveBadge => '20%お得';
-
-  @override
-  String get plansStarterTitle => 'スターター';
-
-  @override
-  String get plansStarterSubtitle => '気軽に学びたい方向けの基本機能';
-
-  @override
-  String get plansStarterBillingPeriod => '永年無料';
-
-  @override
   String get plansCurrentPlanBadge => '現在のプラン';
-
-  @override
-  String get plansStarterButtonCurrent => '現在有効なプラン';
-
-  @override
-  String get plansStarterButtonDowngrade => 'スタータープランにダウングレード';
-
-  @override
-  String get plansStarterFeature1 => '月間100クレジット';
-
-  @override
-  String get plansStarterFeature2 => '標準AI講義文字起こし';
-
-  @override
-  String get plansStarterFeature3 => 'コアトピックマップ生成';
-
-  @override
-  String get plansStarterFeature4 => '基本的なAI Q&Aチャット';
-
-  @override
-  String get plansStarterAlreadyOnSnackbar => 'すでにスタータープランをご利用中です。';
-
-  @override
-  String get plansProTitle => 'Orbit Pro';
-
-  @override
-  String get plansProSubtitle => '最高速度、無制限のインサイト';
-
-  @override
-  String get plansProBillingPeriodAnnual => '月額換算（年払い）';
-
-  @override
-  String get plansBillingPeriodMonthly => '月額';
 
   @override
   String get plansMostPopularBadge => '🔥 一番人気';
 
   @override
-  String get plansProButton => 'Proにアップグレード';
+  String get plansCurrentPlanButton => '現在有効なプラン';
 
   @override
-  String get plansProFeature1 => '月間1,200クレジット（12倍）';
+  String get plansClaimFreeButton => '無料で始める';
 
   @override
-  String get plansProFeature2 => 'リアルタイムオンデバイス＆Whisper ASR';
+  String get plansSubscribeButton => '登録する';
 
   @override
-  String get plansProFeature3 => '無制限の詳細ノート・復習カード';
+  String get plansUnavailableButton => '利用できません';
 
   @override
-  String get plansProFeature4 => 'AIモデルの優先処理速度';
+  String get plansFeatureAllToolsIncluded => '全ての機能が利用可能';
 
   @override
-  String get plansProFeature5 => '文字起こしのエクスポート（PDF・Markdown）';
+  String get plansFeatureCancelAnytime => 'いつでもキャンセル可能';
 
   @override
-  String get plansProFeature6 => 'ギャラクシーナレッジグラフ フル機能';
+  String get plansLoadError => 'プランを読み込めませんでした。もう一度お試しください。';
 
   @override
-  String get plansMaxTitle => 'Orbit Max';
+  String get plansPurchaseErrorTitle => 'エラーが発生しました';
 
   @override
-  String get plansMaxSubtitle => 'ヘビーユーザー・研究者向け';
+  String get plansPurchaseErrorMessage => '処理を完了できませんでした。もう一度お試しください。';
 
   @override
-  String get plansBestValueBadge => '⚡ ベストバリュー';
-
-  @override
-  String get plansMaxButton => 'Orbit Maxを入手';
-
-  @override
-  String get plansMaxFeature1 => '月間3,500クレジット';
-
-  @override
-  String get plansMaxFeature2 => 'Proの全機能を含む';
-
-  @override
-  String get plansMaxFeature3 => '高度なギャラクシーナレッジグラフ';
-
-  @override
-  String get plansMaxFeature4 => 'カスタムAIモデルコンテキスト＆ファインチューニング';
-
-  @override
-  String get plansMaxFeature5 => '24時間365日の優先サポート';
-
-  @override
-  String get plansMaxFeature6 => '新機能への早期アクセス';
+  String get plansCreditingInProgressMessage => '購入が完了しました。クレジットを反映しています…';
 
   @override
   String get plansFooterNote => 'いつでもキャンセル可能。安全に暗号化されています。';
-
-  @override
-  String plansSelectDialogTitle(String planName) {
-    return '$planNameを選択';
-  }
-
-  @override
-  String plansSelectDialogMessage(String planName) {
-    return '$planNameの購入機能は次回アップデートで近日公開予定です！';
-  }
-
-  @override
-  String get plansSelectDialogConfirmButton => '了解';
 
   @override
   String get changePasswordResetSentTitle => 'リセットリンクを送信しました';

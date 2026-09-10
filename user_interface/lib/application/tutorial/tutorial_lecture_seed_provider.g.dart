@@ -9,12 +9,17 @@ part of 'tutorial_lecture_seed_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// ログイン中ユーザーに、既定コース(本物のSupabase同期コース)とチュートリアル
-/// 講義(ローカル限定)が揃っているか確認し、無ければ用意する。
+/// 講義(Cloud生成、Supabase同期)が揃っているか確認し、無ければ用意する。
 /// currentUserProviderをwatchしているため、ログイン/ログアウト/ユーザー
 /// 切り替えのたびに再評価され、冪等チェックも都度やり直される。
 ///
-/// 既定コースの確保はSupabaseへのネットワーク呼び出しを伴うため、オフライン時は
-/// 今回の起動では諦める(DefaultCourseServiceがnullを返す)。この場合チュートリアル
+/// チュートリアル講義の実体は`/seed-tutorial`(lefture_backend)がユーザーの
+/// 最初のDisplay言語に合わせてSupabaseへ投入する。既存ユーザー(移行前から
+/// このアプリを使っている、またはローカルに旧ローカル生成方式のチュートリアル
+/// を持つ)には新規作成しない — 判定方法は下記コメント参照。
+///
+/// 既定コースの確保・チュートリアル投入・Pull同期はいずれもネットワーク呼び
+/// 出しを伴うため、オフライン時は今回の起動では諦める。この場合チュートリアル
 /// 講義のシード自体もスキップし、次回起動時(オンラインになったタイミング)に
 /// 再試行する。
 
@@ -22,12 +27,17 @@ part of 'tutorial_lecture_seed_provider.dart';
 final tutorialLectureSeedProvider = TutorialLectureSeedProvider._();
 
 /// ログイン中ユーザーに、既定コース(本物のSupabase同期コース)とチュートリアル
-/// 講義(ローカル限定)が揃っているか確認し、無ければ用意する。
+/// 講義(Cloud生成、Supabase同期)が揃っているか確認し、無ければ用意する。
 /// currentUserProviderをwatchしているため、ログイン/ログアウト/ユーザー
 /// 切り替えのたびに再評価され、冪等チェックも都度やり直される。
 ///
-/// 既定コースの確保はSupabaseへのネットワーク呼び出しを伴うため、オフライン時は
-/// 今回の起動では諦める(DefaultCourseServiceがnullを返す)。この場合チュートリアル
+/// チュートリアル講義の実体は`/seed-tutorial`(lefture_backend)がユーザーの
+/// 最初のDisplay言語に合わせてSupabaseへ投入する。既存ユーザー(移行前から
+/// このアプリを使っている、またはローカルに旧ローカル生成方式のチュートリアル
+/// を持つ)には新規作成しない — 判定方法は下記コメント参照。
+///
+/// 既定コースの確保・チュートリアル投入・Pull同期はいずれもネットワーク呼び
+/// 出しを伴うため、オフライン時は今回の起動では諦める。この場合チュートリアル
 /// 講義のシード自体もスキップし、次回起動時(オンラインになったタイミング)に
 /// 再試行する。
 
@@ -35,12 +45,17 @@ final class TutorialLectureSeedProvider
     extends $FunctionalProvider<AsyncValue<void>, void, FutureOr<void>>
     with $FutureModifier<void>, $FutureProvider<void> {
   /// ログイン中ユーザーに、既定コース(本物のSupabase同期コース)とチュートリアル
-  /// 講義(ローカル限定)が揃っているか確認し、無ければ用意する。
+  /// 講義(Cloud生成、Supabase同期)が揃っているか確認し、無ければ用意する。
   /// currentUserProviderをwatchしているため、ログイン/ログアウト/ユーザー
   /// 切り替えのたびに再評価され、冪等チェックも都度やり直される。
   ///
-  /// 既定コースの確保はSupabaseへのネットワーク呼び出しを伴うため、オフライン時は
-  /// 今回の起動では諦める(DefaultCourseServiceがnullを返す)。この場合チュートリアル
+  /// チュートリアル講義の実体は`/seed-tutorial`(lefture_backend)がユーザーの
+  /// 最初のDisplay言語に合わせてSupabaseへ投入する。既存ユーザー(移行前から
+  /// このアプリを使っている、またはローカルに旧ローカル生成方式のチュートリアル
+  /// を持つ)には新規作成しない — 判定方法は下記コメント参照。
+  ///
+  /// 既定コースの確保・チュートリアル投入・Pull同期はいずれもネットワーク呼び
+  /// 出しを伴うため、オフライン時は今回の起動では諦める。この場合チュートリアル
   /// 講義のシード自体もスキップし、次回起動時(オンラインになったタイミング)に
   /// 再試行する。
   TutorialLectureSeedProvider._()
@@ -69,4 +84,4 @@ final class TutorialLectureSeedProvider
 }
 
 String _$tutorialLectureSeedHash() =>
-    r'539e9ec2e82e2532cc1bd8cb7e34d3f62cce34fd';
+    r'da3824325968166ca85ce5972ea631e4b69bbd41';

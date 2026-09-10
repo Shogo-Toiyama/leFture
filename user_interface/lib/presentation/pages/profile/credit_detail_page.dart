@@ -134,7 +134,13 @@ class _CurrentPlanCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final plansAsync = ref.watch(claimablePlansProvider);
-    final activePlan = plansAsync.asData?.value.firstOrNull;
+    final plans = plansAsync.asData?.value ?? const <PlanOption>[];
+    // /billing/plansはstore_purchaseプランも含むため、単純にfirstOrNullではなく
+    // summaryのmonthly_allocationと一致するプランを探す(見つからなければ
+    // フォールバック表示のまま)。
+    final activePlan = plans
+        .where((p) => p.monthlyCreditAmountMicro == summary.monthlyAllocationMicro)
+        .firstOrNull;
 
     final planTitle = activePlan?.name ?? l10n.creditDetailActivePlanFallback;
     final creditsCount = summary.monthlyAllocationDisplay ?? activePlan?.monthlyCreditAmountDisplay;
@@ -407,7 +413,9 @@ class _PlanPickerSection extends HookConsumerWidget {
           ),
           data: (plans) => Column(
             children: [
-              for (final plan in plans) ...[
+              // store_purchaseプランはここでは直接claimできない(claim_plan()側で
+              // 弾かれる) — 実際の購入導線はPlansPage(RevenueCat経由)側にある。
+              for (final plan in plans.where((p) => p.isSelfServe)) ...[
                 _PlanTile(
                   title: plan.name,
                   subtitle: l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),

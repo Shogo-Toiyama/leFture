@@ -205,7 +205,9 @@ export const OnboardingWizard: React.FC = () => {
               </p>
               {plansLoading && <p style={{ color: 'var(--comet)' }}>Loading plans…</p>}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {plans.map((plan) => (
+                {/* store_purchaseプランはWeb版に購入導線が無い(iOSのみ実装済み)ため、
+                    ここではself_serveプラン(Free Plan)だけをclaim対象として出す。 */}
+                {plans.filter((plan) => plan.claim_mode === 'self_serve').map((plan) => (
                   <div
                     key={plan.id}
                     style={{

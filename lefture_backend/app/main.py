@@ -11,6 +11,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 import json
 import time
 import uuid
+import hmac
 import asyncio
 import logging
 from typing import Optional
@@ -163,6 +164,7 @@ STALE_FAILED_JOB_TIMEOUT_MINUTES = int(os.getenv("STALE_FAILED_JOB_TIMEOUT_MINUT
 PATROL_TIME_WINDOW_TOLERANCE_MINUTES = int(os.getenv("PATROL_TIME_WINDOW_TOLERANCE_MINUTES", "2")) # Cloud Schedulerは10分おきに叩くが、DB周回を伴う本チェックは0分・30分付近のみ実行(それ以外はウォームアップのみ)。配信遅延の許容幅
 PATROL_DAILY_HOUR_UTC = int(os.getenv("PATROL_DAILY_HOUR_UTC", "0")) # サブスク更新など「1日1回」でよいPatrolチェックを走らせるUTC時(0-23)
 SEND_EMAIL_HOOK_SECRET = os.getenv("SEND_EMAIL_HOOK_SECRET", "") # Supabase Auth「Send Email Hook」の署名検証シークレット(Standard Webhooks形式)
+REVENUECAT_WEBHOOK_SECRET = os.getenv("REVENUECAT_WEBHOOK_SECRET", "") # RevenueCat Webhookの検証シークレット(Authorizationヘッダーの値と一致させる)
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -730,10 +732,13 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
 @app.get("/billing/plans")
 async def billing_plans(request: Request):
     """
-    今claimできる(claim_mode='self_serve'かつ無効化されていない)プラン一覧。
-    Flutter側にplan_idをハードコードさせないための一覧取得エンドポイント。
-    店舗課金(claim_mode='store_purchase')のプランはここには含めない
-    (ストアの購入フロー経由でのみ有効化されるべきなので)。
+    無効化されていないクレジット配布プラン一覧(claim_mode問わず)。
+    Flutter側にplan_id・クレジット量をハードコードさせないための一覧取得
+    エンドポイント。claim_mode='store_purchase'のプランもここに含める
+    (一覧に出すことと、このエンドポイント経由でclaimできることは別問題 —
+    実際の購入操作の可否はclaim_plan() SQL関数側のclaim_modeチェックが
+    引き続き担保する。store_purchaseプランの有効化はRevenueCat Webhook
+    経由でのみ行われ、/billing/claim-planでは弾かれる)。
     """
     auth_header = request.headers.get("Authorization")
     if not auth_header:
@@ -757,8 +762,7 @@ async def billing_plans(request: Request):
     try:
         plans_res = await asyncio.to_thread(
             lambda: admin_client.table("subscription_plans")
-                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, disabled_at")
-                .eq("claim_mode", "self_serve")
+                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, claim_mode, store_product_id, disabled_at")
                 .execute()
         )
     except Exception as e:
@@ -1004,6 +1008,95 @@ async def billing_history(request: Request):
     except Exception as e:
         logger.error(f"Error processing billing history: {e}", exc_info=True)
         return {"history": []}
+
+
+@app.post("/billing/revenuecat-webhook")
+async def revenuecat_webhook(request: Request, authorization: str = Header(None)):
+    """
+    RevenueCatからのサブスクイベント通知を受け取り、store_purchaseプランの
+    クレジットを付与/失効させる。クライアントから送られたレシートを自前で
+    Apple/Google Server APIに問い合わせて検証する方式(このファイル冒頭の
+    /billing/claim-plan付近のTODOが元々想定していたもの)は採用していない —
+    RevenueCatが既にサーバー側でレシート検証を代行しており、そこから届く
+    このWebhookイベント自体を信頼境界として扱う。
+
+    認証はRevenueCatダッシュボードで設定した固定文字列をAuthorizationヘッダーで
+    受け取り、定数時間比較する(/webhook/orchestrator の x-webhook-secret と
+    同じ「単純な文字列比較」方式だが、あちらは素の != 比較なのに対しこちらは
+    hmac.compare_digestを使う。あちらは今回touchしない)。
+
+    冪等性・実際のクレジット付与/mapping更新ロジックは全て
+    grant_store_subscription_credits() / expire_store_subscription() SQL関数側で
+    アトミックに行う(同じevent_idの再送でも二重付与しない)。
+    """
+    if REVENUECAT_WEBHOOK_SECRET:
+        if not hmac.compare_digest((authorization or "").strip(), REVENUECAT_WEBHOOK_SECRET):
+            logger.warning("Rejected RevenueCat webhook: bad/missing Authorization header")
+            raise HTTPException(status_code=401, detail="Unauthorized webhook")
+    else:
+        logger.warning("REVENUECAT_WEBHOOK_SECRET not set - skipping webhook verification (INSECURE)")
+
+    body = await request.json()
+    event = body.get("event", {})
+    event_id = event.get("id")
+    event_type = event.get("type")
+    app_user_id = event.get("app_user_id")  # Purchases.logIn(supabaseUserId) によりSupabaseのuser idと一致する
+    product_id = event.get("product_id")
+    expiration_at_ms = event.get("expiration_at_ms")
+
+    if not event_id or not event_type or not app_user_id:
+        # リトライしても直らない不正なペイロード。ログだけ残して200で終わらせる。
+        logger.error(f"Malformed RevenueCat webhook payload: {body}")
+        return {"status": "ignored", "reason": "malformed_payload"}
+
+    admin_client = get_supabase_client()
+
+    # CANCELLATION(自動更新オフになっただけで期間終了までは有効)は、ここで
+    # マッピングを失効させてもクレジットを取り消してもいけない。PRODUCT_CHANGE/
+    # BILLING_ISSUE/TRANSFER等も含め、今回のスコープでは意図的に無視する。
+    GRANT_EVENT_TYPES = {"INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION"}
+
+    try:
+        if event_type in GRANT_EVENT_TYPES:
+            if not product_id or expiration_at_ms is None:
+                logger.error(f"RevenueCat {event_type} missing product_id/expiration_at_ms: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            period_end_iso = datetime.fromtimestamp(expiration_at_ms / 1000, tz=timezone.utc).isoformat()
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("grant_store_subscription_credits", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
+                    "p_event_type": event_type,
+                    "p_product_id": product_id,
+                    "p_period_end": period_end_iso,
+                }).execute()
+            )
+        elif event_type == "EXPIRATION":
+            if not product_id:
+                logger.error(f"RevenueCat EXPIRATION missing product_id: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("expire_store_subscription", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
+                    "p_product_id": product_id,
+                }).execute()
+            )
+        else:
+            logger.info(f"RevenueCat webhook: ignoring event_type={event_type} (event_id={event_id})")
+            return {"status": "ignored", "event_type": event_type}
+    except Exception as e:
+        error_str = str(e)
+        if "unknown_store_product" in error_str:
+            # 恒久的な設定ミス(subscription_plans側に商品IDが登録されていない)。
+            # リトライしても直らないため、ログだけ残して200で止める。
+            logger.error(f"RevenueCat webhook: unknown store product - {error_str} (event={event})")
+            return {"status": "error_logged", "reason": "unknown_product"}
+        # DB接続エラー等の一時的な失敗はRevenueCat側のリトライに委ねるため5xxを返す。
+        logger.error(f"RevenueCat webhook processing failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal error processing webhook")
+
+    return {"status": "success", "event_type": event_type}
 
 
 # ---------------------------------------------------------
@@ -2454,10 +2547,17 @@ async def _patrol_renew_subscriptions() -> dict:
     """
     admin_client = get_supabase_client()
 
+    # claim_mode='store_purchase'のmappingはここで拾ってはいけない —
+    # その更新はRevenueCat Webhook経由(grant_store_subscription_credits)
+    # でのみ行われるべきで、このパトロールに乗せるとWebhookと二重に
+    # current_period_endを進めてしまう。subscription_plansとの埋め込み
+    # フィルタ(!inner)でself_serveのみに絞る(renew_subscription()側にも
+    # 同種のガードを二重防御として入れてある)。
     due_res = await asyncio.to_thread(
         lambda: admin_client.table("user_subscription_mappings")
-            .select("id")
+            .select("id, subscription_plans!inner(claim_mode)")
             .eq("status", "active")
+            .eq("subscription_plans.claim_mode", "self_serve")
             .lte("current_period_end", datetime.now(timezone.utc).isoformat())
             .execute()
     )

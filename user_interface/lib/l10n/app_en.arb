@@ -2231,216 +2231,69 @@
     "description": "Subtitle under the Plans page headline, reassuring the user plan changes are flexible."
   },
 
-  "plansBillingToggleMonthly": "Monthly",
-  "@plansBillingToggleMonthly": {
-    "description": "Left segment label of the monthly/yearly billing toggle switch at the top of the Plans page."
-  },
-
-  "plansBillingToggleYearly": "Yearly",
-  "@plansBillingToggleYearly": {
-    "description": "Right segment label of the monthly/yearly billing toggle switch at the top of the Plans page."
-  },
-
-  "plansBillingToggleSaveBadge": "SAVE 20%",
-  "@plansBillingToggleSaveBadge": {
-    "description": "Tiny all-caps badge next to the Yearly toggle segment, advertising the annual-billing discount. Must stay short to fit inline in the pill; keep the percentage."
-  },
-
-  "plansStarterTitle": "Starter",
-  "@plansStarterTitle": {
-    "description": "Name of the free pricing tier's card on the Plans page."
-  },
-
-  "plansStarterSubtitle": "Essential tools for casual learners",
-  "@plansStarterSubtitle": {
-    "description": "One-line tagline under the Starter plan's name on its pricing card."
-  },
-
-  "plansStarterBillingPeriod": "forever free",
-  "@plansStarterBillingPeriod": {
-    "description": "Small text next to the '$0' price on the Starter plan card, emphasizing it never expires/never charges."
-  },
-
   "plansCurrentPlanBadge": "CURRENT PLAN",
   "@plansCurrentPlanBadge": {
-    "description": "All-caps badge shown on a pricing card that matches the user's currently active plan (only ever the Starter card today, since paid tiers aren't purchasable yet)."
-  },
-
-  "plansStarterButtonCurrent": "Current Active Plan",
-  "@plansStarterButtonCurrent": {
-    "description": "Disabled button label on the Starter card when it is the user's current plan, replacing the normal call-to-action."
-  },
-
-  "plansStarterButtonDowngrade": "Downgrade to Starter",
-  "@plansStarterButtonDowngrade": {
-    "description": "Button label on the Starter card when the user is currently on a different (paid) plan, offering to downgrade."
-  },
-
-  "plansStarterFeature1": "100 Monthly Credits",
-  "@plansStarterFeature1": {
-    "description": "First bullet-point feature listed on the Starter pricing card, with a checkmark icon."
-  },
-
-  "plansStarterFeature2": "Standard AI Lecture Transcripts",
-  "@plansStarterFeature2": {
-    "description": "Second bullet-point feature listed on the Starter pricing card, with a checkmark icon."
-  },
-
-  "plansStarterFeature3": "Core Topic Map Generation",
-  "@plansStarterFeature3": {
-    "description": "Third bullet-point feature listed on the Starter pricing card, with a checkmark icon."
-  },
-
-  "plansStarterFeature4": "Basic AI Q&A Chat",
-  "@plansStarterFeature4": {
-    "description": "Fourth bullet-point feature listed on the Starter pricing card, with a checkmark icon."
-  },
-
-  "plansStarterAlreadyOnSnackbar": "You are already on the Starter plan.",
-  "@plansStarterAlreadyOnSnackbar": {
-    "description": "Snackbar shown if the user taps the Starter card's button while already on the free tier (a placeholder no-op today, since downgrade isn't wired up yet)."
-  },
-
-  "plansProTitle": "Orbit Pro",
-  "@plansProTitle": {
-    "description": "Name of the mid-tier paid pricing plan's card on the Plans page. 'Orbit' matches the app's space theme; keep as a proper-noun-style plan name, do not translate the word 'Pro' loosely if your language commonly keeps 'Pro' as a loanword for product tiers."
-  },
-
-  "plansProSubtitle": "Maximum speed, unlimited insights",
-  "@plansProSubtitle": {
-    "description": "One-line tagline under the Orbit Pro plan's name on its pricing card."
-  },
-
-  "plansProBillingPeriodAnnual": "per month, billed yearly",
-  "@plansProBillingPeriodAnnual": {
-    "description": "Small text next to the price on the Orbit Pro/Orbit Max cards when the annual-billing toggle is selected, clarifying the monthly-equivalent price is billed as one yearly charge."
-  },
-
-  "plansBillingPeriodMonthly": "per month",
-  "@plansBillingPeriodMonthly": {
-    "description": "Small text next to the price on the Orbit Pro/Orbit Max cards when the monthly-billing toggle is selected."
+    "description": "All-caps badge shown on the pricing card that matches the user's currently active plan (matched by comparing the plan's monthly credit amount against the account's current allocation)."
   },
 
   "plansMostPopularBadge": "🔥 MOST POPULAR",
   "@plansMostPopularBadge": {
-    "description": "All-caps badge on the Orbit Pro pricing card highlighting it as the most popular choice. Keep the 🔥 emoji."
+    "description": "All-caps badge on the middle store-purchase tier's pricing card, highlighting it as the most popular choice. Keep the 🔥 emoji."
   },
 
-  "plansProButton": "Upgrade to Pro",
-  "@plansProButton": {
-    "description": "Call-to-action button label on the Orbit Pro pricing card; opens the (placeholder) plan-selection dialog."
+  "plansCurrentPlanButton": "Current Plan",
+  "@plansCurrentPlanButton": {
+    "description": "Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action."
   },
 
-  "plansProFeature1": "1,200 Monthly Credits (12x boost)",
-  "@plansProFeature1": {
-    "description": "First bullet-point feature on the Orbit Pro pricing card. Keep the '12x boost' emphasis on the multiplier over the free tier."
+  "plansClaimFreeButton": "Get Started Free",
+  "@plansClaimFreeButton": {
+    "description": "Call-to-action button label on the Free plan's pricing card. Tapping it claims the free plan in-app (no store purchase involved)."
   },
 
-  "plansProFeature2": "Realtime On-Device & Whisper ASR",
-  "@plansProFeature2": {
-    "description": "Second bullet-point feature on the Orbit Pro pricing card. 'ASR' (automatic speech recognition) and 'Whisper' (a specific speech-recognition model name) should stay as technical terms/brand-like names, not be translated."
+  "plansSubscribeButton": "Subscribe",
+  "@plansSubscribeButton": {
+    "description": "Call-to-action button label on a paid (App Store subscription) pricing card. Tapping it starts the RevenueCat/App Store purchase flow."
   },
 
-  "plansProFeature3": "Unlimited Deep Notes & Review Cards",
-  "@plansProFeature3": {
-    "description": "Third bullet-point feature on the Orbit Pro pricing card. 'Deep Notes' and 'Review Cards' are the app's own named study-material features, keep consistent with their labels elsewhere in the app."
+  "plansUnavailableButton": "Unavailable",
+  "@plansUnavailableButton": {
+    "description": "Disabled button label shown on a paid plan's card when its App Store product/price couldn't be loaded from RevenueCat yet."
   },
 
-  "plansProFeature4": "High-Priority AI Model Speed",
-  "@plansProFeature4": {
-    "description": "Fourth bullet-point feature on the Orbit Pro pricing card."
+  "plansFeatureAllToolsIncluded": "All app features included",
+  "@plansFeatureAllToolsIncluded": {
+    "description": "Generic bullet-point shown on every pricing card (all tiers currently unlock the same features; only the monthly credit amount differs)."
   },
 
-  "plansProFeature5": "Export Transcripts (PDF & Markdown)",
-  "@plansProFeature5": {
-    "description": "Fifth bullet-point feature on the Orbit Pro pricing card. 'PDF' and 'Markdown' are file-format names, keep untranslated."
+  "plansFeatureCancelAnytime": "Cancel anytime",
+  "@plansFeatureCancelAnytime": {
+    "description": "Generic bullet-point shown on every pricing card, reassuring the user a subscription isn't a long-term commitment."
   },
 
-  "plansProFeature6": "Full Galaxy Knowledge Graph",
-  "@plansProFeature6": {
-    "description": "Sixth bullet-point feature on the Orbit Pro pricing card. 'Galaxy Knowledge Graph' is a named in-app feature, matching the app's space theme."
+  "plansLoadError": "Couldn't load plans. Please try again.",
+  "@plansLoadError": {
+    "description": "Error message shown on the Plans page when the plan list or store pricing fails to load."
   },
 
-  "plansMaxTitle": "Orbit Max",
-  "@plansMaxTitle": {
-    "description": "Name of the top-tier paid pricing plan's card on the Plans page. Keep as a proper-noun-style plan name, matching plansProTitle's naming convention."
+  "plansPurchaseErrorTitle": "Something Went Wrong",
+  "@plansPurchaseErrorTitle": {
+    "description": "Title of the dialog shown when a purchase or free-plan claim fails on the Plans page."
   },
 
-  "plansMaxSubtitle": "For heavy researchers & power users",
-  "@plansMaxSubtitle": {
-    "description": "One-line tagline under the Orbit Max plan's name on its pricing card."
+  "plansPurchaseErrorMessage": "We couldn't complete that. Please try again.",
+  "@plansPurchaseErrorMessage": {
+    "description": "Body text of the dialog shown when a purchase or free-plan claim fails on the Plans page."
   },
 
-  "plansBestValueBadge": "⚡ BEST VALUE",
-  "@plansBestValueBadge": {
-    "description": "All-caps badge on the Orbit Max pricing card highlighting it as the best value tier. Keep the ⚡ emoji."
-  },
-
-  "plansMaxButton": "Get Orbit Max",
-  "@plansMaxButton": {
-    "description": "Call-to-action button label on the Orbit Max pricing card; opens the (placeholder) plan-selection dialog."
-  },
-
-  "plansMaxFeature1": "3,500 Monthly Credits",
-  "@plansMaxFeature1": {
-    "description": "First bullet-point feature on the Orbit Max pricing card."
-  },
-
-  "plansMaxFeature2": "All Pro Features Included",
-  "@plansMaxFeature2": {
-    "description": "Second bullet-point feature on the Orbit Max pricing card, noting it's a superset of the Orbit Pro tier."
-  },
-
-  "plansMaxFeature3": "Advanced Galaxy Knowledge Graph",
-  "@plansMaxFeature3": {
-    "description": "Third bullet-point feature on the Orbit Max pricing card, an upgraded version of plansProFeature6."
-  },
-
-  "plansMaxFeature4": "Custom AI Model Context & Fine-tuning",
-  "@plansMaxFeature4": {
-    "description": "Fourth bullet-point feature on the Orbit Max pricing card. 'Fine-tuning' is a machine-learning term, keep its conventional translation if your language has an established one."
-  },
-
-  "plansMaxFeature5": "Dedicated 24/7 Priority Support",
-  "@plansMaxFeature5": {
-    "description": "Fifth bullet-point feature on the Orbit Max pricing card. Keep '24/7' as-is (commonly understood numeral shorthand)."
-  },
-
-  "plansMaxFeature6": "Early Access to New Experimental Features",
-  "@plansMaxFeature6": {
-    "description": "Sixth bullet-point feature on the Orbit Max pricing card."
+  "plansCreditingInProgressMessage": "Purchase successful! Crediting your account…",
+  "@plansCreditingInProgressMessage": {
+    "description": "Optimistic snackbar shown immediately after a successful App Store purchase, while the app waits for the RevenueCat webhook to actually grant credits server-side (which happens asynchronously, not instantly)."
   },
 
   "plansFooterNote": "Cancel anytime. Encrypted & secure.",
   "@plansFooterNote": {
     "description": "Small reassurance note at the bottom of the Plans page, next to a shield icon."
-  },
-
-  "plansSelectDialogTitle": "Select {planName}",
-  "@plansSelectDialogTitle": {
-    "description": "Title of the placeholder dialog shown when tapping a paid plan's call-to-action button (purchasing isn't implemented yet). {planName} is the already-localized plan name (e.g. plansProTitle's value).",
-    "placeholders": {
-      "planName": {
-        "type": "String",
-        "example": "Orbit Pro"
-      }
-    }
-  },
-
-  "plansSelectDialogMessage": "{planName} purchasing flow is coming soon in the next update!",
-  "@plansSelectDialogMessage": {
-    "description": "Body text of the placeholder plan-selection dialog, telling the user purchasing isn't available yet. Upbeat, apologetic-but-excited tone. {planName} is the already-localized plan name.",
-    "placeholders": {
-      "planName": {
-        "type": "String",
-        "example": "Orbit Pro"
-      }
-    }
-  },
-
-  "plansSelectDialogConfirmButton": "Got it",
-  "@plansSelectDialogConfirmButton": {
-    "description": "Dismiss button on the placeholder plan-selection dialog. Casual acknowledgement phrase, not a formal 'OK'."
   },
 
   "changePasswordResetSentTitle": "Reset Link Sent",

@@ -9,11 +9,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 
 const supabaseUrl = 'https://lvbpuywjxmmeecftinkb.supabase.co';
 const supabaseAnonKey = 'sb_publishable_LUfg9T2f-zvargd7GgR7Cw_KAl86N8c';
+
+// RevenueCatダッシュボード(Project settings > API keys)のiOS public SDK key。
+// Supabaseのanon keyと同じく、クライアント埋め込み前提の公開鍵であり秘密情報ではない。
+// TODO: 実際のキーに置き換える。
+const revenueCatIosApiKey = 'appl_REPLACE_ME';
 
 // Google Cloud Console で作成した2種類のOAuthクライアントID。
 // - googleIosClientId: iOSアプリ用クライアント(ネイティブSDKがこのIDで認証する)
@@ -59,6 +65,12 @@ Future<void> main() async {
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     );
+
+    // Supabaseセッション復元がこの時点で保証されないため、appUserIDなしの
+    // 匿名構成で初期化する。ログイン中ユーザーIDとの同期は
+    // purchasesIdentityProvider(application/purchases/)が行う。
+    await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.info);
+    await Purchases.configure(PurchasesConfiguration(revenueCatIosApiKey));
 
     await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

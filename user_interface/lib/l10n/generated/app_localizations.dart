@@ -2498,245 +2498,83 @@ abstract class AppLocalizations {
   /// **'Choose the plan that fits your study pace. Upgrade or downgrade anytime.'**
   String get plansSubheadline;
 
-  /// Left segment label of the monthly/yearly billing toggle switch at the top of the Plans page.
-  ///
-  /// In en, this message translates to:
-  /// **'Monthly'**
-  String get plansBillingToggleMonthly;
-
-  /// Right segment label of the monthly/yearly billing toggle switch at the top of the Plans page.
-  ///
-  /// In en, this message translates to:
-  /// **'Yearly'**
-  String get plansBillingToggleYearly;
-
-  /// Tiny all-caps badge next to the Yearly toggle segment, advertising the annual-billing discount. Must stay short to fit inline in the pill; keep the percentage.
-  ///
-  /// In en, this message translates to:
-  /// **'SAVE 20%'**
-  String get plansBillingToggleSaveBadge;
-
-  /// Name of the free pricing tier's card on the Plans page.
-  ///
-  /// In en, this message translates to:
-  /// **'Starter'**
-  String get plansStarterTitle;
-
-  /// One-line tagline under the Starter plan's name on its pricing card.
-  ///
-  /// In en, this message translates to:
-  /// **'Essential tools for casual learners'**
-  String get plansStarterSubtitle;
-
-  /// Small text next to the '$0' price on the Starter plan card, emphasizing it never expires/never charges.
-  ///
-  /// In en, this message translates to:
-  /// **'forever free'**
-  String get plansStarterBillingPeriod;
-
-  /// All-caps badge shown on a pricing card that matches the user's currently active plan (only ever the Starter card today, since paid tiers aren't purchasable yet).
+  /// All-caps badge shown on the pricing card that matches the user's currently active plan (matched by comparing the plan's monthly credit amount against the account's current allocation).
   ///
   /// In en, this message translates to:
   /// **'CURRENT PLAN'**
   String get plansCurrentPlanBadge;
 
-  /// Disabled button label on the Starter card when it is the user's current plan, replacing the normal call-to-action.
-  ///
-  /// In en, this message translates to:
-  /// **'Current Active Plan'**
-  String get plansStarterButtonCurrent;
-
-  /// Button label on the Starter card when the user is currently on a different (paid) plan, offering to downgrade.
-  ///
-  /// In en, this message translates to:
-  /// **'Downgrade to Starter'**
-  String get plansStarterButtonDowngrade;
-
-  /// First bullet-point feature listed on the Starter pricing card, with a checkmark icon.
-  ///
-  /// In en, this message translates to:
-  /// **'100 Monthly Credits'**
-  String get plansStarterFeature1;
-
-  /// Second bullet-point feature listed on the Starter pricing card, with a checkmark icon.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard AI Lecture Transcripts'**
-  String get plansStarterFeature2;
-
-  /// Third bullet-point feature listed on the Starter pricing card, with a checkmark icon.
-  ///
-  /// In en, this message translates to:
-  /// **'Core Topic Map Generation'**
-  String get plansStarterFeature3;
-
-  /// Fourth bullet-point feature listed on the Starter pricing card, with a checkmark icon.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic AI Q&A Chat'**
-  String get plansStarterFeature4;
-
-  /// Snackbar shown if the user taps the Starter card's button while already on the free tier (a placeholder no-op today, since downgrade isn't wired up yet).
-  ///
-  /// In en, this message translates to:
-  /// **'You are already on the Starter plan.'**
-  String get plansStarterAlreadyOnSnackbar;
-
-  /// Name of the mid-tier paid pricing plan's card on the Plans page. 'Orbit' matches the app's space theme; keep as a proper-noun-style plan name, do not translate the word 'Pro' loosely if your language commonly keeps 'Pro' as a loanword for product tiers.
-  ///
-  /// In en, this message translates to:
-  /// **'Orbit Pro'**
-  String get plansProTitle;
-
-  /// One-line tagline under the Orbit Pro plan's name on its pricing card.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximum speed, unlimited insights'**
-  String get plansProSubtitle;
-
-  /// Small text next to the price on the Orbit Pro/Orbit Max cards when the annual-billing toggle is selected, clarifying the monthly-equivalent price is billed as one yearly charge.
-  ///
-  /// In en, this message translates to:
-  /// **'per month, billed yearly'**
-  String get plansProBillingPeriodAnnual;
-
-  /// Small text next to the price on the Orbit Pro/Orbit Max cards when the monthly-billing toggle is selected.
-  ///
-  /// In en, this message translates to:
-  /// **'per month'**
-  String get plansBillingPeriodMonthly;
-
-  /// All-caps badge on the Orbit Pro pricing card highlighting it as the most popular choice. Keep the 🔥 emoji.
+  /// All-caps badge on the middle store-purchase tier's pricing card, highlighting it as the most popular choice. Keep the 🔥 emoji.
   ///
   /// In en, this message translates to:
   /// **'🔥 MOST POPULAR'**
   String get plansMostPopularBadge;
 
-  /// Call-to-action button label on the Orbit Pro pricing card; opens the (placeholder) plan-selection dialog.
+  /// Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action.
   ///
   /// In en, this message translates to:
-  /// **'Upgrade to Pro'**
-  String get plansProButton;
+  /// **'Current Plan'**
+  String get plansCurrentPlanButton;
 
-  /// First bullet-point feature on the Orbit Pro pricing card. Keep the '12x boost' emphasis on the multiplier over the free tier.
+  /// Call-to-action button label on the Free plan's pricing card. Tapping it claims the free plan in-app (no store purchase involved).
   ///
   /// In en, this message translates to:
-  /// **'1,200 Monthly Credits (12x boost)'**
-  String get plansProFeature1;
+  /// **'Get Started Free'**
+  String get plansClaimFreeButton;
 
-  /// Second bullet-point feature on the Orbit Pro pricing card. 'ASR' (automatic speech recognition) and 'Whisper' (a specific speech-recognition model name) should stay as technical terms/brand-like names, not be translated.
+  /// Call-to-action button label on a paid (App Store subscription) pricing card. Tapping it starts the RevenueCat/App Store purchase flow.
   ///
   /// In en, this message translates to:
-  /// **'Realtime On-Device & Whisper ASR'**
-  String get plansProFeature2;
+  /// **'Subscribe'**
+  String get plansSubscribeButton;
 
-  /// Third bullet-point feature on the Orbit Pro pricing card. 'Deep Notes' and 'Review Cards' are the app's own named study-material features, keep consistent with their labels elsewhere in the app.
+  /// Disabled button label shown on a paid plan's card when its App Store product/price couldn't be loaded from RevenueCat yet.
   ///
   /// In en, this message translates to:
-  /// **'Unlimited Deep Notes & Review Cards'**
-  String get plansProFeature3;
+  /// **'Unavailable'**
+  String get plansUnavailableButton;
 
-  /// Fourth bullet-point feature on the Orbit Pro pricing card.
+  /// Generic bullet-point shown on every pricing card (all tiers currently unlock the same features; only the monthly credit amount differs).
   ///
   /// In en, this message translates to:
-  /// **'High-Priority AI Model Speed'**
-  String get plansProFeature4;
+  /// **'All app features included'**
+  String get plansFeatureAllToolsIncluded;
 
-  /// Fifth bullet-point feature on the Orbit Pro pricing card. 'PDF' and 'Markdown' are file-format names, keep untranslated.
+  /// Generic bullet-point shown on every pricing card, reassuring the user a subscription isn't a long-term commitment.
   ///
   /// In en, this message translates to:
-  /// **'Export Transcripts (PDF & Markdown)'**
-  String get plansProFeature5;
+  /// **'Cancel anytime'**
+  String get plansFeatureCancelAnytime;
 
-  /// Sixth bullet-point feature on the Orbit Pro pricing card. 'Galaxy Knowledge Graph' is a named in-app feature, matching the app's space theme.
+  /// Error message shown on the Plans page when the plan list or store pricing fails to load.
   ///
   /// In en, this message translates to:
-  /// **'Full Galaxy Knowledge Graph'**
-  String get plansProFeature6;
+  /// **'Couldn\'t load plans. Please try again.'**
+  String get plansLoadError;
 
-  /// Name of the top-tier paid pricing plan's card on the Plans page. Keep as a proper-noun-style plan name, matching plansProTitle's naming convention.
+  /// Title of the dialog shown when a purchase or free-plan claim fails on the Plans page.
   ///
   /// In en, this message translates to:
-  /// **'Orbit Max'**
-  String get plansMaxTitle;
+  /// **'Something Went Wrong'**
+  String get plansPurchaseErrorTitle;
 
-  /// One-line tagline under the Orbit Max plan's name on its pricing card.
+  /// Body text of the dialog shown when a purchase or free-plan claim fails on the Plans page.
   ///
   /// In en, this message translates to:
-  /// **'For heavy researchers & power users'**
-  String get plansMaxSubtitle;
+  /// **'We couldn\'t complete that. Please try again.'**
+  String get plansPurchaseErrorMessage;
 
-  /// All-caps badge on the Orbit Max pricing card highlighting it as the best value tier. Keep the ⚡ emoji.
+  /// Optimistic snackbar shown immediately after a successful App Store purchase, while the app waits for the RevenueCat webhook to actually grant credits server-side (which happens asynchronously, not instantly).
   ///
   /// In en, this message translates to:
-  /// **'⚡ BEST VALUE'**
-  String get plansBestValueBadge;
-
-  /// Call-to-action button label on the Orbit Max pricing card; opens the (placeholder) plan-selection dialog.
-  ///
-  /// In en, this message translates to:
-  /// **'Get Orbit Max'**
-  String get plansMaxButton;
-
-  /// First bullet-point feature on the Orbit Max pricing card.
-  ///
-  /// In en, this message translates to:
-  /// **'3,500 Monthly Credits'**
-  String get plansMaxFeature1;
-
-  /// Second bullet-point feature on the Orbit Max pricing card, noting it's a superset of the Orbit Pro tier.
-  ///
-  /// In en, this message translates to:
-  /// **'All Pro Features Included'**
-  String get plansMaxFeature2;
-
-  /// Third bullet-point feature on the Orbit Max pricing card, an upgraded version of plansProFeature6.
-  ///
-  /// In en, this message translates to:
-  /// **'Advanced Galaxy Knowledge Graph'**
-  String get plansMaxFeature3;
-
-  /// Fourth bullet-point feature on the Orbit Max pricing card. 'Fine-tuning' is a machine-learning term, keep its conventional translation if your language has an established one.
-  ///
-  /// In en, this message translates to:
-  /// **'Custom AI Model Context & Fine-tuning'**
-  String get plansMaxFeature4;
-
-  /// Fifth bullet-point feature on the Orbit Max pricing card. Keep '24/7' as-is (commonly understood numeral shorthand).
-  ///
-  /// In en, this message translates to:
-  /// **'Dedicated 24/7 Priority Support'**
-  String get plansMaxFeature5;
-
-  /// Sixth bullet-point feature on the Orbit Max pricing card.
-  ///
-  /// In en, this message translates to:
-  /// **'Early Access to New Experimental Features'**
-  String get plansMaxFeature6;
+  /// **'Purchase successful! Crediting your account…'**
+  String get plansCreditingInProgressMessage;
 
   /// Small reassurance note at the bottom of the Plans page, next to a shield icon.
   ///
   /// In en, this message translates to:
   /// **'Cancel anytime. Encrypted & secure.'**
   String get plansFooterNote;
-
-  /// Title of the placeholder dialog shown when tapping a paid plan's call-to-action button (purchasing isn't implemented yet). {planName} is the already-localized plan name (e.g. plansProTitle's value).
-  ///
-  /// In en, this message translates to:
-  /// **'Select {planName}'**
-  String plansSelectDialogTitle(String planName);
-
-  /// Body text of the placeholder plan-selection dialog, telling the user purchasing isn't available yet. Upbeat, apologetic-but-excited tone. {planName} is the already-localized plan name.
-  ///
-  /// In en, this message translates to:
-  /// **'{planName} purchasing flow is coming soon in the next update!'**
-  String plansSelectDialogMessage(String planName);
-
-  /// Dismiss button on the placeholder plan-selection dialog. Casual acknowledgement phrase, not a formal 'OK'.
-  ///
-  /// In en, this message translates to:
-  /// **'Got it'**
-  String get plansSelectDialogConfirmButton;
 
   /// Success-state headline in the Change Password bottom sheet, shown after the reset email was sent.
   ///

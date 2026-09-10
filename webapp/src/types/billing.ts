@@ -14,6 +14,8 @@ export interface PlanOption {
   monthly_credit_amount: number;
   price_usd: number | null;
   billing_interval_months: number;
+  claim_mode: 'self_serve' | 'store_purchase';
+  store_product_id: string | null;
 }
 
 export interface CreditHistoryItem {

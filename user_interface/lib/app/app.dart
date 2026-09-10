@@ -5,6 +5,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/notifications/push_notification_service.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
+import 'package:lefture/application/purchases/purchases_identity_provider.dart';
 import 'package:lefture/application/recording/recovery/recovery_providers.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/application/sync/app_lifecycle_sync_watcher.dart';
@@ -25,6 +26,9 @@ class MyApp extends ConsumerWidget {
 
     // クレジット情報の自動ポーリング（録音中・バックエンド処理中・クレジットページ表示中）を監視
     ref.watch(creditPollingProvider);
+
+    // RevenueCatのapp_user_idをログイン中のSupabase user idと同期させ続ける
+    ref.watch(purchasesIdentityProvider);
 
     // Push通知(FCM)のトークン登録・受信・タップ遷移を監視
     ref.watch(pushNotificationServiceProvider);

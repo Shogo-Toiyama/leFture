@@ -1,23 +1,100 @@
 // lib/presentation/pages/profile/plans_page.dart
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+
+import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
+import 'package:lefture/application/purchases/purchases_providers.dart';
+import 'package:lefture/domain/entities/credit_summary.dart';
+import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
-/// ユーザーに有料・無料のプラン選択肢を美しく見せる料金プラン一覧画面。
+/// クレジット配布プラン一覧画面。Freeプランはself_serve(/billing/claim-plan)で
+/// 即時有効化、Entry/Standard/Premiumはstore_purchaseでRevenueCat経由の
+/// App Store購入を行う。表示するプラン一覧・クレジット量はすべて
+/// GET /billing/plans(DB)が真実の源で、価格文字列のみRevenueCatの
+/// Offeringsから取得する。今回のスコープはプランごとの配布クレジット量の
+/// 違いのみで、機能制限(feature gating)は行わない。
 class PlansPage extends HookConsumerWidget {
   const PlansPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    // 年額/月額の切り替えトグル
-    final isAnnual = useState<bool>(true);
     final summaryAsync = ref.watch(creditSummaryProvider);
-    final hasActivePlan = summaryAsync.asData?.value.hasActivePlan ?? false;
+    final plansAsync = ref.watch(claimablePlansProvider);
+    final offeringsAsync = ref.watch(revenueCatOfferingsProvider);
+
+    final purchasingPlanId = useState<String?>(null);
+
+    Future<void> showErrorDialog() async {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1F29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.plansPurchaseErrorTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(l10n.plansPurchaseErrorMessage, style: const TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.creditDetailOkButton, style: const TextStyle(color: AppColors.starGold)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Future<void> handleClaimFree(PlanOption plan) async {
+      purchasingPlanId.value = plan.id;
+      try {
+        await ref.read(creditRepositoryProvider).claimPlan(plan.id);
+        ref.invalidate(creditSummaryProvider);
+        ref.invalidate(claimablePlansProvider);
+      } catch (e) {
+        await showErrorDialog();
+      } finally {
+        purchasingPlanId.value = null;
+      }
+    }
+
+    Future<void> handlePurchase(PlanOption plan, Package package) async {
+      purchasingPlanId.value = plan.id;
+      try {
+        await Purchases.purchase(PurchaseParams.package(package));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.plansCreditingInProgressMessage)),
+          );
+        }
+        // クレジット付与はRevenueCat→バックエンドWebhook経由の非同期処理のため、
+        // 即座には反映されない可能性が高い。数回リトライしつつ、最終的には
+        // 既存のポーリング(CreditDetailPage表示中や録音中の定期更新)に委ねる。
+        final polling = ref.read(creditPollingProvider);
+        unawaited(() async {
+          for (var i = 0; i < 3; i++) {
+            await Future.delayed(const Duration(seconds: 3));
+            await polling.refreshCreditData();
+          }
+        }());
+      } on PlatformException catch (e) {
+        final errorCode = PurchasesErrorHelper.getErrorCode(e);
+        if (errorCode != PurchasesErrorCode.purchaseCancelledError) {
+          await showErrorDialog();
+        }
+      } catch (e) {
+        await showErrorDialog();
+      } finally {
+        purchasingPlanId.value = null;
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
@@ -53,8 +130,6 @@ class PlansPage extends HookConsumerWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 16),
-                  
-                  // ヘッダーキャッチコピー
                   Text(
                     l10n.plansHeadline,
                     textAlign: TextAlign.center,
@@ -75,96 +150,32 @@ class PlansPage extends HookConsumerWidget {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // 月額 / 年額 切り替えスイッチ
-                  _BillingToggle(
-                    isAnnual: isAnnual.value,
-                    onChanged: (val) => isAnnual.value = val,
-                  ),
                   const SizedBox(height: 28),
 
-                  // 1. Starter Plan (Free)
-                  _PricingCard(
-                    title: l10n.plansStarterTitle,
-                    subtitle: l10n.plansStarterSubtitle,
-                    price: '\$0',
-                    billingPeriod: l10n.plansStarterBillingPeriod,
-                    badgeLabel: !hasActivePlan ? l10n.plansCurrentPlanBadge : null,
-                    badgeColor: const Color(0x33FFFFFF),
-                    badgeTextColor: Colors.white70,
-                    isHighlighted: false,
-                    buttonLabel: !hasActivePlan
-                        ? l10n.plansStarterButtonCurrent
-                        : l10n.plansStarterButtonDowngrade,
-                    isCurrentPlan: !hasActivePlan,
-                    features: [
-                      l10n.plansStarterFeature1,
-                      l10n.plansStarterFeature2,
-                      l10n.plansStarterFeature3,
-                      l10n.plansStarterFeature4,
-                    ],
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.plansStarterAlreadyOnSnackbar)),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
+                  if (plansAsync.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
+                    )
+                  else if (plansAsync.hasError)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        l10n.plansLoadError,
+                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
+                      ),
+                    )
+                  else
+                    _PlanCards(
+                      plans: plansAsync.value ?? const [],
+                      summary: summaryAsync.asData?.value,
+                      offerings: offeringsAsync.asData?.value,
+                      purchasingPlanId: purchasingPlanId.value,
+                      onClaimFree: handleClaimFree,
+                      onPurchase: handlePurchase,
+                    ),
 
-                  // 2. Orbit Pro (Most Popular)
-                  _PricingCard(
-                    title: l10n.plansProTitle,
-                    subtitle: l10n.plansProSubtitle,
-                    price: isAnnual.value ? '\$11.99' : '\$14.99',
-                    billingPeriod: isAnnual.value ? l10n.plansProBillingPeriodAnnual : l10n.plansBillingPeriodMonthly,
-                    badgeLabel: l10n.plansMostPopularBadge,
-                    badgeColor: const Color(0xFFFFB300),
-                    badgeTextColor: Colors.black,
-                    isHighlighted: true,
-                    buttonLabel: l10n.plansProButton,
-                    isCurrentPlan: false,
-                    features: [
-                      l10n.plansProFeature1,
-                      l10n.plansProFeature2,
-                      l10n.plansProFeature3,
-                      l10n.plansProFeature4,
-                      l10n.plansProFeature5,
-                      l10n.plansProFeature6,
-                    ],
-                    onTap: () {
-                      _showPlanSelectDialog(context, l10n.plansProTitle);
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 3. Orbit Max (Unlimited)
-                  _PricingCard(
-                    title: l10n.plansMaxTitle,
-                    subtitle: l10n.plansMaxSubtitle,
-                    price: isAnnual.value ? '\$23.99' : '\$29.99',
-                    billingPeriod: isAnnual.value ? l10n.plansProBillingPeriodAnnual : l10n.plansBillingPeriodMonthly,
-                    badgeLabel: l10n.plansBestValueBadge,
-                    badgeColor: const Color(0xFF7C4DFF),
-                    badgeTextColor: Colors.white,
-                    isHighlighted: false,
-                    buttonLabel: l10n.plansMaxButton,
-                    isCurrentPlan: false,
-                    features: [
-                      l10n.plansMaxFeature1,
-                      l10n.plansMaxFeature2,
-                      l10n.plansMaxFeature3,
-                      l10n.plansMaxFeature4,
-                      l10n.plansMaxFeature5,
-                      l10n.plansMaxFeature6,
-                    ],
-                    onTap: () {
-                      _showPlanSelectDialog(context, l10n.plansMaxTitle);
-                    },
-                  ),
                   const SizedBox(height: 32),
-
-                  // 安心注記
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -188,118 +199,110 @@ class PlansPage extends HookConsumerWidget {
       ),
     );
   }
-
-  void _showPlanSelectDialog(BuildContext context, String planName) {
-    final l10n = AppLocalizations.of(context);
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1F29),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          l10n.plansSelectDialogTitle(planName),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          l10n.plansSelectDialogMessage(planName),
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.plansSelectDialogConfirmButton, style: const TextStyle(color: AppColors.starGold)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 月額 / 年額 切り替えトグル Widget
+// プランカード一覧(DB由来のプランをFree→Entry→Standard→Premiumの並びで表示)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BillingToggle extends StatelessWidget {
-  const _BillingToggle({required this.isAnnual, required this.onChanged});
-  final bool isAnnual;
-  final ValueChanged<bool> onChanged;
+class _PlanCards extends StatelessWidget {
+  const _PlanCards({
+    required this.plans,
+    required this.summary,
+    required this.offerings,
+    required this.purchasingPlanId,
+    required this.onClaimFree,
+    required this.onPurchase,
+  });
+
+  final List<PlanOption> plans;
+  final CreditSummary? summary;
+  final Offerings? offerings;
+  final String? purchasingPlanId;
+  final void Function(PlanOption plan) onClaimFree;
+  final void Function(PlanOption plan, Package package) onPurchase;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0x1AFFFFFF),
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: const Color(0x2AFFFFFF)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Monthly Button
-          GestureDetector(
-            onTap: () => onChanged(false),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: !isAnnual ? AppColors.starGold : Colors.transparent,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text(
-                l10n.plansBillingToggleMonthly,
-                style: TextStyle(
-                  color: !isAnnual ? Colors.black : Colors.white70,
-                  fontSize: 13,
-                  fontWeight: !isAnnual ? FontWeight.bold : FontWeight.w500,
+    final sorted = [...plans]..sort((a, b) => a.monthlyCreditAmountMicro.compareTo(b.monthlyCreditAmountMicro));
+    final availablePackages = offerings?.current?.availablePackages ?? const <Package>[];
+
+    return Column(
+      children: [
+        for (final plan in sorted) ...[
+          Builder(
+            builder: (context) {
+              final hasActivePlan = summary?.hasActivePlan ?? false;
+              final monthlyAllocationMicro = summary?.monthlyAllocationMicro;
+              final isCurrentPlan = hasActivePlan && monthlyAllocationMicro == plan.monthlyCreditAmountMicro;
+              final isHighlighted = plan.name == 'Standard';
+
+              Package? package;
+              if (plan.isStorePurchase && plan.storeProductId != null) {
+                for (final pkg in availablePackages) {
+                  if (pkg.storeProduct.identifier == plan.storeProductId) {
+                    package = pkg;
+                    break;
+                  }
+                }
+              }
+
+              final String priceLabel;
+              if (plan.isSelfServe) {
+                priceLabel = l10n.creditDetailPriceFree;
+              } else if (package != null) {
+                priceLabel = package.storeProduct.priceString;
+              } else {
+                priceLabel = '—';
+              }
+
+              final String buttonLabel;
+              final bool buttonEnabled;
+              final VoidCallback? onTap;
+              if (isCurrentPlan) {
+                buttonLabel = l10n.plansCurrentPlanButton;
+                buttonEnabled = false;
+                onTap = null;
+              } else if (plan.isSelfServe) {
+                buttonLabel = l10n.plansClaimFreeButton;
+                buttonEnabled = true;
+                onTap = () => onClaimFree(plan);
+              } else if (package != null) {
+                buttonLabel = l10n.plansSubscribeButton;
+                buttonEnabled = true;
+                onTap = () => onPurchase(plan, package!);
+              } else {
+                buttonLabel = l10n.plansUnavailableButton;
+                buttonEnabled = false;
+                onTap = null;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: _PricingCard(
+                  title: plan.name,
+                  subtitle: l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),
+                  price: priceLabel,
+                  // クレジット/月の説明はsubtitle側(creditDetailPlanSubtitle)に
+                  // 既に含まれているため、価格の隣には何も表示しない。
+                  billingPeriod: '',
+                  isHighlighted: isHighlighted,
+                  badgeLabel: isCurrentPlan
+                      ? l10n.plansCurrentPlanBadge
+                      : (isHighlighted ? l10n.plansMostPopularBadge : null),
+                  badgeColor: isCurrentPlan ? const Color(0x33FFFFFF) : const Color(0xFFFFB300),
+                  badgeTextColor: isCurrentPlan ? Colors.white70 : Colors.black,
+                  buttonLabel: buttonLabel,
+                  isCurrentPlan: !buttonEnabled,
+                  isLoading: purchasingPlanId == plan.id,
+                  onTap: onTap ?? () {},
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          // Annual Button + Save Badge
-          GestureDetector(
-            onTap: () => onChanged(true),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isAnnual ? AppColors.starGold : Colors.transparent,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    l10n.plansBillingToggleYearly,
-                    style: TextStyle(
-                      color: isAnnual ? Colors.black : Colors.white70,
-                      fontSize: 13,
-                      fontWeight: isAnnual ? FontWeight.bold : FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isAnnual ? Colors.black.withValues(alpha: 0.2) : const Color(0xFF7C4DFF),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      l10n.plansBillingToggleSaveBadge,
-                      style: TextStyle(
-                        color: isAnnual ? Colors.black : Colors.white,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+              );
+            },
           ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -317,8 +320,8 @@ class _PricingCard extends StatelessWidget {
     required this.isHighlighted,
     required this.buttonLabel,
     required this.isCurrentPlan,
-    required this.features,
     required this.onTap,
+    this.isLoading = false,
     this.badgeLabel,
     this.badgeColor,
     this.badgeTextColor,
@@ -331,7 +334,7 @@ class _PricingCard extends StatelessWidget {
   final bool isHighlighted;
   final String buttonLabel;
   final bool isCurrentPlan;
-  final List<String> features;
+  final bool isLoading;
   final VoidCallback onTap;
   final String? badgeLabel;
   final Color? badgeColor;
@@ -372,7 +375,6 @@ class _PricingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header (Title + Badge)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,8 +424,6 @@ class _PricingCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-
-                // Price Section
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -437,54 +437,31 @@ class _PricingCard extends StatelessWidget {
                         letterSpacing: -1,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      billingPeriod,
-                      style: TextStyle(
-                        color: AppColors.universe.textComet,
-                        fontSize: 13,
+                    if (billingPeriod.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        billingPeriod,
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 20),
                 const Divider(color: Color(0x26FFFFFF), height: 1),
                 const SizedBox(height: 18),
 
-                // Features list
-                for (final feature in features) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.check_circle_rounded,
-                          color: isHighlighted ? AppColors.starGold : const Color(0xFF8E8EA9),
-                          size: 17,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: const TextStyle(
-                              color: Color(0xFFE2E2EC),
-                              fontSize: 13.5,
-                              height: 1.3,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                _FeatureRow(label: AppLocalizations.of(context).plansFeatureAllToolsIncluded, isHighlighted: isHighlighted),
+                const SizedBox(height: 10),
+                _FeatureRow(label: AppLocalizations.of(context).plansFeatureCancelAnytime, isHighlighted: isHighlighted),
                 const SizedBox(height: 18),
 
-                // Action Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isCurrentPlan ? null : onTap,
+                    onPressed: isCurrentPlan || isLoading ? null : onTap,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isHighlighted
                           ? AppColors.starGold
@@ -503,16 +480,22 @@ class _PricingCard extends StatelessWidget {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      buttonLabel,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        color: isCurrentPlan
-                            ? Colors.white38
-                            : (isHighlighted ? Colors.black : Colors.white),
-                      ),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                          )
+                        : Text(
+                            buttonLabel,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.bold,
+                              color: isCurrentPlan
+                                  ? Colors.white38
+                                  : (isHighlighted ? Colors.black : Colors.white),
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -520,6 +503,37 @@ class _PricingCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow({required this.label, required this.isHighlighted});
+  final String label;
+  final bool isHighlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.check_circle_rounded,
+          color: isHighlighted ? AppColors.starGold : const Color(0xFF8E8EA9),
+          size: 17,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFE2E2EC),
+              fontSize: 13.5,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1397,129 +1397,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose the plan that fits your study pace. Upgrade or downgrade anytime.';
 
   @override
-  String get plansBillingToggleMonthly => 'Monthly';
-
-  @override
-  String get plansBillingToggleYearly => 'Yearly';
-
-  @override
-  String get plansBillingToggleSaveBadge => 'SAVE 20%';
-
-  @override
-  String get plansStarterTitle => 'Starter';
-
-  @override
-  String get plansStarterSubtitle => 'Essential tools for casual learners';
-
-  @override
-  String get plansStarterBillingPeriod => 'forever free';
-
-  @override
   String get plansCurrentPlanBadge => 'CURRENT PLAN';
-
-  @override
-  String get plansStarterButtonCurrent => 'Current Active Plan';
-
-  @override
-  String get plansStarterButtonDowngrade => 'Downgrade to Starter';
-
-  @override
-  String get plansStarterFeature1 => '100 Monthly Credits';
-
-  @override
-  String get plansStarterFeature2 => 'Standard AI Lecture Transcripts';
-
-  @override
-  String get plansStarterFeature3 => 'Core Topic Map Generation';
-
-  @override
-  String get plansStarterFeature4 => 'Basic AI Q&A Chat';
-
-  @override
-  String get plansStarterAlreadyOnSnackbar =>
-      'You are already on the Starter plan.';
-
-  @override
-  String get plansProTitle => 'Orbit Pro';
-
-  @override
-  String get plansProSubtitle => 'Maximum speed, unlimited insights';
-
-  @override
-  String get plansProBillingPeriodAnnual => 'per month, billed yearly';
-
-  @override
-  String get plansBillingPeriodMonthly => 'per month';
 
   @override
   String get plansMostPopularBadge => '🔥 MOST POPULAR';
 
   @override
-  String get plansProButton => 'Upgrade to Pro';
+  String get plansCurrentPlanButton => 'Current Plan';
 
   @override
-  String get plansProFeature1 => '1,200 Monthly Credits (12x boost)';
+  String get plansClaimFreeButton => 'Get Started Free';
 
   @override
-  String get plansProFeature2 => 'Realtime On-Device & Whisper ASR';
+  String get plansSubscribeButton => 'Subscribe';
 
   @override
-  String get plansProFeature3 => 'Unlimited Deep Notes & Review Cards';
+  String get plansUnavailableButton => 'Unavailable';
 
   @override
-  String get plansProFeature4 => 'High-Priority AI Model Speed';
+  String get plansFeatureAllToolsIncluded => 'All app features included';
 
   @override
-  String get plansProFeature5 => 'Export Transcripts (PDF & Markdown)';
+  String get plansFeatureCancelAnytime => 'Cancel anytime';
 
   @override
-  String get plansProFeature6 => 'Full Galaxy Knowledge Graph';
+  String get plansLoadError => 'Couldn\'t load plans. Please try again.';
 
   @override
-  String get plansMaxTitle => 'Orbit Max';
+  String get plansPurchaseErrorTitle => 'Something Went Wrong';
 
   @override
-  String get plansMaxSubtitle => 'For heavy researchers & power users';
+  String get plansPurchaseErrorMessage =>
+      'We couldn\'t complete that. Please try again.';
 
   @override
-  String get plansBestValueBadge => '⚡ BEST VALUE';
-
-  @override
-  String get plansMaxButton => 'Get Orbit Max';
-
-  @override
-  String get plansMaxFeature1 => '3,500 Monthly Credits';
-
-  @override
-  String get plansMaxFeature2 => 'All Pro Features Included';
-
-  @override
-  String get plansMaxFeature3 => 'Advanced Galaxy Knowledge Graph';
-
-  @override
-  String get plansMaxFeature4 => 'Custom AI Model Context & Fine-tuning';
-
-  @override
-  String get plansMaxFeature5 => 'Dedicated 24/7 Priority Support';
-
-  @override
-  String get plansMaxFeature6 => 'Early Access to New Experimental Features';
+  String get plansCreditingInProgressMessage =>
+      'Purchase successful! Crediting your account…';
 
   @override
   String get plansFooterNote => 'Cancel anytime. Encrypted & secure.';
-
-  @override
-  String plansSelectDialogTitle(String planName) {
-    return 'Select $planName';
-  }
-
-  @override
-  String plansSelectDialogMessage(String planName) {
-    return '$planName purchasing flow is coming soon in the next update!';
-  }
-
-  @override
-  String get plansSelectDialogConfirmButton => 'Got it';
 
   @override
   String get changePasswordResetSentTitle => 'Reset Link Sent';
