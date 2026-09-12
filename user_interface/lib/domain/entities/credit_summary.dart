@@ -9,6 +9,7 @@ class CreditSummary {
     required this.extraCreditBalanceMicro,
     required this.hasActivePlan,
     required this.currentPeriodEnd,
+    required this.pendingPlanId,
     required this.creditsPerUsd,
   });
 
@@ -28,6 +29,13 @@ class CreditSummary {
 
   final bool hasActivePlan;
   final DateTime? currentPeriodEnd;
+
+  /// 現在アクティブなプランに、次回更新日で切り替わる予定の別プランのid。
+  /// Apple同一サブスクグループ内のダウングレード/クロスグレードは即時反映
+  /// されず「予約」されるだけなため、それを可視化するための値。予約が
+  /// 無ければnull。
+  final String? pendingPlanId;
+
   final int creditsPerUsd;
 
   int? get creditBalanceDisplay =>
@@ -64,6 +72,7 @@ class CreditSummary {
       extraCreditBalanceMicro: (json['extra_credit_balance'] as int?) ?? 0,
       hasActivePlan: json['has_active_plan'] as bool? ?? false,
       currentPeriodEnd: parseDate(json['current_period_end']),
+      pendingPlanId: json['pending_plan_id'] as String?,
       creditsPerUsd: (json['credits_per_usd'] as int?) ?? 300,
     );
   }

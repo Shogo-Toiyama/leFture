@@ -998,11 +998,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String creditDetailPendingPlanNote(String planName, String date) {
+    return 'Switching to $planName on $date';
+  }
+
+  @override
   String get creditDetailNoActivePlanTitle => 'No active plan';
 
   @override
   String get creditDetailNoActivePlanSubtitle =>
-      'Choose a plan below to start generating lecture materials.';
+      'Choose a plan to start generating lecture materials.';
+
+  @override
+  String get creditDetailViewPlansUnsubscribedButton => 'View Plans';
 
   @override
   String get creditDetailViewPlansButton => 'View & Change Plans';
@@ -1037,7 +1045,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get creditDetailPriceFree => 'Free';
+  String get creditDetailPriceFree => '\$0';
 
   @override
   String get creditDetailUsageHistoryTitle => 'Usage History';
@@ -1062,6 +1070,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String creditDetailCreditsSuffix(String delta) {
     return '$delta credits';
   }
+
+  @override
+  String get creditDetailHistoryRenewed => 'Renewed';
+
+  @override
+  String get creditDetailHistoryPlanChanged => 'Plan Changed';
 
   @override
   String get activityRecordsTitleSaved => 'Saved';
@@ -1396,35 +1410,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plansTitle => 'Plans & Pricing';
 
   @override
-  String get plansHeadline => 'Supercharge your learning journey';
-
-  @override
-  String get plansSubheadline =>
-      'Choose the plan that fits your study pace. Upgrade or downgrade anytime.';
+  String get plansTagline => 'Get premium access on leFture';
 
   @override
   String get plansCurrentPlanBadge => 'CURRENT PLAN';
 
   @override
-  String get plansMostPopularBadge => '🔥 MOST POPULAR';
+  String get plansNextPlanBadge => 'NEXT PLAN';
+
+  @override
+  String get plansMostPopularBadge => '★ MOST POPULAR';
+
+  @override
+  String get plansUltimateBadge => '✦ ULTIMATE';
 
   @override
   String get plansCurrentPlanButton => 'Current Plan';
 
   @override
-  String get plansClaimFreeButton => 'Get Started Free';
+  String get plansScheduledButton => 'Already Scheduled';
 
   @override
-  String get plansSubscribeButton => 'Subscribe';
+  String get plansRevertButton => 'Keep Current Plan';
 
   @override
   String get plansUnavailableButton => 'Unavailable';
 
   @override
-  String get plansFeatureAllToolsIncluded => 'All app features included';
+  String get plansContinueButton => 'Continue';
 
   @override
-  String get plansFeatureCancelAnytime => 'Cancel anytime';
+  String get plansUpgradeButton => 'Upgrade';
+
+  @override
+  String get plansDowngradeButton => 'Downgrade';
+
+  @override
+  String get plansManageSubscriptionButton => 'Manage Subscription';
+
+  @override
+  String get plansManageSubscriptionTitle => 'Manage Your Subscription';
+
+  @override
+  String get plansManageSubscriptionMessage =>
+      'Switching to the Free plan means canceling your current subscription, which Apple requires you to do from your device: open Settings, tap your name, then Subscriptions (or open the App Store app and tap your profile, then Subscriptions). Your current plan stays active — and your credits stay available — until the end of the current billing period.';
+
+  @override
+  String get plansDisclosure =>
+      'leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device\'s account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.';
+
+  @override
+  String get plansDowngradeDialogTitle => 'Plan Change Scheduled';
+
+  @override
+  String get plansDowngradeDialogMessage =>
+      'Your plan will switch at the start of your next billing period — not right now. Until then, you\'ll keep your current plan and credits, and you can change your mind anytime.';
+
+  @override
+  String get plansRevertGuideDialogTitle => 'Cancel the Scheduled Change';
+
+  @override
+  String get plansRevertGuideDialogMessage =>
+      'To cancel this scheduled change and stay on your current plan, open your subscription settings in the App Store and select your current plan again.';
+
+  @override
+  String get plansRevertGuideDialogDismissButton => 'Not Now';
+
+  @override
+  String get plansRevertGuideDialogOpenButton => 'Open App Store';
+
+  @override
+  String plansUpgradeDialogTitle(String planName) {
+    return 'Welcome to $planName!';
+  }
+
+  @override
+  String get plansUpgradeDialogMessage =>
+      'Your new plan is active now, and your credits are on their way.';
+
+  @override
+  String get plansUpgradeDialogButton => 'Let\'s go!';
+
+  @override
+  String get plansFeatureCredits => 'Monthly credit allowance';
+
+  @override
+  String get plansFeatureFasterProcessing => 'Faster processing';
+
+  @override
+  String get plansFeaturePrioritySupport => 'Priority support';
+
+  @override
+  String get plansFeatureEarlyAccess => 'Early access to new features';
+
+  @override
+  String get plansRestorePurchasesButton => 'Restore Purchases';
+
+  @override
+  String get plansRestorePurchasesSuccessMessage => 'Purchases restored';
+
+  @override
+  String get plansRestorePurchasesErrorMessage =>
+      'Couldn\'t restore purchases. Please try again.';
 
   @override
   String get plansLoadError => 'Couldn\'t load plans. Please try again.';
@@ -1435,13 +1522,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get plansPurchaseErrorMessage =>
       'We couldn\'t complete that. Please try again.';
-
-  @override
-  String get plansCreditingInProgressMessage =>
-      'Purchase successful! Crediting your account…';
-
-  @override
-  String get plansFooterNote => 'Cancel anytime. Encrypted & secure.';
 
   @override
   String get changePasswordResetSentTitle => 'Reset Link Sent';

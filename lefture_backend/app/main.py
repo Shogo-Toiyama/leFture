@@ -282,17 +282,19 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     # (オーバードラフト許容)。ここではあくまで「新しいジョブを始めさせない」
     # ゲートとしてだけ使う。
     #
-    # credit_balanceがNULL(=user_credit_balancesに行が無い=一度もgrant_creditsが
-    # 呼ばれていない、プラン未割当)と0以下(=割り当てられたが使い切った)は
-    # Flutter側での見せ方が変わるはずなのでerror_codeで区別できるようにしておく。
-    # user_credit_balancesはRLS有効・ポリシー無しでクライアントから直接触れない
-    # 専用テーブル(user_profilesはFlutterから直接書き換え可能なため、課金情報は
-    # 絶対に置かない)。
-    credit_res = await asyncio.to_thread(
-        lambda: admin_client.table("user_credit_balances").select("credit_balance").eq("user_id", user_id).maybe_single().execute()
+    # /billing/summaryと同じget_credit_summary()を使い、credit_grantsから
+    # 毎回ライブに導出する(以前はuser_credit_balancesという別キャッシュを
+    # 直接読んでいたが、grantが時間経過で失効しても誰も更新しないキャッシュ
+    # だったため、実際には残高0のユーザーの新規ジョブを誤って通してしまう
+    # 可能性があった。真実の源をcredit_grantsの1つに統一する)。
+    # has_active_plan=false(=プラン未割当、またはまだ何のプランにも
+    # 加入していない)とcredit_balance<=0(=プランはあるが使い切った)は
+    # Flutter側での見せ方が変わるのでerror_codeで区別する。
+    summary_res = await asyncio.to_thread(
+        lambda: admin_client.rpc("get_credit_summary", {"p_user_id": user_id}).execute()
     )
-    credit_balance = (credit_res.data or {}).get("credit_balance") if credit_res.data else None
-    if credit_balance is None:
+    summary_row = (summary_res.data or [{}])[0] if summary_res.data else {}
+    if not summary_row.get("has_active_plan"):
         raise HTTPException(
             status_code=402,
             detail={
@@ -300,6 +302,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
                 "message": "No credit plan has been assigned to this account yet.",
             },
         )
+    credit_balance = summary_row.get("credit_balance") or 0
     if credit_balance <= 0:
         raise HTTPException(
             status_code=402,
@@ -762,7 +765,7 @@ async def billing_plans(request: Request):
     try:
         plans_res = await asyncio.to_thread(
             lambda: admin_client.table("subscription_plans")
-                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, claim_mode, store_product_id, disabled_at")
+                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, claim_mode, store_product_id, subtitles, tier_level, disabled_at")
                 .execute()
         )
     except Exception as e:
@@ -787,7 +790,7 @@ async def billing_plans(request: Request):
 async def billing_summary(request: Request):
     """
     Flutter側のクレジット表示(プログレスバー・詳細ページ)向けの一括サマリー。
-    user_credit_balances/credit_grants/user_subscription_mappingsはどれも
+    credit_grants/user_subscription_mappingsはどれも
     RLSでクライアントから直接触れない専用テーブルなので、必ずこのエンドポイント
     経由で取得させる。credits_per_usdも一緒に返すことで、Flutter側が
     しきい値計算(例: Realtime可否の$0.1判定)のために自前でハードコードした
@@ -827,6 +830,7 @@ async def billing_summary(request: Request):
         "extra_credit_balance": row.get("extra_credit_balance"),
         "has_active_plan": bool(row.get("has_active_plan")),
         "current_period_end": row.get("current_period_end"),
+        "pending_plan_id": row.get("pending_plan_id"),
         "credits_per_usd": CREDITS_PER_USD,
     }
 
@@ -834,9 +838,14 @@ async def billing_summary(request: Request):
 @app.get("/billing/history")
 async def billing_history(request: Request):
     """
-    クレジット利用履歴のエンドポイント (累積残量差分方式)。
-    古い順に残量(balance_after)の表示用クレジット変化額を追跡・計算することで、
-    履歴の合計と画面上の現在の残量数値が100%一致するように保証する。
+    クレジット利用履歴のエンドポイント。
+    消費(delta<0)は1時間単位のバケツにまとめて表示件数を抑える。付与(delta>0)は
+    credit_transactions.deltaをそのまま信用する(台帳が完全な前提——プラン切替/
+    更新時に古いクレジットをゼロ化する処理は、必ず対応するreset行を台帳に
+    残すことで、grantのdeltaが目減りして見えることが無いようにしてある)。
+    reset行(credit_reset_renewed/credit_reset_plan_changed)は、具体的な数字を
+    見せると「クレジットを失った」という誤解を招くため、数字を出さない
+    区切りエントリ(reset_reason: "renewed" | "plan_changed")として返す。
     """
     auth_header = request.headers.get("Authorization")
     if not auth_header:
@@ -854,6 +863,22 @@ async def billing_history(request: Request):
     user_id = user_res.user.id
 
     admin_client = get_supabase_client()
+
+    RESET_REASON_LABELS = {
+        "credit_reset_renewed": "renewed",
+        "credit_reset_plan_changed": "plan_changed",
+    }
+
+    def date_time_labels(dt):
+        sample_date = dt.date()
+        if sample_date == today:
+            date_label = "Today"
+        elif sample_date == today - timedelta(days=1):
+            date_label = "Yesterday"
+        else:
+            date_label = dt.strftime("%b %d")
+        time_label = dt.strftime("%I %p").lstrip("0")
+        return date_label, time_label
 
     try:
         tx_res = await asyncio.to_thread(
@@ -875,6 +900,7 @@ async def billing_history(request: Request):
 
         negative_hourly_buckets = {}
         positive_items = []
+        reset_items = []
         prev_display_balance = None
 
         for tx in transactions:
@@ -904,34 +930,31 @@ async def billing_history(request: Request):
 
             curr_display_balance = balance_after // MICRO_PER_CREDIT
 
-            if delta < 0:
+            if reason in RESET_REASON_LABELS:
+                reset_items.append({
+                    "id": str(tx_id) if tx_id else dt.isoformat(),
+                    "dt": dt,
+                    "reset_reason": RESET_REASON_LABELS[reason],
+                })
+
+            elif delta < 0:
                 hour_key = dt.strftime("%Y-%m-%d %H:00")
                 if hour_key not in negative_hourly_buckets:
                     start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
                     negative_hourly_buckets[hour_key] = {
                         "start_display_balance": start_balance,
                         "end_display_balance": curr_display_balance,
-                        "reasons": {reason},
                         "sample_time": dt,
                     }
                 else:
                     negative_hourly_buckets[hour_key]["end_display_balance"] = curr_display_balance
-                    negative_hourly_buckets[hour_key]["reasons"].add(reason)
                     negative_hourly_buckets[hour_key]["sample_time"] = dt
 
             elif delta > 0:
-                start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
-                delta_credits = curr_display_balance - start_balance
-                if delta_credits <= 0:
-                    delta_credits = round(delta / MICRO_PER_CREDIT)
-                    if delta_credits <= 0:
-                        delta_credits = 1
-
                 positive_items.append({
                     "id": str(tx_id) if tx_id else dt.isoformat(),
                     "dt": dt,
-                    "delta_credits": delta_credits,
-                    "reason": reason,
+                    "delta_credits": max(round(delta / MICRO_PER_CREDIT), 1),
                 })
 
             prev_display_balance = curr_display_balance
@@ -942,62 +965,59 @@ async def billing_history(request: Request):
             sample_time = bdata["sample_time"]
             start_bal = bdata["start_display_balance"]
             end_bal = bdata["end_display_balance"]
-            reasons = list(bdata["reasons"])
 
             delta_credits = end_bal - start_bal
             if delta_credits >= 0:
                 delta_credits = -1
 
-            sample_date = sample_time.date()
-            if sample_date == today:
-                date_label = "Today"
-            elif sample_date == today - timedelta(days=1):
-                date_label = "Yesterday"
-            else:
-                date_label = sample_time.strftime("%b %d")
-
-            time_label = sample_time.strftime("%I %p").lstrip("0")
+            date_label, time_label = date_time_labels(sample_time)
 
             all_entries.append({
                 "dt": sample_time,
                 "item": {
                     "id": hour_key,
+                    "kind": "transaction",
                     "date_label": date_label,
                     "time_label": time_label,
                     "timestamp": sample_time.isoformat(),
                     "delta_credits": delta_credits,
                     "formatted_delta": f"{delta_credits}",
                     "is_positive": False,
-                    "reason_summary": ", ".join(reasons) if reasons else "Usage",
                 }
             })
 
         for p in positive_items:
             dt = p["dt"]
             delta_credits = p["delta_credits"]
-            reason = p["reason"]
-
-            sample_date = dt.date()
-            if sample_date == today:
-                date_label = "Today"
-            elif sample_date == today - timedelta(days=1):
-                date_label = "Yesterday"
-            else:
-                date_label = dt.strftime("%b %d")
-
-            time_label = dt.strftime("%I %p").lstrip("0")
+            date_label, time_label = date_time_labels(dt)
 
             all_entries.append({
                 "dt": dt,
                 "item": {
                     "id": p["id"],
+                    "kind": "transaction",
                     "date_label": date_label,
                     "time_label": time_label,
                     "timestamp": dt.isoformat(),
                     "delta_credits": delta_credits,
                     "formatted_delta": f"+{delta_credits}",
                     "is_positive": True,
-                    "reason_summary": reason,
+                }
+            })
+
+        for r in reset_items:
+            dt = r["dt"]
+            date_label, time_label = date_time_labels(dt)
+
+            all_entries.append({
+                "dt": dt,
+                "item": {
+                    "id": r["id"],
+                    "kind": "reset",
+                    "reset_reason": r["reset_reason"],
+                    "date_label": date_label,
+                    "time_label": time_label,
+                    "timestamp": dt.isoformat(),
                 }
             })
 
@@ -1052,8 +1072,10 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
     admin_client = get_supabase_client()
 
     # CANCELLATION(自動更新オフになっただけで期間終了までは有効)は、ここで
-    # マッピングを失効させてもクレジットを取り消してもいけない。PRODUCT_CHANGE/
-    # BILLING_ISSUE/TRANSFER等も含め、今回のスコープでは意図的に無視する。
+    # マッピングを失効させてもクレジットを取り消してもいけない。BILLING_ISSUE/
+    # TRANSFER等も含め、今回のスコープでは意図的に無視する。PRODUCT_CHANGEだけは
+    # 例外で、下のset_pending_plan_change経由で「予約状態」の表示用に拾う
+    # (実際のクレジット付与・プラン切り替えには一切関与しない)。
     GRANT_EVENT_TYPES = {"INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION"}
 
     try:
@@ -1080,6 +1102,22 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
                     "p_user_id": app_user_id,
                     "p_event_id": event_id,
                     "p_product_id": product_id,
+                }).execute()
+            )
+        elif event_type == "PRODUCT_CHANGE":
+            # ダウングレード/クロスグレードが予約された瞬間(実際の切り替えを
+            # 待たず)にRevenueCatが即座に送ってくるイベント。new_product_idを
+            # 「予約先」として記録するだけで、クレジット付与やプラン切り替え
+            # 自体は行わない(それは後続の本物のRENEWALが担う)。
+            new_product_id = event.get("new_product_id")
+            if not new_product_id:
+                logger.error(f"RevenueCat PRODUCT_CHANGE missing new_product_id: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("set_pending_plan_change", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
+                    "p_new_product_id": new_product_id,
                 }).execute()
             )
         else:

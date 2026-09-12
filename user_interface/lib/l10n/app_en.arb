@@ -1570,14 +1570,34 @@
     }
   },
 
+  "creditDetailPendingPlanNote": "Switching to {planName} on {date}",
+  "@creditDetailPendingPlanNote": {
+    "description": "Small note shown on the current plan card when a downgrade/crossgrade is pending (scheduled but not yet effective). {date} is a locale-formatted date string produced by intl's DateFormat.yMMMd, already localized.",
+    "placeholders": {
+      "planName": {
+        "type": "String",
+        "example": "Entry"
+      },
+      "date": {
+        "type": "String",
+        "example": "Jan 5, 2026"
+      }
+    }
+  },
+
   "creditDetailNoActivePlanTitle": "No active plan",
   "@creditDetailNoActivePlanTitle": {
     "description": "Headline on the plan-picker card shown to users who haven't claimed any plan yet, on the Credit Detail page."
   },
 
-  "creditDetailNoActivePlanSubtitle": "Choose a plan below to start generating lecture materials.",
+  "creditDetailNoActivePlanSubtitle": "Choose a plan to start generating lecture materials.",
   "@creditDetailNoActivePlanSubtitle": {
-    "description": "Subtitle under the 'No active plan' headline, prompting the user to pick one of the plan tiles below."
+    "description": "Subtitle under the 'No active plan' headline, prompting the user to pick a plan."
+  },
+
+  "creditDetailViewPlansUnsubscribedButton": "View Plans",
+  "@creditDetailViewPlansUnsubscribedButton": {
+    "description": "Button on the No Active Plan card that navigates to the full Plans page."
   },
 
   "creditDetailViewPlansButton": "View & Change Plans",
@@ -1631,7 +1651,7 @@
     }
   },
 
-  "creditDetailPriceFree": "Free",
+  "creditDetailPriceFree": "$0",
   "@creditDetailPriceFree": {
     "description": "Price label on a claimable-plan tile when the plan has no cost (price is null or zero)."
   },
@@ -1676,6 +1696,16 @@
         "example": "+50"
       }
     }
+  },
+
+  "creditDetailHistoryRenewed": "Renewed",
+  "@creditDetailHistoryRenewed": {
+    "description": "Divider-style row in the usage history list marking the moment a subscription renewed into a new billing period (same plan). Shown as a plain label with no credit amount, since showing a negative number for the expired leftover would misleadingly read as a loss."
+  },
+
+  "creditDetailHistoryPlanChanged": "Plan Changed",
+  "@creditDetailHistoryPlanChanged": {
+    "description": "Divider-style row in the usage history list marking the moment the active plan changed (upgrade, downgrade, or falling back to the Free plan after a paid subscription ended). Shown as a plain label with no credit amount, for the same reason as creditDetailHistoryRenewed."
   },
 
   "activityRecordsTitleSaved": "Saved",
@@ -2231,14 +2261,9 @@
     "description": "AppBar title of the Plans page, a pricing/upgrade screen reached from the account area."
   },
 
-  "plansHeadline": "Supercharge your learning journey",
-  "@plansHeadline": {
-    "description": "Large marketing headline at the top of the Plans page. Energetic, casual tone, matches the 'learning journey' phrasing used elsewhere in onboarding/auth screens."
-  },
-
-  "plansSubheadline": "Choose the plan that fits your study pace. Upgrade or downgrade anytime.",
-  "@plansSubheadline": {
-    "description": "Subtitle under the Plans page headline, reassuring the user plan changes are flexible."
+  "plansTagline": "Get premium access on leFture",
+  "@plansTagline": {
+    "description": "Single-line marketing tagline under the Plans page title, above the plan tab bar. Should feel special/premium, short enough to fit on one line."
   },
 
   "plansCurrentPlanBadge": "CURRENT PLAN",
@@ -2246,9 +2271,19 @@
     "description": "All-caps badge shown on the pricing card that matches the user's currently active plan (matched by comparing the plan's monthly credit amount against the account's current allocation)."
   },
 
-  "plansMostPopularBadge": "🔥 MOST POPULAR",
+  "plansNextPlanBadge": "NEXT PLAN",
+  "@plansNextPlanBadge": {
+    "description": "All-caps badge shown on the pricing card that the user's active plan is scheduled to switch to at the next renewal (a pending downgrade/crossgrade). Mutually exclusive with plansCurrentPlanBadge, since the pending target is by definition a different plan than the currently active one."
+  },
+
+  "plansMostPopularBadge": "★ MOST POPULAR",
   "@plansMostPopularBadge": {
-    "description": "All-caps badge on the middle store-purchase tier's pricing card, highlighting it as the most popular choice. Keep the 🔥 emoji."
+    "description": "Badge shown on the Standard tier card highlighting it as the most popular / recommended plan."
+  },
+
+  "plansUltimateBadge": "✦ ULTIMATE",
+  "@plansUltimateBadge": {
+    "description": "Badge shown on the Premium tier card highlighting it as the top-tier flagship plan."
   },
 
   "plansCurrentPlanButton": "Current Plan",
@@ -2256,14 +2291,14 @@
     "description": "Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action."
   },
 
-  "plansClaimFreeButton": "Get Started Free",
-  "@plansClaimFreeButton": {
-    "description": "Call-to-action button label on the Free plan's pricing card. Tapping it claims the free plan in-app (no store purchase involved)."
+  "plansScheduledButton": "Already Scheduled",
+  "@plansScheduledButton": {
+    "description": "Disabled button label shown on the pricing card that matches the plan the user's subscription is already scheduled to switch to at the next renewal (see plansNextPlanBadge)."
   },
 
-  "plansSubscribeButton": "Subscribe",
-  "@plansSubscribeButton": {
-    "description": "Call-to-action button label on a paid (App Store subscription) pricing card. Tapping it starts the RevenueCat/App Store purchase flow."
+  "plansRevertButton": "Keep Current Plan",
+  "@plansRevertButton": {
+    "description": "Button label shown on the current plan's card instead of the disabled plansCurrentPlanButton, only when a downgrade/crossgrade is pending. Tapping it re-purchases the currently active product, which cancels the pending scheduled change per Apple/RevenueCat's subscription-group behavior."
   },
 
   "plansUnavailableButton": "Unavailable",
@@ -2271,14 +2306,125 @@
     "description": "Disabled button label shown on a paid plan's card when its App Store product/price couldn't be loaded from RevenueCat yet."
   },
 
-  "plansFeatureAllToolsIncluded": "All app features included",
-  "@plansFeatureAllToolsIncluded": {
-    "description": "Generic bullet-point shown on every pricing card (all tiers currently unlock the same features; only the monthly credit amount differs)."
+  "plansContinueButton": "Continue",
+  "@plansContinueButton": {
+    "description": "Label of the floating action button pinned to the bottom of the Plans page, shown when the centered plan is actionable (claims the Free plan or starts an App Store purchase, depending on the plan). When the centered plan is already the user's current plan or has no available store price yet, the button instead shows plansCurrentPlanButton/plansUnavailableButton and is disabled."
   },
 
-  "plansFeatureCancelAnytime": "Cancel anytime",
-  "@plansFeatureCancelAnytime": {
-    "description": "Generic bullet-point shown on every pricing card, reassuring the user a subscription isn't a long-term commitment."
+  "plansUpgradeButton": "Upgrade",
+  "@plansUpgradeButton": {
+    "description": "Button label to upgrade to a higher tier plan."
+  },
+
+  "plansDowngradeButton": "Downgrade",
+  "@plansDowngradeButton": {
+    "description": "Button label to downgrade to a lower tier plan."
+  },
+
+  "plansManageSubscriptionButton": "Manage Subscription",
+  "@plansManageSubscriptionButton": {
+    "description": "Continue-bar button label shown when the Free plan is selected while the user currently has an active paid store subscription. Tapping it does not switch the plan in-app (that must go through Apple's subscription management, per App Store policy) — it opens an informational dialog instead."
+  },
+
+  "plansManageSubscriptionTitle": "Manage Your Subscription",
+  "@plansManageSubscriptionTitle": {
+    "description": "Title of the dialog shown when a user with an active paid plan taps the Free plan's continue button."
+  },
+
+  "plansManageSubscriptionMessage": "Switching to the Free plan means canceling your current subscription, which Apple requires you to do from your device: open Settings, tap your name, then Subscriptions (or open the App Store app and tap your profile, then Subscriptions). Your current plan stays active — and your credits stay available — until the end of the current billing period.",
+  "@plansManageSubscriptionMessage": {
+    "description": "Body text of the dialog explaining how to cancel a subscription via Apple's system, since the app cannot cancel it directly. Intentionally does not include a direct link/deep-link to App Store settings — the user must navigate there themselves."
+  },
+
+  "plansDisclosure": "leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device's account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.",
+  "@plansDisclosure": {
+    "description": "Required App Store subscription disclosure paragraph shown in the scrollable area below the plan cards, per Apple App Review Guideline 3.1.2 (must disclose subscription length, auto-renewal, and that payment is charged to the Apple ID account). Also clarifies that downgrades are deferred to the next renewal, matching Apple's own StoreKit subscription-group behavior."
+  },
+
+  "plansDowngradeDialogTitle": "Plan Change Scheduled",
+  "@plansDowngradeDialogTitle": {
+    "description": "Title of the dialog shown after a user successfully schedules a downgrade to a lower-tier paid plan (or to Free) from a paid plan. Replaces the old generic snackbar."
+  },
+
+  "plansDowngradeDialogMessage": "Your plan will switch at the start of your next billing period — not right now. Until then, you'll keep your current plan and credits, and you can change your mind anytime.",
+  "@plansDowngradeDialogMessage": {
+    "description": "Body text of the downgrade-scheduled dialog. Explains the non-obvious deferred-downgrade behavior (matches Apple's StoreKit subscription-group semantics) so the user doesn't think nothing happened or that they lost their current plan immediately."
+  },
+
+  "plansRevertGuideDialogTitle": "Cancel the Scheduled Change",
+  "@plansRevertGuideDialogTitle": {
+    "description": "Title of the dialog shown when a user with a pending downgrade/crossgrade taps plansRevertButton (Keep Current Plan). Guides them to Apple's own subscription management screen, since the app cannot cancel a scheduled plan change on its own — an earlier attempt to do this by re-purchasing the current plan via the app was found not to reliably work."
+  },
+
+  "plansRevertGuideDialogMessage": "To cancel this scheduled change and stay on your current plan, open your subscription settings in the App Store and select your current plan again.",
+  "@plansRevertGuideDialogMessage": {
+    "description": "Body text explaining how to cancel a scheduled downgrade via Apple's subscription management screen."
+  },
+
+  "plansRevertGuideDialogDismissButton": "Not Now",
+  "@plansRevertGuideDialogDismissButton": {
+    "description": "Dismiss button on the revert-guide dialog that closes it without opening the App Store."
+  },
+
+  "plansRevertGuideDialogOpenButton": "Open App Store",
+  "@plansRevertGuideDialogOpenButton": {
+    "description": "Primary button on the revert-guide dialog that opens Apple's subscription management screen (apps.apple.com/account/subscriptions)."
+  },
+
+  "plansUpgradeDialogTitle": "Welcome to {planName}!",
+  "@plansUpgradeDialogTitle": {
+    "description": "Title of the celebratory dialog shown immediately after a successful upgrade purchase (or first-time paid plan purchase), with the newly purchased plan's name interpolated.",
+    "placeholders": {
+      "planName": {
+        "type": "String",
+        "example": "Premium"
+      }
+    }
+  },
+
+  "plansUpgradeDialogMessage": "Your new plan is active now, and your credits are on their way.",
+  "@plansUpgradeDialogMessage": {
+    "description": "Body text of the celebratory upgrade dialog. 'On their way' reflects that credit granting happens asynchronously via the RevenueCat webhook, not instantly."
+  },
+
+  "plansUpgradeDialogButton": "Let's go!",
+  "@plansUpgradeDialogButton": {
+    "description": "Dismiss button of the celebratory upgrade dialog. Deliberately more enthusiastic than the plain 'OK' used elsewhere, to match the celebratory tone."
+  },
+
+  "plansFeatureCredits": "Monthly credit allowance",
+  "@plansFeatureCredits": {
+    "description": "First row of the generic feature checklist shown on every plan card (with a check/cross icon per plan). Always checked for every plan since all plans grant some amount of monthly credits."
+  },
+
+  "plansFeatureFasterProcessing": "Faster processing",
+  "@plansFeatureFasterProcessing": {
+    "description": "Second row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Entry tier and up)."
+  },
+
+  "plansFeaturePrioritySupport": "Priority support",
+  "@plansFeaturePrioritySupport": {
+    "description": "Third row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Standard tier and up)."
+  },
+
+  "plansFeatureEarlyAccess": "Early access to new features",
+  "@plansFeatureEarlyAccess": {
+    "description": "Fourth row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked for Premium tier only)."
+  },
+
+  "plansRestorePurchasesButton": "Restore Purchases",
+  "@plansRestorePurchasesButton": {
+    "description": "Text button on the Plans page (near the legal disclosure links) that lets a user restore a previous App Store purchase, e.g. after reinstalling the app or switching devices. Required by Apple App Review guidelines for subscription apps."
+  },
+
+  "plansRestorePurchasesSuccessMessage": "Purchases restored",
+  "@plansRestorePurchasesSuccessMessage": {
+    "description": "Snackbar shown after successfully calling RevenueCat's restore-purchases flow."
+  },
+
+  "plansRestorePurchasesErrorMessage": "Couldn't restore purchases. Please try again.",
+  "@plansRestorePurchasesErrorMessage": {
+    "description": "Snackbar shown if restoring purchases fails."
   },
 
   "plansLoadError": "Couldn't load plans. Please try again.",
@@ -2294,16 +2440,6 @@
   "plansPurchaseErrorMessage": "We couldn't complete that. Please try again.",
   "@plansPurchaseErrorMessage": {
     "description": "Body text of the dialog shown when a purchase or free-plan claim fails on the Plans page."
-  },
-
-  "plansCreditingInProgressMessage": "Purchase successful! Crediting your account…",
-  "@plansCreditingInProgressMessage": {
-    "description": "Optimistic snackbar shown immediately after a successful App Store purchase, while the app waits for the RevenueCat webhook to actually grant credits server-side (which happens asynchronously, not instantly)."
-  },
-
-  "plansFooterNote": "Cancel anytime. Encrypted & secure.",
-  "@plansFooterNote": {
-    "description": "Small reassurance note at the bottom of the Plans page, next to a shield icon."
   },
 
   "changePasswordResetSentTitle": "Reset Link Sent",

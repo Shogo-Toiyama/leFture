@@ -17,6 +17,8 @@ import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
+import 'widgets/plan_theme.dart';
+
 /// クレジット残量の内訳を見せる詳細ページ。MyAccountPage上部のクレジット
 /// タイルから遷移してくる。追加クレジット購入・履歴表示は今はUIだけ用意し、
 /// 実際の購入導線(store_purchase)はまだ無いので全て無効化しておく。
@@ -44,26 +46,40 @@ class CreditDetailPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: false,
-            floating: true,
-            backgroundColor: AppColors.universe.voidBackground,
-            title: Text(
-              l10n.creditDetailTitle,
-              style: const TextStyle(color: Color(0xFFF2F2F2), fontWeight: FontWeight.w600, fontSize: 20),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: Color(0xFFF2F2F2)),
-                tooltip: l10n.creditDetailRefreshTooltip,
-                onPressed: () {
-                  ref.read(creditPollingProvider).invalidateCreditData();
-                },
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.starGold.withValues(alpha: 0.30),
+              AppColors.starGold.withValues(alpha: 0.08),
+              Colors.transparent,
             ],
+            stops: const [0.0, 0.18, 0.35],
           ),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: false,
+              floating: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text(
+                l10n.creditDetailTitle,
+                style: const TextStyle(color: Color(0xFFF2F2F2), fontWeight: FontWeight.w600, fontSize: 20),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, color: Color(0xFFF2F2F2)),
+                  tooltip: l10n.creditDetailRefreshTooltip,
+                  onPressed: () {
+                    ref.read(creditPollingProvider).invalidateCreditData();
+                  },
+                ),
+              ],
+            ),
           CupertinoSliverRefreshControl(onRefresh: handleRefresh),
           SliverToBoxAdapter(
             child: summaryAsync.when(
@@ -95,8 +111,9 @@ class CreditDetailPage extends HookConsumerWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+ }
 }
 
 class _CreditDetailBody extends StatelessWidget {
@@ -144,88 +161,242 @@ class _CurrentPlanCard extends ConsumerWidget {
         .where((p) => p.monthlyCreditAmountMicro == summary.monthlyAllocationMicro)
         .firstOrNull;
 
-    final planTitle = activePlan?.name ?? l10n.creditDetailActivePlanFallback;
-    final creditsCount = summary.monthlyAllocationDisplay ?? activePlan?.monthlyCreditAmountDisplay;
-    final creditsSubtitle = creditsCount != null
-        ? l10n.creditDetailCreditsPerMonth(creditsCount)
-        : l10n.creditDetailFullAccessSubtitle;
+    // プランデータ取得前やオフライン時は、Freeプランを仮表示せずグレータイルを表示する。
+    if (activePlan == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              height: 180,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: const Color(0x0DFFFFFF),
+                border: Border.all(color: const Color(0x1FFFFFFF), width: 1.0),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
-    return _GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final planName = activePlan.name;
+    final planTitle = activePlan.name;
+    final themeColor = planThemeColor(planName);
+    final isPremium = planName == 'Premium' || activePlan.tierLevel >= 3;
+    final isStandard = planName == 'Standard' || activePlan.tierLevel == 2;
+    final accentColor = isPremium
+        ? const Color(0xFFC084FC)
+        : isStandard
+            ? const Color(0xFFFB7185)
+            : themeColor;
+
+    final creditsCount = summary.monthlyAllocationDisplay ?? activePlan.monthlyCreditAmountDisplay;
+    final creditsSubtitle = l10n.creditDetailCreditsPerMonth(creditsCount);
+
+    // 現在のプランが、次回更新日に別プランへ切り替わる予約(ダウングレード/
+    // クロスグレード)を持っている場合の一言。Apple同一サブスクグループの
+    // 仕様で即時には反映されないため、これが無いと「何も起きていない」と
+    // 誤解される。
+    final pendingPlan = plans.where((p) => p.id == summary.pendingPlanId).firstOrNull;
+    final pendingPlanNote = (pendingPlan != null && summary.currentPeriodEnd != null)
+        ? l10n.creditDetailPendingPlanNote(
+            pendingPlan.name,
+            DateFormat.yMMMd(l10n.localeName).format(summary.currentPeriodEnd!.toLocal()),
+          )
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: isPremium
+                  ? const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: [0.0, 0.45, 0.78, 1.0],
+                      colors: [
+                        Color(0xFF090A14),
+                        Color(0xFF131026),
+                        Color(0xFF1E1036),
+                        Color(0xFF121E3B),
+                      ],
+                    )
+                  : isStandard
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          stops: [0.0, 0.40, 0.75, 1.0],
+                          colors: [
+                            Color(0xFF140A0F),
+                            Color(0xFF240E18),
+                            Color(0xFF38141F),
+                            Color(0xFF4A1A18),
+                          ],
+                        )
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          stops: const [0.0, 0.75],
+                          colors: [
+                            themeColor.withValues(alpha: 0.22),
+                            AppColors.universe.voidBackground.withValues(alpha: 0.85),
+                          ],
+                        ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: accentColor,
+                width: (isPremium || isStandard) ? 1.6 : 1.4,
+              ),
+              boxShadow: isPremium
+                  ? [
+                      BoxShadow(color: const Color(0xFFA855F7).withValues(alpha: 0.40), blurRadius: 30, spreadRadius: 1),
+                      BoxShadow(color: const Color(0xFF06B6D4).withValues(alpha: 0.24), blurRadius: 40, spreadRadius: 1),
+                    ]
+                  : isStandard
+                      ? [
+                          BoxShadow(color: const Color(0xFFE11D48).withValues(alpha: 0.35), blurRadius: 28, spreadRadius: 1),
+                          BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.22), blurRadius: 40, spreadRadius: 1),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: themeColor.withValues(alpha: 0.25),
+                            blurRadius: 24,
+                          ),
+                        ],
+            ),
+            child: Stack(
               children: [
-                Expanded(
-                  child: Text(
-                    l10n.creditDetailCurrentPlanTitle,
-                    style: const TextStyle(
-                      color: Color(0xFFF2F2F2),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                // Planページのカードと同じ右下の巨大背景アイコン (はみ出し配置)
+                Positioned(
+                  bottom: -30,
+                  right: -30,
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: isPremium ? 0.32 : (isStandard ? 0.26 : 0.15),
+                      child: Image.asset(
+                        planIconAsset(planName),
+                        width: 160,
+                        height: 160,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.starGold.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: AppColors.starGold.withValues(alpha: 0.4)),
-                  ),
-                  child: Text(
-                    l10n.creditDetailActiveBadge,
-                    style: const TextStyle(
-                      color: AppColors.starGold,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.creditDetailCurrentPlanTitle,
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: accentColor.withValues(alpha: 0.55)),
+                            ),
+                            child: Text(
+                              l10n.creditDetailActiveBadge,
+                              style: TextStyle(
+                                color: accentColor,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Planページと同じネオン発光のプラン名
+                      Text(
+                        planTitle,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          shadows: isPremium
+                              ? const [
+                                  Shadow(color: Color(0xFF38BDF8), blurRadius: 6),
+                                  Shadow(color: Color(0xFFEC4899), blurRadius: 14),
+                                  Shadow(color: Color(0xFFA855F7), blurRadius: 24),
+                                ]
+                              : isStandard
+                                  ? const [
+                                      Shadow(color: Color(0xFFFB7185), blurRadius: 6),
+                                      Shadow(color: Color(0xFFE11D48), blurRadius: 14),
+                                      Shadow(color: Color(0xFFF59E0B), blurRadius: 24),
+                                    ]
+                                  : [
+                                      Shadow(color: themeColor, blurRadius: 6),
+                                      Shadow(color: themeColor, blurRadius: 14),
+                                      Shadow(color: themeColor.withValues(alpha: 0.8), blurRadius: 24),
+                                    ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        creditsSubtitle,
+                        style: TextStyle(
+                          color: AppColors.universe.textStarlight,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (pendingPlanNote != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          pendingPlanNote,
+                          style: TextStyle(
+                            color: AppColors.universe.textComet,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () => context.push(AppRoutes.plans),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: accentColor.withValues(alpha: 0.55), width: 1.1),
+                            backgroundColor: accentColor.withValues(alpha: 0.12),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.creditDetailViewPlansButton,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              planTitle,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              creditsSubtitle,
-              style: TextStyle(
-                color: AppColors.universe.textComet,
-                fontSize: 12.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.push(AppRoutes.plans),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0x40FFFFFF)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.stars_rounded, size: 18, color: AppColors.starGold),
-                label: Text(
-                  l10n.creditDetailViewPlansButton,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -244,7 +415,7 @@ class _MonthlyCreditCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     if (!summary.hasActivePlan) {
-      return const _PlanPickerSection();
+      return const _NoActivePlanCard();
     }
 
     // 残高が0以下でも、バー自体は完全な0にはせず薄く赤色を残す(視認性のため)。
@@ -329,187 +500,117 @@ class _MonthlyCreditCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// プラン選択 (未加入ユーザー向け)
+// プラン未加入カード (有効なプランがない時の表示・プラン一覧への導線)
 // ─────────────────────────────────────────────────────────────────────────────
-//
-// GET /billing/plans が返す「今claimできる本物のプラン」をタイルとして並べ、
-// その下に将来の課金プラン(Monthly Pro / Annual Pro)のモックタイルを無効化した
-// 状態で並べておく。実際に有効なplan_idをFlutter側にハードコードしないため、
-// 本物のプランはすべて動的に取得する。
 
-class _PlanPickerSection extends HookConsumerWidget {
-  const _PlanPickerSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final plansAsync = ref.watch(claimablePlansProvider);
-    final claimingPlanId = useState<String?>(null);
-
-    Future<void> handleClaim(PlanOption plan) async {
-      claimingPlanId.value = plan.id;
-      try {
-        await ref.read(creditRepositoryProvider).claimPlan(plan.id);
-        ref.invalidate(creditSummaryProvider);
-        ref.invalidate(claimablePlansProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.creditDetailPlanActivatedSnackbar(plan.name))),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          showDialog<void>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text(l10n.creditDetailActivateErrorTitle),
-              content: Text('$e'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.creditDetailOkButton),
-                ),
-              ],
-            ),
-          );
-        }
-      } finally {
-        claimingPlanId.value = null;
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.creditDetailNoActivePlanTitle,
-                  style: const TextStyle(color: Color(0xFFF2F2F2), fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.creditDetailNoActivePlanSubtitle,
-                  style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        plansAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Center(child: CircularProgressIndicator(color: AppColors.starGold)),
-          ),
-          error: (err, _) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Text(
-              l10n.creditDetailPlansLoadError,
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-            ),
-          ),
-          data: (plans) => Column(
-            children: [
-              // store_purchaseプランはここでは直接claimできない(claim_plan()側で
-              // 弾かれる) — 実際の購入導線はPlansPage(RevenueCat経由)側にある。
-              for (final plan in plans.where((p) => p.isSelfServe)) ...[
-                _PlanTile(
-                  title: plan.name,
-                  subtitle: l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),
-                  priceLabel: (plan.priceUsd == null || plan.priceUsd == 0)
-                      ? l10n.creditDetailPriceFree
-                      : '\$${plan.priceUsd!.toStringAsFixed(2)}',
-                  enabled: true,
-                  isLoading: claimingPlanId.value == plan.id,
-                  onTap: () => handleClaim(plan),
-                ),
-                const SizedBox(height: 12),
-              ],
-              // 有料(store_purchase)プランはここではclaimできないため、
-              // 実際の購入導線であるPlansPageへのリンクを添えておく。
-              TextButton.icon(
-                onPressed: () => context.push(AppRoutes.plans),
-                icon: const Icon(Icons.stars_rounded, size: 18, color: AppColors.starGold),
-                label: Text(
-                  l10n.creditDetailViewPaidPlansButton,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PlanTile extends StatelessWidget {
-  const _PlanTile({
-    required this.title,
-    required this.subtitle,
-    required this.priceLabel,
-    required this.enabled,
-    this.isLoading = false,
-    this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final String priceLabel;
-  final bool enabled;
-  final bool isLoading;
-  final VoidCallback? onTap;
+class _NoActivePlanCard extends StatelessWidget {
+  const _NoActivePlanCard();
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1.0 : 0.5,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: enabled && !isLoading ? onTap : null,
-        child: _GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(color: Color(0xFFF2F2F2), fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5),
-                      ),
-                    ],
-                  ),
+    final l10n = AppLocalizations.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.75],
+                colors: [
+                  AppColors.starGold.withValues(alpha: 0.18),
+                  AppColors.universe.voidBackground.withValues(alpha: 0.85),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.starGold.withValues(alpha: 0.45),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.starGold.withValues(alpha: 0.15),
+                  blurRadius: 20,
                 ),
-                const SizedBox(width: 12),
-                if (isLoading)
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.starGold),
-                  )
-                else
-                  Text(
-                    priceLabel,
-                    style: TextStyle(
-                      color: enabled ? AppColors.starGold : Colors.white38,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
               ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => context.push(AppRoutes.plans),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      bottom: -20,
+                      right: -20,
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: 0.10,
+                          child: Icon(
+                            Icons.stars_rounded,
+                            size: 150,
+                            color: AppColors.starGold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.creditDetailNoActivePlanTitle,
+                            style: const TextStyle(
+                              color: Color(0xFFF2F2F2),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            l10n.creditDetailNoActivePlanSubtitle,
+                            style: TextStyle(
+                              color: AppColors.universe.textComet,
+                              fontSize: 13,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () => context.push(AppRoutes.plans),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: AppColors.starGold.withValues(alpha: 0.55),
+                                  width: 1.1,
+                                ),
+                                backgroundColor: AppColors.starGold.withValues(alpha: 0.12),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                l10n.creditDetailViewPlansUnsubscribedButton,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -717,6 +818,37 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // プラン更新/切り替えの区切り。具体的な数字を出すと「クレジットを
+    // 失った」という誤解を招くため、数字を持たないラベルだけの行として
+    // 通常のトランザクション行とは別に描画する。
+    if (item.isReset) {
+      final label = item.resetReason == 'plan_changed'
+          ? l10n.creditDetailHistoryPlanChanged
+          : l10n.creditDetailHistoryRenewed;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(child: Divider(color: AppColors.universe.glassBorder, height: 1)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: AppColors.universe.glassBorder, height: 1)),
+          ],
+        ),
+      );
+    }
+
     final isPos = item.isPositive;
     final color = isPos ? const Color(0xFF4CAF50) : const Color(0xFFE2E2EC);
     final icon = isPos ? Icons.add_circle_outline_rounded : Icons.bolt_rounded;

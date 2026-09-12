@@ -45,6 +45,7 @@ dependencies:
   # Device / utils
   http: ^1.2.0
   connectivity_plus: ^7.0.0
+  sensors_plus: ^7.1.0
   flutter_dotenv: ^6.0.0
   path: ^1.9.1
   path_provider: ^2.1.5
@@ -100,6 +101,7 @@ flutter:
     - assets/images/avatars/
     - assets/images/tutorial/
     - assets/images/logo/
+    - assets/images/plan_icons/
     - lib/presentation/pages/ai_chat/test_topic_map.json
 
   fonts:

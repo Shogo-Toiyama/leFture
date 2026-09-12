@@ -1793,17 +1793,29 @@ abstract class AppLocalizations {
   /// **'Resets on {date}'**
   String creditDetailResetsOn(String date);
 
+  /// Small note shown on the current plan card when a downgrade/crossgrade is pending (scheduled but not yet effective). {date} is a locale-formatted date string produced by intl's DateFormat.yMMMd, already localized.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching to {planName} on {date}'**
+  String creditDetailPendingPlanNote(String planName, String date);
+
   /// Headline on the plan-picker card shown to users who haven't claimed any plan yet, on the Credit Detail page.
   ///
   /// In en, this message translates to:
   /// **'No active plan'**
   String get creditDetailNoActivePlanTitle;
 
-  /// Subtitle under the 'No active plan' headline, prompting the user to pick one of the plan tiles below.
+  /// Subtitle under the 'No active plan' headline, prompting the user to pick a plan.
   ///
   /// In en, this message translates to:
-  /// **'Choose a plan below to start generating lecture materials.'**
+  /// **'Choose a plan to start generating lecture materials.'**
   String get creditDetailNoActivePlanSubtitle;
+
+  /// Button on the No Active Plan card that navigates to the full Plans page.
+  ///
+  /// In en, this message translates to:
+  /// **'View Plans'**
+  String get creditDetailViewPlansUnsubscribedButton;
 
   /// Button on the Current Plan card (shown to users who already have an active plan) that navigates to the full Plans page, where paid App Store subscription tiers can be purchased.
   ///
@@ -1850,7 +1862,7 @@ abstract class AppLocalizations {
   /// Price label on a claimable-plan tile when the plan has no cost (price is null or zero).
   ///
   /// In en, this message translates to:
-  /// **'Free'**
+  /// **'\$0'**
   String get creditDetailPriceFree;
 
   /// Section header for the credit usage history list on the Credit Detail page.
@@ -1888,6 +1900,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{delta} credits'**
   String creditDetailCreditsSuffix(String delta);
+
+  /// Divider-style row in the usage history list marking the moment a subscription renewed into a new billing period (same plan). Shown as a plain label with no credit amount, since showing a negative number for the expired leftover would misleadingly read as a loss.
+  ///
+  /// In en, this message translates to:
+  /// **'Renewed'**
+  String get creditDetailHistoryRenewed;
+
+  /// Divider-style row in the usage history list marking the moment the active plan changed (upgrade, downgrade, or falling back to the Free plan after a paid subscription ended). Shown as a plain label with no credit amount, for the same reason as creditDetailHistoryRenewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan Changed'**
+  String get creditDetailHistoryPlanChanged;
 
   /// AppBar title of the Activity Records page when showing saved items (review cards, deep notes, keywords). Also reused as the 'Saved' tile title on the My Account page's Activity section, which links here.
   ///
@@ -2498,17 +2522,11 @@ abstract class AppLocalizations {
   /// **'Plans & Pricing'**
   String get plansTitle;
 
-  /// Large marketing headline at the top of the Plans page. Energetic, casual tone, matches the 'learning journey' phrasing used elsewhere in onboarding/auth screens.
+  /// Single-line marketing tagline under the Plans page title, above the plan tab bar. Should feel special/premium, short enough to fit on one line.
   ///
   /// In en, this message translates to:
-  /// **'Supercharge your learning journey'**
-  String get plansHeadline;
-
-  /// Subtitle under the Plans page headline, reassuring the user plan changes are flexible.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose the plan that fits your study pace. Upgrade or downgrade anytime.'**
-  String get plansSubheadline;
+  /// **'Get premium access on leFture'**
+  String get plansTagline;
 
   /// All-caps badge shown on the pricing card that matches the user's currently active plan (matched by comparing the plan's monthly credit amount against the account's current allocation).
   ///
@@ -2516,11 +2534,23 @@ abstract class AppLocalizations {
   /// **'CURRENT PLAN'**
   String get plansCurrentPlanBadge;
 
-  /// All-caps badge on the middle store-purchase tier's pricing card, highlighting it as the most popular choice. Keep the 🔥 emoji.
+  /// All-caps badge shown on the pricing card that the user's active plan is scheduled to switch to at the next renewal (a pending downgrade/crossgrade). Mutually exclusive with plansCurrentPlanBadge, since the pending target is by definition a different plan than the currently active one.
   ///
   /// In en, this message translates to:
-  /// **'🔥 MOST POPULAR'**
+  /// **'NEXT PLAN'**
+  String get plansNextPlanBadge;
+
+  /// Badge shown on the Standard tier card highlighting it as the most popular / recommended plan.
+  ///
+  /// In en, this message translates to:
+  /// **'★ MOST POPULAR'**
   String get plansMostPopularBadge;
+
+  /// Badge shown on the Premium tier card highlighting it as the top-tier flagship plan.
+  ///
+  /// In en, this message translates to:
+  /// **'✦ ULTIMATE'**
+  String get plansUltimateBadge;
 
   /// Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action.
   ///
@@ -2528,17 +2558,17 @@ abstract class AppLocalizations {
   /// **'Current Plan'**
   String get plansCurrentPlanButton;
 
-  /// Call-to-action button label on the Free plan's pricing card. Tapping it claims the free plan in-app (no store purchase involved).
+  /// Disabled button label shown on the pricing card that matches the plan the user's subscription is already scheduled to switch to at the next renewal (see plansNextPlanBadge).
   ///
   /// In en, this message translates to:
-  /// **'Get Started Free'**
-  String get plansClaimFreeButton;
+  /// **'Already Scheduled'**
+  String get plansScheduledButton;
 
-  /// Call-to-action button label on a paid (App Store subscription) pricing card. Tapping it starts the RevenueCat/App Store purchase flow.
+  /// Button label shown on the current plan's card instead of the disabled plansCurrentPlanButton, only when a downgrade/crossgrade is pending. Tapping it re-purchases the currently active product, which cancels the pending scheduled change per Apple/RevenueCat's subscription-group behavior.
   ///
   /// In en, this message translates to:
-  /// **'Subscribe'**
-  String get plansSubscribeButton;
+  /// **'Keep Current Plan'**
+  String get plansRevertButton;
 
   /// Disabled button label shown on a paid plan's card when its App Store product/price couldn't be loaded from RevenueCat yet.
   ///
@@ -2546,17 +2576,143 @@ abstract class AppLocalizations {
   /// **'Unavailable'**
   String get plansUnavailableButton;
 
-  /// Generic bullet-point shown on every pricing card (all tiers currently unlock the same features; only the monthly credit amount differs).
+  /// Label of the floating action button pinned to the bottom of the Plans page, shown when the centered plan is actionable (claims the Free plan or starts an App Store purchase, depending on the plan). When the centered plan is already the user's current plan or has no available store price yet, the button instead shows plansCurrentPlanButton/plansUnavailableButton and is disabled.
   ///
   /// In en, this message translates to:
-  /// **'All app features included'**
-  String get plansFeatureAllToolsIncluded;
+  /// **'Continue'**
+  String get plansContinueButton;
 
-  /// Generic bullet-point shown on every pricing card, reassuring the user a subscription isn't a long-term commitment.
+  /// Button label to upgrade to a higher tier plan.
   ///
   /// In en, this message translates to:
-  /// **'Cancel anytime'**
-  String get plansFeatureCancelAnytime;
+  /// **'Upgrade'**
+  String get plansUpgradeButton;
+
+  /// Button label to downgrade to a lower tier plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Downgrade'**
+  String get plansDowngradeButton;
+
+  /// Continue-bar button label shown when the Free plan is selected while the user currently has an active paid store subscription. Tapping it does not switch the plan in-app (that must go through Apple's subscription management, per App Store policy) — it opens an informational dialog instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Subscription'**
+  String get plansManageSubscriptionButton;
+
+  /// Title of the dialog shown when a user with an active paid plan taps the Free plan's continue button.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Your Subscription'**
+  String get plansManageSubscriptionTitle;
+
+  /// Body text of the dialog explaining how to cancel a subscription via Apple's system, since the app cannot cancel it directly. Intentionally does not include a direct link/deep-link to App Store settings — the user must navigate there themselves.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching to the Free plan means canceling your current subscription, which Apple requires you to do from your device: open Settings, tap your name, then Subscriptions (or open the App Store app and tap your profile, then Subscriptions). Your current plan stays active — and your credits stay available — until the end of the current billing period.'**
+  String get plansManageSubscriptionMessage;
+
+  /// Required App Store subscription disclosure paragraph shown in the scrollable area below the plan cards, per Apple App Review Guideline 3.1.2 (must disclose subscription length, auto-renewal, and that payment is charged to the Apple ID account). Also clarifies that downgrades are deferred to the next renewal, matching Apple's own StoreKit subscription-group behavior.
+  ///
+  /// In en, this message translates to:
+  /// **'leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device\'s account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.'**
+  String get plansDisclosure;
+
+  /// Title of the dialog shown after a user successfully schedules a downgrade to a lower-tier paid plan (or to Free) from a paid plan. Replaces the old generic snackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan Change Scheduled'**
+  String get plansDowngradeDialogTitle;
+
+  /// Body text of the downgrade-scheduled dialog. Explains the non-obvious deferred-downgrade behavior (matches Apple's StoreKit subscription-group semantics) so the user doesn't think nothing happened or that they lost their current plan immediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plan will switch at the start of your next billing period — not right now. Until then, you\'ll keep your current plan and credits, and you can change your mind anytime.'**
+  String get plansDowngradeDialogMessage;
+
+  /// Title of the dialog shown when a user with a pending downgrade/crossgrade taps plansRevertButton (Keep Current Plan). Guides them to Apple's own subscription management screen, since the app cannot cancel a scheduled plan change on its own — an earlier attempt to do this by re-purchasing the current plan via the app was found not to reliably work.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel the Scheduled Change'**
+  String get plansRevertGuideDialogTitle;
+
+  /// Body text explaining how to cancel a scheduled downgrade via Apple's subscription management screen.
+  ///
+  /// In en, this message translates to:
+  /// **'To cancel this scheduled change and stay on your current plan, open your subscription settings in the App Store and select your current plan again.'**
+  String get plansRevertGuideDialogMessage;
+
+  /// Dismiss button on the revert-guide dialog that closes it without opening the App Store.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get plansRevertGuideDialogDismissButton;
+
+  /// Primary button on the revert-guide dialog that opens Apple's subscription management screen (apps.apple.com/account/subscriptions).
+  ///
+  /// In en, this message translates to:
+  /// **'Open App Store'**
+  String get plansRevertGuideDialogOpenButton;
+
+  /// Title of the celebratory dialog shown immediately after a successful upgrade purchase (or first-time paid plan purchase), with the newly purchased plan's name interpolated.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to {planName}!'**
+  String plansUpgradeDialogTitle(String planName);
+
+  /// Body text of the celebratory upgrade dialog. 'On their way' reflects that credit granting happens asynchronously via the RevenueCat webhook, not instantly.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new plan is active now, and your credits are on their way.'**
+  String get plansUpgradeDialogMessage;
+
+  /// Dismiss button of the celebratory upgrade dialog. Deliberately more enthusiastic than the plain 'OK' used elsewhere, to match the celebratory tone.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s go!'**
+  String get plansUpgradeDialogButton;
+
+  /// First row of the generic feature checklist shown on every plan card (with a check/cross icon per plan). Always checked for every plan since all plans grant some amount of monthly credits.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly credit allowance'**
+  String get plansFeatureCredits;
+
+  /// Second row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Entry tier and up).
+  ///
+  /// In en, this message translates to:
+  /// **'Faster processing'**
+  String get plansFeatureFasterProcessing;
+
+  /// Third row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Standard tier and up).
+  ///
+  /// In en, this message translates to:
+  /// **'Priority support'**
+  String get plansFeaturePrioritySupport;
+
+  /// Fourth row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked for Premium tier only).
+  ///
+  /// In en, this message translates to:
+  /// **'Early access to new features'**
+  String get plansFeatureEarlyAccess;
+
+  /// Text button on the Plans page (near the legal disclosure links) that lets a user restore a previous App Store purchase, e.g. after reinstalling the app or switching devices. Required by Apple App Review guidelines for subscription apps.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Purchases'**
+  String get plansRestorePurchasesButton;
+
+  /// Snackbar shown after successfully calling RevenueCat's restore-purchases flow.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases restored'**
+  String get plansRestorePurchasesSuccessMessage;
+
+  /// Snackbar shown if restoring purchases fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t restore purchases. Please try again.'**
+  String get plansRestorePurchasesErrorMessage;
 
   /// Error message shown on the Plans page when the plan list or store pricing fails to load.
   ///
@@ -2575,18 +2731,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t complete that. Please try again.'**
   String get plansPurchaseErrorMessage;
-
-  /// Optimistic snackbar shown immediately after a successful App Store purchase, while the app waits for the RevenueCat webhook to actually grant credits server-side (which happens asynchronously, not instantly).
-  ///
-  /// In en, this message translates to:
-  /// **'Purchase successful! Crediting your account…'**
-  String get plansCreditingInProgressMessage;
-
-  /// Small reassurance note at the bottom of the Plans page, next to a shield icon.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel anytime. Encrypted & secure.'**
-  String get plansFooterNote;
 
   /// Success-state headline in the Change Password bottom sheet, shown after the reset email was sent.
   ///

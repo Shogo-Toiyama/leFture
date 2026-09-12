@@ -948,10 +948,18 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String creditDetailPendingPlanNote(String planName, String date) {
+    return '$dateに$planNameへ切り替わります';
+  }
+
+  @override
   String get creditDetailNoActivePlanTitle => '有効なプランがありません';
 
   @override
-  String get creditDetailNoActivePlanSubtitle => '下のプランから選んで、講義資料の生成を始めましょう。';
+  String get creditDetailNoActivePlanSubtitle => 'プランを選んで、講義資料の生成を始めましょう。';
+
+  @override
+  String get creditDetailViewPlansUnsubscribedButton => 'プランを見る';
 
   @override
   String get creditDetailViewPlansButton => 'プランを見る・変更する';
@@ -984,7 +992,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get creditDetailPriceFree => '無料';
+  String get creditDetailPriceFree => '\$0';
 
   @override
   String get creditDetailUsageHistoryTitle => '利用履歴';
@@ -1007,6 +1015,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String creditDetailCreditsSuffix(String delta) {
     return '$delta クレジット';
   }
+
+  @override
+  String get creditDetailHistoryRenewed => '更新されました';
+
+  @override
+  String get creditDetailHistoryPlanChanged => 'プランが変更されました';
 
   @override
   String get activityRecordsTitleSaved => '保存済み';
@@ -1333,35 +1347,107 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansTitle => 'プランと料金';
 
   @override
-  String get plansHeadline => '学習をもっと加速させよう';
-
-  @override
-  String get plansSubheadline =>
-      '学習ペースに合ったプランを選びましょう。アップグレード・ダウングレードはいつでも可能です。';
+  String get plansTagline => 'leFtureでプレミアム機能を解放しよう';
 
   @override
   String get plansCurrentPlanBadge => '現在のプラン';
 
   @override
-  String get plansMostPopularBadge => '🔥 一番人気';
+  String get plansNextPlanBadge => '次のプラン';
+
+  @override
+  String get plansMostPopularBadge => '★ 一番人気';
+
+  @override
+  String get plansUltimateBadge => '✦ 最上位';
 
   @override
   String get plansCurrentPlanButton => '現在有効なプラン';
 
   @override
-  String get plansClaimFreeButton => '無料で始める';
+  String get plansScheduledButton => '予約済み';
 
   @override
-  String get plansSubscribeButton => '登録する';
+  String get plansRevertButton => 'プランを戻す';
 
   @override
   String get plansUnavailableButton => '利用できません';
 
   @override
-  String get plansFeatureAllToolsIncluded => '全ての機能が利用可能';
+  String get plansContinueButton => '続ける';
 
   @override
-  String get plansFeatureCancelAnytime => 'いつでもキャンセル可能';
+  String get plansUpgradeButton => 'アップグレード';
+
+  @override
+  String get plansDowngradeButton => 'ダウングレード';
+
+  @override
+  String get plansManageSubscriptionButton => 'サブスクを管理';
+
+  @override
+  String get plansManageSubscriptionTitle => 'サブスクリプションの管理';
+
+  @override
+  String get plansManageSubscriptionMessage =>
+      'Freeプランへの切り替えは、現在のサブスクリプションを解約することを意味します。解約はApple側の設定からのみ行えます: 「設定」アプリを開き、自分の名前をタップ→「サブスクリプション」(またはApp Storeアプリを開き、プロフィールをタップ→「サブスクリプション」)。現在のプランと付与済みのクレジットは、今の請求期間が終わるまでそのまま有効です。';
+
+  @override
+  String get plansDisclosure =>
+      'leFtureのサブスクリプションは、現在の期間終了の24時間前までにキャンセルしない限り、毎月自動的に更新されます。購入確認時にApple IDアカウントに課金されます。サブスクリプションはいつでも端末のアカウント設定から管理・キャンセルできます。プランのダウングレードは即時ではなく、次回請求期間の開始時に反映されます。それまでは現在のプランとクレジットがそのまま有効です。';
+
+  @override
+  String get plansDowngradeDialogTitle => 'プラン変更を予約しました';
+
+  @override
+  String get plansDowngradeDialogMessage =>
+      'プランの切り替えは今すぐではなく、次回の請求期間の開始時に反映されます。それまでは現在のプランとクレジットがそのまま有効で、いつでも変更し直すことができます。';
+
+  @override
+  String get plansRevertGuideDialogTitle => '予約の取り消し方法';
+
+  @override
+  String get plansRevertGuideDialogMessage =>
+      'この予約を取り消して現在のプランのまま続けるには、App Storeのサブスクリプション設定を開き、現在のプランをもう一度選択してください。';
+
+  @override
+  String get plansRevertGuideDialogDismissButton => '後で';
+
+  @override
+  String get plansRevertGuideDialogOpenButton => 'App Storeを開く';
+
+  @override
+  String plansUpgradeDialogTitle(String planName) {
+    return '$planNameへようこそ!';
+  }
+
+  @override
+  String get plansUpgradeDialogMessage =>
+      '新しいプランはもう有効になっています。クレジットはまもなく反映されます。';
+
+  @override
+  String get plansUpgradeDialogButton => 'はじめよう!';
+
+  @override
+  String get plansFeatureCredits => '毎月のクレジット付与';
+
+  @override
+  String get plansFeatureFasterProcessing => '処理速度アップ';
+
+  @override
+  String get plansFeaturePrioritySupport => '優先サポート';
+
+  @override
+  String get plansFeatureEarlyAccess => '新機能への早期アクセス';
+
+  @override
+  String get plansRestorePurchasesButton => '購入を復元';
+
+  @override
+  String get plansRestorePurchasesSuccessMessage => '購入を復元しました';
+
+  @override
+  String get plansRestorePurchasesErrorMessage => '購入を復元できませんでした。もう一度お試しください。';
 
   @override
   String get plansLoadError => 'プランを読み込めませんでした。もう一度お試しください。';
@@ -1371,12 +1457,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get plansPurchaseErrorMessage => '処理を完了できませんでした。もう一度お試しください。';
-
-  @override
-  String get plansCreditingInProgressMessage => '購入が完了しました。クレジットを反映しています…';
-
-  @override
-  String get plansFooterNote => 'いつでもキャンセル可能。安全に暗号化されています。';
 
   @override
   String get changePasswordResetSentTitle => 'リセットリンクを送信しました';
