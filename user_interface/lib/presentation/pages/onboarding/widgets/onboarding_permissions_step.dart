@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_illustrations.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_step_header.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/permissions_panel.dart';
@@ -104,9 +105,11 @@ class OnboardingPermissionsStep extends HookConsumerWidget {
                     eyebrow: l10n.onboardingPermissionsEyebrow,
                     title: l10n.onboardingPermissionsTitle,
                     subtitle: l10n.onboardingPermissionsSubtitle,
-                    onBack: onBack,
+                    eyebrowColor: AppColors.alertAmber,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
+                  const Center(child: PermissionsStepIllustration()),
+                  const SizedBox(height: 20),
                   PermissionsRows(specs: specs, state: permState, isOnboarding: true),
                   const Spacer(),
                   const SizedBox(height: 24),

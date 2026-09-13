@@ -11,12 +11,14 @@ class OnboardingStepHeader extends StatelessWidget {
     required this.eyebrow,
     required this.title,
     this.subtitle,
+    this.eyebrowColor,
     this.onBack,
   });
 
   final String eyebrow;
   final String title;
   final String? subtitle;
+  final Color? eyebrowColor;
   final VoidCallback? onBack;
 
   @override
@@ -31,7 +33,7 @@ class OnboardingStepHeader extends StatelessWidget {
         Text(
           eyebrow,
           style: TextStyle(
-            color: AppColors.universe.textComet,
+            color: eyebrowColor ?? AppColors.universe.textComet,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,

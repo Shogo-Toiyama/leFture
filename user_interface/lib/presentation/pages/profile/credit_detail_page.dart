@@ -184,9 +184,9 @@ class _CurrentPlanCard extends ConsumerWidget {
 
     final planName = activePlan.name;
     final planTitle = activePlan.name;
-    final themeColor = planThemeColor(planName);
-    final isPremium = planName == 'Premium' || activePlan.tierLevel >= 3;
-    final isStandard = planName == 'Standard' || activePlan.tierLevel == 2;
+    final themeColor = planThemeColor(planName, storeProductId: activePlan.storeProductId);
+    final isPremium = activePlan.isPremiumTier;
+    final isStandard = activePlan.isStandardTier;
     final accentColor = isPremium
         ? const Color(0xFFC084FC)
         : isStandard
@@ -281,7 +281,7 @@ class _CurrentPlanCard extends ConsumerWidget {
                     child: Opacity(
                       opacity: isPremium ? 0.32 : (isStandard ? 0.26 : 0.15),
                       child: Image.asset(
-                        planIconAsset(planName),
+                        planIconAsset(planName, storeProductId: activePlan.storeProductId),
                         width: 160,
                         height: 160,
                         fit: BoxFit.contain,

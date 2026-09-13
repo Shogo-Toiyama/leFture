@@ -65,7 +65,7 @@ class OnboardingIntroStep extends HookWidget {
       ),
       _IntroStepSpec(
         color: AppColors.starGold,
-        icon: Icons.card_giftcard_rounded,
+        icon: Icons.workspace_premium_rounded,
         title: l10n.onboardingIntroStep4Title,
         desc: l10n.onboardingIntroStep4Desc,
         delayMs: 780,

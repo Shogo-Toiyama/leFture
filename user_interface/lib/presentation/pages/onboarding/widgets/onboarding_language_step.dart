@@ -6,6 +6,7 @@ import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/recording/recording_language_controller.dart';
 import 'package:lefture/domain/entities/app_language.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_illustrations.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_step_header.dart';
 import 'package:lefture/presentation/pages/profile/widgets/language_selection_sheet.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
@@ -53,9 +54,11 @@ class OnboardingLanguageStep extends HookConsumerWidget {
                     eyebrow: l10n.onboardingLanguageEyebrow,
                     title: l10n.onboardingLanguageTitle,
                     subtitle: l10n.onboardingLanguageSubtitle,
-                    onBack: onBack,
+                    eyebrowColor: AppColors.cosmicBlue,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
+                  const Center(child: LanguageStepIllustration()),
+                  const SizedBox(height: 20),
                   _LanguageRow(
                     icon: Icons.language_rounded,
                     label: l10n.onboardingLanguageDisplayLabel,

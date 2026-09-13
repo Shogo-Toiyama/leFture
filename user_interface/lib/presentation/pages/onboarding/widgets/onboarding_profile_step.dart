@@ -7,33 +7,12 @@ import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/profile/user_profile_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
-import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_back_button.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_illustrations.dart';
+import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_step_header.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
-class _ProfileQuestion {
-  const _ProfileQuestion({
-    required this.title,
-    required this.subtitle,
-    required this.hint,
-    required this.controller,
-    this.minLines = 4,
-    this.maxLines = 8,
-    required this.required,
-  });
-
-  final String title;
-  final String subtitle;
-  final String hint;
-  final TextEditingController controller;
-  final int minLines;
-  final int maxLines;
-  final bool required;
-}
-
-/// One-question-per-screen profile setup: Interests → Future Dreams → Bio.
-/// Interests/Dreams are the easy, concrete questions and go first; Bio is
-/// last (and the only required one — matches `MakeProfileSheet`'s existing
-/// validation) since by then the user is warmed up for something reflective.
+/// Single-screen profile setup: Bio → Interests → Future Goals.
+/// Simplifies the former 3-step wizard into one scrollable, unified form.
 class OnboardingProfileStep extends HookConsumerWidget {
   const OnboardingProfileStep({super.key, required this.onNext, required this.onBack});
 
@@ -45,51 +24,18 @@ class OnboardingProfileStep extends HookConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final existing = ref.read(currentUserProfileProvider).asData?.value;
 
+    final bioCtl = useTextEditingController(text: existing?.bio ?? '');
     final interestsCtl = useTextEditingController(text: existing?.interests ?? '');
     final dreamsCtl = useTextEditingController(text: existing?.futureGoals ?? '');
-    final bioCtl = useTextEditingController(text: existing?.bio ?? '');
-    // Rebuilds on every keystroke so the Bio question's Continue button can
-    // react to it becoming non-empty.
+
+    // Rebuilds on keystrokes so the Continue button can enable/disable
     useListenable(bioCtl);
 
-    final qIndex = useState(0);
     final isSubmitting = useState(false);
-
-    final questions = [
-      _ProfileQuestion(
-        title: l10n.onboardingProfileInterestsTitle,
-        subtitle: l10n.onboardingProfileInterestsSubtitle,
-        hint: l10n.makeProfileInterestsHint,
-        controller: interestsCtl,
-        minLines: 4,
-        maxLines: 8,
-        required: false,
-      ),
-      _ProfileQuestion(
-        title: l10n.onboardingProfileDreamsTitle,
-        subtitle: l10n.onboardingProfileDreamsSubtitle,
-        hint: l10n.makeProfileFutureDreamsHint,
-        controller: dreamsCtl,
-        minLines: 4,
-        maxLines: 8,
-        required: false,
-      ),
-      _ProfileQuestion(
-        title: l10n.onboardingProfileBioTitle,
-        subtitle: l10n.onboardingProfileBioSubtitle,
-        hint: l10n.makeProfileAboutYouHint,
-        controller: bioCtl,
-        minLines: 4,
-        maxLines: 8,
-        required: true,
-      ),
-    ];
-
-    final q = questions[qIndex.value];
-    final isLast = qIndex.value == questions.length - 1;
-    final canAdvance = !q.required || q.controller.text.trim().isNotEmpty;
+    final canAdvance = bioCtl.text.trim().isNotEmpty;
 
     Future<void> submit() async {
+      if (isSubmitting.value) return;
       isSubmitting.value = true;
       try {
         await ref.read(userProfileRepositoryProvider).updateProfile(
@@ -104,22 +50,6 @@ class OnboardingProfileStep extends HookConsumerWidget {
       }
     }
 
-    void handlePrimary() {
-      if (isLast) {
-        submit();
-      } else {
-        qIndex.value++;
-      }
-    }
-
-    void handleBack() {
-      if (qIndex.value > 0) {
-        qIndex.value--;
-      } else {
-        onBack();
-      }
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -130,84 +60,52 @@ class OnboardingProfileStep extends HookConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  OnboardingBackButton(onTap: handleBack),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      for (var i = 0; i < questions.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 5),
-                        Expanded(
-                          child: Container(
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: i <= qIndex.value ? AppColors.starGold : AppColors.universe.glassWhiteLow,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  OnboardingStepHeader(
+                    eyebrow: l10n.onboardingProfileEyebrow,
+                    title: l10n.onboardingProfileTitle,
+                    subtitle: l10n.onboardingProfileSubtitle,
+                    eyebrowColor: AppColors.growthGreen,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    l10n.onboardingProfileStepCounter(qIndex.value + 1, questions.length),
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    q.title,
-                    style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(q.subtitle, style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.4)),
+                  const Center(child: ProfileStepIllustration()),
                   const SizedBox(height: 20),
-                  TextField(
-                    key: ValueKey(qIndex.value),
-                    controller: q.controller,
-                    minLines: q.minLines,
-                    maxLines: q.maxLines,
-                    style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: q.hint,
-                      hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.55)),
-                      filled: true,
-                      fillColor: AppColors.universe.glassWhiteLow,
-                      contentPadding: const EdgeInsets.all(14),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.universe.glassBorder),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppColors.starGold),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+
+                  // 1. Bio (あなたについて) - 順番: Bio → Interests → Future
+                  _ProfileFieldCard(
+                    title: l10n.onboardingProfileBioTitle,
+                    subtitle: l10n.onboardingProfileBioSubtitle,
+                    hint: l10n.makeProfileAboutYouHint,
+                    controller: bioCtl,
+                    minLines: 3,
+                    maxLines: 5,
+                    isRequired: true,
                   ),
-                  if (q.required) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.onboardingProfileBioRequiredNote,
-                      style: TextStyle(color: AppColors.universe.textComet, fontSize: 11.5),
-                    ),
-                  ],
-                  const Spacer(),
                   const SizedBox(height: 16),
-                  if (!q.required)
-                    Center(
-                      child: TextButton(
-                        onPressed: isSubmitting.value ? null : handlePrimary,
-                        child: Text(
-                          l10n.onboardingSkipButton,
-                          style: TextStyle(color: AppColors.universe.textComet, fontSize: 12.5, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
+
+                  // 2. Interests (興味・関心)
+                  _ProfileFieldCard(
+                    title: l10n.onboardingProfileInterestsTitle,
+                    subtitle: l10n.onboardingProfileInterestsSubtitle,
+                    hint: l10n.makeProfileInterestsHint,
+                    controller: interestsCtl,
+                    minLines: 2,
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 3. Future Dreams / Goals (将来の目標)
+                  _ProfileFieldCard(
+                    title: l10n.onboardingProfileDreamsTitle,
+                    subtitle: l10n.onboardingProfileDreamsSubtitle,
+                    hint: l10n.makeProfileFutureDreamsHint,
+                    controller: dreamsCtl,
+                    minLines: 2,
+                    maxLines: 4,
+                  ),
+
+                  const Spacer(),
+                  const SizedBox(height: 24),
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -215,10 +113,11 @@ class OnboardingProfileStep extends HookConsumerWidget {
                         backgroundColor: AppColors.starGold,
                         foregroundColor: Colors.black,
                         disabledBackgroundColor: AppColors.universe.glassWhiteLow,
+                        disabledForegroundColor: Colors.white38,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: isSubmitting.value ? null : (canAdvance ? handlePrimary : null),
+                      onPressed: isSubmitting.value ? null : (canAdvance ? submit : null),
                       child: isSubmitting.value
                           ? const SizedBox(
                               height: 20,
@@ -226,7 +125,7 @@ class OnboardingProfileStep extends HookConsumerWidget {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                             )
                           : Text(
-                              isLast ? l10n.onboardingContinueButton : l10n.onboardingNextButton,
+                              l10n.onboardingContinueButton,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                     ),
@@ -237,6 +136,96 @@ class OnboardingProfileStep extends HookConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ProfileFieldCard extends StatelessWidget {
+  const _ProfileFieldCard({
+    required this.title,
+    required this.subtitle,
+    required this.hint,
+    required this.controller,
+    this.minLines = 2,
+    this.maxLines = 4,
+    this.isRequired = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final String hint;
+  final TextEditingController controller;
+  final int minLines;
+  final int maxLines;
+  final bool isRequired;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: AppColors.universe.textStarlight,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.growthGreen.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppColors.growthGreen.withValues(alpha: 0.38)),
+                ),
+                child: const Text(
+                  'REQUIRED',
+                  style: TextStyle(
+                    color: AppColors.growthGreen,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          style: TextStyle(color: AppColors.universe.textComet, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          minLines: minLines,
+          maxLines: maxLines,
+          style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.55), fontSize: 13),
+            filled: true,
+            fillColor: AppColors.universe.glassWhiteLow,
+            contentPadding: const EdgeInsets.all(12),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: AppColors.universe.glassBorder),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: AppColors.growthGreen, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

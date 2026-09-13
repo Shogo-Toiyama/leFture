@@ -2546,6 +2546,12 @@ abstract class AppLocalizations {
   /// **'★ MOST POPULAR'**
   String get plansMostPopularBadge;
 
+  /// Badge shown on the Max tier card highlighting it as the recommended plan.
+  ///
+  /// In en, this message translates to:
+  /// **'★ RECOMMENDED'**
+  String get plansRecommendedBadge;
+
   /// Badge shown on the Premium tier card highlighting it as the top-tier flagship plan.
   ///
   /// In en, this message translates to:
@@ -2557,6 +2563,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current Plan'**
   String get plansCurrentPlanButton;
+
+  /// Button label on the onboarding plans step when the user already has this plan active (e.g. Free plan), allowing them to proceed through onboarding without making a purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Current Plan'**
+  String get plansContinueWithCurrentPlanButton;
 
   /// Disabled button label shown on the pricing card that matches the plan the user's subscription is already scheduled to switch to at the next renewal (see plansNextPlanBadge).
   ///
@@ -4622,16 +4634,16 @@ abstract class AppLocalizations {
   /// **'Allow recording and notifications'**
   String get onboardingIntroStep3Desc;
 
-  /// Title of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap. Deliberately not "Plan"/"Pick a plan" — there is only one self-serve plan today, so wording must not imply a choice among several.
+  /// Title of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap. There are now multiple plans (Free/Entry/Standard/Premium) to choose from, so wording must not imply only one option.
   ///
   /// In en, this message translates to:
-  /// **'Welcome Bonus'**
+  /// **'Plan'**
   String get onboardingIntroStep4Title;
 
-  /// Description of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap.
+  /// Description of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap.
   ///
   /// In en, this message translates to:
-  /// **'Claim your welcome bonus credits'**
+  /// **'Pick the plan that fits you'**
   String get onboardingIntroStep4Desc;
 
   /// Small eyebrow label above the title on the onboarding language step.
@@ -4685,7 +4697,7 @@ abstract class AppLocalizations {
   /// Small eyebrow label above the title on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'Setup'**
+  /// **'Permissions'**
   String get onboardingPermissionsEyebrow;
 
   /// Title on the onboarding permissions step. Deliberately vague about the count since it differs by platform (2 on iOS, 3 on Android).
@@ -4826,41 +4838,23 @@ abstract class AppLocalizations {
   /// **'Allow All Permissions'**
   String get onboardingPermissionsAllowAll;
 
-  /// Small eyebrow label above the title on the onboarding plan step.
+  /// Small eyebrow label above the title on the onboarding profile step.
   ///
   /// In en, this message translates to:
-  /// **'Almost done'**
-  String get onboardingPlanEyebrow;
+  /// **'Profile'**
+  String get onboardingProfileEyebrow;
 
-  /// Title on the onboarding plan step.
+  /// Title on the onboarding profile step.
   ///
   /// In en, this message translates to:
-  /// **'Get started with leFture'**
-  String get onboardingPlanTitle;
+  /// **'Tell us about yourself'**
+  String get onboardingProfileTitle;
 
-  /// Badge shown on the onboarding plan step. Says "every month", not "included"/a one-time amount — the Welcome Bonus plan (subscription_plans row of that name) grants 1,500 credits on a recurring monthly basis, not a single up-front gift.
+  /// Subtitle on the onboarding profile step.
   ///
   /// In en, this message translates to:
-  /// **'Welcome Bonus: 1,500 credits every month'**
-  String get onboardingPlanBadge;
-
-  /// Subtitle on the onboarding plan step. Must make clear this is an ongoing monthly plan (not a one-time sign-up gift) and must not mention future subscription plans — this step claims the real Welcome Bonus plan, not a placeholder plan picker, so it must not read as unfinished to App Review.
-  ///
-  /// In en, this message translates to:
-  /// **'Your account starts on the Welcome Bonus plan — 1,500 credits every month, free, so you can use every feature.'**
-  String get onboardingPlanSubtitle;
-
-  /// Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview).
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re already on a plan'**
-  String get onboardingPlanActiveTitle;
-
-  /// Inline error shown on the onboarding plan step if claiming the free plan fails.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t activate your plan. You can try again from your account page later.'**
-  String get onboardingPlanClaimError;
+  /// **'leFture tailors your lecture notes and fun facts based on who you are.'**
+  String get onboardingProfileSubtitle;
 
   /// Small progress counter above each question on the onboarding profile step, e.g. 'Profile · 1 of 3'.
   ///
@@ -4909,6 +4903,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Required — this is what makes your content actually personal.'**
   String get onboardingProfileBioRequiredNote;
+
+  /// Small eyebrow label above the title on the onboarding plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get onboardingPlanEyebrow;
+
+  /// Title on the onboarding plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your plan'**
+  String get onboardingPlanTitle;
+
+  /// Subtitle on the onboarding plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the plan that fits your study pace. You can change it anytime.'**
+  String get onboardingPlanSubtitle;
 
   /// Title on the final onboarding step.
   ///

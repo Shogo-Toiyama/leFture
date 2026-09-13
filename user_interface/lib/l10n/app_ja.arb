@@ -423,8 +423,10 @@
   "plansCurrentPlanBadge": "現在のプラン",
   "plansNextPlanBadge": "次のプラン",
   "plansMostPopularBadge": "★ 一番人気",
+  "plansRecommendedBadge": "★ おすすめ",
   "plansUltimateBadge": "✦ 最上位",
   "plansCurrentPlanButton": "現在有効なプラン",
+  "plansContinueWithCurrentPlanButton": "現在のプランで続ける",
   "plansScheduledButton": "予約済み",
   "plansRevertButton": "プランを戻す",
   "plansUnavailableButton": "利用できません",
@@ -814,8 +816,8 @@
   "onboardingIntroStep2Desc": "専攻・興味・将来の夢を教えてください",
   "onboardingIntroStep3Title": "権限許可",
   "onboardingIntroStep3Desc": "録音とお知らせの権限を確認します",
-  "onboardingIntroStep4Title": "ウェルカムボーナス",
-  "onboardingIntroStep4Desc": "ウェルカムボーナスを受け取る",
+  "onboardingIntroStep4Title": "プラン",
+  "onboardingIntroStep4Desc": "自分に合うプランを選びます",
 
   "onboardingLanguageEyebrow": "言語",
   "onboardingLanguageTitle": "言語を設定しましょう",
@@ -826,7 +828,7 @@
   "onboardingLanguageRecordingDesc": "録音する授業・講義の言語",
   "onboardingLanguageFooterNote": "※ 後からアカウントページの「設定」よりいつでも変更できます。",
 
-  "onboardingPermissionsEyebrow": "初期設定",
+  "onboardingPermissionsEyebrow": "権限",
   "onboardingPermissionsTitle": "いくつかの許可をお願いします",
   "onboardingPermissionsSubtitle": "バックグラウンドで録音を安全に維持するために必要です。",
   "onboardingPermissionsMicTitle": "マイク",
@@ -851,12 +853,9 @@
   "onboardingPermissionsRequesting": "権限を要求中...",
   "onboardingPermissionsAllowAll": "すべての権限を許可",
 
-  "onboardingPlanEyebrow": "もうすぐ完了",
-  "onboardingPlanTitle": "leFtureを体験する",
-  "onboardingPlanBadge": "ウェルカムボーナス：毎月1,500クレジット付与",
-  "onboardingPlanSubtitle": "あなたのアカウントは「ウェルカムボーナス」プランでスタートします — 毎月1,500クレジットが無料で付与され、すべての機能をお使いいただけます。",
-  "onboardingPlanActiveTitle": "すでにプランが有効です",
-  "onboardingPlanClaimError": "プランを有効化できませんでした。後ほどアカウントページから再度お試しください。",
+  "onboardingProfileEyebrow": "プロフィール",
+  "onboardingProfileTitle": "プロフィールを教えてください",
+  "onboardingProfileSubtitle": "あなたに合わせた講義ノートや豆知識を作成するために使用します。",
 
   "onboardingProfileStepCounter": "プロフィール · {total}問中{current}問目",
   "onboardingProfileInterestsTitle": "何に興味がありますか？",
@@ -866,6 +865,10 @@
   "onboardingProfileBioTitle": "他にも、あなたらしさを教えてください",
   "onboardingProfileBioSubtitle": "性格や価値観、今頑張っていることなど。",
   "onboardingProfileBioRequiredNote": "必須項目です。あなた専用のコンテンツ作りに欠かせません。",
+
+  "onboardingPlanEyebrow": "プラン",
+  "onboardingPlanTitle": "プランを選択しましょう",
+  "onboardingPlanSubtitle": "あなたの学習ペースに合ったプランを選んでください。後からいつでも変更できます。",
 
   "onboardingDoneTitle": "準備完了です",
   "onboardingDoneSubtitle": "さっそくコースを作成して、最初の講義を録音しましょう！",

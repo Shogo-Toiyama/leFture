@@ -1422,10 +1422,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plansMostPopularBadge => '★ MOST POPULAR';
 
   @override
+  String get plansRecommendedBadge => '★ RECOMMENDED';
+
+  @override
   String get plansUltimateBadge => '✦ ULTIMATE';
 
   @override
   String get plansCurrentPlanButton => 'Current Plan';
+
+  @override
+  String get plansContinueWithCurrentPlanButton => 'Continue with Current Plan';
 
   @override
   String get plansScheduledButton => 'Already Scheduled';
@@ -2582,10 +2588,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingIntroStep3Desc => 'Allow recording and notifications';
 
   @override
-  String get onboardingIntroStep4Title => 'Welcome Bonus';
+  String get onboardingIntroStep4Title => 'Plan';
 
   @override
-  String get onboardingIntroStep4Desc => 'Claim your welcome bonus credits';
+  String get onboardingIntroStep4Desc => 'Pick the plan that fits you';
 
   @override
   String get onboardingLanguageEyebrow => 'Language';
@@ -2616,7 +2622,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can change these anytime later from Settings in your Account page.';
 
   @override
-  String get onboardingPermissionsEyebrow => 'Setup';
+  String get onboardingPermissionsEyebrow => 'Permissions';
 
   @override
   String get onboardingPermissionsTitle => 'leFture needs a few permissions';
@@ -2698,24 +2704,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPermissionsAllowAll => 'Allow All Permissions';
 
   @override
-  String get onboardingPlanEyebrow => 'Almost done';
+  String get onboardingProfileEyebrow => 'Profile';
 
   @override
-  String get onboardingPlanTitle => 'Get started with leFture';
+  String get onboardingProfileTitle => 'Tell us about yourself';
 
   @override
-  String get onboardingPlanBadge => 'Welcome Bonus: 1,500 credits every month';
-
-  @override
-  String get onboardingPlanSubtitle =>
-      'Your account starts on the Welcome Bonus plan — 1,500 credits every month, free, so you can use every feature.';
-
-  @override
-  String get onboardingPlanActiveTitle => 'You\'re already on a plan';
-
-  @override
-  String get onboardingPlanClaimError =>
-      'Couldn\'t activate your plan. You can try again from your account page later.';
+  String get onboardingProfileSubtitle =>
+      'leFture tailors your lecture notes and fun facts based on who you are.';
 
   @override
   String onboardingProfileStepCounter(int current, int total) {
@@ -2746,6 +2742,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingProfileBioRequiredNote =>
       'Required — this is what makes your content actually personal.';
+
+  @override
+  String get onboardingPlanEyebrow => 'Plan';
+
+  @override
+  String get onboardingPlanTitle => 'Choose your plan';
+
+  @override
+  String get onboardingPlanSubtitle =>
+      'Pick the plan that fits your study pace. You can change it anytime.';
 
   @override
   String get onboardingDoneTitle => 'You\'re all set';

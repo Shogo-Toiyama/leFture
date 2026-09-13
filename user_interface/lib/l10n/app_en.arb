@@ -2281,6 +2281,11 @@
     "description": "Badge shown on the Standard tier card highlighting it as the most popular / recommended plan."
   },
 
+  "plansRecommendedBadge": "★ RECOMMENDED",
+  "@plansRecommendedBadge": {
+    "description": "Badge shown on the Max tier card highlighting it as the recommended plan."
+  },
+
   "plansUltimateBadge": "✦ ULTIMATE",
   "@plansUltimateBadge": {
     "description": "Badge shown on the Premium tier card highlighting it as the top-tier flagship plan."
@@ -2289,6 +2294,11 @@
   "plansCurrentPlanButton": "Current Plan",
   "@plansCurrentPlanButton": {
     "description": "Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action."
+  },
+
+  "plansContinueWithCurrentPlanButton": "Continue with Current Plan",
+  "@plansContinueWithCurrentPlanButton": {
+    "description": "Button label on the onboarding plans step when the user already has this plan active (e.g. Free plan), allowing them to proceed through onboarding without making a purchase."
   },
 
   "plansScheduledButton": "Already Scheduled",
@@ -4021,13 +4031,13 @@
   "@onboardingIntroStep3Desc": {
     "description": "Description of waypoint 3 (Permissions) on the onboarding intro/bridge step's roadmap."
   },
-  "onboardingIntroStep4Title": "Welcome Bonus",
+  "onboardingIntroStep4Title": "Plan",
   "@onboardingIntroStep4Title": {
-    "description": "Title of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap. Deliberately not \"Plan\"/\"Pick a plan\" — there is only one self-serve plan today, so wording must not imply a choice among several."
+    "description": "Title of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap. There are now multiple plans (Free/Entry/Standard/Premium) to choose from, so wording must not imply only one option."
   },
-  "onboardingIntroStep4Desc": "Claim your welcome bonus credits",
+  "onboardingIntroStep4Desc": "Pick the plan that fits you",
   "@onboardingIntroStep4Desc": {
-    "description": "Description of waypoint 4 (Plan/Welcome Bonus) on the onboarding intro/bridge step's roadmap."
+    "description": "Description of waypoint 4 (Plan) on the onboarding intro/bridge step's roadmap."
   },
 
   "onboardingLanguageEyebrow": "Language",
@@ -4063,7 +4073,7 @@
     "description": "Footer note on the onboarding language step informing users they can change language settings later."
   },
 
-  "onboardingPermissionsEyebrow": "Setup",
+  "onboardingPermissionsEyebrow": "Permissions",
   "@onboardingPermissionsEyebrow": {
     "description": "Small eyebrow label above the title on the onboarding permissions step."
   },
@@ -4163,29 +4173,17 @@
     "description": "Button label to request all permissions at once."
   },
 
-  "onboardingPlanEyebrow": "Almost done",
-  "@onboardingPlanEyebrow": {
-    "description": "Small eyebrow label above the title on the onboarding plan step."
+  "onboardingProfileEyebrow": "Profile",
+  "@onboardingProfileEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding profile step."
   },
-  "onboardingPlanTitle": "Get started with leFture",
-  "@onboardingPlanTitle": {
-    "description": "Title on the onboarding plan step."
+  "onboardingProfileTitle": "Tell us about yourself",
+  "@onboardingProfileTitle": {
+    "description": "Title on the onboarding profile step."
   },
-  "onboardingPlanBadge": "Welcome Bonus: 1,500 credits every month",
-  "@onboardingPlanBadge": {
-    "description": "Badge shown on the onboarding plan step. Says \"every month\", not \"included\"/a one-time amount — the Welcome Bonus plan (subscription_plans row of that name) grants 1,500 credits on a recurring monthly basis, not a single up-front gift."
-  },
-  "onboardingPlanSubtitle": "Your account starts on the Welcome Bonus plan — 1,500 credits every month, free, so you can use every feature.",
-  "@onboardingPlanSubtitle": {
-    "description": "Subtitle on the onboarding plan step. Must make clear this is an ongoing monthly plan (not a one-time sign-up gift) and must not mention future subscription plans — this step claims the real Welcome Bonus plan, not a placeholder plan picker, so it must not read as unfinished to App Review."
-  },
-  "onboardingPlanActiveTitle": "You're already on a plan",
-  "@onboardingPlanActiveTitle": {
-    "description": "Title of the plan card on the onboarding plan step when the user already has an active plan (e.g. re-visiting onboarding from the account preview)."
-  },
-  "onboardingPlanClaimError": "Couldn't activate your plan. You can try again from your account page later.",
-  "@onboardingPlanClaimError": {
-    "description": "Inline error shown on the onboarding plan step if claiming the free plan fails."
+  "onboardingProfileSubtitle": "leFture tailors your lecture notes and fun facts based on who you are.",
+  "@onboardingProfileSubtitle": {
+    "description": "Subtitle on the onboarding profile step."
   },
 
   "onboardingProfileStepCounter": "Profile · {current} of {total}",
@@ -4223,6 +4221,19 @@
   "onboardingProfileBioRequiredNote": "Required — this is what makes your content actually personal.",
   "@onboardingProfileBioRequiredNote": {
     "description": "Small note under the required Bio question on the onboarding profile step."
+  },
+
+  "onboardingPlanEyebrow": "Plan",
+  "@onboardingPlanEyebrow": {
+    "description": "Small eyebrow label above the title on the onboarding plan step."
+  },
+  "onboardingPlanTitle": "Choose your plan",
+  "@onboardingPlanTitle": {
+    "description": "Title on the onboarding plan step."
+  },
+  "onboardingPlanSubtitle": "Pick the plan that fits your study pace. You can change it anytime.",
+  "@onboardingPlanSubtitle": {
+    "description": "Subtitle on the onboarding plan step."
   },
 
   "onboardingDoneTitle": "You're all set",

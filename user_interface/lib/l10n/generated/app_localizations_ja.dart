@@ -1359,10 +1359,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansMostPopularBadge => '★ 一番人気';
 
   @override
+  String get plansRecommendedBadge => '★ おすすめ';
+
+  @override
   String get plansUltimateBadge => '✦ 最上位';
 
   @override
   String get plansCurrentPlanButton => '現在有効なプラン';
+
+  @override
+  String get plansContinueWithCurrentPlanButton => '現在のプランで続ける';
 
   @override
   String get plansScheduledButton => '予約済み';
@@ -2478,10 +2484,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingIntroStep3Desc => '録音とお知らせの権限を確認します';
 
   @override
-  String get onboardingIntroStep4Title => 'ウェルカムボーナス';
+  String get onboardingIntroStep4Title => 'プラン';
 
   @override
-  String get onboardingIntroStep4Desc => 'ウェルカムボーナスを受け取る';
+  String get onboardingIntroStep4Desc => '自分に合うプランを選びます';
 
   @override
   String get onboardingLanguageEyebrow => '言語';
@@ -2508,7 +2514,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingLanguageFooterNote => '※ 後からアカウントページの「設定」よりいつでも変更できます。';
 
   @override
-  String get onboardingPermissionsEyebrow => '初期設定';
+  String get onboardingPermissionsEyebrow => '権限';
 
   @override
   String get onboardingPermissionsTitle => 'いくつかの許可をお願いします';
@@ -2586,24 +2592,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingPermissionsAllowAll => 'すべての権限を許可';
 
   @override
-  String get onboardingPlanEyebrow => 'もうすぐ完了';
+  String get onboardingProfileEyebrow => 'プロフィール';
 
   @override
-  String get onboardingPlanTitle => 'leFtureを体験する';
+  String get onboardingProfileTitle => 'プロフィールを教えてください';
 
   @override
-  String get onboardingPlanBadge => 'ウェルカムボーナス：毎月1,500クレジット付与';
-
-  @override
-  String get onboardingPlanSubtitle =>
-      'あなたのアカウントは「ウェルカムボーナス」プランでスタートします — 毎月1,500クレジットが無料で付与され、すべての機能をお使いいただけます。';
-
-  @override
-  String get onboardingPlanActiveTitle => 'すでにプランが有効です';
-
-  @override
-  String get onboardingPlanClaimError =>
-      'プランを有効化できませんでした。後ほどアカウントページから再度お試しください。';
+  String get onboardingProfileSubtitle => 'あなたに合わせた講義ノートや豆知識を作成するために使用します。';
 
   @override
   String onboardingProfileStepCounter(int current, int total) {
@@ -2630,6 +2625,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingProfileBioRequiredNote => '必須項目です。あなた専用のコンテンツ作りに欠かせません。';
+
+  @override
+  String get onboardingPlanEyebrow => 'プラン';
+
+  @override
+  String get onboardingPlanTitle => 'プランを選択しましょう';
+
+  @override
+  String get onboardingPlanSubtitle =>
+      'あなたの学習ペースに合ったプランを選んでください。後からいつでも変更できます。';
 
   @override
   String get onboardingDoneTitle => '準備完了です';

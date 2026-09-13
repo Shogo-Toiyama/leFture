@@ -35,9 +35,9 @@ class PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final themeColor = planThemeColor(plan.name);
-    final isPremium = plan.name == 'Premium' || plan.tierLevel >= 3;
-    final isStandard = plan.name == 'Standard' || plan.tierLevel == 2;
+    final themeColor = planThemeColor(plan.name, storeProductId: plan.storeProductId);
+    final isPremium = plan.isPremiumTier;
+    final isStandard = plan.isStandardTier;
     final languageCode = Localizations.localeOf(context).languageCode;
     final subtitle = plan.localizedSubtitle(languageCode);
 
@@ -128,7 +128,7 @@ class PlanCard extends StatelessWidget {
                   child: Opacity(
                     opacity: isPremium ? 0.38 : (isStandard ? 0.28 : 0.15),
                     child: Image.asset(
-                      planIconAsset(plan.name),
+                      planIconAsset(plan.name, storeProductId: plan.storeProductId),
                       width: 400,
                       height: 400,
                       fit: BoxFit.contain,
@@ -183,32 +183,6 @@ class PlanCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                    ] else if (isStandard) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFE11D48), Color(0xFFF59E0B)],
-                          ),
-                          borderRadius: BorderRadius.circular(100),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFE11D48).withValues(alpha: 0.45),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          l10n.plansMostPopularBadge,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
                     ] else if (isPremium) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -225,7 +199,7 @@ class PlanCard extends StatelessWidget {
                           ],
                         ),
                         child: Text(
-                          l10n.plansUltimateBadge,
+                          l10n.plansRecommendedBadge,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10.5,

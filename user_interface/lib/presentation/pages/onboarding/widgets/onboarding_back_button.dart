@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 import 'package:lefture/presentation/themes/app_colors.dart';
 
-/// Small back chevron shared by onboarding steps that can go back — either
-/// to the previous macro step, or (on the profile step) to the previous
-/// question within the step.
+/// Enlarged back button shared by onboarding steps. Styled to match
+/// [LanguageHeaderButton] with a glassmorphism circular container and a
+/// comfortable touch target.
 class OnboardingBackButton extends StatelessWidget {
   const OnboardingBackButton({super.key, required this.onTap});
 
@@ -13,12 +13,30 @@ class OnboardingBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: AppColors.universe.textComet),
+    final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
+    final buttonSize = isTablet ? 46.0 : 40.0;
+    final iconSize = isTablet ? 22.0 : 18.0;
+
+    return Material(
+      color: AppColors.universe.glassWhiteLow,
+      shape: const CircleBorder(side: BorderSide(color: Color(0x1CFFFFFF))),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: buttonSize,
+          height: buttonSize,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 2), // Chevron visual center correction
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: iconSize,
+                color: AppColors.universe.textStarlight,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
