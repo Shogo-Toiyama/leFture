@@ -228,6 +228,14 @@ class AppLocalizationsJa extends AppLocalizations {
       'コースが選択されていません。コースを設定しないとAI自動解析は開始されません。解析を始めるには、アップロードの前後どちらかでコースを選択してください。';
 
   @override
+  String get recordingDurationWarningBanner =>
+      '録音を開始してから3時間が経過しました。3時間半になると自動的に一時停止します。';
+
+  @override
+  String get recordingDurationLimitBanner =>
+      'この録音は上限の3時間半に達したため、自動的に一時停止しました。ここまでの内容を確認してアップロードできます。';
+
+  @override
   String get recordingOrDivider => 'または';
 
   @override
@@ -330,10 +338,20 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get recordingRealtimeCreditsDialogMessage =>
-      'リアルタイム文字起こしを利用するには、クレジット残高が必要です。';
+      'リアルタイム文字起こしの利用には、30クレジット以上の残高が必要です。';
 
   @override
   String get recordingRealtimeCreditsDialogConfirm => 'クレジットを確認';
+
+  @override
+  String get recordingRealtimeUpgradeDialogTitle => 'Maxプランが必要です';
+
+  @override
+  String get recordingRealtimeUpgradeDialogMessage =>
+      '録音中のリアルタイム文字起こしはMaxプラン限定の機能です。';
+
+  @override
+  String get upgradeRequiredViewPlansButton => 'プランを見る';
 
   @override
   String get recordingSpeechModelDialogTitle => '音声モデルが必要です';
@@ -2041,6 +2059,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deepNotesListGeneratingMessage => '詳細ノートを生成中…';
+
+  @override
+  String get deepNotesLockedDialogTitle => '詳細ノートは生成されていません';
+
+  @override
+  String get deepNotesLockedDialogMessage =>
+      'この講義はFreeプランで処理されたため、このトピックの詳細ノートは作成されていません。プランをアップグレードしても、この講義に今から追加されることはありません — Liteプラン以上で録音した今後の講義から、全トピックの詳細ノートが自動的に生成されます。';
+
+  @override
+  String get deepNotesLockedCaption => '未生成・Freeプラン';
 
   @override
   String lectureNotePageTopicLabel(int index) {

@@ -76,8 +76,8 @@ class _PlanTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = planThemeColor(plan.name, storeProductId: plan.storeProductId);
-    final iconAsset = planIconAsset(plan.name, storeProductId: plan.storeProductId);
+    final color = planThemeColor(plan.tierLevel);
+    final iconAsset = planIconAsset(plan.tierLevel);
     // 左側の暗い色 (テーマカラーのニュアンスを含んだ深い不透明ダーク)
     final darkColor = Color.lerp(color, const Color(0xFF0D0F18), 0.75)!;
     final midColor = Color.lerp(color, const Color(0xFF0D0F18), 0.35)!;

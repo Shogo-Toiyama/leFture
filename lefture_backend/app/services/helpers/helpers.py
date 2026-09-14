@@ -2,6 +2,8 @@ import re
 import json
 import hashlib
 import uuid
+import asyncio
+import subprocess
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,6 +11,31 @@ from typing import Optional, List, Dict, Any
 
 from app.core.config import PROMPTS_DIR
 from app.core.supabase import get_supabase_client
+
+
+async def _get_audio_duration_seconds(source: str) -> float:
+    """
+    ffprobeでコンテナのヘッダのみを読み、音声の長さを取得する。
+    AudioSegment.from_file()のようにPCMへフルデコードしないため、
+    3時間超のマスター音声でもメモリ使用量はほぼゼロで済む。
+
+    sourceはローカルファイルパス、またはHTTP(S) URL(例: R2の署名付きGET URL)の
+    どちらでもよい — ffmpeg/ffprobeはURLスキームを自動判定し、S3互換ストレージの
+    Range GETに対応しているため、URLを渡してもファイル全体をダウンロードせず
+    ヘッダ部分だけ読みに行く(プリレコ音声の残高見積もりで、TRANSCRIBE_MASTERより
+    前に全体をダウンロードし直す無駄を避けるために利用する)。
+    """
+    proc = await asyncio.to_thread(
+        subprocess.run,
+        [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(source),
+        ],
+        capture_output=True, text=True, check=True, timeout=15,
+    )
+    return float(proc.stdout.strip())
 
 def _strip_code_fence(text: str) -> str:
     if text.lstrip().startswith("```"):

@@ -131,7 +131,7 @@ class _CelebrationDialogState extends State<_CelebrationDialog> with SingleTicke
     super.initState();
     // 2.8秒かけて優雅に開花し、チカチカと星屑のように瞬きながら舞い落ちる
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2800));
-    _particles = _generateParticles(planThemeColor(widget.plan.name));
+    _particles = _generateParticles(planThemeColor(widget.plan.tierLevel));
     _controller.forward();
   }
 
@@ -191,7 +191,7 @@ class _CelebrationDialogState extends State<_CelebrationDialog> with SingleTicke
 
   @override
   Widget build(BuildContext context) {
-    final color = planThemeColor(widget.plan.name);
+    final color = planThemeColor(widget.plan.tierLevel);
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -222,7 +222,7 @@ class _CelebrationDialogState extends State<_CelebrationDialog> with SingleTicke
                       border: Border.all(color: color, width: 1.5),
                     ),
                     padding: const EdgeInsets.all(14),
-                    child: Image.asset(planIconAsset(widget.plan.name), fit: BoxFit.contain),
+                    child: Image.asset(planIconAsset(widget.plan.tierLevel), fit: BoxFit.contain),
                   ),
                   const SizedBox(height: 18),
                   Text(

@@ -1,7 +1,12 @@
+import '../plan_features.dart' as plan_features;
+
 /// バックエンドの GET /billing/summary が返す値をそのまま表現するモデル。
 /// クレジット関連のテーブルはすべてRLSでクライアントから直接触れないため、
 /// このエンティティは必ずこのAPI経由でのみ取得される(ローカルDBへの
 /// キャッシュ・オフライン表示は今回のスコープでは行わない)。
+///
+/// tierLevelも同じレスポンスに乗っている(機能ゲート判定用)。専用の取得経路を
+/// 増やさず、既に常時watchされているこのモデルにそのまま相乗りさせている。
 class CreditSummary {
   const CreditSummary({
     required this.creditBalanceMicro,
@@ -11,6 +16,8 @@ class CreditSummary {
     required this.currentPeriodEnd,
     required this.pendingPlanId,
     required this.creditsPerUsd,
+    required this.tierLevel,
+    required this.gatingDisabled,
   });
 
   /// 1 表示クレジット = 1,000,000 内部単位(μクレジット)。バックエンドの
@@ -38,6 +45,19 @@ class CreditSummary {
 
   final int creditsPerUsd;
 
+  /// 0=Free, 1=Lite, 2=Core, 3=Max。有効なプラン割当が無い場合はtierFree(0)扱い
+  /// (バックエンドのget_user_tier_levelと同じフォールバック方針)。
+  final int tierLevel;
+
+  /// サーバー側のkill-switch(GATING_DISABLED_FOR_ALL_USERS)がこのユーザーに
+  /// 効いているか。実機テスト用にREAL_GATING_TEST_USER_IDSへ登録された
+  /// アカウントだけfalseになり、本来のtierLevel判定を受ける。
+  final bool gatingDisabled;
+
+  /// この機能がtierLevel的に使えるかどうか(plan_features.dart参照)。
+  bool hasFeature(String featureKey) =>
+      plan_features.hasFeature(tierLevel, featureKey, gatingDisabled: gatingDisabled);
+
   int? get creditBalanceDisplay =>
       creditBalanceMicro == null ? null : creditBalanceMicro! ~/ microCreditsPerCredit;
 
@@ -55,13 +75,12 @@ class CreditSummary {
     return (balance / allocation).clamp(0.0, 1.0);
   }
 
-  /// 指定したUSD相当額以上のクレジットが残っているか。
-  /// (例: Realtime文字起こしの$0.1しきい値判定)
-  bool hasAtLeastUsd(double usd) {
+  /// 指定した表示クレジット数以上の残高があるか。
+  /// (例: Realtime文字起こしの最低クレジットしきい値判定)
+  bool hasAtLeastCredits(int credits) {
     final balance = creditBalanceMicro;
     if (balance == null) return false;
-    final thresholdMicro = (usd * creditsPerUsd * microCreditsPerCredit).round();
-    return balance >= thresholdMicro;
+    return balance >= credits * microCreditsPerCredit;
   }
 
   factory CreditSummary.fromJson(Map<String, dynamic> json) {
@@ -74,6 +93,9 @@ class CreditSummary {
       currentPeriodEnd: parseDate(json['current_period_end']),
       pendingPlanId: json['pending_plan_id'] as String?,
       creditsPerUsd: (json['credits_per_usd'] as int?) ?? 300,
+      tierLevel: (json['tier_level'] as int?) ?? plan_features.tierFree,
+      // フィールド欠落時(古いキャッシュ等)はこれまで通りの「全機能開放」に倒す。
+      gatingDisabled: (json['gating_disabled'] as bool?) ?? true,
     );
   }
 }

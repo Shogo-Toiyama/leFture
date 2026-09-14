@@ -235,6 +235,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'No course selected. Automated AI analysis will not start unless a course is assigned. Please select a course before or after uploading to start analysis.';
 
   @override
+  String get recordingDurationWarningBanner =>
+      'You\'ve been recording for 3 hours. Recording will automatically pause at 3.5 hours.';
+
+  @override
+  String get recordingDurationLimitBanner =>
+      'This recording reached the maximum length (3.5 hours) and has been paused. You can review and upload what you have so far.';
+
+  @override
   String get recordingOrDivider => 'OR';
 
   @override
@@ -343,10 +351,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recordingRealtimeCreditsDialogMessage =>
-      'Realtime transcription requires remaining credits.';
+      'Realtime transcription requires at least 30 remaining credits.';
 
   @override
   String get recordingRealtimeCreditsDialogConfirm => 'View Credits';
+
+  @override
+  String get recordingRealtimeUpgradeDialogTitle => 'Max plan required';
+
+  @override
+  String get recordingRealtimeUpgradeDialogMessage =>
+      'Realtime transcription during recording is available on the Max plan.';
+
+  @override
+  String get upgradeRequiredViewPlansButton => 'View Plans';
 
   @override
   String get recordingSpeechModelDialogTitle => 'Speech model required';
@@ -2124,6 +2142,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deepNotesListGeneratingMessage =>
       'Deep notes are being generated…';
+
+  @override
+  String get deepNotesLockedDialogTitle => 'Deep Notes not generated';
+
+  @override
+  String get deepNotesLockedDialogMessage =>
+      'This lecture was processed on the Free plan, so full Deep Notes weren\'t created for this topic. Upgrading won\'t add them to this lecture — but recordings on the Lite plan or above get full Deep Notes for every topic automatically.';
+
+  @override
+  String get deepNotesLockedCaption => 'Not generated · Free plan';
 
   @override
   String lectureNotePageTopicLabel(int index) {

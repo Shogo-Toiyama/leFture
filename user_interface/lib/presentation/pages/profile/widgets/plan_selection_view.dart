@@ -328,7 +328,7 @@ class PlanSelectionView extends HookConsumerWidget {
         }
       }
       isContinueLoading = purchasingPlanId.value == selectedPlan.id;
-      continueColor = planThemeColor(selectedPlan.name, storeProductId: selectedPlan.storeProductId);
+      continueColor = planThemeColor(selectedPlan.tierLevel);
       isUpgradeAction = !purchaseState.isCurrentPlan &&
           hasActivePlan &&
           currentPlan != null &&

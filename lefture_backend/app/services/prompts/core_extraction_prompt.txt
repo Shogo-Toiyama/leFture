@@ -5,7 +5,7 @@ You will also perform one focused task at the end: identifying the single most p
 
 ### OUTPUT LANGUAGE
 ${LANGUAGE_INSTRUCTIONS}
-This applies to `summary`, `title`, `topics[].title`, `topics[].keywords`, `topics[].concept_focus`, and `topics[].concept_intro_line`. `concept_focus` must still be copied character-for-character from that same topic's `keywords` list, including any parenthetical original-language term.
+This applies to `summary`, `title`, `topics[].title`, `topics[].keywords[].keyword`, `topics[].keywords[].definition`, `topics[].concept_focus`, and `topics[].concept_intro_line`. `concept_focus` must still be copied character-for-character from the `keyword` field of one of that same topic's own `keywords` entries, including any parenthetical original-language term.
 
 ### INPUT FORMAT
 A plain text transcript where each line represents a sentence or utterance.
@@ -16,7 +16,7 @@ The format is strict: `<sid>: <text>`
 Before producing any output, internally perform the following stages. Do not show this reasoning in your output — only the final JSON.
 
 - Stage A: Scan the full transcript and identify 8–15 candidate conceptual segments, each with an approximate SID range and a one-line description of its core concept.
-- Stage B: Merge adjacent candidates into exactly 4–6 chapters, guided primarily by major conceptual shifts (problem → solution, principle → implementation, theory → real-world system). Do not split every technical term into its own chapter.
+- Stage B: Merge adjacent candidates into chapters, meeting the ACADEMIC Topic Count Target specified in section 1 below (LOGISTICS/OFF_TOPIC segments are separate and do not count toward that target), guided primarily by major conceptual shifts (problem → solution, principle → implementation, theory → real-world system). Do not split every technical term into its own chapter.
 - Stage C: Where multiple valid merge points exist, prefer the one that keeps topic lengths closer to balanced (see Balance Rule below). Semantic boundaries always take priority over balance — balance is a tie-breaker, not a hard constraint that can override a genuine conceptual shift.
 - Stage D: Classify any non-academic stretch as LOGISTICS, OFF_TOPIC, or filler-to-absorb (see Content Filtering Rule below).
 - Stage E: Validate the full draft against the Coverage Rule, Continuity Rule, Balance Rule, and OUTPUT LANGUAGE instructions. Verify that all `topics[].title`, `summary`, `title`, and `concept_intro_line` are written in the requested output language and NOT left in the transcript language (e.g. English). Fix any violations before finalizing.
@@ -26,10 +26,32 @@ Before producing any output, internally perform the following stages. Do not sho
 
 **1. TOPICS & KEYWORDS (`topics`):**
 
-- Partition the transcript into 4 to 6 broad, student-friendly learning chapters.
+- Partition the transcript into broad, student-friendly learning chapters, following the ACADEMIC Topic Count Target below. This target counts ACADEMIC topics only — LOGISTICS and OFF_TOPIC segments are separate and do not count toward it.
+
+<!--IF:TOPIC_COUNT_TIER_1-->
+**ACADEMIC Topic Count Target: 2 to 4 topics.** (This is a shorter lecture — do not over-split it into more chapters than the content genuinely supports.)
+<!--END_IF-->
+<!--IF:TOPIC_COUNT_TIER_2-->
+**ACADEMIC Topic Count Target: 3 to 5 topics.**
+<!--END_IF-->
+<!--IF:TOPIC_COUNT_TIER_3-->
+**ACADEMIC Topic Count Target: 4 to 6 topics.**
+<!--END_IF-->
+<!--IF:TOPIC_COUNT_TIER_4-->
+**ACADEMIC Topic Count Target: 5 to 7 topics.** (This is a long lecture — merge related material rather than creating more chapters than this range allows.)
+<!--END_IF-->
+
 - For each ACADEMIC topic, extract 3 to 6 core academic concepts (`keywords`).
+<!--IF:keyword_extraction_subscriber-->
+- Return `keywords` as a list of objects `{"keyword": "...", "definition": "..."}` — one object per concept, never a plain string. Fill in each `definition` with a short explanation (roughly 1-2 minutes to read, about 3-6 sentences) of what the term means AND specifically how/why it was used in THIS lecture's context — not a generic dictionary definition. **Language Rule (CRITICAL):** write `definition` strictly in the specified output language per `OUTPUT LANGUAGE` above — do NOT leave it in English/transcript language just because the `keyword` itself keeps an original-language term in parentheses.
+<!--ELSE-->
+- Return `keywords` as a plain list of strings (e.g. `["Virtual memory", "Process isolation"]`) — do NOT wrap them in objects and do NOT include a `definition` field. Writing definitions is not needed for this lecture, so skip that work entirely.
+<!--END_IF-->
+<!--IF:topic_summary_fallback-->
+- For each ACADEMIC topic, also provide a `summary`: 1-2 sentences (a short, student-friendly description of what this specific chapter covers — not a generic restatement of the title). This is used elsewhere in the app as the topic's short description, so write it as a standalone sentence a student would understand without having read anything else. **Language Rule (CRITICAL):** write `summary` strictly in the specified output language per `OUTPUT LANGUAGE` above.
+<!--END_IF-->
 - If the professor returns to an earlier concept for a sustained section, create or continue a chapter that reflects that resumed concept rather than forcing it into an unrelated chapter.
-- **Language Rule (CRITICAL):** `topics[].title` MUST be written in the specified output language per `OUTPUT LANGUAGE` above (e.g., in Japanese). Do NOT leave topic titles in English/transcript language. For `keywords`, write them in the output language, and include the original transcript term in parentheses when instructed by the bilingual rule.
+- **Language Rule (CRITICAL):** `topics[].title` MUST be written in the specified output language per `OUTPUT LANGUAGE` above (e.g., in Japanese). Do NOT leave topic titles in English/transcript language. For each `keyword`, write it in the output language, and include the original transcript term in parentheses when instructed by the bilingual rule.
 
 **Topic Types:**
 - `ACADEMIC`: substantive lecture content — concepts, theories, mechanisms, problems, and solutions that a student would need to learn and could be tested on.
@@ -82,7 +104,7 @@ Before producing any output, internally perform the following stages. Do not sho
 Identify the single most pivotal academic concept taught in today's lecture to serve as the anchor for a future Fun Fact story.
 
 - **Select the Core Concept (CRITICAL):**
-  - Choose the concept from `topics[].keywords` that represents the main intellectual takeaway, central mechanism, or major breakthrough of today's lecture.
+  - Choose the concept (its `keyword` string) from `topics[].keywords` that represents the main intellectual takeaway, central mechanism, or major breakthrough of today's lecture.
   - **Future Importance:** Prioritize the concept that is most essential for understanding subsequent topics or future lectures in this course/field — the foundational idea where understanding it deeply today pays the highest dividends in upcoming classes.
   - **Avoid Generic Prerequisites:** Do NOT choose baseline, background, or recurring prerequisite terms that appear in every lecture (e.g., in a Computer Systems class, do not pick generic "Memory" or "Variables" if today's actual focus was "Virtual Memory Page Tables").
   - **Avoid Minor Tangents:** Do NOT choose minor illustrative examples, side remarks, or isolated trivia mentioned in passing.
@@ -91,7 +113,7 @@ Identify the single most pivotal academic concept taught in today's lecture to s
   - Every object in `topics[]` MUST include a boolean field `is_fun_fact_topic`. Set it to `true` on the ONE `ACADEMIC` topic you are choosing, and `false` on every other topic (including all `LOGISTICS`/`OFF_TOPIC` topics — they can never be `true`). Exactly one topic in the whole array has `is_fun_fact_topic: true`.
   - On that SAME topic object — and ONLY on that topic object — also add two more fields: `concept_focus` and `concept_intro_line` (described below). Every other topic must NOT have these two fields at all.
   - Do this all directly on the topic object itself, at the point where you write that topic. Do NOT put `concept_focus`/`concept_intro_line` in a separate top-level section, and do NOT reference the chosen topic by number or position from anywhere else — everything about your fun-fact choice lives in one place: that one topic object.
-  - `concept_focus` must be copied character-for-character from that SAME topic's own `keywords` list (never from a different topic's keywords).
+  - `concept_focus` must be copied character-for-character from the `keyword` field of one of that SAME topic's own `keywords` entries (never from a different topic's keywords).
 
 - **Write `concept_intro_line`:**
   - Write 2–3 concise sentences describing:
@@ -123,11 +145,33 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
       "idx": 2,
       "title": "Motivation for Virtual Memory",
       "topic_type": "ACADEMIC",
+<!--IF:topic_summary_fallback-->
+      "summary": "A one-to-two sentence, student-friendly description of what this chapter covers.",
+<!--END_IF-->
       "keywords": [
+<!--IF:keyword_extraction_subscriber-->
+        {
+          "keyword": "Virtual memory",
+          "definition": "A memory management technique that provides an abstracted, idealized view of storage resources. In this lecture, the professor introduced it as the essential architecture that freed modern computing from physical RAM limits. It was emphasized as the foundational mechanism that allows multiple programs to run simultaneously without corrupting one another's memory."
+        },
+        {
+          "keyword": "Process isolation",
+          "definition": "A security and stability boundary that prevents one running process from accessing or modifying the memory assigned to another. The professor presented this as the primary design driver for modern operating systems, noting how early computing suffered constant crashes when rogue programs wrote to shared memory."
+        },
+        {
+          "keyword": "Address space",
+          "definition": "The complete range of memory addresses available to a given program. The lecture illustrated how every process is granted the illusion of its own private, contiguous address space starting from zero, completely divorced from physical RAM layout."
+        },
+        {
+          "keyword": "Memory fragmentation",
+          "definition": "A state in which memory becomes divided into small, non-contiguous chunks that cannot satisfy allocation demands despite total free memory being sufficient. The professor highlighted external fragmentation as the historical failure mode that doomed naive contiguous memory allocation."
+        }
+<!--ELSE-->
         "Virtual memory",
         "Process isolation",
         "Address space",
         "Memory fragmentation"
+<!--END_IF-->
       ],
       "start_sid": "s000043",
       "end_sid": "s000118",
@@ -137,12 +181,38 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
       "idx": 3,
       "title": "Address Translation and Page Tables",
       "topic_type": "ACADEMIC",
+<!--IF:topic_summary_fallback-->
+      "summary": "A one-to-two sentence, student-friendly description of what this chapter covers.",
+<!--END_IF-->
       "keywords": [
+<!--IF:keyword_extraction_subscriber-->
+        {
+          "keyword": "Address translation",
+          "definition": "The hardware-driven conversion of program-generated virtual addresses into physical addresses in DRAM. The professor emphasized this mechanism as the heart of virtual memory, comparing it to hotel keycards directing guests to designated rooms without exposing back-of-house room allocation."
+        },
+        {
+          "keyword": "Page table",
+          "definition": "A per-process data structure maintained by the operating system that stores virtual-to-physical address mappings. The professor walked through how the OS traverses page table entries (PTEs) on memory accesses and marks invalid pages to trigger demand paging."
+        },
+        {
+          "keyword": "Memory Management Unit (MMU)",
+          "definition": "A dedicated hardware component on the CPU chip responsible for executing virtual-to-physical translations at hardware clock speeds. The professor contrasted the MMU's sub-nanosecond lookups with slow OS interrupt handling, showing why virtual memory demands dedicated hardware."
+        },
+        {
+          "keyword": "Virtual address",
+          "definition": "The memory address emitted by an application's CPU instructions. The professor stressed that user applications execute exclusively in virtual address space and never encounter physical memory pointers directly."
+        },
+        {
+          "keyword": "Physical address",
+          "definition": "The raw hardware address dispatched across the physical memory bus to DRAM. The lecture demonstrated how disparate virtual addresses from different programs map onto arbitrary, non-contiguous physical page frames transparently."
+        }
+<!--ELSE-->
         "Address translation",
         "Page table",
         "Memory Management Unit (MMU)",
         "Virtual address",
         "Physical address"
+<!--END_IF-->
       ],
       "start_sid": "s000119",
       "end_sid": "s000247",
@@ -154,11 +224,33 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
       "idx": 4,
       "title": "TLB Performance Tradeoffs",
       "topic_type": "ACADEMIC",
+<!--IF:topic_summary_fallback-->
+      "summary": "A one-to-two sentence, student-friendly description of what this chapter covers.",
+<!--END_IF-->
       "keywords": [
+<!--IF:keyword_extraction_subscriber-->
+        {
+          "keyword": "Translation Lookaside Buffer (TLB)",
+          "definition": "A small, ultra-fast associative cache inside the MMU that holds recent virtual-to-physical translations. The professor explained that since full page table walks require multiple memory references, the TLB is the critical component that keeps virtual memory performance viable."
+        },
+        {
+          "keyword": "Context switch overhead",
+          "definition": "The latency and throughput penalty that occurs when the CPU switches from executing one process to another. The professor highlighted that flushing the TLB during context switches discards cached translations, causing severe latency spikes until the new process rebuilds its working set."
+        },
+        {
+          "keyword": "Cache hit rate",
+          "definition": "The percentage of memory translation attempts that find their entry directly in the TLB without requiring a full page table walk. The professor emphasized that real-world workloads depend on high locality of reference to maintain hit rates above 98%."
+        },
+        {
+          "keyword": "Page fault",
+          "definition": "An exception raised by the MMU when a program accesses a virtual page not currently resident in physical memory. The professor detailed how the kernel intercepts this trap to load the page from disk into RAM and update the page table before resuming execution."
+        }
+<!--ELSE-->
         "Translation Lookaside Buffer (TLB)",
         "Context switch overhead",
         "Cache hit rate",
         "Page fault"
+<!--END_IF-->
       ],
       "start_sid": "s000248",
       "end_sid": "s000372",
@@ -171,4 +263,12 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
 
 Notes on the example above:
 - `idx` is simply each topic's position in the array (1, 2, 3, 4, ...) — just number topics in order as you write them, no special counting rule needed.
+<!--IF:keyword_extraction_subscriber-->
+- Each keyword's `definition` explains its meaning in the specific context of this lecture, as shown above.
+<!--ELSE-->
+- `keywords` is a plain list of strings, as shown above — no objects, no `definition` field.
+<!--END_IF-->
 - Only the chosen topic ("Address Translation and Page Tables") has `is_fun_fact_topic: true` plus `concept_focus`/`concept_intro_line`. Every other topic has `is_fun_fact_topic: false` and no `concept_focus`/`concept_intro_line` fields at all. There is no separate top-level section for the fun fact choice — everything about it lives on that one topic object.
+<!--IF:topic_summary_fallback-->
+- Every ACADEMIC topic has a `summary` field, as shown above.
+<!--END_IF-->

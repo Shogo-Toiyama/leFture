@@ -7,18 +7,22 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/domain/entities/deep_note.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
 import 'package:lefture/core/utils/annotation_text_utils.dart';
 import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/blurred_summary_placeholder.dart';
 import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
@@ -26,6 +30,7 @@ import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
 import 'package:lefture/presentation/widgets/transcript_modal.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
 import 'package:lefture/domain/entities/annotation.dart';
@@ -59,6 +64,11 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     final notesAsync = hasPassedTopics
         ? null
         : ref.watch(deepNotesProvider(lectureId));
+    // Freeプランでは最初のトピック(position 0)だけがプレビュー生成され、それ以外は
+    // deep_notes_list_page.dartと同じ理由でロックする。このページはトピック間の
+    // 次/前ナビゲーションと「一覧から直接ジャンプ」の両方を持つため、両方の入口を
+    // ここで塞ぐ必要がある。
+    final hasFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
 
     // Fetch lecture and parent course to get theme colors
     final lectureAsync = ref.watch(lectureProvider(lectureId));
@@ -113,9 +123,12 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       }).toList();
     }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
 
+    // Liteプラン未満で直接このページへ来た場合(URL直打ち等)は、ロックされた
+    // トピックを直接開かせず先頭(常に解放されているプレビュー)へ寄せる。
+    final safeTopicIndex = hasFullDeepNotes ? topicIndex : 0;
     final index = resolvedTopics.isEmpty
         ? 0
-        : topicIndex.clamp(0, resolvedTopics.length - 1);
+        : safeTopicIndex.clamp(0, resolvedTopics.length - 1);
     final currentIndex = useState<int>(index);
     // 直近の遷移方向: 1=次のノートへ, -1=前のノートへ, 0=遷移直後ではない。
     // 遷移先のノートを開いた瞬間のスクロール位置を決めるために使う。
@@ -184,7 +197,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     final hasSyncedInitialIndex = useRef(false);
     useEffect(() {
       if (!hasSyncedInitialIndex.value && resolvedTopics.isNotEmpty) {
-        currentIndex.value = topicIndex.clamp(0, resolvedTopics.length - 1);
+        currentIndex.value = safeTopicIndex.clamp(0, resolvedTopics.length - 1);
         hasSyncedInitialIndex.value = true;
       }
       return null;
@@ -224,6 +237,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     currentIndex,
                     navigationDirection,
                     textThemeColor,
+                    hasFullDeepNotes,
                   ),
                   hasSelection.value,
                   textThemeColor,
@@ -251,6 +265,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     final topic = resolvedTopics[currentIndex.value];
     final totalTopics = resolvedTopics.length;
+    // ロックされたトピック(position > 0、Full DeepNotes未解放)へは"次へ"で
+    // 進めない — position 0は常に解放済みプレビューなので、ここから進めるのは
+    // 常にロック済みトピックへ、という前提で成立している。
+    final canAdvanceToNext = currentIndex.value < totalTopics - 1 && hasFullDeepNotes;
 
     // 現在選択中の範囲が、ノート本文の何文字目〜何文字目にあたるかを求める。
     TextLocation? locateSelection() {
@@ -359,6 +377,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   currentIndex,
                   navigationDirection,
                   textThemeColor,
+                  hasFullDeepNotes,
                 ),
                 hasSelection.value,
                 textThemeColor,
@@ -587,10 +606,13 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       prevTitle: currentIndex.value > 0
                           ? resolvedTopics[currentIndex.value - 1].title
                           : null,
-                      nextImagePath: currentIndex.value < totalTopics - 1
+                      // ロックされている(position > 0 かつFull DeepNotes未解放)
+                      // 次のトピックへは進めない — "次へ"のプレビュー自体を隠す
+                      // ことで、そもそも押せない/見えない状態にする。
+                      nextImagePath: canAdvanceToNext
                           ? resolvedTopics[currentIndex.value + 1].imagePath
                           : null,
-                      nextTitle: currentIndex.value < totalTopics - 1
+                      nextTitle: canAdvanceToNext
                           ? resolvedTopics[currentIndex.value + 1].title
                           : null,
                       arrivalDirection: navigationDirection.value,
@@ -609,7 +631,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         }
                       },
                       onNext: () {
-                        if (currentIndex.value < totalTopics - 1) {
+                        if (canAdvanceToNext) {
                           navigationDirection.value = 1;
                           currentIndex.value = currentIndex.value + 1;
                         }
@@ -872,6 +894,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     ValueNotifier<int> currentIndex,
     ValueNotifier<int> navigationDirection,
     Color textThemeColor,
+    bool hasFullDeepNotes,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -942,12 +965,27 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       itemBuilder: (context, index) {
                         final topic = resolvedTopics[index];
                         final isSelected = index == currentIndex.value;
+                        final isLocked = index > 0 && !hasFullDeepNotes;
+                        final lockColor = planThemeColor(plan_features.tierLite);
+
                         return GestureDetector(
-                          onTap: () {
-                            navigationDirection.value = 0; // jump directly
-                            currentIndex.value = index;
-                            Navigator.pop(context);
-                          },
+                          onTap: isLocked
+                              ? () {
+                                  Navigator.pop(context);
+                                  showUpgradeRequiredDialog(
+                                    context: context,
+                                    requiredTierColor: lockColor,
+                                    title: AppLocalizations.of(context).deepNotesLockedDialogTitle,
+                                    message: AppLocalizations.of(context).deepNotesLockedDialogMessage,
+                                    viewPlansLabel: AppLocalizations.of(context).upgradeRequiredViewPlansButton,
+                                    cancelLabel: AppLocalizations.of(context).recordingCancelButton,
+                                  );
+                                }
+                              : () {
+                                  navigationDirection.value = 0; // jump directly
+                                  currentIndex.value = index;
+                                  Navigator.pop(context);
+                                },
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -956,9 +994,11 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                   : AppColors.paper.background,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isSelected
-                                    ? textThemeColor.withValues(alpha: 0.3)
-                                    : Colors.black.withValues(alpha: 0.07),
+                                color: isLocked
+                                    ? lockColor.withValues(alpha: 0.25)
+                                    : (isSelected
+                                        ? textThemeColor.withValues(alpha: 0.3)
+                                        : Colors.black.withValues(alpha: 0.07)),
                                 width: isSelected ? 1.5 : 1.0,
                               ),
                             ),
@@ -969,16 +1009,15 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: textThemeColor.withValues(
-                                      alpha: 0.12,
-                                    ),
+                                    color: (isLocked ? lockColor : textThemeColor)
+                                        .withValues(alpha: 0.12),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(
                                     child: Text(
                                       '${index + 1}',
                                       style: TextStyle(
-                                        color: textThemeColor,
+                                        color: isLocked ? lockColor : textThemeColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -999,8 +1038,19 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      if (topic.summary.isNotEmpty) ...[
-                                        const SizedBox(height: 6),
+                                      const SizedBox(height: 6),
+                                      if (isLocked) ...[
+                                        BlurredSummaryPlaceholder(color: lockColor),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          AppLocalizations.of(context).deepNotesLockedCaption,
+                                          style: TextStyle(
+                                            color: lockColor,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ] else if (topic.summary.isNotEmpty)
                                         Text(
                                           topic.summary,
                                           style: TextStyle(
@@ -1011,10 +1061,13 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                      ],
                                     ],
                                   ),
                                 ),
+                                if (isLocked) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(Icons.lock_outline_rounded, color: lockColor, size: 20),
+                                ],
                               ],
                             ),
                           ),

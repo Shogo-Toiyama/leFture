@@ -182,9 +182,8 @@ class _CurrentPlanCard extends ConsumerWidget {
       );
     }
 
-    final planName = activePlan.name;
     final planTitle = activePlan.name;
-    final themeColor = planThemeColor(planName, storeProductId: activePlan.storeProductId);
+    final themeColor = planThemeColor(activePlan.tierLevel);
     final isPremium = activePlan.isPremiumTier;
     final isStandard = activePlan.isStandardTier;
     final accentColor = isPremium
@@ -281,7 +280,7 @@ class _CurrentPlanCard extends ConsumerWidget {
                     child: Opacity(
                       opacity: isPremium ? 0.32 : (isStandard ? 0.26 : 0.15),
                       child: Image.asset(
-                        planIconAsset(planName, storeProductId: activePlan.storeProductId),
+                        planIconAsset(activePlan.tierLevel),
                         width: 160,
                         height: 160,
                         fit: BoxFit.contain,

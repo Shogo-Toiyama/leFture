@@ -35,7 +35,7 @@ class PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final themeColor = planThemeColor(plan.name, storeProductId: plan.storeProductId);
+    final themeColor = planThemeColor(plan.tierLevel);
     final isPremium = plan.isPremiumTier;
     final isStandard = plan.isStandardTier;
     final languageCode = Localizations.localeOf(context).languageCode;
@@ -128,7 +128,7 @@ class PlanCard extends StatelessWidget {
                   child: Opacity(
                     opacity: isPremium ? 0.38 : (isStandard ? 0.28 : 0.15),
                     child: Image.asset(
-                      planIconAsset(plan.name, storeProductId: plan.storeProductId),
+                      planIconAsset(plan.tierLevel),
                       width: 400,
                       height: 400,
                       fit: BoxFit.contain,

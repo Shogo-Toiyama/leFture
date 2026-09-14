@@ -15,9 +15,15 @@ from app.services.helpers.helpers import (
 )
 
 
+def _keyword_strings(topic: Dict[str, Any]) -> List[str]:
+    """topic['keywords']は{"keyword": str, "definition": str|None}のオブジェクトのリスト。
+    ここではdefinitionは使わず、用語そのもの(keyword)だけをコンテキストとして拾う。"""
+    return [kw["keyword"] for kw in (topic.get("keywords") or []) if isinstance(kw, dict) and kw.get("keyword")]
+
+
 def _format_topic_context(topic: Dict[str, Any]) -> str:
     title = topic.get("title", "")
-    keywords = topic.get("keywords") or []
+    keywords = _keyword_strings(topic)
     keyword_str = ", ".join(keywords) if keywords else "N/A"
     return f"Title: {title}\nKey Terms: {keyword_str}"
 
@@ -26,7 +32,7 @@ def _format_lecture_topics(topics: List[Dict[str, Any]]) -> str:
     lines = []
     for t in topics:
         title = t.get("title", "")
-        keywords = ", ".join(t.get("keywords") or [])
+        keywords = ", ".join(_keyword_strings(t))
         lines.append(f"- {title} (Key Terms: {keywords})" if keywords else f"- {title}")
     return "\n".join(lines)
 

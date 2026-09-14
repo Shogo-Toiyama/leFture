@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 import 'package:lefture/core/services/audio_record/audio_chunker.dart';
 import 'package:lefture/core/services/background_task.dart';
 import 'package:lefture/core/services/audio_record/pcm_duration_utils.dart';
@@ -23,6 +24,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/services/audio_record/audio_recorder_service.dart';
+import '../../domain/plan_features.dart' as plan_features;
 import '../../infrastructure/local_db/repositories/recording_repository_drift.dart';
 import '../credit/credit_providers.dart';
 import '../profile/display_language_controller.dart';
@@ -32,10 +34,24 @@ import 'upload_manager.dart';
 
 part 'recording_controller.g.dart';
 
-/// Realtime文字起こしを許可する最低クレジット残高(USD換算)。録音自体は
-/// クレジット0でも常に可能。この制限はRealtime(継続的にサーバーへ送信し
-/// 続ける処理)にのみ適用する。
-const double kRealtimeMinCreditUsd = 0.1;
+/// Realtime文字起こしを許可する最低クレジット残高(表示クレジット単位)。
+/// 録音自体はクレジット0でも常に可能。この制限はRealtime(継続的にWhisperへ
+/// 送信し続ける、パイプライン中で最もコストのかかる処理)にのみ適用する。
+///
+/// 30 = 最安の講義tier(30分以内、60クレジット)の50% — /start-analysisの
+/// MIN_BALANCE_RATIO_FOR_NEW_JOBと同じ考え方。これ単体で悪用(Realtimeだけ
+/// ONにして録音し続け、講義分析は一切せず削除する使い方)を防げるわけでは
+/// ないが、残高が実質0の状態でWhisperコストだけ無限に発生させることは防ぐ。
+const int kMinCreditsForRealtimeTranscribe = 30;
+
+/// 録音上限(秒)。バックエンドのMAX_RECORDING_SECONDS(3時間半)と同じ値を
+/// ハードコードしている(値を変える時は両方直すこと)。到達したら録音を
+/// 一時停止する(手動で一時停止ボタンを押したのと同じ挙動 — 録音自体を
+/// 失わせないため、自動アップロードまでは進めない)。
+const int kMaxRecordingSeconds = 210 * 60;
+
+/// この秒数に達したら一度だけ警告を出す(3時間)。
+const int kRecordingDurationWarningSeconds = 3 * 60 * 60;
 
 /// [RecordingController.setRealtimeTranscribe]の結果。失敗した理由を呼び出し側
 /// (UI)へ返し、必ずユーザーに見える形で伝えられるようにするためのもの。
@@ -48,7 +64,10 @@ enum RealtimeToggleResult {
   /// 録音中は変更できない。
   lockedWhileRecording,
 
-  /// クレジット残高が[kRealtimeMinCreditUsd]に満たない。
+  /// 現在のプランがRealtime Transcribeに対応していない(Max未満)。
+  requiresUpgrade,
+
+  /// クレジット残高が[kMinCreditsForRealtimeTranscribe]に満たない。
   insufficientCredits,
 }
 
@@ -224,38 +243,7 @@ class RecordingController extends _$RecordingController {
 
     // 2. Recording -> Pause
     if (state.phase == RecordingPhase.recording) {
-      await _recorder.pause();
-      _timer?.cancel();
-
-      // マイクからの音声供給が止まるだけでは、既に起動済みのオンデバイスASR
-      // エンジン(モデルをロードした専用isolate)はメモリに常駐したままになって
-      // しまう。一時停止中に発熱・電池消費が続く原因になるため、ここで明示的に
-      // 止める(再開時に必要なら`start`し直す)。
-      if (state.realtimeTranscribe) {
-        await ref.read(liveAsrControllerProvider.notifier).stop();
-      }
-
-      if (state.realtimeTranscribe) {
-        final flushed = _chunker?.flush();
-        if (flushed != null && flushed.data.isNotEmpty) {
-          final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
-
-          await _repo.attachAudioAndEnqueueUpload(
-            userId: user.id,
-            lectureId: state.currentLectureId!,
-            localPath: path,
-            sequenceIndex: _currentChunkIndex,
-            startTime: flushed.startTimeSec,
-            endTime: flushed.startTimeSec + flushed.data.length / kMasterPcmBytesPerSecond,
-          );
-          _currentChunkIndex++;
-        }
-      } else {
-        DevLog.add('[Pause] Realtime Transcribe is OFF, skipping chunk upload');
-        _chunker?.flush(); // メモリ解放のためflushは呼ぶが結果は使わない
-      }
-
-      state = state.copyWith(phase: RecordingPhase.paused, audioLevel: 0.0);
+      await _pauseRecording(user);
       return;
     }
 
@@ -264,7 +252,7 @@ class RecordingController extends _$RecordingController {
       await _recorder.resume();
       _startTimer();
 
-      if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
+      if (state.realtimeTranscribe && _canUseRealtimeNow()) {
         final recordingLanguage = ref.read(recordingLanguageControllerProvider);
         // 一時停止で止めたLiveAsrControllerは再開のたびに新しいisolateを
         // 起動し内部タイムスタンプが0から数え直しになるため、これまでの
@@ -426,7 +414,7 @@ class RecordingController extends _$RecordingController {
       if (state.realtimeTranscribe && modelUnavailable) {
         DevLog.add('[StartSession] Realtime Transcribe disabled: no model available for "$recordingLanguage".');
         state = state.copyWith(realtimeTranscribe: false);
-      } else if (state.realtimeTranscribe && _hasEnoughCreditsForRealtime()) {
+      } else if (state.realtimeTranscribe && _canUseRealtimeNow()) {
         ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
         // ダウンロード中/未確認のままでも録音自体はブロックしない
         // (LiveAsrController側がダウンロード完了を検知して自動的に
@@ -490,9 +478,72 @@ class RecordingController extends _$RecordingController {
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      DevLog.add('[Timer] Tick: ${state.elapsedSeconds + 1} (Phase: ${state.phase})');
-      state = state.copyWith(elapsedSeconds: state.elapsedSeconds + 1);
+      final nextElapsed = state.elapsedSeconds + 1;
+      DevLog.add('[Timer] Tick: $nextElapsed (Phase: ${state.phase})');
+
+      if (nextElapsed >= kMaxRecordingSeconds) {
+        state = state.copyWith(elapsedSeconds: nextElapsed);
+        // 一時停止ボタンを押したのと同じ挙動にするだけ(録音自体は失わせない)。
+        // タイマー自体は_pauseRecording内の_timer?.cancel()で止まる。
+        unawaited(_pauseForDurationLimit());
+        return;
+      }
+
+      state = state.copyWith(elapsedSeconds: nextElapsed);
     });
+  }
+
+  /// マイク一時停止・オンデバイスASR停止・末尾チャンクのフラッシュ&アップロードを
+  /// まとめて行い、phaseをpausedに遷移させる。toggleStartStopResumeの手動一時停止と
+  /// [_pauseForDurationLimit](録音上限到達時の自動一時停止)の両方から呼ばれる共通処理。
+  Future<void> _pauseRecording(User user) async {
+    await _recorder.pause();
+    _timer?.cancel();
+
+    // マイクからの音声供給が止まるだけでは、既に起動済みのオンデバイスASR
+    // エンジン(モデルをロードした専用isolate)はメモリに常駐したままになって
+    // しまう。一時停止中に発熱・電池消費が続く原因になるため、ここで明示的に
+    // 止める(再開時に必要なら`start`し直す)。
+    if (state.realtimeTranscribe) {
+      await ref.read(liveAsrControllerProvider.notifier).stop();
+    }
+
+    if (state.realtimeTranscribe) {
+      final flushed = _chunker?.flush();
+      if (flushed != null && flushed.data.isNotEmpty) {
+        final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
+
+        await _repo.attachAudioAndEnqueueUpload(
+          userId: user.id,
+          lectureId: state.currentLectureId!,
+          localPath: path,
+          sequenceIndex: _currentChunkIndex,
+          startTime: flushed.startTimeSec,
+          endTime: flushed.startTimeSec + flushed.data.length / kMasterPcmBytesPerSecond,
+        );
+        _currentChunkIndex++;
+      }
+    } else {
+      DevLog.add('[Pause] Realtime Transcribe is OFF, skipping chunk upload');
+      _chunker?.flush(); // メモリ解放のためflushは呼ぶが結果は使わない
+    }
+
+    state = state.copyWith(phase: RecordingPhase.paused, audioLevel: 0.0);
+  }
+
+  /// 録音上限([kMaxRecordingSeconds])到達時に呼ばれる。既にpaused/idle等へ
+  /// 遷移済み(タイマーのタイミングと手動操作が競合した等)なら何もしない。
+  ///
+  /// 理由の説明はtransientNotice(SnackBar、一度きりで数秒で消える)ではなく、
+  /// RecordingPage側でelapsedSeconds/phaseを見て常時表示する警告バナーに任せる
+  /// (授業中は画面を伏せていることが多く、一瞬で消えるSnackBarでは
+  /// 気づけないため)。
+  Future<void> _pauseForDurationLimit() async {
+    if (state.phase != RecordingPhase.recording) return;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    await _pauseRecording(user);
   }
 
   Future<void> setAutoStartAnalysis(bool value) async {
@@ -510,33 +561,48 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  /// クレジット残高が$kRealtimeMinCreditUsd以上あるか。未取得(ロード中/
-  /// オフライン等)の場合は安全側に倒してfalseを返す。
+  /// 現在のプラン・クレジット残高の両方でRealtimeが使える状態か。未取得
+  /// (ロード中/オフライン等)の場合は安全側に倒してfalseを返す。
   ///
-  /// 実際にサーバーへ送り始める(＝課金が発生しうる)録音開始・再開の判定用。
-  /// 設定トグルの可否は[_canEnableRealtime]の方を使うこと。
-  bool _hasEnoughCreditsForRealtime() {
+  /// 実際にサーバーへ送り始める(＝Whisperコストが発生しうる)録音開始・再開の
+  /// 判定用。設定トグルの可否は[_canEnableRealtimeByTier]/
+  /// [_canEnableRealtimeByCredits]の方を使うこと。
+  bool _canUseRealtimeNow() {
     final summary = ref.read(creditSummaryProvider).asData?.value;
     if (summary == null) return false;
-    return summary.hasAtLeastUsd(kRealtimeMinCreditUsd);
+    return summary.hasFeature(plan_features.featureRealtimeTranscribe) &&
+        summary.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
   }
 
-  /// 設定変更のためのクレジット判定。[_hasEnoughCreditsForRealtime]と違い、
-  /// 残高が未取得ならここで取得を待ち、それでも分からない(オフライン/API失敗)
-  /// 場合は許可する。
+  /// 設定変更のためのプラン判定。残高が未取得ならここで取得を待ち、それでも
+  /// 分からない(オフライン/API失敗)場合は許可する。
   ///
-  /// 「分からない=拒否」にすると、残高は足りているのに通信が済んでいないだけで
-  /// トグルがONにできず、しかもユーザーには理由が分からない、という状態に
-  /// なってしまうため。実際に足りない状態で録音を始めた場合は
-  /// [_startRecordingSession]が改めて判定してRealtimeだけ無効化する。
-  Future<bool> _canEnableRealtime() async {
+  /// 「分からない=拒否」にすると、実際は使えるプランなのに通信が済んでいない
+  /// だけでトグルがONにできず、しかもユーザーには理由が分からない、という
+  /// 状態になってしまうため。実際に使えない状態で録音を始めた場合は
+  /// [_canUseRealtimeNow]が改めて判定してRealtimeだけ無効化する。
+  Future<bool> _canEnableRealtimeByTier() async {
     final cached = ref.read(creditSummaryProvider).asData?.value;
-    if (cached != null) return cached.hasAtLeastUsd(kRealtimeMinCreditUsd);
+    if (cached != null) return cached.hasFeature(plan_features.featureRealtimeTranscribe);
     try {
       final summary = await ref.read(creditSummaryProvider.future);
-      return summary.hasAtLeastUsd(kRealtimeMinCreditUsd);
+      return summary.hasFeature(plan_features.featureRealtimeTranscribe);
     } catch (e, st) {
-      DevLog.add('⚠️ [Realtime] credit summary unavailable, allowing the toggle anyway: $e\n$st');
+      DevLog.add('⚠️ [Realtime] credit summary unavailable (tier check), allowing the toggle anyway: $e\n$st');
+      return true;
+    }
+  }
+
+  /// 設定変更のためのクレジット判定。考え方は[_canEnableRealtimeByTier]と同じ
+  /// (不明なら許可し、実際の録音開始時に[_canUseRealtimeNow]で改めて厳密判定する)。
+  Future<bool> _canEnableRealtimeByCredits() async {
+    final cached = ref.read(creditSummaryProvider).asData?.value;
+    if (cached != null) return cached.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
+    try {
+      final summary = await ref.read(creditSummaryProvider.future);
+      return summary.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
+    } catch (e, st) {
+      DevLog.add('⚠️ [Realtime] credit summary unavailable (credit check), allowing the toggle anyway: $e\n$st');
       return true;
     }
   }
@@ -547,8 +613,13 @@ class RecordingController extends _$RecordingController {
     }
 
     // 録音自体は常に可能なので、ここでブロックするのはRealtimeのON操作のみ。
-    if (value && !await _canEnableRealtime()) {
-      return RealtimeToggleResult.insufficientCredits;
+    if (value) {
+      if (!await _canEnableRealtimeByTier()) {
+        return RealtimeToggleResult.requiresUpgrade;
+      }
+      if (!await _canEnableRealtimeByCredits()) {
+        return RealtimeToggleResult.insufficientCredits;
+      }
     }
 
     state = state.copyWith(realtimeTranscribe: value, clearErrorMessage: true);

@@ -530,6 +530,18 @@ abstract class AppLocalizations {
   /// **'No course selected. Automated AI analysis will not start unless a course is assigned. Please select a course before or after uploading to start analysis.'**
   String get recordingNoCourseWarning;
 
+  /// Persistent warning banner (not a SnackBar) shown while recording/paused once elapsed time passes 3 hours, since users often aren't looking at the screen during a lecture and a transient toast would be missed.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been recording for 3 hours. Recording will automatically pause at 3.5 hours.'**
+  String get recordingDurationWarningBanner;
+
+  /// Persistent warning banner shown once the recording has been auto-paused after hitting the 3.5-hour maximum length.
+  ///
+  /// In en, this message translates to:
+  /// **'This recording reached the maximum length (3.5 hours) and has been paused. You can review and upload what you have so far.'**
+  String get recordingDurationLimitBanner;
+
   /// Short divider word between two horizontal lines on the Recording page, separating the record button area from the 'select an existing audio file' option below it. Must stay very short (1 word) to fit the divider. English uses uppercase for visual style; other languages should just use their natural word for 'or'.
   ///
   /// In en, this message translates to:
@@ -722,10 +734,10 @@ abstract class AppLocalizations {
   /// **'Not enough credits'**
   String get recordingRealtimeCreditsDialogTitle;
 
-  /// Body text of the not-enough-credits dialog informing the user that credits are required.
+  /// Body text of the not-enough-credits dialog informing the user of the minimum credit balance required for Realtime transcription.
   ///
   /// In en, this message translates to:
-  /// **'Realtime transcription requires remaining credits.'**
+  /// **'Realtime transcription requires at least 30 remaining credits.'**
   String get recordingRealtimeCreditsDialogMessage;
 
   /// Button label to navigate to the credits page.
@@ -733,6 +745,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Credits'**
   String get recordingRealtimeCreditsDialogConfirm;
+
+  /// Title of the dialog shown when the user tries to turn on Realtime transcribe but their current plan doesn't include it (Max plan only).
+  ///
+  /// In en, this message translates to:
+  /// **'Max plan required'**
+  String get recordingRealtimeUpgradeDialogTitle;
+
+  /// Body text explaining that Realtime transcribe is a Max-plan-only feature.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription during recording is available on the Max plan.'**
+  String get recordingRealtimeUpgradeDialogMessage;
+
+  /// Generic button label used across upgrade-required dialogs to navigate to the Plans page.
+  ///
+  /// In en, this message translates to:
+  /// **'View Plans'**
+  String get upgradeRequiredViewPlansButton;
 
   /// Title of the dialog shown when the user turns on Realtime transcribe but the on-device speech model for the current recording language hasn't been downloaded yet.
   ///
@@ -3805,6 +3835,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deep notes are being generated…'**
   String get deepNotesListGeneratingMessage;
+
+  /// Title of the dialog shown when tapping a Deep Notes topic that was never generated because the account was on the Free plan when this lecture was processed. Deliberately states non-existence rather than implying hidden/locked content, to avoid a misleading 'pay to reveal' impression.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Notes not generated'**
+  String get deepNotesLockedDialogTitle;
+
+  /// Body text explicitly stating that content wasn't generated (not just hidden) and that upgrading is not retroactive for the current lecture, only for future recordings. Important for trust — must not imply the content already exists and just needs unlocking.
+  ///
+  /// In en, this message translates to:
+  /// **'This lecture was processed on the Free plan, so full Deep Notes weren\'t created for this topic. Upgrading won\'t add them to this lecture — but recordings on the Lite plan or above get full Deep Notes for every topic automatically.'**
+  String get deepNotesLockedDialogMessage;
+
+  /// Very short caption shown directly on a locked Deep Notes card/tile (not inside the dialog) so the 'not generated, not hidden' fact is visible at a glance without tapping.
+  ///
+  /// In en, this message translates to:
+  /// **'Not generated · Free plan'**
+  String get deepNotesLockedCaption;
 
   /// Small label line above the lecture title in the LectureNotePage app bar, showing the 1-based index of the topic/segment being viewed, e.g. 'Topic 3'. Same pattern as transcriptPageTopicLabel/announcementTranscriptModalTopicLabel elsewhere in the app.
   ///

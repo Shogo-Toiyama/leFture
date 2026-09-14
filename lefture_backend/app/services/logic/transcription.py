@@ -4,37 +4,17 @@ import time
 import os
 import base64
 import asyncio
-import subprocess
 import requests
 from pathlib import Path
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
 from pydub import AudioSegment
-from app.services.helpers.helpers import TaskLogger
+from app.services.helpers.helpers import TaskLogger, _get_audio_duration_seconds
 from app.services.helpers.llm_unified import BillingEngine
 
 
 class _RetryableCloudflareError(Exception):
     """429/5xx等、リトライすれば成功する見込みがあるCloudflare APIエラー。"""
     pass
-
-
-async def _get_audio_duration_seconds(path: Path) -> float:
-    """
-    ffprobeでコンテナのヘッダのみを読み、音声の長さを取得する。
-    AudioSegment.from_file()のようにPCMへフルデコードしないため、
-    3時間超のマスター音声でもメモリ使用量はほぼゼロで済む。
-    """
-    proc = await asyncio.to_thread(
-        subprocess.run,
-        [
-            "ffprobe", "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "default=noprint_wrappers=1:nokey=1",
-            str(path),
-        ],
-        capture_output=True, text=True, check=True,
-    )
-    return float(proc.stdout.strip())
 
 
 @retry(

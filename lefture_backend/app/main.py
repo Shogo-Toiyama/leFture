@@ -62,7 +62,15 @@ CANCELLABLE_TASK_STATUSES = ["PENDING", "QUEUED", "WAITING", "RUNNING", "FAILED"
 
 from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
-from app.services.helpers.credits import CREDITS_PER_USD
+from app.services.helpers.credits import (
+    CREDITS_PER_USD,
+    MAX_RECORDING_SECONDS,
+    MICRO_CREDITS_PER_CREDIT,
+    MIN_BALANCE_RATIO_FOR_NEW_JOB,
+    resolve_duration_tier,
+)
+from app.services.helpers.helpers import _get_audio_duration_seconds
+from app.services.helpers.plan_features import get_user_tier_level, has_feature, is_gating_disabled_for_user, FEATURE_REALTIME_TRANSCRIBE
 from app.services.tutorial_content import get_tutorial_content
 
 # チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
@@ -327,7 +335,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     # 「検証自体ができなかった(503)」を明確に区別する。
     try:
         lec_res = await asyncio.to_thread(
-            lambda: admin_client.table("lectures").select("course_id").eq("id", payload.lecture_id).maybe_single().execute()
+            lambda: admin_client.table("lectures").select("course_id, audio_path").eq("id", payload.lecture_id).maybe_single().execute()
         )
     except Exception as e:
         # ここに来るのは通信断やDB障害など「待てば直るかもしれない」失敗だけ。
@@ -439,6 +447,89 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             f"payload={payload.expected_chunks}, previous_job={previous_expected}, "
             f"transcript_rows={transcript_count} → {expected_chunks}"
         )
+
+    # 3.9 Realtime Transcribe(録音中にリアルタイムで文字起こしする経路)は本来Maxプラン限定。
+    # ただし、この時点では録音・チャンクごとの文字起こし自体は既に完了してしまっている
+    # ため、ここでブロックしても「録音はしたのに解析だけ一生できない」という、それこそ
+    # 一番避けたい詰み状態をユーザーに強いるだけになる。よって意図的にブロックしない
+    # (実際の入口の権限管理はFlutter側— Realtimeトグルをそもそも出さない/選ばせない
+    # ——に任せる)。ここでは万一そのFlutter側のガードが抜けたケースを検知できるように
+    # ログだけ残す。
+    if is_realtime:
+        tier = await asyncio.to_thread(get_user_tier_level, user_id)
+        if not has_feature(tier, FEATURE_REALTIME_TRANSCRIBE, user_id=user_id):
+            print(
+                f"⚠️ Realtime transcribe used without Max plan (lecture_id={payload.lecture_id}, "
+                f"user_id={user_id}, tier={tier}). Proceeding anyway — see comment above."
+            )
+
+    # 3.95 音声の長さを見積もり、(a) 録音上限を超えていないか (b) 見積もりクレジットに
+    # 対して残高が少なすぎないか、を確認する。
+    #
+    # (a) 録音上限(MAX_RECORDING_SECONDS=3時間半)は本来Flutter側(録音中/アップロード時)
+    # で弾く想定だが、APIを直接叩かれた場合の保険としてバックエンドにも同じ上限を置く。
+    # 既に録音・アップロードされてしまった音声を拒否するだけで、録音自体を途中で
+    # 打ち切るような真似はしない(そちらは別の話で、意図的にやらないことにしている)。
+    #
+    # (b) 上のcredit_balance<=0チェックだけでは「明らかに0以下」しか弾けないため、
+    # 音声の長さから消費予定クレジットを見積もり、その
+    # MIN_BALANCE_RATIO_FOR_NEW_JOB(現在50%)未満しか残高が無ければここで止める。
+    # 100%を要求しないのは、(1)進行中ジョブの実消費は元々オーバードラフトを許容する
+    # 設計であり、ここだけ厳密にするのは一貫しないため、(2)この時点の見積もり自体
+    # 多少ブレる(プレレコはffprobeの実測値だが、リアルタイムは録音完了時点で
+    # 既に文字起こし済みのチャンクの合計であり、万一取りこぼしがあれば実際より
+    # 少なく見積もられる)ため。
+    #
+    # (a)(b)どちらも、見積もり自体に失敗した場合(ffprobeエラー・タイムアウト等の
+    # インフラ都合)はこの追加チェックだけスキップし、上のcredit_balance<=0チェックの
+    # みで判断する(インフラの一時的な不調でユーザーを誤って締め出したくないため)。
+    try:
+        if is_realtime:
+            duration_res = await asyncio.to_thread(
+                lambda: admin_client.table("lecture_transcripts")
+                    .select("audio_duration")
+                    .eq("lecture_id", payload.lecture_id)
+                    .execute()
+            )
+            estimated_duration_seconds = sum(
+                (row.get("audio_duration") or 0.0) for row in (duration_res.data or [])
+            )
+        else:
+            audio_path = lecture_row.get("audio_path")
+            if not audio_path:
+                raise ValueError(f"lecture {payload.lecture_id} is missing audio_path")
+            presigned_url = storage_service.generate_presigned_get_url(audio_path)
+            estimated_duration_seconds = await _get_audio_duration_seconds(presigned_url)
+
+        if estimated_duration_seconds > MAX_RECORDING_SECONDS:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error_code": "RECORDING_TOO_LONG",
+                    "message": "This recording exceeds the maximum supported length.",
+                    "duration_seconds": estimated_duration_seconds,
+                    "max_duration_seconds": MAX_RECORDING_SECONDS,
+                },
+            )
+
+        estimated_credits = resolve_duration_tier(estimated_duration_seconds).credits
+        min_required_micro_credits = (
+            estimated_credits * MICRO_CREDITS_PER_CREDIT * MIN_BALANCE_RATIO_FOR_NEW_JOB
+        )
+        if credit_balance < min_required_micro_credits:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "error_code": "INSUFFICIENT_CREDITS",
+                    "message": "Estimated credit cost for this lecture exceeds your available balance.",
+                    "credit_balance": credit_balance,
+                    "estimated_credits": estimated_credits,
+                },
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"⚠️ Failed to estimate required credits for lecture {payload.lecture_id}: {e}. Skipping this check.")
 
     first_task = "CHECK_AND_ASSEMBLE" if is_realtime else "TRANSCRIBE_MASTER"
 
@@ -824,6 +915,17 @@ async def billing_summary(request: Request):
         raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
     row = (summary_res.data or [{}])[0] if summary_res.data else {}
 
+    # tier_level(機能ゲート判定用)もここで一緒に返す。Flutter側は既にこの
+    # エンドポイントをアプリ全体でほぼ常時watchしているので(CustomAppBar経由)、
+    # 専用の新しい取得経路・キャッシュを増やさずに済む。
+    tier_level = await asyncio.to_thread(get_user_tier_level, user_id)
+    # gating_disabled: このユーザーにkill-switchが効いているか(実機テスト用に
+    # REAL_GATING_TEST_USER_IDSへ登録されたアカウントだけfalseになる)。実際の
+    # 生成・保存の可否は常にバックエンド(has_feature)側が最終判断するので、この
+    # 値がそのままクライアントに渡ってもUIロック表示のヒントとしてしか使われず、
+    # 悪用の余地は無い。
+    gating_disabled = is_gating_disabled_for_user(user_id)
+
     return {
         "credit_balance": row.get("credit_balance"),
         "monthly_allocation": row.get("monthly_allocation"),
@@ -832,6 +934,8 @@ async def billing_summary(request: Request):
         "current_period_end": row.get("current_period_end"),
         "pending_plan_id": row.get("pending_plan_id"),
         "credits_per_usd": CREDITS_PER_USD,
+        "tier_level": tier_level,
+        "gating_disabled": gating_disabled,
     }
 
 

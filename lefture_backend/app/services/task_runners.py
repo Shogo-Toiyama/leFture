@@ -14,7 +14,17 @@ from app.core.supabase import get_supabase_client
 from app.core.r2_storage import storage_service
 from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_content_language_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
-from app.services.helpers.credits import charge_credits_for_task
+from app.services.helpers.credits import record_task_cost, consume_lecture_credits, resolve_duration_tier
+from app.services.helpers.plan_features import (
+    get_user_tier_level,
+    has_feature,
+    FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER,
+    FEATURE_ANNOUNCEMENT_GENERATION,
+    FEATURE_TOPIC_MAP,
+    FEATURE_DEEP_NOTES_FULL,
+    FEATURE_FUN_FACT_SEARCH,
+    FEATURE_REALTIME_TRANSCRIBE,
+)
 from app.services.push_notification_service import send_push_notification
 from app.services.push_notification_content import get_push_content
 
@@ -124,14 +134,15 @@ def _update_task_status_sync(
         )
 
     # billing_recordsが乗っているpayloadは、そのタスクが実際にAIコストを
-    # 発生させたタスクなので、ここでクレジット消費を確定させる。
+    # 発生させたタスクなので、ここで原価をusage_recordsに記録する(残高は動かさない —
+    # 実際のクレジット消費は音声長に応じた固定額をFINALIZE_JOBで1回だけ行う)。
     # user_idが渡されていない呼び出し元は対象外(課金と無関係な状態更新)。
     billing_records = (payload or {}).get("billing_records")
     if billing_records and user_id:
         cost_usd = sum(r.get("cost_usd", 0.0) for r in billing_records)
         task_type = billing_records[0].get("task_type")
         try:
-            charge_credits_for_task(
+            record_task_cost(
                 user_id=user_id,
                 task_id=task_id,
                 task_type=task_type,
@@ -140,10 +151,10 @@ def _update_task_status_sync(
                 job_id=job_id,
             )
         except Exception:
-            # 課金の失敗でパイプライン自体を止めたくない。usage_records/
-            # credit_transactionsの欠損は後から突合・再計算で補える想定。
+            # 記録の失敗でパイプライン自体を止めたくない。usage_recordsの
+            # 欠損は原価分析にのみ影響し、後から突合・再計算で補える想定。
             _credits_logger.exception(
-                f"Failed to charge credits for task_id={task_id} user_id={user_id}"
+                f"Failed to record task cost for task_id={task_id} user_id={user_id}"
             )
 
 def _get_job_context_sync(job_id: str) -> dict:
@@ -527,10 +538,11 @@ async def trigger_sentence_review_for_batch_if_ready(
             logger.log(f"✅ Batch {batch_start} (4 chunks) successfully REVIEWED and updated in DB (costs allocated)!")
 
             # このバッチのSENTENCE_REVIEWコストは、4チャンクへ表示用に配分する前の
-            # 合計金額でここ1回だけ課金する(配分後の値で4回課金すると同額になるはず
-            # だが、丸め処理を分散させないためにも合計側で一度だけ行う)。
+            # 合計金額でここ1回だけusage_recordsに記録する(残高は動かさない。配分後の
+            # 値で4回記録すると同額になるはずだが、丸め処理を分散させないためにも
+            # 合計側で一度だけ行う)。
             try:
-                charge_credits_for_task(
+                record_task_cost(
                     user_id=uid,
                     task_id=None,
                     task_type="SENTENCE_REVIEW",
@@ -540,7 +552,7 @@ async def trigger_sentence_review_for_batch_if_ready(
                 )
             except Exception:
                 _credits_logger.exception(
-                    f"Failed to charge credits for SENTENCE_REVIEW lecture_id={lecture_id} batch_start={batch_start}"
+                    f"Failed to record task cost for SENTENCE_REVIEW lecture_id={lecture_id} batch_start={batch_start}"
                 )
 
             # ★ 「全チャンクが揃った」を成立させ得るイベントは2種類ある:
@@ -643,11 +655,11 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
             }).eq("lecture_id", lecture_id).eq("chunk_index", chunk_index).execute()
         )
 
-        # このチャンクのTRANSCRIBE_CHUNKコストはここが唯一の課金ポイント。
-        # CHECK_AND_ASSEMBLEは後でこのbilling_recordsを合算してレポートに
-        # 使うだけなので、そちらでは絶対に二重課金しないこと。
+        # このチャンクのTRANSCRIBE_CHUNKコストはここでusage_recordsに記録する
+        # (残高は動かさない)。CHECK_AND_ASSEMBLEは後でこのbilling_recordsを
+        # 合算してレポートに使うだけなので、そちらでは絶対に二重記録しないこと。
         try:
-            charge_credits_for_task(
+            record_task_cost(
                 user_id=uid,
                 task_id=None,
                 task_type="TRANSCRIBE_CHUNK",
@@ -657,7 +669,7 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
             )
         except Exception:
             _credits_logger.exception(
-                f"Failed to charge credits for TRANSCRIBE_CHUNK lecture_id={lecture_id} chunk_index={chunk_index}"
+                f"Failed to record task cost for TRANSCRIBE_CHUNK lecture_id={lecture_id} chunk_index={chunk_index}"
             )
 
         logger.log(f"✅ Chunk transcription completed: Chunk {chunk_index}")
@@ -981,7 +993,17 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         # D. Storage保存 ＆ DB更新
         # ---------------------------------------------------------
         remote_transcript_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "transcript_assembled", assembled_data)
-        
+
+        # 📏 音声の長さ(全チャンクの合計)を確定させ、lecturesに書き込む。
+        # 固定クレジット消費(FINALIZE_JOB)とトピック数上限(CORE_EXTRACTION)の
+        # 両方がここで確定した値を読みに来る。
+        total_audio_duration = sum(c.get("audio_duration") or 0.0 for c in completed_chunks)
+        await asyncio.to_thread(
+            lambda: supabase.table("lectures").update({
+                "audio_duration_seconds": total_audio_duration,
+            }).eq("id", lecture_id).execute()
+        )
+
         # 💰 各チャンクの文字起こし／ progressive review の請求データを Supabase から取得して集計に合流させる
         logger.log("💰 Merging individual chunk billing records from DB...")
         for c in completed_chunks:
@@ -1150,13 +1172,16 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
             logger.log("⏭️ Skipping lecture_transcripts registration (Pre-recorded mode, already in R2)")
             # プレレコはlecture_transcriptsに行を作らないため、検出言語の保存先は
             # lectures.detected_recording_language(講義1件につき1値)にする。
+            # 音声の長さ(audio_duration_seconds)も同じくここでしか確定しないため、
+            # 同じUPDATEでlecturesに書き込む(固定クレジット消費とトピック数上限が
+            # 後でこの値を読む)。
+            lectures_update: dict = {"audio_duration_seconds": result.get("audio_duration", 0.0)}
             detected_language = result.get("detected_language")
             if detected_language:
-                await asyncio.to_thread(
-                    lambda: supabase.table("lectures").update({
-                        "detected_recording_language": detected_language,
-                    }).eq("id", lecture_id).execute()
-                )
+                lectures_update["detected_recording_language"] = detected_language
+            await asyncio.to_thread(
+                lambda: supabase.table("lectures").update(lectures_update).eq("id", lecture_id).execute()
+            )
         
         # 7. 請求データの合算と保存
         aggregated_records = _aggregate_billing_records(billing.records)
@@ -1200,6 +1225,7 @@ async def run_core_extraction_task(job_id: str, task_id: str):
 
     # 💡 このタスク専用のお財布（コスト計算機）を用意
     billing = BillingEngine(task_type="CORE_EXTRACTION")
+    supabase = get_supabase_client()
 
     try:
         # リアルタイム(expected_chunks > 0)ではCHECK_AND_ASSEMBLE、プレレコ(expected_chunks == 0)ではTRANSCRIBE_MASTERから取得
@@ -1212,6 +1238,20 @@ async def run_core_extraction_task(job_id: str, task_id: str):
             _get_content_language_context, lecture_id
         )
 
+        # 音声の長さからACADEMICトピック数の目標範囲(tier)を解決する。
+        # CHECK_AND_ASSEMBLE/TRANSCRIBE_MASTERが必ず先に完了しているため、
+        # この時点でlectures.audio_duration_secondsは確定済みのはず。
+        lecture_res = await asyncio.to_thread(
+            lambda: supabase.table("lectures").select("audio_duration_seconds").eq("id", lecture_id).single().execute()
+        )
+        duration_seconds = (lecture_res.data or {}).get("audio_duration_seconds")
+        if duration_seconds is None:
+            raise ValueError(f"lectures.audio_duration_seconds is not set for lecture_id={lecture_id}")
+        duration_tier = resolve_duration_tier(duration_seconds)
+
+        # このユーザーのプランtier(機能ゲート用)を解決する。
+        tier = await asyncio.to_thread(get_user_tier_level, uid)
+
         # UnifiedLLMを初期化して職人に渡す
         llm = UnifiedLLM(billing)
         extractor = CoreExtractionService(llm, logger)
@@ -1219,6 +1259,9 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         # メモリ上で処理
         extraction_result = await extractor.run_from_memory(
             transcript_data,
+            duration_tier=duration_tier,
+            plan_tier=tier,
+            user_id=uid,
             content_language=content_language,
             transcript_language=transcript_language,
             is_bilingual=is_bilingual,
@@ -1228,7 +1271,6 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "core_extraction", extraction_result)
 
         # Supabaseの `lectures` テーブルを更新 (title_generated と summary)
-        supabase = get_supabase_client()
         await asyncio.to_thread(
             lambda: supabase.table("lectures").update({
                 "title_generated": extraction_result.get("title"),
@@ -1242,20 +1284,28 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         # （Cloud Tasksのリトライでこの関数が2回走っても重複しない）
         def _insert_keywords_sync():
             supabase.table("keywords").delete().eq("lecture_id", lecture_id).execute()
+
+            # Freeプランはkeywordsテーブルへの保存自体を行わない(LLM内部では
+            # ReviewCards等の文脈として引き続き使われるが、DB上には残さずユーザーには
+            # 見せない)。
+            if not has_feature(tier, FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER, user_id=uid):
+                return
+
             for topic in extraction_result.get("topics", []):
                 if topic.get("topic_type") != "ACADEMIC":
                     # LOGISTICSはidxがNoneのため対象外（そもそもkeywordsも
                     # 生成されない想定だが念のため明示的にスキップする）。
                     continue
                 topic_idx = topic.get("idx")
-                topic_keywords = topic.get("keywords", [])
-                for kw in topic_keywords:
+                # topic["keywords"]は{"keyword": str, "definition": str|None}の
+                # オブジェクトのリスト(core_extraction.pyで正規化済み)。
+                for kw in topic.get("keywords", []):
                     kw_data = {
                         "user_id": uid,
                         "lecture_id": lecture_id,
                         "topic_number": topic_idx,
-                        "keyword": kw,
-                        "definition": None
+                        "keyword": kw["keyword"],
+                        "definition": kw.get("definition")
                     }
                     supabase.table("keywords").insert(kw_data).execute()
 
@@ -1347,6 +1397,13 @@ async def run_announcement_generation_task(job_id: str, task_id: str):
     logger.log(f"▶️ Starting ANNOUNCEMENT_GENERATION (Task: {task_id})")
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
+        return
+
+    tier = await asyncio.to_thread(get_user_tier_level, uid)
+    if not has_feature(tier, FEATURE_ANNOUNCEMENT_GENERATION, user_id=uid):
+        logger.log("⏭️ ANNOUNCEMENT_GENERATION skipped (plan does not include announcement generation).")
+        await _update_task_status(task_id, "COMPLETED", payload={"announcements_path": None, "billing_records": []})
+        logger.save_to_r2(storage_service)
         return
 
     billing = BillingEngine(task_type="ANNOUNCEMENT_GENERATION")
@@ -1583,7 +1640,14 @@ async def run_topic_mapping_task(job_id: str, task_id: str):
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
         return
-    
+
+    tier = await asyncio.to_thread(get_user_tier_level, uid)
+    if not has_feature(tier, FEATURE_TOPIC_MAP, user_id=uid):
+        logger.log("⏭️ TOPIC_MAPPING skipped (plan does not include topic map generation).")
+        await _update_task_status(task_id, "COMPLETED", payload={"topic_mapping_path": None, "billing_records": []})
+        logger.save_to_r2(storage_service)
+        return
+
     billing = BillingEngine(task_type="TOPIC_MAPPING")
     
     try:
@@ -2078,10 +2142,10 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
 
             # このタスクはCourse単位のバックグラウンド処理でprocessing_tasks行を
             # 持たない(task_id/job_idが存在しない)ため、_update_task_status経由の
-            # 課金ではなくここで直接消費する。
+            # 記録ではなくここで直接usage_recordsに記録する(残高は動かさない)。
             try:
                 await asyncio.to_thread(
-                    charge_credits_for_task,
+                    record_task_cost,
                     uid,
                     None,
                     "TOPIC_MAP_RECONSTRUCTION",
@@ -2091,7 +2155,7 @@ async def run_topic_map_reconstruction_task(course_id: str) -> dict:
                 )
             except Exception:
                 _credits_logger.exception(
-                    f"Failed to charge credits for TOPIC_MAP_RECONSTRUCTION course_id={course_id}"
+                    f"Failed to record task cost for TOPIC_MAP_RECONSTRUCTION course_id={course_id}"
                 )
 
             return {"status": "completed", "removed_lectures": len(pending_removals), "integrated_topics": len(flat_pending_topics)}
@@ -2345,6 +2409,14 @@ async def run_fun_fact_search_task(job_id: str, task_id: str):
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
         return
+
+    tier = await asyncio.to_thread(get_user_tier_level, uid)
+    if not has_feature(tier, FEATURE_FUN_FACT_SEARCH, user_id=uid):
+        logger.log("⏭️ FUN_FACT_SEARCH skipped (plan does not include web-search-grounded fun facts). Proceeding with empty results.")
+        await _update_task_status(task_id, "COMPLETED", payload={"search_results_path": None, "billing_records": []})
+        logger.save_to_r2(storage_service)
+        return
+
     billing = BillingEngine(task_type="FUN_FACT_SEARCH")
 
     try:
@@ -2466,15 +2538,37 @@ async def run_detail_contents_task(job_id: str, task_id: str):
     if not await _claim_task(task_id):
         logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
         return
+
+    # DeepNotesの1トピック目プレビューは全プラン共通のベース機能(Freeも含む)なので、
+    # ここでタスクごとスキップすることはない。Lite未満(=Free)かどうかだけを後で見て、
+    # 生成対象トピックを絞る。
+    tier = await asyncio.to_thread(get_user_tier_level, uid)
+
     billing = BillingEngine(task_type="DETAIL_CONTENTS_GENERATION")
-    
+
     try:
         # データの読み込み
         classified_payload = await _get_dependency_payload(job_id, "ROLE_CLASSIFICATION")
         classified_data = await _download_from_r2_to_memory(classified_payload["role_classification_path"])
-        
+
         core_payload = await _get_dependency_payload(job_id, "CORE_EXTRACTION")
         core_data = await _download_from_r2_to_memory(core_payload["core_extraction_path"])
+
+        # Freeプランは「最初のACADEMICトピックだけ途中まで見せるプレビュー」なので、
+        # サービスに渡すtopicsを1件だけに絞る(サービス自体はcore_data["topics"]を
+        # 全部ループする作りなので、ここで絞るのが一番安全)。Lite以上は絞らない。
+        service_core_data = core_data
+        if not has_feature(tier, FEATURE_DEEP_NOTES_FULL, user_id=uid):
+            academic_topics_sorted = sorted(
+                (t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"),
+                key=lambda t: t.get("idx") or 0,
+            )
+            preview_topics = academic_topics_sorted[:1]
+            service_core_data = {**core_data, "topics": preview_topics}
+            logger.log(
+                f"🔒 Free tier: limiting DeepNotes generation to the first ACADEMIC topic "
+                f"(idx={preview_topics[0].get('idx') if preview_topics else None})."
+            )
 
         # 職人を呼んで丸投げ
         content_language, transcript_language, is_bilingual = await asyncio.to_thread(
@@ -2485,7 +2579,7 @@ async def run_detail_contents_task(job_id: str, task_id: str):
 
         # 💡 Review Cardと同じく、全データを渡して中でループ・フィルタリングしてもらう！
         all_details = await service.run_from_memory(
-            classified_data, core_data,
+            classified_data, service_core_data,
             uid=uid,
             lecture_id=lecture_id,
             content_language=content_language,
@@ -2498,23 +2592,44 @@ async def run_detail_contents_task(job_id: str, task_id: str):
         # Supabaseに1トピックずつ詳細ノートとトピック情報を保存
         supabase = get_supabase_client()
         core_topics = {t.get("idx"): t for t in core_data.get("topics", [])}
+        details_by_idx = {
+            d["topic_idx"]: d
+            for d in all_details
+            if d.get("topic_idx") is not None and d.get("content")
+        }
 
         # 冪等性のため、書き込み前にこの講義分の既存lecture_topics/deep_notesを削除しておく
         def _insert_details_sync():
             supabase.table("lecture_topics").delete().eq("lecture_id", lecture_id).execute()
             supabase.table("deep_notes").delete().eq("lecture_id", lecture_id).execute()
-            for detail in all_details:
-                topic_idx = detail.get("topic_idx")
-                raw_content = detail.get("content")
-                if topic_idx is None or not raw_content:
+
+            # A. lecture_topics は「このトピックの存在」そのものを表す行で、
+            # ReviewCardsのナビゲーション・Hero Collage画像リンク(FINALIZE_JOB)・
+            # TopicMapが参照する。これらはDeepNotes(deep_notes行)とは独立した
+            # ベース機能なので、DeepNotesがプランで絞られていても全ACADEMICトピック
+            # 分の行を必ず作る(Freeプランで2トピック目以降のReviewCardsが
+            # 生成されているのに、それを開く導線自体が無い——という事故を防ぐため)。
+            for topic_idx, core_topic in core_topics.items():
+                if core_topic.get("topic_type") != "ACADEMIC":
                     continue
 
-                # タイトルとサマリーの分離
-                summary, clean_contents = _parse_detail_contents(raw_content)
+                detail = details_by_idx.get(topic_idx)
+                summary = None
+                if detail is not None:
+                    summary, clean_contents = _parse_detail_contents(detail["content"])
+                    supabase.table("deep_notes").insert({
+                        "user_id": uid,
+                        "lecture_id": lecture_id,
+                        "topic_number": topic_idx,
+                        "note_contents": clean_contents,
+                    }).execute()
+                else:
+                    # DeepNotes本文を生成しないトピック(Freeプランの2枚目以降)は、
+                    # CORE_EXTRACTIONが代わりに用意した軽量summaryをフォールバックで使う
+                    # (Lite以上ならdetailが必ず存在するのでここには来ない)。
+                    summary = core_topic.get("summary")
 
-                # A. lecture_topics にトピック情報を保存
-                core_topic = core_topics.get(topic_idx, {})
-                topic_data = {
+                supabase.table("lecture_topics").insert({
                     "user_id": uid,
                     "lecture_id": lecture_id,
                     "index": topic_idx,
@@ -2522,18 +2637,8 @@ async def run_detail_contents_task(job_id: str, task_id: str):
                     "topic_type": core_topic.get("topic_type", "ACADEMIC"),
                     "summary": summary,
                     "start_sid": core_topic.get("start_sid"),
-                    "end_sid": core_topic.get("end_sid")
-                }
-                supabase.table("lecture_topics").insert(topic_data).execute()
-
-                # B. deep_notes にクリーンな詳細ノートを保存
-                note_data = {
-                    "user_id": uid,
-                    "lecture_id": lecture_id,
-                    "topic_number": topic_idx,
-                    "note_contents": clean_contents
-                }
-                supabase.table("deep_notes").insert(note_data).execute()
+                    "end_sid": core_topic.get("end_sid"),
+                }).execute()
 
         await asyncio.to_thread(_insert_details_sync)
 
@@ -2621,6 +2726,25 @@ async def run_finalize_job_task(job_id: str, task_id: str):
             "report_text": final_report,
             "finalized_at": datetime.now().isoformat()
         })
+
+        # 3.5 音声の長さに応じた固定クレジットをここで1回だけ消費する。
+        # 各タスク完了ごとの実コスト課金(record_task_cost)はusage_recordsへの
+        # 記録専用に変わったため、ユーザーの残高を実際に動かすのはここだけ。
+        try:
+            lecture_res = await asyncio.to_thread(
+                lambda: supabase.table("lectures").select("audio_duration_seconds").eq("id", lecture_id).single().execute()
+            )
+            duration_seconds = (lecture_res.data or {}).get("audio_duration_seconds")
+            if duration_seconds is None:
+                logger.log(f"⚠️ lectures.audio_duration_seconds is not set for lecture_id={lecture_id}. Skipping credit consumption.")
+            else:
+                await asyncio.to_thread(consume_lecture_credits, uid, job_id, lecture_id, duration_seconds)
+                logger.log(f"💳 Consumed fixed credits for lecture_id={lecture_id} (duration={duration_seconds}s).")
+        except Exception as credit_error:
+            # クレジット消費が失敗してもJob自体は完了扱いのまま進める(既存のcredit_transactions/
+            # usage_recordsの欠損対応と同じ方針)。
+            logger.log(f"⚠️ Failed to consume lecture credits for lecture_id={lecture_id}: {credit_error}")
+            _credits_logger.exception(f"Failed to consume lecture credits for job_id={job_id} lecture_id={lecture_id}")
 
         # 4. Job全体の統計を更新 (オプション: processing_jobsテーブルに直接書き込む)
         await asyncio.to_thread(

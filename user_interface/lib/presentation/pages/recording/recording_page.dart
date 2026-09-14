@@ -24,9 +24,12 @@ import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/domain/entities/app_language.dart';
 import 'package:lefture/domain/entities/lecture_moment.dart';
 import 'package:lefture/domain/entities/live_transcript_sentence.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/presentation/pages/profile/widgets/language_selection_sheet.dart';
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
@@ -428,6 +431,15 @@ class RecordingPage extends HookConsumerWidget {
           return;
         case RealtimeToggleResult.lockedWhileRecording:
           await showRealtimeLockedDialog();
+        case RealtimeToggleResult.requiresUpgrade:
+          await showUpgradeRequiredDialog(
+            context: context,
+            requiredTierColor: planThemeColor(plan_features.tierMax),
+            title: l10n.recordingRealtimeUpgradeDialogTitle,
+            message: l10n.recordingRealtimeUpgradeDialogMessage,
+            viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+            cancelLabel: l10n.recordingCancelButton,
+          );
         case RealtimeToggleResult.insufficientCredits:
           final confirmed = await showCustomDialog(
             context: context,
@@ -1119,6 +1131,85 @@ class RecordingPage extends HookConsumerWidget {
                                               color: AppColors
                                                   .universe
                                                   .textStarlight,
+                                              fontSize: 12,
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                              // 3時間経過の警告(常時表示バナー)。授業中は画面を
+                              // 伏せていることが多く、一瞬で消えるSnackBarでは
+                              // 気づけないため、コース未選択の注意書きと同じ
+                              // 「消えない・phaseに応じて出す」方式にしている。
+                              if (state.elapsedSeconds >= kRecordingDurationWarningSeconds &&
+                                  state.elapsedSeconds < kMaxRecordingSeconds &&
+                                  (state.phase == RecordingPhase.recording ||
+                                      state.phase == RecordingPhase.paused))
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.alertAmber.withValues(alpha: 0.15),
+                                      border: Border.all(color: AppColors.alertAmber, width: 1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          color: AppColors.alertAmber,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.recordingDurationWarningBanner,
+                                            style: TextStyle(
+                                              color: AppColors.universe.textStarlight,
+                                              fontSize: 12,
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                              // 3.5時間の上限に達し、自動的に一時停止した後もずっと表示し続ける
+                              // (この録音セッションが終わるまで、なぜ止まったか常に分かるように)。
+                              if (state.elapsedSeconds >= kMaxRecordingSeconds &&
+                                  (state.phase == RecordingPhase.recording ||
+                                      state.phase == RecordingPhase.paused))
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.correctionRed.withValues(alpha: 0.15),
+                                      border: Border.all(color: AppColors.correctionRed, width: 1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.pause_circle_outline_rounded,
+                                          color: AppColors.correctionRed,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            l10n.recordingDurationLimitBanner,
+                                            style: TextStyle(
+                                              color: AppColors.universe.textStarlight,
                                               fontSize: 12,
                                               height: 1.5,
                                             ),

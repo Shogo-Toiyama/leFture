@@ -4,10 +4,12 @@ import re
 from typing import Any, Dict
 
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
-from app.services.helpers.helpers import _load_prompt
+from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
 from app.services.helpers.helpers import TaskLogger
 from app.services.helpers.helpers import _sid_to_int, _int_to_sid
 from app.services.helpers.helpers import _build_bilingual_gloss_instruction
+from app.services.helpers.credits import DURATION_TIERS, DurationTier
+from app.services.helpers.plan_features import has_feature, FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER, FEATURE_DEEP_NOTES_FULL
 
 # 重なりを自動補正してよい上限（文数）。これを超える場合は「軽微なズレ」とは
 # 言えないため補正を諦め、リトライに任せる。
@@ -27,6 +29,9 @@ class CoreExtractionService:
     async def run_from_memory(
         self,
         transcript_data: list[dict],
+        duration_tier: DurationTier,
+        plan_tier: int,
+        user_id: str | None = None,
         student_profile: str = "",
         content_language: str = "English",
         transcript_language: str = "English",
@@ -34,10 +39,30 @@ class CoreExtractionService:
     ) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Core Extraction with {self.model_alias}")
 
+        keyword_definitions_enabled = has_feature(plan_tier, FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER, user_id=user_id)
+        # DeepNotesが全トピックには生成されないプラン(=Free)だけ、CORE_EXTRACTION側で
+        # 軽量な代替summaryも作らせる。lecture_topics.summaryはDeepNotes専用ではなく
+        # topics_sheet.dart(講義ビューアーのトピック一覧)やReviewCards生成時の
+        # 「前回講義の文脈」としても使われるため、DeepNotes本文を生成しないトピックでも
+        # summary自体は欠かせない。Lite以上は全トピックで本物のDeepNotes summaryが
+        # 別途生成されるので、ここでは無駄になるだけ — 生成させない。
+        needs_topic_summary_fallback = not has_feature(plan_tier, FEATURE_DEEP_NOTES_FULL, user_id=user_id)
+
         prompt = _load_prompt("core_extraction_prompt.txt")
         prompt = prompt.replace(
             "${LANGUAGE_INSTRUCTIONS}",
             _build_bilingual_gloss_instruction(content_language, transcript_language, is_bilingual),
+        )
+        # 条件タグは全部まとめて1回で解決する(_render_conditional_sectionsは
+        # 渡されたconditionsに無い名前のタグを全てFalse扱いで消してしまうため、
+        # 複数の関心事があっても呼び出しは分けずに1つのdictへマージすること)。
+        prompt = _render_conditional_sections(
+            prompt,
+            {
+                **{tier.key: tier.key == duration_tier.key for tier in DURATION_TIERS},
+                FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER: keyword_definitions_enabled,
+                "topic_summary_fallback": needs_topic_summary_fallback,
+            },
         )
         options_json = LLMOptions(output_type="json", temperature=0.4)
 
@@ -109,6 +134,9 @@ class CoreExtractionService:
                 output=res.output_json,
                 valid_sids=valid_sids,
                 sid_to_order=sid_to_order,
+                duration_tier=duration_tier,
+                keyword_definitions_enabled=keyword_definitions_enabled,
+                needs_topic_summary_fallback=needs_topic_summary_fallback,
             )
         except Exception as e:
             # バリデーション失敗時、生のLLM出力はどこにも残らずそのまま消えていた。
@@ -130,6 +158,9 @@ class CoreExtractionService:
         output: Dict[str, Any],
         valid_sids: set[str],
         sid_to_order: dict[str, int],
+        duration_tier: DurationTier,
+        keyword_definitions_enabled: bool,
+        needs_topic_summary_fallback: bool,
     ) -> Dict[str, Any]:
         """
         Validate the LLM output before saving it as core_extraction.
@@ -183,15 +214,49 @@ class CoreExtractionService:
                     f"'OFF_TOPIC'. Got: {topic_type}"
                 )
 
-            # keywords のバリデーション
-            keywords = topic.get("keywords")
-            if keywords is not None:
-                if not isinstance(keywords, list):
+            # keywords のバリデーション。各要素は{"keyword": str, "definition": str|None}の
+            # オブジェクト。以前はkeywords(文字列リスト)とkeyword_definitions(別リスト)を
+            # 分けて持たせ、keyword文字列でクロスリファレンスしていたが、LLMの出力ブレで
+            # 一致しない/対応漏れが起きやすかったため、1つのオブジェクトに同居させる形に
+            # 統一した(クロスリファレンス自体を無くす)。壊れたエントリはSID/トピック数の
+            # ような構造的前提と違い、落として警告ログだけ残せば十分。
+            raw_keywords = topic.get("keywords")
+            keywords: list[dict] = []
+            if raw_keywords is not None:
+                if not isinstance(raw_keywords, list):
                     raise ValueError(f"topics[{idx}].keywords must be a list.")
-                if not all(isinstance(kw, str) for kw in keywords):
-                    raise ValueError(f"topics[{idx}].keywords must contain only strings.")
-            else:
-                topic["keywords"] = []
+                for entry in raw_keywords:
+                    if isinstance(entry, str) and entry.strip():
+                        # 万一プロンプトの指示に反して旧形式(プレーン文字列)で返しても
+                        # 拾えるようにしておく(definitionは無しとして扱う)。
+                        keywords.append({"keyword": entry, "definition": None})
+                    elif isinstance(entry, dict) and isinstance(entry.get("keyword"), str) and entry["keyword"].strip():
+                        definition = entry.get("definition")
+                        keywords.append({
+                            "keyword": entry["keyword"],
+                            "definition": definition.strip() if isinstance(definition, str) and definition.strip() else None,
+                        })
+                    else:
+                        self.logger.log(f"⚠️ topics[{idx}] dropped malformed keywords entry: {entry!r}")
+
+            if not keyword_definitions_enabled:
+                # このtierではdefinitionを生成させていないので、LLMが指示に反して
+                # 書いてしまった場合に備えバックエンド側でも強制的にnullへ倒す。
+                for kw in keywords:
+                    kw["definition"] = None
+
+            topic["keywords"] = keywords
+
+            # ACADEMICトピックの代替summary。DeepNotes本文が生成されないトピック
+            # (Freeプランの2トピック目以降)のlecture_topics.summaryを埋めるための
+            # フォールバックとしてのみ使われるので、needs_topic_summary_fallbackが
+            # Falseの時はLLMが指示に反して書いてしまってもNoneに倒す
+            # (Lite以上は本物のDeepNotes由来summaryが別途優先して使われるため)。
+            raw_summary = topic.get("summary")
+            topic["summary"] = None
+            if needs_topic_summary_fallback and topic_type == "ACADEMIC":
+                if isinstance(raw_summary, str) and raw_summary.strip():
+                    topic["summary"] = raw_summary.strip()
 
             topic["start_sid"], topic["end_sid"] = self._validate_sid_range(
                 start_sid=topic.get("start_sid"),
@@ -275,6 +340,16 @@ class CoreExtractionService:
 
         output["topics"] = normalized_topics
 
+        # プロンプト側のACADEMIC Topic Count Targetは強制ではなくお願いなので、
+        # ここでは失敗させず「ズレていた」という事実だけログに残す(後で守られている
+        # 割合を見て、必要ならリトライ等の強制力を追加するかを判断する)。
+        if not (duration_tier.min_topics <= academic_count <= duration_tier.max_topics):
+            self.logger.log(
+                f"⚠️ ACADEMIC topic count ({academic_count}) is outside the target range "
+                f"[{duration_tier.min_topics}, {duration_tier.max_topics}] for tier "
+                f"'{duration_tier.key}'."
+            )
+
         # fun fact用トピックの選択は、番号や別セクションでクロス参照させず、
         # 選んだトピック自身に is_fun_fact_topic / concept_focus / concept_intro_line
         # を全て持たせる方式にしている。以前は concept_focus が別オブジェクト
@@ -308,10 +383,11 @@ class CoreExtractionService:
                 "The topic with is_fun_fact_topic=true must have a non-empty "
                 f"concept_focus (topic: {selected_topic.get('title')!r})."
             )
-        if concept_focus not in selected_topic["keywords"]:
+        selected_topic_keyword_strings = [kw["keyword"] for kw in selected_topic["keywords"]]
+        if concept_focus not in selected_topic_keyword_strings:
             raise ValueError(
                 f"concept_focus ({concept_focus!r}) must be one of the selected topic's "
-                f"own keywords: {selected_topic['keywords']}"
+                f"own keywords: {selected_topic_keyword_strings}"
             )
 
         concept_intro_line = selected_topic.get("concept_intro_line")

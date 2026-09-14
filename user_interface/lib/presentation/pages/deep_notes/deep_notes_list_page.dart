@@ -6,13 +6,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/domain/entities/annotation.dart';
 import 'package:lefture/domain/entities/deep_note.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/blurred_summary_placeholder.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 
@@ -62,6 +67,10 @@ class DeepNotesListPage extends HookConsumerWidget {
 
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
     final notesAsync  = ref.watch(deepNotesProvider(lectureId));
+    // Freeプランでは最初のトピックだけプレビュー生成され、2件目以降は
+    // バックエンド側でそもそもdeep_notesが作られない(空文字のnote_contents)。
+    // それを常時表示のロック付きカードとして見せる(タップ→アップグレード導線)。
+    final hasFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
 
     final topics = useMemoized(() {
       final rawTopics = topicsAsync.asData?.value ?? <LectureTopic>[];
@@ -96,7 +105,13 @@ class DeepNotesListPage extends HookConsumerWidget {
               isLightBg: true,
             ),
             Expanded(
-              child: _buildBody(context, topics, notesAsync.isLoading || topicsAsync.isLoading, courseId),
+              child: _buildBody(
+                context,
+                topics,
+                notesAsync.isLoading || topicsAsync.isLoading,
+                courseId,
+                hasFullDeepNotes,
+              ),
             ),
           ],
         ),
@@ -109,6 +124,7 @@ class DeepNotesListPage extends HookConsumerWidget {
     List<DeepNoteTopic> topics,
     bool isLoading,
     String courseId,
+    bool hasFullDeepNotes,
   ) {
     if (isLoading) {
       return const Center(
@@ -140,17 +156,35 @@ class DeepNotesListPage extends HookConsumerWidget {
       itemBuilder: (context, index) {
         final topic = topics[index];
         final hasContent = topic.content.trim().isNotEmpty;
+        // Freeプランでは最初のトピック(index==0)だけがプレビューとして実際に
+        // 生成される。2件目以降は(まだ処理中なのではなく)そもそもプランで
+        // 絞られているため、hourglass(処理中)ではなくlock(要アップグレード)
+        // 扱いにする。
+        final isLocked = index > 0 && !hasFullDeepNotes;
+        final lockColor = planThemeColor(plan_features.tierLite);
+
         return GestureDetector(
-          onTap: () => context.push(
-              '${AppRoutes.coursesRootPath}/c/$courseId/dnd/$lectureId/${topic.index}',
-              extra: topics),
+          onTap: isLocked
+              ? () => showUpgradeRequiredDialog(
+                    context: context,
+                    requiredTierColor: lockColor,
+                    title: AppLocalizations.of(context).deepNotesLockedDialogTitle,
+                    message: AppLocalizations.of(context).deepNotesLockedDialogMessage,
+                    viewPlansLabel: AppLocalizations.of(context).upgradeRequiredViewPlansButton,
+                    cancelLabel: AppLocalizations.of(context).recordingCancelButton,
+                  )
+              : () => context.push(
+                  '${AppRoutes.coursesRootPath}/c/$courseId/dnd/$lectureId/${topic.index}',
+                  extra: topics),
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.paper.background,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.07)),
+                  color: isLocked
+                      ? lockColor.withValues(alpha: 0.25)
+                      : Colors.black.withValues(alpha: 0.07)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.03),
@@ -166,14 +200,15 @@ class DeepNotesListPage extends HookConsumerWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AppColors.deepGold.withValues(alpha: 0.12),
+                    color: (isLocked ? lockColor : AppColors.deepGold)
+                        .withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: const TextStyle(
-                        color: AppColors.deepGold,
+                      style: TextStyle(
+                        color: isLocked ? lockColor : AppColors.deepGold,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -193,8 +228,22 @@ class DeepNotesListPage extends HookConsumerWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (topic.summary.isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                      const SizedBox(height: 6),
+                      if (isLocked) ...[
+                        BlurredSummaryPlaceholder(color: lockColor),
+                        const SizedBox(height: 4),
+                        // ブラー単体だと「本当は存在していて隠されているだけ」に
+                        // 見えかねないため、一目で「生成されていない」と分かる
+                        // キャプションを添える(ダイアログを開かなくても伝わるように)。
+                        Text(
+                          AppLocalizations.of(context).deepNotesLockedCaption,
+                          style: TextStyle(
+                            color: lockColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else if (topic.summary.isNotEmpty)
                         Text(
                           topic.summary,
                           style: TextStyle(
@@ -205,18 +254,21 @@ class DeepNotesListPage extends HookConsumerWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ],
                     ],
                   ),
                 ),
                 const SizedBox(width: 12),
                 Icon(
-                  hasContent
-                      ? Icons.chevron_right
-                      : Icons.hourglass_empty_outlined,
-                  color: hasContent
-                      ? AppColors.deepGold
-                      : AppColors.paper.textPencil,
+                  isLocked
+                      ? Icons.lock_outline_rounded
+                      : (hasContent
+                          ? Icons.chevron_right
+                          : Icons.hourglass_empty_outlined),
+                  color: isLocked
+                      ? lockColor
+                      : (hasContent
+                          ? AppColors.deepGold
+                          : AppColors.paper.textPencil),
                   size: 22,
                 ),
               ],
