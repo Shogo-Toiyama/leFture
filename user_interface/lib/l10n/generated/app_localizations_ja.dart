@@ -1453,22 +1453,44 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansUpgradeDialogButton => 'はじめよう!';
 
   @override
-  String get plansFeatureCredits => '毎月のクレジット付与';
+  String get plansFeatureReviewCardsFunFacts => 'Review CardsとFun Fact生成';
 
   @override
-  String get plansFeatureFasterProcessing => '処理速度アップ';
+  String get plansFeatureDeepNotes => 'DeepNotes（詳細ノート）生成';
 
   @override
-  String get plansFeaturePrioritySupport => '優先サポート';
+  String get plansFeatureTranscriptSourceSearch => 'トランスクリプト閲覧・出典検索';
 
   @override
-  String get plansFeatureEarlyAccess => '新機能への早期アクセス';
+  String get plansFeatureKeywordsAnnouncements => 'キーワード・アナウンスメント生成';
+
+  @override
+  String get plansFeatureRealtimeTranscription => 'リアルタイム文字起こし';
+
+  @override
+  String plansCreditsPerMonth(String credits) {
+    return '$credits クレジット / 月';
+  }
+
+  @override
+  String plansWeeklyLecturesEstimate(int count) {
+    return '約週$count回の講義';
+  }
 
   @override
   String get plansRestorePurchasesButton => '購入を復元';
 
   @override
+  String get plansRestorePurchasesTitle => '購入の復元';
+
+  @override
   String get plansRestorePurchasesSuccessMessage => '購入を復元しました';
+
+  @override
+  String get plansRestorePurchasesNotFound => '有効なサブスクリプションが見つかりませんでした。';
+
+  @override
+  String get plansRestorePurchasesAlreadyInUse => 'この購入は既に別のアカウントに紐付けられています。';
 
   @override
   String get plansRestorePurchasesErrorMessage => '購入を復元できませんでした。もう一度お試しください。';
@@ -1481,6 +1503,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get plansPurchaseErrorMessage => '処理を完了できませんでした。もう一度お試しください。';
+
+  @override
+  String get plansDeviceAlreadyClaimedTitle => '無料特典はご利用いただけません';
+
+  @override
+  String get plansDeviceAlreadyClaimedMessage =>
+      'この端末では既に無料特典（Freeプラン）が適用されています。講義を記録するには有料プランにご加入いただくか、以前のアカウントでログインしてください。\n\nお困りの際はお問い合わせください。';
+
+  @override
+  String get plansContactSupportButton => 'お問い合わせ';
 
   @override
   String get changePasswordResetSentTitle => 'リセットリンクを送信しました';
@@ -1617,6 +1649,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get coursePageTopicMapNotGeneratedLabel => 'まだ生成されていません';
+
+  @override
+  String get coursePageTopicMapLockedLabel => 'Liteプランが必要';
 
   @override
   String get coursePageLecturesTitle => '講義';
@@ -2069,6 +2104,42 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deepNotesLockedCaption => '未生成・Freeプラン';
+
+  @override
+  String get deepNotesTutorialNotice =>
+      '※ Liteプラン以上で全トピックのノートを利用できます（チュートリアル限定で公開中）';
+
+  @override
+  String get keywordsLockedDialogTitle => 'キーワードは生成されていません';
+
+  @override
+  String get keywordsLockedDialogMessage =>
+      'この講義はCore未満のプランで処理されたため、キーワードの抽出・保存は行われていません。プランをアップグレードしても、この講義に今から追加されることはありません — Coreプラン以上で録音した今後の講義から、キーワード抽出が自動的に行われます。';
+
+  @override
+  String get announcementsLockedDialogTitle => 'アナウンスメントは生成されていません';
+
+  @override
+  String get announcementsLockedDialogMessage =>
+      'この講義はCore未満のプランで処理されたため、アナウンスメントの抽出は行われていません。プランをアップグレードしても、この講義に今から追加されることはありません — Coreプラン以上で録音した今後の講義から、アナウンスメント抽出が自動的に行われます。';
+
+  @override
+  String get topicMapLockedDialogTitle => 'トピックマップは生成されていません';
+
+  @override
+  String get topicMapLockedDialogMessage =>
+      'このコースのトピックマップは、講義がLite未満のプランで処理されたため作成されていません。プランをアップグレードしても過去の講義が今から追加されることはありません — Liteプラン以上で録音した今後の講義から、トピックマップの構築が始まります。';
+
+  @override
+  String get transcriptLockedDialogTitle => 'ソース・文字起こしにはCoreプランが必要です';
+
+  @override
+  String get transcriptLockedDialogMessage =>
+      '文字起こし自体はすべてのプランの講義で既に保存されています — 閲覧できるかどうかがCoreプラン以上の機能です。いつでもアップグレードすれば、この講義も含めてすぐに閲覧できるようになります。';
+
+  @override
+  String get announcementsSheetLockedBanner =>
+      '現在のプランでは、講義からのアナウンスメントは抽出されません。今後の講義から含めるにはCoreプランへのアップグレードが必要です。';
 
   @override
   String lectureNotePageTopicLabel(int index) {
@@ -2840,4 +2911,40 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get signInUserNotFoundMessage =>
       'アカウントが存在しません。新規登録画面からユーザーネームを設定して登録してください。';
+
+  @override
+  String get creditRateModalTitle => 'クレジット消費の目安';
+
+  @override
+  String get creditRateModalDescription => 'クレジットの消費量は、録音した音声の長さによって変わります。';
+
+  @override
+  String get creditRateTableDurationHeader => '録音時間';
+
+  @override
+  String get creditRateTableCreditsHeader => '消費クレジット';
+
+  @override
+  String get creditRateRow1Duration => '30分未満';
+
+  @override
+  String get creditRateRow2Duration => '30分 〜 1時間30分';
+
+  @override
+  String get creditRateRow3Duration => '1時間30分 〜 2時間30分';
+
+  @override
+  String get creditRateRow4Duration => '2時間30分 〜 3時間30分';
+
+  @override
+  String creditRateRowCredits(int count) {
+    return '$count クレジット';
+  }
+
+  @override
+  String get creditRateMaxDurationNotice =>
+      '※ 1回の最大録音時間は3時間30分です。3時間30分以上の録音はできません。';
+
+  @override
+  String get creditRateModalCloseButton => '閉じる';
 }

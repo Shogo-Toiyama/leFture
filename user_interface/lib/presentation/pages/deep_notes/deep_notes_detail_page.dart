@@ -64,15 +64,18 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     final notesAsync = hasPassedTopics
         ? null
         : ref.watch(deepNotesProvider(lectureId));
-    // Freeプランでは最初のトピック(position 0)だけがプレビュー生成され、それ以外は
-    // deep_notes_list_page.dartと同じ理由でロックする。このページはトピック間の
-    // 次/前ナビゲーションと「一覧から直接ジャンプ」の両方を持つため、両方の入口を
-    // ここで塞ぐ必要がある。
-    final hasFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
-
     // Fetch lecture and parent course to get theme colors
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
+    final isTutorial = lecture?.metadata?['is_tutorial'] == true;
+
+    // Freeプランでは最初のトピック(position 0)だけがプレビュー生成され、それ以外は
+    // deep_notes_list_page.dartと同じ理由でロックする。このページはトピック間の
+    // 次/前ナビゲーションと「一覧から直接ジャンプ」の両方を持つため、両方の入口を
+    // ここで塞ぐ必要がある。チュートリアル講義の場合は全トピックのノートが生成されているため常に解放する。
+    final hasPlanFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
+    final hasFullDeepNotes = isTutorial || hasPlanFullDeepNotes;
+    final showTutorialNotice = isTutorial && !hasPlanFullDeepNotes;
 
     final coursesAsync = ref.watch(courseListProvider);
     final courses = coursesAsync.asData?.value;
@@ -529,8 +532,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     final courseIdVal = course?.id;
                     if (!context.mounted) return;
                     if (lectureId.isNotEmpty) {
-                      await showTranscriptModal(
+                      await showTranscriptModalGated(
                         context,
+                        ref,
                         lectureId: lectureId,
                         startSid: startSid,
                         endSid: endSid,
@@ -559,8 +563,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         final endSid = formatSid(sortedSids.last);
                         final courseIdVal = course?.id;
                         if (lectureId.isNotEmpty) {
-                          await showTranscriptModal(
+                          await showTranscriptModalGated(
                             context,
+                            ref,
                             lectureId: lectureId,
                             startSid: startSid,
                             endSid: endSid,
@@ -615,6 +620,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       nextTitle: canAdvanceToNext
                           ? resolvedTopics[currentIndex.value + 1].title
                           : null,
+                      showTutorialNotice: showTutorialNotice,
                       arrivalDirection: navigationDirection.value,
                       textThemeColor: textThemeColor,
                       selectionAreaKey: selectionAreaKey,
@@ -634,13 +640,26 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         if (canAdvanceToNext) {
                           navigationDirection.value = 1;
                           currentIndex.value = currentIndex.value + 1;
+                          return true;
+                        } else if (currentIndex.value < totalTopics - 1 && !hasFullDeepNotes) {
+                          showUpgradeRequiredDialog(
+                            context: context,
+                            requiredTierColor: planThemeColor(plan_features.tierLite),
+                            title: AppLocalizations.of(context).deepNotesLockedDialogTitle,
+                            message: AppLocalizations.of(context).deepNotesLockedDialogMessage,
+                            viewPlansLabel: AppLocalizations.of(context).upgradeRequiredViewPlansButton,
+                            cancelLabel: AppLocalizations.of(context).recordingCancelButton,
+                          );
                         }
+                        return false;
                       },
                       onPrev: () {
                         if (currentIndex.value > 0) {
                           navigationDirection.value = -1;
                           currentIndex.value = currentIndex.value - 1;
+                          return true;
                         }
+                        return false;
                       },
                       temporaryHighlight: temporaryHighlight.value,
                       onAnnotationTap: (a) {
@@ -1116,20 +1135,22 @@ class _NoteDetailContent extends HookWidget {
     this.selectionListenerNotifier,
     this.temporaryHighlight,
     this.onAnnotationTap,
+    this.showTutorialNotice = false,
   });
 
   final DeepNoteTopic topic;
   final int topicIndex;
   final int totalTopics;
   final int arrivalDirection;
-  final VoidCallback onNext;
-  final VoidCallback onPrev;
+  final bool Function() onNext;
+  final bool Function() onPrev;
   final Color textThemeColor;
   final ValueChanged<String?> onSelectionChanged;
   final String? prevImagePath;
   final String? prevTitle;
   final String? nextImagePath;
   final String? nextTitle;
+  final bool showTutorialNotice;
   final GlobalKey<SelectionAreaState>? selectionAreaKey;
   final SelectionListenerNotifier? selectionListenerNotifier;
   final Annotation? temporaryHighlight;
@@ -1238,13 +1259,17 @@ class _NoteDetailContent extends HookWidget {
             if (shouldGoToNext.value) {
               shouldGoToNext.value = false;
               shouldGoToPrev.value = false;
-              isTransitioning.value = true;
-              onNext();
+              final didNavigate = onNext();
+              if (didNavigate) {
+                isTransitioning.value = true;
+              }
             } else if (shouldGoToPrev.value) {
               shouldGoToNext.value = false;
               shouldGoToPrev.value = false;
-              isTransitioning.value = true;
-              onPrev();
+              final didNavigate = onPrev();
+              if (didNavigate) {
+                isTransitioning.value = true;
+              }
             }
           }
 
@@ -1326,7 +1351,7 @@ class _NoteDetailContent extends HookWidget {
                           threshold: startedAtTop.value ? 50.0 : 120.0,
                           hasReachedThreshold: shouldGoToPrev.value,
                           textThemeColor: textThemeColor,
-                          onTap: onPrev,
+                          onTap: () => onPrev(),
                         ),
                         Text(
                           AppLocalizations.of(context).deepNotesDetailPullPrevHint,
@@ -1353,6 +1378,21 @@ class _NoteDetailContent extends HookWidget {
                 ],
 
                 // ── Title ──────────────────────────────────────────────────
+                if (showTutorialNotice) ...[
+                  SelectionContainer.disabled(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        AppLocalizations.of(context).deepNotesTutorialNotice,
+                        style: TextStyle(
+                          color: planThemeColor(plan_features.tierLite),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 SelectionContainer.disabled(
                   child: Text(
                     topic.title,
@@ -1550,7 +1590,7 @@ class _NoteDetailContent extends HookWidget {
                           threshold: startedAtBottom.value ? 50.0 : 120.0,
                           hasReachedThreshold: shouldGoToNext.value,
                           textThemeColor: textThemeColor,
-                          onTap: onNext,
+                          onTap: () => onNext(),
                         ),
                       ],
                     ),

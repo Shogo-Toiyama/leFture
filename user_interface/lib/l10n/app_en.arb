@@ -2336,7 +2336,7 @@
     "description": "Button label shown on the current plan's card instead of the disabled plansCurrentPlanButton, only when a downgrade/crossgrade is pending. Tapping it re-purchases the currently active product, which cancels the pending scheduled change per Apple/RevenueCat's subscription-group behavior."
   },
 
-  "plansUnavailableButton": "Unavailable",
+  "plansUnavailableButton": "Not Available",
   "@plansUnavailableButton": {
     "description": "Disabled button label shown on a paid plan's card when its App Store product/price couldn't be loaded from RevenueCat yet."
   },
@@ -2427,39 +2427,83 @@
     "description": "Dismiss button of the celebratory upgrade dialog. Deliberately more enthusiastic than the plain 'OK' used elsewhere, to match the celebratory tone."
   },
 
-  "plansFeatureCredits": "Monthly credit allowance",
-  "@plansFeatureCredits": {
-    "description": "First row of the generic feature checklist shown on every plan card (with a check/cross icon per plan). Always checked for every plan since all plans grant some amount of monthly credits."
+  "plansFeatureReviewCardsFunFacts": "Review Cards & Fun Facts generation",
+  "@plansFeatureReviewCardsFunFacts": {
+    "description": "First row of the feature checklist shown on plan cards. Generating review cards and fun facts (available on all plans)."
   },
 
-  "plansFeatureFasterProcessing": "Faster processing",
-  "@plansFeatureFasterProcessing": {
-    "description": "Second row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Entry tier and up)."
+  "plansFeatureDeepNotes": "DeepNotes (detailed notes) generation",
+  "@plansFeatureDeepNotes": {
+    "description": "Second row of the feature checklist shown on plan cards. Full DeepNotes generation (available from Lite tier and up)."
   },
 
-  "plansFeaturePrioritySupport": "Priority support",
-  "@plansFeaturePrioritySupport": {
-    "description": "Third row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Standard tier and up)."
+  "plansFeatureTranscriptSourceSearch": "Transcript viewing & source search",
+  "@plansFeatureTranscriptSourceSearch": {
+    "description": "Third row of the feature checklist shown on plan cards. Viewing transcripts and source citation search (available from Core tier and up)."
   },
 
-  "plansFeatureEarlyAccess": "Early access to new features",
-  "@plansFeatureEarlyAccess": {
-    "description": "Fourth row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked for Premium tier only)."
+  "plansFeatureKeywordsAnnouncements": "Keyword & announcement generation",
+  "@plansFeatureKeywordsAnnouncements": {
+    "description": "Fourth row of the feature checklist shown on plan cards. Generating keywords and announcements (available from Core tier and up)."
   },
+
+  "plansFeatureRealtimeTranscription": "Real-time transcription",
+  "@plansFeatureRealtimeTranscription": {
+    "description": "Fifth row of the feature checklist shown on plan cards. Real-time audio transcription (available on Max tier only)."
+  },
+
+  "plansCreditsPerMonth": "{credits} credits / month",
+  "@plansCreditsPerMonth": {
+    "description": "Highlight banner on plan card showing monthly credit allowance, e.g. 2,000 credits / month.",
+    "placeholders": {
+      "credits": {
+        "type": "String",
+        "example": "2,000"
+      }
+    }
+  },
+
+  "plansWeeklyLecturesEstimate": "{count, plural, one{Approx. {count} lecture / week} other{Approx. {count} lectures / week}}",
+  "@plansWeeklyLecturesEstimate": {
+    "description": "Subtitle in the credit highlight banner showing approximate weekly lecture recording capability based on monthly credits.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+
+
 
   "plansRestorePurchasesButton": "Restore Purchases",
   "@plansRestorePurchasesButton": {
     "description": "Text button on the Plans page (near the legal disclosure links) that lets a user restore a previous App Store purchase, e.g. after reinstalling the app or switching devices. Required by Apple App Review guidelines for subscription apps."
   },
 
+  "plansRestorePurchasesTitle": "Restore Purchases",
+  "@plansRestorePurchasesTitle": {
+    "description": "Title of dialog shown after restoring purchases."
+  },
+
   "plansRestorePurchasesSuccessMessage": "Purchases restored",
   "@plansRestorePurchasesSuccessMessage": {
-    "description": "Snackbar shown after successfully calling RevenueCat's restore-purchases flow."
+    "description": "Dialog message shown after successfully restoring an active subscription."
+  },
+
+  "plansRestorePurchasesNotFound": "No active subscriptions found.",
+  "@plansRestorePurchasesNotFound": {
+    "description": "Dialog message shown when no active subscription is found during restore."
+  },
+
+  "plansRestorePurchasesAlreadyInUse": "This purchase is already linked to another account.",
+  "@plansRestorePurchasesAlreadyInUse": {
+    "description": "Dialog message shown when the store receipt is already linked to another user account."
   },
 
   "plansRestorePurchasesErrorMessage": "Couldn't restore purchases. Please try again.",
   "@plansRestorePurchasesErrorMessage": {
-    "description": "Snackbar shown if restoring purchases fails."
+    "description": "Dialog message shown if restoring purchases fails with an unexpected error."
   },
 
   "plansLoadError": "Couldn't load plans. Please try again.",
@@ -2475,6 +2519,21 @@
   "plansPurchaseErrorMessage": "We couldn't complete that. Please try again.",
   "@plansPurchaseErrorMessage": {
     "description": "Body text of the dialog shown when a purchase or free-plan claim fails on the Plans page."
+  },
+
+  "plansDeviceAlreadyClaimedTitle": "Free Trial Already Used",
+  "@plansDeviceAlreadyClaimedTitle": {
+    "description": "Title of the dialog shown when a user tries to claim the Free plan on a device that already claimed it on another account."
+  },
+
+  "plansDeviceAlreadyClaimedMessage": "The free trial has already been used on this device. To record lectures, please subscribe to a plan or sign in with your original account.\n\nIf you need help, please contact support.",
+  "@plansDeviceAlreadyClaimedMessage": {
+    "description": "Message of the dialog shown when a user tries to claim the Free plan on a device that already claimed it on another account."
+  },
+
+  "plansContactSupportButton": "Contact Support",
+  "@plansContactSupportButton": {
+    "description": "Button in the device already claimed dialog that opens the contact/support page."
   },
 
   "changePasswordResetSentTitle": "Reset Link Sent",
@@ -2711,6 +2770,11 @@
   "coursePageTopicMapNotGeneratedLabel": "Not generated yet",
   "@coursePageTopicMapNotGeneratedLabel": {
     "description": "Small hint label in the bottom-left corner of the Topic Map preview card when no topic map has been generated for this course yet (e.g. zero lectures analyzed so far)."
+  },
+
+  "coursePageTopicMapLockedLabel": "Requires Lite plan",
+  "@coursePageTopicMapLockedLabel": {
+    "description": "Small hint label in the bottom-left corner of the Topic Map preview card when the reason no map exists is that this course's lectures were processed on a plan below Lite (as opposed to genuinely not generated yet). Distinct from coursePageTopicMapNotGeneratedLabel so the two causes aren't conflated."
   },
 
   "coursePageLecturesTitle": "Lectures",
@@ -3488,6 +3552,56 @@
   "deepNotesLockedCaption": "Not generated · Free plan",
   "@deepNotesLockedCaption": {
     "description": "Very short caption shown directly on a locked Deep Notes card/tile (not inside the dialog) so the 'not generated, not hidden' fact is visible at a glance without tapping."
+  },
+
+  "deepNotesTutorialNotice": "※ Full Deep Notes requires Lite plan or above (unlocked for tutorial)",
+  "@deepNotesTutorialNotice": {
+    "description": "Notice text shown in blue above the note title indicating full deep notes normally requires the Lite plan, but is previewed for tutorial."
+  },
+
+  "keywordsLockedDialogTitle": "Keywords not generated",
+  "@keywordsLockedDialogTitle": {
+    "description": "Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state."
+  },
+
+  "keywordsLockedDialogMessage": "This lecture was processed on a plan below Core, so keyword definitions weren't extracted or saved for it. Upgrading won't add them to this lecture — but recordings on the Core plan or above get keyword extraction automatically.",
+  "@keywordsLockedDialogMessage": {
+    "description": "Body text explaining keywords were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings."
+  },
+
+  "announcementsLockedDialogTitle": "Announcements not generated",
+  "@announcementsLockedDialogTitle": {
+    "description": "Title of the dialog shown when tapping the Announcements chip on a lecture that was processed on a plan below Core, so no announcements were extracted for it."
+  },
+
+  "announcementsLockedDialogMessage": "This lecture was processed on a plan below Core, so announcements weren't extracted from it. Upgrading won't add them to this lecture — but recordings on the Core plan or above get announcement extraction automatically.",
+  "@announcementsLockedDialogMessage": {
+    "description": "Body text explaining announcements were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings."
+  },
+
+  "topicMapLockedDialogTitle": "Topic Map not generated",
+  "@topicMapLockedDialogTitle": {
+    "description": "Title of the dialog shown when tapping a Topic Map card whose course has no map because its lectures were processed on a plan below Lite."
+  },
+
+  "topicMapLockedDialogMessage": "This course's Topic Map hasn't been built because its lectures were processed on a plan below Lite. Upgrading won't retroactively add past lectures — but new lectures recorded on the Lite plan or above will start building your Topic Map.",
+  "@topicMapLockedDialogMessage": {
+    "description": "Body text explaining the Topic Map was never generated for this course's existing lectures (not just hidden) and that upgrading only affects future lectures, not past ones."
+  },
+
+  "transcriptLockedDialogTitle": "Source & Transcript requires Core",
+  "@transcriptLockedDialogTitle": {
+    "description": "Title of the dialog shown when tapping the Transcript button/entry on a plan below Core. Unlike Deep Notes/Keywords/Announcements, the transcript itself is always generated for every plan — only viewing it is gated — so this copy must not claim the content doesn't exist."
+  },
+
+  "transcriptLockedDialogMessage": "The original transcript is already saved for every lecture — viewing it is a Core plan feature. Upgrade anytime and you'll be able to view it here immediately, including for this lecture.",
+  "@transcriptLockedDialogMessage": {
+    "description": "Body text clarifying that (unlike the other locked features) the transcript data already exists and upgrading unlocks it immediately for this lecture too, not just future ones — an accurate, non-retroactive-sounding message is wrong here because it IS retroactive for this one."
+  },
+
+  "announcementsSheetLockedBanner": "Announcements aren't extracted from your lectures on your current plan. Upgrade to Core to include future lectures.",
+  "@announcementsSheetLockedBanner": {
+    "description": "Short banner shown above the announcement list in the cross-course/cross-lecture announcements sheets (home bar's 'all announcements' sheet, and a course's announcements sheet) when the account's plan doesn't include announcement generation. The sheet itself always stays open (not blocked), since tutorial lectures always get announcements regardless of plan — this just explains why real lectures may show none."
   },
 
   "lectureNotePageTopicLabel": "Topic {index}",
@@ -4495,5 +4609,55 @@
   "signInUserNotFoundMessage": "Account not found. Please register from the sign-up page with a username.",
   "@signInUserNotFoundMessage": {
     "description": "Error message shown when a user tries to sign in via social auth on the sign-in page without an existing account."
+  },
+
+  "creditRateModalTitle": "Credit Usage Guide",
+  "@creditRateModalTitle": {
+    "description": "Title of the modal dialog displaying credit consumption rates based on recording duration."
+  },
+  "creditRateModalDescription": "Credits consumed depend on the duration of your recorded audio.",
+  "@creditRateModalDescription": {
+    "description": "Description in the credit usage guide explaining that consumption depends on audio length."
+  },
+  "creditRateTableDurationHeader": "Duration",
+  "@creditRateTableDurationHeader": {
+    "description": "Header for the recording duration column in the credit rate table."
+  },
+  "creditRateTableCreditsHeader": "Credits",
+  "@creditRateTableCreditsHeader": {
+    "description": "Header for the credits consumed column in the credit rate table."
+  },
+  "creditRateRow1Duration": "Under 30 min",
+  "@creditRateRow1Duration": {
+    "description": "Duration label for under 30 minutes in the credit rate table."
+  },
+  "creditRateRow2Duration": "30 min – 1.5 hours",
+  "@creditRateRow2Duration": {
+    "description": "Duration label for 30 minutes to 1.5 hours in the credit rate table."
+  },
+  "creditRateRow3Duration": "1.5 – 2.5 hours",
+  "@creditRateRow3Duration": {
+    "description": "Duration label for 1.5 to 2.5 hours in the credit rate table."
+  },
+  "creditRateRow4Duration": "2.5 – 3.5 hours",
+  "@creditRateRow4Duration": {
+    "description": "Duration label for 2.5 to 3.5 hours in the credit rate table."
+  },
+  "creditRateRowCredits": "{count} credits",
+  "@creditRateRowCredits": {
+    "description": "Credits count label in the credit rate table row.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "creditRateMaxDurationNotice": "※ Maximum recording duration is 3.5 hours. Recordings longer than 3.5 hours cannot be processed.",
+  "@creditRateMaxDurationNotice": {
+    "description": "Notice at the bottom of the credit rate table stating the 3.5-hour maximum recording limit."
+  },
+  "creditRateModalCloseButton": "Close",
+  "@creditRateModalCloseButton": {
+    "description": "Close button label for the credit rate table modal."
   }
 }

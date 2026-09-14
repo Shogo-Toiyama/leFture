@@ -9,6 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   ffmpeg_kit_flutter_new_audio
   file_selector_windows
   firebase_core
+  flutter_secure_storage_windows
   permission_handler_windows
   record_windows
   sqlite3_flutter_libs

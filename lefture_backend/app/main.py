@@ -167,9 +167,10 @@ STALE_TASK_TIMEOUT_MINUTES = int(os.getenv("STALE_TASK_TIMEOUT_MINUTES", "20")) 
 TOPIC_MAP_STALE_TIMEOUT_MINUTES = int(os.getenv("TOPIC_MAP_STALE_TIMEOUT_MINUTES", "60")) # Lecture削除/移動でstaleになったTopic Mapを、ユーザー操作が無くても自動でRecreateするまでの分数
 LECTURE_HARD_DELETE_RETENTION_DAYS = int(os.getenv("LECTURE_HARD_DELETE_RETENTION_DAYS", "30")) # ソフト削除(deleted_at)からハードデリートまでの日数
 PATROL_HARD_DELETE_BATCH_SIZE = int(os.getenv("PATROL_HARD_DELETE_BATCH_SIZE", "50")) # Patrol1回あたりでハードデリートする講義数の上限(タイムアウト防止。溢れた分は次回実行で処理される)
+PATROL_AUDIO_CHUNKS_CLEANUP_BATCH_SIZE = int(os.getenv("PATROL_AUDIO_CHUNKS_CLEANUP_BATCH_SIZE", "100")) # Patrol1回あたりでaudio_chunksを掃除する講義数の上限
 CLOUD_TASKS_MAX_ATTEMPTS = int(os.getenv("CLOUD_TASKS_MAX_ATTEMPTS", "5")) # lefture-processing-queueのRetry Config(Max Attempts)と必ず一致させる。GCP側で変更したらここも変更すること
 STALE_FAILED_JOB_TIMEOUT_MINUTES = int(os.getenv("STALE_FAILED_JOB_TIMEOUT_MINUTES", "15")) # 即時判定(X-CloudTasks-TaskRetryCount)の取りこぼし対策。FAILEDのまま動きがないタスクを見て親ジョブをFAILED化するまでの分数
-PATROL_TIME_WINDOW_TOLERANCE_MINUTES = int(os.getenv("PATROL_TIME_WINDOW_TOLERANCE_MINUTES", "2")) # Cloud Schedulerは10分おきに叩くが、DB周回を伴う本チェックは0分・30分付近のみ実行(それ以外はウォームアップのみ)。配信遅延の許容幅
+PATROL_TIME_WINDOW_TOLERANCE_MINUTES = int(os.getenv("PATROL_TIME_WINDOW_TOLERANCE_MINUTES", "4")) # Cloud Schedulerは10分おきに叩くが、DB周回を伴う本チェックは0分・30分付近のみ実行(それ以外はウォームアップのみ)。配信遅延の許容幅
 PATROL_DAILY_HOUR_UTC = int(os.getenv("PATROL_DAILY_HOUR_UTC", "0")) # サブスク更新など「1日1回」でよいPatrolチェックを走らせるUTC時(0-23)
 SEND_EMAIL_HOOK_SECRET = os.getenv("SEND_EMAIL_HOOK_SECRET", "") # Supabase Auth「Send Email Hook」の署名検証シークレット(Standard Webhooks形式)
 REVENUECAT_WEBHOOK_SECRET = os.getenv("REVENUECAT_WEBHOOK_SECRET", "") # RevenueCat Webhookの検証シークレット(Authorizationヘッダーの値と一致させる)
@@ -204,6 +205,7 @@ class ClaimPlanRequest(BaseModel):
     """Flutterから /billing/claim-plan に渡されるデータ。claim_mode='self_serve'の
     プランのみ有効化できる(store_purchaseプランはここでは弾かれる)。"""
     plan_id: str
+    device_id: Optional[str] = None
 
 class StartAnalysisRequest(BaseModel):
     lecture_id: str
@@ -803,13 +805,17 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
     admin_client = get_supabase_client()
 
     try:
+        rpc_params = {"p_user_id": user_id, "p_plan_id": payload.plan_id}
+        if payload.device_id:
+            rpc_params["p_device_id"] = payload.device_id.strip()
+
         await asyncio.to_thread(
-            lambda: admin_client.rpc(
-                "claim_plan", {"p_user_id": user_id, "p_plan_id": payload.plan_id}
-            ).execute()
+            lambda: admin_client.rpc("claim_plan", rpc_params).execute()
         )
     except Exception as e:
         error_str = str(e)
+        if "device_already_claimed" in error_str:
+            raise HTTPException(status_code=409, detail={"error_code": "DEVICE_ALREADY_CLAIMED", "message": "The free trial has already been claimed on this device."})
         if "plan_not_found" in error_str:
             raise HTTPException(status_code=404, detail={"error_code": "PLAN_NOT_FOUND", "message": "Plan not found."})
         if "plan_not_self_serve" in error_str:
@@ -2004,7 +2010,7 @@ async def worker_cleanup_audio_chunks(payload: CleanupAudioChunksPayload):
     """
     _patrol_enqueue_audio_chunks_cleanup がenqueueしたタスクを実際に処理する。
     指定講義の R2 audio_chunks/ 配下を一括削除し、
-    lectures テーブルの metadata (jsonb) に audio_chunks_cleaned: True を記録する。
+    lectures テーブルの audio_chunks_cleaned カラムおよび metadata (jsonb) に True を記録する。
     """
     admin_client = get_supabase_client()
     from app.core.r2_storage import storage_service
@@ -2014,7 +2020,7 @@ async def worker_cleanup_audio_chunks(payload: CleanupAudioChunksPayload):
     deleted_count = await asyncio.to_thread(storage_service.delete_prefix, prefix)
     print(f"🧹 Cleaned up {deleted_count} audio chunks in R2 for lecture {payload.lecture_id}")
 
-    # 2. Supabase の lectures.metadata にフラグをマージ更新
+    # 2. Supabase の lectures (audio_chunks_cleaned カラム ＆ metadata) にフラグを記録
     lec_res = await asyncio.to_thread(
         lambda: admin_client.table("lectures")
             .select("metadata")
@@ -2029,7 +2035,10 @@ async def worker_cleanup_audio_chunks(payload: CleanupAudioChunksPayload):
 
     await asyncio.to_thread(
         lambda: admin_client.table("lectures")
-            .update({"metadata": current_metadata})
+            .update({
+                "audio_chunks_cleaned": True,
+                "metadata": current_metadata,
+            })
             .eq("id", payload.lecture_id)
             .execute()
     )
@@ -2697,7 +2706,7 @@ async def _patrol_renew_subscriptions() -> dict:
     # 同種のガードを二重防御として入れてある)。
     due_res = await asyncio.to_thread(
         lambda: admin_client.table("user_subscription_mappings")
-            .select("id, subscription_plans!inner(claim_mode)")
+            .select("id, subscription_plans!user_subscription_mappings_plan_id_fkey!inner(claim_mode)")
             .eq("status", "active")
             .eq("subscription_plans.claim_mode", "self_serve")
             .lte("current_period_end", datetime.now(timezone.utc).isoformat())
@@ -2722,21 +2731,22 @@ async def _patrol_enqueue_audio_chunks_cleanup() -> dict:
     """
     毎日UTC PATROL_DAILY_HOUR_UTC時付近に1回だけ、patrol()から呼ばれる。
     作成から AUDIO_CHUNKS_RETENTION_DAYS (既定7日) 以上経過し、
-    まだ audio_chunks_cleaned が True になっていない講義を集め、
+    まだ audio_chunks_cleaned が False の講義を集め、
     Cloud Tasks に 1 件ずつエンキューする。
+    ゴミ箱(deleted_at IS NOT NULL)に入っている講義も対象に含む。
     """
     admin_client = get_supabase_client()
     retention_threshold = (
         datetime.now(timezone.utc) - timedelta(days=AUDIO_CHUNKS_RETENTION_DAYS)
     ).isoformat()
 
-    # created_at <= 7日前 ＆ deleted_at IS NULL ＆ metadata->>audio_chunks_cleaned が True でない講義を抽出
+    # created_at <= 7日前 ＆ audio_chunks_cleaned == False の講義を抽出 (deleted_atの有無は問わない)
     due_res = await asyncio.to_thread(
         lambda: admin_client.table("lectures")
             .select("id, user_id")
             .lte("created_at", retention_threshold)
-            .is_("deleted_at", "null")
-            .or_("metadata->>audio_chunks_cleaned.is.null,metadata->>audio_chunks_cleaned.eq.false")
+            .eq("audio_chunks_cleaned", False)
+            .limit(PATROL_AUDIO_CHUNKS_CLEANUP_BATCH_SIZE)
             .execute()
     )
     due_lectures = due_res.data or []
@@ -2752,6 +2762,27 @@ async def _patrol_enqueue_audio_chunks_cleanup() -> dict:
             print(f"⚠️ Failed to enqueue audio chunks cleanup for lecture {row['id']}: {e}")
 
     return {"due": len(due_lectures), "enqueued": enqueued, "failed": failed}
+
+
+async def _patrol_sweep_r2_audio_chunks() -> dict:
+    """
+    毎月1回、R2バケット全体を直接ストリーミング走査し、
+    7日以上前の /audio_chunks/ を一括削除するバックストップ処理。
+    DBに紐づかない孤児（Orphan）データも一掃する。
+    """
+    from app.core.r2_storage import storage_service
+    return await asyncio.to_thread(
+        storage_service.sweep_stale_audio_chunks,
+        retention_days=AUDIO_CHUNKS_RETENTION_DAYS,
+    )
+
+
+@app.post("/maintenance/sweep-r2-audio-chunks")
+async def sweep_r2_audio_chunks_endpoint():
+    """
+    R2バケット全体を直接走査して7日以上前の audio_chunks を一括削除する手動実行用エンドポイント。
+    """
+    return await _patrol_sweep_r2_audio_chunks()
 
 
 @app.post("/maintenance/patrol")
@@ -2789,6 +2820,14 @@ async def patrol():
         except Exception as e:
             results["cleanup_audio_chunks"] = {"error": str(e)}
             print(f"⚠️ Patrol check 'cleanup_audio_chunks' failed: {e}")
+
+        # 毎月1日(:00付近)に1回だけ、R2バケット全体の直接スイープを走らせる(孤児チャンクのバックストップ)
+        if now.day == 1:
+            try:
+                results["sweep_orphan_r2_chunks"] = await _patrol_sweep_r2_audio_chunks()
+            except Exception as e:
+                results["sweep_orphan_r2_chunks"] = {"error": str(e)}
+                print(f"⚠️ Patrol check 'sweep_orphan_r2_chunks' failed: {e}")
 
     return results
 

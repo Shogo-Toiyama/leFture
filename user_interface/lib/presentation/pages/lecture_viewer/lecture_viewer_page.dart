@@ -8,7 +8,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/application/lecture_viewer/lecture_content_recovery.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/domain/entities/announcement.dart';
@@ -390,6 +394,21 @@ class _LectureViewerBody extends HookConsumerWidget {
     // 割り切る。
     final heroCollageReveal = reveal(const ['FINALIZE_JOB']);
 
+    // Keywords/Announcements/Transcriptはプラン次第でそもそも生成されない
+    // (Keywords/Announcementsはバックエンド側でDBに保存すら行われず、常に0件)。
+    // 「0件だから」なのか「プランでロックされているから0件」なのかを区別して
+    // チップ/ボタンの見た目・タップ挙動を分けるため、ここでtier判定を持っておく。
+    final hasKeywordsFeature =
+        ref.watch(hasFeatureProvider(plan_features.featureKeywordExtractionSubscriber));
+    final hasAnnouncementsFeature =
+        ref.watch(hasFeatureProvider(plan_features.featureAnnouncementGeneration));
+    final hasTranscriptFeature =
+        ref.watch(hasFeatureProvider(plan_features.featureSourceTranscriptView));
+    final isKeywordsLocked = keywords.isEmpty && !hasKeywordsFeature;
+    final isAnnouncementsLocked = announcements.isEmpty && !hasAnnouncementsFeature;
+    final subscriberLockColor = planThemeColor(plan_features.tierCore);
+    final transcriptLockColor = planThemeColor(plan_features.tierCore);
+
     final hasAnyReady = [
       transcriptReveal,
       summaryReveal,
@@ -664,13 +683,23 @@ class _LectureViewerBody extends HookConsumerWidget {
                               label: l10n.lectureViewerAnnouncementsChip(
                                 announcements.length,
                               ),
-                              onTap: announcements.isNotEmpty
-                                  ? () => _showAnnouncementsSheet(
-                                      context,
-                                      lecture.id,
-                                      announcements,
+                              lockColor: isAnnouncementsLocked ? subscriberLockColor : null,
+                              onTap: isAnnouncementsLocked
+                                  ? () => showUpgradeRequiredDialog(
+                                      context: context,
+                                      requiredTierColor: subscriberLockColor,
+                                      title: l10n.announcementsLockedDialogTitle,
+                                      message: l10n.announcementsLockedDialogMessage,
+                                      viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                                      cancelLabel: l10n.recordingCancelButton,
                                     )
-                                  : null,
+                                  : announcements.isNotEmpty
+                                      ? () => _showAnnouncementsSheet(
+                                          context,
+                                          lecture.id,
+                                          announcements,
+                                        )
+                                      : null,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -682,9 +711,19 @@ class _LectureViewerBody extends HookConsumerWidget {
                               label: l10n.lectureViewerKeywordsChip(
                                 keywords.length,
                               ),
-                              onTap: keywords.isNotEmpty
-                                  ? () => _showKeywordsSheet(context, keywords, topics)
-                                  : null,
+                              lockColor: isKeywordsLocked ? subscriberLockColor : null,
+                              onTap: isKeywordsLocked
+                                  ? () => showUpgradeRequiredDialog(
+                                      context: context,
+                                      requiredTierColor: subscriberLockColor,
+                                      title: l10n.keywordsLockedDialogTitle,
+                                      message: l10n.keywordsLockedDialogMessage,
+                                      viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                                      cancelLabel: l10n.recordingCancelButton,
+                                    )
+                                  : keywords.isNotEmpty
+                                      ? () => _showKeywordsSheet(context, keywords, topics)
+                                      : null,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -813,9 +852,24 @@ class _LectureViewerBody extends HookConsumerWidget {
                       reveal: transcriptReveal,
                       locked: const ShimmerBox(height: 52, borderRadius: 12),
                       ready: GestureDetector(
-                        onTap: () => context.push(
-                          '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript',
-                        ),
+                        // Transcript自体は全プランで生成・保存されている
+                        // (バックエンド側にゲートは無い) — ロックされているのは
+                        // 「閲覧できるかどうか」というUI側の機能だけなので、
+                        // DeepNotes/Keywords/Announcementsとは違いアップグレードすれば
+                        // このレクチャーのTranscriptも即座に見られるようになる
+                        // (非遡及ではない)。ダイアログの文言もそれに合わせて分けてある。
+                        onTap: hasTranscriptFeature
+                            ? () => context.push(
+                                '${AppRoutes.coursesRootPath}/c/${lecture.courseId}/v/${lecture.id}/transcript',
+                              )
+                            : () => showUpgradeRequiredDialog(
+                                context: context,
+                                requiredTierColor: transcriptLockColor,
+                                title: l10n.transcriptLockedDialogTitle,
+                                message: l10n.transcriptLockedDialogMessage,
+                                viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                                cancelLabel: l10n.recordingCancelButton,
+                              ),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -823,15 +877,19 @@ class _LectureViewerBody extends HookConsumerWidget {
                             color: AppColors.universe.glassWhiteLow,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.universe.glassBorder,
+                              color: hasTranscriptFeature
+                                  ? AppColors.universe.glassBorder
+                                  : transcriptLockColor.withValues(alpha: 0.4),
                             ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.receipt_long_outlined,
-                                color: AppColors.starGold,
+                                hasTranscriptFeature
+                                    ? Icons.receipt_long_outlined
+                                    : Icons.lock_outline_rounded,
+                                color: hasTranscriptFeature ? AppColors.starGold : transcriptLockColor,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
@@ -1213,14 +1271,25 @@ class _ViewerReactionButton extends ConsumerWidget {
 // ヘッダーの「Xお知らせ」「Y Fun Facts」チップ
 // ---------------------------------------------------------------------------
 class _HighlightChip extends StatelessWidget {
-  const _HighlightChip({required this.icon, required this.label, this.onTap});
+  const _HighlightChip({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.lockColor,
+  });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+  // nullでなければ「プラン的にロックされている」表示(色付き鍵アイコン)にする。
+  // このチップ自体はonTapがnullでない限り常にタップ可能 —
+  // ロック時もタップさせてアップグレード導線ダイアログへ誘導する
+  // (以前はロック時onTap:nullで何も起きない無反応チップだった)。
+  final Color? lockColor;
 
   @override
   Widget build(BuildContext context) {
+    final isLocked = lockColor != null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1228,12 +1297,14 @@ class _HighlightChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.universe.glassWhiteLow,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.universe.glassBorder),
+          border: Border.all(
+            color: isLocked ? lockColor!.withValues(alpha: 0.4) : AppColors.universe.glassBorder,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.starGold, size: 14),
+            Icon(icon, color: isLocked ? lockColor : AppColors.starGold, size: 14),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1243,7 +1314,10 @@ class _HighlightChip extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (onTap != null) ...[
+            if (isLocked) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.lock_outline_rounded, color: lockColor, size: 13),
+            ] else if (onTap != null) ...[
               const SizedBox(width: 4),
               Icon(
                 Icons.chevron_right_rounded,

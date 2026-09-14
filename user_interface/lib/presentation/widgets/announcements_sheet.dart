@@ -6,16 +6,21 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/announcement/announcement_provider.dart';
 import 'package:lefture/application/course/course_announcement_provider.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/domain/entities/announcement.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/course/widgets/announcement_edit_sheet.dart';
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcement_tile.dart';
 import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
+import 'package:lefture/presentation/widgets/plan_lock_illustration.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 
 /// アナウンスメント一覧ボトムシート。
 /// - [lectureId] 指定: 該当レクチャーのアナウンスを表示
@@ -54,6 +59,17 @@ class AnnouncementsSheet extends HookConsumerWidget {
     }, [statusFilter.value]);
 
     final bool isGlobalScope = lectureId == null && courseId == null;
+
+    // 講義単位のシート(lectureId指定)は、既にlecture_viewer_page.dart側で
+    // ロック中はチップのonTapがこのシートを開かずダイアログに誘導するため、
+    // ここまで辿り着く時点で常にhasAnnouncementsFeature。一方コース横断/全体
+    // 横断のシートは「0件」がプランによるものか本当に0件かを区別できないので、
+    // ロック中はタイル一覧の上に注意書きバナーを出す(シート自体は開ける —
+    // チュートリアル用Announcementはプランに関わらず常に生成されるため)。
+    final hasAnnouncementsFeature =
+        ref.watch(hasFeatureProvider(plan_features.featureAnnouncementGeneration));
+    final showAnnouncementsLockBanner = lectureId == null && !hasAnnouncementsFeature;
+    final announcementsLockColor = planThemeColor(plan_features.tierCore);
 
     // ホーム画面(全コース横断)スコープは無制限に貯まりうるため、状態/種類
     // フィルターごとにDB側で絞り込んだ上で20件ずつページングして読み込む。
@@ -287,6 +303,60 @@ class AnnouncementsSheet extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 4),
+
+              if (showAnnouncementsLockBanner)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                  child: InkWell(
+                    onTap: () {
+                      showUpgradeRequiredDialog(
+                        context: context,
+                        requiredTierColor: announcementsLockColor,
+                        title: l10n.announcementsLockedDialogTitle,
+                        message: l10n.announcementsSheetLockedBanner,
+                        viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                        cancelLabel: l10n.recordingCancelButton,
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161829),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: announcementsLockColor.withValues(alpha: 0.35)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          PlanLockIllustration(
+                            color: announcementsLockColor,
+                            size: 52,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            l10n.announcementsLockedDialogTitle,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.universe.textStarlight,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
               Expanded(
                 child: announcementsAsync.when(

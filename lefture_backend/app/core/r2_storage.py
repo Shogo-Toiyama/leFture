@@ -3,6 +3,7 @@ import json
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Tuple
 
@@ -151,6 +152,49 @@ class R2StorageService:
             continuation_token = response.get("NextContinuationToken")
 
         return deleted
+
+    def sweep_stale_audio_chunks(self, retention_days: int = 7) -> dict:
+        """
+        R2バケット全体をストリーミング走査し、キーに '/audio_chunks/' を含み、
+        かつ LastModified が retention_days 日以上前のオブジェクトを一括削除する。
+        DBに存在しない孤児（Orphan）データを含めた月1回のバックストップ用。
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        continuation_token = None
+        scanned_count = 0
+        deleted_count = 0
+
+        while True:
+            list_kwargs = {"Bucket": self.bucket_name}
+            if continuation_token:
+                list_kwargs["ContinuationToken"] = continuation_token
+            response = self.s3.list_objects_v2(**list_kwargs)
+            contents = response.get("Contents", [])
+            if not contents:
+                break
+
+            scanned_count += len(contents)
+            stale_keys = []
+            for obj in contents:
+                key = obj.get("Key", "")
+                last_modified = obj.get("LastModified")
+                if "/audio_chunks/" in key and last_modified and last_modified < cutoff:
+                    stale_keys.append({"Key": key})
+
+            if stale_keys:
+                self.s3.delete_objects(Bucket=self.bucket_name, Delete={"Objects": stale_keys})
+                deleted_count += len(stale_keys)
+
+            if not response.get("IsTruncated"):
+                break
+            continuation_token = response.get("NextContinuationToken")
+
+        print(f"🧹 [R2 Sweep] Scanned {scanned_count} objects, deleted {deleted_count} stale audio chunks")
+        return {
+            "scanned_objects": scanned_count,
+            "deleted_chunks": deleted_count,
+            "retention_days": retention_days,
+        }
 
     def object_exists(self, storage_path: str) -> bool:
         """R2上に指定パスのオブジェクトが実在するか確認する。"""

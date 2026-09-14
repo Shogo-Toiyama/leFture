@@ -9,6 +9,13 @@ import '../../domain/entities/credit_summary.dart';
 import '../../domain/entities/credit_usage_item.dart';
 import '../../domain/entities/plan_option.dart';
 
+class DeviceAlreadyClaimedException implements Exception {
+  const DeviceAlreadyClaimedException([this.message = 'Device already claimed.']);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 class CreditRepository {
   final SupabaseClient _supabase;
   CreditRepository(this._supabase);
@@ -57,17 +64,24 @@ class CreditRepository {
   /// self_serveプランを選択・有効化する。失敗時はバックエンドが返す
   /// {"detail": {"error_code": ..., "message": ...}} をそのままExceptionの
   /// メッセージに含めて投げる(呼び出し側でユーザー向けメッセージに変換する)。
-  Future<void> claimPlan(String planId) async {
+  Future<void> claimPlan(String planId, {String? deviceId}) async {
+    final payload = <String, dynamic>{'plan_id': planId};
+    if (deviceId != null && deviceId.isNotEmpty) {
+      payload['device_id'] = deviceId;
+    }
     final response = await http.post(
       Uri.parse('$_cloudRunBaseUrl/billing/claim-plan'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $_jwt',
       },
-      body: jsonEncode({'plan_id': planId}),
+      body: jsonEncode(payload),
     ).timeout(networkTimeout);
 
     if (response.statusCode != 200) {
+      if (response.body.contains('DEVICE_ALREADY_CLAIMED')) {
+        throw const DeviceAlreadyClaimedException();
+      }
       throw Exception('Failed to claim plan (${response.statusCode}): ${response.body}');
     }
   }

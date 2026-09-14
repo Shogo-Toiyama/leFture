@@ -59,7 +59,7 @@ FEATURE_REALTIME_TRANSCRIBE = "realtime_transcribe"
 _FEATURE_MIN_TIER: dict[str, int] = {
     FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER: TIER_CORE,
     FEATURE_ANNOUNCEMENT_GENERATION: TIER_CORE,
-    FEATURE_SOURCE_TRANSCRIPT_VIEW: TIER_LITE,
+    FEATURE_SOURCE_TRANSCRIPT_VIEW: TIER_CORE,
     FEATURE_TOPIC_MAP: TIER_LITE,
     FEATURE_DEEP_NOTES_FULL: TIER_LITE,
     FEATURE_FUN_FACT_SEARCH: TIER_CORE,
@@ -99,9 +99,13 @@ def get_user_tier_level(user_id: str) -> int:
     TIER_FREEとして扱う — 機能ゲート的には最も制限された側に倒すのが安全なため。
     """
     supabase = get_supabase_client()
+    # user_subscription_mappingsはsubscription_plansへのFKを2本持つ
+    # (plan_id, pending_plan_id 2026-09-12追加)ため、"subscription_plans(...)"
+    # だけだとPostgREST側でどちらのFK経由か曖昧になりPGRST201で失敗する。
+    # 現在有効なプランを見たいのでplan_id経由だと明示する。
     res = (
         supabase.table("user_subscription_mappings")
-        .select("subscription_plans(tier_level)")
+        .select("subscription_plans!plan_id(tier_level)")
         .eq("user_id", user_id)
         .eq("status", "active")
         .limit(1)

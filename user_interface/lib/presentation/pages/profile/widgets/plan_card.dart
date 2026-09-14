@@ -2,10 +2,12 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/credit_rate_table_dialog.dart';
 
 import 'plan_purchase_state.dart';
 import 'plan_theme.dart';
@@ -40,6 +42,8 @@ class PlanCard extends StatelessWidget {
     final isStandard = plan.isStandardTier;
     final languageCode = Localizations.localeOf(context).languageCode;
     final subtitle = plan.localizedSubtitle(languageCode);
+    final weeklyLectures = math.max(1, (plan.monthlyCreditAmountDisplay / 100.0 / 4).round());
+    final formattedCredits = NumberFormat.decimalPattern().format(plan.monthlyCreditAmountDisplay);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -141,115 +145,118 @@ class PlanCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (state.isCurrentPlan) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isPremium
-                              ? const Color(0xFFA855F7).withValues(alpha: 0.25)
-                              : themeColor.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(
-                            color: isPremium ? const Color(0xFFC084FC) : themeColor.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        child: Text(
-                          l10n.plansCurrentPlanBadge,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          plan.name,
                           style: TextStyle(
-                            color: isPremium ? const Color(0xFFE879F9) : themeColor,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ] else if (isPendingTarget) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.universe.glassWhiteLow,
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: AppColors.universe.textStarlight.withValues(alpha: 0.6)),
-                        ),
-                        child: Text(
-                          l10n.plansNextPlanBadge,
-                          style: TextStyle(
-                            color: AppColors.universe.textStarlight,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ] else if (isPremium) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFA855F7), Color(0xFF06B6D4)],
-                          ),
-                          borderRadius: BorderRadius.circular(100),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFA855F7).withValues(alpha: 0.45),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          l10n.plansRecommendedBadge,
-                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            shadows: isPremium
+                                ? const [
+                                    Shadow(color: Color(0xFF38BDF8), blurRadius: 8),
+                                    Shadow(color: Color(0xFFEC4899), blurRadius: 18),
+                                    Shadow(color: Color(0xFFA855F7), blurRadius: 32),
+                                    Shadow(color: Color(0xFF6366F1), blurRadius: 48),
+                                  ]
+                                : isStandard
+                                    ? const [
+                                        Shadow(color: Color(0xFFFB7185), blurRadius: 8),
+                                        Shadow(color: Color(0xFFE11D48), blurRadius: 18),
+                                        Shadow(color: Color(0xFFF59E0B), blurRadius: 32),
+                                        Shadow(color: Color(0xFFD97706), blurRadius: 48),
+                                      ]
+                                    : [
+                                        Shadow(
+                                          color: themeColor,
+                                          blurRadius: 8,
+                                        ),
+                                        Shadow(
+                                          color: themeColor,
+                                          blurRadius: 18,
+                                        ),
+                                        Shadow(
+                                          color: themeColor.withValues(alpha: 0.9),
+                                          blurRadius: 30,
+                                        ),
+                                        Shadow(
+                                          color: themeColor.withValues(alpha: 0.6),
+                                          blurRadius: 45,
+                                        ),
+                                      ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                    Text(
-                      plan.name,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                        shadows: isPremium
-                            ? const [
-                                Shadow(color: Color(0xFF38BDF8), blurRadius: 8),
-                                Shadow(color: Color(0xFFEC4899), blurRadius: 18),
-                                Shadow(color: Color(0xFFA855F7), blurRadius: 32),
-                                Shadow(color: Color(0xFF6366F1), blurRadius: 48),
-                              ]
-                            : isStandard
-                                ? const [
-                                    Shadow(color: Color(0xFFFB7185), blurRadius: 8),
-                                    Shadow(color: Color(0xFFE11D48), blurRadius: 18),
-                                    Shadow(color: Color(0xFFF59E0B), blurRadius: 32),
-                                    Shadow(color: Color(0xFFD97706), blurRadius: 48),
-                                  ]
-                                : [
-                                    Shadow(
-                                      color: themeColor,
-                                      blurRadius: 8,
-                                    ),
-                                    Shadow(
-                                      color: themeColor,
-                                      blurRadius: 18,
-                                    ),
-                                    Shadow(
-                                      color: themeColor.withValues(alpha: 0.9),
-                                      blurRadius: 30,
-                                    ),
-                                    Shadow(
-                                      color: themeColor.withValues(alpha: 0.6),
-                                      blurRadius: 45,
-                                    ),
-                                  ],
-                      ),
+                        const Spacer(),
+                        if (state.isCurrentPlan) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPremium
+                                  ? const Color(0xFFA855F7).withValues(alpha: 0.25)
+                                  : themeColor.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(
+                                color: isPremium ? const Color(0xFFC084FC) : themeColor.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            child: Text(
+                              l10n.plansCurrentPlanBadge,
+                              style: TextStyle(
+                                color: isPremium ? const Color(0xFFE879F9) : themeColor,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ] else if (isPendingTarget) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.universe.glassWhiteLow,
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: AppColors.universe.textStarlight.withValues(alpha: 0.6)),
+                            ),
+                            child: Text(
+                              l10n.plansNextPlanBadge,
+                              style: TextStyle(
+                                color: AppColors.universe.textStarlight,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ] else if (isPremium) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFA855F7), Color(0xFF06B6D4)],
+                              ),
+                              borderRadius: BorderRadius.circular(100),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFA855F7).withValues(alpha: 0.45),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              l10n.plansRecommendedBadge,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (subtitle != null && subtitle.isNotEmpty) ...[
                       const SizedBox(height: 6),
@@ -264,23 +271,41 @@ class PlanCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 18),
-                    _FeatureCheckRow(label: l10n.plansFeatureCredits, included: plan.tierLevel >= 0, themeColor: themeColor),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 14),
+                    _CreditHighlightBanner(
+                      creditsText: l10n.plansCreditsPerMonth(formattedCredits),
+                      estimateText: l10n.plansWeeklyLecturesEstimate(weeklyLectures),
+                      themeColor: themeColor,
+                      isPremium: isPremium,
+                      isStandard: isStandard,
+                    ),
+                    const SizedBox(height: 14),
                     _FeatureCheckRow(
-                      label: l10n.plansFeatureFasterProcessing,
+                      label: l10n.plansFeatureReviewCardsFunFacts,
+                      included: plan.tierLevel >= 0,
+                      themeColor: themeColor,
+                    ),
+                    const SizedBox(height: 7),
+                    _FeatureCheckRow(
+                      label: l10n.plansFeatureDeepNotes,
                       included: plan.tierLevel >= 1,
                       themeColor: themeColor,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 7),
                     _FeatureCheckRow(
-                      label: l10n.plansFeaturePrioritySupport,
+                      label: l10n.plansFeatureTranscriptSourceSearch,
                       included: plan.tierLevel >= 2,
                       themeColor: themeColor,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 7),
                     _FeatureCheckRow(
-                      label: l10n.plansFeatureEarlyAccess,
+                      label: l10n.plansFeatureKeywordsAnnouncements,
+                      included: plan.tierLevel >= 2,
+                      themeColor: themeColor,
+                    ),
+                    const SizedBox(height: 7),
+                    _FeatureCheckRow(
+                      label: l10n.plansFeatureRealtimeTranscription,
                       included: plan.tierLevel >= 3,
                       themeColor: themeColor,
                     ),
@@ -288,11 +313,6 @@ class PlanCard extends StatelessWidget {
                     Text(
                       state.priceLabel,
                       style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.creditDetailPlanSubtitle(plan.monthlyCreditAmountDisplay, plan.billingIntervalMonths),
-                      style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
                     ),
                   ],
                 ),
@@ -323,8 +343,110 @@ class PlanCard extends StatelessWidget {
   }
 }
 
-/// チェックマーク/バツで機能の有無を示す行。実際の機能制限(feature gating)は
-/// まだ実装していないため、あくまで見た目上の演出用プレースホルダー。
+/// プランの毎月クレジット数と、それに基づいた大体の講義回数目安を目立たせるバナー。
+class _CreditHighlightBanner extends StatelessWidget {
+  const _CreditHighlightBanner({
+    required this.creditsText,
+    required this.estimateText,
+    required this.themeColor,
+    required this.isPremium,
+    required this.isStandard,
+  });
+
+  final String creditsText;
+  final String estimateText;
+  final Color themeColor;
+  final bool isPremium;
+  final bool isStandard;
+
+  @override
+  Widget build(BuildContext context) {
+    final accentColor = isPremium
+        ? const Color(0xFFC084FC)
+        : isStandard
+            ? const Color(0xFFFB7185)
+            : themeColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => showCreditRateTableDialog(context),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.35),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.stars_rounded,
+                  color: isPremium ? const Color(0xFFE879F9) : accentColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            creditsText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Icon(
+                          Icons.help_outline_rounded,
+                          size: 14,
+                          color: AppColors.universe.textStarlight.withValues(alpha: 0.7),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      estimateText,
+                      style: TextStyle(
+                        color: AppColors.universe.textStarlight.withValues(alpha: 0.88),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// チェックマーク/バツで機能の有無を示す行。
 class _FeatureCheckRow extends StatelessWidget {
   const _FeatureCheckRow({required this.label, required this.included, required this.themeColor});
 

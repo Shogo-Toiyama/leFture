@@ -1,8 +1,7 @@
-// lib/presentation/pages/profile/widgets/plan_selection_view.dart
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,9 +12,11 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
+import 'package:lefture/application/device/device_identity_service.dart';
 import 'package:lefture/application/purchases/purchases_providers.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/domain/entities/plan_option.dart';
+import 'package:lefture/infrastructure/repositories/credit_repository.dart' show DeviceAlreadyClaimedException;
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
@@ -79,6 +80,14 @@ class PlanSelectionView extends HookConsumerWidget {
 
     final selectedIndex = useState<int>(initialIndex);
     final isInitialIndexSet = useRef<bool>(isDataReady);
+    final hasClaimedDeviceFree = useState<bool>(false);
+
+    useEffect(() {
+      ref.read(deviceIdentityServiceProvider).hasClaimedDeviceFree().then((value) {
+        hasClaimedDeviceFree.value = value;
+      });
+      return null;
+    }, const []);
 
     useEffect(() {
       if (isInitialIndexSet.value) return null;
@@ -149,15 +158,58 @@ class PlanSelectionView extends HookConsumerWidget {
       );
     }
 
+    Future<void> showDeviceAlreadyClaimedDialog() async {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1F29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.plansDeviceAlreadyClaimedTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(l10n.plansDeviceAlreadyClaimedMessage, style: const TextStyle(color: Colors.white70, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push(AppRoutes.contact);
+              },
+              child: Text(
+                l10n.plansContactSupportButton,
+                style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.creditDetailOkButton, style: const TextStyle(color: Colors.white60)),
+            ),
+          ],
+        ),
+      );
+    }
+
     Future<void> handleClaimFree(PlanOption plan) async {
       purchasingPlanId.value = plan.id;
+      final deviceService = ref.read(deviceIdentityServiceProvider);
       try {
-        await ref.read(creditRepositoryProvider).claimPlan(plan.id);
+        final deviceId = await deviceService.getOrCreateDeviceId();
+        await ref.read(creditRepositoryProvider).claimPlan(plan.id, deviceId: deviceId);
+        await deviceService.markDeviceFreeClaimed();
+        hasClaimedDeviceFree.value = true;
         ref.invalidate(creditSummaryProvider);
         ref.invalidate(claimablePlansProvider);
         onPlanActivated?.call();
+      } on DeviceAlreadyClaimedException {
+        hasClaimedDeviceFree.value = true;
+        await deviceService.markDeviceFreeClaimed();
+        await showDeviceAlreadyClaimedDialog();
       } catch (e) {
-        await showErrorDialog();
+        if (e.toString().contains('DEVICE_ALREADY_CLAIMED')) {
+          hasClaimedDeviceFree.value = true;
+          await deviceService.markDeviceFreeClaimed();
+          await showDeviceAlreadyClaimedDialog();
+        } else {
+          await showErrorDialog();
+        }
       } finally {
         purchasingPlanId.value = null;
       }
@@ -206,21 +258,65 @@ class PlanSelectionView extends HookConsumerWidget {
       }
     }
 
+    final isRestoringPurchases = useState<bool>(false);
+
+    Future<void> showRestoreResultDialog({required String message}) async {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1F29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            l10n.plansRestorePurchasesTitle,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.creditDetailOkButton, style: const TextStyle(color: AppColors.starGold)),
+            ),
+          ],
+        ),
+      );
+    }
+
     Future<void> handleRestorePurchases() async {
+      if (isRestoringPurchases.value) return;
+      isRestoringPurchases.value = true;
       try {
-        await Purchases.restorePurchases();
-        ref.read(creditPollingProvider).invalidateCreditData();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.plansRestorePurchasesSuccessMessage)),
-          );
+        final customerInfo = await Purchases.restorePurchases();
+        final hasActive = customerInfo.entitlements.active.isNotEmpty;
+        if (hasActive) {
+          ref.read(creditPollingProvider).invalidateCreditData();
+          ref.invalidate(claimablePlansProvider);
+          ref.invalidate(creditSummaryProvider);
         }
+        await showRestoreResultDialog(
+          message: hasActive
+              ? l10n.plansRestorePurchasesSuccessMessage
+              : l10n.plansRestorePurchasesNotFound,
+        );
+      } on PlatformException catch (e) {
+        final errorCode = PurchasesErrorHelper.getErrorCode(e);
+        DevLog.add('⚠️ [Plans] restore purchases failed errorCode=$errorCode message=${e.message}');
+        final String message;
+        if (errorCode == PurchasesErrorCode.receiptAlreadyInUseError ||
+            errorCode == PurchasesErrorCode.receiptInUseByOtherSubscriberError) {
+          message = l10n.plansRestorePurchasesAlreadyInUse;
+        } else {
+          message = l10n.plansRestorePurchasesErrorMessage;
+        }
+        await showRestoreResultDialog(message: message);
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.plansRestorePurchasesErrorMessage)),
-          );
-        }
+        DevLog.add('⚠️ [Plans] restore purchases failed error=$e');
+        await showRestoreResultDialog(message: l10n.plansRestorePurchasesErrorMessage);
+      } finally {
+        isRestoringPurchases.value = false;
       }
     }
 
@@ -313,8 +409,13 @@ class PlanSelectionView extends HookConsumerWidget {
           continueLabel = l10n.plansManageSubscriptionButton;
           onContinue = () => showManageSubscriptionDialog();
         } else if (selectedPlan.isSelfServe) {
-          continueLabel = actionLabel;
-          onContinue = () => handleClaimFree(selectedPlan);
+          if (hasClaimedDeviceFree.value) {
+            continueLabel = l10n.plansUnavailableButton;
+            onContinue = null;
+          } else {
+            continueLabel = actionLabel;
+            onContinue = () => handleClaimFree(selectedPlan);
+          }
         } else if (purchaseState.package != null) {
           continueLabel = actionLabel;
           onContinue = () => handlePurchase(
@@ -338,7 +439,9 @@ class PlanSelectionView extends HookConsumerWidget {
       isPremiumPlan = selectedPlan.isPremiumTier;
     }
 
-    final carouselHeight = MediaQuery.sizeOf(context).height * 0.49;
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final baseCardHeight = 450.0 * math.max(1.0, textScale);
+    final carouselHeight = math.max(baseCardHeight, MediaQuery.sizeOf(context).height * 0.49);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
@@ -365,7 +468,7 @@ class PlanSelectionView extends HookConsumerWidget {
                 // フローティングContinueボタンだけがこの外側(Stack)に留まり、常に見える。
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 140),
+                    padding: const EdgeInsets.only(bottom: 160),
                     child: Column(
                       children: [
                         header,
@@ -422,7 +525,7 @@ class PlanSelectionView extends HookConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _PlanDisclosureContent(l10n: l10n, onRestorePurchases: handleRestorePurchases),
+                          _PlanDisclosureContent(l10n: l10n),
                         ],
                       ],
                     ),
@@ -441,6 +544,9 @@ class PlanSelectionView extends HookConsumerWidget {
                 isUpgrade: isUpgradeAction,
                 isPremiumPlan: isPremiumPlan,
                 onPressed: onContinue,
+                l10n: l10n,
+                onRestorePurchases: handleRestorePurchases,
+                isRestoring: isRestoringPurchases.value,
               ),
             ),
           ],
@@ -455,51 +561,16 @@ class PlanSelectionView extends HookConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _PlanDisclosureContent extends StatelessWidget {
-  const _PlanDisclosureContent({required this.l10n, required this.onRestorePurchases});
+  const _PlanDisclosureContent({required this.l10n});
   final AppLocalizations l10n;
-  final VoidCallback onRestorePurchases;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.plansDisclosure,
-            style: TextStyle(color: AppColors.universe.textComet, fontSize: 12, height: 1.5),
-          ),
-          const SizedBox(height: 12),
-          RichText(
-            text: TextSpan(
-              style: TextStyle(color: AppColors.universe.textComet, fontSize: 12, height: 1.5),
-              children: [
-                TextSpan(
-                  text: l10n.termsAndConditionsLink,
-                  style: const TextStyle(color: AppColors.starGold, decoration: TextDecoration.underline),
-                  recognizer: TapGestureRecognizer()..onTap = () => context.push(AppRoutes.termsOfService),
-                ),
-                const TextSpan(text: '   '),
-                TextSpan(
-                  text: l10n.privacyPolicyLink,
-                  style: const TextStyle(color: AppColors.starGold, decoration: TextDecoration.underline),
-                  recognizer: TapGestureRecognizer()..onTap = () => context.push(AppRoutes.privacyPolicy),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              onPressed: onRestorePurchases,
-              child: Text(
-                l10n.plansRestorePurchasesButton,
-                style: const TextStyle(color: AppColors.starGold, fontSize: 12.5, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        l10n.plansDisclosure,
+        style: TextStyle(color: AppColors.universe.textComet, fontSize: 12, height: 1.5),
       ),
     );
   }
@@ -517,6 +588,9 @@ class _PlanFloatingContinueBar extends StatelessWidget {
     required this.isUpgrade,
     required this.isPremiumPlan,
     required this.onPressed,
+    required this.l10n,
+    required this.onRestorePurchases,
+    required this.isRestoring,
   });
 
   final String label;
@@ -525,130 +599,233 @@ class _PlanFloatingContinueBar extends StatelessWidget {
   final bool isUpgrade;
   final bool isPremiumPlan;
   final VoidCallback? onPressed;
+  final AppLocalizations l10n;
+  final VoidCallback onRestorePurchases;
+  final bool isRestoring;
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    final bottomPadding = math.max(bottomInset, 8.0) + 4.0;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.universe.voidBackground.withValues(alpha: 0.75),
+            color: AppColors.universe.voidBackground.withValues(alpha: 0.82),
             border: Border(top: BorderSide(color: AppColors.universe.glassBorder)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 16),
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: (isUpgrade && onPressed != null)
-                ? DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      gradient: isPremiumPlan
-                          ? const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFF43F5E), // Rose Pink
-                                Color(0xFFA855F7), // Cosmic Purple
-                                Color(0xFF6366F1), // Indigo
-                              ],
-                            )
-                          : LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                HSLColor.fromColor(color)
-                                    .withLightness((HSLColor.fromColor(color).lightness + 0.12).clamp(0.0, 1.0))
-                                    .toColor(),
-                                color,
-                                HSLColor.fromColor(color)
-                                    .withLightness((HSLColor.fromColor(color).lightness - 0.08).clamp(0.0, 1.0))
-                                    .toColor(),
-                              ],
-                            ),
-                      boxShadow: isPremiumPlan
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFFA855F7).withValues(alpha: 0.55),
-                                blurRadius: 24,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 4),
-                              ),
-                              BoxShadow(
-                                color: const Color(0xFFF43F5E).withValues(alpha: 0.35),
-                                blurRadius: 12,
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.50),
-                                blurRadius: 22,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 4),
-                              ),
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                blurRadius: 8,
-                              ),
-                            ],
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1.2),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: isLoading ? null : onPressed,
-                        child: Center(
-                          child: isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: (isUpgrade && onPressed != null)
+                    ? DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          gradient: isPremiumPlan
+                              ? const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFF43F5E), // Rose Pink
+                                    Color(0xFFA855F7), // Cosmic Purple
+                                    Color(0xFF6366F1), // Indigo
+                                  ],
                                 )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      label,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.6,
-                                        shadows: [
-                                          Shadow(color: Colors.black45, blurRadius: 6, offset: Offset(0, 1)),
-                                        ],
-                                      ),
-                                    ),
+                              : LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    HSLColor.fromColor(color)
+                                        .withLightness((HSLColor.fromColor(color).lightness + 0.12).clamp(0.0, 1.0))
+                                        .toColor(),
+                                    color,
+                                    HSLColor.fromColor(color)
+                                        .withLightness((HSLColor.fromColor(color).lightness - 0.08).clamp(0.0, 1.0))
+                                        .toColor(),
                                   ],
                                 ),
+                          boxShadow: isPremiumPlan
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFA855F7).withValues(alpha: 0.55),
+                                    blurRadius: 24,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(0xFFF43F5E).withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.50),
+                                    blurRadius: 22,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1.2),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: isLoading ? null : onPressed,
+                            child: Center(
+                              child: isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          label,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.6,
+                                            shadows: [
+                                              Shadow(color: Colors.black45, blurRadius: 6, offset: Offset(0, 1)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: isLoading ? null : onPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: onPressed != null ? color : const Color(0x1AFFFFFF),
+                          foregroundColor: onPressed != null ? Colors.black : Colors.white38,
+                          disabledBackgroundColor: const Color(0x1AFFFFFF),
+                          disabledForegroundColor: Colors.white38,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                              )
+                            : Text(label, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold)),
+                      ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => context.push(AppRoutes.termsOfService),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        l10n.termsAndConditionsLink,
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 11,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.universe.textComet,
                         ),
                       ),
                     ),
-                  )
-                : ElevatedButton(
-                    onPressed: isLoading ? null : onPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: onPressed != null ? color : const Color(0x1AFFFFFF),
-                      foregroundColor: onPressed != null ? Colors.black : Colors.white38,
-                      disabledBackgroundColor: const Color(0x1AFFFFFF),
-                      disabledForegroundColor: Colors.white38,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                          )
-                        : Text(label, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold)),
                   ),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                      fontSize: 10,
+                    ),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => context.push(AppRoutes.privacyPolicy),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        l10n.privacyPolicyLink,
+                        style: TextStyle(
+                          color: AppColors.universe.textComet,
+                          fontSize: 11,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.universe.textComet,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                      fontSize: 10,
+                    ),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isRestoring ? null : onRestorePurchases,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: isRestoring
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.plansRestorePurchasesButton,
+                                  style: TextStyle(
+                                    color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                                    fontSize: 11,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.universe.textComet.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const SizedBox(
+                                  width: 9,
+                                  height: 9,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: AppColors.starGold,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              l10n.plansRestorePurchasesButton,
+                              style: TextStyle(
+                                color: AppColors.universe.textComet,
+                                fontSize: 11,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppColors.universe.textComet,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

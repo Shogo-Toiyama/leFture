@@ -3,12 +3,16 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/course/course_announcement_provider.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/topic_map/topic_map_provider.dart';
 import 'package:lefture/application/topic_map/topic_map_reconstruct_controller.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 
 
@@ -564,6 +568,14 @@ class _CourseLectureListView extends ConsumerWidget {
           topicMap != null && topicMap.totalLecturesCovered > 0 && !topicMap.isStale,
       orElse: () => false,
     );
+    // Topic MapはLiteプラン以上の機能。バックエンド側で下位プランの講義には
+    // topic_mappings行自体が作られないため、canOpenTopicMapが既にfalseの状態と
+    // 「プランでロックされている」状態は今のままでは見分けがつかない。
+    // canOpenTopicMapが既にtrue(=データが実在する。過去にLite以上だった名残など)
+    // なら、現在のプランに関わらずそのまま見せる。
+    final hasTopicMapFeature = ref.watch(hasFeatureProvider(plan_features.featureTopicMap));
+    final isTopicMapLocked = !hasTopicMapFeature && !canOpenTopicMap;
+    final topicMapLockColor = planThemeColor(plan_features.tierLite);
     final isReconstructingTopicMap = ref
         .watch(topicMapReconstructControllerProvider(courseId))
         .isLoading;
@@ -867,18 +879,29 @@ class _CourseLectureListView extends ConsumerWidget {
                                   ref,
                                   courseId,
                                 ))
-                          : (canOpenTopicMap
-                              ? () => context.push(
-                                  '${AppRoutes.coursesRootPath}/c/$courseId/${AppRoutes.topicMap}',
+                          : (isTopicMapLocked
+                              ? () => showUpgradeRequiredDialog(
+                                  context: context,
+                                  requiredTierColor: topicMapLockColor,
+                                  title: l10n.topicMapLockedDialogTitle,
+                                  message: l10n.topicMapLockedDialogMessage,
+                                  viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                                  cancelLabel: l10n.recordingCancelButton,
                                 )
-                              : null),
+                              : (canOpenTopicMap
+                                  ? () => context.push(
+                                      '${AppRoutes.coursesRootPath}/c/$courseId/${AppRoutes.topicMap}',
+                                    )
+                                  : null)),
                       child: Container(
                         height: 220,
                         decoration: BoxDecoration(
                           color: AppColors.universe.glassWhiteLow,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.universe.glassBorder,
+                            color: isTopicMapLocked
+                                ? topicMapLockColor.withValues(alpha: 0.4)
+                                : AppColors.universe.glassBorder,
                           ),
                         ),
                         child: ClipRRect(
@@ -995,17 +1018,27 @@ class _CourseLectureListView extends ConsumerWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            canOpenTopicMap
-                                                ? l10n.coursePageTopicMapOpenLabel
-                                                : l10n.coursePageTopicMapNotGeneratedLabel,
+                                            isTopicMapLocked
+                                                ? l10n.coursePageTopicMapLockedLabel
+                                                : (canOpenTopicMap
+                                                    ? l10n.coursePageTopicMapOpenLabel
+                                                    : l10n.coursePageTopicMapNotGeneratedLabel),
                                             style: TextStyle(
-                                              color:
-                                                  AppColors.universe.textComet,
+                                              color: isTopicMapLocked
+                                                  ? topicMapLockColor
+                                                  : AppColors.universe.textComet,
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          if (canOpenTopicMap) ...[
+                                          if (isTopicMapLocked) ...[
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              Icons.lock_outline_rounded,
+                                              color: topicMapLockColor,
+                                              size: 13,
+                                            ),
+                                          ] else if (canOpenTopicMap) ...[
                                             const SizedBox(width: 4),
                                             Icon(
                                               Icons.arrow_forward,

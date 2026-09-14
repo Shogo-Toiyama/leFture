@@ -1012,8 +1012,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                   final courseIdVal = course?.id;
                                   if (!context.mounted) return;
                                   if (lectureId.isNotEmpty) {
-                                    await showTranscriptModal(
+                                    await showTranscriptModalGated(
                                       context,
+                                      widgetRef,
                                       lectureId: lectureId,
                                       startSid: startSid,
                                       endSid: endSid,
@@ -1053,8 +1054,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                       final endSid = formatSid(sortedSids.last);
                                       final courseIdVal = course?.id;
                                       if (lectureId.isNotEmpty) {
-                                        await showTranscriptModal(
+                                        await showTranscriptModalGated(
                                           context,
+                                          widgetRef,
                                           lectureId: lectureId,
                                           startSid: startSid,
                                           endSid: endSid,

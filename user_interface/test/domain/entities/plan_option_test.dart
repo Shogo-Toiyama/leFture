@@ -19,8 +19,8 @@ void main() {
       expect(plan.isStarterTier, isTrue);
       expect(plan.isStandardTier, isFalse);
       expect(plan.isPremiumTier, isFalse);
-      expect(planThemeColor(plan.name, storeProductId: plan.storeProductId), AppColors.cosmicBlue);
-      expect(planIconAsset(plan.name, storeProductId: plan.storeProductId), 'assets/images/plan_icons/planet.png');
+      expect(planThemeColor(plan.tierLevel), AppColors.cosmicBlue);
+      expect(planIconAsset(plan.tierLevel), 'assets/images/plan_icons/planet.png');
     });
 
     test('resolves Standard / Core tier correctly by storeProductId', () {
@@ -36,8 +36,8 @@ void main() {
       expect(plan.isStarterTier, isFalse);
       expect(plan.isStandardTier, isTrue);
       expect(plan.isPremiumTier, isFalse);
-      expect(planThemeColor(plan.name, storeProductId: plan.storeProductId), const Color(0xFFE11D48));
-      expect(planIconAsset(plan.name, storeProductId: plan.storeProductId), 'assets/images/plan_icons/solarsystem.png');
+      expect(planThemeColor(plan.tierLevel), const Color(0xFFE11D48));
+      expect(planIconAsset(plan.tierLevel), 'assets/images/plan_icons/solarsystem.png');
     });
 
     test('resolves Premium / Max tier correctly by storeProductId', () {
@@ -53,8 +53,8 @@ void main() {
       expect(plan.isStarterTier, isFalse);
       expect(plan.isStandardTier, isFalse);
       expect(plan.isPremiumTier, isTrue);
-      expect(planThemeColor(plan.name, storeProductId: plan.storeProductId), const Color(0xFF7C4DFF));
-      expect(planIconAsset(plan.name, storeProductId: plan.storeProductId), 'assets/images/plan_icons/galaxy.png');
+      expect(planThemeColor(plan.tierLevel), const Color(0xFF7C4DFF));
+      expect(planIconAsset(plan.tierLevel), 'assets/images/plan_icons/galaxy.png');
     });
 
     test('resolves Free tier when storeProductId is null', () {
@@ -68,8 +68,8 @@ void main() {
 
       expect(plan.tierLevel, 0);
       expect(plan.isFreeTier, isTrue);
-      expect(planThemeColor(plan.name, storeProductId: plan.storeProductId), AppColors.starGold);
-      expect(planIconAsset(plan.name, storeProductId: plan.storeProductId), 'assets/images/plan_icons/stardust.png');
+      expect(planThemeColor(plan.tierLevel), AppColors.starGold);
+      expect(planIconAsset(plan.tierLevel), 'assets/images/plan_icons/stardust.png');
     });
   });
 }

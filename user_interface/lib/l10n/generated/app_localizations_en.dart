@@ -1458,7 +1458,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plansRevertButton => 'Keep Current Plan';
 
   @override
-  String get plansUnavailableButton => 'Unavailable';
+  String get plansUnavailableButton => 'Not Available';
 
   @override
   String get plansContinueButton => 'Continue';
@@ -1516,22 +1516,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plansUpgradeDialogButton => 'Let\'s go!';
 
   @override
-  String get plansFeatureCredits => 'Monthly credit allowance';
+  String get plansFeatureReviewCardsFunFacts =>
+      'Review Cards & Fun Facts generation';
 
   @override
-  String get plansFeatureFasterProcessing => 'Faster processing';
+  String get plansFeatureDeepNotes => 'DeepNotes (detailed notes) generation';
 
   @override
-  String get plansFeaturePrioritySupport => 'Priority support';
+  String get plansFeatureTranscriptSourceSearch =>
+      'Transcript viewing & source search';
 
   @override
-  String get plansFeatureEarlyAccess => 'Early access to new features';
+  String get plansFeatureKeywordsAnnouncements =>
+      'Keyword & announcement generation';
+
+  @override
+  String get plansFeatureRealtimeTranscription => 'Real-time transcription';
+
+  @override
+  String plansCreditsPerMonth(String credits) {
+    return '$credits credits / month';
+  }
+
+  @override
+  String plansWeeklyLecturesEstimate(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Approx. $count lectures / week',
+      one: 'Approx. $count lecture / week',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get plansRestorePurchasesButton => 'Restore Purchases';
 
   @override
+  String get plansRestorePurchasesTitle => 'Restore Purchases';
+
+  @override
   String get plansRestorePurchasesSuccessMessage => 'Purchases restored';
+
+  @override
+  String get plansRestorePurchasesNotFound => 'No active subscriptions found.';
+
+  @override
+  String get plansRestorePurchasesAlreadyInUse =>
+      'This purchase is already linked to another account.';
 
   @override
   String get plansRestorePurchasesErrorMessage =>
@@ -1546,6 +1578,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get plansPurchaseErrorMessage =>
       'We couldn\'t complete that. Please try again.';
+
+  @override
+  String get plansDeviceAlreadyClaimedTitle => 'Free Trial Already Used';
+
+  @override
+  String get plansDeviceAlreadyClaimedMessage =>
+      'The free trial has already been used on this device. To record lectures, please subscribe to a plan or sign in with your original account.\n\nIf you need help, please contact support.';
+
+  @override
+  String get plansContactSupportButton => 'Contact Support';
 
   @override
   String get changePasswordResetSentTitle => 'Reset Link Sent';
@@ -1686,6 +1728,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coursePageTopicMapNotGeneratedLabel => 'Not generated yet';
+
+  @override
+  String get coursePageTopicMapLockedLabel => 'Requires Lite plan';
 
   @override
   String get coursePageLecturesTitle => 'Lectures';
@@ -2152,6 +2197,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deepNotesLockedCaption => 'Not generated · Free plan';
+
+  @override
+  String get deepNotesTutorialNotice =>
+      '※ Full Deep Notes requires Lite plan or above (unlocked for tutorial)';
+
+  @override
+  String get keywordsLockedDialogTitle => 'Keywords not generated';
+
+  @override
+  String get keywordsLockedDialogMessage =>
+      'This lecture was processed on a plan below Core, so keyword definitions weren\'t extracted or saved for it. Upgrading won\'t add them to this lecture — but recordings on the Core plan or above get keyword extraction automatically.';
+
+  @override
+  String get announcementsLockedDialogTitle => 'Announcements not generated';
+
+  @override
+  String get announcementsLockedDialogMessage =>
+      'This lecture was processed on a plan below Core, so announcements weren\'t extracted from it. Upgrading won\'t add them to this lecture — but recordings on the Core plan or above get announcement extraction automatically.';
+
+  @override
+  String get topicMapLockedDialogTitle => 'Topic Map not generated';
+
+  @override
+  String get topicMapLockedDialogMessage =>
+      'This course\'s Topic Map hasn\'t been built because its lectures were processed on a plan below Lite. Upgrading won\'t retroactively add past lectures — but new lectures recorded on the Lite plan or above will start building your Topic Map.';
+
+  @override
+  String get transcriptLockedDialogTitle => 'Source & Transcript requires Core';
+
+  @override
+  String get transcriptLockedDialogMessage =>
+      'The original transcript is already saved for every lecture — viewing it is a Core plan feature. Upgrade anytime and you\'ll be able to view it here immediately, including for this lecture.';
+
+  @override
+  String get announcementsSheetLockedBanner =>
+      'Announcements aren\'t extracted from your lectures on your current plan. Upgrade to Core to include future lectures.';
 
   @override
   String lectureNotePageTopicLabel(int index) {
@@ -2967,4 +3048,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signInUserNotFoundMessage =>
       'Account not found. Please register from the sign-up page with a username.';
+
+  @override
+  String get creditRateModalTitle => 'Credit Usage Guide';
+
+  @override
+  String get creditRateModalDescription =>
+      'Credits consumed depend on the duration of your recorded audio.';
+
+  @override
+  String get creditRateTableDurationHeader => 'Duration';
+
+  @override
+  String get creditRateTableCreditsHeader => 'Credits';
+
+  @override
+  String get creditRateRow1Duration => 'Under 30 min';
+
+  @override
+  String get creditRateRow2Duration => '30 min – 1.5 hours';
+
+  @override
+  String get creditRateRow3Duration => '1.5 – 2.5 hours';
+
+  @override
+  String get creditRateRow4Duration => '2.5 – 3.5 hours';
+
+  @override
+  String creditRateRowCredits(int count) {
+    return '$count credits';
+  }
+
+  @override
+  String get creditRateMaxDurationNotice =>
+      '※ Maximum recording duration is 3.5 hours. Recordings longer than 3.5 hours cannot be processed.';
+
+  @override
+  String get creditRateModalCloseButton => 'Close';
 }

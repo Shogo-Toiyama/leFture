@@ -65,12 +65,17 @@ class DeepNotesListPage extends HookConsumerWidget {
     final lecture = lectureAsync.asData?.value;
     final courseId = lecture?.courseId ?? 'N/A';
 
+    final isTutorial = lecture?.metadata?['is_tutorial'] == true;
+
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
     final notesAsync  = ref.watch(deepNotesProvider(lectureId));
     // Freeプランでは最初のトピックだけプレビュー生成され、2件目以降は
     // バックエンド側でそもそもdeep_notesが作られない(空文字のnote_contents)。
     // それを常時表示のロック付きカードとして見せる(タップ→アップグレード導線)。
-    final hasFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
+    // ただしチュートリアル講義の場合は全トピックのノートが生成されているため常に解放する。
+    final hasPlanFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
+    final hasFullDeepNotes = isTutorial || hasPlanFullDeepNotes;
+    final showTutorialNotice = isTutorial && !hasPlanFullDeepNotes;
 
     final topics = useMemoized(() {
       final rawTopics = topicsAsync.asData?.value ?? <LectureTopic>[];
@@ -111,6 +116,7 @@ class DeepNotesListPage extends HookConsumerWidget {
                 notesAsync.isLoading || topicsAsync.isLoading,
                 courseId,
                 hasFullDeepNotes,
+                showTutorialNotice,
               ),
             ),
           ],
@@ -125,6 +131,7 @@ class DeepNotesListPage extends HookConsumerWidget {
     bool isLoading,
     String courseId,
     bool hasFullDeepNotes,
+    bool showTutorialNotice,
   ) {
     if (isLoading) {
       return const Center(
@@ -154,6 +161,7 @@ class DeepNotesListPage extends HookConsumerWidget {
       itemCount: topics.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
+        final l10n = AppLocalizations.of(context);
         final topic = topics[index];
         final hasContent = topic.content.trim().isNotEmpty;
         // Freeプランでは最初のトピック(index==0)だけがプレビューとして実際に
@@ -220,6 +228,17 @@ class DeepNotesListPage extends HookConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (showTutorialNotice && index > 0) ...[
+                        Text(
+                          l10n.deepNotesTutorialNotice,
+                          style: TextStyle(
+                            color: lockColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                      ],
                       Text(
                         topic.title,
                         style: TextStyle(

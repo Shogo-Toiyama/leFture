@@ -7,6 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
 
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
@@ -15,13 +16,16 @@ import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/core/utils/topic_color_utils.dart';
 import 'package:lefture/domain/entities/lecture_moment.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/repositories/lecture_artifact_repository.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/pages/transcript/transcript_page.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/audio_player_bar.dart';
 import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 
 // ── トップレベルの表示用ヘルパー関数 ───────────────────────────────
 Future<void> showTranscriptModal(
@@ -33,6 +37,44 @@ Future<void> showTranscriptModal(
   List<String>? highlightSids,
 }) {
   return TranscriptModal.show(
+    context,
+    lectureId: lectureId,
+    courseId: courseId,
+    startSid: startSid,
+    endSid: endSid,
+    highlightSids: highlightSids,
+  );
+}
+
+/// Source/Transcript閲覧はLiteプラン以上の機能。呼び出し側(deep_notes,
+/// review_cards, announcement_tile等)は個別にプラン判定を書かず、必ずこの
+/// ゲート付きラッパー経由で呼ぶ。Transcript自体は全プランで生成・保存されて
+/// いる(バックエンドにゲートは無い)ため、ロックされているのは「閲覧できるか」
+/// だけ — アップグレードすれば同じ講義のTranscriptがそのまま即座に見られる
+/// (DeepNotes/Keywords/Announcementsのような「非遡及」ではない)。
+Future<void> showTranscriptModalGated(
+  BuildContext context,
+  WidgetRef ref, {
+  required String lectureId,
+  String? courseId,
+  String? startSid,
+  String? endSid,
+  List<String>? highlightSids,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final hasFeature = ref.read(hasFeatureProvider(plan_features.featureSourceTranscriptView));
+  if (!hasFeature) {
+    final lockColor = planThemeColor(plan_features.tierCore);
+    return showUpgradeRequiredDialog(
+      context: context,
+      requiredTierColor: lockColor,
+      title: l10n.transcriptLockedDialogTitle,
+      message: l10n.transcriptLockedDialogMessage,
+      viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+      cancelLabel: l10n.recordingCancelButton,
+    );
+  }
+  return showTranscriptModal(
     context,
     lectureId: lectureId,
     courseId: courseId,

@@ -16,6 +16,7 @@ import 'package:lefture/domain/entities/credit_usage_item.dart';
 import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/credit_rate_table_dialog.dart';
 
 import 'widgets/plan_theme.dart';
 
@@ -353,11 +354,26 @@ class _CurrentPlanCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        creditsSubtitle,
-                        style: TextStyle(
-                          color: AppColors.universe.textStarlight,
-                          fontSize: 13,
+                      GestureDetector(
+                        onTap: () => showCreditRateTableDialog(context),
+                        behavior: HitTestBehavior.opaque,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              creditsSubtitle,
+                              style: TextStyle(
+                                color: AppColors.universe.textStarlight,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Icon(
+                              Icons.help_outline_rounded,
+                              size: 14,
+                              color: AppColors.universe.textStarlight.withValues(alpha: 0.7),
+                            ),
+                          ],
                         ),
                       ),
                       if (pendingPlanNote != null) ...[

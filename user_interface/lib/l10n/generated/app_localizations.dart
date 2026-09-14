@@ -2615,7 +2615,7 @@ abstract class AppLocalizations {
   /// Disabled button label shown on a paid plan's card when its App Store product/price couldn't be loaded from RevenueCat yet.
   ///
   /// In en, this message translates to:
-  /// **'Unavailable'**
+  /// **'Not Available'**
   String get plansUnavailableButton;
 
   /// Label of the floating action button pinned to the bottom of the Plans page, shown when the centered plan is actionable (claims the Free plan or starts an App Store purchase, depending on the plan). When the centered plan is already the user's current plan or has no available store price yet, the button instead shows plansCurrentPlanButton/plansUnavailableButton and is disabled.
@@ -2714,29 +2714,47 @@ abstract class AppLocalizations {
   /// **'Let\'s go!'**
   String get plansUpgradeDialogButton;
 
-  /// First row of the generic feature checklist shown on every plan card (with a check/cross icon per plan). Always checked for every plan since all plans grant some amount of monthly credits.
+  /// First row of the feature checklist shown on plan cards. Generating review cards and fun facts (available on all plans).
   ///
   /// In en, this message translates to:
-  /// **'Monthly credit allowance'**
-  String get plansFeatureCredits;
+  /// **'Review Cards & Fun Facts generation'**
+  String get plansFeatureReviewCardsFunFacts;
 
-  /// Second row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Entry tier and up).
+  /// Second row of the feature checklist shown on plan cards. Full DeepNotes generation (available from Lite tier and up).
   ///
   /// In en, this message translates to:
-  /// **'Faster processing'**
-  String get plansFeatureFasterProcessing;
+  /// **'DeepNotes (detailed notes) generation'**
+  String get plansFeatureDeepNotes;
 
-  /// Third row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked from Standard tier and up).
+  /// Third row of the feature checklist shown on plan cards. Viewing transcripts and source citation search (available from Core tier and up).
   ///
   /// In en, this message translates to:
-  /// **'Priority support'**
-  String get plansFeaturePrioritySupport;
+  /// **'Transcript viewing & source search'**
+  String get plansFeatureTranscriptSourceSearch;
 
-  /// Fourth row of the generic feature checklist shown on plan cards. Illustrative placeholder copy, not tied to actual feature gating (checked for Premium tier only).
+  /// Fourth row of the feature checklist shown on plan cards. Generating keywords and announcements (available from Core tier and up).
   ///
   /// In en, this message translates to:
-  /// **'Early access to new features'**
-  String get plansFeatureEarlyAccess;
+  /// **'Keyword & announcement generation'**
+  String get plansFeatureKeywordsAnnouncements;
+
+  /// Fifth row of the feature checklist shown on plan cards. Real-time audio transcription (available on Max tier only).
+  ///
+  /// In en, this message translates to:
+  /// **'Real-time transcription'**
+  String get plansFeatureRealtimeTranscription;
+
+  /// Highlight banner on plan card showing monthly credit allowance, e.g. 2,000 credits / month.
+  ///
+  /// In en, this message translates to:
+  /// **'{credits} credits / month'**
+  String plansCreditsPerMonth(String credits);
+
+  /// Subtitle in the credit highlight banner showing approximate weekly lecture recording capability based on monthly credits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Approx. {count} lecture / week} other{Approx. {count} lectures / week}}'**
+  String plansWeeklyLecturesEstimate(int count);
 
   /// Text button on the Plans page (near the legal disclosure links) that lets a user restore a previous App Store purchase, e.g. after reinstalling the app or switching devices. Required by Apple App Review guidelines for subscription apps.
   ///
@@ -2744,13 +2762,31 @@ abstract class AppLocalizations {
   /// **'Restore Purchases'**
   String get plansRestorePurchasesButton;
 
-  /// Snackbar shown after successfully calling RevenueCat's restore-purchases flow.
+  /// Title of dialog shown after restoring purchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Purchases'**
+  String get plansRestorePurchasesTitle;
+
+  /// Dialog message shown after successfully restoring an active subscription.
   ///
   /// In en, this message translates to:
   /// **'Purchases restored'**
   String get plansRestorePurchasesSuccessMessage;
 
-  /// Snackbar shown if restoring purchases fails.
+  /// Dialog message shown when no active subscription is found during restore.
+  ///
+  /// In en, this message translates to:
+  /// **'No active subscriptions found.'**
+  String get plansRestorePurchasesNotFound;
+
+  /// Dialog message shown when the store receipt is already linked to another user account.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase is already linked to another account.'**
+  String get plansRestorePurchasesAlreadyInUse;
+
+  /// Dialog message shown if restoring purchases fails with an unexpected error.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t restore purchases. Please try again.'**
@@ -2773,6 +2809,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t complete that. Please try again.'**
   String get plansPurchaseErrorMessage;
+
+  /// Title of the dialog shown when a user tries to claim the Free plan on a device that already claimed it on another account.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Trial Already Used'**
+  String get plansDeviceAlreadyClaimedTitle;
+
+  /// Message of the dialog shown when a user tries to claim the Free plan on a device that already claimed it on another account.
+  ///
+  /// In en, this message translates to:
+  /// **'The free trial has already been used on this device. To record lectures, please subscribe to a plan or sign in with your original account.\n\nIf you need help, please contact support.'**
+  String get plansDeviceAlreadyClaimedMessage;
+
+  /// Button in the device already claimed dialog that opens the contact/support page.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support'**
+  String get plansContactSupportButton;
 
   /// Success-state headline in the Change Password bottom sheet, shown after the reset email was sent.
   ///
@@ -3013,6 +3067,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not generated yet'**
   String get coursePageTopicMapNotGeneratedLabel;
+
+  /// Small hint label in the bottom-left corner of the Topic Map preview card when the reason no map exists is that this course's lectures were processed on a plan below Lite (as opposed to genuinely not generated yet). Distinct from coursePageTopicMapNotGeneratedLabel so the two causes aren't conflated.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires Lite plan'**
+  String get coursePageTopicMapLockedLabel;
 
   /// Section header above the lecture list on the Course detail page.
   ///
@@ -3853,6 +3913,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not generated · Free plan'**
   String get deepNotesLockedCaption;
+
+  /// Notice text shown in blue above the note title indicating full deep notes normally requires the Lite plan, but is previewed for tutorial.
+  ///
+  /// In en, this message translates to:
+  /// **'※ Full Deep Notes requires Lite plan or above (unlocked for tutorial)'**
+  String get deepNotesTutorialNotice;
+
+  /// Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state.
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords not generated'**
+  String get keywordsLockedDialogTitle;
+
+  /// Body text explaining keywords were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings.
+  ///
+  /// In en, this message translates to:
+  /// **'This lecture was processed on a plan below Core, so keyword definitions weren\'t extracted or saved for it. Upgrading won\'t add them to this lecture — but recordings on the Core plan or above get keyword extraction automatically.'**
+  String get keywordsLockedDialogMessage;
+
+  /// Title of the dialog shown when tapping the Announcements chip on a lecture that was processed on a plan below Core, so no announcements were extracted for it.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements not generated'**
+  String get announcementsLockedDialogTitle;
+
+  /// Body text explaining announcements were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings.
+  ///
+  /// In en, this message translates to:
+  /// **'This lecture was processed on a plan below Core, so announcements weren\'t extracted from it. Upgrading won\'t add them to this lecture — but recordings on the Core plan or above get announcement extraction automatically.'**
+  String get announcementsLockedDialogMessage;
+
+  /// Title of the dialog shown when tapping a Topic Map card whose course has no map because its lectures were processed on a plan below Lite.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic Map not generated'**
+  String get topicMapLockedDialogTitle;
+
+  /// Body text explaining the Topic Map was never generated for this course's existing lectures (not just hidden) and that upgrading only affects future lectures, not past ones.
+  ///
+  /// In en, this message translates to:
+  /// **'This course\'s Topic Map hasn\'t been built because its lectures were processed on a plan below Lite. Upgrading won\'t retroactively add past lectures — but new lectures recorded on the Lite plan or above will start building your Topic Map.'**
+  String get topicMapLockedDialogMessage;
+
+  /// Title of the dialog shown when tapping the Transcript button/entry on a plan below Core. Unlike Deep Notes/Keywords/Announcements, the transcript itself is always generated for every plan — only viewing it is gated — so this copy must not claim the content doesn't exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Source & Transcript requires Core'**
+  String get transcriptLockedDialogTitle;
+
+  /// Body text clarifying that (unlike the other locked features) the transcript data already exists and upgrading unlocks it immediately for this lecture too, not just future ones — an accurate, non-retroactive-sounding message is wrong here because it IS retroactive for this one.
+  ///
+  /// In en, this message translates to:
+  /// **'The original transcript is already saved for every lecture — viewing it is a Core plan feature. Upgrade anytime and you\'ll be able to view it here immediately, including for this lecture.'**
+  String get transcriptLockedDialogMessage;
+
+  /// Short banner shown above the announcement list in the cross-course/cross-lecture announcements sheets (home bar's 'all announcements' sheet, and a course's announcements sheet) when the account's plan doesn't include announcement generation. The sheet itself always stays open (not blocked), since tutorial lectures always get announcements regardless of plan — this just explains why real lectures may show none.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements aren\'t extracted from your lectures on your current plan. Upgrade to Core to include future lectures.'**
+  String get announcementsSheetLockedBanner;
 
   /// Small label line above the lecture title in the LectureNotePage app bar, showing the 1-based index of the topic/segment being viewed, e.g. 'Topic 3'. Same pattern as transcriptPageTopicLabel/announcementTranscriptModalTopicLabel elsewhere in the app.
   ///
@@ -5281,6 +5401,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account not found. Please register from the sign-up page with a username.'**
   String get signInUserNotFoundMessage;
+
+  /// Title of the modal dialog displaying credit consumption rates based on recording duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Usage Guide'**
+  String get creditRateModalTitle;
+
+  /// Description in the credit usage guide explaining that consumption depends on audio length.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits consumed depend on the duration of your recorded audio.'**
+  String get creditRateModalDescription;
+
+  /// Header for the recording duration column in the credit rate table.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get creditRateTableDurationHeader;
+
+  /// Header for the credits consumed column in the credit rate table.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits'**
+  String get creditRateTableCreditsHeader;
+
+  /// Duration label for under 30 minutes in the credit rate table.
+  ///
+  /// In en, this message translates to:
+  /// **'Under 30 min'**
+  String get creditRateRow1Duration;
+
+  /// Duration label for 30 minutes to 1.5 hours in the credit rate table.
+  ///
+  /// In en, this message translates to:
+  /// **'30 min – 1.5 hours'**
+  String get creditRateRow2Duration;
+
+  /// Duration label for 1.5 to 2.5 hours in the credit rate table.
+  ///
+  /// In en, this message translates to:
+  /// **'1.5 – 2.5 hours'**
+  String get creditRateRow3Duration;
+
+  /// Duration label for 2.5 to 3.5 hours in the credit rate table.
+  ///
+  /// In en, this message translates to:
+  /// **'2.5 – 3.5 hours'**
+  String get creditRateRow4Duration;
+
+  /// Credits count label in the credit rate table row.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} credits'**
+  String creditRateRowCredits(int count);
+
+  /// Notice at the bottom of the credit rate table stating the 3.5-hour maximum recording limit.
+  ///
+  /// In en, this message translates to:
+  /// **'※ Maximum recording duration is 3.5 hours. Recordings longer than 3.5 hours cannot be processed.'**
+  String get creditRateMaxDurationNotice;
+
+  /// Close button label for the credit rate table modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get creditRateModalCloseButton;
 }
 
 class _AppLocalizationsDelegate

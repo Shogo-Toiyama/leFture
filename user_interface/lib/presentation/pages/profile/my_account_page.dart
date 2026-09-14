@@ -577,7 +577,7 @@ class _CreditCardSkeleton extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: const Icon(
-            Icons.bolt_rounded,
+            Icons.stars_rounded,
             color: AppColors.starGold,
             size: 16,
           ),
@@ -642,7 +642,7 @@ class _CreditCardContent extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      Icons.bolt_rounded,
+                      Icons.stars_rounded,
                       color: AppColors.starGold,
                       size: 16,
                     ),

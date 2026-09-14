@@ -271,8 +271,9 @@ class AnnouncementTile extends HookConsumerWidget {
               child: GestureDetector(
                 onTap: () {
                   if (announcement.lectureId != null) {
-                    showTranscriptModal(
+                    showTranscriptModalGated(
                       context,
+                      ref,
                       lectureId: announcement.lectureId!,
                       startSid: announcement.startSid,
                       endSid: announcement.endSid,

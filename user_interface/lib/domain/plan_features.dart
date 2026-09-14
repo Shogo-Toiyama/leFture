@@ -32,7 +32,7 @@ const String featureRealtimeTranscribe = 'realtime_transcribe';
 const Map<String, int> _featureMinTier = {
   featureKeywordExtractionSubscriber: tierCore,
   featureAnnouncementGeneration: tierCore,
-  featureSourceTranscriptView: tierLite,
+  featureSourceTranscriptView: tierCore,
   featureTopicMap: tierLite,
   featureDeepNotesFull: tierLite,
   featureFunFactSearch: tierCore,
