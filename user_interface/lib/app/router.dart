@@ -551,7 +551,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.plans,
-        builder: (context, state) => const PlansPage(),
+        builder: (context, state) {
+          final extra = state.extra;
+          final int? initialTierLevel = (extra is int)
+              ? extra
+              : (extra is String ? int.tryParse(extra) : null)
+                  ?? int.tryParse(state.uri.queryParameters['tier'] ?? '');
+          return PlansPage(initialTierLevel: initialTierLevel);
+        },
       ),
       GoRoute(
         path: AppRoutes.profile,

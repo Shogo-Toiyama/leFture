@@ -899,7 +899,7 @@
     "description": "Small all-caps section header above a single featured fun-fact card on the Lecture Viewer page. Shown uppercase in English for visual style with letter-spacing; languages without case distinction can just use the natural phrase."
   },
 
-  "lectureViewerTranscriptButtonLabel": "Transcript",
+  "lectureViewerTranscriptButtonLabel": "Transcript & Audio",
   "@lectureViewerTranscriptButtonLabel": {
     "description": "Label on a full-width button/row at the bottom of the Lecture Viewer page that navigates to the full lecture transcript. Short label."
   },
@@ -2437,7 +2437,7 @@
     "description": "Second row of the feature checklist shown on plan cards. Full DeepNotes generation (available from Lite tier and up)."
   },
 
-  "plansFeatureTranscriptSourceSearch": "Transcript viewing & source search",
+  "plansFeatureTranscriptSourceSearch": "Transcript, audio playback & source search",
   "@plansFeatureTranscriptSourceSearch": {
     "description": "Third row of the feature checklist shown on plan cards. Viewing transcripts and source citation search (available from Core tier and up)."
   },
@@ -3255,7 +3255,7 @@
     "description": "Fallback message filling the whole Transcript page when the lecture referenced by the route can no longer be found."
   },
 
-  "transcriptPageTitle": "Transcript",
+  "transcriptPageTitle": "Transcript & Audio",
   "@transcriptPageTitle": {
     "description": "AppBar title of the full-screen Transcript page (the standalone page reached from the lecture viewer, distinct from the Announcement Transcript modal bottom sheet)."
   },
@@ -3559,6 +3559,26 @@
     "description": "Notice text shown in blue above the note title indicating full deep notes normally requires the Lite plan, but is previewed for tutorial."
   },
 
+  "deepNotesSkippedPlanLimitTitle": "Analyzed under Free Plan",
+  "@deepNotesSkippedPlanLimitTitle": {
+    "description": "Title of the panel in Deep Notes detail view explaining that full notes were skipped because the lecture was processed under the Free plan."
+  },
+
+  "deepNotesSkippedPlanLimitDescription": "Deep Notes were only generated for the first topic because this lecture was analyzed under the Free plan.",
+  "@deepNotesSkippedPlanLimitDescription": {
+    "description": "Description explaining why this topic's deep note does not exist."
+  },
+
+  "deepNotesSkippedPlanLimitCaption": "Analyzed on Free plan (No Deep Notes)",
+  "@deepNotesSkippedPlanLimitCaption": {
+    "description": "Caption on deep notes list item for skipped topics."
+  },
+
+  "deepNotesSkippedTopicNotice": "Deep Notes for this topic were not generated because this lecture was analyzed under the Free plan.",
+  "@deepNotesSkippedTopicNotice": {
+    "description": "Dialog message shown when tapping a skipped deep note in topics sheet."
+  },
+
   "keywordsLockedDialogTitle": "Keywords not generated",
   "@keywordsLockedDialogTitle": {
     "description": "Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state."
@@ -3589,12 +3609,12 @@
     "description": "Body text explaining the Topic Map was never generated for this course's existing lectures (not just hidden) and that upgrading only affects future lectures, not past ones."
   },
 
-  "transcriptLockedDialogTitle": "Source & Transcript requires Core",
+  "transcriptLockedDialogTitle": "Transcript & Audio requires Core",
   "@transcriptLockedDialogTitle": {
     "description": "Title of the dialog shown when tapping the Transcript button/entry on a plan below Core. Unlike Deep Notes/Keywords/Announcements, the transcript itself is always generated for every plan — only viewing it is gated — so this copy must not claim the content doesn't exist."
   },
 
-  "transcriptLockedDialogMessage": "The original transcript is already saved for every lecture — viewing it is a Core plan feature. Upgrade anytime and you'll be able to view it here immediately, including for this lecture.",
+  "transcriptLockedDialogMessage": "The transcript and recorded audio are already saved for every lecture — viewing and listening to them is a Core plan feature. Upgrade anytime and you'll be able to access them here immediately, including for this lecture.",
   "@transcriptLockedDialogMessage": {
     "description": "Body text clarifying that (unlike the other locked features) the transcript data already exists and upgrading unlocks it immediately for this lecture too, not just future ones — an accurate, non-retroactive-sounding message is wrong here because it IS retroactive for this one."
   },

@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:lefture/app/router.dart';
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/repositories/push_notification_repository.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -138,6 +139,9 @@ class PushNotificationService {
   }
 
   void _showForegroundNotification(RemoteMessage message) {
+    // 分析完了通知等を受信したタイミングでクレジット情報を最新化
+    _ref.invalidate(creditSummaryProvider);
+
     final notification = message.notification;
     if (notification == null) return;
     _localNotifications.show(
@@ -159,6 +163,8 @@ class PushNotificationService {
   }
 
   Future<void> _handleNotificationTap(RemoteMessage message) async {
+    _ref.invalidate(creditSummaryProvider);
+
     final lectureId = message.data['lecture_id'] as String?;
     if (lectureId == null) return;
 

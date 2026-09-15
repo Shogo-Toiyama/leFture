@@ -29,6 +29,7 @@ import 'package:lefture/presentation/pages/course/widgets/course_style_helper.da
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
+import 'package:lefture/presentation/widgets/horizontal_scroll_drag_guard.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
@@ -1322,85 +1323,114 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                             }
                           }
                         },
-                        child: GestureDetector(
+                        child: RawGestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onHorizontalDragStart: (_) {
-                            if (hasSelection.value) return;
-                            animToken.value++;
-                            animationController.stop();
-                            isAnimating.value = false;
-                            isScrubbing.value = false;
-                            anchorIndex.value = committedIndex.value;
-                            visualIndex.value = committedIndex.value;
-                            dragProgress.value = 0.0;
-                            // A tap's nudge may still be pending; letting its
-                            // timer fire mid-drag would zero the rubber band
-                            // out from under the finger.
-                            nudgeTimer.value?.cancel();
-                            isNudging.value = false;
-                            overscroll.value = 0.0;
-                            rawDrag.value = 0.0;
-                            isDragging.value = true;
-                          },
-                          onHorizontalDragUpdate: (details) {
-                            if (!isDragging.value || hasSelection.value) return;
-                            // Dragging left (negative dx) moves forward.
-                            rawDrag.value =
-                                (rawDrag.value - details.delta.dx / cardWidth)
-                                    .clamp(-2.0, 2.0);
-                            final atStart = committedIndex.value == 0;
-                            final atEnd =
-                                committedIndex.value == totalCards - 1;
-                            dragProgress.value = rawDrag.value.clamp(
-                              atStart ? 0.0 : -1.0,
-                              atEnd ? 0.0 : 1.0,
-                            );
-                            // At the very first / last card the leftover pull
-                            // has nowhere to page to, so it feeds the rubber
-                            // band instead.
-                            final excess = rawDrag.value - dragProgress.value;
-                            overscroll.value =
-                                (atStart && excess < 0) || (atEnd && excess > 0)
-                                ? excess
-                                : 0.0;
-                          },
-                          onHorizontalDragEnd: (details) {
-                            if (!isDragging.value) return;
-                            final travelled = dragProgress.value;
-                            final dir = travelled >= 0 ? 1 : -1;
-                            final velocity = details.primaryVelocity ?? 0.0;
-                            final flung =
-                                velocity.abs() > 700 &&
-                                (velocity < 0) == (dir > 0);
-                            final commit =
-                                travelled.abs() >= 0.35 ||
-                                (travelled.abs() > 0.03 && flung);
-                            dragProgress.value = 0.0;
-                            // Letting go releases the rubber band: isDragging
-                            // goes false in settle(), which switches the
-                            // TweenAnimationBuilder below from "track the
-                            // finger" to "ease back to zero".
-                            overscroll.value = 0.0;
-                            rawDrag.value = 0.0;
-                            settle(
-                              anchor: committedIndex.value,
-                              dir: dir,
-                              fromProgress: travelled.abs(),
-                              toDest: commit,
-                            );
-                          },
-                          onHorizontalDragCancel: () {
-                            if (!isDragging.value) return;
-                            final travelled = dragProgress.value;
-                            dragProgress.value = 0.0;
-                            overscroll.value = 0.0;
-                            rawDrag.value = 0.0;
-                            settle(
-                              anchor: committedIndex.value,
-                              dir: travelled >= 0 ? 1 : -1,
-                              fromProgress: travelled.abs(),
-                              toDest: false,
-                            );
+                          gestures: {
+                            SwipeAwareHorizontalDragRecognizer:
+                                GestureRecognizerFactoryWithHandlers<
+                                  SwipeAwareHorizontalDragRecognizer
+                                >(
+                                  () => SwipeAwareHorizontalDragRecognizer(),
+                                  (recognizer) {
+                                    recognizer
+                                      ..onStart = (_) {
+                                        if (hasSelection.value) return;
+                                        animToken.value++;
+                                        animationController.stop();
+                                        isAnimating.value = false;
+                                        isScrubbing.value = false;
+                                        anchorIndex.value =
+                                            committedIndex.value;
+                                        visualIndex.value =
+                                            committedIndex.value;
+                                        dragProgress.value = 0.0;
+                                        // A tap's nudge may still be pending;
+                                        // letting its timer fire mid-drag
+                                        // would zero the rubber band out from
+                                        // under the finger.
+                                        nudgeTimer.value?.cancel();
+                                        isNudging.value = false;
+                                        overscroll.value = 0.0;
+                                        rawDrag.value = 0.0;
+                                        isDragging.value = true;
+                                      }
+                                      ..onUpdate = (details) {
+                                        if (!isDragging.value ||
+                                            hasSelection.value) {
+                                          return;
+                                        }
+                                        // Dragging left (negative dx) moves
+                                        // forward.
+                                        rawDrag.value =
+                                            (rawDrag.value -
+                                                    details.delta.dx /
+                                                        cardWidth)
+                                                .clamp(-2.0, 2.0);
+                                        final atStart =
+                                            committedIndex.value == 0;
+                                        final atEnd =
+                                            committedIndex.value ==
+                                            totalCards - 1;
+                                        dragProgress.value = rawDrag.value
+                                            .clamp(
+                                              atStart ? 0.0 : -1.0,
+                                              atEnd ? 0.0 : 1.0,
+                                            );
+                                        // At the very first / last card the
+                                        // leftover pull has nowhere to page
+                                        // to, so it feeds the rubber band
+                                        // instead.
+                                        final excess =
+                                            rawDrag.value - dragProgress.value;
+                                        overscroll.value =
+                                            (atStart && excess < 0) ||
+                                                (atEnd && excess > 0)
+                                            ? excess
+                                            : 0.0;
+                                      }
+                                      ..onEnd = (details) {
+                                        if (!isDragging.value) return;
+                                        final travelled = dragProgress.value;
+                                        final dir = travelled >= 0 ? 1 : -1;
+                                        final velocity =
+                                            details.primaryVelocity ?? 0.0;
+                                        final flung =
+                                            velocity.abs() > 700 &&
+                                            (velocity < 0) == (dir > 0);
+                                        final commit =
+                                            travelled.abs() >= 0.35 ||
+                                            (travelled.abs() > 0.03 && flung);
+                                        dragProgress.value = 0.0;
+                                        // Letting go releases the rubber
+                                        // band: isDragging goes false in
+                                        // settle(), which switches the
+                                        // TweenAnimationBuilder below from
+                                        // "track the finger" to "ease back to
+                                        // zero".
+                                        overscroll.value = 0.0;
+                                        rawDrag.value = 0.0;
+                                        settle(
+                                          anchor: committedIndex.value,
+                                          dir: dir,
+                                          fromProgress: travelled.abs(),
+                                          toDest: commit,
+                                        );
+                                      }
+                                      ..onCancel = () {
+                                        if (!isDragging.value) return;
+                                        final travelled = dragProgress.value;
+                                        dragProgress.value = 0.0;
+                                        overscroll.value = 0.0;
+                                        rawDrag.value = 0.0;
+                                        settle(
+                                          anchor: committedIndex.value,
+                                          dir: travelled >= 0 ? 1 : -1,
+                                          fromProgress: travelled.abs(),
+                                          toDest: false,
+                                        );
+                                      };
+                                  },
+                                ),
                           },
                           child: TweenAnimationBuilder<double>(
                             // Diminishing returns: the card gives a little at
@@ -2557,11 +2587,15 @@ class _ReviewCardBlockView extends HookWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Text(
-                  block.codeString ?? '',
-                  style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+              HorizontalScrollDragGuard(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Text(
+                    block.codeString ?? '',
+                    style: (codeStyle ?? const TextStyle()).copyWith(
+                      height: 1.5,
+                    ),
+                  ),
                 ),
               ),
               if ((block.explanation ?? '').isNotEmpty) ...[

@@ -68,6 +68,7 @@ Future<void> showTranscriptModalGated(
     return showUpgradeRequiredDialog(
       context: context,
       requiredTierColor: lockColor,
+      targetTierLevel: plan_features.tierCore,
       title: l10n.transcriptLockedDialogTitle,
       message: l10n.transcriptLockedDialogMessage,
       viewPlansLabel: l10n.upgradeRequiredViewPlansButton,

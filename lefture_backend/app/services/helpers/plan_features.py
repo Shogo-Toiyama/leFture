@@ -53,6 +53,9 @@ FEATURE_DEEP_NOTES_FULL = "deep_notes_full"  # Lite以上: 全トピック生成
 FEATURE_FUN_FACT_SEARCH = "fun_fact_search"
 FEATURE_REALTIME_TRANSCRIBE = "realtime_transcribe"
 
+# Freeプラン等でDeepNotes生成が意図的にスキップされたトピックのnote_contentsセンチネル値
+DEEP_NOTES_SKIPPED_PLAN_LIMIT = "__SKIPPED_PLAN_LIMIT__"
+
 # feature_key -> 必要な最小tier_level。
 # 今は要件が細かく(機能の一部だけ別プラン、など)、DBでの管理には向かないため
 # 意図的にハードコードしている。将来Maxから段階的に降ろす場合はここを直接編集する。

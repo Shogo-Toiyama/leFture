@@ -91,7 +91,7 @@ class PipelineProgressBanner extends HookConsumerWidget {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    value: total > 0 ? completed / total : null,
+                    value: (completed > 0 && total > 0) ? completed / total : null,
                     color: themeColor,
                   ),
                 ),

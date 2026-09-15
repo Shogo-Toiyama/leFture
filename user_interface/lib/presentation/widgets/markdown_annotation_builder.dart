@@ -37,6 +37,7 @@ import 'package:markdown/markdown.dart' as md;
 
 import 'package:lefture/core/utils/annotation_text_utils.dart';
 import 'package:lefture/domain/entities/annotation.dart';
+import 'package:lefture/presentation/widgets/horizontal_scroll_drag_guard.dart';
 
 /// Tags this builder must be registered under. Callers pass one shared
 /// instance to `MarkdownBody(builders: annotationMarkdownBuilders(builder))`.
@@ -267,9 +268,11 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
     if (!_inPreBlock) return result;
     return Padding(
       padding: codeblockPadding,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: result,
+      child: HorizontalScrollDragGuard(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: result,
+        ),
       ),
     );
   }

@@ -883,6 +883,7 @@ class _CourseLectureListView extends ConsumerWidget {
                               ? () => showUpgradeRequiredDialog(
                                   context: context,
                                   requiredTierColor: topicMapLockColor,
+                                  targetTierLevel: plan_features.tierLite,
                                   title: l10n.topicMapLockedDialogTitle,
                                   message: l10n.topicMapLockedDialogMessage,
                                   viewPlansLabel: l10n.upgradeRequiredViewPlansButton,

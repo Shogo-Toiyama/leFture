@@ -1121,7 +1121,7 @@ abstract class AppLocalizations {
   /// Label on a full-width button/row at the bottom of the Lecture Viewer page that navigates to the full lecture transcript. Short label.
   ///
   /// In en, this message translates to:
-  /// **'Transcript'**
+  /// **'Transcript & Audio'**
   String get lectureViewerTranscriptButtonLabel;
 
   /// Snackbar shown when tapping a source-URL chip on a fun-fact card fails to open the link in the browser.
@@ -2729,7 +2729,7 @@ abstract class AppLocalizations {
   /// Third row of the feature checklist shown on plan cards. Viewing transcripts and source citation search (available from Core tier and up).
   ///
   /// In en, this message translates to:
-  /// **'Transcript viewing & source search'**
+  /// **'Transcript, audio playback & source search'**
   String get plansFeatureTranscriptSourceSearch;
 
   /// Fourth row of the feature checklist shown on plan cards. Generating keywords and announcements (available from Core tier and up).
@@ -3593,7 +3593,7 @@ abstract class AppLocalizations {
   /// AppBar title of the full-screen Transcript page (the standalone page reached from the lecture viewer, distinct from the Announcement Transcript modal bottom sheet).
   ///
   /// In en, this message translates to:
-  /// **'Transcript'**
+  /// **'Transcript & Audio'**
   String get transcriptPageTitle;
 
   /// Tooltip on the sync/auto-scroll toggle icon button in the Transcript page's AppBar, shown while auto-scroll is currently ON. Explains that manual scrolling pauses it and it auto-resumes after 5 seconds of inactivity. Must stay short.
@@ -3920,6 +3920,30 @@ abstract class AppLocalizations {
   /// **'※ Full Deep Notes requires Lite plan or above (unlocked for tutorial)'**
   String get deepNotesTutorialNotice;
 
+  /// Title of the panel in Deep Notes detail view explaining that full notes were skipped because the lecture was processed under the Free plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzed under Free Plan'**
+  String get deepNotesSkippedPlanLimitTitle;
+
+  /// Description explaining why this topic's deep note does not exist.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Notes were only generated for the first topic because this lecture was analyzed under the Free plan.'**
+  String get deepNotesSkippedPlanLimitDescription;
+
+  /// Caption on deep notes list item for skipped topics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzed on Free plan (No Deep Notes)'**
+  String get deepNotesSkippedPlanLimitCaption;
+
+  /// Dialog message shown when tapping a skipped deep note in topics sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Notes for this topic were not generated because this lecture was analyzed under the Free plan.'**
+  String get deepNotesSkippedTopicNotice;
+
   /// Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state.
   ///
   /// In en, this message translates to:
@@ -3959,13 +3983,13 @@ abstract class AppLocalizations {
   /// Title of the dialog shown when tapping the Transcript button/entry on a plan below Core. Unlike Deep Notes/Keywords/Announcements, the transcript itself is always generated for every plan — only viewing it is gated — so this copy must not claim the content doesn't exist.
   ///
   /// In en, this message translates to:
-  /// **'Source & Transcript requires Core'**
+  /// **'Transcript & Audio requires Core'**
   String get transcriptLockedDialogTitle;
 
   /// Body text clarifying that (unlike the other locked features) the transcript data already exists and upgrading unlocks it immediately for this lecture too, not just future ones — an accurate, non-retroactive-sounding message is wrong here because it IS retroactive for this one.
   ///
   /// In en, this message translates to:
-  /// **'The original transcript is already saved for every lecture — viewing it is a Core plan feature. Upgrade anytime and you\'ll be able to view it here immediately, including for this lecture.'**
+  /// **'The transcript and recorded audio are already saved for every lecture — viewing and listening to them is a Core plan feature. Upgrade anytime and you\'ll be able to access them here immediately, including for this lecture.'**
   String get transcriptLockedDialogMessage;
 
   /// Short banner shown above the announcement list in the cross-course/cross-lecture announcements sheets (home bar's 'all announcements' sheet, and a course's announcements sheet) when the account's plan doesn't include announcement generation. The sheet itself always stays open (not blocked), since tutorial lectures always get announcements regardless of plan — this just explains why real lectures may show none.

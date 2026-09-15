@@ -38,6 +38,7 @@ class PlanSelectionView extends HookConsumerWidget {
     required this.header,
     required this.onBack,
     this.onPlanActivated,
+    this.initialTierLevel,
   });
 
   /// スクロール領域先頭に表示するヘッダーWidget(オンボーディング用またはPlansPage用)。
@@ -51,6 +52,10 @@ class PlanSelectionView extends HookConsumerWidget {
   /// では未指定のままでよい(このページに留まって最新状態を表示する)。
   final VoidCallback? onPlanActivated;
 
+  /// ダイアログ等から特定プランへの誘導時に初期表示するtierLevel(0: Free, 1: Lite, 2: Core, 3: Max)。
+  /// 未指定時はデフォルトで4つ目(最上位/Recommended)が開く。
+  final int? initialTierLevel;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -61,22 +66,24 @@ class PlanSelectionView extends HookConsumerWidget {
     final purchasingPlanId = useState<String?>(null);
 
     // 初回表示カードの決定:
-    // 未加入なら3番目(index 2)、何かに加入してたら一つ上のプラン、一番上のプランに加入してたらそのまま一番上を表示。
+    // ダイアログ等からinitialTierLevelが指定されていればそのプランを、
+    // それ以外はどのプランに加入していてもデフォルトで4つ目(最上位/Recommended)を開く。
+    int resolveTargetIndex(List<PlanOption> sorted) {
+      if (initialTierLevel != null) {
+        final idx = sorted.indexWhere((p) => p.tierLevel == initialTierLevel);
+        if (idx != -1) return idx;
+      }
+      return (sorted.length >= 4) ? 3 : (sorted.length - 1);
+    }
+
     final isDataReady = plansAsync.hasValue && (summaryAsync.hasValue || !summaryAsync.isLoading);
     final initialIndex = useMemoized(() {
       if (!isDataReady) return 0;
       final plans = plansAsync.asData?.value.toList();
       if (plans == null || plans.isEmpty) return 0;
       final sorted = [...plans]..sort((a, b) => a.tierLevel.compareTo(b.tierLevel));
-      final summary = summaryAsync.asData?.value;
-      final hasActivePlan = summary?.hasActivePlan ?? false;
-      final currentPlan = sorted.where((p) => hasActivePlan && p.monthlyCreditAmountMicro == summary?.monthlyAllocationMicro).firstOrNull;
-      if (!hasActivePlan || currentPlan == null) {
-        return (sorted.length >= 3) ? 2 : (sorted.length - 1);
-      }
-      final currentIdx = sorted.indexOf(currentPlan);
-      return (currentIdx + 1).clamp(0, sorted.length - 1);
-    }, []);
+      return resolveTargetIndex(sorted);
+    }, [initialTierLevel]);
 
     final selectedIndex = useState<int>(initialIndex);
     final isInitialIndexSet = useRef<bool>(isDataReady);
@@ -96,22 +103,10 @@ class PlanSelectionView extends HookConsumerWidget {
       if (summaryAsync.isLoading) return null;
 
       final sorted = [...plans]..sort((a, b) => a.tierLevel.compareTo(b.tierLevel));
-      final summary = summaryAsync.asData?.value;
-      final hasActivePlan = summary?.hasActivePlan ?? false;
-      final currentPlan = sorted.where((p) => hasActivePlan && p.monthlyCreditAmountMicro == summary?.monthlyAllocationMicro).firstOrNull;
-
-      final int targetIndex;
-      if (!hasActivePlan || currentPlan == null) {
-        targetIndex = (sorted.length >= 3) ? 2 : (sorted.length - 1);
-      } else {
-        final currentIdx = sorted.indexOf(currentPlan);
-        targetIndex = (currentIdx + 1).clamp(0, sorted.length - 1);
-      }
-
-      selectedIndex.value = targetIndex;
+      selectedIndex.value = resolveTargetIndex(sorted);
       isInitialIndexSet.value = true;
       return null;
-    }, [plansAsync.hasValue, summaryAsync.hasValue, summaryAsync.isLoading]);
+    }, [plansAsync.hasValue, summaryAsync.hasValue, summaryAsync.isLoading, initialTierLevel]);
 
     Future<void> showErrorDialog() async {
       if (!context.mounted) return;

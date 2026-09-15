@@ -29,6 +29,9 @@ const String featureDeepNotesFull = 'deep_notes_full'; // Lite以上: 全トピ�
 const String featureFunFactSearch = 'fun_fact_search';
 const String featureRealtimeTranscribe = 'realtime_transcribe';
 
+/// Freeプラン等でDeepNotes生成が意図的にスキップされたトピックのnote_contentsセンチネル値
+const String deepNotesSkippedPlanLimit = '__SKIPPED_PLAN_LIMIT__';
+
 const Map<String, int> _featureMinTier = {
   featureKeywordExtractionSubscriber: tierCore,
   featureAnnouncementGeneration: tierCore,

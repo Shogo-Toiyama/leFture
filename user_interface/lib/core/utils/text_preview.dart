@@ -6,6 +6,8 @@ import 'sid_citation.dart';
 /// (maxLines/ellipsisが必要な) 場所で使う。SID引用も同時に除去する。
 String plainTextPreview(String source) {
   var text = stripSidCitations(source);
+  // Web文献引用 (⟦1⟧, ⟦1, 2⟧, 〚1〛, [[1]] 等) の除去
+  text = text.replaceAll(RegExp(r'(?:⟦|〚|\[\[)\s*\d+[\d\s,，\-–—−]*\s*(?:⟧|〛|\]\])'), '');
 
   // 見出し記号 (# ## ###)
   text = text.replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '');

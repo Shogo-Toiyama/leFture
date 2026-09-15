@@ -42,7 +42,7 @@ class PlanCard extends StatelessWidget {
     final isStandard = plan.isStandardTier;
     final languageCode = Localizations.localeOf(context).languageCode;
     final subtitle = plan.localizedSubtitle(languageCode);
-    final weeklyLectures = math.max(1, (plan.monthlyCreditAmountDisplay / 100.0 / 4).round());
+    final weeklyLectures = math.max(1, (plan.monthlyCreditAmountDisplay / 100.0 / 4.1).round());
     final formattedCredits = NumberFormat.decimalPattern().format(plan.monthlyCreditAmountDisplay);
 
     return ClipRRect(

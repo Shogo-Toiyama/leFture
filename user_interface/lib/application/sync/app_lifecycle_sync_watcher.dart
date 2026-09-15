@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lefture/application/app_config/app_config_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
@@ -46,6 +47,7 @@ class AppLifecycleSyncWatcher {
       onResume: () {
         _triggerBootstrap();
         _triggerAppConfigRefresh();
+        _triggerCreditRefresh();
       },
       // ★ デバッグ用: バックグラウンド転送(継続エンコード/background_downloader
       // のアップロード)が「本当にロック/バックグラウンド中も裏で動き続けて
@@ -66,6 +68,7 @@ class AppLifecycleSyncWatcher {
       if (_wasOffline && !isOffline) {
         _triggerBootstrap();
         _triggerAppConfigRefresh();
+        _triggerCreditRefresh();
       }
       _wasOffline = isOffline;
     });
@@ -82,5 +85,9 @@ class AppLifecycleSyncWatcher {
 
   void _triggerAppConfigRefresh() {
     _ref.read(appConfigControllerProvider.notifier).refresh();
+  }
+
+  void _triggerCreditRefresh() {
+    _ref.invalidate(creditSummaryProvider);
   }
 }

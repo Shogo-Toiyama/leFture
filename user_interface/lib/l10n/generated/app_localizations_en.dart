@@ -585,7 +585,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lectureViewerFunFactHeader => 'FUN FACT';
 
   @override
-  String get lectureViewerTranscriptButtonLabel => 'Transcript';
+  String get lectureViewerTranscriptButtonLabel => 'Transcript & Audio';
 
   @override
   String get lectureViewerFunFactLinkOpenFailedSnackbar =>
@@ -1524,7 +1524,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plansFeatureTranscriptSourceSearch =>
-      'Transcript viewing & source search';
+      'Transcript, audio playback & source search';
 
   @override
   String get plansFeatureKeywordsAnnouncements =>
@@ -2019,7 +2019,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptPageLectureNotFound => 'Lecture not found';
 
   @override
-  String get transcriptPageTitle => 'Transcript';
+  String get transcriptPageTitle => 'Transcript & Audio';
 
   @override
   String get transcriptPageAutoScrollOnTooltip =>
@@ -2203,6 +2203,21 @@ class AppLocalizationsEn extends AppLocalizations {
       '※ Full Deep Notes requires Lite plan or above (unlocked for tutorial)';
 
   @override
+  String get deepNotesSkippedPlanLimitTitle => 'Analyzed under Free Plan';
+
+  @override
+  String get deepNotesSkippedPlanLimitDescription =>
+      'Deep Notes were only generated for the first topic because this lecture was analyzed under the Free plan.';
+
+  @override
+  String get deepNotesSkippedPlanLimitCaption =>
+      'Analyzed on Free plan (No Deep Notes)';
+
+  @override
+  String get deepNotesSkippedTopicNotice =>
+      'Deep Notes for this topic were not generated because this lecture was analyzed under the Free plan.';
+
+  @override
   String get keywordsLockedDialogTitle => 'Keywords not generated';
 
   @override
@@ -2224,11 +2239,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'This course\'s Topic Map hasn\'t been built because its lectures were processed on a plan below Lite. Upgrading won\'t retroactively add past lectures — but new lectures recorded on the Lite plan or above will start building your Topic Map.';
 
   @override
-  String get transcriptLockedDialogTitle => 'Source & Transcript requires Core';
+  String get transcriptLockedDialogTitle => 'Transcript & Audio requires Core';
 
   @override
   String get transcriptLockedDialogMessage =>
-      'The original transcript is already saved for every lecture — viewing it is a Core plan feature. Upgrade anytime and you\'ll be able to view it here immediately, including for this lecture.';
+      'The transcript and recorded audio are already saved for every lecture — viewing and listening to them is a Core plan feature. Upgrade anytime and you\'ll be able to access them here immediately, including for this lecture.';
 
   @override
   String get announcementsSheetLockedBanner =>

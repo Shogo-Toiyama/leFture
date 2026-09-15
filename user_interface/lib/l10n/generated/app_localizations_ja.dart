@@ -549,7 +549,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lectureViewerFunFactHeader => 'ファンファクト';
 
   @override
-  String get lectureViewerTranscriptButtonLabel => '文字起こし';
+  String get lectureViewerTranscriptButtonLabel => '文字起こし・音声';
 
   @override
   String get lectureViewerFunFactLinkOpenFailedSnackbar => 'リンクを開けませんでした。';
@@ -1459,7 +1459,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansFeatureDeepNotes => 'DeepNotes（詳細ノート）生成';
 
   @override
-  String get plansFeatureTranscriptSourceSearch => 'トランスクリプト閲覧・出典検索';
+  String get plansFeatureTranscriptSourceSearch => '文字起こし・音声再生・出典検索';
 
   @override
   String get plansFeatureKeywordsAnnouncements => 'キーワード・アナウンスメント生成';
@@ -1933,7 +1933,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get transcriptPageLectureNotFound => '講義が見つかりません';
 
   @override
-  String get transcriptPageTitle => '文字起こし';
+  String get transcriptPageTitle => '文字起こし・音声';
 
   @override
   String get transcriptPageAutoScrollOnTooltip => '自動スクロールモード（5秒後に再開）';
@@ -2110,6 +2110,20 @@ class AppLocalizationsJa extends AppLocalizations {
       '※ Liteプラン以上で全トピックのノートを利用できます（チュートリアル限定で公開中）';
 
   @override
+  String get deepNotesSkippedPlanLimitTitle => 'Freeプラン時に解析された講義です';
+
+  @override
+  String get deepNotesSkippedPlanLimitDescription =>
+      'この講義はFreeプランご利用時に解析されたため、詳細ノートは第1トピックのみ生成されています。';
+
+  @override
+  String get deepNotesSkippedPlanLimitCaption => 'Freeプラン時に解析（詳細ノート未生成）';
+
+  @override
+  String get deepNotesSkippedTopicNotice =>
+      'この講義はFreeプラン時に解析されたため、このトピックの詳細ノートは生成されていません。';
+
+  @override
   String get keywordsLockedDialogTitle => 'キーワードは生成されていません';
 
   @override
@@ -2131,11 +2145,11 @@ class AppLocalizationsJa extends AppLocalizations {
       'このコースのトピックマップは、講義がLite未満のプランで処理されたため作成されていません。プランをアップグレードしても過去の講義が今から追加されることはありません — Liteプラン以上で録音した今後の講義から、トピックマップの構築が始まります。';
 
   @override
-  String get transcriptLockedDialogTitle => 'ソース・文字起こしにはCoreプランが必要です';
+  String get transcriptLockedDialogTitle => '文字起こし・音声にはCoreプランが必要です';
 
   @override
   String get transcriptLockedDialogMessage =>
-      '文字起こし自体はすべてのプランの講義で既に保存されています — 閲覧できるかどうかがCoreプラン以上の機能です。いつでもアップグレードすれば、この講義も含めてすぐに閲覧できるようになります。';
+      '文字起こしと録音音声はすべてのプランの講義で既に保存されています — 閲覧・再生できるかどうかがCoreプラン以上の機能です。いつでもアップグレードすれば、この講義も含めてすぐに閲覧・再生できるようになります。';
 
   @override
   String get announcementsSheetLockedBanner =>

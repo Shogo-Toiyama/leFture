@@ -35,6 +35,7 @@ import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dar
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/lecture_hero_collage.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/fun_fact_inline_text.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -263,6 +264,7 @@ class _LecturePageContent extends ConsumerWidget {
           if (uid != null) {
             ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
           }
+          ref.invalidate(creditSummaryProvider);
           ref
               .read(lectureControllerProvider.notifier)
               .bootstrapLectures(reason: 'lecture_viewer_became_complete');
@@ -688,6 +690,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                                   ? () => showUpgradeRequiredDialog(
                                       context: context,
                                       requiredTierColor: subscriberLockColor,
+                                      targetTierLevel: plan_features.tierCore,
                                       title: l10n.announcementsLockedDialogTitle,
                                       message: l10n.announcementsLockedDialogMessage,
                                       viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
@@ -716,6 +719,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                                   ? () => showUpgradeRequiredDialog(
                                       context: context,
                                       requiredTierColor: subscriberLockColor,
+                                      targetTierLevel: plan_features.tierCore,
                                       title: l10n.keywordsLockedDialogTitle,
                                       message: l10n.keywordsLockedDialogMessage,
                                       viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
@@ -865,6 +869,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                             : () => showUpgradeRequiredDialog(
                                 context: context,
                                 requiredTierColor: transcriptLockColor,
+                                targetTierLevel: plan_features.tierCore,
                                 title: l10n.transcriptLockedDialogTitle,
                                 message: l10n.transcriptLockedDialogMessage,
                                 viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
@@ -1103,8 +1108,9 @@ class _ViewerFunFactCard extends HookConsumerWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(25, 12, 25, 16),
-              child: Text(
-                fullText,
+              child: FunFactInlineText(
+                text: fullText,
+                sources: fact.sources,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 14,
@@ -1119,7 +1125,11 @@ class _ViewerFunFactCard extends HookConsumerWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final url in fact.sources) _ViewerFunFactSourceChip(url: url),
+                    for (var i = 0; i < fact.sources.length; i++)
+                      _ViewerFunFactSourceChip(
+                        number: i + 1,
+                        url: fact.sources[i],
+                      ),
                   ],
                 ),
               ),
@@ -1156,8 +1166,12 @@ class _ViewerFunFactCard extends HookConsumerWidget {
 }
 
 class _ViewerFunFactSourceChip extends StatelessWidget {
-  const _ViewerFunFactSourceChip({required this.url});
+  const _ViewerFunFactSourceChip({
+    this.number,
+    required this.url,
+  });
 
+  final int? number;
   final String url;
 
   String get _label {
@@ -1193,6 +1207,16 @@ class _ViewerFunFactSourceChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (number != null) ...[
+              Text(
+                '[$number] ',
+                style: const TextStyle(
+                  color: AppColors.starGold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
             const Icon(Icons.link, color: AppColors.deepGold, size: 12),
             const SizedBox(width: 4),
             Text(

@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lefture/domain/entities/deep_note.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/domain/entities/review_card.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 
 /// トピック一覧ボトムシートを表示するヘルパー関数
 Future<void> showTopicsSheet({
@@ -168,6 +174,20 @@ class _TopicTile extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final hasSummary = topic.summary?.trim().isNotEmpty == true;
 
+    final lectureAsync = ref.watch(lectureProvider(lectureId));
+    final lecture = lectureAsync.asData?.value;
+    final isTutorial = lecture?.metadata?['is_tutorial'] == true;
+    final hasPlanFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
+    final hasFullDeepNotes = isTutorial || hasPlanFullDeepNotes;
+    final isDeepNotesLocked = topicIndex > 0 && !hasFullDeepNotes;
+    final deepNotesLockColor = planThemeColor(plan_features.tierLite);
+
+    final notesAsync = ref.watch(deepNotesProvider(lectureId));
+    final notes = notesAsync.asData?.value ?? const <DeepNote>[];
+    final noteMap = {for (final n in notes) n.topicNumber: n};
+    final note = noteMap[topic.index];
+    final isSkipped = note?.noteContents == plan_features.deepNotesSkippedPlanLimit;
+
     // このトピックに属するカードの枚数と、全カードリストにおける先頭インデックスを計算
     final topicCards = allCards.where((c) => c.topicNumber == topic.index).toList();
     final hasReviewCards = topicCards.isNotEmpty;
@@ -283,14 +303,44 @@ class _TopicTile extends ConsumerWidget {
               ),
               // 詳細ノートボタン
               _TopicActionButton(
-                icon: Icons.description_outlined,
+                icon: isDeepNotesLocked
+                    ? Icons.lock_rounded
+                    : (isSkipped
+                        ? Icons.info_outline_rounded
+                        : Icons.description_outlined),
                 label: l10n.lectureViewerTopicCardDeepNotes,
-                accentColor: const Color(0xFF64B5F6),
+                accentColor: isDeepNotesLocked
+                    ? deepNotesLockColor
+                    : (isSkipped
+                        ? AppColors.universe.textComet
+                        : const Color(0xFF64B5F6)),
                 onTap: () {
-                  Navigator.of(context).pop();
-                  context.push(
-                    '${AppRoutes.coursesRootPath}/c/$effectiveCourseId/dnd/$lectureId/$topicIndex',
-                  );
+                  if (isDeepNotesLocked) {
+                    Navigator.of(context).pop();
+                    showUpgradeRequiredDialog(
+                      context: context,
+                      requiredTierColor: deepNotesLockColor,
+                      targetTierLevel: plan_features.tierLite,
+                      title: l10n.deepNotesLockedDialogTitle,
+                      message: l10n.deepNotesLockedDialogMessage,
+                      viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                      cancelLabel: l10n.recordingCancelButton,
+                    );
+                  } else if (isSkipped) {
+                    showCustomDialog(
+                      context: context,
+                      title: l10n.deepNotesSkippedPlanLimitTitle,
+                      message: l10n.deepNotesSkippedTopicNotice,
+                      confirmLabel: l10n.coursePageOkButton,
+                      cancelLabel: null,
+                      icon: Icons.info_outline_rounded,
+                    );
+                  } else {
+                    Navigator.of(context).pop();
+                    context.push(
+                      '${AppRoutes.coursesRootPath}/c/$effectiveCourseId/dnd/$lectureId/$topicIndex',
+                    );
+                  }
                 },
               ),
             ],

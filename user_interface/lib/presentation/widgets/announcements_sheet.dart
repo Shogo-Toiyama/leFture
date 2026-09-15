@@ -312,6 +312,7 @@ class AnnouncementsSheet extends HookConsumerWidget {
                       showUpgradeRequiredDialog(
                         context: context,
                         requiredTierColor: announcementsLockColor,
+                        targetTierLevel: plan_features.tierCore,
                         title: l10n.announcementsLockedDialogTitle,
                         message: l10n.announcementsSheetLockedBanner,
                         viewPlansLabel: l10n.upgradeRequiredViewPlansButton,

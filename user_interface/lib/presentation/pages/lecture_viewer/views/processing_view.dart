@@ -126,7 +126,7 @@ class ProcessingView extends HookConsumerWidget {
                         height: 72,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          value: total > 0 ? completed / total : null,
+                          value: (completed > 0 && total > 0) ? completed / total : null,
                           backgroundColor: AppColors.universe.glassWhiteLow,
                           valueColor: AlwaysStoppedAnimation(themeColor),
                         ),

@@ -37,6 +37,7 @@ import 'package:lefture/infrastructure/supabase/repositories/lecture_topic_repos
 import 'package:lefture/infrastructure/supabase/repositories/deep_note_repository_supabase.dart';
 import 'package:lefture/infrastructure/supabase/repositories/keyword_repository_supabase.dart';
 import 'package:lefture/application/recording/recovery/recovery_providers.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 
 part 'lecture_controller.g.dart';
@@ -342,6 +343,7 @@ class LectureController extends _$LectureController {
         );
       }
     } finally {
+      ref.invalidate(creditSummaryProvider);
       link.close();
     }
   }

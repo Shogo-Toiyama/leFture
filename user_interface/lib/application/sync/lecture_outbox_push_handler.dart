@@ -6,10 +6,18 @@ import 'package:lefture/infrastructure/supabase/repositories/topic_map_repositor
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
 /// pushの瞬間に[LocalLectures]の最新行を読み直し、Supabaseの`lectures`
-/// テーブルへ全カラムでupsertする。まだ一度もサーバーに存在しない講義
-/// (アップロード完了前に削除された等)でもINSERTのNOT NULL制約に
-/// 引っかからないよう、常に必要なカラムを揃えて送る。
+/// テーブルへ「クライアントが実際に変更しうるカラムだけ」をupsertする。
+/// まだ一度もサーバーに存在しない講義(アップロード完了前に削除された等)でも
+/// INSERTのNOT NULL制約に引っかからないよう、常に必要なカラムは揃えて送る。
 /// `updated_at`はSupabase側の自動更新トリガーに一任するため送らない。
+///
+/// title_generated・summary・audio_path・audio_duration_seconds・metadata等、
+/// バックエンド(CORE_EXTRACTION等)だけが書き込むサーバー生成フィールドは
+/// 意図的にペイロードへ含めない。PostgRESTのupsertはペイロードに無いカラムを
+/// ON CONFLICT時に一切書き換えないため、含めなければサーバー側の値は保持される。
+/// 逆にこれらを含めてしまうと、pushの瞬間のローカルDrift行がまだサーバーの
+/// 生成結果を同期(pull)し終えていない場合に、古いnull値で上書きしてしまう
+/// レースが起きる(実際に title_generated で発生していた既知バグ)。
 ///
 /// あわせて、削除/Course間移動によるTopic Mapのstale化(mark-stale)も
 /// このpushの一部として送信する。これによりLectureの永続化(lecture行の
@@ -62,7 +70,6 @@ class LectureOutboxPushHandler implements OutboxPushHandler {
       'user_id': existing.userId,
       'course_id': existing.courseId,
       'title': existing.title,
-      'title_generated': existing.titleGenerated,
       'lecture_datetime':
           (existing.lectureDatetime ?? existing.createdAt).toUtc().toIso8601String(),
       'sort_order': existing.sortOrder ?? 0,

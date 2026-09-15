@@ -435,6 +435,7 @@ class RecordingPage extends HookConsumerWidget {
           await showUpgradeRequiredDialog(
             context: context,
             requiredTierColor: planThemeColor(plan_features.tierMax),
+            targetTierLevel: plan_features.tierMax,
             title: l10n.recordingRealtimeUpgradeDialogTitle,
             message: l10n.recordingRealtimeUpgradeDialogMessage,
             viewPlansLabel: l10n.upgradeRequiredViewPlansButton,

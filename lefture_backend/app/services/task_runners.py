@@ -24,6 +24,7 @@ from app.services.helpers.plan_features import (
     FEATURE_DEEP_NOTES_FULL,
     FEATURE_FUN_FACT_SEARCH,
     FEATURE_REALTIME_TRANSCRIBE,
+    DEEP_NOTES_SKIPPED_PLAN_LIMIT,
 )
 from app.services.push_notification_service import send_push_notification
 from app.services.push_notification_content import get_push_content
@@ -2627,7 +2628,14 @@ async def run_detail_contents_task(job_id: str, task_id: str):
                     # DeepNotes本文を生成しないトピック(Freeプランの2枚目以降)は、
                     # CORE_EXTRACTIONが代わりに用意した軽量summaryをフォールバックで使う
                     # (Lite以上ならdetailが必ず存在するのでここには来ない)。
+                    # 明示的にスキップされたことを表すセンチネル値をdeep_notesに書き込んでおく。
                     summary = core_topic.get("summary")
+                    supabase.table("deep_notes").insert({
+                        "user_id": uid,
+                        "lecture_id": lecture_id,
+                        "topic_number": topic_idx,
+                        "note_contents": DEEP_NOTES_SKIPPED_PLAN_LIMIT,
+                    }).execute()
 
                 supabase.table("lecture_topics").insert({
                     "user_id": uid,

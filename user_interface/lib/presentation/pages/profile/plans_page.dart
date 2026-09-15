@@ -9,7 +9,9 @@ import 'widgets/plan_selection_view.dart';
 /// クレジット配布プラン一覧画面。実際のUI/ロジックは[PlanSelectionView]に
 /// あり、このページはそれをNavigatorのpushで開ける単体画面として包む。
 class PlansPage extends StatelessWidget {
-  const PlansPage({super.key});
+  const PlansPage({super.key, this.initialTierLevel});
+
+  final int? initialTierLevel;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +23,7 @@ class PlansPage extends StatelessWidget {
       body: PlanSelectionView(
         header: _PlansPageHeader(onBack: handleBack, tagline: l10n.plansTagline),
         onBack: handleBack,
+        initialTierLevel: initialTierLevel,
       ),
     );
   }

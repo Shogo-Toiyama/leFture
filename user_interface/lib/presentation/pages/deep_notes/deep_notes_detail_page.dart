@@ -645,6 +645,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                           showUpgradeRequiredDialog(
                             context: context,
                             requiredTierColor: planThemeColor(plan_features.tierLite),
+                            targetTierLevel: plan_features.tierLite,
                             title: AppLocalizations.of(context).deepNotesLockedDialogTitle,
                             message: AppLocalizations.of(context).deepNotesLockedDialogMessage,
                             viewPlansLabel: AppLocalizations.of(context).upgradeRequiredViewPlansButton,
@@ -985,6 +986,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                         final topic = resolvedTopics[index];
                         final isSelected = index == currentIndex.value;
                         final isLocked = index > 0 && !hasFullDeepNotes;
+                        final isSkipped = topic.content == plan_features.deepNotesSkippedPlanLimit;
                         final lockColor = planThemeColor(plan_features.tierLite);
 
                         return GestureDetector(
@@ -994,6 +996,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                   showUpgradeRequiredDialog(
                                     context: context,
                                     requiredTierColor: lockColor,
+                                    targetTierLevel: plan_features.tierLite,
                                     title: AppLocalizations.of(context).deepNotesLockedDialogTitle,
                                     message: AppLocalizations.of(context).deepNotesLockedDialogMessage,
                                     viewPlansLabel: AppLocalizations.of(context).upgradeRequiredViewPlansButton,
@@ -1069,6 +1072,28 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
+                                      ] else if (isSkipped) ...[
+                                        if (topic.summary.isNotEmpty) ...[
+                                          Text(
+                                            topic.summary,
+                                            style: TextStyle(
+                                              color: AppColors.paper.textPencil,
+                                              fontSize: 13,
+                                              height: 1.4,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                        ],
+                                        Text(
+                                          AppLocalizations.of(context).deepNotesSkippedPlanLimitCaption,
+                                          style: TextStyle(
+                                            color: AppColors.paper.textPencil.withValues(alpha: 0.7),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                       ] else if (topic.summary.isNotEmpty)
                                         Text(
                                           topic.summary,
@@ -1086,6 +1111,11 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                                 if (isLocked) ...[
                                   const SizedBox(width: 8),
                                   Icon(Icons.lock_outline_rounded, color: lockColor, size: 20),
+                                ] else if (isSkipped) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(Icons.info_outline_rounded,
+                                      color: AppColors.paper.textPencil.withValues(alpha: 0.6),
+                                      size: 20),
                                 ],
                               ],
                             ),
@@ -1476,9 +1506,60 @@ class _NoteDetailContent extends HookWidget {
                 ],
                 const SizedBox(height: 24),
 
-                // ── Markdown content ───────────────────────────────────────
-                SelectionArea(
-                  key: selectionAreaKey,
+                // ── Markdown content or Skipped notice ─────────────────────
+                if (topic.content == plan_features.deepNotesSkippedPlanLimit)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.paper.textPencil.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.info_outline_rounded,
+                            color: AppColors.paper.textPencil,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          AppLocalizations.of(context).deepNotesSkippedPlanLimitTitle,
+                          style: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          AppLocalizations.of(context).deepNotesSkippedPlanLimitDescription,
+                          style: TextStyle(
+                            color: AppColors.paper.textPencil,
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  SelectionArea(
+                    key: selectionAreaKey,
                   contextMenuBuilder: (context, selectableRegionState) =>
                       const SizedBox.shrink(),
                   onSelectionChanged: (content) => onSelectionChanged(

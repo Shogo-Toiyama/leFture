@@ -48,6 +48,8 @@ class DeepNoteTopic {
   final bool saved;
   final List<Annotation> annotations;
   final String? imagePath;
+
+  bool get isSkippedByPlanLimit => content == plan_features.deepNotesSkippedPlanLimit;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +165,8 @@ class DeepNotesListPage extends HookConsumerWidget {
       itemBuilder: (context, index) {
         final l10n = AppLocalizations.of(context);
         final topic = topics[index];
-        final hasContent = topic.content.trim().isNotEmpty;
+        final isSkipped = topic.isSkippedByPlanLimit;
+        final hasRealContent = topic.content.trim().isNotEmpty && !isSkipped;
         // Freeプランでは最初のトピック(index==0)だけがプレビューとして実際に
         // 生成される。2件目以降は(まだ処理中なのではなく)そもそもプランで
         // 絞られているため、hourglass(処理中)ではなくlock(要アップグレード)
@@ -176,6 +179,7 @@ class DeepNotesListPage extends HookConsumerWidget {
               ? () => showUpgradeRequiredDialog(
                     context: context,
                     requiredTierColor: lockColor,
+                    targetTierLevel: plan_features.tierLite,
                     title: AppLocalizations.of(context).deepNotesLockedDialogTitle,
                     message: AppLocalizations.of(context).deepNotesLockedDialogMessage,
                     viewPlansLabel: AppLocalizations.of(context).upgradeRequiredViewPlansButton,
@@ -262,6 +266,28 @@ class DeepNotesListPage extends HookConsumerWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ] else if (isSkipped) ...[
+                        if (topic.summary.isNotEmpty) ...[
+                          Text(
+                            topic.summary,
+                            style: TextStyle(
+                              color: AppColors.paper.textPencil,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                        Text(
+                          l10n.deepNotesSkippedPlanLimitCaption,
+                          style: TextStyle(
+                            color: AppColors.paper.textPencil.withValues(alpha: 0.7),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ] else if (topic.summary.isNotEmpty)
                         Text(
                           topic.summary,
@@ -280,14 +306,18 @@ class DeepNotesListPage extends HookConsumerWidget {
                 Icon(
                   isLocked
                       ? Icons.lock_outline_rounded
-                      : (hasContent
-                          ? Icons.chevron_right
-                          : Icons.hourglass_empty_outlined),
+                      : (isSkipped
+                          ? Icons.info_outline_rounded
+                          : (hasRealContent
+                              ? Icons.chevron_right
+                              : Icons.hourglass_empty_outlined)),
                   color: isLocked
                       ? lockColor
-                      : (hasContent
-                          ? AppColors.deepGold
-                          : AppColors.paper.textPencil),
+                      : (isSkipped
+                          ? AppColors.paper.textPencil.withValues(alpha: 0.6)
+                          : (hasRealContent
+                              ? AppColors.deepGold
+                              : AppColors.paper.textPencil)),
                   size: 22,
                 ),
               ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lefture/app/routes.dart';
+import 'package:lefture/domain/plan_features.dart' as plan_features;
+import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/plan_lock_illustration.dart';
 
@@ -11,6 +13,7 @@ import 'package:lefture/presentation/widgets/plan_lock_illustration.dart';
 Future<void> showUpgradeRequiredDialog({
   required BuildContext context,
   required Color requiredTierColor,
+  int? targetTierLevel,
   required String title,
   required String message,
   required String viewPlansLabel,
@@ -89,7 +92,8 @@ Future<void> showUpgradeRequiredDialog({
                         // ダイアログを閉じた後の画面遷移は、popで破棄されるdialogContext
                         // ではなく呼び出し元のcontextを使う(not_started_view.dartの
                         // 既存パターンと同じ)。
-                        context.push(AppRoutes.plans);
+                        final effectiveTier = targetTierLevel ?? _inferTierFromColor(requiredTierColor);
+                        context.push(AppRoutes.plans, extra: effectiveTier);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: requiredTierColor,
@@ -114,4 +118,11 @@ Future<void> showUpgradeRequiredDialog({
       ),
     ),
   );
+}
+
+int? _inferTierFromColor(Color color) {
+  if (color == planThemeColor(plan_features.tierLite)) return plan_features.tierLite;
+  if (color == planThemeColor(plan_features.tierCore)) return plan_features.tierCore;
+  if (color == planThemeColor(plan_features.tierMax)) return plan_features.tierMax;
+  return null;
 }
