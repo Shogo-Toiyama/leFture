@@ -101,6 +101,9 @@ class LocalLectures extends Table {
   // フォールバック(バックエンド側で解決)。
   TextColumn get displayLanguage => text().nullable()();
 
+  // この講義の分析で消費されたクレジット量（マイクロクレジット単位: 1 credit = 1,000,000 micro-credits）。
+  IntColumn get creditsUsed => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {id, userId};
 }
@@ -517,7 +520,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -725,6 +728,10 @@ class AppDatabase extends _$AppDatabase {
         // 消えてしまう。以後のスキーマ変更は addColumn/createTable 等の
         // 非破壊マイグレーションで行うこと。
         await m.addColumn(localLectureAssets, localLectureAssets.endTime);
+      }
+      if (from < 25) {
+        // バージョン25: LocalLectures に creditsUsed を追加
+        await m.addColumn(localLectures, localLectures.creditsUsed);
       }
     },
   );

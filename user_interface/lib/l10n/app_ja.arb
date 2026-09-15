@@ -983,5 +983,6 @@
   "creditRateRow4Duration": "2時間30分 〜 3時間30分",
   "creditRateRowCredits": "{count} クレジット",
   "creditRateMaxDurationNotice": "※ 1回の最大録音時間は3時間30分です。3時間30分以上の録音はできません。",
-  "creditRateModalCloseButton": "閉じる"
+  "creditRateModalCloseButton": "閉じる",
+  "creditRateModalBuyCreditsButton": "クレジット購入"
 }

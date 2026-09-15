@@ -145,3 +145,10 @@ def consume_lecture_credits(
             },
         },
     ).execute()
+
+    # 講義レコード自体にも消費クレジット(マイクロクレジット)を記録
+    try:
+        supabase.table("lectures").update({"credits_used": micro_credits}).eq("id", lecture_id).execute()
+    except Exception as e:
+        logger.warning(f"consume_lecture_credits: failed to update lectures.credits_used for {lecture_id}: {e}")
+

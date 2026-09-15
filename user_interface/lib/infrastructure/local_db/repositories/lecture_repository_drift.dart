@@ -162,6 +162,7 @@ class LectureRepositoryDrift {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       lastAccessedAt: row.lastAccessedAt,
+      creditsUsedMicro: row.creditsUsed,
     );
   }
 }

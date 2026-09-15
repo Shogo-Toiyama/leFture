@@ -28,7 +28,15 @@ class Lecture {
   /// Supabaseには存在しないため、fromMap/toUpsertMapでは扱わない。
   final DateTime? lastAccessedAt;
 
+  /// この講義の分析で消費されたクレジット量（マイクロクレジット単位: 1 credit = 1,000,000 micro-credits）。
+  /// 未消費・未記録の場合は null。
+  final int? creditsUsedMicro;
+
   bool get isDeleted => deletedAt != null;
+
+  /// 表示用クレジット数（例: 100）。未消費・未記録の場合は null。
+  int? get creditsUsedDisplay =>
+      creditsUsedMicro == null ? null : creditsUsedMicro! ~/ 1000000;
 
   String get displayTitle {
     if (title != null && title!.trim().isNotEmpty) {
@@ -55,6 +63,7 @@ class Lecture {
     required this.createdAt,
     required this.updatedAt,
     this.lastAccessedAt,
+    this.creditsUsedMicro,
   });
 
   factory Lecture.fromMap(Map<String, dynamic> map) {
@@ -72,6 +81,7 @@ class Lecture {
       lectureDatetime: DateTime.parse(map['lecture_datetime'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+      creditsUsedMicro: (map['credits_used'] as num?)?.toInt(),
     );
   }
 

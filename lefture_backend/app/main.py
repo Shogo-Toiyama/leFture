@@ -1233,10 +1233,17 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
     admin_client = get_supabase_client()
 
     # CANCELLATION(自動更新オフになっただけで期間終了までは有効)は、ここで
-    # マッピングを失効させてもクレジットを取り消してもいけない。BILLING_ISSUE/
-    # TRANSFER等も含め、今回のスコープでは意図的に無視する。PRODUCT_CHANGEだけは
-    # 例外で、下のset_pending_plan_change経由で「予約状態」の表示用に拾う
-    # (実際のクレジット付与・プラン切り替えには一切関与しない)。
+    # マッピングを失効させてもクレジットを取り消してもいけない。TRANSFER等も
+    # 含め、今回のスコープでは意図的に無視する。PRODUCT_CHANGEだけは例外で、
+    # 下のset_pending_plan_change経由で「予約状態」の表示用に拾う(実際の
+    # クレジット付与・プラン切り替えには一切関与しない)。
+    #
+    # BILLING_ISSUE(更新時の決済失敗)は無視してはいけない: App Store Connectで
+    # Billing Grace Period(28日)を設定しているため、Appleは決済リトライ中も
+    # サブスクを「有効」として扱うが、こちらの前回付与クレジットのexpires_at
+    # (前回current_period_end + 6時間の猶予)はRENEWALが来ないまま過ぎてしまい、
+    # 実質数時間でクレジットが消えてしまう。下のBILLING_ISSUE分岐で
+    # handle_billing_issue() を呼び、Grace Period終了日までクレジットを維持する。
     GRANT_EVENT_TYPES = {"INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION"}
 
     try:
@@ -1250,6 +1257,23 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
                     "p_user_id": app_user_id,
                     "p_event_id": event_id,
                     "p_event_type": event_type,
+                    "p_product_id": product_id,
+                    "p_period_end": period_end_iso,
+                }).execute()
+            )
+        elif event_type == "BILLING_ISSUE":
+            # Grace Period中は決済がまだ成功していないため新規クレジットの
+            # 積み増しは行わず、既存クレジットをGrace Period終了日
+            # (expiration_at_ms、Apple/StoreKitがGrace Period分延長した値)まで
+            # 維持する。冪等性・実際のロジックはhandle_billing_issue() SQL関数側で行う。
+            if not product_id or expiration_at_ms is None:
+                logger.error(f"RevenueCat BILLING_ISSUE missing product_id/expiration_at_ms: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            period_end_iso = datetime.fromtimestamp(expiration_at_ms / 1000, tz=timezone.utc).isoformat()
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("handle_billing_issue", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
                     "p_product_id": product_id,
                     "p_period_end": period_end_iso,
                 }).execute()

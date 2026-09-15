@@ -23,6 +23,7 @@ import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcements_sheet.dart';
+import 'package:lefture/presentation/widgets/credit_rate_table_dialog.dart';
 import 'package:lefture/presentation/widgets/glowing_rainbow_border.dart';
 import 'package:lefture/app/navigation_utils.dart';
 import 'package:lefture/app/routes.dart';
@@ -494,45 +495,54 @@ class _LectureViewerBody extends HookConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 所属コースへのリンク (例: "物理学I ›")。
-                      // 「戻る」ではなく「この講義が所属している場所」を示す導線なので、
-                      // 左シェブロン(=端末の戻る操作と競合して見える)ではなく末尾の
-                      // 右シェブロンにしている。実際の遷移方向はnavigateUpToが
-                      // pop/pushを出し分け、アニメーションが自然に表現する。
-                      if (course != null || lecture.courseId != null) ...[
-                        InkWell(
-                          onTap: () => navigateUpTo(
-                            context,
-                            lecture.courseId != null
-                                ? '${AppRoutes.coursesRootPath}/c/${lecture.courseId}'
-                                : AppRoutes.coursesRootPath,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.chevron_left,
-                                  color: themeColor,
-                                  size: 22,
-                                ),
-                                Flexible(
-                                  child: Text(
-                                    course?.displayTitle ?? l10n.coursePageTitle,
-                                    style: TextStyle(
-                                      color: themeColor,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                      // 所属コースへのリンク (左側) & 消費クレジットチップ (右側)
+                      if (course != null || lecture.courseId != null || lecture.creditsUsedDisplay != null) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (course != null || lecture.courseId != null)
+                              Flexible(
+                                child: InkWell(
+                                  onTap: () => navigateUpTo(
+                                    context,
+                                    lecture.courseId != null
+                                        ? '${AppRoutes.coursesRootPath}/c/${lecture.courseId}'
+                                        : AppRoutes.coursesRootPath,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.chevron_left,
+                                          color: themeColor,
+                                          size: 22,
+                                        ),
+                                        Flexible(
+                                          child: Text(
+                                            course?.displayTitle ?? l10n.coursePageTitle,
+                                            style: TextStyle(
+                                              color: themeColor,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            if (lecture.creditsUsedDisplay != null)
+                              _LectureCreditsChip(credits: lecture.creditsUsedDisplay!),
+                          ],
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -2033,4 +2043,56 @@ Future<void> _handleRefresh(
     ref.invalidate(courseListProvider);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 講義消費クレジット表示チップ（白〜グレー調のシンプルデザイン）
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LectureCreditsChip extends StatelessWidget {
+  const _LectureCreditsChip({required this.credits});
+  final int credits;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => showCreditRateTableDialog(context),
+        borderRadius: BorderRadius.circular(100),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.stars_rounded,
+                size: 14.5,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '$credits',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

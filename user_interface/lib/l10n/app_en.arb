@@ -4776,5 +4776,9 @@
   "creditRateModalCloseButton": "Close",
   "@creditRateModalCloseButton": {
     "description": "Close button label for the credit rate table modal."
+  },
+  "creditRateModalBuyCreditsButton": "Buy Credits",
+  "@creditRateModalBuyCreditsButton": {
+    "description": "Buy credits button label in the credit rate table modal."
   }
 }

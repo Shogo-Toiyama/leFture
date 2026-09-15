@@ -900,6 +900,17 @@ class $LocalLecturesTable extends LocalLectures
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _creditsUsedMeta = const VerificationMeta(
+    'creditsUsed',
+  );
+  @override
+  late final GeneratedColumn<int> creditsUsed = GeneratedColumn<int>(
+    'credits_used',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -926,6 +937,7 @@ class $LocalLecturesTable extends LocalLectures
     isRealtime,
     recordingLanguage,
     displayLanguage,
+    creditsUsed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1117,6 +1129,15 @@ class $LocalLecturesTable extends LocalLectures
         ),
       );
     }
+    if (data.containsKey('credits_used')) {
+      context.handle(
+        _creditsUsedMeta,
+        creditsUsed.isAcceptableOrUnknown(
+          data['credits_used']!,
+          _creditsUsedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1222,6 +1243,10 @@ class $LocalLecturesTable extends LocalLectures
         DriftSqlType.string,
         data['${effectivePrefix}display_language'],
       ),
+      creditsUsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}credits_used'],
+      ),
     );
   }
 
@@ -1256,6 +1281,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
   final bool isRealtime;
   final String? recordingLanguage;
   final String? displayLanguage;
+  final int? creditsUsed;
   const LocalLecture({
     required this.id,
     required this.userId,
@@ -1281,6 +1307,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     required this.isRealtime,
     this.recordingLanguage,
     this.displayLanguage,
+    this.creditsUsed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1340,6 +1367,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     }
     if (!nullToAbsent || displayLanguage != null) {
       map['display_language'] = Variable<String>(displayLanguage);
+    }
+    if (!nullToAbsent || creditsUsed != null) {
+      map['credits_used'] = Variable<int>(creditsUsed);
     }
     return map;
   }
@@ -1401,6 +1431,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       displayLanguage: displayLanguage == null && nullToAbsent
           ? const Value.absent()
           : Value(displayLanguage),
+      creditsUsed: creditsUsed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creditsUsed),
     );
   }
 
@@ -1440,6 +1473,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
         json['recordingLanguage'],
       ),
       displayLanguage: serializer.fromJson<String?>(json['displayLanguage']),
+      creditsUsed: serializer.fromJson<int?>(json['creditsUsed']),
     );
   }
   @override
@@ -1472,6 +1506,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       'isRealtime': serializer.toJson<bool>(isRealtime),
       'recordingLanguage': serializer.toJson<String?>(recordingLanguage),
       'displayLanguage': serializer.toJson<String?>(displayLanguage),
+      'creditsUsed': serializer.toJson<int?>(creditsUsed),
     };
   }
 
@@ -1500,6 +1535,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     bool? isRealtime,
     Value<String?> recordingLanguage = const Value.absent(),
     Value<String?> displayLanguage = const Value.absent(),
+    Value<int?> creditsUsed = const Value.absent(),
   }) => LocalLecture(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1541,6 +1577,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     displayLanguage: displayLanguage.present
         ? displayLanguage.value
         : this.displayLanguage,
+    creditsUsed: creditsUsed.present ? creditsUsed.value : this.creditsUsed,
   );
   LocalLecture copyWithCompanion(LocalLecturesCompanion data) {
     return LocalLecture(
@@ -1594,6 +1631,9 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
       displayLanguage: data.displayLanguage.present
           ? data.displayLanguage.value
           : this.displayLanguage,
+      creditsUsed: data.creditsUsed.present
+          ? data.creditsUsed.value
+          : this.creditsUsed,
     );
   }
 
@@ -1625,7 +1665,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           ..write('autoStartAnalysis: $autoStartAnalysis, ')
           ..write('isRealtime: $isRealtime, ')
           ..write('recordingLanguage: $recordingLanguage, ')
-          ..write('displayLanguage: $displayLanguage')
+          ..write('displayLanguage: $displayLanguage, ')
+          ..write('creditsUsed: $creditsUsed')
           ..write(')'))
         .toString();
   }
@@ -1656,6 +1697,7 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
     isRealtime,
     recordingLanguage,
     displayLanguage,
+    creditsUsed,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1685,7 +1727,8 @@ class LocalLecture extends DataClass implements Insertable<LocalLecture> {
           other.autoStartAnalysis == this.autoStartAnalysis &&
           other.isRealtime == this.isRealtime &&
           other.recordingLanguage == this.recordingLanguage &&
-          other.displayLanguage == this.displayLanguage);
+          other.displayLanguage == this.displayLanguage &&
+          other.creditsUsed == this.creditsUsed);
 }
 
 class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
@@ -1713,6 +1756,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
   final Value<bool> isRealtime;
   final Value<String?> recordingLanguage;
   final Value<String?> displayLanguage;
+  final Value<int?> creditsUsed;
   final Value<int> rowid;
   const LocalLecturesCompanion({
     this.id = const Value.absent(),
@@ -1739,6 +1783,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.isRealtime = const Value.absent(),
     this.recordingLanguage = const Value.absent(),
     this.displayLanguage = const Value.absent(),
+    this.creditsUsed = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalLecturesCompanion.insert({
@@ -1766,6 +1811,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     this.isRealtime = const Value.absent(),
     this.recordingLanguage = const Value.absent(),
     this.displayLanguage = const Value.absent(),
+    this.creditsUsed = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId);
@@ -1794,6 +1840,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Expression<bool>? isRealtime,
     Expression<String>? recordingLanguage,
     Expression<String>? displayLanguage,
+    Expression<int>? creditsUsed,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1823,6 +1870,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       if (isRealtime != null) 'is_realtime': isRealtime,
       if (recordingLanguage != null) 'recording_language': recordingLanguage,
       if (displayLanguage != null) 'display_language': displayLanguage,
+      if (creditsUsed != null) 'credits_used': creditsUsed,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1852,6 +1900,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     Value<bool>? isRealtime,
     Value<String?>? recordingLanguage,
     Value<String?>? displayLanguage,
+    Value<int?>? creditsUsed,
     Value<int>? rowid,
   }) {
     return LocalLecturesCompanion(
@@ -1880,6 +1929,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
       isRealtime: isRealtime ?? this.isRealtime,
       recordingLanguage: recordingLanguage ?? this.recordingLanguage,
       displayLanguage: displayLanguage ?? this.displayLanguage,
+      creditsUsed: creditsUsed ?? this.creditsUsed,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1961,6 +2011,9 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
     if (displayLanguage.present) {
       map['display_language'] = Variable<String>(displayLanguage.value);
     }
+    if (creditsUsed.present) {
+      map['credits_used'] = Variable<int>(creditsUsed.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1996,6 +2049,7 @@ class LocalLecturesCompanion extends UpdateCompanion<LocalLecture> {
           ..write('isRealtime: $isRealtime, ')
           ..write('recordingLanguage: $recordingLanguage, ')
           ..write('displayLanguage: $displayLanguage, ')
+          ..write('creditsUsed: $creditsUsed, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12900,6 +12954,7 @@ typedef $$LocalLecturesTableCreateCompanionBuilder =
       Value<bool> isRealtime,
       Value<String?> recordingLanguage,
       Value<String?> displayLanguage,
+      Value<int?> creditsUsed,
       Value<int> rowid,
     });
 typedef $$LocalLecturesTableUpdateCompanionBuilder =
@@ -12928,6 +12983,7 @@ typedef $$LocalLecturesTableUpdateCompanionBuilder =
       Value<bool> isRealtime,
       Value<String?> recordingLanguage,
       Value<String?> displayLanguage,
+      Value<int?> creditsUsed,
       Value<int> rowid,
     });
 
@@ -13057,6 +13113,11 @@ class $$LocalLecturesTableFilterComposer
 
   ColumnFilters<String> get displayLanguage => $composableBuilder(
     column: $table.displayLanguage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get creditsUsed => $composableBuilder(
+    column: $table.creditsUsed,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13190,6 +13251,11 @@ class $$LocalLecturesTableOrderingComposer
     column: $table.displayLanguage,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get creditsUsed => $composableBuilder(
+    column: $table.creditsUsed,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalLecturesTableAnnotationComposer
@@ -13299,6 +13365,11 @@ class $$LocalLecturesTableAnnotationComposer
     column: $table.displayLanguage,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get creditsUsed => $composableBuilder(
+    column: $table.creditsUsed,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalLecturesTableTableManager
@@ -13357,6 +13428,7 @@ class $$LocalLecturesTableTableManager
                 Value<bool> isRealtime = const Value.absent(),
                 Value<String?> recordingLanguage = const Value.absent(),
                 Value<String?> displayLanguage = const Value.absent(),
+                Value<int?> creditsUsed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion(
                 id: id,
@@ -13383,6 +13455,7 @@ class $$LocalLecturesTableTableManager
                 isRealtime: isRealtime,
                 recordingLanguage: recordingLanguage,
                 displayLanguage: displayLanguage,
+                creditsUsed: creditsUsed,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13412,6 +13485,7 @@ class $$LocalLecturesTableTableManager
                 Value<bool> isRealtime = const Value.absent(),
                 Value<String?> recordingLanguage = const Value.absent(),
                 Value<String?> displayLanguage = const Value.absent(),
+                Value<int?> creditsUsed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLecturesCompanion.insert(
                 id: id,
@@ -13438,6 +13512,7 @@ class $$LocalLecturesTableTableManager
                 isRealtime: isRealtime,
                 recordingLanguage: recordingLanguage,
                 displayLanguage: displayLanguage,
+                creditsUsed: creditsUsed,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

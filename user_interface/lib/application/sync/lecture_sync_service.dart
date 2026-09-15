@@ -100,6 +100,7 @@ class LectureSyncService {
           sortOrder: Value(json['sort_order'] as int?),
           recordingLanguage: Value(json['recording_language'] as String?),
           displayLanguage: Value(json['display_language'] as String?),
+          creditsUsed: Value((json['credits_used'] as num?)?.toInt()),
           createdAt: Value(DateTime.parse(json['created_at'])),
           updatedAt: Value(updatedAt),
           deletedAt: Value(

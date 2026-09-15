@@ -5581,6 +5581,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get creditRateModalCloseButton;
+
+  /// Buy credits button label in the credit rate table modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Credits'**
+  String get creditRateModalBuyCreditsButton;
 }
 
 class _AppLocalizationsDelegate

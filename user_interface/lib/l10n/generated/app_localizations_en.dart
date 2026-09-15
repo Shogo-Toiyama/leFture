@@ -3153,4 +3153,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get creditRateModalCloseButton => 'Close';
+
+  @override
+  String get creditRateModalBuyCreditsButton => 'Buy Credits';
 }

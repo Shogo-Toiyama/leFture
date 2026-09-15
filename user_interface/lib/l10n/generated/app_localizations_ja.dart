@@ -3014,4 +3014,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get creditRateModalCloseButton => '閉じる';
+
+  @override
+  String get creditRateModalBuyCreditsButton => 'クレジット購入';
 }
