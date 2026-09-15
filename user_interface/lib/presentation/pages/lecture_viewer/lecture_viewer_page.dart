@@ -35,7 +35,7 @@ import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dar
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/lecture_hero_collage.dart';
-import 'package:lefture/presentation/pages/lecture_viewer/widgets/fun_fact_inline_text.dart';
+import 'package:lefture/core/utils/text_preview.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -1071,9 +1071,10 @@ class _ViewerFunFactCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hook = fact.hook?.trim();
     final body = fact.body?.trim() ?? '';
-    final fullText = (hook != null && hook.isNotEmpty)
+    final rawFullText = (hook != null && hook.isNotEmpty)
         ? '$hook\n\n$body'
         : body;
+    final fullText = stripFunFactCitations(rawFullText);
 
     final currentReaction = fact.reaction;
 
@@ -1108,9 +1109,8 @@ class _ViewerFunFactCard extends HookConsumerWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(25, 12, 25, 16),
-              child: FunFactInlineText(
-                text: fullText,
-                sources: fact.sources,
+              child: Text(
+                fullText,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 14,
@@ -1119,20 +1119,7 @@ class _ViewerFunFactCard extends HookConsumerWidget {
               ),
             ),
             if (fact.sources.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(25, 0, 25, 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (var i = 0; i < fact.sources.length; i++)
-                      _ViewerFunFactSourceChip(
-                        number: i + 1,
-                        url: fact.sources[i],
-                      ),
-                  ],
-                ),
-              ),
+              _ViewerFunFactSourcesAccordion(sources: fact.sources),
             Container(
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1165,13 +1152,121 @@ class _ViewerFunFactCard extends HookConsumerWidget {
   }
 }
 
-class _ViewerFunFactSourceChip extends StatelessWidget {
-  const _ViewerFunFactSourceChip({
-    this.number,
-    required this.url,
-  });
+class _ViewerFunFactSourcesAccordion extends HookWidget {
+  const _ViewerFunFactSourcesAccordion({required this.sources});
 
-  final int? number;
+  final List<String> sources;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sources.isEmpty) return const SizedBox.shrink();
+
+    final isExpanded = useState(false);
+    final l10n = AppLocalizations.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(25, 0, 25, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => isExpanded.value = !isExpanded.value,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isExpanded.value
+                      ? AppColors.starGold.withValues(alpha: 0.15)
+                      : AppColors.universe.glassWhiteLow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isExpanded.value
+                        ? AppColors.starGold.withValues(alpha: 0.4)
+                        : AppColors.universe.glassBorder,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.link_rounded,
+                      color: isExpanded.value
+                          ? AppColors.starGold
+                          : AppColors.universe.textComet,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      l10n.lectureViewerFunFactSourcesButton,
+                      style: TextStyle(
+                        color: isExpanded.value
+                            ? AppColors.starGold
+                            : AppColors.universe.textComet,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    AnimatedRotation(
+                      turns: isExpanded.value ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: isExpanded.value
+                            ? AppColors.starGold
+                            : AppColors.universe.textComet,
+                        size: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            crossFadeState: isExpanded.value
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131525).withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.universe.glassBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var i = 0; i < sources.length; i++) ...[
+                      if (i > 0)
+                        const Divider(
+                          height: 10,
+                          thickness: 0.5,
+                          color: Colors.white10,
+                        ),
+                      _ViewerFunFactSourceItem(url: sources[i]),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewerFunFactSourceItem extends StatelessWidget {
+  const _ViewerFunFactSourceItem({required this.url});
+
   final String url;
 
   String get _label {
@@ -1195,40 +1290,36 @@ class _ViewerFunFactSourceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _open(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.universe.glassWhiteLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.universe.glassBorder),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (number != null) ...[
-              Text(
-                '[$number] ',
-                style: const TextStyle(
-                  color: AppColors.starGold,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _open(context),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.open_in_new_rounded,
+                color: AppColors.deepGold,
+                size: 13,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _label,
+                  style: const TextStyle(
+                    color: AppColors.deepGold,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.underline,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
-            const Icon(Icons.link, color: AppColors.deepGold, size: 12),
-            const SizedBox(width: 4),
-            Text(
-              _label,
-              style: const TextStyle(
-                color: AppColors.deepGold,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

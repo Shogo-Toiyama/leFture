@@ -175,6 +175,7 @@
   "lectureViewerReviewCardsTitle": "復習カード",
   "lectureViewerDeepNotesTitle": "詳細ノート",
   "lectureViewerFunFactHeader": "ファンファクト",
+  "lectureViewerFunFactSourcesButton": "ソース",
   "lectureViewerFunFactLinkOpenFailedSnackbar": "リンクを開けませんでした。",
   "lectureViewerTranscriptButtonLabel": "文字起こし・音声",
   "lectureViewerReactionUpdateFailedSnackbar": "リアクションの更新に失敗しました: {error}",

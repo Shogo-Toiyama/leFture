@@ -320,7 +320,14 @@ class PlanSelectionView extends HookConsumerWidget {
     final hasPlansError = plansAsync.hasError || (!isLoadingPlans && plans.isEmpty);
 
     final sortedPlans = [...plans]..sort((a, b) => a.tierLevel.compareTo(b.tierLevel));
+    // ★ summaryAsync.asData?.valueは再フェッチ中(AsyncLoading with previous
+    // data)でも直前の取得結果を保持する(RiverpodのcopyWithPrevious挙動)。
+    // これがnullになるのは「このセッションでまだ一度もデータを取得できていない」
+    // 場合(初回ロード中、または初回取得がエラーで終わった場合)に限られる —
+    // そのケースをhasActivePlan=falseとして扱うと「有料ユーザーが一瞬Freeに
+    // 見える」問題になるため、summaryIsUnknownとして明示的に区別する。
     final summary = summaryAsync.asData?.value;
+    final summaryIsUnknown = summary == null;
     final hasActivePlan = summary?.hasActivePlan ?? false;
     final currentPlan = sortedPlans.where((p) => hasActivePlan && p.monthlyCreditAmountMicro == summary?.monthlyAllocationMicro).firstOrNull;
     // 現在アクティブなプランが、次回更新日に切り替わる予定の別プラン
@@ -335,7 +342,13 @@ class PlanSelectionView extends HookConsumerWidget {
     final bool isPremiumPlan;
     final int safeIndex;
 
-    if (isLoadingPlans || sortedPlans.isEmpty) {
+    if (isLoadingPlans || sortedPlans.isEmpty || summaryIsUnknown) {
+      // summaryIsUnknown(=このユーザーの現在の加入状況をまだ一度も取得できて
+      // いない)間は、hasActivePlan=falseを前提にした購入/ダウングレード判定を
+      // 一切走らせない。判定を進めてしまうと「本当は有料プラン加入中なのに
+      // まだ未加入として扱われ、Freeへのダウングレードや新規購入ボタンが
+      // 誤って有効になる」ことがあり得るため、Continueボタンごと無効化して
+      // 安全側に倒す。
       continueLabel = l10n.plansContinueButton;
       onContinue = null;
       isContinueLoading = false;

@@ -167,11 +167,9 @@ class DeepNotesListPage extends HookConsumerWidget {
         final topic = topics[index];
         final isSkipped = topic.isSkippedByPlanLimit;
         final hasRealContent = topic.content.trim().isNotEmpty && !isSkipped;
-        // Freeプランでは最初のトピック(index==0)だけがプレビューとして実際に
-        // 生成される。2件目以降は(まだ処理中なのではなく)そもそもプランで
-        // 絞られているため、hourglass(処理中)ではなくlock(要アップグレード)
-        // 扱いにする。
-        final isLocked = index > 0 && !hasFullDeepNotes;
+        // 本文が存在する場合はプランに関わらずロックなしで閲覧可能。
+        // 本文がなく、Freeプランかつトピック2件目以降であればロック(要アップグレード)。
+        final isLocked = !hasRealContent && index > 0 && !hasFullDeepNotes;
         final lockColor = planThemeColor(plan_features.tierLite);
 
         return GestureDetector(

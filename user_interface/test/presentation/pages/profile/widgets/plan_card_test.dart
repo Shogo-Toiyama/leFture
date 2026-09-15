@@ -84,7 +84,7 @@ void main() {
 
       expect(find.text('Review CardsとFun Fact生成'), findsOneWidget);
       expect(find.text('DeepNotes（詳細ノート）生成'), findsOneWidget);
-      expect(find.text('トランスクリプト閲覧・出典検索'), findsOneWidget);
+      expect(find.text('文字起こし・音声再生・出典検索'), findsOneWidget);
       expect(find.text('キーワード・アナウンスメント生成'), findsOneWidget);
       expect(find.text('リアルタイム文字起こし'), findsOneWidget);
 
@@ -119,7 +119,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('3,000 クレジット / 月'), findsOneWidget);
-      expect(find.text('約週8回の講義'), findsOneWidget);
+      expect(find.text('約週7回の講義'), findsOneWidget);
 
       expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(5));
       expect(find.byIcon(Icons.cancel_rounded), findsNothing);
@@ -130,11 +130,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('3,000 credits / month'), findsOneWidget);
-      expect(find.text('Approx. 8 lectures / week'), findsOneWidget);
+      expect(find.text('Approx. 7 lectures / week'), findsOneWidget);
 
       expect(find.text('Review Cards & Fun Facts generation'), findsOneWidget);
       expect(find.text('DeepNotes (detailed notes) generation'), findsOneWidget);
-      expect(find.text('Transcript viewing & source search'), findsOneWidget);
+      expect(find.text('Transcript, audio playback & source search'), findsOneWidget);
       expect(find.text('Keyword & announcement generation'), findsOneWidget);
       expect(find.text('Real-time transcription'), findsOneWidget);
 

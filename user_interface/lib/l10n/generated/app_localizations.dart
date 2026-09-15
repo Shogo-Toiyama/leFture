@@ -1118,6 +1118,12 @@ abstract class AppLocalizations {
   /// **'FUN FACT'**
   String get lectureViewerFunFactHeader;
 
+  /// Button label to toggle expanding the sources accordion under a Fun Fact card.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get lectureViewerFunFactSourcesButton;
+
   /// Label on a full-width button/row at the bottom of the Lecture Viewer page that navigates to the full lecture transcript. Short label.
   ///
   /// In en, this message translates to:

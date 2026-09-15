@@ -41,7 +41,8 @@ Do not invent a different story, concept, or real-world example. Write up the gi
    - **Close with a Punchline:** End with a memorable, punchy takeaway that leaves the student inspired and eager for the next lecture.
 
 4. **Evidence Citations in Body Using Double Brackets (`⟦#⟧`):**
-   - Whenever you incorporate specific facts, turning points, surprising numbers, or mechanisms from `<WEB_SEARCH_RESULTS>`, immediately append the citation number in double square brackets: `⟦1⟧`, `⟦2⟧`, or `⟦1, 2⟧`.
+   - Whenever you incorporate specific facts, turning points, surprising numbers, or mechanisms from `<WEB_SEARCH_RESULTS>`, immediately append the citation number in double square brackets: `⟦1⟧` or `⟦2⟧`.
+   - **At Most 1 Citation Per Sentence (Strict Limit):** Never place more than ONE citation in a single sentence. Avoid citing multiple sources (e.g. `⟦1, 2⟧`) or scattering multiple citation brackets across the same sentence. Keep citations subtle and unobtrusive.
    - **No Fake Citations:** Cite ONLY the numbers that appear in `<WEB_SEARCH_RESULTS>` and genuinely support that fact. Do NOT invent citation numbers or claim you used sources that you did not actually rely on.
    - Do NOT output URLs anywhere. The backend will automatically map your `⟦#⟧` tags back to the exact source URLs.
 
@@ -62,7 +63,7 @@ Do not invent a different story, concept, or real-world example. Write up the gi
 - **Paragraphs:** Use explicit `\n\n` for line breaks to keep paragraphs short and easy to read on mobile screens.
 - `title`: Max 6 words + 1 emoji. Punchy & intriguing. No citations.
 - `hook`: Strictly 1–2 short sentences. High-impact shocking fact/mystery. No lecture recap. No citations.
-- `body`: 4–7 crisp sentences broken by `\n\n`. Opens with 1 exciting concept callback sentence, followed by the self-contained story with `⟦#⟧` citations where web data was used.
+- `body`: 4–7 crisp sentences broken by `\n\n`. Opens with 1 exciting concept callback sentence, followed by the self-contained story with `⟦#⟧` citations where web data was used (at most 1 citation per sentence).
 
 ---
 

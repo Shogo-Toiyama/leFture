@@ -899,6 +899,11 @@
     "description": "Small all-caps section header above a single featured fun-fact card on the Lecture Viewer page. Shown uppercase in English for visual style with letter-spacing; languages without case distinction can just use the natural phrase."
   },
 
+  "lectureViewerFunFactSourcesButton": "Sources",
+  "@lectureViewerFunFactSourcesButton": {
+    "description": "Button label to toggle expanding the sources accordion under a Fun Fact card."
+  },
+
   "lectureViewerTranscriptButtonLabel": "Transcript & Audio",
   "@lectureViewerTranscriptButtonLabel": {
     "description": "Label on a full-width button/row at the bottom of the Lecture Viewer page that navigates to the full lecture transcript. Short label."

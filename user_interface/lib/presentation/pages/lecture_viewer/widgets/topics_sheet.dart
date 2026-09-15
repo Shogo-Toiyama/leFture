@@ -179,14 +179,18 @@ class _TopicTile extends ConsumerWidget {
     final isTutorial = lecture?.metadata?['is_tutorial'] == true;
     final hasPlanFullDeepNotes = ref.watch(hasFeatureProvider(plan_features.featureDeepNotesFull));
     final hasFullDeepNotes = isTutorial || hasPlanFullDeepNotes;
-    final isDeepNotesLocked = topicIndex > 0 && !hasFullDeepNotes;
-    final deepNotesLockColor = planThemeColor(plan_features.tierLite);
 
     final notesAsync = ref.watch(deepNotesProvider(lectureId));
     final notes = notesAsync.asData?.value ?? const <DeepNote>[];
     final noteMap = {for (final n in notes) n.topicNumber: n};
     final note = noteMap[topic.index];
-    final isSkipped = note?.noteContents == plan_features.deepNotesSkippedPlanLimit;
+    final noteContents = note?.noteContents ?? '';
+    final isSkipped = noteContents == plan_features.deepNotesSkippedPlanLimit;
+    final hasRealContent = noteContents.trim().isNotEmpty && !isSkipped;
+    // 本文が存在する場合はプランに関係なく閲覧可能。
+    // 本文がなく、Freeプランかつトピック2件目以降であれば青い鍵でロック(要アップグレード)。
+    final isDeepNotesLocked = !hasRealContent && topicIndex > 0 && !hasFullDeepNotes;
+    final deepNotesLockColor = planThemeColor(plan_features.tierLite);
 
     // このトピックに属するカードの枚数と、全カードリストにおける先頭インデックスを計算
     final topicCards = allCards.where((c) => c.topicNumber == topic.index).toList();

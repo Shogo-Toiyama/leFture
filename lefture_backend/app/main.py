@@ -362,10 +362,10 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             detail="Lecture must be assigned to a course before analysis can start."
         )
 
-    # 3.6 同じlecture_idの未完了(!=COMPLETED)jobが既にあるか確認する。
+    # 3.6 同じlecture_idのjobが既にあるか確認する(COMPLETEDも含めて全件見る)。
     old_jobs_res = await asyncio.to_thread(
         lambda: admin_client.table("processing_jobs").select("id, status, expected_chunks")
-            .eq("lecture_id", payload.lecture_id).neq("status", "COMPLETED")
+            .eq("lecture_id", payload.lecture_id)
             .order("created_at", desc=True).execute()
     )
     old_jobs = old_jobs_res.data or []
@@ -376,16 +376,22 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     # 成功しているケース)によって複数回呼ばれ得るため、ここでガードしないと
     # 同じlectureに対して二重にjob/taskが作られてしまう(過去に実際に発生した)。
     #
-    # ★ 判定対象は「生きているjob」だけに限る(DEAD_JOB_STATUSESは除外)。
-    # 通信が不安定な環境では「音声のアップロードが終わる前に手動でStart Analysis
-    # → TRANSCRIBE_MASTERがaudio_path無しでFAILED」が起き、その後アップロードが
-    # 成功して自動発火しても、このガードがFAILEDジョブを「進行中」とみなして
-    # no-opを返し続けるため、分析が二度と始まらなくなっていた。
-    # 「Start Over」ボタン等、ユーザーが明示的に再実行を選んだ場合はforce=Trueで
-    # 呼ばれ、生きているjobごとキャンセル→新規作成する。
+    # ★ 判定対象は「生きているjob」全般(DEAD_JOB_STATUSESは除外)で、COMPLETEDも
+    # 含む。以前はCOMPLETEDをここで除外していたため、1つ目のjobが完了した後に
+    # 届いた2つ目の自動発火リクエスト(クライアント側のバックグラウンド転送完了
+    # イベントの重複配信や、ACK取りこぼしによる再送が原因)がこのガードを素通りし、
+    # 同じlectureに対してCORE_EXTRACTION等が二重に走ってしまっていた(トピック等が
+    # 名前違いで2セットできる不具合の原因)。
+    # 「やり直し分析」を後で作る場合は、force=Trueを送る前にサーバー側で古いjobの
+    # statusを明示的にCANCELLED等へ変更してから叩く設計にすること(現時点では
+    # やり直し機能自体は未実装)。
     active_jobs = [j for j in old_jobs if j.get("status") not in DEAD_JOB_STATUSES]
     if active_jobs and not payload.force:
-        existing_job_id = active_jobs[0]["id"]
+        existing_job = active_jobs[0]
+        existing_job_id = existing_job["id"]
+        if existing_job.get("status") == "COMPLETED":
+            print(f"⏭️ Lecture {payload.lecture_id} already has a completed job ({existing_job_id}). Returning existing job (idempotent no-op).")
+            return {"message": "Analysis already completed", "job_id": existing_job_id}
         print(f"⏭️ Active job already exists for lecture {payload.lecture_id} ({existing_job_id}). Returning existing job (idempotent no-op).")
         return {"message": "Analysis already in progress", "job_id": existing_job_id}
 
@@ -977,6 +983,7 @@ async def billing_history(request: Request):
     RESET_REASON_LABELS = {
         "credit_reset_renewed": "renewed",
         "credit_reset_plan_changed": "plan_changed",
+        "credit_expired": "expired",
     }
 
     def date_time_labels(dt):
@@ -1011,7 +1018,6 @@ async def billing_history(request: Request):
         negative_hourly_buckets = {}
         positive_items = []
         reset_items = []
-        prev_display_balance = None
 
         for tx in transactions:
             created_at_str = tx.get("created_at")
@@ -1038,8 +1044,6 @@ async def billing_history(request: Request):
             except Exception:
                 continue
 
-            curr_display_balance = balance_after // MICRO_PER_CREDIT
-
             if reason in RESET_REASON_LABELS:
                 reset_items.append({
                     "id": str(tx_id) if tx_id else dt.isoformat(),
@@ -1048,17 +1052,22 @@ async def billing_history(request: Request):
                 })
 
             elif delta < 0:
+                # ★ 表示額はbalance_afterの差分ではなく、そのバケツに属する行の
+                # 実際のdeltaを合計して求める。以前はbalance_afterの差分を使って
+                # おり、失効(credit_expired)のように「remaining_amountだけ静かに
+                # 減ってcredit_transactionsに記録が残らない」変化があると、その分が
+                # 次の消費行にまるごと乗ってしまっていた(10分の講義で-60のところ
+                # -2000と表示される、等)。失効も今はmaterialize_expired_grants経由で
+                # 必ずreason='credit_expired'の行を残すため(RESET_REASON_LABELSに
+                # 含めて区切り線として表示)、消費行のdeltaはもう実消費額と一致する。
                 hour_key = dt.strftime("%Y-%m-%d %H:00")
                 if hour_key not in negative_hourly_buckets:
-                    start_balance = prev_display_balance if prev_display_balance is not None else ((balance_after - delta) // MICRO_PER_CREDIT)
                     negative_hourly_buckets[hour_key] = {
-                        "start_display_balance": start_balance,
-                        "end_display_balance": curr_display_balance,
+                        "delta_sum_micro": 0,
                         "sample_time": dt,
                     }
-                else:
-                    negative_hourly_buckets[hour_key]["end_display_balance"] = curr_display_balance
-                    negative_hourly_buckets[hour_key]["sample_time"] = dt
+                negative_hourly_buckets[hour_key]["delta_sum_micro"] += delta
+                negative_hourly_buckets[hour_key]["sample_time"] = dt
 
             elif delta > 0:
                 positive_items.append({
@@ -1067,16 +1076,12 @@ async def billing_history(request: Request):
                     "delta_credits": max(round(delta / MICRO_PER_CREDIT), 1),
                 })
 
-            prev_display_balance = curr_display_balance
-
         all_entries = []
 
         for hour_key, bdata in negative_hourly_buckets.items():
             sample_time = bdata["sample_time"]
-            start_bal = bdata["start_display_balance"]
-            end_bal = bdata["end_display_balance"]
 
-            delta_credits = end_bal - start_bal
+            delta_credits = round(bdata["delta_sum_micro"] / MICRO_PER_CREDIT)
             if delta_credits >= 0:
                 delta_credits = -1
 
@@ -2675,20 +2680,55 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
 # 将来ここに追加していく（例）:
 # async def _patrol_collect_error_reports() -> dict: ...
 
-PATROL_CHECKS = [
-    ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
-    ("advance_stalled_dags", _patrol_advance_stalled_dags),
-    ("wake_waiting_check_and_assemble", _patrol_wake_waiting_check_and_assemble),
-    ("fail_stuck_jobs", _patrol_fail_stuck_jobs),
-    ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
-    ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
-]
+
+async def _patrol_materialize_dormant_expired_grants() -> dict:
+    """
+    クレジットの失効は本来、grant/consume/webhook/更新の各RPC呼び出しの先頭で
+    materialize_expired_grants()により即座に実体化される(lazy materialization)。
+    このパトロールは、しばらくアプリを開かない等の理由でそれらの経路が
+    一切呼ばれないユーザーのための、日次ではなく通常の30分おきPATROL_CHECKS
+    ループに乗せるバックストップに過ぎない。credit_grants_expiring_idx
+    (user_id, expires_at) where remaining_amount > 0 を使うため、対象が
+    いなければ実質コスト0。ユーザーごとに独立してmaterialize_expired_grants
+    をRPC呼び出しするので、consume_credits等のロック順と衝突しない
+    (一括UPDATEによるスイープは意図的に避けている)。
+    """
+    admin_client = get_supabase_client()
+
+    stale_res = await asyncio.to_thread(
+        lambda: admin_client.table("credit_grants")
+            .select("user_id")
+            .gt("remaining_amount", 0)
+            .lte("expires_at", (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat())
+            .execute()
+    )
+    user_ids = sorted({row["user_id"] for row in (stale_res.data or [])})
+
+    materialized = 0
+    failed = 0
+    for user_id in user_ids:
+        try:
+            await asyncio.to_thread(
+                lambda user_id=user_id: admin_client.rpc(
+                    "materialize_expired_grants", {"p_user_id": user_id}
+                ).execute()
+            )
+            materialized += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Failed to materialize expired grants for user {user_id}: {e}")
+
+    return {"users_checked": len(user_ids), "materialized": materialized, "failed": failed}
 
 
 async def _patrol_renew_subscriptions() -> dict:
     """
-    毎日UTC PATROL_DAILY_HOUR_UTC時付近に1回だけ、patrol()から呼ばれる
-    (専用のCloud Schedulerジョブは用意しない。既存の10分おきpatrolに相乗り)。
+    以前は「1日1回だけ」patrol()の日次ブロックから呼ばれていたが、
+    renew_subscription()自体は既に冪等(current_period_end > nowなら
+    即returnするだけ)なので、通常の30分おきPATROL_CHECKSに乗せても安全。
+    Freeプラン等self_serveプランの更新が最大24時間遅れる問題(その間
+    grant_credits前のcredit_grantsが失効したままになり得る)を解消するため、
+    通常のPATROL_CHECKSループに移した。
     全ユーザー分の更新処理をこの呼び出しの中で直接行うと、ユーザー数が
     増えるほどタイムアウトのリスクが上がるため、ここでは「更新期限が
     来ているmapping_idを集めてCloud Tasksに1件ずつ積む」だけの軽い処理に
@@ -2725,6 +2765,18 @@ async def _patrol_renew_subscriptions() -> dict:
             print(f"⚠️ Failed to enqueue renewal for mapping {row['id']}: {e}")
 
     return {"due": len(due_mappings), "enqueued": enqueued, "failed": failed}
+
+
+PATROL_CHECKS = [
+    ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
+    ("advance_stalled_dags", _patrol_advance_stalled_dags),
+    ("wake_waiting_check_and_assemble", _patrol_wake_waiting_check_and_assemble),
+    ("fail_stuck_jobs", _patrol_fail_stuck_jobs),
+    ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
+    ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
+    ("materialize_dormant_expired_grants", _patrol_materialize_dormant_expired_grants),
+    ("renew_subscriptions", _patrol_renew_subscriptions),
+]
 
 
 async def _patrol_enqueue_audio_chunks_cleanup() -> dict:
@@ -2804,17 +2856,14 @@ async def patrol():
             results[name] = {"error": str(e)}
             print(f"⚠️ Patrol check '{name}' failed: {e}")
 
-    # サブスク更新および音声チャンククリーンアップは「1日1回」でよいので、
-    # 実行ウィンドウ(:00付近 or :30付近)のうち、PATROL_DAILY_HOUR_UTC時台の
-    # :00付近側だけを通す。:30付近側まで通すと1日2回走ってしまうため、hourに
-    # 加えてminute側もtoleranceで絞っている。
+    # 音声チャンククリーンアップは「1日1回」でよいので、実行ウィンドウ
+    # (:00付近 or :30付近)のうち、PATROL_DAILY_HOUR_UTC時台の:00付近側だけを
+    # 通す。:30付近側まで通すと1日2回走ってしまうため、hourに加えてminute側も
+    # toleranceで絞っている。
+    # ★ renew_subscriptionsは以前ここ(1日1回)にあったが、既に冪等なので
+    # PATROL_CHECKS(30分おき)に移した — Freeプラン更新の遅延を最大24時間から
+    # 最大30分に短縮するため。
     if now.hour == PATROL_DAILY_HOUR_UTC and now.minute < PATROL_TIME_WINDOW_TOLERANCE_MINUTES:
-        try:
-            results["renew_subscriptions"] = await _patrol_renew_subscriptions()
-        except Exception as e:
-            results["renew_subscriptions"] = {"error": str(e)}
-            print(f"⚠️ Patrol check 'renew_subscriptions' failed: {e}")
-
         try:
             results["cleanup_audio_chunks"] = await _patrol_enqueue_audio_chunks_cleanup()
         except Exception as e:

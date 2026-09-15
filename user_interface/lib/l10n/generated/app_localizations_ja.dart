@@ -549,6 +549,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lectureViewerFunFactHeader => 'ファンファクト';
 
   @override
+  String get lectureViewerFunFactSourcesButton => 'ソース';
+
+  @override
   String get lectureViewerTranscriptButtonLabel => '文字起こし・音声';
 
   @override

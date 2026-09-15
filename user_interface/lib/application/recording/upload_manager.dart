@@ -441,6 +441,15 @@ class UploadManager {
         return;
       }
 
+      // 二重発火ガード。バックグラウンド転送プラグイン(FileDownloader)は
+      // サスペンド中に受け取れなかった完了イベントをresumeFromBackground時に
+      // 再配信することがあり、このハンドラがステータスを見ずに再実行されると
+      // 同じ講義に対してstart_analysisジョブが二重に積まれてしまう。
+      if (await _repo.hasStartAnalysisJobForLecture(lecture.id)) {
+        DevLog.add('⏭️ [UploadManager] start_analysisジョブが既に存在するため、二重発火を回避します。');
+        return;
+      }
+
       DevLog.add('🎉 マスター音声の送信完了！分析開始の号砲を鳴らします！');
       await _repo.enqueueStartAnalysis(
         userId: lecture.userId,

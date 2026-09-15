@@ -126,9 +126,16 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       }).toList();
     }, [hasPassedTopics, topics, topicsAsync, notesAsync]);
 
-    // Liteプラン未満で直接このページへ来た場合(URL直打ち等)は、ロックされた
-    // トピックを直接開かせず先頭(常に解放されているプレビュー)へ寄せる。
-    final safeTopicIndex = hasFullDeepNotes ? topicIndex : 0;
+    // Liteプラン未満で直接このページへ来た場合でも、対象トピックが既に
+    // 生成済み(またはスキップ記録済み)であればそのまま開き、未生成の場合のみ先頭へ寄せる。
+    final targetTopic = (topicIndex >= 0 && topicIndex < resolvedTopics.length)
+        ? resolvedTopics[topicIndex]
+        : null;
+    final targetContent = targetTopic?.content ?? '';
+    final targetIsSkipped = targetContent == plan_features.deepNotesSkippedPlanLimit;
+    final targetHasRealContent = targetContent.trim().isNotEmpty && !targetIsSkipped;
+    final canViewRequestedTopic = hasFullDeepNotes || targetHasRealContent;
+    final safeTopicIndex = canViewRequestedTopic ? topicIndex : 0;
     final index = resolvedTopics.isEmpty
         ? 0
         : safeTopicIndex.clamp(0, resolvedTopics.length - 1);
@@ -268,10 +275,14 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     final topic = resolvedTopics[currentIndex.value];
     final totalTopics = resolvedTopics.length;
-    // ロックされたトピック(position > 0、Full DeepNotes未解放)へは"次へ"で
-    // 進めない — position 0は常に解放済みプレビューなので、ここから進めるのは
-    // 常にロック済みトピックへ、という前提で成立している。
-    final canAdvanceToNext = currentIndex.value < totalTopics - 1 && hasFullDeepNotes;
+    final nextTopic = (currentIndex.value < totalTopics - 1)
+        ? resolvedTopics[currentIndex.value + 1]
+        : null;
+    final nextContent = nextTopic?.content ?? '';
+    final nextIsSkipped = nextContent == plan_features.deepNotesSkippedPlanLimit;
+    final nextHasRealContent = nextContent.trim().isNotEmpty && !nextIsSkipped;
+    final canAdvanceToNext = currentIndex.value < totalTopics - 1 &&
+        (hasFullDeepNotes || nextHasRealContent);
 
     // 現在選択中の範囲が、ノート本文の何文字目〜何文字目にあたるかを求める。
     TextLocation? locateSelection() {
@@ -985,8 +996,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       itemBuilder: (context, index) {
                         final topic = resolvedTopics[index];
                         final isSelected = index == currentIndex.value;
-                        final isLocked = index > 0 && !hasFullDeepNotes;
                         final isSkipped = topic.content == plan_features.deepNotesSkippedPlanLimit;
+                        final hasRealContent = topic.content.trim().isNotEmpty && !isSkipped;
+                        final isLocked = !hasRealContent && index > 0 && !hasFullDeepNotes;
                         final lockColor = planThemeColor(plan_features.tierLite);
 
                         return GestureDetector(

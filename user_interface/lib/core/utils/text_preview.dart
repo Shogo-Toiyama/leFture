@@ -1,13 +1,21 @@
 import 'sid_citation.dart';
 
+/// Fun Factの本文に含まれるWeb文献引用記法 (⟦1⟧, ⟦1, 2⟧, 〚1〛, [[1]] 等) を除去する。
+String stripFunFactCitations(String source) {
+  return source.replaceAll(
+    RegExp(r'(?:⟦|〚|\[\[)\s*\d+[\d\s,，\-–—−]*\s*(?:⟧|〛|\]\])'),
+    '',
+  );
+}
+
 /// Markdown入りテキストを、1〜数行のプレビュー表示用のプレーンテキストに変換する。
 ///
 /// カルーセルカードやリストのサブタイトルなど、MarkdownBodyを使えない
 /// (maxLines/ellipsisが必要な) 場所で使う。SID引用も同時に除去する。
 String plainTextPreview(String source) {
   var text = stripSidCitations(source);
-  // Web文献引用 (⟦1⟧, ⟦1, 2⟧, 〚1〛, [[1]] 等) の除去
-  text = text.replaceAll(RegExp(r'(?:⟦|〚|\[\[)\s*\d+[\d\s,，\-–—−]*\s*(?:⟧|〛|\]\])'), '');
+  // Web文献引用の除去
+  text = stripFunFactCitations(text);
 
   // 見出し記号 (# ## ###)
   text = text.replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '');

@@ -21,4 +21,16 @@ void main() {
       expect(result, 'Regular sentence without any bracket.');
     });
   });
+
+  group('stripFunFactCitations', () {
+    test('removes web citations while preserving line breaks and paragraphs', () {
+      final input =
+          'Hook sentence here.\n\nFirst paragraph with fact⟦1⟧.\n\nSecond paragraph with multiple⟦2⟧ citations⟦3⟧.';
+      final result = stripFunFactCitations(input);
+      expect(
+        result,
+        'Hook sentence here.\n\nFirst paragraph with fact.\n\nSecond paragraph with multiple citations.',
+      );
+    });
+  });
 }

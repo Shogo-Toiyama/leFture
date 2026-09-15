@@ -15,6 +15,7 @@ import 'package:lefture/presentation/themes/app_colors.dart'; // 色追加
 // AIチャットはApple審査対応のため一時的に非表示。再有効化時にコメントアウトを外す。
 // import 'package:lefture/presentation/widgets/ai_chat_sheet.dart';
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/recording/live_transcript_provider.dart';
 import 'package:lefture/application/asr/live_asr_controller.dart';
 import 'package:lefture/core/services/asr_engine/asr_engine_status.dart';
@@ -413,6 +414,9 @@ class RecordingPage extends HookConsumerWidget {
             asrModelState.status == AsrModelStatus.ready);
     // Realtime Transcribeの設定は録音を始める前にしか変更できない。
     final realtimeLocked = state.phase != RecordingPhase.idle;
+    final hasRealtimeFeature = ref.watch(
+      hasFeatureProvider(plan_features.featureRealtimeTranscribe),
+    );
 
     Future<void> showRealtimeLockedDialog() => showCustomDialog(
       context: context,
@@ -457,6 +461,10 @@ class RecordingPage extends HookConsumerWidget {
     }
 
     Future<void> confirmAndDownloadAsrModel() async {
+      if (!hasRealtimeFeature) {
+        await showRealtimeToggleFailure(RealtimeToggleResult.requiresUpgrade);
+        return;
+      }
       final confirmed = await showCustomDialog(
         context: context,
         title: l10n.recordingSpeechModelDialogTitle,
@@ -1761,7 +1769,9 @@ class RecordingPage extends HookConsumerWidget {
                                         subtitleColor: asrModelErrored
                                             ? AppColors.correctionRed
                                             : null,
-                                        titleTrailing: asrModelUpdating
+                                        titleTrailing:
+                                            (hasRealtimeFeature &&
+                                                asrModelUpdating)
                                             ? SizedBox(
                                                 width: 12,
                                                 height: 12,
@@ -1776,45 +1786,64 @@ class RecordingPage extends HookConsumerWidget {
                                                     ),
                                               )
                                             : null,
-                                        trailing: buildAsrTrailingAction(
-                                          modelState: asrModelState,
-                                          locked: realtimeLocked,
-                                          onDownloadTap:
-                                              confirmAndDownloadAsrModel,
-                                          onPauseTap: () => ref
-                                              .read(
-                                                asrModelManagerProvider
-                                                    .notifier,
+                                        trailing: !hasRealtimeFeature
+                                            ? Icon(
+                                                Icons.lock_outline_rounded,
+                                                color: planThemeColor(
+                                                  plan_features.tierMax,
+                                                ),
+                                                size: 20,
                                               )
-                                              .pauseDownload(
-                                                recordingLanguage,
+                                            : buildAsrTrailingAction(
+                                                modelState: asrModelState,
+                                                locked: realtimeLocked,
+                                                onDownloadTap:
+                                                    confirmAndDownloadAsrModel,
+                                                onPauseTap: () => ref
+                                                    .read(
+                                                      asrModelManagerProvider
+                                                          .notifier,
+                                                    )
+                                                    .pauseDownload(
+                                                      recordingLanguage,
+                                                    ),
+                                                onResumeTap: () =>
+                                                    resumeAsrModelWithErrorDialog(
+                                                      context,
+                                                      ref,
+                                                      recordingLanguage,
+                                                    ),
                                               ),
-                                          onResumeTap: () =>
-                                              resumeAsrModelWithErrorDialog(
-                                                context,
-                                                ref,
-                                                recordingLanguage,
-                                              ),
-                                        ),
-                                        onTileTap: realtimeLocked
-                                            ? showRealtimeLockedDialog
-                                            : asrModelDownloadable
-                                            ? confirmAndDownloadAsrModel
-                                            : null,
-                                        value: state.realtimeTranscribe,
+                                        onTileTap: !hasRealtimeFeature
+                                            ? (realtimeLocked
+                                                ? showRealtimeLockedDialog
+                                                : () => showRealtimeToggleFailure(
+                                                    RealtimeToggleResult
+                                                        .requiresUpgrade,
+                                                  ))
+                                            : (realtimeLocked
+                                                ? showRealtimeLockedDialog
+                                                : asrModelDownloadable
+                                                ? confirmAndDownloadAsrModel
+                                                : null),
+                                        value:
+                                            hasRealtimeFeature &&
+                                            state.realtimeTranscribe,
                                         dimmed: realtimeLocked,
-                                        onChanged: (val) async {
-                                          if (realtimeLocked) {
-                                            await showRealtimeLockedDialog();
-                                            return;
-                                          }
-                                          final result = await controller
-                                              .setRealtimeTranscribe(val);
-                                          if (!context.mounted) return;
-                                          await showRealtimeToggleFailure(
-                                            result,
-                                          );
-                                        },
+                                        onChanged: !hasRealtimeFeature
+                                            ? null
+                                            : (val) async {
+                                                if (realtimeLocked) {
+                                                  await showRealtimeLockedDialog();
+                                                  return;
+                                                }
+                                                final result = await controller
+                                                    .setRealtimeTranscribe(val);
+                                                if (!context.mounted) return;
+                                                await showRealtimeToggleFailure(
+                                                  result,
+                                                );
+                                              },
                                       ),
                                       const SizedBox(height: 12),
                                       _RecordingLanguageRow(

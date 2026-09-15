@@ -585,6 +585,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lectureViewerFunFactHeader => 'FUN FACT';
 
   @override
+  String get lectureViewerFunFactSourcesButton => 'Sources';
+
+  @override
   String get lectureViewerTranscriptButtonLabel => 'Transcript & Audio';
 
   @override
