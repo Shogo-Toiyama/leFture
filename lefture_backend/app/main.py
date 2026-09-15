@@ -889,6 +889,52 @@ async def billing_plans(request: Request):
     return {"plans": claimable}
 
 
+@app.get("/billing/credit-packs")
+async def billing_credit_packs(request: Request):
+    """
+    無効化されていない追加クレジットパック一覧(都度課金、非サブスク)。
+    /billing/plansと同じ理由でFlutter側に商品ID・クレジット量をハードコード
+    させないための一覧取得エンドポイント。実際の付与はRevenueCat Webhook
+    (NON_RENEWING_PURCHASEイベント → grant_credit_pack_purchase())経由でのみ行う。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    user_res = user_client.auth.get_user(token)
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+
+    admin_client = get_supabase_client()
+
+    try:
+        packs_res = await asyncio.to_thread(
+            lambda: admin_client.table("credit_packs")
+                .select("id, name, credit_amount, price_usd, store_product_id, disabled_at")
+                .execute()
+        )
+    except Exception as e:
+        logger.error(f"Error fetching credit packs: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
+
+    now = datetime.now(timezone.utc)
+    available = []
+    for pack in (packs_res.data or []):
+        disabled_at = pack.get("disabled_at")
+        if disabled_at and datetime.fromisoformat(disabled_at) <= now:
+            continue
+        pack.pop("disabled_at", None)
+        available.append(pack)
+
+    return {"packs": available}
+
+
 @app.get("/billing/summary")
 async def billing_summary(request: Request):
     """
@@ -1219,6 +1265,20 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
                     "p_product_id": product_id,
                 }).execute()
             )
+        elif event_type == "NON_RENEWING_PURCHASE":
+            # 追加クレジットパック(都度課金、非サブスク)の購入。expiration_at_msは
+            # 持たない(消費型商品のため)。冪等性・付与ロジックはgrant_credit_pack_purchase()
+            # SQL関数側でアトミックに行う(同じevent_idの再送でも二重付与しない)。
+            if not product_id:
+                logger.error(f"RevenueCat NON_RENEWING_PURCHASE missing product_id: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("grant_credit_pack_purchase", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
+                    "p_product_id": product_id,
+                }).execute()
+            )
         elif event_type == "PRODUCT_CHANGE":
             # ダウングレード/クロスグレードが予約された瞬間(実際の切り替えを
             # 待たず)にRevenueCatが即座に送ってくるイベント。new_product_idを
@@ -1240,9 +1300,9 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
             return {"status": "ignored", "event_type": event_type}
     except Exception as e:
         error_str = str(e)
-        if "unknown_store_product" in error_str:
-            # 恒久的な設定ミス(subscription_plans側に商品IDが登録されていない)。
-            # リトライしても直らないため、ログだけ残して200で止める。
+        if "unknown_store_product" in error_str or "unknown_credit_pack" in error_str:
+            # 恒久的な設定ミス(subscription_plans/credit_packs側に商品IDが
+            # 登録されていない)。リトライしても直らないため、ログだけ残して200で止める。
             logger.error(f"RevenueCat webhook: unknown store product - {error_str} (event={event})")
             return {"status": "error_logged", "reason": "unknown_product"}
         # DB接続エラー等の一時的な失敗はRevenueCat側のリトライに委ねるため5xxを返す。

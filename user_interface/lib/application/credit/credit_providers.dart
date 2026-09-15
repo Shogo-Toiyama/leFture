@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/entities/credit_pack_option.dart';
 import '../../domain/entities/credit_summary.dart';
 import '../../domain/entities/credit_usage_item.dart';
 import '../../domain/entities/plan_option.dart';
@@ -29,6 +30,12 @@ final creditSummaryProvider = FutureProvider<CreditSummary>((ref) async {
 /// (claim後に古い一覧を見せ続けないようにするため)。
 final claimablePlansProvider = FutureProvider.autoDispose<List<PlanOption>>((ref) async {
   return ref.watch(creditRepositoryProvider).fetchClaimablePlans();
+});
+
+/// 購入可能な追加クレジットパック一覧(都度課金、非サブスク)。
+/// claimablePlansProviderと同じ理由でautoDisposeにしている。
+final creditPacksProvider = FutureProvider.autoDispose<List<CreditPackOption>>((ref) async {
+  return ref.watch(creditRepositoryProvider).fetchCreditPacks();
 });
 
 /// GET /billing/history の結果 (1時間ごとの利用履歴)。

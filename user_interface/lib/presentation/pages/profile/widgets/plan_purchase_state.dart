@@ -18,6 +18,21 @@ class PlanPurchaseState {
   final String priceLabel;
 }
 
+/// RevenueCatのOfferings(current)の中から、storeProductIdと
+/// StoreProduct.identifierが一致するPackageを探す。プラン購入・追加クレジット
+/// パック購入の両方で使う共通ロジック(商品はどちらも同じcurrent Offeringに
+/// 含まれている)。
+Package? findPackageByProductId(Offerings? offerings, String? storeProductId) {
+  if (storeProductId == null) return null;
+  final availablePackages = offerings?.current?.availablePackages ?? const <Package>[];
+  for (final pkg in availablePackages) {
+    if (pkg.storeProduct.identifier == storeProductId) {
+      return pkg;
+    }
+  }
+  return null;
+}
+
 /// summary(現在のクレジット状況)とofferings(RevenueCatの価格情報)から、
 /// 1プラン分の状態を導出する。isCurrentPlanはmonthlyAllocationMicroの
 /// 一致で判定する(/billing/summaryはactiveなプランのidそのものを
@@ -32,16 +47,7 @@ PlanPurchaseState resolvePlanPurchaseState({
   final monthlyAllocationMicro = summary?.monthlyAllocationMicro;
   final isCurrentPlan = hasActivePlan && monthlyAllocationMicro == plan.monthlyCreditAmountMicro;
 
-  final availablePackages = offerings?.current?.availablePackages ?? const <Package>[];
-  Package? package;
-  if (plan.isStorePurchase && plan.storeProductId != null) {
-    for (final pkg in availablePackages) {
-      if (pkg.storeProduct.identifier == plan.storeProductId) {
-        package = pkg;
-        break;
-      }
-    }
-  }
+  final package = plan.isStorePurchase ? findPackageByProductId(offerings, plan.storeProductId) : null;
 
   final String priceLabel;
   if (plan.isSelfServe) {

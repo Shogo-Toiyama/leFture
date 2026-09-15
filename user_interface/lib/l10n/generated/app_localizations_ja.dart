@@ -989,6 +989,56 @@ class AppLocalizationsJa extends AppLocalizations {
   String get creditDetailViewPaidPlansButton => '有料プランを見る';
 
   @override
+  String get creditDetailBuyCreditsLink => 'クレジットを購入 ＞';
+
+  @override
+  String get purchaseCreditsTitle => 'クレジット購入';
+
+  @override
+  String get purchaseCreditsTagline => '必要な分だけいつでも追加。有効期限はありません。';
+
+  @override
+  String get purchaseCreditsCurrentBalance => '現在残高';
+
+  @override
+  String get purchaseCreditsDisclosure =>
+      '購入確認時にApple IDアカウントに課金されます。購入された追加クレジットに有効期限はありません。月間クレジットが不足した際に自動的に消費されます。';
+
+  @override
+  String get purchaseCreditsNoExpiration => '有効期限なし';
+
+  @override
+  String purchaseCreditsPackLectures(int count) {
+    return '講義 約$count回分';
+  }
+
+  @override
+  String get purchaseCreditsPackBestValue => '一番お得';
+
+  @override
+  String get purchaseCreditsPackPopular => '一番人気';
+
+  @override
+  String get purchaseCreditsPackStarter => '手軽にお試し';
+
+  @override
+  String get creditDetailExtraCreditsTitle => '追加クレジット';
+
+  @override
+  String creditDetailExtraCreditsBalance(int credits) {
+    return '$creditsクレジット保有中';
+  }
+
+  @override
+  String creditDetailBuyCreditsPackButton(int credits, String price) {
+    return '$creditsクレジット — $price';
+  }
+
+  @override
+  String get creditDetailBuyCreditsLoadError =>
+      'クレジットパックを読み込めませんでした。下に引っ張って再読み込みしてください。';
+
+  @override
   String get creditDetailPlansLoadError => 'プランを読み込めませんでした。下に引っ張って再読み込みしてください。';
 
   @override

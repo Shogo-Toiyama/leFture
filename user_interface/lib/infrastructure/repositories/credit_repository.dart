@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/utils/network_constants.dart';
+import '../../domain/entities/credit_pack_option.dart';
 import '../../domain/entities/credit_summary.dart';
 import '../../domain/entities/credit_usage_item.dart';
 import '../../domain/entities/plan_option.dart';
@@ -84,6 +85,24 @@ class CreditRepository {
       }
       throw Exception('Failed to claim plan (${response.statusCode}): ${response.body}');
     }
+  }
+
+  /// 購入可能な追加クレジットパック一覧(都度課金、非サブスク)。
+  Future<List<CreditPackOption>> fetchCreditPacks() async {
+    final response = await http.get(
+      Uri.parse('$_cloudRunBaseUrl/billing/credit-packs'),
+      headers: {'Authorization': 'Bearer $_jwt'},
+    ).timeout(networkTimeout);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch credit packs (${response.statusCode}): ${response.body}');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final packs = (body['packs'] as List<dynamic>? ?? [])
+        .map((e) => CreditPackOption.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return packs;
   }
 
   /// 1時間ごとのクレジット利用履歴を取得する。

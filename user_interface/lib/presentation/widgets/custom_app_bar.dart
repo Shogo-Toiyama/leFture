@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -308,29 +310,66 @@ class CustomAppBar extends ConsumerWidget {
                       // ロード中/未取得/プラン未加入(hasActivePlan=false)は薄い赤の
                       // ミニマムスリバーだけ見せる(0を「何も無い」ではなく
                       // 「使い切った/未加入」として視覚的に区別するため)。
-                      final isDepleted = summary == null || !summary.hasActivePlan || (summary.creditBalanceDisplay ?? 0) <= 0;
-                      final gaugeValue = isDepleted ? 0.03 : summary.remainingFraction;
-                      final gaugeColor = isDepleted
-                          ? const Color(0xFFD32F2F)
-                          : (isLightBg ? AppColors.deepGold : AppColors.starGold);
+                      final totalBalance = summary?.creditBalanceDisplay ?? 0;
+                      final monthlyAllocation = summary?.monthlyAllocationDisplay ?? 0;
+                      final extraBalance = summary?.extraCreditBalanceDisplay ?? 0;
+
+                      final isDepleted = summary == null || !summary.hasActivePlan || totalBalance <= 0;
+
+                      final double monthlyFraction;
+                      final double totalFraction;
+
+                      if (isDepleted) {
+                        monthlyFraction = 0.03;
+                        totalFraction = 0.03;
+                      } else {
+                        final monthlyBalance = (totalBalance - extraBalance).clamp(0, monthlyAllocation);
+                        final maxCapacity = math.max(monthlyAllocation, totalBalance);
+                        if (maxCapacity <= 0) {
+                          monthlyFraction = 0.0;
+                          totalFraction = 0.0;
+                        } else {
+                          monthlyFraction = (monthlyBalance / maxCapacity).clamp(0.0, 1.0);
+                          totalFraction = (totalBalance / maxCapacity).clamp(0.0, 1.0);
+                        }
+                      }
+
                       return GestureDetector(
                         onTap: () => context.push(AppRoutes.account),
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // クレジット残量ゲージ
+                            // 1. 下層: 合計分の円形ゲージ (紫: 追加クレジット分)
                             SizedBox(
                               width: 32,
                               height: 32,
                               child: CircularProgressIndicator(
-                                value: gaugeValue,
+                                value: totalFraction,
                                 strokeWidth: 2.5,
                                 backgroundColor: isLightBg
                                     ? AppColors.paper.textInk.withValues(alpha: 0.1)
                                     : AppColors.universe.glassWhiteLow,
-                                valueColor: AlwaysStoppedAnimation<Color>(gaugeColor),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDepleted
+                                      ? const Color(0xFFD32F2F)
+                                      : const Color(0xFFC084FC),
+                                ),
                               ),
                             ),
+                            // 2. 上層: 月間分の円形ゲージ (金色: 月次クレジット分)
+                            if (!isDepleted && monthlyFraction > 0)
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(
+                                  value: monthlyFraction,
+                                  strokeWidth: 2.5,
+                                  backgroundColor: Colors.transparent,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    isLightBg ? AppColors.deepGold : AppColors.starGold,
+                                  ),
+                                ),
+                              ),
                             // User Avatar
                             UserAvatar(
                               profile: profile,

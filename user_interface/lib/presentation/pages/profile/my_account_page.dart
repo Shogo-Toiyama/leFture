@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -610,20 +611,34 @@ class _CreditCardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     // プラン未加入(=一度もclaimしていない)場合は「0」と明示的に表示する。
-    final balance = summary.hasActivePlan
+    final totalBalance = summary.hasActivePlan
         ? (summary.creditBalanceDisplay ?? 0)
         : 0;
-    final allocation = summary.hasActivePlan
+    final monthlyAllocation = summary.hasActivePlan
         ? (summary.monthlyAllocationDisplay ?? 0)
         : 0;
-    final isDepleted = balance <= 0;
+    final extraBalance = summary.extraCreditBalanceDisplay;
 
-    // 0でもバー自体は完全にはゼロにせず、薄く赤色のスリバーを残しておく
-    // (「何も無い」ではなく「使い切った」ことが視覚的に分かるようにするため)。
-    final displayFraction = isDepleted ? 0.03 : summary.remainingFraction;
-    final barColors = isDepleted
-        ? const [Color(0xFFFF5252), Color(0xFFD32F2F)]
-        : const [Color(0xFFFFB300), Color(0xFFFF8F00)];
+    final monthlyBalance = totalBalance < 0
+        ? totalBalance
+        : (totalBalance - extraBalance).clamp(0, monthlyAllocation);
+
+    final maxCapacity = math.max(monthlyAllocation, totalBalance);
+    final isDepleted = totalBalance <= 0;
+
+    final double monthlyFraction;
+    final double totalFraction;
+
+    if (isDepleted) {
+      monthlyFraction = 0.03;
+      totalFraction = 0.03;
+    } else if (maxCapacity <= 0) {
+      monthlyFraction = 0.0;
+      totalFraction = 0.0;
+    } else {
+      monthlyFraction = (monthlyBalance / maxCapacity).clamp(0.0, 1.0);
+      totalFraction = (totalBalance / maxCapacity).clamp(0.0, 1.0);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -672,7 +687,7 @@ class _CreditCardContent extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: '$balance',
+                        text: '$totalBalance',
                         style: const TextStyle(
                           color: AppColors.starGold,
                           fontSize: 16,
@@ -680,7 +695,7 @@ class _CreditCardContent extends StatelessWidget {
                         ),
                       ),
                       TextSpan(
-                        text: ' / $allocation',
+                        text: ' / $monthlyAllocation',
                         style: TextStyle(
                           color: AppColors.universe.textComet,
                           fontSize: 13,
@@ -713,24 +728,66 @@ class _CreditCardContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(100),
                 ),
               ),
-              // Fill
-              FractionallySizedBox(
-                widthFactor: displayFraction,
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: barColors),
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: barColors.first.withValues(alpha: 0.5),
-                        blurRadius: 6,
-                        offset: const Offset(0, 1),
+              if (isDepleted)
+                FractionallySizedBox(
+                  widthFactor: 0.03,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF5252), Color(0xFFD32F2F)],
                       ),
-                    ],
+                      borderRadius: BorderRadius.circular(100),
+                    ),
                   ),
-                ),
-              ),
+                )
+              else ...[
+                // 1. 下層: 合計分の幅まで伸びる「紫バー」（追加クレジット分）
+                if (totalFraction > 0)
+                  FractionallySizedBox(
+                    widthFactor: totalFraction,
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFC084FC), Color(0xFFA855F7)],
+                        ),
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFA855F7).withValues(alpha: 0.4),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                // 2. 上層: 月間クレジット分の幅を覆う「黄色バー」（月次クレジット分）
+                if (monthlyFraction > 0)
+                  FractionallySizedBox(
+                    widthFactor: monthlyFraction,
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                        ),
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withValues(alpha: 0.5),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),

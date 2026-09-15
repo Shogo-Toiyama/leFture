@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart' show CupertinoSliverRefreshControl;
@@ -7,8 +8,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import 'package:lefture/app/routes.dart';
-// import 'package:go_router/go_router.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/domain/entities/credit_summary.dart';
@@ -21,8 +22,8 @@ import 'package:lefture/presentation/widgets/credit_rate_table_dialog.dart';
 import 'widgets/plan_theme.dart';
 
 /// クレジット残量の内訳を見せる詳細ページ。MyAccountPage上部のクレジット
-/// タイルから遷移してくる。追加クレジット購入・履歴表示は今はUIだけ用意し、
-/// 実際の購入導線(store_purchase)はまだ無いので全て無効化しておく。
+/// タイルから遷移してくる。追加クレジットパック(都度課金、無期限)の購入導線
+/// (_ExtraCreditCard)もここに含む。
 ///
 /// 更新方法は3つ: (1) このページを開いている間は自動で定期的に再取得 (5秒間隔ポーリング)
 /// (処理中のジョブがある間、消費されていく様子が見えるように)、
@@ -132,8 +133,6 @@ class _CreditDetailBody extends StatelessWidget {
           const SizedBox(height: 20),
           _CurrentPlanCard(summary: summary),
         ],
-        // const SizedBox(height: 20),
-        // _ExtraCreditCard(summary: summary),
         const SizedBox(height: 20),
         _HistorySection(),
         const SizedBox(height: 48),
@@ -206,6 +205,10 @@ class _CurrentPlanCard extends ConsumerWidget {
             pendingPlan.name,
             DateFormat.yMMMd(l10n.localeName).format(summary.currentPeriodEnd!.toLocal()),
           )
+        : null;
+
+    final resetLabel = summary.currentPeriodEnd != null
+        ? l10n.creditDetailResetsOn(DateFormat.yMMMd(l10n.localeName).format(summary.currentPeriodEnd!.toLocal()))
         : null;
 
     return Padding(
@@ -376,6 +379,16 @@ class _CurrentPlanCard extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      if (resetLabel != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          resetLabel,
+                          style: TextStyle(
+                            color: AppColors.universe.textComet,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                       if (pendingPlanNote != null) ...[
                         const SizedBox(height: 4),
                         Text(
@@ -433,17 +446,34 @@ class _MonthlyCreditCard extends StatelessWidget {
       return const _NoActivePlanCard();
     }
 
-    // 残高が0以下でも、バー自体は完全な0にはせず薄く赤色を残す(視認性のため)。
-    final rawFraction = summary.remainingFraction;
-    final isDepleted = (summary.creditBalanceDisplay ?? 0) <= 0;
-    final displayFraction = isDepleted ? 0.03 : rawFraction;
-    final barColors = isDepleted
-        ? const [Color(0xFFFF5252), Color(0xFFD32F2F)]
-        : const [Color(0xFFFFB300), Color(0xFFFF8F00)];
+    final totalBalance = summary.creditBalanceDisplay ?? 0;
+    final monthlyAllocation = summary.monthlyAllocationDisplay ?? 0;
+    final extraBalance = summary.extraCreditBalanceDisplay;
 
-    final resetLabel = summary.currentPeriodEnd != null
-        ? l10n.creditDetailResetsOn(DateFormat.yMMMd(l10n.localeName).format(summary.currentPeriodEnd!.toLocal()))
-        : null;
+    // 月間クレジット残量:
+    // オーバードラフト時はそのままマイナス値を反映、それ以外は0〜月間枠に収める
+    final monthlyBalance = totalBalance < 0
+        ? totalBalance
+        : (totalBalance - extraBalance).clamp(0, monthlyAllocation);
+
+    // プログレスバーの分母（100%基準）:
+    // 基本は monthlyAllocation だが、追加分を合わせてこれを超えるなら totalBalance を分母とする
+    final maxCapacity = math.max(monthlyAllocation, totalBalance);
+
+    final isDepleted = totalBalance <= 0;
+    final double monthlyFraction;
+    final double totalFraction;
+
+    if (isDepleted) {
+      monthlyFraction = 0.03; // 残高0以下でも薄く視認性のために少し赤色を表示
+      totalFraction = 0.03;
+    } else if (maxCapacity <= 0) {
+      monthlyFraction = 0.0;
+      totalFraction = 0.0;
+    } else {
+      monthlyFraction = (monthlyBalance / maxCapacity).clamp(0.0, 1.0);
+      totalFraction = (totalBalance / maxCapacity).clamp(0.0, 1.0);
+    }
 
     return _GlassCard(
       child: Padding(
@@ -463,17 +493,31 @@ class _MonthlyCreditCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(children: [
                     TextSpan(
-                      // ★ 以前はisDepletedの時に実際の値を無視して0を表示していたが、
-                      // このアプリはオーバードラフト(残高がマイナスに大きく振れること)を
-                      // 許容する設計のため、0に丸めると「実際どれだけマイナスか」が
-                      // 分からなくなってしまう。実際の値をそのまま表示する。
-                      text: '${summary.creditBalanceDisplay ?? 0}',
-                      style: const TextStyle(color: AppColors.starGold, fontSize: 18, fontWeight: FontWeight.w700),
+                      text: '$monthlyBalance',
+                      style: TextStyle(
+                        color: isDepleted ? const Color(0xFFFF5252) : AppColors.starGold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     TextSpan(
-                      text: ' / ${summary.monthlyAllocationDisplay ?? 0}',
+                      text: ' / $monthlyAllocation',
                       style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, fontWeight: FontWeight.w500),
                     ),
+                    if (extraBalance > 0) ...[
+                      TextSpan(
+                        text: ' + ',
+                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                      TextSpan(
+                        text: '$extraBalance',
+                        style: const TextStyle(
+                          color: Color(0xFFC084FC),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ]),
                 ),
               ],
@@ -483,6 +527,7 @@ class _MonthlyCreditCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(100),
               child: Stack(
                 children: [
+                  // 背景: 空バー
                   Container(
                     height: 10,
                     decoration: BoxDecoration(
@@ -490,23 +535,79 @@ class _MonthlyCreditCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(100),
                     ),
                   ),
-                  FractionallySizedBox(
-                    widthFactor: displayFraction,
-                    child: Container(
-                      height: 10,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: barColors),
-                        borderRadius: BorderRadius.circular(100),
+                  if (isDepleted)
+                    // 残高マイナス/0時: 薄い赤バー
+                    FractionallySizedBox(
+                      widthFactor: 0.03,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        height: 10,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF5252), Color(0xFFD32F2F)],
+                          ),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
                       ),
-                    ),
-                  ),
+                    )
+                  else ...[
+                    // 1. 下層: 合計分の幅まで伸びる「紫バー」（追加クレジット分）
+                    if (totalFraction > 0)
+                      FractionallySizedBox(
+                        widthFactor: totalFraction,
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          height: 10,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFC084FC), Color(0xFFA855F7)],
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ),
+                    // 2. 上層: 月間クレジット分の幅を覆う「黄色バー」（月次クレジット分）
+                    // これにより左側が黄色、右側が紫と綺麗に分割表示される
+                    if (monthlyFraction > 0)
+                      FractionallySizedBox(
+                        widthFactor: monthlyFraction,
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          height: 10,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                            ),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
-            if (resetLabel != null) ...[
-              const SizedBox(height: 10),
-              Text(resetLabel, style: TextStyle(color: AppColors.universe.textComet, fontSize: 12)),
-            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => context.push(AppRoutes.purchaseCredits),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      l10n.creditDetailBuyCreditsLink,
+                      style: const TextStyle(
+                        color: AppColors.starGold,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -634,63 +735,7 @@ class _NoActivePlanCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 追加クレジット (将来のストア課金購入分。今はUIだけ)
-// ─────────────────────────────────────────────────────────────────────────────
 
-// /*
-// class _ExtraCreditCard extends StatelessWidget {
-//   const _ExtraCreditCard({required this.summary});
-//   final CreditSummary summary;
-// 
-//   @override
-//   Widget build(BuildContext context) {
-//     return _GlassCard(
-//       child: Padding(
-//         padding: const EdgeInsets.all(20),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Row(
-//               children: [
-//                 const Text(
-//                   'Additional Credits',
-//                   style: TextStyle(color: Color(0xFFF2F2F2), fontSize: 15, fontWeight: FontWeight.w600),
-//                 ),
-//                 const SizedBox(width: 8),
-//                 Container(
-//                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-//                   decoration: BoxDecoration(
-//                     color: Colors.white.withValues(alpha: 0.08),
-//                     borderRadius: BorderRadius.circular(100),
-//                   ),
-//                   child: const Text(
-//                     'Coming Soon',
-//                     style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w600),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             const SizedBox(height: 6),
-//             Text(
-//               '${summary.extraCreditBalanceDisplay} credits',
-//               style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-//             ),
-//             const SizedBox(height: 14),
-//             SizedBox(
-//               width: double.infinity,
-//               child: OutlinedButton(
-//                 onPressed: null, // ストア課金が実装されるまで無効化
-//                 child: const Text('Buy More Credits'),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-// */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1時間ごとの利用履歴 セクション

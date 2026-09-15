@@ -1040,6 +1040,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get creditDetailViewPaidPlansButton => 'View Paid Plans';
 
   @override
+  String get creditDetailBuyCreditsLink => 'Buy Credits ＞';
+
+  @override
+  String get purchaseCreditsTitle => 'Buy Credits';
+
+  @override
+  String get purchaseCreditsTagline => 'Add credits anytime. Never expire.';
+
+  @override
+  String get purchaseCreditsCurrentBalance => 'Current Balance';
+
+  @override
+  String get purchaseCreditsDisclosure =>
+      'Payment will be charged to your Apple ID account at confirmation of purchase. Purchased additional credits never expire and are automatically used when monthly credits run out.';
+
+  @override
+  String get purchaseCreditsNoExpiration => 'Never Expires';
+
+  @override
+  String purchaseCreditsPackLectures(int count) {
+    return 'Approx. $count lectures';
+  }
+
+  @override
+  String get purchaseCreditsPackBestValue => 'BEST VALUE';
+
+  @override
+  String get purchaseCreditsPackPopular => 'MOST POPULAR';
+
+  @override
+  String get purchaseCreditsPackStarter => 'STARTER';
+
+  @override
+  String get creditDetailExtraCreditsTitle => 'Additional Credits';
+
+  @override
+  String creditDetailExtraCreditsBalance(int credits) {
+    return '$credits credits available';
+  }
+
+  @override
+  String creditDetailBuyCreditsPackButton(int credits, String price) {
+    return '$credits Credits — $price';
+  }
+
+  @override
+  String get creditDetailBuyCreditsLoadError =>
+      'Could not load credit packs. Pull to refresh and try again.';
+
+  @override
   String get creditDetailPlansLoadError =>
       'Could not load plans. Pull to refresh and try again.';
 

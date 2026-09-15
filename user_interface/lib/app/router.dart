@@ -31,6 +31,7 @@ import 'package:lefture/presentation/pages/learning_galaxy/learning_galaxy_page.
 import 'package:lefture/presentation/pages/ai_chat/ai_chat_page.dart';
 import 'package:lefture/presentation/pages/profile/my_account_page.dart';
 import 'package:lefture/presentation/pages/profile/credit_detail_page.dart';
+import 'package:lefture/presentation/pages/profile/purchase_credits_page.dart';
 import 'package:lefture/presentation/pages/profile/plans_page.dart';
 import 'package:lefture/presentation/pages/profile/user_profile_detail_page.dart';
 import 'package:lefture/presentation/pages/contact/contact_page.dart';
@@ -548,6 +549,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.creditDetail,
         builder: (context, state) => const CreditDetailPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.purchaseCredits,
+        builder: (context, state) => const PurchaseCreditsPage(),
       ),
       GoRoute(
         path: AppRoutes.plans,

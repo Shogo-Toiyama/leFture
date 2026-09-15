@@ -1865,6 +1865,90 @@ abstract class AppLocalizations {
   /// **'View Paid Plans'**
   String get creditDetailViewPaidPlansButton;
 
+  /// Small text link/button next to the reset date caption on the monthly credit card, navigating to the credit purchase page.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Credits ＞'**
+  String get creditDetailBuyCreditsLink;
+
+  /// AppBar title on the Credit Purchase page.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Credits'**
+  String get purchaseCreditsTitle;
+
+  /// Header subtitle on the Credit Purchase page.
+  ///
+  /// In en, this message translates to:
+  /// **'Add credits anytime. Never expire.'**
+  String get purchaseCreditsTagline;
+
+  /// Label above current credit balance display on Credit Purchase page.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Balance'**
+  String get purchaseCreditsCurrentBalance;
+
+  /// App Store disclosure text on the credit purchase page explaining charge to Apple ID account, no expiration, and automatic deduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment will be charged to your Apple ID account at confirmation of purchase. Purchased additional credits never expire and are automatically used when monthly credits run out.'**
+  String get purchaseCreditsDisclosure;
+
+  /// Badge indicating that purchased credit packs have no expiration date.
+  ///
+  /// In en, this message translates to:
+  /// **'Never Expires'**
+  String get purchaseCreditsNoExpiration;
+
+  /// Subtitle on a credit pack card indicating the approximate number of lectures it covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Approx. {count} lectures'**
+  String purchaseCreditsPackLectures(int count);
+
+  /// Pill badge on the largest credit pack card.
+  ///
+  /// In en, this message translates to:
+  /// **'BEST VALUE'**
+  String get purchaseCreditsPackBestValue;
+
+  /// Pill badge on the mid-tier credit pack card.
+  ///
+  /// In en, this message translates to:
+  /// **'MOST POPULAR'**
+  String get purchaseCreditsPackPopular;
+
+  /// Pill badge on the starter credit pack card.
+  ///
+  /// In en, this message translates to:
+  /// **'STARTER'**
+  String get purchaseCreditsPackStarter;
+
+  /// Title of the card on the Credit Detail page that shows the user's purchased (non-subscription, never-expiring) credit balance and lets them buy more.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Credits'**
+  String get creditDetailExtraCreditsTitle;
+
+  /// Balance line on the Additional Credits card, showing how many purchased credits the user currently has.
+  ///
+  /// In en, this message translates to:
+  /// **'{credits} credits available'**
+  String creditDetailExtraCreditsBalance(int credits);
+
+  /// Label on a button for purchasing one specific additional credit pack, e.g. '500 Credits — $4.99'.
+  ///
+  /// In en, this message translates to:
+  /// **'{credits} Credits — {price}'**
+  String creditDetailBuyCreditsPackButton(int credits, String price);
+
+  /// Error text shown in the Additional Credits card if the list of purchasable credit packs fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load credit packs. Pull to refresh and try again.'**
+  String get creditDetailBuyCreditsLoadError;
+
   /// Error text shown in the plan-picker section if the list of claimable plans fails to load.
   ///
   /// In en, this message translates to:
