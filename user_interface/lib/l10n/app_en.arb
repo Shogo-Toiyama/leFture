@@ -3641,7 +3641,7 @@
     "description": "Title of the dialog shown when tapping a Deep Notes topic that was never generated because the account was on the Free plan when this lecture was processed. Deliberately states non-existence rather than implying hidden/locked content, to avoid a misleading 'pay to reveal' impression."
   },
 
-  "deepNotesLockedDialogMessage": "This lecture was processed on the Free plan, so full Deep Notes weren't created for this topic. Upgrading won't add them to this lecture — but recordings on the Lite plan or above get full Deep Notes for every topic automatically.",
+  "deepNotesLockedDialogMessage": "Deep Notes were not generated for this lecture. Upgrade to Lite or above to automatically generate notes for all topics in future lectures.",
   "@deepNotesLockedDialogMessage": {
     "description": "Body text explicitly stating that content wasn't generated (not just hidden) and that upgrading is not retroactive for the current lecture, only for future recordings. Important for trust — must not imply the content already exists and just needs unlocking."
   },
@@ -3661,7 +3661,7 @@
     "description": "Title of the panel in Deep Notes detail view explaining that full notes were skipped because the lecture was processed under the Free plan."
   },
 
-  "deepNotesSkippedPlanLimitDescription": "Deep Notes were only generated for the first topic because this lecture was analyzed under the Free plan.",
+  "deepNotesSkippedPlanLimitDescription": "Analyzed on the Free plan, so Deep Notes were only generated for the first topic.",
   "@deepNotesSkippedPlanLimitDescription": {
     "description": "Description explaining why this topic's deep note does not exist."
   },
@@ -3681,7 +3681,7 @@
     "description": "Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state."
   },
 
-  "keywordsLockedDialogMessage": "This lecture was processed on a plan below Core, so keyword definitions weren't extracted or saved for it. Upgrading won't add them to this lecture — but recordings on the Core plan or above get keyword extraction automatically.",
+  "keywordsLockedDialogMessage": "Keywords were not extracted for this lecture. Upgrade to Core or above to automatically extract keywords in future lectures.",
   "@keywordsLockedDialogMessage": {
     "description": "Body text explaining keywords were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings."
   },
@@ -3691,7 +3691,7 @@
     "description": "Title of the dialog shown when tapping the Announcements chip on a lecture that was processed on a plan below Core, so no announcements were extracted for it."
   },
 
-  "announcementsLockedDialogMessage": "This lecture was processed on a plan below Core, so announcements weren't extracted from it. Upgrading won't add them to this lecture — but recordings on the Core plan or above get announcement extraction automatically.",
+  "announcementsLockedDialogMessage": "Announcements were not extracted for this lecture. Upgrade to Core or above to automatically extract announcements in future lectures.",
   "@announcementsLockedDialogMessage": {
     "description": "Body text explaining announcements were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings."
   },
@@ -3701,7 +3701,7 @@
     "description": "Title of the dialog shown when tapping a Topic Map card whose course has no map because its lectures were processed on a plan below Lite."
   },
 
-  "topicMapLockedDialogMessage": "This course's Topic Map hasn't been built because its lectures were processed on a plan below Lite. Upgrading won't retroactively add past lectures — but new lectures recorded on the Lite plan or above will start building your Topic Map.",
+  "topicMapLockedDialogMessage": "A Topic Map has not been built for this course. Upgrade to Lite or above to automatically build Topic Maps in future lectures.",
   "@topicMapLockedDialogMessage": {
     "description": "Body text explaining the Topic Map was never generated for this course's existing lectures (not just hidden) and that upgrading only affects future lectures, not past ones."
   },
@@ -3711,12 +3711,12 @@
     "description": "Title of the dialog shown when tapping the Transcript button/entry on a plan below Core. Unlike Deep Notes/Keywords/Announcements, the transcript itself is always generated for every plan — only viewing it is gated — so this copy must not claim the content doesn't exist."
   },
 
-  "transcriptLockedDialogMessage": "The transcript and recorded audio are already saved for every lecture — viewing and listening to them is a Core plan feature. Upgrade anytime and you'll be able to access them here immediately, including for this lecture.",
+  "transcriptLockedDialogMessage": "Viewing transcripts and listening to audio is exclusive to the Core plan. Upgrade to access them immediately, including for this lecture.",
   "@transcriptLockedDialogMessage": {
     "description": "Body text clarifying that (unlike the other locked features) the transcript data already exists and upgrading unlocks it immediately for this lecture too, not just future ones — an accurate, non-retroactive-sounding message is wrong here because it IS retroactive for this one."
   },
 
-  "announcementsSheetLockedBanner": "Announcements aren't extracted from your lectures on your current plan. Upgrade to Core to include future lectures.",
+  "announcementsSheetLockedBanner": "Announcement extraction is exclusive to the Core plan. Upgrade to automatically extract them in future lectures.",
   "@announcementsSheetLockedBanner": {
     "description": "Short banner shown above the announcement list in the cross-course/cross-lecture announcements sheets (home bar's 'all announcements' sheet, and a course's announcements sheet) when the account's plan doesn't include announcement generation. The sheet itself always stays open (not blocked), since tutorial lectures always get announcements regardless of plan — this just explains why real lectures may show none."
   },
@@ -4368,7 +4368,7 @@
   "@onboardingPermissionsNotifTitle": {
     "description": "Notification permission row title on the onboarding permissions step."
   },
-  "onboardingPermissionsNotifSubtitle": "Helps keep background recording stable (optional).",
+  "onboardingPermissionsNotifSubtitle": "So we can let you know as soon as your lecture analysis is ready.",
   "@onboardingPermissionsNotifSubtitle": {
     "description": "Notification permission row subtitle on the onboarding permissions step."
   },

@@ -56,7 +56,17 @@ class PushNotificationService {
     await _localNotifications.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(),
+        // DarwinInitializationSettingsはrequestAlertPermission/
+        // requestSoundPermission/requestBadgePermissionが全てデフォルトtrueで、
+        // これ単体でアプリ起動時に即OSの許可ダイアログを出してしまう
+        // (下のFirebaseMessaging側の許可リクエストとは別の、もう1つの
+        // トリガーだった)。許可リクエストのタイミングはオンボーディング側
+        // (permission_handler経由)に一本化するため、ここでは全て無効化する。
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestSoundPermission: false,
+          requestBadgePermission: false,
+        ),
       ),
     );
     await _localNotifications
@@ -66,7 +76,13 @@ class PushNotificationService {
         ?.createNotificationChannel(_androidChannel);
 
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
+    // 通知の許可リクエスト(OSダイアログ)はここでは行わない。以前はアプリ起動と
+    // 同時に(オンボーディングより先に)ここで許可を求めてしまっていた —
+    // iOSは許可ダイアログを端末ごとに一度しか出さないため、オンボーディングの
+    // 権限ステップ(onboarding_permissions_step.dart、permission_handler経由で
+    // Permission.notification.request()を呼ぶ)が実際には何も表示できていなかった。
+    // 許可リクエストのタイミングはオンボーディング側に一本化する。
+    //
     // フォアグラウンド中もOSバナーで自然に見せたいので、
     // ここではlocal_notificationsで自前表示する(下のonMessage参照)。
     await messaging.setForegroundNotificationPresentationOptions(

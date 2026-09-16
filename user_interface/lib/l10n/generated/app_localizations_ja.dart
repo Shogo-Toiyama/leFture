@@ -2153,7 +2153,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deepNotesLockedDialogMessage =>
-      'この講義はFreeプランで処理されたため、このトピックの詳細ノートは作成されていません。プランをアップグレードしても、この講義に今から追加されることはありません — Liteプラン以上で録音した今後の講義から、全トピックの詳細ノートが自動的に生成されます。';
+      'この講義の詳細ノートは生成されていません。Liteプラン以上にアップグレードすると、今後の講義から全トピックのノートが自動生成されます。';
 
   @override
   String get deepNotesLockedCaption => '未生成・Freeプラン';
@@ -2167,7 +2167,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deepNotesSkippedPlanLimitDescription =>
-      'この講義はFreeプランご利用時に解析されたため、詳細ノートは第1トピックのみ生成されています。';
+      'Freeプランご利用時の講義のため、詳細ノートは第1トピックのみ生成されています。';
 
   @override
   String get deepNotesSkippedPlanLimitCaption => 'Freeプラン時に解析（詳細ノート未生成）';
@@ -2181,32 +2181,32 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keywordsLockedDialogMessage =>
-      'この講義はCore未満のプランで処理されたため、キーワードの抽出・保存は行われていません。プランをアップグレードしても、この講義に今から追加されることはありません — Coreプラン以上で録音した今後の講義から、キーワード抽出が自動的に行われます。';
+      'この講義のキーワードは抽出されていません。Coreプラン以上にアップグレードすると、今後の講義から自動で抽出されます。';
 
   @override
   String get announcementsLockedDialogTitle => 'アナウンスメントは生成されていません';
 
   @override
   String get announcementsLockedDialogMessage =>
-      'この講義はCore未満のプランで処理されたため、アナウンスメントの抽出は行われていません。プランをアップグレードしても、この講義に今から追加されることはありません — Coreプラン以上で録音した今後の講義から、アナウンスメント抽出が自動的に行われます。';
+      'この講義のアナウンスメントは抽出されていません。Coreプラン以上にアップグレードすると、今後の講義から自動で抽出されます。';
 
   @override
   String get topicMapLockedDialogTitle => 'トピックマップは生成されていません';
 
   @override
   String get topicMapLockedDialogMessage =>
-      'このコースのトピックマップは、講義がLite未満のプランで処理されたため作成されていません。プランをアップグレードしても過去の講義が今から追加されることはありません — Liteプラン以上で録音した今後の講義から、トピックマップの構築が始まります。';
+      'このコースのトピックマップは作成されていません。Liteプラン以上にアップグレードすると、今後の講義から自動でマップが構築されます。';
 
   @override
-  String get transcriptLockedDialogTitle => '文字起こし・音声にはCoreプランが必要です';
+  String get transcriptLockedDialogTitle => '文字起こし・音声の確認にはCoreプランが必要です';
 
   @override
   String get transcriptLockedDialogMessage =>
-      '文字起こしと録音音声はすべてのプランの講義で既に保存されています — 閲覧・再生できるかどうかがCoreプラン以上の機能です。いつでもアップグレードすれば、この講義も含めてすぐに閲覧・再生できるようになります。';
+      '文字起こしと録音音声の閲覧・再生はCoreプラン限定の機能です。アップグレードすると、この講義も含めてすぐに利用できるようになります。';
 
   @override
   String get announcementsSheetLockedBanner =>
-      '現在のプランでは、講義からのアナウンスメントは抽出されません。今後の講義から含めるにはCoreプランへのアップグレードが必要です。';
+      'アナウンスメントの抽出はCoreプラン限定です。アップグレードすると今後の講義から自動で抽出されます。';
 
   @override
   String lectureNotePageTopicLabel(int index) {
@@ -2700,7 +2700,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get onboardingPermissionsNotifSubtitle =>
-      'バックグラウンド録音を安定させるために使います（任意）。';
+      '講義の分析が終わったタイミングでお知らせするために使います。';
 
   @override
   String get onboardingPermissionsBackgroundTitle => 'バックグラウンドでも安定して動作させる';

@@ -2766,7 +2766,7 @@ async def run_finalize_job_task(job_id: str, task_id: str):
         # 5. Push通知 (失敗してもJob自体は完了扱いのまま進める)
         try:
             lecture_res = await asyncio.to_thread(
-                lambda: supabase.table("lectures").select("title").eq("id", lecture_id).single().execute()
+                lambda: supabase.table("lectures").select("title, title_generated").eq("id", lecture_id).single().execute()
             )
 
             # ユーザーの表示言語(display_language)を取得し、文言をその言語で組み立てる
@@ -2782,7 +2782,16 @@ async def run_finalize_job_task(job_id: str, task_id: str):
                 logger.log(f"⚠️ Failed to fetch display_language for push notification: {lang_error}")
 
             content = get_push_content(display_lang)
-            lecture_title = (lecture_res.data or {}).get("title") or content.UNTITLED_LECTURE
+            lecture_row = lecture_res.data or {}
+            # Flutter側(activity_records_provider.dart)と同じ優先順位: ユーザーが
+            # 手動で付けたtitleを優先し、無ければAI生成のtitle_generatedを使う。
+            # ここが漏れていたため、通常の録音では常にUNTITLED_LECTUREフォールバック
+            # (「講義」/「Lecture」)しか表示されていなかった。
+            lecture_title = (
+                (lecture_row.get("title") or "").strip()
+                or (lecture_row.get("title_generated") or "").strip()
+                or content.UNTITLED_LECTURE
+            )
             await send_push_notification(
                 user_id=uid,
                 title=content.JOB_COMPLETED_TITLE,

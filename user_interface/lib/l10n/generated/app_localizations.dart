@@ -3995,7 +3995,7 @@ abstract class AppLocalizations {
   /// Body text explicitly stating that content wasn't generated (not just hidden) and that upgrading is not retroactive for the current lecture, only for future recordings. Important for trust — must not imply the content already exists and just needs unlocking.
   ///
   /// In en, this message translates to:
-  /// **'This lecture was processed on the Free plan, so full Deep Notes weren\'t created for this topic. Upgrading won\'t add them to this lecture — but recordings on the Lite plan or above get full Deep Notes for every topic automatically.'**
+  /// **'Deep Notes were not generated for this lecture. Upgrade to Lite or above to automatically generate notes for all topics in future lectures.'**
   String get deepNotesLockedDialogMessage;
 
   /// Very short caption shown directly on a locked Deep Notes card/tile (not inside the dialog) so the 'not generated, not hidden' fact is visible at a glance without tapping.
@@ -4019,7 +4019,7 @@ abstract class AppLocalizations {
   /// Description explaining why this topic's deep note does not exist.
   ///
   /// In en, this message translates to:
-  /// **'Deep Notes were only generated for the first topic because this lecture was analyzed under the Free plan.'**
+  /// **'Analyzed on the Free plan, so Deep Notes were only generated for the first topic.'**
   String get deepNotesSkippedPlanLimitDescription;
 
   /// Caption on deep notes list item for skipped topics.
@@ -4043,7 +4043,7 @@ abstract class AppLocalizations {
   /// Body text explaining keywords were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings.
   ///
   /// In en, this message translates to:
-  /// **'This lecture was processed on a plan below Core, so keyword definitions weren\'t extracted or saved for it. Upgrading won\'t add them to this lecture — but recordings on the Core plan or above get keyword extraction automatically.'**
+  /// **'Keywords were not extracted for this lecture. Upgrade to Core or above to automatically extract keywords in future lectures.'**
   String get keywordsLockedDialogMessage;
 
   /// Title of the dialog shown when tapping the Announcements chip on a lecture that was processed on a plan below Core, so no announcements were extracted for it.
@@ -4055,7 +4055,7 @@ abstract class AppLocalizations {
   /// Body text explaining announcements were never generated for this lecture (not just hidden) and that upgrading is not retroactive for it, only for future recordings.
   ///
   /// In en, this message translates to:
-  /// **'This lecture was processed on a plan below Core, so announcements weren\'t extracted from it. Upgrading won\'t add them to this lecture — but recordings on the Core plan or above get announcement extraction automatically.'**
+  /// **'Announcements were not extracted for this lecture. Upgrade to Core or above to automatically extract announcements in future lectures.'**
   String get announcementsLockedDialogMessage;
 
   /// Title of the dialog shown when tapping a Topic Map card whose course has no map because its lectures were processed on a plan below Lite.
@@ -4067,7 +4067,7 @@ abstract class AppLocalizations {
   /// Body text explaining the Topic Map was never generated for this course's existing lectures (not just hidden) and that upgrading only affects future lectures, not past ones.
   ///
   /// In en, this message translates to:
-  /// **'This course\'s Topic Map hasn\'t been built because its lectures were processed on a plan below Lite. Upgrading won\'t retroactively add past lectures — but new lectures recorded on the Lite plan or above will start building your Topic Map.'**
+  /// **'A Topic Map has not been built for this course. Upgrade to Lite or above to automatically build Topic Maps in future lectures.'**
   String get topicMapLockedDialogMessage;
 
   /// Title of the dialog shown when tapping the Transcript button/entry on a plan below Core. Unlike Deep Notes/Keywords/Announcements, the transcript itself is always generated for every plan — only viewing it is gated — so this copy must not claim the content doesn't exist.
@@ -4079,13 +4079,13 @@ abstract class AppLocalizations {
   /// Body text clarifying that (unlike the other locked features) the transcript data already exists and upgrading unlocks it immediately for this lecture too, not just future ones — an accurate, non-retroactive-sounding message is wrong here because it IS retroactive for this one.
   ///
   /// In en, this message translates to:
-  /// **'The transcript and recorded audio are already saved for every lecture — viewing and listening to them is a Core plan feature. Upgrade anytime and you\'ll be able to access them here immediately, including for this lecture.'**
+  /// **'Viewing transcripts and listening to audio is exclusive to the Core plan. Upgrade to access them immediately, including for this lecture.'**
   String get transcriptLockedDialogMessage;
 
   /// Short banner shown above the announcement list in the cross-course/cross-lecture announcements sheets (home bar's 'all announcements' sheet, and a course's announcements sheet) when the account's plan doesn't include announcement generation. The sheet itself always stays open (not blocked), since tutorial lectures always get announcements regardless of plan — this just explains why real lectures may show none.
   ///
   /// In en, this message translates to:
-  /// **'Announcements aren\'t extracted from your lectures on your current plan. Upgrade to Core to include future lectures.'**
+  /// **'Announcement extraction is exclusive to the Core plan. Upgrade to automatically extract them in future lectures.'**
   String get announcementsSheetLockedBanner;
 
   /// Small label line above the lecture title in the LectureNotePage app bar, showing the 1-based index of the topic/segment being viewed, e.g. 'Topic 3'. Same pattern as transcriptPageTopicLabel/announcementTranscriptModalTopicLabel elsewhere in the app.
@@ -5015,7 +5015,7 @@ abstract class AppLocalizations {
   /// Notification permission row subtitle on the onboarding permissions step.
   ///
   /// In en, this message translates to:
-  /// **'Helps keep background recording stable (optional).'**
+  /// **'So we can let you know as soon as your lecture analysis is ready.'**
   String get onboardingPermissionsNotifSubtitle;
 
   /// Battery-optimization-exemption permission row title on the onboarding permissions step. Android only.

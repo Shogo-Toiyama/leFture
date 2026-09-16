@@ -727,14 +727,27 @@ class AppDatabase extends _$AppDatabase {
         // 'local_only')はサーバーに実体が無く、drop-allすると復旧対象ごと
         // 消えてしまう。以後のスキーマ変更は addColumn/createTable 等の
         // 非破壊マイグレーションで行うこと。
-        await m.addColumn(localLectureAssets, localLectureAssets.endTime);
+        await _addColumnIfMissing(m, localLectureAssets, localLectureAssets.endTime);
       }
       if (from < 25) {
         // バージョン25: LocalLectures に creditsUsed を追加
-        await m.addColumn(localLectures, localLectures.creditsUsed);
+        await _addColumnIfMissing(m, localLectures, localLectures.creditsUsed);
       }
     },
   );
+
+  /// `Migrator.addColumn`のラッパー。まれに(開発中のホットリスタート等で)
+  /// ADD COLUMN自体は成功したのにDrift内部のuser_version更新がそこまで
+  /// 到達せず、次回起動時に同じマイグレーションステップが再実行されて
+  /// "duplicate column name"で毎回失敗し続ける(起動不能になる)ことがある。
+  /// そのケースを自己修復できるよう、既にカラムが存在するエラーだけ無視する。
+  Future<void> _addColumnIfMissing(Migrator m, TableInfo table, GeneratedColumn column) async {
+    try {
+      await m.addColumn(table, column);
+    } catch (e) {
+      if (!e.toString().contains('duplicate column name')) rethrow;
+    }
+  }
 
   // --- User Profiles ---
 
