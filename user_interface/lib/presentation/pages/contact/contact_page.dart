@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/infrastructure/repositories/backend_warmup.dart';
@@ -129,10 +130,11 @@ class ContactPage extends HookConsumerWidget {
         statusMessage.value = l10n.contactSubmittingTicket;
 
         // Gather device info
+        final packageInfo = await PackageInfo.fromPlatform();
         final deviceInfo = {
           'os': Platform.operatingSystem,
           'os_version': Platform.operatingSystemVersion,
-          'app_version': '1.0.0+1',
+          'app_version': '${packageInfo.version} (${packageInfo.buildNumber})',
           'locale': Platform.localeName,
         };
 
