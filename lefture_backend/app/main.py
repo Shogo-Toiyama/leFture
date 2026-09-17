@@ -26,6 +26,8 @@ from pydantic import BaseModel
 from google.cloud import tasks_v2
 from google.api_core.exceptions import AlreadyExists
 from standardwebhooks.webhooks import Webhook, WebhookVerificationError
+import stripe
+import httpx
 
 # チャンクenqueue専用の時間バケット。receive_transcribe_chunkにはenqueue前の
 # アトミックなDBステータス遷移ガードが無い(クライアントの再送がそのまま二重
@@ -174,6 +176,10 @@ PATROL_TIME_WINDOW_TOLERANCE_MINUTES = int(os.getenv("PATROL_TIME_WINDOW_TOLERAN
 PATROL_DAILY_HOUR_UTC = int(os.getenv("PATROL_DAILY_HOUR_UTC", "0")) # サブスク更新など「1日1回」でよいPatrolチェックを走らせるUTC時(0-23)
 SEND_EMAIL_HOOK_SECRET = os.getenv("SEND_EMAIL_HOOK_SECRET", "") # Supabase Auth「Send Email Hook」の署名検証シークレット(Standard Webhooks形式)
 REVENUECAT_WEBHOOK_SECRET = os.getenv("REVENUECAT_WEBHOOK_SECRET", "") # RevenueCat Webhookの検証シークレット(Authorizationヘッダーの値と一致させる)
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "") # Web版の追加クレジット決済(RevenueCatを経由しない自前Stripe連携)用
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "") # /billing/stripe-webhook(追加クレジットのpayment_intent.succeeded、プランのinvoice.payment_succeeded)の署名検証シークレット(whsec_...)
+REVENUECAT_STRIPE_PUBLIC_API_KEY = os.getenv("REVENUECAT_STRIPE_PUBLIC_API_KEY", "") # RevenueCatダッシュボード > StripeアプリのPublic API key。POST /v1/receiptsでStripeサブスクをRevenueCatに知らせる際に使う
+stripe.api_key = STRIPE_SECRET_KEY
 
 # Cloud Tasks クライアント (グローバルで1つ持っておく)
 client = tasks_v2.CloudTasksClient()
@@ -870,7 +876,7 @@ async def billing_plans(request: Request):
     try:
         plans_res = await asyncio.to_thread(
             lambda: admin_client.table("subscription_plans")
-                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, claim_mode, store_product_id, subtitles, tier_level, disabled_at")
+                .select("id, name, monthly_credit_amount, price_usd, billing_interval_months, claim_mode, store_product_id, stripe_price_id, subtitles, tier_level, disabled_at")
                 .execute()
         )
     except Exception as e:
@@ -918,7 +924,7 @@ async def billing_credit_packs(request: Request):
     try:
         packs_res = await asyncio.to_thread(
             lambda: admin_client.table("credit_packs")
-                .select("id, name, credit_amount, price_usd, store_product_id, disabled_at")
+                .select("id, name, credit_amount, price_usd, store_product_id, stripe_price_id, disabled_at")
                 .execute()
         )
     except Exception as e:
@@ -1333,6 +1339,634 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
             return {"status": "error_logged", "reason": "unknown_product"}
         # DB接続エラー等の一時的な失敗はRevenueCat側のリトライに委ねるため5xxを返す。
         logger.error(f"RevenueCat webhook processing failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal error processing webhook")
+
+    return {"status": "success", "event_type": event_type}
+
+
+# ---------------------------------------------------------
+# Web版 追加クレジット決済 (自前Stripe、RevenueCatを経由しない)
+# ---------------------------------------------------------
+#
+# サブスク(プラン)はStripeアカウントをRevenueCatに接続し、RevenueCat Webhook
+# (上のrevenuecat_webhook)経由でgrant_store_subscription_credits()に流れる。
+# 一方、追加クレジット(都度課金)はRevenueCatの外部購入追跡API
+# (POST /v1/receipts)がCheckout Session経由の購入しか識別できず、webapp側で
+# 完全にカスタムなPayment Element UIを使う方針とは両立しないため、ここだけ
+# RevenueCatを経由せず、Stripeのwebhookを直接受ける独立した経路にする。
+# grant_credit_pack_purchase() SQL関数自体はRevenueCat経由と共用(event_type引数で区別)。
+
+class CreateCreditPackPaymentRequest(BaseModel):
+    credit_pack_id: str
+
+
+@app.post("/billing/stripe/create-credit-pack-payment")
+async def billing_stripe_create_credit_pack_payment(payload: CreateCreditPackPaymentRequest, request: Request):
+    """
+    webapp側のカスタムPayment Element UIが使うPaymentIntentを発行する。
+    金額はStripe側のPrice(credit_packs.stripe_price_id)から取得するので、
+    クライアントから金額を受け取らない(改ざん防止)。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        user_client = create_client(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    admin_client = get_supabase_client()
+    try:
+        pack_res = await asyncio.to_thread(
+            lambda: admin_client.table("credit_packs")
+                .select("id, stripe_price_id, disabled_at")
+                .eq("id", payload.credit_pack_id)
+                .maybe_single()
+                .execute()
+        )
+    except Exception as e:
+        logger.error(f"Error fetching credit pack {payload.credit_pack_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
+
+    pack = pack_res.data if pack_res else None
+    if not pack or pack.get("disabled_at"):
+        raise HTTPException(status_code=404, detail="Credit pack not found")
+    stripe_price_id = pack.get("stripe_price_id")
+    if not stripe_price_id:
+        raise HTTPException(status_code=400, detail="This credit pack is not available for web purchase")
+
+    try:
+        price = await asyncio.to_thread(stripe.Price.retrieve, stripe_price_id)
+        intent = await asyncio.to_thread(
+            stripe.PaymentIntent.create,
+            amount=price["unit_amount"],
+            currency=price["currency"],
+            automatic_payment_methods={"enabled": True},
+            metadata={
+                "supabase_user_id": uid,
+                "credit_pack_id": pack["id"],
+                "stripe_price_id": stripe_price_id,
+            },
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating PaymentIntent for credit pack {pack['id']}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to create payment")
+
+    return {"client_secret": intent["client_secret"]}
+
+
+# ---------------------------------------------------------
+# Web版 プラン(サブスク)決済 (自前Stripe → RevenueCat連携)
+# ---------------------------------------------------------
+#
+# 追加クレジットと違い、プランはRevenueCatに引き続き追跡させる(実際のクレジット
+# 付与は既存のgrant_store_subscription_credits() / revenuecat_webhookが担う、
+# ここは一切変更しない)。流れ:
+#   1. ここでStripe Subscriptionをpayment_behavior='default_incomplete'で作り、
+#      client_secretをwebapp側のPayment Elementに渡す。
+#   2. ユーザーが決済を確定すると、Stripeからinvoice.payment_succeededが届く
+#      (下のbilling_stripe_webhook)。そこでRevenueCatの外部購入追跡API
+#      (POST /v1/receipts)にこのsubscription idを知らせる。
+#   3. RevenueCatがそれを検知し、自前のwebhook(INITIAL_PURCHASE等)を
+#      /billing/revenuecat-webhookに送ってくる → 既存経路でクレジット付与。
+
+class CreateSubscriptionPaymentRequest(BaseModel):
+    plan_id: str
+
+
+async def _get_or_create_stripe_customer(admin_client, uid: str) -> str:
+    profile_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles")
+            .select("stripe_customer_id")
+            .eq("id", uid)
+            .maybe_single()
+            .execute()
+    )
+    existing = profile_res.data.get("stripe_customer_id") if profile_res and profile_res.data else None
+    if existing:
+        return existing
+
+    customer = await asyncio.to_thread(stripe.Customer.create, metadata={"supabase_user_id": uid})
+    await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles")
+            .update({"stripe_customer_id": customer["id"]})
+            .eq("id", uid)
+            .execute()
+    )
+    return customer["id"]
+
+
+@app.post("/billing/stripe/create-subscription-payment")
+async def billing_stripe_create_subscription_payment(payload: CreateSubscriptionPaymentRequest, request: Request):
+    """webapp側のカスタムPayment Element UIが使うSubscriptionのclient_secretを発行する。"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        user_client = create_client(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    admin_client = get_supabase_client()
+    try:
+        plan_res = await asyncio.to_thread(
+            lambda: admin_client.table("subscription_plans")
+                .select("id, stripe_price_id, disabled_at")
+                .eq("id", payload.plan_id)
+                .maybe_single()
+                .execute()
+        )
+    except Exception as e:
+        logger.error(f"Error fetching subscription plan {payload.plan_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
+
+    plan = plan_res.data if plan_res else None
+    if not plan or plan.get("disabled_at"):
+        raise HTTPException(status_code=404, detail="Plan not found")
+    stripe_price_id = plan.get("stripe_price_id")
+    if not stripe_price_id:
+        raise HTTPException(status_code=400, detail="This plan is not available for web purchase")
+
+    customer_id = await _get_or_create_stripe_customer(admin_client, uid)
+    subscription = await _create_new_stripe_subscription(customer_id, uid, plan["id"], stripe_price_id)
+    payment_intent = subscription["latest_invoice"]["payment_intent"]
+    return {"client_secret": payment_intent["client_secret"], "subscription_id": subscription["id"]}
+
+
+async def _create_new_stripe_subscription(customer_id: str, uid: str, plan_id: str, stripe_price_id: str):
+    try:
+        return await asyncio.to_thread(
+            stripe.Subscription.create,
+            customer=customer_id,
+            items=[{"price": stripe_price_id}],
+            payment_behavior="default_incomplete",
+            payment_settings={"save_default_payment_method": "on_subscription"},
+            expand=["latest_invoice.payment_intent"],
+            metadata={
+                "supabase_user_id": uid,
+                "subscription_plan_id": plan_id,
+            },
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating Subscription for plan {plan_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to create subscription")
+
+
+class SwitchPlanRequest(BaseModel):
+    plan_id: str
+
+
+@app.post("/billing/stripe/switch-plan")
+async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Request):
+    """
+    既に何らかのプラン(Free/Apple/Stripeいずれか)を持つユーザーが別のプランに
+    切り替える時の統一エンドポイント。
+
+    - Stripeで管理中のアクティブなサブスクが実際に見つかった場合だけ、
+      アップグレード(即時切り替え+即時課金)/ダウングレード・解約(Subscription
+      Scheduleで次回更新時に予約、Appleの同一サブスクグループの挙動に合わせる)
+      を行う。二重にサブスクを作らない。
+    - 見つからない場合(現在Free、またはApple経由の購読中)は、素直に
+      claim_plan()(self_serve宛て)または新規Stripeサブスク作成
+      (store_purchase宛て)を行う — 今までのclaim-plan/create-subscription-payment
+      と同じ結果になる。Appleの購読はこちらから解約できない(既知の制限。
+      ユーザーはiOS側で自分で解約する必要がある)。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        user_client = create_client(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    admin_client = get_supabase_client()
+    try:
+        plan_res = await asyncio.to_thread(
+            lambda: admin_client.table("subscription_plans")
+                .select("id, tier_level, claim_mode, stripe_price_id, disabled_at")
+                .eq("id", payload.plan_id)
+                .maybe_single()
+                .execute()
+        )
+    except Exception as e:
+        logger.error(f"Error fetching subscription plan {payload.plan_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
+
+    target_plan = plan_res.data if plan_res else None
+    if not target_plan or target_plan.get("disabled_at"):
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    profile_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles")
+            .select("stripe_customer_id")
+            .eq("id", uid)
+            .maybe_single()
+            .execute()
+    )
+    customer_id = profile_res.data.get("stripe_customer_id") if profile_res and profile_res.data else None
+
+    active_subscription = None
+    if customer_id:
+        try:
+            subs = await asyncio.to_thread(stripe.Subscription.list, customer=customer_id, status="active", limit=1)
+            if subs["data"]:
+                active_subscription = subs["data"][0]
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to list Stripe subscriptions for customer {customer_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to look up current subscription")
+
+    # ケースA: 現在アクティブなStripeサブスクが無い(Free/Apple/未加入) →
+    # 今までのclaim-plan/create-subscription-paymentと同じことをするだけ。
+    if not active_subscription:
+        if target_plan["claim_mode"] == "self_serve":
+            try:
+                await asyncio.to_thread(
+                    lambda: admin_client.rpc("claim_plan", {
+                        "p_user_id": uid,
+                        "p_plan_id": target_plan["id"],
+                    }).execute()
+                )
+            except Exception as e:
+                error_str = str(e)
+                if "plan_already_claimed" in error_str:
+                    return {"status": "already_current"}
+                if "plan_already_active_other_plan" in error_str:
+                    raise HTTPException(status_code=409, detail="You already have an active plan on another platform. Please cancel it there first.")
+                logger.error(f"claim_plan failed for user {uid}: {e}", exc_info=True)
+                raise HTTPException(status_code=400, detail="Failed to claim plan")
+            return {"status": "claimed"}
+
+        if not target_plan.get("stripe_price_id"):
+            raise HTTPException(status_code=400, detail="This plan is not available for web purchase")
+
+        # Stripeにアクティブなサブスクが無いのにclaim_mode='store_purchase'のプランが
+        # 既にactiveなら、それはApple経由としか有り得ない。こちらから解約できない
+        # (ユーザーがiOS側で自分で解約する必要がある)ため、二重課金を避けて
+        # ここで明確にブロックする。webapp側はこのerror_codeを見て
+        # 「Appleを解約してからWebで購読してください」という案内を出す。
+        try:
+            other_store_res = await asyncio.to_thread(
+                lambda: admin_client.table("user_subscription_mappings")
+                    .select("id, subscription_plans!user_subscription_mappings_plan_id_fkey!inner(claim_mode)")
+                    .eq("user_id", uid)
+                    .eq("status", "active")
+                    .eq("subscription_plans.claim_mode", "store_purchase")
+                    .execute()
+            )
+        except Exception as e:
+            logger.error(f"Error checking existing store_purchase mapping for user {uid}: {e}", exc_info=True)
+            raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
+
+        if other_store_res.data:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error_code": "APPLE_SUBSCRIPTION_ACTIVE",
+                    "message": "You already have an active subscription through the App Store. Please cancel it in your iOS device settings before subscribing on the web.",
+                },
+            )
+
+        customer_id = customer_id or await _get_or_create_stripe_customer(admin_client, uid)
+        subscription = await _create_new_stripe_subscription(
+            customer_id, uid, target_plan["id"], target_plan["stripe_price_id"]
+        )
+        payment_intent = subscription["latest_invoice"]["payment_intent"]
+        return {"client_secret": payment_intent["client_secret"], "subscription_id": subscription["id"]}
+
+    # ケースB: Stripeサブスクが既にアクティブ → アップグレード/ダウングレード/解約。
+    subscription_id = active_subscription["id"]
+
+    # 前回ダウングレード予約済み等でSubscription Scheduleが付いている場合、
+    # いったん解放してクリーンな状態から今回の判断をやり直す。
+    schedule_id = active_subscription.get("schedule")
+    if schedule_id:
+        try:
+            await asyncio.to_thread(stripe.SubscriptionSchedule.release, schedule_id)
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to release schedule {schedule_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to update subscription")
+
+    if target_plan["claim_mode"] == "self_serve":
+        # Freeへの「ダウングレード」= 次回更新時に自動解約(=Appleのキャンセルと同じ挙動)。
+        # 実際にEXPIRATIONが来た時のFreeフォールバックは既存のexpire_store_subscription任せ。
+        try:
+            await asyncio.to_thread(stripe.Subscription.modify, subscription_id, cancel_at_period_end=True)
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to cancel Stripe subscription {subscription_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to cancel subscription")
+        return {"status": "scheduled_cancel"}
+
+    new_price_id = target_plan.get("stripe_price_id")
+    if not new_price_id:
+        raise HTTPException(status_code=400, detail="This plan is not available for web purchase")
+
+    current_price_id = active_subscription["items"]["data"][0]["price"]["id"]
+    current_item_id = active_subscription["items"]["data"][0]["id"]
+
+    current_plan_res = await asyncio.to_thread(
+        lambda: admin_client.table("subscription_plans")
+            .select("tier_level")
+            .eq("stripe_price_id", current_price_id)
+            .maybe_single()
+            .execute()
+    )
+    current_tier = current_plan_res.data.get("tier_level") if current_plan_res and current_plan_res.data else None
+
+    if current_tier is not None and target_plan["tier_level"] <= current_tier:
+        # ダウングレード(または同tierへの再選択): 次回更新時に切り替わる
+        # Subscription Scheduleを作る(即時の変更・課金は一切しない)。
+        # https://docs.stripe.com/billing/subscriptions/subscription-schedules
+        # の「Schedule an upgrade or downgrade for an existing subscription」と同じ手順。
+        try:
+            schedule = await asyncio.to_thread(stripe.SubscriptionSchedule.create, from_subscription=subscription_id)
+            await asyncio.to_thread(
+                stripe.SubscriptionSchedule.modify,
+                schedule["id"],
+                end_behavior="release",
+                phases=[
+                    {
+                        "items": [{
+                            "price": schedule["phases"][0]["items"][0]["price"],
+                            "quantity": schedule["phases"][0]["items"][0]["quantity"],
+                        }],
+                        "start_date": schedule["phases"][0]["start_date"],
+                        "end_date": schedule["phases"][0]["end_date"],
+                    },
+                    {
+                        # 1回分だけdurationを与えて次の更新を新価格で迎えさせ、その後は
+                        # end_behavior='release'によりスケジュールから解放された通常の
+                        # サブスクとしてその価格のまま自動更新され続ける。
+                        "items": [{"price": new_price_id, "quantity": 1}],
+                        "duration": {"interval": "month", "interval_count": 1},
+                    },
+                ],
+            )
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to schedule downgrade for subscription {subscription_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to schedule plan change")
+        return {"status": "scheduled_downgrade"}
+
+    # アップグレード: Stripe自身の日割り計算(proration_behavior)は使わず、Appleの
+    # サブスクグループと同じ「経過時間ベース(消費クレジット量は無視)」の日割りを
+    # 自前で計算する。
+    #   請求額 = 新プラン価格 − ( 現プラン価格 × (期間終了 − 今) / (期間終了 − 期間開始) )
+    # 支払いが成功して初めてプランの価格を切り替える(失敗したのに上位プランに
+    # なってしまう状態を避けるため、先に課金→成功したら切り替え、の順序にする)。
+    try:
+        old_price = await asyncio.to_thread(stripe.Price.retrieve, current_price_id)
+        new_price = await asyncio.to_thread(stripe.Price.retrieve, new_price_id)
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to retrieve prices for upgrade of subscription {subscription_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to look up plan pricing")
+
+    if old_price["currency"] != new_price["currency"]:
+        logger.error(f"Currency mismatch upgrading subscription {subscription_id}: {old_price['currency']} vs {new_price['currency']}")
+        raise HTTPException(status_code=500, detail="Plan pricing misconfiguration")
+
+    # current_period_start/endは2025年のAPIバージョン変更でSubscription直下から
+    # Subscription Itemに移動している。
+    current_item = active_subscription["items"]["data"][0]
+    period_start = current_item["current_period_start"]
+    period_end = current_item["current_period_end"]
+    now_ts = time.time()
+
+    total_seconds = period_end - period_start
+    remaining_seconds = max(0, period_end - now_ts)
+    remaining_fraction = (remaining_seconds / total_seconds) if total_seconds > 0 else 0
+
+    unused_credit = old_price["unit_amount"] * remaining_fraction
+    charge_amount = max(0, round(new_price["unit_amount"] - unused_credit))
+    currency = new_price["currency"]
+
+    invoice = None
+    try:
+        await asyncio.to_thread(
+            stripe.InvoiceItem.create,
+            customer=customer_id,
+            amount=charge_amount,
+            currency=currency,
+            description=f"Upgrade proration: {current_price_id} -> {new_price_id}",
+        )
+        invoice = await asyncio.to_thread(
+            stripe.Invoice.create,
+            customer=customer_id,
+            collection_method="charge_automatically",
+            pending_invoice_items_behavior="include",
+            auto_advance=False,
+        )
+        invoice = await asyncio.to_thread(stripe.Invoice.finalize_invoice, invoice["id"])
+        invoice = await asyncio.to_thread(stripe.Invoice.pay, invoice["id"])
+    except stripe.error.StripeError as e:
+        logger.warning(f"Upgrade payment failed for subscription {subscription_id}: {e}")
+        if invoice is not None and invoice.get("status") == "open":
+            try:
+                await asyncio.to_thread(stripe.Invoice.void_invoice, invoice["id"])
+            except stripe.error.StripeError:
+                pass
+        raise HTTPException(status_code=402, detail="Payment for the upgrade failed")
+
+    if invoice.get("status") != "paid":
+        if invoice.get("status") == "open":
+            try:
+                await asyncio.to_thread(stripe.Invoice.void_invoice, invoice["id"])
+            except stripe.error.StripeError:
+                pass
+        raise HTTPException(status_code=402, detail="Payment for the upgrade failed")
+
+    # 課金が成功したので、ここで初めてプランの価格を切り替える。今回の差額は
+    # 上で自前計算・請求済みなので、Stripe自身の日割り計算は一切走らせない。
+    try:
+        await asyncio.to_thread(
+            stripe.Subscription.modify,
+            subscription_id,
+            items=[{"id": current_item_id, "price": new_price_id}],
+            proration_behavior="none",
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Charged upgrade but failed to switch price for subscription {subscription_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Payment succeeded but failed to switch plan. Please contact support.")
+    return {"status": "switched"}
+
+
+async def _notify_revenuecat_of_stripe_subscription(subscription_id: str, uid: str) -> None:
+    """
+    RevenueCatの外部購入追跡API。実際のクレジット付与はここでは行わない
+    (RevenueCatが後追いで送ってくる/billing/revenuecat-webhookのINITIAL_PURCHASE/
+    RENEWALが既存経路でgrant_store_subscription_credits()を呼ぶ)。
+    """
+    if not REVENUECAT_STRIPE_PUBLIC_API_KEY:
+        logger.error("REVENUECAT_STRIPE_PUBLIC_API_KEY not set - cannot notify RevenueCat of Stripe subscription")
+        raise RuntimeError("revenuecat_not_configured")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(
+            "https://api.revenuecat.com/v1/receipts",
+            headers={
+                "Authorization": f"Bearer {REVENUECAT_STRIPE_PUBLIC_API_KEY}",
+                "X-Platform": "stripe",
+            },
+            json={"app_user_id": uid, "fetch_token": subscription_id},
+        )
+        response.raise_for_status()
+
+
+async def _handle_stripe_subscription_invoice_paid(event: dict) -> dict:
+    """
+    invoice.payment_succeeded受信時の処理。RevenueCatへの通知が成功した後にだけ
+    冪等性マーカーを記録する(先に記録してしまうと、通知が失敗した時にStripeの
+    再送を「処理済み」として誤って無視してしまうため)。RevenueCatの
+    POST /v1/receipts自体は同じsubscription idを複数回送っても安全な設計
+    (レシート確認と同じ考え方)なので、ごく稀な同時配信による多重呼び出しは許容する。
+    """
+    event_id = event["id"]
+    admin_client = get_supabase_client()
+
+    existing = await asyncio.to_thread(
+        lambda: admin_client.table("revenuecat_webhook_events")
+            .select("event_id")
+            .eq("event_id", event_id)
+            .maybe_single()
+            .execute()
+    )
+    if existing and existing.data:
+        return {"status": "already_processed", "event_type": "invoice.payment_succeeded"}
+
+    invoice = event["data"]["object"]
+    subscription_id = invoice.get("subscription")
+    if not subscription_id:
+        # サブスクに紐づかない請求(単発invoice等)。今回のスコープ外なので無視する。
+        return {"status": "ignored", "reason": "not_a_subscription_invoice"}
+
+    try:
+        subscription = await asyncio.to_thread(stripe.Subscription.retrieve, subscription_id)
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to retrieve Stripe subscription {subscription_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to look up subscription")
+
+    uid = (subscription.get("metadata") or {}).get("supabase_user_id")
+    if not uid:
+        logger.error(f"Stripe subscription {subscription_id} missing supabase_user_id metadata")
+        return {"status": "ignored", "reason": "missing_metadata"}
+
+    try:
+        await _notify_revenuecat_of_stripe_subscription(subscription_id, uid)
+    except Exception as e:
+        logger.error(f"Failed to notify RevenueCat of Stripe subscription {subscription_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to notify RevenueCat")
+
+    try:
+        await asyncio.to_thread(
+            lambda: admin_client.table("revenuecat_webhook_events")
+                .insert({"event_id": event_id, "event_type": "STRIPE_INVOICE_PAYMENT_SUCCEEDED"})
+                .execute()
+        )
+    except Exception as e:
+        # 既に他プロセスが同時に処理し終えていた場合のunique制約違反等。
+        # RevenueCatへの通知自体は成功しているので致命的ではない。
+        logger.warning(f"Could not record idempotency marker for stripe event {event_id}: {e}")
+
+    return {"status": "success", "event_type": "invoice.payment_succeeded"}
+
+
+@app.post("/billing/stripe-webhook")
+async def billing_stripe_webhook(request: Request, stripe_signature: str = Header(None, alias="Stripe-Signature")):
+    """
+    2種類のイベントを扱う:
+    - payment_intent.succeeded: create-credit-pack-paymentで作られたPaymentIntentの
+      完了通知。grant_credit_pack_purchase()で追加クレジットを直接付与する。
+    - invoice.payment_succeeded: create-subscription-paymentで作られたSubscriptionの
+      請求が確定した通知。ここではクレジットを付与せず、RevenueCatの外部購入追跡API
+      に知らせるだけ(実際の付与はRevenueCatが送り返してくる/billing/revenuecat-webhook
+      が既存経路で行う)。
+
+    冪等性はrevenuecat_webhook_events.event_idへの記録で担保する(テーブル名は
+    歴史的経緯でrevenuecat_webhook_eventsのままだが、event_id text primary keyの
+    汎用的な冪等性台帳として問題なく共用できる)。
+    """
+    if not STRIPE_WEBHOOK_SECRET:
+        logger.warning("STRIPE_WEBHOOK_SECRET not set - rejecting Stripe webhook")
+        raise HTTPException(status_code=401, detail="Webhook not configured")
+
+    raw_body = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(raw_body, stripe_signature, STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        logger.warning(f"Rejected Stripe webhook: invalid signature - {e}")
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+    event_id = event["id"]
+    event_type = event["type"]
+
+    if event_type == "invoice.payment_succeeded":
+        return await _handle_stripe_subscription_invoice_paid(event)
+
+    if event_type != "payment_intent.succeeded":
+        return {"status": "ignored", "event_type": event_type}
+
+    intent = event["data"]["object"]
+    metadata = intent.get("metadata") or {}
+    uid = metadata.get("supabase_user_id")
+    stripe_price_id = metadata.get("stripe_price_id")
+
+    if not uid or not stripe_price_id:
+        logger.error(f"Stripe payment_intent.succeeded missing metadata: {intent.get('id')}")
+        return {"status": "ignored", "reason": "missing_metadata"}
+
+    admin_client = get_supabase_client()
+    try:
+        await asyncio.to_thread(
+            lambda: admin_client.rpc("grant_credit_pack_purchase", {
+                "p_user_id": uid,
+                "p_event_id": event_id,
+                "p_product_id": stripe_price_id,
+                "p_event_type": "STRIPE_PAYMENT_INTENT_SUCCEEDED",
+            }).execute()
+        )
+    except Exception as e:
+        error_str = str(e)
+        if "unknown_credit_pack" in error_str:
+            # 恒久的な設定ミス(credit_packs.stripe_price_idが未登録)。リトライしても
+            # 直らないため、ログだけ残して200で止める(revenuecat_webhookと同じ方針)。
+            logger.error(f"Stripe webhook: unknown credit pack - {error_str} (price_id={stripe_price_id})")
+            return {"status": "error_logged", "reason": "unknown_product"}
+        logger.error(f"Stripe webhook processing failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal error processing webhook")
 
     return {"status": "success", "event_type": event_type}

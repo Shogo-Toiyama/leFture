@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -8,9 +9,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
+import 'package:lefture/application/lecture_viewer/lecture_content_recovery.dart';
 import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
@@ -75,6 +78,23 @@ class NotStartedView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+
+    // 再インストール等でローカルDBのマスター音声アセット行が失われていた場合、
+    // Supabaseから1回だけ復元する(詳細は[ensureMasterAudioAssetAvailable]参照)。
+    // この画面(分析前)だけの特別処理 — 通常のLectureViewerPage表示では
+    // 音声を先読みしない。
+    useEffect(() {
+      final db = ref.read(appDatabaseProvider);
+      unawaited(
+        ensureMasterAudioAssetAvailable(
+          db,
+          lectureId: lecture.id,
+          userId: lecture.userId,
+        ),
+      );
+      return null;
+    }, [lecture.id]);
+
     // クレジット不足/未加入エラーは、汎用のインラインエラー表示ではなく
     // 専用ダイアログでクレジットページへ誘導する。ref.listenなのでstateが
     // 変化した瞬間だけ発火し、rebuildのたびに再表示することはない。

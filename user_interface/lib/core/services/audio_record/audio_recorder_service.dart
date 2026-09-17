@@ -548,7 +548,11 @@ class AudioRecorderService {
     final fixedFile = File(fixedPath);
     if (await fixedFile.exists()) await fixedFile.delete();
 
-    final command = '-y -i "$m4aPath" -c copy -movflags +faststart "$fixedPath"';
+    // 出力先が".m4a.faststart.tmp"のような非標準の拡張子だと、ffmpegが
+    // ファイル名から出力コンテナ形式を判別できず失敗する
+    // ("Unable to choose an output format")。拡張子に頼らず`-f mp4`で
+    // 明示的に指定する。
+    final command = '-y -i "$m4aPath" -c copy -movflags +faststart -f mp4 "$fixedPath"';
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
 

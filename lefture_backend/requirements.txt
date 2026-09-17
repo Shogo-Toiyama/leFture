@@ -17,3 +17,4 @@ tenacity
 resend
 standardwebhooks
 firebase-admin
+stripe
