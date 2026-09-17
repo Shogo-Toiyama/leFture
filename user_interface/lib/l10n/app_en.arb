@@ -1635,6 +1635,11 @@
     "description": "Button on the Current Plan card (shown to users who already have an active plan) that navigates to the full Plans page, where paid App Store subscription tiers can be purchased."
   },
 
+  "creditDetailViewPlansButtonAndroid": "View Plans",
+  "@creditDetailViewPlansButtonAndroid": {
+    "description": "Android-only replacement for creditDetailViewPlansButton. Avoids 'Change' wording since paid plan tiers cannot be purchased or changed in-app on Android (Google Play Consumption-only positioning)."
+  },
+
   "creditDetailViewPaidPlansButton": "View Paid Plans",
   "@creditDetailViewPaidPlansButton": {
     "description": "Link/button shown below the free self-serve plan tile (for users with no active plan yet) that navigates to the full Plans page to see the paid App Store subscription tiers."
@@ -1645,9 +1650,19 @@
     "description": "Small text link/button next to the reset date caption on the monthly credit card, navigating to the credit purchase page."
   },
 
+  "creditDetailBuyCreditsLinkAndroid": "Additional Credits ＞",
+  "@creditDetailBuyCreditsLinkAndroid": {
+    "description": "Android-only replacement for creditDetailBuyCreditsLink. Avoids any 'buy/purchase' wording since the destination page has no in-app purchase capability on Android (Google Play Consumption-only positioning)."
+  },
+
   "purchaseCreditsTitle": "Buy Credits",
   "@purchaseCreditsTitle": {
     "description": "AppBar title on the Credit Purchase page."
+  },
+
+  "purchaseCreditsTitleAndroid": "Additional Credits",
+  "@purchaseCreditsTitleAndroid": {
+    "description": "Android-only replacement for purchaseCreditsTitle. Avoids any 'buy/purchase' wording."
   },
 
   "purchaseCreditsTagline": "Add credits anytime. Never expire.",
@@ -1663,6 +1678,11 @@
   "purchaseCreditsDisclosure": "Payment will be charged to your Apple ID account at confirmation of purchase. Purchased additional credits never expire and are automatically used when monthly credits run out.",
   "@purchaseCreditsDisclosure": {
     "description": "App Store disclosure text on the credit purchase page explaining charge to Apple ID account, no expiration, and automatic deduction."
+  },
+
+  "purchaseCreditsDisclosureAndroid": "Additional credits can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to buy credits.",
+  "@purchaseCreditsDisclosureAndroid": {
+    "description": "Android-only replacement for purchaseCreditsDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Intentionally plain text with no tappable link to the website, per Google Play Consumption-only positioning."
   },
 
   "purchaseCreditsNoExpiration": "Never Expires",
@@ -2471,6 +2491,16 @@
   "plansDisclosure": "leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device's account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.",
   "@plansDisclosure": {
     "description": "Required App Store subscription disclosure paragraph shown in the scrollable area below the plan cards, per Apple App Review Guideline 3.1.2 (must disclose subscription length, auto-renewal, and that payment is charged to the Apple ID account). Also clarifies that downgrades are deferred to the next renewal, matching Apple's own StoreKit subscription-group behavior."
+  },
+
+  "plansDisclosureAndroid": "Paid plans can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to subscribe.",
+  "@plansDisclosureAndroid": {
+    "description": "Android-only replacement for plansDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Google Play Consumption-only positioning: intentionally plain text with no tappable link to the website."
+  },
+
+  "plansStartFreeButton": "Start with the Free plan",
+  "@plansStartFreeButton": {
+    "description": "Android-only onboarding button shown below the plan disclosure notice, in the normal scroll flow (not floating). Unlike the shared Continue button, this is always fixed to activating the Free plan regardless of which plan card is currently selected in the carousel — it lets the user proceed through onboarding without any purchase capability."
   },
 
   "plansDowngradeDialogTitle": "Plan Change Scheduled",
@@ -4780,5 +4810,9 @@
   "creditRateModalBuyCreditsButton": "Buy Credits",
   "@creditRateModalBuyCreditsButton": {
     "description": "Buy credits button label in the credit rate table modal."
+  },
+  "creditRateModalBuyCreditsButtonAndroid": "View Credit Options",
+  "@creditRateModalBuyCreditsButtonAndroid": {
+    "description": "Android-only replacement for creditRateModalBuyCreditsButton. Avoids any 'buy/purchase' wording since the destination page has no in-app purchase capability on Android."
   }
 }

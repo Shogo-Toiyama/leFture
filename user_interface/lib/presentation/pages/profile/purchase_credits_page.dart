@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ import 'package:lefture/domain/entities/credit_pack_option.dart';
 import 'package:lefture/domain/entities/credit_summary.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/android_web_redirect_notice_card.dart';
 
 import 'widgets/credit_pack_illustration.dart';
 import 'widgets/plan_purchase_state.dart';
@@ -150,6 +152,12 @@ class PurchaseCreditsPage extends HookConsumerWidget {
       }
     }
 
+    // Androidではストア課金導線(価格表示・購入ボタン)を一切出さない
+    // (Google Play Consumption-onlyポリシーに沿うため)。クレジットパックの
+    // 内容(クレジット量)は引き続き閲覧できるが、価格・購入ボタン・
+    // 購入の復元リンクは非表示にし、代わりにウェブサイト誘導の開示文言を出す。
+    final isAndroid = Platform.isAndroid;
+
     final rawPacks = packsAsync.asData?.value ?? const <CreditPackOption>[];
     // クレジット量順にソート
     final packs = [...rawPacks]..sort((a, b) => a.creditAmountMicro.compareTo(b.creditAmountMicro));
@@ -188,7 +196,7 @@ class PurchaseCreditsPage extends HookConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        l10n.purchaseCreditsTitle,
+                        isAndroid ? l10n.purchaseCreditsTitleAndroid : l10n.purchaseCreditsTitle,
                         style: const TextStyle(
                           color: Color(0xFFF2F2F2),
                           fontSize: 20,
@@ -252,55 +260,70 @@ class PurchaseCreditsPage extends HookConsumerWidget {
                     ),
                   )
                 else
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                  Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.58,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < packs.length; i += 3) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (var j = 0; j < 3; j++) ...[
+                                  if (j > 0) const SizedBox(width: 10),
+                                  if (i + j < packs.length) ...[
+                                    Expanded(
+                                      child: _CreditPackGridCard(
+                                        pack: packs[i + j],
+                                        package: findPackageByProductId(offerings, packs[i + j].storeProductId),
+                                        isPurchasing: purchasingPackId.value == packs[i + j].id,
+                                        isDisabled: purchasingPackId.value != null && purchasingPackId.value != packs[i + j].id,
+                                        isAndroid: isAndroid,
+                                        onPurchase: () {
+                                          final pkg = findPackageByProductId(offerings, packs[i + j].storeProductId);
+                                          if (pkg != null) {
+                                            handlePurchase(packs[i + j], pkg);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ] else
+                                    const Expanded(child: SizedBox.shrink()),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    itemCount: packs.length,
-                    itemBuilder: (context, index) {
-                      final pack = packs[index];
-                      final package = findPackageByProductId(offerings, pack.storeProductId);
-                      final isPurchasing = purchasingPackId.value == pack.id;
-                      final isAnyPurchasing = purchasingPackId.value != null;
-
-                      return _CreditPackGridCard(
-                        pack: pack,
-                        package: package,
-                        isPurchasing: isPurchasing,
-                        isDisabled: isAnyPurchasing && !isPurchasing,
-                        onPurchase: () {
-                          if (package != null) {
-                            handlePurchase(pack, package);
-                          }
-                        },
-                      );
-                    },
                   ),
 
                 const SizedBox(height: 20),
 
-                // Apple規約 開示文言 (Disclosure)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    l10n.purchaseCreditsDisclosure,
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 11.5,
-                      height: 1.45,
+                // Android: ウェブサイト誘導の開示文言(テーマカラーであるゴールドのカード状ハイライトで目立たせる)。
+                // iOS: Apple規約に基づく開示文言(通常テキスト)。
+                if (isAndroid)
+                  AndroidWebRedirectNoticeCard(
+                    text: l10n.purchaseCreditsDisclosureAndroid,
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      l10n.purchaseCreditsDisclosure,
+                      style: TextStyle(
+                        color: AppColors.universe.textComet,
+                        fontSize: 11.5,
+                        height: 1.45,
+                      ),
                     ),
                   ),
-                ),
 
                 const SizedBox(height: 12),
 
-                // 利用規約 • プライバシーポリシー • 購入の復元 リンク
+                // 利用規約 • プライバシーポリシー • (iOSのみ)購入の復元 リンク
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Wrap(
@@ -347,53 +370,55 @@ class PurchaseCreditsPage extends HookConsumerWidget {
                           ),
                         ),
                       ),
-                      Text(
-                        '•',
-                        style: TextStyle(
-                          color: AppColors.universe.textComet.withValues(alpha: 0.5),
-                          fontSize: 10,
+                      if (!isAndroid) ...[
+                        Text(
+                          '•',
+                          style: TextStyle(
+                            color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: isRestoringPurchases.value ? null : handleRestorePurchases,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: isRestoringPurchases.value
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      l10n.plansRestorePurchasesButton,
-                                      style: TextStyle(
-                                        color: AppColors.universe.textComet.withValues(alpha: 0.5),
-                                        fontSize: 11,
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: AppColors.universe.textComet.withValues(alpha: 0.5),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: isRestoringPurchases.value ? null : handleRestorePurchases,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: isRestoringPurchases.value
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        l10n.plansRestorePurchasesButton,
+                                        style: TextStyle(
+                                          color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                                          fontSize: 11,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: AppColors.universe.textComet.withValues(alpha: 0.5),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const SizedBox(
-                                      width: 9,
-                                      height: 9,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 1.5,
-                                        color: Color(0xFFC084FC),
+                                      const SizedBox(width: 4),
+                                      const SizedBox(
+                                        width: 9,
+                                        height: 9,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                          color: Color(0xFFC084FC),
+                                        ),
                                       ),
+                                    ],
+                                  )
+                                : Text(
+                                    l10n.plansRestorePurchasesButton,
+                                    style: TextStyle(
+                                      color: AppColors.universe.textComet,
+                                      fontSize: 11,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: AppColors.universe.textComet,
                                     ),
-                                  ],
-                                )
-                              : Text(
-                                  l10n.plansRestorePurchasesButton,
-                                  style: TextStyle(
-                                    color: AppColors.universe.textComet,
-                                    fontSize: 11,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: AppColors.universe.textComet,
                                   ),
-                                ),
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -468,6 +493,7 @@ class _CreditPackGridCard extends StatelessWidget {
     required this.package,
     required this.isPurchasing,
     required this.isDisabled,
+    required this.isAndroid,
     required this.onPurchase,
   });
 
@@ -475,12 +501,13 @@ class _CreditPackGridCard extends StatelessWidget {
   final Package? package;
   final bool isPurchasing;
   final bool isDisabled;
+  final bool isAndroid;
   final VoidCallback onPurchase;
 
   @override
   Widget build(BuildContext context) {
     final priceString = package?.storeProduct.priceString ?? '—';
-    final canPurchase = package != null && !isDisabled && !isPurchasing;
+    final canPurchase = !isAndroid && package != null && !isDisabled && !isPurchasing;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -510,6 +537,7 @@ class _CreditPackGridCard extends StatelessWidget {
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. 画像埋め込み領域 (正方形プレースホルダー)
@@ -538,7 +566,7 @@ class _CreditPackGridCard extends StatelessWidget {
 
               // 2. 星の記号 + 数字 ラベル
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                padding: EdgeInsets.fromLTRB(4, 4, 4, isAndroid ? 10 : 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
@@ -567,42 +595,44 @@ class _CreditPackGridCard extends StatelessWidget {
                 ),
               ),
 
-              // 3. 購入ボタン（「$XX」とだけ表示）
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
-                child: SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    onPressed: canPurchase ? onPurchase : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA855F7),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFA855F7).withValues(alpha: 0.35),
-                      elevation: 0,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+              // 3. 購入ボタン（「$XX」とだけ表示）。
+              // Androidでは価格・購入ボタン自体を出さず、カードをコンパクトに表示する。
+              if (!isAndroid)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+                  child: SizedBox(
+                    height: 36,
+                    child: ElevatedButton(
+                      onPressed: canPurchase ? onPurchase : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFA855F7),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFFA855F7).withValues(alpha: 0.35),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: isPurchasing
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              priceString,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                     ),
-                    child: isPurchasing
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            priceString,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

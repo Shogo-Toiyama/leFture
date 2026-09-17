@@ -1037,13 +1037,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get creditDetailViewPlansButton => 'View & Change Plans';
 
   @override
+  String get creditDetailViewPlansButtonAndroid => 'View Plans';
+
+  @override
   String get creditDetailViewPaidPlansButton => 'View Paid Plans';
 
   @override
   String get creditDetailBuyCreditsLink => 'Buy Credits ＞';
 
   @override
+  String get creditDetailBuyCreditsLinkAndroid => 'Additional Credits ＞';
+
+  @override
   String get purchaseCreditsTitle => 'Buy Credits';
+
+  @override
+  String get purchaseCreditsTitleAndroid => 'Additional Credits';
 
   @override
   String get purchaseCreditsTagline => 'Add credits anytime. Never expire.';
@@ -1054,6 +1063,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get purchaseCreditsDisclosure =>
       'Payment will be charged to your Apple ID account at confirmation of purchase. Purchased additional credits never expire and are automatically used when monthly credits run out.';
+
+  @override
+  String get purchaseCreditsDisclosureAndroid =>
+      'Additional credits can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to buy credits.';
 
   @override
   String get purchaseCreditsNoExpiration => 'Never Expires';
@@ -1535,6 +1548,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get plansDisclosure =>
       'leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device\'s account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.';
+
+  @override
+  String get plansDisclosureAndroid =>
+      'Paid plans can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to subscribe.';
+
+  @override
+  String get plansStartFreeButton => 'Start with the Free plan';
 
   @override
   String get plansDowngradeDialogTitle => 'Plan Change Scheduled';
@@ -3156,4 +3176,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get creditRateModalBuyCreditsButton => 'Buy Credits';
+
+  @override
+  String get creditRateModalBuyCreditsButtonAndroid => 'View Credit Options';
 }

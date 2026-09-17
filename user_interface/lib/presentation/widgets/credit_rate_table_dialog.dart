@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lefture/app/routes.dart';
@@ -279,7 +281,9 @@ class CreditRateTableDialog extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          l10n.creditRateModalBuyCreditsButton,
+                          Platform.isAndroid
+                              ? l10n.creditRateModalBuyCreditsButtonAndroid
+                              : l10n.creditRateModalBuyCreditsButton,
                           style: const TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.w700,

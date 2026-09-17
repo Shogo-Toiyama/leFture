@@ -18,9 +18,12 @@ logger = logging.getLogger(__name__)
 # Trueの間はhas_feature()がtier_levelを見ずに常にTrueを返す — subscription_plans側
 # のtier_levelは一切書き換えない(Free=0のまま)ので、Flutter側のtier_levelベースの
 # 表示ロジック(PlanOption.isPremiumTier等)には影響しない。
-# サブスクUIをTestFlightに出し、テストユーザーに1年間有効のMaxプロモコードを
-# 配布し終えたらFalseに戻す。
-GATING_DISABLED_FOR_ALL_USERS = True
+# App Store Review / 本番運用時はFalseにし、ユーザーのtier_levelに基づいて
+# 機能を制限・開放する。
+# 必要に応じて環境変数 GATING_DISABLED_FOR_ALL_USERS=true で一時的に上書き可能。
+GATING_DISABLED_FOR_ALL_USERS = (
+    os.environ.get("GATING_DISABLED_FOR_ALL_USERS", "false").strip().lower() == "true"
+)
 
 # GATING_DISABLED_FOR_ALL_USERS中でも、開発者自身の実機テスト用アカウントだけは
 # 本番同様にtier_levelベースの実際のgatingを受けられるようにする許可リスト。

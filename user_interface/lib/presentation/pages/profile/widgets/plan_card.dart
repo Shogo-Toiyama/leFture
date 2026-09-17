@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -310,10 +311,14 @@ class PlanCard extends StatelessWidget {
                       themeColor: themeColor,
                     ),
                     const Spacer(),
-                    Text(
-                      state.priceLabel,
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                    ),
+                    // Androidでは価格を一切表示しない(Freeプランの"$0"表記も含め、
+                    // Google Playに「アプリ内で購入させようとしている」と見なされ
+                    // うる金額表記を画面内から完全に排除するため)。
+                    if (!Platform.isAndroid)
+                      Text(
+                        state.priceLabel,
+                        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
+                      ),
                   ],
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -19,6 +20,7 @@ import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/infrastructure/repositories/credit_repository.dart' show DeviceAlreadyClaimedException;
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/android_web_redirect_notice_card.dart';
 
 import 'plan_card_carousel.dart';
 import 'plan_change_dialogs.dart';
@@ -447,6 +449,15 @@ class PlanSelectionView extends HookConsumerWidget {
       isPremiumPlan = selectedPlan.isPremiumTier;
     }
 
+    // Androidではストア課金導線を一切出さない(Google Play Consumption-only
+    // ポリシーに沿うため、購入ボタン自体を無効化ではなく非表示にする)。
+    // 有料プランの内容(内容・カード)は引き続き閲覧できるが、フローティング
+    // Continueボタンの代わりに、ウェブサイト誘導の開示文言と、
+    // (オンボーディング文脈=onPlanActivated != nullの時のみ)常に固定で
+    // 「Freeプランで始める」ボタンを通常のスクロール内に置く。
+    final isAndroid = Platform.isAndroid;
+    final freePlan = sortedPlans.where((p) => p.isSelfServe).firstOrNull;
+
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
     final baseCardHeight = 450.0 * math.max(1.0, textScale);
     final carouselHeight = math.max(baseCardHeight, MediaQuery.sizeOf(context).height * 0.49);
@@ -533,7 +544,22 @@ class PlanSelectionView extends HookConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _PlanDisclosureContent(l10n: l10n),
+                          if (isAndroid) ...[
+                            _PlanAndroidWebRedirectNotice(l10n: l10n),
+                            const SizedBox(height: 16),
+                            _PlanLegalLinksRow(l10n: l10n),
+                            if (onPlanActivated != null && freePlan != null) ...[
+                              const SizedBox(height: 20),
+                              _PlanStartFreeButton(
+                                l10n: l10n,
+                                isLoading: purchasingPlanId.value == freePlan.id,
+                                isAlreadyClaimed: hasClaimedDeviceFree.value,
+                                onPressed: () => handleClaimFree(freePlan),
+                              ),
+                            ],
+                            const SizedBox(height: 24),
+                          ] else
+                            _PlanDisclosureContent(l10n: l10n),
                         ],
                       ],
                     ),
@@ -541,22 +567,23 @@ class PlanSelectionView extends HookConsumerWidget {
                 ),
               ],
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _PlanFloatingContinueBar(
-                label: continueLabel,
-                color: continueColor,
-                isLoading: isContinueLoading,
-                isUpgrade: isUpgradeAction,
-                isPremiumPlan: isPremiumPlan,
-                onPressed: onContinue,
-                l10n: l10n,
-                onRestorePurchases: handleRestorePurchases,
-                isRestoring: isRestoringPurchases.value,
+            if (!isAndroid)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _PlanFloatingContinueBar(
+                  label: continueLabel,
+                  color: continueColor,
+                  isLoading: isContinueLoading,
+                  isUpgrade: isUpgradeAction,
+                  isPremiumPlan: isPremiumPlan,
+                  onPressed: onContinue,
+                  l10n: l10n,
+                  onRestorePurchases: handleRestorePurchases,
+                  isRestoring: isRestoringPurchases.value,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -579,6 +606,129 @@ class _PlanDisclosureContent extends StatelessWidget {
       child: Text(
         l10n.plansDisclosure,
         style: TextStyle(color: AppColors.universe.textComet, fontSize: 12, height: 1.5),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Android向け: ウェブサイト誘導の開示文言(通常のカード状ハイライトで目立たせる)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PlanAndroidWebRedirectNotice extends StatelessWidget {
+  const _PlanAndroidWebRedirectNotice({required this.l10n});
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return AndroidWebRedirectNoticeCard(
+      text: l10n.plansDisclosureAndroid,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 利用規約・プライバシーポリシーのリンク行(Android版はRestore Purchasesを含まない)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PlanLegalLinksRow extends StatelessWidget {
+  const _PlanLegalLinksRow({required this.l10n});
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.push(AppRoutes.termsOfService),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                l10n.termsAndConditionsLink,
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 11,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.universe.textComet,
+                ),
+              ),
+            ),
+          ),
+          Text('•', style: TextStyle(color: AppColors.universe.textComet.withValues(alpha: 0.5), fontSize: 10)),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.push(AppRoutes.privacyPolicy),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                l10n.privacyPolicyLink,
+                style: TextStyle(
+                  color: AppColors.universe.textComet,
+                  fontSize: 11,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.universe.textComet,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Android向けオンボーディング専用:「Freeプランで始める」固定ボタン
+// カルーセルの選択状態とは無関係に、常にFreeプランのアクティベートだけを行う。
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PlanStartFreeButton extends StatelessWidget {
+  const _PlanStartFreeButton({
+    required this.l10n,
+    required this.isLoading,
+    required this.isAlreadyClaimed,
+    required this.onPressed,
+  });
+
+  final AppLocalizations l10n;
+  final bool isLoading;
+  final bool isAlreadyClaimed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: (isLoading || isAlreadyClaimed) ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.starGold,
+            foregroundColor: Colors.black,
+            disabledBackgroundColor: const Color(0x1AFFFFFF),
+            disabledForegroundColor: Colors.white38,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 0,
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                )
+              : Text(
+                  isAlreadyClaimed ? l10n.plansUnavailableButton : l10n.plansStartFreeButton,
+                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
+                ),
+        ),
       ),
     );
   }

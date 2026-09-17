@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -414,7 +415,9 @@ class _CurrentPlanCard extends ConsumerWidget {
                             ),
                           ),
                           child: Text(
-                            l10n.creditDetailViewPlansButton,
+                            Platform.isAndroid
+                                ? l10n.creditDetailViewPlansButtonAndroid
+                                : l10n.creditDetailViewPlansButton,
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                           ),
                         ),
@@ -597,7 +600,7 @@ class _MonthlyCreditCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Text(
-                      l10n.creditDetailBuyCreditsLink,
+                      Platform.isAndroid ? l10n.creditDetailBuyCreditsLinkAndroid : l10n.creditDetailBuyCreditsLink,
                       style: const TextStyle(
                         color: AppColors.starGold,
                         fontSize: 12,

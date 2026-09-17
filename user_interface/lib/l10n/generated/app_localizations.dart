@@ -1859,6 +1859,12 @@ abstract class AppLocalizations {
   /// **'View & Change Plans'**
   String get creditDetailViewPlansButton;
 
+  /// Android-only replacement for creditDetailViewPlansButton. Avoids 'Change' wording since paid plan tiers cannot be purchased or changed in-app on Android (Google Play Consumption-only positioning).
+  ///
+  /// In en, this message translates to:
+  /// **'View Plans'**
+  String get creditDetailViewPlansButtonAndroid;
+
   /// Link/button shown below the free self-serve plan tile (for users with no active plan yet) that navigates to the full Plans page to see the paid App Store subscription tiers.
   ///
   /// In en, this message translates to:
@@ -1871,11 +1877,23 @@ abstract class AppLocalizations {
   /// **'Buy Credits ＞'**
   String get creditDetailBuyCreditsLink;
 
+  /// Android-only replacement for creditDetailBuyCreditsLink. Avoids any 'buy/purchase' wording since the destination page has no in-app purchase capability on Android (Google Play Consumption-only positioning).
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Credits ＞'**
+  String get creditDetailBuyCreditsLinkAndroid;
+
   /// AppBar title on the Credit Purchase page.
   ///
   /// In en, this message translates to:
   /// **'Buy Credits'**
   String get purchaseCreditsTitle;
+
+  /// Android-only replacement for purchaseCreditsTitle. Avoids any 'buy/purchase' wording.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Credits'**
+  String get purchaseCreditsTitleAndroid;
 
   /// Header subtitle on the Credit Purchase page.
   ///
@@ -1894,6 +1912,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payment will be charged to your Apple ID account at confirmation of purchase. Purchased additional credits never expire and are automatically used when monthly credits run out.'**
   String get purchaseCreditsDisclosure;
+
+  /// Android-only replacement for purchaseCreditsDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Intentionally plain text with no tappable link to the website, per Google Play Consumption-only positioning.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional credits can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to buy credits.'**
+  String get purchaseCreditsDisclosureAndroid;
 
   /// Badge indicating that purchased credit packs have no expiration date.
   ///
@@ -2749,6 +2773,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device\'s account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.'**
   String get plansDisclosure;
+
+  /// Android-only replacement for plansDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Google Play Consumption-only positioning: intentionally plain text with no tappable link to the website.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid plans can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to subscribe.'**
+  String get plansDisclosureAndroid;
+
+  /// Android-only onboarding button shown below the plan disclosure notice, in the normal scroll flow (not floating). Unlike the shared Continue button, this is always fixed to activating the Free plan regardless of which plan card is currently selected in the carousel — it lets the user proceed through onboarding without any purchase capability.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with the Free plan'**
+  String get plansStartFreeButton;
 
   /// Title of the dialog shown after a user successfully schedules a downgrade to a lower-tier paid plan (or to Free) from a paid plan. Replaces the old generic snackbar.
   ///
@@ -5587,6 +5623,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Buy Credits'**
   String get creditRateModalBuyCreditsButton;
+
+  /// Android-only replacement for creditRateModalBuyCreditsButton. Avoids any 'buy/purchase' wording since the destination page has no in-app purchase capability on Android.
+  ///
+  /// In en, this message translates to:
+  /// **'View Credit Options'**
+  String get creditRateModalBuyCreditsButtonAndroid;
 }
 
 class _AppLocalizationsDelegate

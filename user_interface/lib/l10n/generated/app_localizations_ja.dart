@@ -986,13 +986,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get creditDetailViewPlansButton => 'プランを見る・変更する';
 
   @override
+  String get creditDetailViewPlansButtonAndroid => 'プランを見る';
+
+  @override
   String get creditDetailViewPaidPlansButton => '有料プランを見る';
 
   @override
   String get creditDetailBuyCreditsLink => 'クレジットを購入 ＞';
 
   @override
+  String get creditDetailBuyCreditsLinkAndroid => '追加クレジットについて ＞';
+
+  @override
   String get purchaseCreditsTitle => 'クレジット購入';
+
+  @override
+  String get purchaseCreditsTitleAndroid => '追加クレジット';
 
   @override
   String get purchaseCreditsTagline => '必要な分だけいつでも追加。有効期限はありません。';
@@ -1003,6 +1012,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get purchaseCreditsDisclosure =>
       '購入確認時にApple IDアカウントに課金されます。購入された追加クレジットに有効期限はありません。月間クレジットが不足した際に自動的に消費されます。';
+
+  @override
+  String get purchaseCreditsDisclosureAndroid =>
+      '追加クレジットのご購入は、<gold>公式ウェブサイト（lefture.com）</gold>でのみ承っております。<b>Android版アプリ内では購入できません。</b>ブラウザで<gold>lefture.com</gold>にアクセスしてご購入ください。';
 
   @override
   String get purchaseCreditsNoExpiration => '有効期限なし';
@@ -1472,6 +1485,13 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get plansDisclosure =>
       'leFtureのサブスクリプションは、現在の期間終了の24時間前までにキャンセルしない限り、毎月自動的に更新されます。購入確認時にApple IDアカウントに課金されます。サブスクリプションはいつでも端末のアカウント設定から管理・キャンセルできます。プランのダウングレードは即時ではなく、次回請求期間の開始時に反映されます。それまでは現在のプランとクレジットがそのまま有効です。';
+
+  @override
+  String get plansDisclosureAndroid =>
+      '有料プランのご購入は、<gold>公式ウェブサイト（lefture.com）</gold>でのみ承っております。<b>Android版アプリ内では購入できません。</b>ブラウザで<gold>lefture.com</gold>にアクセスしてご購入ください。';
+
+  @override
+  String get plansStartFreeButton => 'Freeプランで始める';
 
   @override
   String get plansDowngradeDialogTitle => 'プラン変更を予約しました';
@@ -3017,4 +3037,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get creditRateModalBuyCreditsButton => 'クレジット購入';
+
+  @override
+  String get creditRateModalBuyCreditsButtonAndroid => 'クレジットについて見る';
 }
