@@ -17,6 +17,45 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      GoogleサインインのポップアップCOOP対策(webapp/src/lib/googleAuth.ts参照)。
+      ポップアップがGoogle認証を終えてこのオリジンに#id_token=...付きで
+      戻ってきた時、React/supabase-jsが読み込まれる(=Supabaseクライアントが
+      detectSessionInUrlでこのハッシュを見てしまう)より前に、同期的に
+      ハッシュを消費してBroadcastChannelで親ウィンドウに中継し、自分自身を
+      閉じる。lefture_google_oauth_pendingフラグが立っていない通常の
+      ページ読み込み(Appleのコールバック等)は素通りする。
+      定数(ストレージキー・チャンネル名)はgoogleAuth.tsと手動で同期させること。
+    -->
+    <script>
+      (function () {
+        var hash = window.location.hash;
+        if (!hash || hash.indexOf('state=') === -1) return;
+        if (hash.indexOf('id_token=') === -1 && hash.indexOf('error=') === -1) return;
+        if (localStorage.getItem('lefture_google_oauth_pending') !== '1') return;
+
+        var params = new URLSearchParams(hash.substring(1));
+        var payload = {
+          state: params.get('state'),
+          idToken: params.get('id_token'),
+          error: params.get('error'),
+        };
+
+        // ここまで来た時点でこのページ読み込みはGoogleサインインポップアップの
+        // コールバックだと確定しているので、ハッシュを消してから中継・自己終了する。
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+
+        try {
+          var channel = new BroadcastChannel('lefture-google-oauth');
+          channel.postMessage(payload);
+          channel.close();
+        } catch (e) {
+          // BroadcastChannel未対応環境。親ウィンドウ側は後述のタイムアウトでエラー終了する。
+        }
+
+        window.close();
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

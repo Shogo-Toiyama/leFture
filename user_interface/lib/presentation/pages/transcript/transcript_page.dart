@@ -10,6 +10,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/core/utils/moment_display_utils.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/core/utils/topic_color_utils.dart';
@@ -266,6 +267,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
     final playbackSpeed = useState<double>(1.0);
     final isAudioLoaded = useState<bool>(false);
     final audioFileVal = useState<File?>(null);
+    final audioLoadErrorMessage = useState<String?>(null);
 
     // Scroll & Auto-scroll setup (5s Idle Resume)
     final scrollController = useScrollController();
@@ -630,6 +632,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
       if (r2FileAsync.hasValue && r2FileAsync.value != null) {
         final file = r2FileAsync.value!;
         audioFileVal.value = file;
+        audioLoadErrorMessage.value = null;
         player
             .setReleaseMode(ReleaseMode.stop)
             .then((_) {
@@ -637,6 +640,12 @@ class _TranscriptPageContent extends HookConsumerWidget {
             })
             .then((_) {
               isAudioLoaded.value = true;
+            })
+            .catchError((Object error, StackTrace stackTrace) {
+              DevLog.add(
+                '[AudioPlayer] setSource failed for ${file.path}: $error\n$stackTrace',
+              );
+              audioLoadErrorMessage.value = error.toString();
             });
       }
       return null;
@@ -1231,7 +1240,7 @@ class _TranscriptPageContent extends HookConsumerWidget {
                     ? (r2FileAsync.error is ArtifactOfflineException
                         ? l10n.transcriptPageOfflineErrorShort
                         : r2FileAsync.error.toString())
-                    : null,
+                    : audioLoadErrorMessage.value,
                 topics: topics,
                 currentTopic: currentTopic,
                 moments: moments,

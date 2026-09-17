@@ -714,8 +714,9 @@ class RecordingController extends _$RecordingController {
 
       // 1. マスター音声は録音中ずっと継続エンコードされてきている(named pipe +
       // fragmented MP4)。ここでは最後のフラグメントを確定させてファイルを
-      // 閉じるだけなので、通常はほぼ一瞬で終わる。実機での所要時間を測って
-      // おく(--dart-define=IS_TEST_MODE=true のビルドならDevLogオーバーレイで
+      // 閉じ、続けてシーク可能な普通のMP4へ無劣化remux(-c copy)するので、
+      // 通常はどちらもほぼ一瞬で終わる。実機での所要時間を測っておく
+      // (--dart-define=IS_TEST_MODE=true のビルドならDevLogオーバーレイで
       // 確認できる)。iOSの実行猶予は概ね30秒なので、ここが何秒かかっているかが
       // 再発リスクの直接の指標になる。
       final encodeStartedAt = DateTime.now();

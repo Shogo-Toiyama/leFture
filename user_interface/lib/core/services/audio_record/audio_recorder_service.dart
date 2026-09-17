@@ -528,9 +528,52 @@ class AudioRecorderService {
     await sink.flush();
   }
 
+  /// [finalizeContinuousMasterEncode]が確定させたfragmented MP4
+  /// (`+empty_moov+default_base_moof`、クラッシュ耐性のため2秒毎に断片化して
+  /// 書き出したもの)は、シーク用インデックス(サンプルテーブル)を持たない。
+  /// そのため再生側のプレイヤーがシークしようとすると、Androidでは断片を
+  /// 先頭から線形に探すしかなく極端に遅い/タイムアウトし、iOSのAVPlayerに
+  /// 至っては読み込み自体を`AVPlayerItem.Status.failed`で拒否する
+  /// (実機ログで両方確認済み)。
+  ///
+  /// 録音データ自体は変えず(`-c copy`、再エンコード無し)、コンテナの並びだけを
+  /// 目次付きの普通のMP4に作り直す。対象は既に圧縮済みのm4a(90分講義でも
+  /// 数十MB程度)であり、デコード/エンコードが無いピュアなファイルI/Oのため、
+  /// 通常1〜2秒で終わる。失敗した場合は例外にせず、fragmentedのままの
+  /// オリジナルを残してログのみ出す(このステップが無くてもAndroidでは
+  /// 一応読み込めるファイルであり、このメソッドの失敗でアップロード自体を
+  /// 止めたくないため)。
+  Future<void> _remuxMasterM4aForSeekablePlayback(String m4aPath) async {
+    final fixedPath = '$m4aPath.faststart.tmp';
+    final fixedFile = File(fixedPath);
+    if (await fixedFile.exists()) await fixedFile.delete();
+
+    final command = '-y -i "$m4aPath" -c copy -movflags +faststart "$fixedPath"';
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+
+    if (!ReturnCode.isSuccess(returnCode)) {
+      final logs = await session.getLogs();
+      final errorMsg = logs.map((l) => l.getMessage()).join('\n');
+      DevLog.add(
+        '⚠️ [AudioRecorder] faststart remux failed for $m4aPath '
+        '(keeping fragmented original — seeking may be slow/broken). '
+        'ReturnCode: $returnCode\nLogs:\n$errorMsg',
+      );
+      try {
+        if (await fixedFile.exists()) await fixedFile.delete();
+      } catch (_) {}
+      return;
+    }
+
+    await File(m4aPath).delete();
+    await fixedFile.rename(m4aPath);
+  }
+
   /// 継続エンコードを確定する。パイプを閉じてffmpegへ入力終端(EOF)を伝え、
   /// 最後のフラグメントが確定するのを待ってからM4Aパスを返す。録音中ずっと
-  /// エンコードし続けてきたため、通常はほぼ一瞬で完了する。
+  /// エンコードし続けてきたため、通常はほぼ一瞬で完了する。最後に
+  /// [_remuxMasterM4aForSeekablePlayback]で、シーク可能な普通のMP4へ作り直す。
   Future<String> finalizeContinuousMasterEncode(
     String lectureId, {
     Duration watchdogTimeout = const Duration(seconds: 20),
@@ -585,7 +628,15 @@ class AudioRecorderService {
       debugPrint('⚠️ Failed to delete pipe file after finalize: $e');
     }
 
-    return getMasterM4aPath(lectureId);
+    final m4aPath = await getMasterM4aPath(lectureId);
+    final remuxStartedAt = DateTime.now();
+    await _remuxMasterM4aForSeekablePlayback(m4aPath);
+    DevLog.add(
+      '🔧 [AudioRecorder] faststart remux for $lectureId took '
+      '${DateTime.now().difference(remuxStartedAt).inMilliseconds}ms',
+    );
+
+    return m4aPath;
   }
 
   /// 録音の破棄([RecordingController.cancelAndDiscard])用。進行中の
