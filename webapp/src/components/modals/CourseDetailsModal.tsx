@@ -1,4 +1,5 @@
 import React from 'react';
+import { Tag, CalendarDays, Clock, type LucideIcon } from 'lucide-react';
 import type { Course } from '../../types/course';
 import { ModalDialog } from './ModalDialog';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -20,10 +21,10 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
   const createdLabel = language === 'ja' ? '作成日' : 'Created';
   const summaryLabel = language === 'ja' ? '概要・説明' : 'Summary';
 
-  const rows: { icon: string; label: string; value: string }[] = [];
+  const rows: { icon: LucideIcon; label: string; value: string }[] = [];
 
   if (course.course_code?.trim()) {
-    rows.push({ icon: '#', label: courseCodeLabel, value: course.course_code.trim() });
+    rows.push({ icon: Tag, label: courseCodeLabel, value: course.course_code.trim() });
   }
 
   // Attributes from populated object or metadata if available
@@ -33,7 +34,7 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
   ].filter(Boolean);
 
   if (termYearParts.length > 0) {
-    rows.push({ icon: '📅', label: termLabel, value: termYearParts.join(' ') });
+    rows.push({ icon: CalendarDays, label: termLabel, value: termYearParts.join(' ') });
   }
 
   if (course.created_at) {
@@ -42,7 +43,7 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
       month: 'short',
       day: 'numeric',
     });
-    rows.push({ icon: '🕒', label: createdLabel, value: formattedDate });
+    rows.push({ icon: Clock, label: createdLabel, value: formattedDate });
   }
 
   return (
@@ -51,7 +52,7 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
         <div className="course-details-rows">
           {rows.map((row, idx) => (
             <div key={idx} className="course-details-row">
-              <span className="details-row-icon">{row.icon}</span>
+              <row.icon size={16} className="details-row-icon" />
               <span className="details-row-label">{row.label}</span>
               <span className="details-row-value">{row.value}</span>
             </div>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { Search, X, Plus } from 'lucide-react';
 import type { Course } from '../../types/course';
 import { useCourses } from '../../hooks/useCourses';
 import { ModalDialog } from './ModalDialog';
 import { CourseEditModal } from './CourseEditModal';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { CourseIconGlyph } from '../../lib/courseIcons';
 
 export interface CoursePickerModalProps {
   initialSelectedCourseId?: string | null;
@@ -57,10 +59,7 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
           {/* Search & Add New Course Row */}
           <div className="course-picker-search-row">
             <div className="course-picker-search-box">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="picker-search-svg">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <Search size={18} className="picker-search-svg" />
               <input
                 type="text"
                 className="course-picker-search-input"
@@ -75,7 +74,7 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
                   className="picker-search-clear"
                   onClick={() => setSearchQuery('')}
                 >
-                  ✕
+                  <X size={16} />
                 </button>
               )}
             </div>
@@ -86,7 +85,7 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
               onClick={() => setShowCreateModal(true)}
               title={language === 'ja' ? '新規コース作成' : 'Create new course'}
             >
-              +
+              <Plus size={18} />
             </button>
           </div>
 
@@ -110,7 +109,7 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
                       borderColor: `${courseColor}44`,
                     }}
                   >
-                    <span className="picker-item-icon">✦</span>
+                    <CourseIconGlyph icon={c.metadata?.icon as string} size={18} className="picker-item-icon" />
                   </div>
                   <div className="picker-item-info">
                     <span className="picker-item-title">{c.course_title}</span>

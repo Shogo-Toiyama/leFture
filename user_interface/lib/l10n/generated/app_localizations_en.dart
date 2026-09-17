@@ -1518,6 +1518,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plansContinueWithCurrentPlanButton => 'Continue with Current Plan';
 
   @override
+  String plansContinueWithPlanButton(String planName) {
+    return 'Continue with $planName Plan';
+  }
+
+  @override
   String get plansScheduledButton => 'Already Scheduled';
 
   @override

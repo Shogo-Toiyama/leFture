@@ -830,6 +830,8 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
             raise HTTPException(status_code=410, detail={"error_code": "PLAN_EXPIRED", "message": "This plan is no longer available."})
         if "plan_already_claimed" in error_str or "duplicate key" in error_str:
             raise HTTPException(status_code=409, detail={"error_code": "PLAN_ALREADY_CLAIMED", "message": "This plan has already been claimed."})
+        if "plan_already_active_other_plan" in error_str:
+            raise HTTPException(status_code=409, detail={"error_code": "ANOTHER_PLAN_ALREADY_ACTIVE", "message": "You already have an active plan. This plan cannot be claimed."})
         raise HTTPException(status_code=500, detail=f"Failed to claim plan: {e}")
 
     return {"status": "success", "plan_id": payload.plan_id}

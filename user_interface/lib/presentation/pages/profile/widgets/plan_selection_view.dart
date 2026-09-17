@@ -548,14 +548,27 @@ class PlanSelectionView extends HookConsumerWidget {
                             _PlanAndroidWebRedirectNotice(l10n: l10n),
                             const SizedBox(height: 16),
                             _PlanLegalLinksRow(l10n: l10n),
-                            if (onPlanActivated != null && freePlan != null) ...[
+                            if (onPlanActivated != null && !summaryIsUnknown) ...[
                               const SizedBox(height: 20),
-                              _PlanStartFreeButton(
-                                l10n: l10n,
-                                isLoading: purchasingPlanId.value == freePlan.id,
-                                isAlreadyClaimed: hasClaimedDeviceFree.value,
-                                onPressed: () => handleClaimFree(freePlan),
-                              ),
+                              if (hasActivePlan)
+                                // Web/他プラットフォームで既に何らかのプラン(Freeも含む)に
+                                // 加入済みなら、Androidではプラン変更ができないため
+                                // 常にそのまま先へ進めるだけにする。ここでFreeの
+                                // claim_planを呼ぶと、既存プランが残ったまま
+                                // Freeプラン分のクレジットが二重付与されてしまう。
+                                _PlanContinueWithCurrentButton(
+                                  label: currentPlan != null
+                                      ? l10n.plansContinueWithPlanButton(currentPlan.name)
+                                      : l10n.plansContinueWithCurrentPlanButton,
+                                  onPressed: onPlanActivated!,
+                                )
+                              else if (freePlan != null)
+                                _PlanStartFreeButton(
+                                  l10n: l10n,
+                                  isLoading: purchasingPlanId.value == freePlan.id,
+                                  isAlreadyClaimed: hasClaimedDeviceFree.value,
+                                  onPressed: () => handleClaimFree(freePlan),
+                                ),
                             ],
                             const SizedBox(height: 24),
                           ] else
@@ -728,6 +741,46 @@ class _PlanStartFreeButton extends StatelessWidget {
                   isAlreadyClaimed ? l10n.plansUnavailableButton : l10n.plansStartFreeButton,
                   style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Android向けオンボーディング専用:「{プラン名}プランで続ける」固定ボタン
+// 既に何らかのプラン(Web加入分を含む)がactiveな場合に表示し、購入も
+// claim_planも呼ばずそのまま次のステップへ進める。
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PlanContinueWithCurrentButton extends StatelessWidget {
+  const _PlanContinueWithCurrentButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.starGold,
+            foregroundColor: Colors.black,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 0,
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );

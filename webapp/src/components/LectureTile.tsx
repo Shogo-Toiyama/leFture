@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import type { Lecture } from '../types/lecture';
 import { lectureDisplayTitle } from '../types/lecture';
 import { TopicImage } from './TopicImage';
+import { useFirstTopicImagePath } from '../hooks/useFirstTopicImagePath';
 
 export interface LectureTileProps {
   lecture: Lecture;
   to?: string;
   courseCode?: string | null;
   courseColor?: string | null;
-  firstTopicImagePath?: string | null;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -19,10 +19,10 @@ export const LectureTile: React.FC<LectureTileProps> = ({
   to,
   courseCode,
   courseColor,
-  firstTopicImagePath,
   onEdit,
   onDelete,
 }) => {
+  const firstTopicImagePath = useFirstTopicImagePath(lecture.id);
   const targetUrl = to || `/lectures/${lecture.id}`;
   const accent = courseColor || '#FFB300';
   const title = lectureDisplayTitle(lecture);

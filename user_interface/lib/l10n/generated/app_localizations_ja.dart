@@ -1455,6 +1455,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansContinueWithCurrentPlanButton => '現在のプランで続ける';
 
   @override
+  String plansContinueWithPlanButton(String planName) {
+    return '$planNameプランで続ける';
+  }
+
+  @override
   String get plansScheduledButton => '予約済み';
 
   @override

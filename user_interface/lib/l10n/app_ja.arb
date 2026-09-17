@@ -451,6 +451,7 @@
   "plansUltimateBadge": "✦ 最上位",
   "plansCurrentPlanButton": "現在有効なプラン",
   "plansContinueWithCurrentPlanButton": "現在のプランで続ける",
+  "plansContinueWithPlanButton": "{planName}プランで続ける",
   "plansScheduledButton": "予約済み",
   "plansRevertButton": "プランを戻す",
   "plansUnavailableButton": "利用できません",

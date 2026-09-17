@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import type { Course } from '../../types/course';
 import { createCourse, updateCourse } from '../../lib/courses';
 import { ModalDialog } from './ModalDialog';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { CourseIconGlyph, COURSE_ICON_KEYS } from '../../lib/courseIcons';
 
 const PRESET_COLORS = [
   '#FFB300', // Gold (Default)
@@ -15,21 +17,6 @@ const PRESET_COLORS = [
   '#26A69A', // Teal
   '#66BB6A', // Green
   '#8D6E63', // Brown
-];
-
-const PRESET_ICONS = [
-  'school',
-  'book',
-  'science',
-  'code',
-  'calculate',
-  'psychology',
-  'history_edu',
-  'language',
-  'palette',
-  'music_note',
-  'public',
-  'biotech',
 ];
 
 export interface CourseEditModalProps {
@@ -160,7 +147,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
         <div className="edit-form-field">
           <label className="edit-form-label">{iconLabel}</label>
           <div className="course-icon-picker-grid">
-            {PRESET_ICONS.map((ic) => (
+            {COURSE_ICON_KEYS.map((ic) => (
               <button
                 key={ic}
                 type="button"
@@ -171,7 +158,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
                 }}
                 onClick={() => setIcon(ic)}
               >
-                <span className="course-icon-symbol">✦</span>
+                <CourseIconGlyph icon={ic} size={20} className="course-icon-symbol" />
                 <span className="course-icon-name">{ic}</span>
               </button>
             ))}
@@ -186,7 +173,9 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
             onClick={() => setShowMore((prev) => !prev)}
           >
             <span>{moreInfoLabel}</span>
-            <span className="accordion-chevron">{showMore ? '▲' : '▼'}</span>
+            <span className="accordion-chevron">
+              {showMore ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
           </button>
 
           {showMore && (

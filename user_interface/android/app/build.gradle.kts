@@ -15,6 +15,17 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+fun getCommitCount(): Int {
+    val process = ProcessBuilder("git", "-C", rootProject.projectDir.path, "rev-list", "--count", "HEAD").start()
+    val output = process.inputStream.bufferedReader().readText().trim()
+    val exitCode = process.waitFor()
+    if (exitCode != 0 || output.isEmpty()) {
+        val errorMsg = process.errorStream.bufferedReader().readText().trim()
+        throw GradleException("Failed to get Git commit count for versionCode (exit code: $exitCode): $errorMsg")
+    }
+    return output.toInt()
+}
+
 android {
     namespace = "com.lefture.app"
     compileSdk = flutter.compileSdkVersion
@@ -35,7 +46,7 @@ android {
         applicationId = "com.lefture.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
+        versionCode = getCommitCount()
         versionName = flutter.versionName
     }
 

@@ -39,11 +39,21 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
   size = 48,
 }) => {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [externalLoadFailed, setExternalLoadFailed] = useState(false);
 
   const cleanUrl = avatarUrl?.trim() ?? '';
   const isExternal = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://');
   const isPreset = cleanUrl.startsWith('preset:');
   const isStoragePath = cleanUrl.length > 0 && !isExternal && !isPreset;
+
+  // GoogleのプロフィールURL(lh3.googleusercontent.com等)はReferrerを見て弾く
+  // ことがあり、Referrer-Policyを指定しないと何のエラーも出さずに読み込みに
+  // 失敗する(<img>のonerrorすら発火しないケースがある)。念のため
+  // referrerPolicy="no-referrer"を指定し、それでも失敗したらonErrorで
+  // イニシャルのプレースホルダーにフォールバックする。
+  useEffect(() => {
+    setExternalLoadFailed(false);
+  }, [cleanUrl]);
 
   useEffect(() => {
     if (!isStoragePath) return;
@@ -77,12 +87,14 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
     .slice(0, 2)
     .join('');
 
-  if (isExternal) {
+  if (isExternal && !externalLoadFailed) {
     return (
       <img
         src={cleanUrl}
         alt={username}
         className="avatar-image"
+        referrerPolicy="no-referrer"
+        onError={() => setExternalLoadFailed(true)}
         style={{
           width: size,
           height: size,

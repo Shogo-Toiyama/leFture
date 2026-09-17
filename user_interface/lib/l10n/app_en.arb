@@ -2443,6 +2443,17 @@
     "description": "Button label on the onboarding plans step when the user already has this plan active (e.g. Free plan), allowing them to proceed through onboarding without making a purchase."
   },
 
+  "plansContinueWithPlanButton": "Continue with {planName} Plan",
+  "@plansContinueWithPlanButton": {
+    "description": "Button label on the Android onboarding plans step when the user already has an active subscription of any kind (claimed on web or another platform). Lets them proceed through onboarding without re-claiming or being offered the Free plan, since Android cannot change plans in-app.",
+    "placeholders": {
+      "planName": {
+        "type": "String",
+        "example": "Max"
+      }
+    }
+  },
+
   "plansScheduledButton": "Already Scheduled",
   "@plansScheduledButton": {
     "description": "Disabled button label shown on the pricing card that matches the plan the user's subscription is already scheduled to switch to at the next renewal (see plansNextPlanBadge)."

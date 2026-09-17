@@ -2714,6 +2714,12 @@ abstract class AppLocalizations {
   /// **'Continue with Current Plan'**
   String get plansContinueWithCurrentPlanButton;
 
+  /// Button label on the Android onboarding plans step when the user already has an active subscription of any kind (claimed on web or another platform). Lets them proceed through onboarding without re-claiming or being offered the Free plan, since Android cannot change plans in-app.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {planName} Plan'**
+  String plansContinueWithPlanButton(String planName);
+
   /// Disabled button label shown on the pricing card that matches the plan the user's subscription is already scheduled to switch to at the next renewal (see plansNextPlanBadge).
   ///
   /// In en, this message translates to:

@@ -22,6 +22,19 @@ export async function listLectureTopics(lectureId: string): Promise<LectureTopic
   return data as LectureTopic[];
 }
 
+/** 最初のトピック(index = 1)のimage_pathを取得。lecture_topic_repository_supabase.dart準拠。 */
+export async function getFirstTopicImagePath(lectureId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('lecture_topics')
+    .select('image_path')
+    .eq('lecture_id', lectureId)
+    .eq('index', 1)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.image_path as string | null) ?? null;
+}
+
 export async function listReviewCards(lectureId: string): Promise<ReviewCard[]> {
   const { data, error } = await supabase
     .from('review_cards')
