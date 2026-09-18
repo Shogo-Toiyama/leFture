@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useProcessingStatus } from '../../hooks/useProcessingStatus';
 import { useCourse } from '../../hooks/useCourse';
 import { useFunFacts } from '../../hooks/useFunFacts';
 import { useLectureTopics } from '../../hooks/useLectureTopics';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useKeywords } from '../../hooks/useKeywords';
+import { useCreditSummary } from '../../hooks/useCreditSummary';
 import { useLanguage } from '../../i18n/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 import { startAnalysis, InsufficientCreditsError } from '../../lib/upload';
 import { updateFunFactReaction, stripFunFactCitations } from '../../lib/content';
+import {
+  hasFeature,
+  FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER,
+  FEATURE_ANNOUNCEMENT_GENERATION,
+  FEATURE_SOURCE_TRANSCRIPT_VIEW,
+} from '../../lib/planFeatures';
+import { tierAccent } from '../../lib/planTheme';
 import type { FunFact } from '../../types/content';
 import { lectureDisplayTitle, lectureCreditsUsedDisplay, DEAD_JOB_STATUSES } from '../../types/lecture';
 import { PipelineStepsList } from '../../components/PipelineStepsList';
@@ -20,10 +29,19 @@ import { AnnouncementsModal } from '../../components/modals/AnnouncementsModal';
 import { KeywordsModal } from '../../components/modals/KeywordsModal';
 import { TopicsModal } from '../../components/modals/TopicsModal';
 import { LectureEditModal } from '../../components/modals/LectureEditModal';
+import { UpgradeRequiredDialog } from '../../components/UpgradeRequiredDialog';
+import { CreditRateTableDialog } from '../../components/CreditRateTableDialog';
+
+interface LockDialogInfo {
+  titleKey: TranslationKey;
+  messageKey: TranslationKey;
+  color: string;
+}
 
 export const LectureViewerPage: React.FC = () => {
   const { lectureId } = useParams<{ lectureId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const blockedReason = (location.state as { analysisBlockedReason?: string } | null)?.analysisBlockedReason;
 
   const { t, language } = useLanguage();
@@ -33,10 +51,29 @@ export const LectureViewerPage: React.FC = () => {
   const { funFacts, setFunFacts } = useFunFacts(lectureId);
   const { announcements, setAnnouncements } = useAnnouncements(lectureId);
   const { keywords, setKeywords } = useKeywords(lectureId);
+  const { summary } = useCreditSummary(false);
 
   const [activeModal, setActiveModal] = useState<'announcements' | 'keywords' | 'topics' | 'edit' | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(blockedReason ?? null);
+  const [lockDialog, setLockDialog] = useState<LockDialogInfo | null>(null);
+  const [creditRateOpen, setCreditRateOpen] = useState(false);
+
+  // summaryが未取得の間は「ロックされていない」扱いにして、後からロック表示に
+  // 切り替わるちらつきを避ける(Flutter版もhasFeatureProviderの解決待ち中は同様)。
+  const hasKeywordsFeature = summary
+    ? hasFeature(summary.tier_level, FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER, summary.gating_disabled)
+    : true;
+  const hasAnnouncementsFeature = summary
+    ? hasFeature(summary.tier_level, FEATURE_ANNOUNCEMENT_GENERATION, summary.gating_disabled)
+    : true;
+  const hasTranscriptFeature = summary
+    ? hasFeature(summary.tier_level, FEATURE_SOURCE_TRANSCRIPT_VIEW, summary.gating_disabled)
+    : true;
+  const isKeywordsLocked = keywords.length === 0 && !hasKeywordsFeature;
+  const isAnnouncementsLocked = announcements.length === 0 && !hasAnnouncementsFeature;
+  const isTranscriptLocked = !hasTranscriptFeature;
+  const subscriberLockColor = tierAccent(2).accent;
 
   const handleStart = async (force: boolean) => {
     if (!lectureId) return;
@@ -97,6 +134,7 @@ export const LectureViewerPage: React.FC = () => {
         summary={lecture.summary}
         creditsUsed={lectureCreditsUsedDisplay(lecture)}
         onEdit={() => setActiveModal('edit')}
+        onCreditsChipClick={() => setCreditRateOpen(true)}
       />
 
       {/* 2. Main Body Content (Below Hero) */}
@@ -157,23 +195,43 @@ export const LectureViewerPage: React.FC = () => {
               {/* 1. Announcements Chip */}
               <button
                 type="button"
-                className="lecture-highlight-chip"
-                onClick={() => setActiveModal('announcements')}
+                className={`lecture-highlight-chip ${isAnnouncementsLocked ? 'locked-chip' : ''}`}
+                onClick={() =>
+                  isAnnouncementsLocked
+                    ? setLockDialog({
+                        titleKey: 'announcementsLockedDialogTitle',
+                        messageKey: 'announcementsLockedDialogMessage',
+                        color: subscriberLockColor,
+                      })
+                    : setActiveModal('announcements')
+                }
               >
-                <span className="material-symbols-outlined chip-icon-glyph">campaign</span>
+                <span className="material-symbols-outlined chip-icon-glyph">
+                  {isAnnouncementsLocked ? 'lock' : 'campaign'}
+                </span>
                 <span>{language === 'ja' ? 'お知らせ' : 'Announcements'}</span>
-                <span className="chip-count-badge">{announcements.length}</span>
+                {!isAnnouncementsLocked && <span className="chip-count-badge">{announcements.length}</span>}
               </button>
 
               {/* 2. Keywords Chip */}
               <button
                 type="button"
-                className="lecture-highlight-chip"
-                onClick={() => setActiveModal('keywords')}
+                className={`lecture-highlight-chip ${isKeywordsLocked ? 'locked-chip' : ''}`}
+                onClick={() =>
+                  isKeywordsLocked
+                    ? setLockDialog({
+                        titleKey: 'keywordsLockedDialogTitle',
+                        messageKey: 'keywordsLockedDialogMessage',
+                        color: subscriberLockColor,
+                      })
+                    : setActiveModal('keywords')
+                }
               >
-                <span className="material-symbols-outlined chip-icon-glyph">vpn_key</span>
+                <span className="material-symbols-outlined chip-icon-glyph">
+                  {isKeywordsLocked ? 'lock' : 'vpn_key'}
+                </span>
                 <span>{language === 'ja' ? 'キーワード' : 'Keywords'}</span>
-                <span className="chip-count-badge">{keywords.length}</span>
+                {!isKeywordsLocked && <span className="chip-count-badge">{keywords.length}</span>}
               </button>
 
               {/* 3. Topics Chip */}
@@ -225,20 +283,45 @@ export const LectureViewerPage: React.FC = () => {
                 </Link>
 
                 {/* 3. Transcript & Audio */}
-                <Link to={`/lectures/${lectureId}/transcript`} className="action-nav-card">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="action-nav-card"
+                  onClick={() =>
+                    isTranscriptLocked
+                      ? setLockDialog({
+                          titleKey: 'transcriptLockedDialogTitle',
+                          messageKey: 'transcriptLockedDialogMessage',
+                          color: subscriberLockColor,
+                        })
+                      : navigate(`/lectures/${lectureId}/transcript`)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') (e.currentTarget as HTMLElement).click();
+                  }}
+                >
                   <div className="action-nav-left">
                     <div
                       className="action-nav-icon-wrap"
-                      style={{ backgroundColor: 'rgba(255, 179, 0, 0.15)', color: 'var(--gold)' }}
+                      style={
+                        isTranscriptLocked
+                          ? { backgroundColor: `${subscriberLockColor}26`, color: subscriberLockColor }
+                          : { backgroundColor: 'rgba(255, 179, 0, 0.15)', color: 'var(--gold)' }
+                      }
                     >
-                      <span className="material-symbols-outlined action-nav-glyph">receipt_long</span>
+                      <span className="material-symbols-outlined action-nav-glyph">
+                        {isTranscriptLocked ? 'lock' : 'receipt_long'}
+                      </span>
                     </div>
                     <span className="action-nav-title">{t('transcript')}</span>
                   </div>
-                  <div className="action-nav-arrow" style={{ color: 'var(--gold)' }}>
+                  <div
+                    className="action-nav-arrow"
+                    style={{ color: isTranscriptLocked ? subscriberLockColor : 'var(--gold)' }}
+                  >
                     →
                   </div>
-                </Link>
+                </div>
               </div>
 
               {/* Right Column: Fun Facts Section */}
@@ -275,6 +358,7 @@ export const LectureViewerPage: React.FC = () => {
           onAnnouncementToggled={(updated) => {
             setAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
           }}
+          enableTranscriptView
         />
       )}
       {activeModal === 'keywords' && (
@@ -304,6 +388,17 @@ export const LectureViewerPage: React.FC = () => {
           }}
         />
       )}
+
+      {lockDialog && (
+        <UpgradeRequiredDialog
+          requiredTierColor={lockDialog.color}
+          title={t(lockDialog.titleKey)}
+          message={t(lockDialog.messageKey)}
+          onClose={() => setLockDialog(null)}
+        />
+      )}
+
+      {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
     </div>
   );
 };

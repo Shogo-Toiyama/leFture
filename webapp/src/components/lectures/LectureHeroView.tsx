@@ -14,6 +14,7 @@ interface LectureHeroViewProps {
   summary?: string | null;
   creditsUsed?: number | null;
   onEdit?: () => void;
+  onCreditsChipClick?: () => void;
 }
 
 export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
@@ -24,6 +25,7 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
   summary,
   creditsUsed,
   onEdit,
+  onCreditsChipClick,
 }) => {
   const heroTopics = topics.filter((t) => t.image_path).slice(0, 6);
   const courseColor = (course?.metadata?.color as string) || '#FFB300';
@@ -85,14 +87,16 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
 
           <div className="lecture-hero-nav-actions">
             {creditsUsed != null && (
-              <div
+              <button
+                type="button"
                 className="lecture-credits-chip"
                 title={`${creditsUsed} credits used`}
                 aria-label={`${creditsUsed} credits used`}
+                onClick={onCreditsChipClick}
               >
                 <CreditStarIcon size={15} className="lecture-credits-icon" color="rgba(255, 255, 255, 0.85)" />
                 <span className="lecture-credits-value">{creditsUsed}</span>
-              </div>
+              </button>
             )}
 
             {onEdit && (

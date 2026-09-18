@@ -66,6 +66,8 @@ export interface Announcement {
   title: string | null;
   description: string | null;
   location: string | null;
+  start_sid: string | null;
+  end_sid: string | null;
   related_topic_title: string | null;
   completed_at: string | null;
   metadata: Record<string, unknown> | null;

@@ -6,6 +6,9 @@
  * 呼び出されていない — 準備段階)。
  */
 
+/** Freeプラン等でDeepNotes生成が意図的にスキップされたトピックのnote_contentsセンチネル値。 */
+export const DEEP_NOTES_SKIPPED_PLAN_LIMIT = '__SKIPPED_PLAN_LIMIT__';
+
 export const TIER_FREE = 0;
 export const TIER_LITE = 1;
 export const TIER_CORE = 2;

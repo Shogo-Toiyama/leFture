@@ -172,6 +172,39 @@ export const translations = {
     accountDeletedTitle: 'Account deleted',
     accountDeletedMessage:
       'Your account and all associated data have been permanently deleted. Thank you for using leFture.',
+
+    // Feature lock (plan gating)
+    upgradeRequiredViewPlansButton: 'View Plans',
+    upgradeRequiredCancelButton: 'Cancel',
+    deepNotesLockedDialogTitle: 'Deep Notes not generated',
+    deepNotesLockedDialogMessage:
+      'Deep Notes were not generated for this lecture. Upgrade to Lite or above to automatically generate notes for all topics in future lectures.',
+    deepNotesLockedCaption: 'Not generated · Free plan',
+    keywordsLockedDialogTitle: 'Keywords not generated',
+    keywordsLockedDialogMessage:
+      'Keywords were not extracted for this lecture. Upgrade to Core or above to automatically extract keywords in future lectures.',
+    announcementsLockedDialogTitle: 'Announcements not generated',
+    announcementsLockedDialogMessage:
+      'Announcements were not extracted for this lecture. Upgrade to Core or above to automatically extract announcements in future lectures.',
+    topicMapLockedDialogTitle: 'Topic Map not generated',
+    topicMapLockedDialogMessage:
+      'A Topic Map has not been built for this course. Upgrade to Lite or above to automatically build Topic Maps in future lectures.',
+    transcriptLockedDialogTitle: 'Transcript & Audio requires Core',
+    transcriptLockedDialogMessage:
+      'Viewing transcripts and listening to audio is exclusive to the Core plan. Upgrade to access them immediately, including for this lecture.',
+
+    // Credit rate table
+    creditRateModalTitle: 'Credit Usage Guide',
+    creditRateModalDescription: 'Credits consumed depend on the duration of your recorded audio.',
+    creditRateTableDurationHeader: 'Duration',
+    creditRateTableCreditsHeader: 'Credits',
+    creditRateRow1Duration: 'Under 30 min',
+    creditRateRow2Duration: '30 min – 1.5 hours',
+    creditRateRow3Duration: '1.5 – 2.5 hours',
+    creditRateRow4Duration: '2.5 – 3.5 hours',
+    creditRateMaxDurationNotice:
+      '※ Maximum recording duration is 3.5 hours. Recordings longer than 3.5 hours cannot be processed.',
+    creditRateModalBuyCreditsButton: 'Buy Credits',
   },
   ja: {
     // Brand & Common
@@ -344,6 +377,38 @@ export const translations = {
     accountDeletedTitle: 'アカウントを削除しました',
     accountDeletedMessage:
       'アカウントと関連するすべてのデータが完全に削除されました。leFtureをご利用いただきありがとうございました。',
+
+    // Feature lock (plan gating)
+    upgradeRequiredViewPlansButton: 'プランを見る',
+    upgradeRequiredCancelButton: 'キャンセル',
+    deepNotesLockedDialogTitle: '詳細ノートは生成されていません',
+    deepNotesLockedDialogMessage:
+      'この講義の詳細ノートは生成されていません。Liteプラン以上にアップグレードすると、今後の講義から全トピックのノートが自動生成されます。',
+    deepNotesLockedCaption: '未生成 · Freeプラン',
+    keywordsLockedDialogTitle: 'キーワードは生成されていません',
+    keywordsLockedDialogMessage:
+      'この講義のキーワードは抽出されていません。Coreプラン以上にアップグレードすると、今後の講義から自動で抽出されます。',
+    announcementsLockedDialogTitle: 'アナウンスメントは生成されていません',
+    announcementsLockedDialogMessage:
+      'この講義のアナウンスメントは抽出されていません。Coreプラン以上にアップグレードすると、今後の講義から自動で抽出されます。',
+    topicMapLockedDialogTitle: 'トピックマップは生成されていません',
+    topicMapLockedDialogMessage:
+      'このコースのトピックマップは作成されていません。Liteプラン以上にアップグレードすると、今後の講義から自動でマップが構築されます。',
+    transcriptLockedDialogTitle: '文字起こし・音声の確認にはCoreプランが必要です',
+    transcriptLockedDialogMessage:
+      '文字起こしと録音音声の閲覧・再生はCoreプラン限定の機能です。アップグレードすると、この講義も含めてすぐに利用できるようになります。',
+
+    // Credit rate table
+    creditRateModalTitle: 'クレジット消費の目安',
+    creditRateModalDescription: 'クレジットの消費量は、録音した音声の長さによって変わります。',
+    creditRateTableDurationHeader: '録音時間',
+    creditRateTableCreditsHeader: '消費クレジット',
+    creditRateRow1Duration: '30分未満',
+    creditRateRow2Duration: '30分 〜 1時間30分',
+    creditRateRow3Duration: '1時間30分 〜 2時間30分',
+    creditRateRow4Duration: '2時間30分 〜 3時間30分',
+    creditRateMaxDurationNotice: '※ 1回の最大録音時間は3時間30分です。3時間30分以上の録音はできません。',
+    creditRateModalBuyCreditsButton: 'クレジット購入',
   },
 } as const;
 

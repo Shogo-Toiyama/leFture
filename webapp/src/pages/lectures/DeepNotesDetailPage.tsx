@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Bookmark, ChevronDown, ChevronUp, LayoutGrid, X } from 'lucide-react';
+import { Bookmark, ChevronDown, ChevronUp, LayoutGrid, Lock, X } from 'lucide-react';
 import { useLectureTopics } from '../../hooks/useLectureTopics';
 import { useDeepNotes } from '../../hooks/useDeepNotes';
 import { useCourse } from '../../hooks/useCourse';
@@ -24,6 +24,9 @@ import {
 import { AdjacentTopicPreview } from '../../components/deepNotes/AdjacentTopicPreview';
 import { DeepNotesDetailSkeleton } from '../../components/deepNotes/DeepNotesDetailSkeleton';
 import { TranscriptSheet } from '../../components/transcript/TranscriptSheet';
+import { UpgradeRequiredDialog } from '../../components/UpgradeRequiredDialog';
+import { DEEP_NOTES_SKIPPED_PLAN_LIMIT, TIER_LITE } from '../../lib/planFeatures';
+import { tierAccent } from '../../lib/planTheme';
 
 /**
  * 詳細ノートビューア。deep_notes_detail_page.dart と同じ紙面(ライトテーマ)の
@@ -47,6 +50,8 @@ export const DeepNotesDetailPage: React.FC = () => {
   // なって重なる。そのときだけ「外側をタップで閉じる」幕を出す。
   const stackedPanels = useMediaQuery(STACKED_PANELS_QUERY);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const deepNotesLockColor = tierAccent(TIER_LITE).accent;
 
   useEffect(() => {
     if (!lectureId) return;
@@ -125,6 +130,7 @@ export const DeepNotesDetailPage: React.FC = () => {
   const drawerEntries: DeepNoteEntry[] = entries.map((entry) => ({
     topic: entry.topic,
     summary: entry.topic.summary ? stripSidCitations(entry.topic.summary) : '',
+    isLocked: entry.note.note_contents === DEEP_NOTES_SKIPPED_PLAN_LIMIT,
   }));
 
   const rootStyle = { ['--pv-accent' as string]: accent } as React.CSSProperties;
@@ -152,6 +158,7 @@ export const DeepNotesDetailPage: React.FC = () => {
 
   const { topic, note } = current;
   const heroUrl = topic.image_path ? imageUrls[topic.image_path] ?? null : null;
+  const isLocked = note.note_contents === DEEP_NOTES_SKIPPED_PLAN_LIMIT;
   const cleaned = stripSidCitations(stripFigurePlaceholders(note.note_contents));
 
   const handleReaction = async (reaction: 'like' | 'dislike') => {
@@ -238,23 +245,38 @@ export const DeepNotesDetailPage: React.FC = () => {
           <h1 className="dnv-title">{topic.topic_title}</h1>
           {topic.summary && <p className="dnv-summary">{stripSidCitations(topic.summary)}</p>}
 
-          <AnnotationLayer
-            key={note.id}
-            table="deep_notes"
-            rowId={note.id}
-            metadata={note.metadata}
-            onMetadataChange={(metadata) => patchNote(note.id, metadata)}
-            lectureId={lectureId!}
-            onOpenSource={setSourceSids}
-          >
-            <AnnotatedMarkdown
-              className="dnv-prose"
-              markdown={cleaned}
-              rawMarkdown={note.note_contents}
-              annotations={readAnnotations(note.metadata)}
-              blockIdx={null}
-            />
-          </AnnotationLayer>
+          {isLocked ? (
+            <div
+              className="locked-content-placeholder"
+              role="button"
+              tabIndex={0}
+              onClick={() => setLockDialogOpen(true)}
+            >
+              <div className="locked-content-blur">{topic.summary ? stripSidCitations(topic.summary) : ''}</div>
+              <span className="locked-content-caption" style={{ color: deepNotesLockColor }}>
+                <Lock size={13} />
+                {t('deepNotesLockedCaption')}
+              </span>
+            </div>
+          ) : (
+            <AnnotationLayer
+              key={note.id}
+              table="deep_notes"
+              rowId={note.id}
+              metadata={note.metadata}
+              onMetadataChange={(metadata) => patchNote(note.id, metadata)}
+              lectureId={lectureId!}
+              onOpenSource={setSourceSids}
+            >
+              <AnnotatedMarkdown
+                className="dnv-prose"
+                markdown={cleaned}
+                rawMarkdown={note.note_contents}
+                annotations={readAnnotations(note.metadata)}
+                blockIdx={null}
+              />
+            </AnnotationLayer>
+          )}
 
           <p className="dnv-disclaimer">{t('aiDisclaimer')}</p>
 
@@ -307,6 +329,15 @@ export const DeepNotesDetailPage: React.FC = () => {
             onClose={() => setListOpen(false)}
           />
         </>
+      )}
+
+      {lockDialogOpen && (
+        <UpgradeRequiredDialog
+          requiredTierColor={deepNotesLockColor}
+          title={t('deepNotesLockedDialogTitle')}
+          message={t('deepNotesLockedDialogMessage')}
+          onClose={() => setLockDialogOpen(false)}
+        />
       )}
     </div>
   );

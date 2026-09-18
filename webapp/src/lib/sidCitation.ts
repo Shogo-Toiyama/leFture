@@ -33,6 +33,31 @@ export function formatSid(n: number): string {
   return `s${n.toString().padStart(6, '0')}`;
 }
 
+/** "s000010" のようなSIDから連番部分だけを取り出す。 */
+function sidToNumber(sid: string | null | undefined): number | null {
+  if (!sid) return null;
+  const match = /[sS]\s*0*(\d{1,6})/.exec(sid);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * start_sid〜end_sid(両端含む)を個々のSID文字列へ展開する。
+ * announcements.start_sid/end_sidのように、範囲の両端しか持たないデータを
+ * TranscriptView の highlightSids (Set<string>) に渡すための変換。
+ */
+export function expandSidRange(
+  startSid: string | null | undefined,
+  endSid: string | null | undefined
+): string[] {
+  const from = sidToNumber(startSid);
+  const to = sidToNumber(endSid ?? startSid);
+  if (from === null || to === null) return [];
+  const [lo, hi] = from <= to ? [from, to] : [to, from];
+  const sids: string[] = [];
+  for (let i = lo; i <= hi; i += 1) sids.push(formatSid(i));
+  return sids;
+}
+
 /** "s000010-s000012, s000020" のような中身をSID番号に展開する。 */
 function parseSidBody(body: string): number[] {
   const sids: number[] = [];

@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Announcement, AnnouncementType } from '../../types/content';
 import type { Lecture } from '../../types/lecture';
 import { toggleAnnouncementCompleted } from '../../lib/content';
+import { expandSidRange } from '../../lib/sidCitation';
 import { ModalDialog } from './ModalDialog';
+import { TranscriptSheet } from '../transcript/TranscriptSheet';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 export interface AnnouncementsModalProps {
@@ -10,9 +13,16 @@ export interface AnnouncementsModalProps {
   lectures?: Lecture[];
   onClose: () => void;
   onAnnouncementToggled?: (updated: Announcement) => void;
+  /**
+   * trueにすると、カードのクリックは(該当sidがあれば)講義への遷移ではなく
+   * トランスクリプトの該当範囲をこのモーダルに被せて表示する動作になる。
+   * LectureViewerPage(=今まさにその講義を見ている画面)からの利用専用。
+   * HomePage/CourseDetailPageでは渡さず、素直に講義ページへ遷移させる。
+   */
+  enableTranscriptView?: boolean;
 }
 
-function getAnnouncementTypeConfig(type: string) {
+export function getAnnouncementTypeConfig(type: string) {
   switch (type.toUpperCase()) {
     case 'TODO':
       return { icon: 'task_alt', color: '#4ade80', bg: 'rgba(74, 222, 128, 0.14)', label: 'TODO' };
@@ -48,14 +58,21 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   lectures,
   onClose,
   onAnnouncementToggled,
+  enableTranscriptView,
 }) => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const title = language === 'ja' ? 'お知らせ' : 'Announcements';
 
   // 1. Status Filter: 'active' | 'completed' | 'all' (Flutter: statusFilter)
   const [filter, setFilter] = useState<'active' | 'completed' | 'all'>('active');
   // 2. Type Filter: null | 'TODO' | 'EVENT' | 'INFO' | 'HINT' (Flutter: selectedType)
   const [selectedType, setSelectedType] = useState<AnnouncementType | null>(null);
+  // トランスクリプト表示中の対象。モーダルは閉じずに、この状態がある間だけ
+  // ModalDialogのsidePanelとして左側にTranscriptSheetを被せる。
+  const [transcriptTarget, setTranscriptTarget] = useState<{ lectureId: string; sids: string[] } | null>(
+    null
+  );
 
   const activeCount = useMemo(() => announcements.filter((a) => !a.completed_at).length, [announcements]);
   const completedCount = useMemo(() => announcements.filter((a) => Boolean(a.completed_at)).length, [announcements]);
@@ -67,6 +84,20 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
     if (selectedType && a.type.toUpperCase() !== selectedType.toUpperCase()) return false;
     return true;
   });
+
+  /** タップ時の遷移: レクチャーページ由来ならトランスクリプトの該当範囲、
+   *  それ以外(Home/CourseDetail)なら講義ページそのものへ。
+   *  Flutter版と同様、完了済みの項目はタップ遷移を無効化する。 */
+  const handleCardActivate = (item: Announcement) => {
+    if (item.completed_at) return;
+    if (enableTranscriptView) {
+      if (item.start_sid && item.end_sid) {
+        setTranscriptTarget({ lectureId: item.lecture_id, sids: expandSidRange(item.start_sid, item.end_sid) });
+      }
+      return;
+    }
+    if (item.lecture_id) navigate(`/lectures/${item.lecture_id}`);
+  };
 
   const handleToggleDone = async (item: Announcement) => {
     const isCompleted = Boolean(item.completed_at);
@@ -84,7 +115,21 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   };
 
   return (
-    <ModalDialog title={title} count={announcements.length} onClose={onClose} maxWidth={720}>
+    <ModalDialog
+      title={title}
+      count={announcements.length}
+      onClose={onClose}
+      maxWidth={720}
+      sidePanel={
+        transcriptTarget ? (
+          <TranscriptSheet
+            lectureId={transcriptTarget.lectureId}
+            sids={transcriptTarget.sids}
+            onClose={() => setTranscriptTarget(null)}
+          />
+        ) : undefined
+      }
+    >
       {/* ── 1. Status Filter (Flutter _SegmentItem Segment Bar) ── */}
       <div className="announcements-segment-bar">
         <button
@@ -152,11 +197,29 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
             const typeConfig = getAnnouncementTypeConfig(item.type);
             const lectureTitle = item.lecture_id ? lectureTitleMap.get(item.lecture_id) : null;
             const formattedDate = formatAnnouncementDate(item.created_at, language);
+            const hasTranscript = Boolean(item.start_sid && item.end_sid);
+            const isActivatable =
+              !isCompleted && (enableTranscriptView ? hasTranscript : Boolean(item.lecture_id));
 
             return (
               <div
                 key={item.id}
-                className={`flutter-announcement-card ${isCompleted ? 'is-completed' : ''}`}
+                className={`flutter-announcement-card ${isCompleted ? 'is-completed' : ''} ${
+                  isActivatable ? 'is-activatable' : ''
+                }`}
+                role={isActivatable ? 'button' : undefined}
+                tabIndex={isActivatable ? 0 : undefined}
+                onClick={isActivatable ? () => handleCardActivate(item) : undefined}
+                onKeyDown={
+                  isActivatable
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleCardActivate(item);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {/* Left: Type Icon (Colored Badge) */}
                 <div
@@ -210,6 +273,20 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                       <span className="announcement-date-info">{formattedDate}</span>
                     )}
                   </div>
+
+                  {enableTranscriptView && hasTranscript && !isCompleted && (
+                    <button
+                      type="button"
+                      className="announcement-transcript-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCardActivate(item);
+                      }}
+                    >
+                      <span className="material-symbols-outlined">receipt_long</span>
+                      <span>{language === 'ja' ? 'トランスクリプトで確認' : 'View in transcript'}</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Right: Square Checkmark Button (Done / Undo) */}
@@ -217,7 +294,10 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                   <button
                     type="button"
                     className={`announcement-square-check ${isCompleted ? 'is-completed' : ''}`}
-                    onClick={() => handleToggleDone(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleDone(item);
+                    }}
                     title={
                       isCompleted
                         ? language === 'ja'

@@ -600,19 +600,22 @@ export const GalaxyView: React.FC<GalaxyViewProps> = ({ className }) => {
     let lastTime = performance.now();
     let accumulator = 0;
 
+    // 関数宣言として外側スコープに置くことで、下のonVisibilityChangeからも
+    // 同じループ関数を参照できるようにする(タブ再表示時に正しく再開させるため)。
+    function frame(now: number) {
+      rafId = requestAnimationFrame(frame);
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+      accumulator += dt;
+      if (accumulator < 1 / 40) return;
+      const step = accumulator;
+      accumulator = 0;
+      render(step);
+    }
+
     if (reduced) {
       render(0);
     } else {
-      const frame = (now: number) => {
-        rafId = requestAnimationFrame(frame);
-        const dt = Math.min(0.05, (now - lastTime) / 1000);
-        lastTime = now;
-        accumulator += dt;
-        if (accumulator < 1 / 40) return;
-        const step = accumulator;
-        accumulator = 0;
-        render(step);
-      };
       rafId = requestAnimationFrame(frame);
     }
 
@@ -623,9 +626,7 @@ export const GalaxyView: React.FC<GalaxyViewProps> = ({ className }) => {
       } else {
         lastTime = performance.now();
         accumulator = 0;
-        rafId = requestAnimationFrame((now) => {
-          lastTime = now;
-        });
+        rafId = requestAnimationFrame(frame);
       }
     }
     document.addEventListener('visibilitychange', onVisibilityChange);

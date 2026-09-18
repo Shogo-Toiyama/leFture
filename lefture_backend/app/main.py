@@ -843,6 +843,32 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
     return {"status": "success", "plan_id": payload.plan_id}
 
 
+async def _fill_live_stripe_prices(rows: list[dict]) -> None:
+    """
+    price_usdがNULLだがstripe_price_idを持つ行(Stripe移行後に価格を書き戻して
+    いなかった既存のsubscription_plans/credit_packs)に対し、Stripe側の実勢価格を
+    ライブ取得してその場でprice_usdを埋める(rowsを直接書き換える)。
+    店頭決済(Apple)専用でstripe_price_idが無い行はそのままNULLで返る
+    (実価格はApp Store側が正のため)。
+    1件のStripe障害で一覧全体を失敗させたくないので、失敗した行はNULLのまま
+    ログだけ出して続行する。
+    """
+    targets = [row for row in rows if row.get("price_usd") is None and row.get("stripe_price_id")]
+    if not targets:
+        return
+
+    async def _fetch(row: dict) -> None:
+        try:
+            price = await asyncio.to_thread(stripe.Price.retrieve, row["stripe_price_id"])
+            unit_amount = price.get("unit_amount")
+            if unit_amount is not None:
+                row["price_usd"] = unit_amount / 100
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to fetch live Stripe price for {row['stripe_price_id']}: {e}", exc_info=True)
+
+    await asyncio.gather(*(_fetch(row) for row in targets))
+
+
 @app.get("/billing/plans")
 async def billing_plans(request: Request):
     """
@@ -894,6 +920,8 @@ async def billing_plans(request: Request):
         plan.pop("disabled_at", None)
         claimable.append(plan)
 
+    await _fill_live_stripe_prices(claimable)
+
     return {"plans": claimable}
 
 
@@ -939,6 +967,8 @@ async def billing_credit_packs(request: Request):
             continue
         pack.pop("disabled_at", None)
         available.append(pack)
+
+    await _fill_live_stripe_prices(available)
 
     return {"packs": available}
 
@@ -1487,6 +1517,37 @@ class SwitchPlanRequest(BaseModel):
     plan_id: str
 
 
+async def _mark_stripe_pending_plan(admin_client, uid: str, plan_id: str) -> None:
+    """
+    Stripe側でダウングレード/解約が予約された瞬間に、DB上の
+    user_subscription_mappings.pending_plan_idへその予約先を書く。
+    Apple側はRevenueCatのPRODUCT_CHANGE webhook(set_pending_plan_change RPC)が
+    同じ列を書くので、これでプラットフォームを跨いで「予約中」バッジが
+    同じ1つのフィールドから正しく出せるようになる。
+    switch-plan自身がユーザーの1リクエスト内で完結する同期処理のため、
+    webhookのような冪等性(イベントログ)は不要で、素直なUPDATEでよい。
+    """
+    await asyncio.to_thread(
+        lambda: admin_client.table("user_subscription_mappings")
+            .update({"pending_plan_id": plan_id})
+            .eq("user_id", uid)
+            .eq("status", "active")
+            .execute()
+    )
+
+
+async def _clear_stripe_pending_plan(admin_client, uid: str) -> None:
+    """予約が実行に移った(アップグレード等で即時反映された)/取り消された時に、
+    pending_plan_idを空に戻す。"""
+    await asyncio.to_thread(
+        lambda: admin_client.table("user_subscription_mappings")
+            .update({"pending_plan_id": None})
+            .eq("user_id", uid)
+            .eq("status", "active")
+            .execute()
+    )
+
+
 @app.post("/billing/stripe/switch-plan")
 async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Request):
     """
@@ -1630,6 +1691,10 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
             logger.error(f"Failed to release schedule {schedule_id}: {e}", exc_info=True)
             raise HTTPException(status_code=502, detail="Failed to update subscription")
 
+    # ここから先の分岐で予約を新たに作るかもしれないので、一旦まっさらに戻す
+    # (即時反映されるアップグレードの場合はこれがそのまま最終状態になる)。
+    await _clear_stripe_pending_plan(admin_client, uid)
+
     if target_plan["claim_mode"] == "self_serve":
         # Freeへの「ダウングレード」= 次回更新時に自動解約(=Appleのキャンセルと同じ挙動)。
         # 実際にEXPIRATIONが来た時のFreeフォールバックは既存のexpire_store_subscription任せ。
@@ -1638,6 +1703,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         except stripe.error.StripeError as e:
             logger.error(f"Failed to cancel Stripe subscription {subscription_id}: {e}", exc_info=True)
             raise HTTPException(status_code=502, detail="Failed to cancel subscription")
+        await _mark_stripe_pending_plan(admin_client, uid, target_plan["id"])
         return {"status": "scheduled_cancel"}
 
     new_price_id = target_plan.get("stripe_price_id")
@@ -1688,6 +1754,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         except stripe.error.StripeError as e:
             logger.error(f"Failed to schedule downgrade for subscription {subscription_id}: {e}", exc_info=True)
             raise HTTPException(status_code=502, detail="Failed to schedule plan change")
+        await _mark_stripe_pending_plan(admin_client, uid, target_plan["id"])
         return {"status": "scheduled_downgrade"}
 
     # アップグレード: Stripe自身の日割り計算(proration_behavior)は使わず、Appleの
@@ -1770,6 +1837,101 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         logger.error(f"Charged upgrade but failed to switch price for subscription {subscription_id}: {e}", exc_info=True)
         raise HTTPException(status_code=502, detail="Payment succeeded but failed to switch plan. Please contact support.")
     return {"status": "switched"}
+
+
+@app.post("/billing/stripe/resume-plan")
+async def billing_stripe_resume_plan(request: Request):
+    """
+    Stripeで予約された解約(scheduled_cancel)やダウングレード(scheduled_downgrade)を
+    取り消し、現在のプランのまま自動更新を続ける状態に戻す。引数は不要 —
+    ユーザーの「今アクティブなStripeサブスク」に対して、予約を解除するだけ。
+
+    Apple(RevenueCat)経由の予約はこちらから取り消せない(switch-planと同じ既知の
+    制限: Appleの公式サブスク管理APIには「予約を取り消す」操作が存在せず、
+    ユーザー本人がiOS端末のApp Store設定から操作する以外に手段が無い)。
+    そのため、Stripe側に実際に予約されている形跡(スケジュール or
+    cancel_at_period_end)が見つからない場合は、Apple経由の予約だと判断して
+    APPLE_MANAGED_SUBSCRIPTIONを返す。
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        user_client = create_client(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+        user_res = user_client.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Unauthorized user")
+        uid = user_res.user.id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    admin_client = get_supabase_client()
+
+    profile_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles")
+            .select("stripe_customer_id")
+            .eq("id", uid)
+            .maybe_single()
+            .execute()
+    )
+    customer_id = profile_res.data.get("stripe_customer_id") if profile_res and profile_res.data else None
+
+    active_subscription = None
+    if customer_id:
+        try:
+            subs = await asyncio.to_thread(stripe.Subscription.list, customer=customer_id, status="active", limit=1)
+            if subs["data"]:
+                active_subscription = subs["data"][0]
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to list Stripe subscriptions for customer {customer_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to look up current subscription")
+
+    def apple_managed_error() -> HTTPException:
+        return HTTPException(
+            status_code=409,
+            detail={
+                "error_code": "APPLE_MANAGED_SUBSCRIPTION",
+                "message": "This change was scheduled through the App Store and can only be undone in your iOS device's account settings.",
+            },
+        )
+
+    if not active_subscription:
+        raise apple_managed_error()
+
+    subscription_id = active_subscription["id"]
+    schedule_id = active_subscription.get("schedule")
+    resumed = False
+
+    if schedule_id:
+        try:
+            await asyncio.to_thread(stripe.SubscriptionSchedule.release, schedule_id)
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to release schedule {schedule_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to resume subscription")
+        resumed = True
+
+    if active_subscription.get("cancel_at_period_end"):
+        try:
+            await asyncio.to_thread(stripe.Subscription.modify, subscription_id, cancel_at_period_end=False)
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to un-cancel Stripe subscription {subscription_id}: {e}", exc_info=True)
+            raise HTTPException(status_code=502, detail="Failed to resume subscription")
+        resumed = True
+
+    if not resumed:
+        # Stripe側には予約の形跡が無い = pending_plan_idはApple由来。
+        raise apple_managed_error()
+
+    await _clear_stripe_pending_plan(admin_client, uid)
+    return {"status": "resumed"}
 
 
 async def _notify_revenuecat_of_stripe_subscription(subscription_id: str, uid: str) -> None:

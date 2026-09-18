@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Check, X, ExternalLink } from 'lucide-react';
 import { useCreditSummary } from '../../hooks/useCreditSummary';
 import { usePlans } from '../../hooks/usePlans';
-import { switchPlan, type SwitchPlanResult } from '../../lib/billing';
+import { switchPlan, resumePlan, type SwitchPlanResult } from '../../lib/billing';
 import { ApiError, extractErrorCode } from '../../lib/api';
 import { toDisplayCredits } from '../../types/billing';
 import type { CreditSummary, PlanOption } from '../../types/billing';
@@ -13,6 +13,7 @@ import { StripeCheckoutModal } from '../../components/modals/StripeCheckoutModal
 import { useLanguage } from '../../i18n/LanguageContext';
 import { CreditStarIcon } from '../../components/icons/CreditStarIcon';
 import { PlansSkeleton } from '../../components/account/PlansSkeleton';
+import { CreditRateTableDialog } from '../../components/CreditRateTableDialog';
 
 
 /** plan_card.dartの5行と全く同じ、必要tierのしきい値。 */
@@ -63,9 +64,11 @@ export const PlansPage: React.FC = () => {
   const isJa = language === 'ja';
 
   const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [resuming, setResuming] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<PendingCheckout | null>(null);
+  const [creditRateOpen, setCreditRateOpen] = useState(false);
 
   const sortedPlans = useMemo(() => [...plans].sort((a, b) => a.tier_level - b.tier_level), [plans]);
   const currentTierLevel = summary?.has_active_plan ? summary.tier_level : 0;
@@ -124,6 +127,34 @@ export const PlansPage: React.FC = () => {
     void waitAndRefetch(refetch);
   };
 
+  const handleResumePlan = async () => {
+    setResuming(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await resumePlan();
+      await refetch();
+      setNotice(
+        isJa
+          ? '予約されていた変更を取り消し、現在のプランのまま継続します。'
+          : 'The scheduled change was canceled. Your current plan will continue as-is.'
+      );
+    } catch (err) {
+      const code = extractErrorCode(err);
+      if (code === 'APPLE_MANAGED_SUBSCRIPTION') {
+        setError(
+          isJa
+            ? 'この変更はApp Store経由で予約されたため、iOS端末のアカウント設定からのみ取り消せます。'
+            : "This change was scheduled through the App Store and can only be undone in your iOS device's account settings."
+        );
+      } else {
+        setError(err instanceof ApiError ? err.message : isJa ? '予約の取り消しに失敗しました' : 'Failed to cancel the scheduled change');
+      }
+    } finally {
+      setResuming(false);
+    }
+  };
+
   const loading = summaryLoading || plansLoading;
   // カード列と比較表で同じ列定義を共有し、上下の列をぴたりと揃える。
   // 幅が十分にある時は横幅いっぱいに自然に広がり、横スクロールなしでそのまま表示される。
@@ -167,6 +198,9 @@ export const PlansPage: React.FC = () => {
                     currentTierLevel={currentTierLevel}
                     switching={switchingId === plan.id}
                     onAction={() => handlePlanAction(plan)}
+                    resuming={resuming}
+                    onResume={handleResumePlan}
+                    onCreditRateClick={() => setCreditRateOpen(true)}
                     isJa={isJa}
                   />
                 ))}
@@ -204,10 +238,12 @@ export const PlansPage: React.FC = () => {
                 {sortedPlans.map((plan) => {
                   const { accent } = tierAccent(plan.tier_level);
                   return (
-                    <div
+                    <button
                       key={plan.id}
+                      type="button"
                       className="plans-compare-cell plans-credits-cell is-head"
                       style={{ ['--plan-accent' as string]: accent }}
+                      onClick={() => setCreditRateOpen(true)}
                     >
                       <span className="plans-credits-amount">
                         {toDisplayCredits(plan.monthly_credit_amount).toLocaleString()}
@@ -222,7 +258,7 @@ export const PlansPage: React.FC = () => {
                               weeklyLectureEstimate(plan.monthly_credit_amount) === 1 ? 'lecture' : 'lectures'
                             } / week`}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
 
@@ -283,6 +319,8 @@ export const PlansPage: React.FC = () => {
           onSuccess={handleCheckoutSuccess}
         />
       )}
+
+      {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
     </div>
   );
 };
@@ -297,17 +335,33 @@ const PlanCard: React.FC<{
   currentTierLevel: number;
   switching: boolean;
   onAction: () => void;
+  resuming: boolean;
+  onResume: () => void;
+  onCreditRateClick: () => void;
   isJa: boolean;
-}> = ({ plan, summary, currentTierLevel, switching, onAction, isJa }) => {
+}> = ({ plan, summary, currentTierLevel, switching, onAction, resuming, onResume, onCreditRateClick, isJa }) => {
   const { accent, isPremium, isStandard } = tierAccent(plan.tier_level);
   const isCurrentPlan = summary.has_active_plan && plan.monthly_credit_amount === summary.monthly_allocation;
   const isPendingTarget = summary.pending_plan_id === plan.id;
+  // 今のプランから、次回更新日に別プランへ切り替わることが予約されているか。
+  // (isPendingTargetはその「切り替え先」のカードを指すのに対し、こちらは
+  // 「切り替え元(今のプラン)」のカードで予約取り消しボタンを出すために使う)
+  const hasScheduledChange = isCurrentPlan && Boolean(summary.pending_plan_id);
   // store_purchaseかつStripe価格が無いプランは、ウェブからは購入できない(Apple専用)。
   const isPurchasableOnWeb = plan.claim_mode === 'self_serve' || Boolean(plan.stripe_price_id);
 
   let action: React.ReactNode;
   if (isCurrentPlan) {
-    action = <span className="plans-badge is-current">{isJa ? '現在のプラン' : 'CURRENT PLAN'}</span>;
+    action = (
+      <>
+        <span className="plans-badge is-current">{isJa ? '現在のプラン' : 'CURRENT PLAN'}</span>
+        {hasScheduledChange && (
+          <button type="button" className="plans-resume-btn" onClick={onResume} disabled={resuming}>
+            {resuming ? (isJa ? '処理中…' : 'Working…') : isJa ? '現在のプランを維持する' : 'Keep Current Plan'}
+          </button>
+        )}
+      </>
+    );
   } else if (isPendingTarget) {
     action = <span className="plans-badge is-pending">{isJa ? '変更予約中' : 'SCHEDULED'}</span>;
   } else if (!isPurchasableOnWeb) {
@@ -387,12 +441,12 @@ const PlanCard: React.FC<{
               <span className="plans-card-price-unit">{isJa ? ' / 月' : ' / mo'}</span>
             )}
           </p>
-          <div className="plans-card-credits-compact">
+          <button type="button" className="plans-card-credits-compact" onClick={onCreditRateClick}>
             <CreditStarIcon size={12} color="var(--star-gold, #fbc02d)" />
             <span>
               {toDisplayCredits(plan.monthly_credit_amount).toLocaleString()} {isJa ? 'クレジット / 月' : 'credits / mo'}
             </span>
-          </div>
+          </button>
         </div>
         <div className="plans-card-action">{action}</div>
       </div>

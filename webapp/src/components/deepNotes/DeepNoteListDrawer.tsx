@@ -1,10 +1,12 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 import type { LectureTopic } from '../../types/content';
 
 export interface DeepNoteEntry {
   topic: LectureTopic;
   summary: string;
+  /** trueならこのトピックのDeepNotesはプラン制限で生成されていない(deep_notes_list_page.dart準拠)。 */
+  isLocked?: boolean;
 }
 
 interface DeepNoteListDrawerProps {
@@ -42,7 +44,7 @@ export const DeepNoteListDrawer: React.FC<DeepNoteListDrawerProps> = ({
         <button
           key={entry.topic.id}
           type="button"
-          className={`pv-tile is-stacked ${i === currentIndex ? 'is-current' : ''}`}
+          className={`pv-tile is-stacked ${i === currentIndex ? 'is-current' : ''} ${entry.isLocked ? 'is-locked' : ''}`}
           onClick={() => onSelect(i)}
         >
           <span className="pv-tile-badge">{i + 1}</span>
@@ -50,6 +52,7 @@ export const DeepNoteListDrawer: React.FC<DeepNoteListDrawerProps> = ({
             <span className="pv-tile-title">{entry.topic.topic_title}</span>
             {entry.summary && <span className="pv-tile-summary">{entry.summary}</span>}
           </span>
+          {entry.isLocked && <Lock size={14} className="pv-tile-lock" />}
         </button>
       ))}
     </div>

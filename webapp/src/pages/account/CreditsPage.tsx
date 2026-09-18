@@ -10,6 +10,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { CreditsPageSkeleton } from '../../components/account/CreditsPageSkeleton';
 import { CreditsHistorySkeleton } from '../../components/account/CreditsHistorySkeleton';
 import { tierAccent, planIconAsset } from '../../lib/planTheme';
+import { CreditRateTableDialog } from '../../components/CreditRateTableDialog';
 
 const HISTORY_PAGE_SIZE = 10;
 
@@ -27,6 +28,7 @@ export const CreditsPage: React.FC = () => {
   const isJa = language === 'ja';
 
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [creditRateOpen, setCreditRateOpen] = useState(false);
 
   const handleRetry = () => {
     void Promise.allSettled([refetchSummary(), refetchHistory()]);
@@ -65,7 +67,14 @@ export const CreditsPage: React.FC = () => {
 
       <MonthlyCreditCard summary={summary} isJa={isJa} />
 
-      {summary.has_active_plan && <CurrentPlanCard summary={summary} plans={plans} isJa={isJa} />}
+      {summary.has_active_plan && (
+        <CurrentPlanCard
+          summary={summary}
+          plans={plans}
+          isJa={isJa}
+          onCreditRateClick={() => setCreditRateOpen(true)}
+        />
+      )}
 
       <HistoryCard
         items={history}
@@ -75,6 +84,8 @@ export const CreditsPage: React.FC = () => {
         onExpand={() => setHistoryExpanded(true)}
         isJa={isJa}
       />
+
+      {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
     </div>
   );
 };
@@ -160,11 +171,12 @@ const NoActivePlanCard: React.FC<{ isJa: boolean }> = ({ isJa }) => (
 // 現在のプラン
 // ─────────────────────────────────────────────────────────────────────────
 
-const CurrentPlanCard: React.FC<{ summary: CreditSummary; plans: PlanOption[]; isJa: boolean }> = ({
-  summary,
-  plans,
-  isJa,
-}) => {
+const CurrentPlanCard: React.FC<{
+  summary: CreditSummary;
+  plans: PlanOption[];
+  isJa: boolean;
+  onCreditRateClick: () => void;
+}> = ({ summary, plans, isJa, onCreditRateClick }) => {
   // /billing/plans はstore_purchaseプランも含むため、単純な先頭要素ではなく
   // summaryのmonthly_allocationと一致するプランを探す(_CurrentPlanCard 準拠)。
   const activePlan = useMemo(
@@ -198,9 +210,9 @@ const CurrentPlanCard: React.FC<{ summary: CreditSummary; plans: PlanOption[]; i
         <span className="credits-plan-badge">{isJa ? '有効' : 'ACTIVE'}</span>
       </div>
       <h2 className="credits-plan-name">{activePlan.name}</h2>
-      <p className="credits-plan-credits">
+      <button type="button" className="credits-plan-credits" onClick={onCreditRateClick}>
         {isJa ? `${creditsCount}クレジット / 月` : `${creditsCount} credits / month`}
-      </p>
+      </button>
       {summary.current_period_end && (
         <p className="credits-plan-reset">
           {isJa

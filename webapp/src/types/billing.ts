@@ -10,6 +10,8 @@ export interface CreditSummary {
   credits_per_usd: number;
   /** 0=Free, 1=Lite, 2=Core, 3=Max。 */
   tier_level: number;
+  /** kill-switch(実機テスト用許可リスト含む)。trueならhasFeature()は常にtrueを返す。 */
+  gating_disabled: boolean;
 }
 
 export interface PlanOption {

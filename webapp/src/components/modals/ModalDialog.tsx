@@ -6,6 +6,12 @@ export interface ModalDialogProps {
   onClose: () => void;
   children: React.ReactNode;
   maxWidth?: number | string;
+  /**
+   * 指定すると、このモーダルを閉じずにバックドロップの左側へ固定パネルとして
+   * 表示し、カード本体はその右側へ寄せる(例: アナウンスからのトランスクリプト
+   * 表示。AnnouncementsModal + TranscriptSheetの二重表示に使う)。
+   */
+  sidePanel?: React.ReactNode;
 }
 
 export const ModalDialog: React.FC<ModalDialogProps> = ({
@@ -14,6 +20,7 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
   onClose,
   children,
   maxWidth = 680,
+  sidePanel,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -24,7 +31,12 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
   }, [onClose]);
 
   return (
-    <div className="lecture-modal-backdrop" onClick={onClose}>
+    <div className={`lecture-modal-backdrop ${sidePanel ? 'has-side-panel' : ''}`} onClick={onClose}>
+      {sidePanel && (
+        <div className="lecture-modal-side-panel" onClick={(e) => e.stopPropagation()}>
+          {sidePanel}
+        </div>
+      )}
       <div
         className="lecture-modal-card"
         style={{ maxWidth }}

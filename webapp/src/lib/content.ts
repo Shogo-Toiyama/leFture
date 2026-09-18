@@ -122,6 +122,22 @@ export async function listAnnouncements(
   return [];
 }
 
+/**
+ * ホーム用: 講義を横断した最新のアナウンスメント。
+ * announcementsテーブルのRLSが auth.uid() = user_id なので、講義IDで絞らなくても
+ * ログインユーザー自身の分だけが返る。
+ */
+export async function listRecentAnnouncements(limit = 20): Promise<Announcement[]> {
+  const { data, error } = await supabase
+    .from('announcements')
+    .select('*')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data as Announcement[]) || [];
+}
+
 export async function listKeywords(lectureId: string): Promise<Keyword[]> {
   const { data, error } = await supabase
     .from('keywords')

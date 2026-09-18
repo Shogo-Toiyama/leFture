@@ -35,3 +35,12 @@ export const switchPlan = (planId: string) =>
     method: 'POST',
     body: JSON.stringify({ plan_id: planId }),
   });
+
+/**
+ * Stripeで予約された解約/ダウングレードを取り消し、現在のプランのまま
+ * 自動更新を続ける状態に戻す。Apple経由の予約はこちらから取り消せない
+ * (ユーザーがiOS端末のApp Store設定から操作する必要がある) ため、
+ * その場合はAPPLE_MANAGED_SUBSCRIPTIONのerror_codeを持つApiErrorが投げられる。
+ */
+export const resumePlan = () =>
+  apiFetch<{ status: 'resumed' }>('/billing/stripe/resume-plan', { method: 'POST' });

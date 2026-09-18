@@ -7,10 +7,13 @@ import { useLectures } from '../../hooks/useLectures';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useCourseAttributes } from '../../hooks/useCourseAttributes';
 import { useTopicMap } from '../../hooks/useTopicMap';
+import { useCreditSummary } from '../../hooks/useCreditSummary';
 import { computeTopicMapLayout } from '../../lib/topicMap/layout';
 import { TopicMapCanvas } from '../../components/courses/topicMap/TopicMapCanvas';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { softDeleteLecture } from '../../lib/lectures';
+import { hasFeature, FEATURE_TOPIC_MAP } from '../../lib/planFeatures';
+import { tierAccent } from '../../lib/planTheme';
 import type { Course } from '../../types/course';
 import type { Lecture } from '../../types/lecture';
 import { CourseEditModal } from '../../components/modals/CourseEditModal';
@@ -22,11 +25,12 @@ import { PageState } from '../../components/PageState';
 import { CourseDetailSkeleton } from '../../components/courses/CourseDetailSkeleton';
 import { CourseLecturesSectionSkeleton } from '../../components/courses/CourseLecturesSectionSkeleton';
 import { useUploadModal } from '../../context/UploadModalContext';
+import { UpgradeRequiredDialog } from '../../components/UpgradeRequiredDialog';
 
 export const CourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { openUploadModal } = useUploadModal();
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -39,6 +43,14 @@ export const CourseDetailPage: React.FC = () => {
   const { lectures, loading: lecturesLoading, error: lecturesError, refetch: refetchLectures } = useLectures(courseId);
   const { announcements, setAnnouncements } = useAnnouncements(undefined, courseId);
   const { map: topicMapData } = useTopicMap(courseId);
+  const { summary } = useCreditSummary(false);
+  const [topicMapLockOpen, setTopicMapLockOpen] = useState(false);
+
+  // summary未取得中は未ロック扱い(LectureViewerPageと同じ、ちらつき回避のための既定)。
+  const hasTopicMapFeature = summary
+    ? hasFeature(summary.tier_level, FEATURE_TOPIC_MAP, summary.gating_disabled)
+    : true;
+  const topicMapLockColor = tierAccent(1).accent;
 
   // 属性マスターデータ (Flutter同等の属性解決用)
   const years = useCourseAttributes('year');
@@ -242,12 +254,23 @@ export const CourseDetailPage: React.FC = () => {
           <span className="course-section-heading">{topicMapTitle}</span>
           <div
             className="course-topicmap-preview-card"
-            onClick={() => navigate(`/courses/${courseId}/topic-map`)}
+            onClick={() =>
+              hasTopicMapFeature ? navigate(`/courses/${courseId}/topic-map`) : setTopicMapLockOpen(true)
+            }
             role="button"
             tabIndex={0}
             title={topicMapTitle}
           >
-            {topicMapLayout && topicMapData && topicMapData.nodes.length > 0 ? (
+            {!hasTopicMapFeature ? (
+              <div className="locked-content-placeholder">
+                <span className="material-symbols-outlined" style={{ color: topicMapLockColor, fontSize: 28 }}>
+                  lock
+                </span>
+                <span className="locked-content-caption" style={{ color: topicMapLockColor }}>
+                  {language === 'ja' ? 'Liteプラン以上で利用可能' : 'Available on Lite plan or above'}
+                </span>
+              </div>
+            ) : topicMapLayout && topicMapData && topicMapData.nodes.length > 0 ? (
               <TopicMapCanvas
                 data={topicMapData}
                 simulation={topicMapLayout.simulation}
@@ -407,6 +430,15 @@ export const CourseDetailPage: React.FC = () => {
             await refetchLectures();
             setEditingLecture(null);
           }}
+        />
+      )}
+
+      {topicMapLockOpen && (
+        <UpgradeRequiredDialog
+          requiredTierColor={topicMapLockColor}
+          title={t('topicMapLockedDialogTitle')}
+          message={t('topicMapLockedDialogMessage')}
+          onClose={() => setTopicMapLockOpen(false)}
         />
       )}
     </div>
