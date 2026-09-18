@@ -1,25 +1,25 @@
 export const PRESET_CLAY_AVATARS = [
-  'clay_bear.png',
-  'clay_books.png',
-  'clay_boy.png',
-  'clay_burger.png',
-  'clay_camera.png',
-  'clay_cat.png',
-  'clay_coffee.png',
-  'clay_dog.png',
-  'clay_earth.png',
-  'clay_galaxy.png',
-  'clay_gamepad.png',
-  'clay_girl.png',
-  'clay_headphones.png',
-  'clay_owl.png',
-  'clay_palette.png',
-  'clay_penguin.png',
-  'clay_robot.png',
-  'clay_rocket.png',
-  'clay_suitcase.png',
-  'clay_unicorn.png',
-];
+  'clay_bear.webp',
+  'clay_books.webp',
+  'clay_boy.webp',
+  'clay_burger.webp',
+  'clay_camera.webp',
+  'clay_cat.webp',
+  'clay_coffee.webp',
+  'clay_dog.webp',
+  'clay_earth.webp',
+  'clay_galaxy.webp',
+  'clay_gamepad.webp',
+  'clay_girl.webp',
+  'clay_headphones.webp',
+  'clay_owl.webp',
+  'clay_palette.webp',
+  'clay_penguin.webp',
+  'clay_robot.webp',
+  'clay_rocket.webp',
+  'clay_suitcase.webp',
+  'clay_unicorn.webp',
+] as const;
 
 /// 1. ビビッド (12色)
 export const VIVID_GRADIENTS = [
@@ -99,7 +99,7 @@ export function getTextColorForStyle(bgStyle: number, bgIndex: number): string {
 }
 
 export interface ParsedAvatarPreset {
-  icon: string; // 'initials' or 'clay_bear.png'
+  icon: string; // 'initials' or 'clay_bear.webp'
   bgStyle: number; // 0=vivid, 1=pastel, 2=dark
   bgIndex: number; // 0..11
 }
@@ -116,7 +116,7 @@ export function parsePreset(presetStr: string): ParsedAvatarPreset {
     if (!k || !v) continue;
     const key = k.trim();
     const val = v.trim();
-    if (key === 'icon') icon = val;
+    if (key === 'icon') icon = val.replace(/\.png$/, '.webp');
     if (key === 'bg_style') bgStyle = parseInt(val, 10) || 0;
     if (key === 'bg_index') bgIndex = parseInt(val, 10) || 0;
   }

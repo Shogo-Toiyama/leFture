@@ -300,7 +300,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
                     type="button"
                     className={`avatar-preset-btn ${isSelected ? 'is-selected' : ''}`}
                     onClick={() => setSelectedIcon(icon)}
-                    title={icon.replace('clay_', '').replace('.png', '')}
+                    title={icon.replace('clay_', '').replace(/\.(png|webp)$/, '')}
                   >
                     <img src={`/avatars/${icon}`} alt={icon} className="avatar-preset-btn-img" />
                     {isSelected && (

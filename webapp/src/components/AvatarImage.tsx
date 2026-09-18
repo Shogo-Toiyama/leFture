@@ -113,7 +113,7 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
       >
         {isClayIcon ? (
           <img
-            src={`/avatars/${icon}`}
+            src={`/avatars/${icon.replace(/\.png$/, '.webp')}`}
             alt={effectiveName}
             style={{ width: '80%', height: '80%', objectFit: 'contain' }}
             onError={(e) => {

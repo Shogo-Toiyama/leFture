@@ -17,10 +17,10 @@ export function tierAccent(tierLevel: number): TierTheme {
   return { accent: '#FFB300', isPremium: false, isStandard: false };
 }
 
-/** planIconAsset(plan_theme.dart) 準拠。public/img/plan_icons/ に同名png済み。 */
+/** planIconAsset(plan_theme.dart) 準拠。public/img/plan_icons/ に同名webp配置。 */
 export function planIconAsset(tierLevel: number): string {
-  if (tierLevel >= 3) return '/img/plan_icons/galaxy.png';
-  if (tierLevel === 2) return '/img/plan_icons/solarsystem.png';
-  if (tierLevel === 1) return '/img/plan_icons/planet.png';
-  return '/img/plan_icons/stardust.png';
+  if (tierLevel >= 3) return '/img/plan_icons/galaxy.webp';
+  if (tierLevel === 2) return '/img/plan_icons/solarsystem.webp';
+  if (tierLevel === 1) return '/img/plan_icons/planet.webp';
+  return '/img/plan_icons/stardust.webp';
 }

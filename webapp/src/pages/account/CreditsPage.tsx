@@ -147,7 +147,7 @@ const MonthlyCreditCard: React.FC<{ summary: CreditSummary; isJa: boolean }> = (
 
 const NoActivePlanCard: React.FC<{ isJa: boolean }> = ({ isJa }) => (
   <Link to="/account/plans" className="credits-noplan-card">
-    <img src="/img/plan_icons/stardust.png" alt="" className="credits-noplan-img" aria-hidden="true" />
+    <img src="/img/plan_icons/stardust.webp" alt="" className="credits-noplan-img" aria-hidden="true" />
     <span className="credits-noplan-title">{isJa ? '有効なプランがありません' : 'No active plan'}</span>
     <span className="credits-noplan-subtitle">
       {isJa ? 'プランを選んで、講義資料の生成を始めましょう。' : 'Choose a plan to start generating lecture materials.'}
