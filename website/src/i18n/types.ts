@@ -130,6 +130,25 @@ export interface DownloadModalTranslations {
   androidDesc: string;
   androidBadge: string;
   note: string;
+  form: {
+    back: string;
+    title: string;
+    subtitle: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    emailHint: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    deviceLabel?: string;
+    devicePlaceholder?: string;
+    submitButton: string;
+    submitting: string;
+    successTitle: string;
+    successMessage: string;
+    closeButton: string;
+    errorEmail: string;
+    errorGeneric: string;
+  };
 }
 
 export interface Translations {

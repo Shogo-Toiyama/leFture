@@ -9,7 +9,7 @@ import {
   type AnnotatableTable,
 } from '../../lib/annotations';
 import { readSelectionOffsets } from '../../lib/markdownAnnotations';
-import { findCitationAfterSelection } from '../../lib/sidCitation';
+import { findSourceForSelection } from '../../lib/sourceCitation';
 import { HIGHLIGHT_PRESET_COLORS, noteText, type Annotation } from '../../types/annotation';
 import type { ContentMetadata } from '../../types/content';
 import { AnnotationContext, type RegisteredBlock } from './AnnotationContext';
@@ -22,6 +22,8 @@ interface PendingSelection {
   endIdx: number;
   text: string;
   rawMarkdown: string;
+  /** 描画済みブロックのtextContent。選択オフセットの座標系そのもの。 */
+  flattenedText: string;
   rect: DOMRect;
 }
 
@@ -41,6 +43,11 @@ interface AnnotationLayerProps {
   metadata: ContentMetadata | null;
   onMetadataChange: (metadata: ContentMetadata) => void;
   lectureId: string;
+  /**
+   * "Source" を押したときの出口。渡されていればトランスクリプトのシートを
+   * 開き、無ければ文字起こしページへ遷移する。
+   */
+  onOpenSource?: (sidStrings: string[]) => void;
   children: React.ReactNode;
 }
 
@@ -83,10 +90,14 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   metadata,
   onMetadataChange,
   lectureId,
+  onOpenSource,
   children,
 }) => {
   const navigate = useNavigate();
   const blocksRef = useRef(new Map<string, RegisteredBlock>());
+  // ノート編集中かどうか。選択の追従はドキュメント購読なので、編集中に
+  // 走って編集中のノートを閉じてしまわないよう ref で見張る。
+  const noteEditorOpenRef = useRef(false);
 
   const [selection, setSelection] = useState<PendingSelection | null>(null);
   const [showHighlightRow, setShowHighlightRow] = useState(false);
@@ -117,6 +128,8 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     (annotationId: string, anchor: DOMRect) => {
       const annotation = annotations.find((a) => a.id === annotationId);
       if (!annotation || annotation.annotation_type !== 'notes') return;
+      // stateの反映を待たずに立てる(選択追従はrAFで走るため)。
+      noteEditorOpenRef.current = true;
       setSelection(null);
       setNoteEditor({
         annotation,
@@ -131,38 +144,134 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     [annotations]
   );
 
-  // 選択の確定はドキュメント全体のmouseup/keyupで拾う(選択が要素外で終わることがあるため)。
+  /**
+   * 選択の追従。
+   *
+   * mouseupだけを見ていると、(1)クリックによる選択解除がmouseupの後に反映される
+   * ブラウザでメニューが消えない、(2)キーボード選択やダブルクリックを取りこぼす、
+   * という二つの取りこぼしが起きる。そこでselectionchangeを主、ポインタの上下を
+   * 「ドラッグ確定の合図」として併用する。
+   *   - 選択が空になったら即座に閉じる
+   *   - ドラッグ中(ポインタ押下中)は確定しない
+   *   - ツールバー自身の上での操作では何も動かさない
+   */
   useEffect(() => {
-    const handle = (event: Event) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest('[data-annotation-ui]')) return;
+    let pointerDown = false;
+    let onOwnUi = false;
+    let frame = 0;
 
-      for (const block of blocksRef.current.values()) {
-        const offsets = readSelectionOffsets(block.element);
-        if (!offsets) continue;
-        setNoteEditor(null);
+    const evaluate = () => {
+      // ノート編集中は選択UIを一切動かさない(閉じるのは Cancel / Save / Esc)。
+      if (noteEditorOpenRef.current) return;
+
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        setSelection(null);
         setShowHighlightRow(false);
         setShowColors(false);
-        setSelection({
-          blockIdx: block.blockIdx,
-          startIdx: offsets.startIdx,
-          endIdx: offsets.endIdx,
-          text: offsets.text,
-          rawMarkdown: block.rawMarkdown,
-          rect: offsets.rect,
-        });
         return;
+      }
+
+      // ノート編集中のtextarea内の選択には反応しない。
+      const anchor = sel.anchorNode;
+      const anchorElement =
+        anchor instanceof HTMLElement ? anchor : (anchor?.parentElement ?? null);
+      if (anchorElement?.closest('[data-annotation-ui]')) return;
+
+      // まずブロック内に収まっている選択、無ければブロックにクリップして拾う。
+      const blocks = [...blocksRef.current.values()];
+      for (const pass of [false, true]) {
+        for (const block of blocks) {
+          const offsets = readSelectionOffsets(block.element, { clip: pass });
+          if (!offsets) continue;
+          setShowHighlightRow(false);
+          setShowColors(false);
+          setSelection({
+            blockIdx: block.blockIdx,
+            startIdx: offsets.startIdx,
+            endIdx: offsets.endIdx,
+            text: offsets.text,
+            rawMarkdown: block.rawMarkdown,
+            flattenedText: block.element.textContent ?? '',
+            rect: offsets.rect,
+          });
+          return;
+        }
       }
       setSelection(null);
     };
 
-    document.addEventListener('mouseup', handle);
-    document.addEventListener('keyup', handle);
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(evaluate);
+    };
+
+    const isOwnUi = (target: EventTarget | null) =>
+      target instanceof Element && Boolean(target.closest('[data-annotation-ui]'));
+
+    const onPointerDown = (event: PointerEvent) => {
+      onOwnUi = isOwnUi(event.target);
+      pointerDown = !onOwnUi;
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      const ownUi = onOwnUi || isOwnUi(event.target);
+      pointerDown = false;
+      onOwnUi = false;
+      if (!ownUi) schedule();
+    };
+
+    const onSelectionChange = () => {
+      if (onOwnUi) return;
+      const sel = window.getSelection();
+      // 解除はドラッグ中でも即座に反映する(掴み直しで古いメニューが残らない)。
+      if (!sel || sel.isCollapsed) {
+        schedule();
+        return;
+      }
+      if (!pointerDown) schedule();
+    };
+
+    document.addEventListener('selectionchange', onSelectionChange);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('pointerup', onPointerUp, true);
+    document.addEventListener('pointercancel', onPointerUp, true);
     return () => {
-      document.removeEventListener('mouseup', handle);
-      document.removeEventListener('keyup', handle);
+      cancelAnimationFrame(frame);
+      document.removeEventListener('selectionchange', onSelectionChange);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerUp, true);
     };
   }, []);
+
+  useEffect(() => {
+    noteEditorOpenRef.current = noteEditor !== null;
+  }, [noteEditor]);
+
+  // カード内をスクロールしてもメニューが選択範囲に貼りついたままになるよう、
+  // 位置だけ追従させる(fixed配置なのでスクロールでは自動的にはずれる)。
+  const hasSelection = selection !== null;
+  useEffect(() => {
+    if (!hasSelection) return;
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+        const rect = sel.getRangeAt(0).getBoundingClientRect();
+        setSelection((prev) => (prev ? { ...prev, rect } : prev));
+      });
+    };
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [hasSelection]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -218,6 +327,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
 
   const startNote = () => {
     if (!selection) return;
+    noteEditorOpenRef.current = true;
     setNoteEditor({
       blockIdx: selection.blockIdx,
       startIdx: selection.startIdx,
@@ -270,16 +380,28 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     dismiss();
   };
 
+  const source = useMemo(
+    () =>
+      selection
+        ? findSourceForSelection(
+            selection.rawMarkdown,
+            selection.flattenedText,
+            selection.startIdx,
+            selection.endIdx
+          )
+        : null,
+    [selection]
+  );
+
   const jumpToSource = () => {
-    if (!selection) return;
-    const citations = findCitationAfterSelection(selection.rawMarkdown, selection.text);
-    const sids = Array.from(new Set(citations.flatMap((c) => c.sidStrings)));
+    const sids = source?.sidStrings ?? [];
     dismiss();
     if (sids.length === 0) return;
-    navigate(`/lectures/${lectureId}/transcript?sids=${sids.join(',')}`);
+    if (onOpenSource) onOpenSource(sids);
+    else navigate(`/lectures/${lectureId}/transcript?sids=${sids.join(',')}`);
   };
 
-  const hasSource = selection ? findCitationAfterSelection(selection.rawMarkdown, selection.text).length > 0 : false;
+  const hasSource = (source?.sidStrings.length ?? 0) > 0;
 
   const contextValue = useMemo(
     () => ({ registerBlock, unregisterBlock, openAnnotation }),

@@ -1442,10 +1442,6 @@ async def billing_stripe_create_credit_pack_payment(payload: CreateCreditPackPay
 #   3. RevenueCatがそれを検知し、自前のwebhook(INITIAL_PURCHASE等)を
 #      /billing/revenuecat-webhookに送ってくる → 既存経路でクレジット付与。
 
-class CreateSubscriptionPaymentRequest(BaseModel):
-    plan_id: str
-
-
 async def _get_or_create_stripe_customer(admin_client, uid: str) -> str:
     profile_res = await asyncio.to_thread(
         lambda: admin_client.table("user_profiles")
@@ -1466,55 +1462,6 @@ async def _get_or_create_stripe_customer(admin_client, uid: str) -> str:
             .execute()
     )
     return customer["id"]
-
-
-@app.post("/billing/stripe/create-subscription-payment")
-async def billing_stripe_create_subscription_payment(payload: CreateSubscriptionPaymentRequest, request: Request):
-    """webapp側のカスタムPayment Element UIが使うSubscriptionのclient_secretを発行する。"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    try:
-        user_client = create_client(
-            SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
-
-    admin_client = get_supabase_client()
-    try:
-        plan_res = await asyncio.to_thread(
-            lambda: admin_client.table("subscription_plans")
-                .select("id, stripe_price_id, disabled_at")
-                .eq("id", payload.plan_id)
-                .maybe_single()
-                .execute()
-        )
-    except Exception as e:
-        logger.error(f"Error fetching subscription plan {payload.plan_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
-
-    plan = plan_res.data if plan_res else None
-    if not plan or plan.get("disabled_at"):
-        raise HTTPException(status_code=404, detail="Plan not found")
-    stripe_price_id = plan.get("stripe_price_id")
-    if not stripe_price_id:
-        raise HTTPException(status_code=400, detail="This plan is not available for web purchase")
-
-    customer_id = await _get_or_create_stripe_customer(admin_client, uid)
-    subscription = await _create_new_stripe_subscription(customer_id, uid, plan["id"], stripe_price_id)
-    payment_intent = subscription["latest_invoice"]["payment_intent"]
-    return {"client_secret": payment_intent["client_secret"], "subscription_id": subscription["id"]}
 
 
 async def _create_new_stripe_subscription(customer_id: str, uid: str, plan_id: str, stripe_price_id: str):
@@ -1552,7 +1499,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
       を行う。二重にサブスクを作らない。
     - 見つからない場合(現在Free、またはApple経由の購読中)は、素直に
       claim_plan()(self_serve宛て)または新規Stripeサブスク作成
-      (store_purchase宛て)を行う — 今までのclaim-plan/create-subscription-payment
+      (store_purchase宛て)を行う — 今までのclaim-plan/新規Stripeサブスク作成
       と同じ結果になる。Appleの購読はこちらから解約できない(既知の制限。
       ユーザーはiOS側で自分で解約する必要がある)。
     """
@@ -1613,7 +1560,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
             raise HTTPException(status_code=502, detail="Failed to look up current subscription")
 
     # ケースA: 現在アクティブなStripeサブスクが無い(Free/Apple/未加入) →
-    # 今までのclaim-plan/create-subscription-paymentと同じことをするだけ。
+    # 今までのclaim-plan/新規Stripeサブスク作成と同じことをするだけ。
     if not active_subscription:
         if target_plan["claim_mode"] == "self_serve":
             try:
@@ -1911,7 +1858,7 @@ async def billing_stripe_webhook(request: Request, stripe_signature: str = Heade
     2種類のイベントを扱う:
     - payment_intent.succeeded: create-credit-pack-paymentで作られたPaymentIntentの
       完了通知。grant_credit_pack_purchase()で追加クレジットを直接付与する。
-    - invoice.payment_succeeded: create-subscription-paymentで作られたSubscriptionの
+    - invoice.payment_succeeded: switch-planで作られたSubscriptionの
       請求が確定した通知。ここではクレジットを付与せず、RevenueCatの外部購入追跡API
       に知らせるだけ(実際の付与はRevenueCatが送り返してくる/billing/revenuecat-webhook
       が既存経路で行う)。

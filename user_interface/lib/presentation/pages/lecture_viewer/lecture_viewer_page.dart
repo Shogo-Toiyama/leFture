@@ -1079,14 +1079,14 @@ class _ViewerFunFactCard extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final hook = fact.hook?.trim();
     final body = fact.body?.trim() ?? '';
-    final rawFullText = (hook != null && hook.isNotEmpty)
-        ? '$hook\n\n$body'
-        : body;
-    final fullText = stripFunFactCitations(rawFullText);
+    final cleanHook = hook != null && hook.isNotEmpty ? stripFunFactCitations(hook) : '';
+    final cleanBody = body.isNotEmpty ? stripFunFactCitations(body) : '';
 
     final currentReaction = fact.reaction;
+    final isSourcesExpanded = useState(false);
 
     return GlowingRainbowBorder(
       borderRadius: 20.0,
@@ -1106,7 +1106,7 @@ class _ViewerFunFactCard extends HookConsumerWidget {
           children: [
             if (fact.title?.trim().isNotEmpty == true)
               Padding(
-                padding: const EdgeInsets.fromLTRB(25, 25, 25, 0),
+                padding: const EdgeInsets.fromLTRB(25, 22, 25, 0),
                 child: Text(
                   fact.title!.trim(),
                   style: const TextStyle(
@@ -1117,35 +1117,135 @@ class _ViewerFunFactCard extends HookConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(25, 12, 25, 16),
-              child: Text(
-                fullText,
-                style: TextStyle(
-                  color: AppColors.universe.textStarlight,
-                  fontSize: 14,
-                  height: 1.5,
+
+            // 1. Hook (キャッチコピーとして際立たせる)
+            if (cleanHook.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+                child: Text(
+                  cleanHook,
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.45,
+                  ),
                 ),
               ),
-            ),
-            if (fact.sources.isNotEmpty)
-              _ViewerFunFactSourcesAccordion(sources: fact.sources),
-            Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.white10)),
+
+            // 2. Divider (HookとBodyの区切りグラデーションライン)
+            if (cleanHook.isNotEmpty && cleanBody.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.white.withValues(alpha: 0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
               ),
+
+            // 3. Body (詳細本文)
+            if (cleanBody.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  cleanHook.isNotEmpty ? 0 : 14,
+                  24,
+                  14,
+                ),
+                child: Text(
+                  cleanBody,
+                  style: TextStyle(
+                    color: AppColors.universe.textStarlight.withValues(alpha: 0.9),
+                    fontSize: 13.5,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+
+            // 4. Footer: Sources Accordion Button (left) & Like/Dislike (right)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 2, 16, 16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  Expanded(
+                    child: fact.sources.isNotEmpty
+                        ? Align(
+                            alignment: Alignment.centerLeft,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => isSourcesExpanded.value = !isSourcesExpanded.value,
+                                borderRadius: BorderRadius.circular(100),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: isSourcesExpanded.value
+                                        ? AppColors.starGold.withValues(alpha: 0.15)
+                                        : Colors.white.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: isSourcesExpanded.value
+                                          ? AppColors.starGold.withValues(alpha: 0.4)
+                                          : Colors.white.withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.link_rounded,
+                                        color: isSourcesExpanded.value
+                                            ? AppColors.starGold
+                                            : AppColors.universe.textComet,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        '${l10n.lectureViewerFunFactSourcesButton} (${fact.sources.length})',
+                                        style: TextStyle(
+                                          color: isSourcesExpanded.value
+                                              ? AppColors.starGold
+                                              : AppColors.universe.textComet,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      AnimatedRotation(
+                                        turns: isSourcesExpanded.value ? 0.5 : 0.0,
+                                        duration: const Duration(milliseconds: 200),
+                                        child: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: isSourcesExpanded.value
+                                              ? AppColors.starGold
+                                              : AppColors.universe.textComet,
+                                          size: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                  const SizedBox(width: 8),
                   _ViewerReactionButton(
                     factId: fact.id,
                     lectureId: fact.lectureId!,
                     reaction: 'like',
                     currentReaction: currentReaction,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 4),
                   _ViewerReactionButton(
                     factId: fact.id,
                     lectureId: fact.lectureId!,
@@ -1155,120 +1255,43 @@ class _ViewerFunFactCard extends HookConsumerWidget {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-class _ViewerFunFactSourcesAccordion extends HookWidget {
-  const _ViewerFunFactSourcesAccordion({required this.sources});
-
-  final List<String> sources;
-
-  @override
-  Widget build(BuildContext context) {
-    if (sources.isEmpty) return const SizedBox.shrink();
-
-    final isExpanded = useState(false);
-    final l10n = AppLocalizations.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(25, 0, 25, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => isExpanded.value = !isExpanded.value,
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isExpanded.value
-                      ? AppColors.starGold.withValues(alpha: 0.15)
-                      : AppColors.universe.glassWhiteLow,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isExpanded.value
-                        ? AppColors.starGold.withValues(alpha: 0.4)
-                        : AppColors.universe.glassBorder,
+            // 5. Expandable Sources Accordion Body
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 200),
+              crossFadeState: isSourcesExpanded.value
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF131525).withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.universe.glassBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = 0; i < fact.sources.length; i++) ...[
+                        if (i > 0)
+                          const Divider(
+                            height: 10,
+                            thickness: 0.5,
+                            color: Colors.white10,
+                          ),
+                        _ViewerFunFactSourceItem(url: fact.sources[i]),
+                      ],
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.link_rounded,
-                      color: isExpanded.value
-                          ? AppColors.starGold
-                          : AppColors.universe.textComet,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      l10n.lectureViewerFunFactSourcesButton,
-                      style: TextStyle(
-                        color: isExpanded.value
-                            ? AppColors.starGold
-                            : AppColors.universe.textComet,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    AnimatedRotation(
-                      turns: isExpanded.value ? 0.5 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: isExpanded.value
-                            ? AppColors.starGold
-                            : AppColors.universe.textComet,
-                        size: 15,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
-          ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            crossFadeState: isExpanded.value
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF131525).withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.universe.glassBorder),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < sources.length; i++) ...[
-                      if (i > 0)
-                        const Divider(
-                          height: 10,
-                          thickness: 0.5,
-                          color: Colors.white10,
-                        ),
-                      _ViewerFunFactSourceItem(url: sources[i]),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1311,7 +1334,7 @@ class _ViewerFunFactSourceItem extends StatelessWidget {
             children: [
               const Icon(
                 Icons.open_in_new_rounded,
-                color: AppColors.deepGold,
+                color: AppColors.starGold,
                 size: 13,
               ),
               const SizedBox(width: 8),
@@ -1319,7 +1342,7 @@ class _ViewerFunFactSourceItem extends StatelessWidget {
                 child: Text(
                   _label,
                   style: const TextStyle(
-                    color: AppColors.deepGold,
+                    color: AppColors.starGold,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     decoration: TextDecoration.underline,
@@ -1357,37 +1380,41 @@ class _ViewerReactionButton extends ConsumerWidget {
     IconData iconData;
     Color iconColor;
     if (reaction == 'like') {
-      iconData = isActive ? Icons.favorite : Icons.favorite_border;
-      iconColor = isActive ? Colors.redAccent : Colors.white54;
+      iconData = isActive ? Icons.favorite_rounded : Icons.favorite_border_rounded;
+      iconColor = isActive ? Colors.redAccent : Colors.white38;
     } else {
-      iconData = isActive ? Icons.thumb_down : Icons.thumb_down_alt_outlined;
-      iconColor = isActive ? Colors.blueAccent : Colors.white54;
+      iconData = isActive ? Icons.thumb_down_rounded : Icons.thumb_down_alt_outlined;
+      iconColor = isActive ? AppColors.universe.textComet : Colors.white38;
     }
 
-    return IconButton(
-      icon: Icon(iconData, color: iconColor, size: 20),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      onPressed: () async {
-        final newReaction = isActive ? null : reaction;
-        try {
-          // ローカルDBを即時更新(楽観的UI)。Streamが自動的にUIへ反映するため
-          // invalidateは不要。Supabaseへの反映はバックグラウンドのOutbox経由。
-          await ref
-              .read(funFactRepositoryDriftProvider)
-              .updateReaction(id: factId, reaction: newReaction);
-          ref.read(lectureControllerProvider.notifier).pushOutboxNow();
-        } catch (e) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.lectureViewerReactionUpdateFailedSnackbar(e.toString()),
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: () async {
+          final newReaction = isActive ? null : reaction;
+          try {
+            await ref
+                .read(funFactRepositoryDriftProvider)
+                .updateReaction(id: factId, reaction: newReaction);
+            ref.read(lectureControllerProvider.notifier).pushOutboxNow();
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  l10n.lectureViewerReactionUpdateFailedSnackbar(e.toString()),
+                ),
               ),
-            ),
-          );
-        }
-      },
+            );
+          }
+        },
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Icon(iconData, color: iconColor, size: 19),
+        ),
+      ),
     );
   }
 }

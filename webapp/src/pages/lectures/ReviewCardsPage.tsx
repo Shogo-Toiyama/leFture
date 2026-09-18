@@ -1,68 +1,168 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Bookmark, ChevronLeft, ChevronRight, LayoutGrid, X } from 'lucide-react';
 import { useLectureTopics } from '../../hooks/useLectureTopics';
 import { useReviewCards } from '../../hooks/useReviewCards';
+import { useCourse } from '../../hooks/useCourse';
+import { useTopicImageUrls } from '../../hooks/useTopicImageUrls';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { useMediaQuery, STACKED_PANELS_QUERY } from '../../hooks/useMediaQuery';
+import { useCardFlipGestures } from '../../hooks/useCardFlipGestures';
+import { getLecture } from '../../lib/lectures';
 import { updateReviewCardReaction } from '../../lib/content';
 import { readAnnotations, toggleSaved } from '../../lib/annotations';
-import { blockRawMarkdownSource } from '../../lib/reviewCardBlocks';
+import { readableAccent } from '../../lib/reviewCardTheme';
 import { REVIEW_CARD_TYPE_ORDER, type ContentMetadata, type ReviewCard } from '../../types/content';
-import { ReviewCardBlockView } from '../../components/ReviewCardBlockView';
+import type { Lecture } from '../../types/lecture';
+import type { TranslationKey } from '../../i18n/translations';
 import { ReactionBar } from '../../components/ReactionBar';
-import { CitationLink } from '../../components/CitationLink';
 import { AnnotationLayer } from '../../components/annotations/AnnotationLayer';
-import { PageState } from '../../components/PageState';
+import { ReviewCardFace } from '../../components/reviewCards/ReviewCardFace';
+import { ReviewCoverCard } from '../../components/reviewCards/ReviewCoverCard';
+import { ReviewCardListDrawer } from '../../components/reviewCards/ReviewCardListDrawer';
+import { TranscriptSheet } from '../../components/transcript/TranscriptSheet';
+import type { ReviewFlatItem, ReviewTopicGroup } from '../../components/reviewCards/types';
+import { ReviewCardsSkeleton } from '../../components/reviewCards/ReviewCardsSkeleton';
 
-const CARD_TYPE_LABEL: Record<string, string> = {
-  hook: 'Hook',
-  core_why: 'Why it matters',
-  gotcha: 'Watch out',
-  next_action: 'Next step',
+const TYPE_LABEL_KEY: Record<string, TranslationKey> = {
+  hook: 'reviewCardTypeHook',
+  core_why: 'reviewCardTypeCoreWhy',
+  gotcha: 'reviewCardTypeGotcha',
+  next_action: 'reviewCardTypeNextAction',
 };
 
-/** review_cards_viewer_page.dart 準拠: 紙面全画面カード + トピック毎のセグメント進捗バー。 */
+/**
+ * 復習カードビューア。review_cards_viewer_page.dart と同じ紙面(ライトテーマ)の
+ * 全画面ビューアで、アプリシェル(ダーク)の外側に自前で敷き直している。
+ */
 export const ReviewCardsPage: React.FC = () => {
   const { lectureId } = useParams<{ lectureId: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
   const { topics } = useLectureTopics(lectureId);
   const { cards, loading, error, setCards } = useReviewCards(lectureId);
+  const [lecture, setLecture] = useState<Lecture | null>(null);
+  const { course } = useCourse(lecture?.course_id);
+
   const [index, setIndex] = useState(0);
-
-  const grouped = useMemo(() => {
-    const topicOrder = new Map(topics.map((t, i) => [t.index, i]));
-    const sorted = [...cards].sort((a, b) => {
-      const topicDiff = (topicOrder.get(a.topic_number) ?? 0) - (topicOrder.get(b.topic_number) ?? 0);
-      if (topicDiff !== 0) return topicDiff;
-      return REVIEW_CARD_TYPE_ORDER.indexOf(a.card_type) - REVIEW_CARD_TYPE_ORDER.indexOf(b.card_type);
-    });
-    const byTopic: ReviewCard[][] = [];
-    for (const card of sorted) {
-      const arr = byTopic[byTopic.length - 1];
-      if (arr && cards.find((c) => c.id === arr[0].id)?.topic_number === card.topic_number) {
-        arr.push(card);
-      } else {
-        byTopic.push([card]);
-      }
-    }
-    return { flat: sorted, byTopic };
-  }, [cards, topics]);
-
-  const orderedCards = grouped.flat;
+  // 一覧は常に本文へ覆いかぶさるオーバーレイ(モーダル)。出典シートとは違い、
+  // 開いている間に本文や出典を同時に操作できる必要はない。
+  const [listOpen, setListOpen] = useState(false);
+  /** 出典シートで強調するSID。null ならシートは閉じている。 */
+  const [sourceSids, setSourceSids] = useState<string[] | null>(null);
+  // 出典シートは広い画面では本文の横に並ぶが、狭い画面ではボトムシートに
+  // なって重なる。そのときだけ「外側をタップで閉じる」幕を出す。
+  const stackedPanels = useMediaQuery(STACKED_PANELS_QUERY);
+  // めくりアニメーション。dir は「どちら向きにめくったか」で、leaving は
+  // まだ退場アニメーション中の一つ前のカード。
+  const [dir, setDir] = useState<'next' | 'prev'>('next');
+  const [leaving, setLeaving] = useState<number | null>(null);
+  const indexRef = useRef(0);
 
   useEffect(() => {
-    if (index >= orderedCards.length) setIndex(0);
-  }, [orderedCards, index]);
+    if (!lectureId) return;
+    let cancelled = false;
+    getLecture(lectureId)
+      .then((data) => {
+        if (!cancelled) setLecture(data);
+      })
+      .catch(() => {
+        /* コースカラーが取れないだけなので既定色で続行する */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lectureId]);
+
+  const accent = readableAccent((course?.metadata?.color as string | undefined) ?? null);
+
+  const { groups, flat } = useMemo(() => {
+    const byTopic = new Map<number, ReviewCard[]>();
+    for (const card of cards) {
+      const list = byTopic.get(card.topic_number);
+      if (list) list.push(card);
+      else byTopic.set(card.topic_number, [card]);
+    }
+
+    const nextGroups: ReviewTopicGroup[] = [];
+    const nextFlat: ReviewFlatItem[] = [];
+    for (const topic of topics) {
+      const topicCards = (byTopic.get(topic.index) ?? [])
+        .slice()
+        .sort(
+          (a, b) =>
+            REVIEW_CARD_TYPE_ORDER.indexOf(a.card_type) - REVIEW_CARD_TYPE_ORDER.indexOf(b.card_type)
+        );
+      if (topicCards.length === 0) continue;
+
+      const groupIndex = nextGroups.length;
+      const startIndex = nextFlat.length;
+      nextGroups.push({ topic, cards: topicCards, startIndex });
+      nextFlat.push({ groupIndex, card: null });
+      for (const card of topicCards) nextFlat.push({ groupIndex, card });
+    }
+    return { groups: nextGroups, flat: nextFlat };
+  }, [cards, topics]);
+
+  const imageUrls = useTopicImageUrls(useMemo(() => groups.map((g) => g.topic.image_path), [groups]));
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
+  useEffect(() => {
+    if (flat.length > 0 && index >= flat.length) {
+      setLeaving(null);
+      setIndex(0);
+    }
+  }, [flat.length, index]);
+
+  const goTo = useCallback(
+    (next: number) => {
+      if (flat.length === 0) return;
+      const clamped = Math.min(Math.max(next, 0), flat.length - 1);
+      const current = indexRef.current;
+      if (clamped === current) return;
+      indexRef.current = clamped;
+      setDir(clamped > current ? 'next' : 'prev');
+      setLeaving(current);
+      setIndex(clamped);
+    },
+    [flat.length]
+  );
+
+  // 退場アニメーションが終わったら、裏で残していたカードを片付ける。
+  useEffect(() => {
+    if (leaving === null) return;
+    const timer = window.setTimeout(() => setLeaving(null), 420);
+    return () => window.clearTimeout(timer);
+  }, [leaving, index]);
+
+  const close = useCallback(() => navigate(`/lectures/${lectureId}`), [navigate, lectureId]);
+
+  // スマホはスワイプとタップでめくる(左右の矢印はカードの上に重ねて残す)。
+  const flipGestures = useCardFlipGestures({
+    onPrevious: () => goTo(indexRef.current - 1),
+    onNext: () => goTo(indexRef.current + 1),
+  });
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT')) return;
-      if (event.key === 'ArrowRight') setIndex((i) => Math.min(i + 1, orderedCards.length - 1));
-      if (event.key === 'ArrowLeft') setIndex((i) => Math.max(i - 1, 0));
-      if (event.key === 'Escape') navigate(`/lectures/${lectureId}`);
+      if (event.key === 'ArrowRight') goTo(index + 1);
+      if (event.key === 'ArrowLeft') goTo(index - 1);
+      // Escapeは開いているパネルを、上に乗っている方から順に畳むだけ。
+      // ビューアそのものは閉じない。
+      if (event.key === 'Escape') {
+        if (listOpen) setListOpen(false);
+        else if (sourceSids) setSourceSids(null);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [orderedCards.length, navigate, lectureId]);
+  }, [goTo, index, listOpen, sourceSids]);
 
   const patchCard = useCallback(
     (cardId: string, metadata: ContentMetadata) => {
@@ -71,77 +171,163 @@ export const ReviewCardsPage: React.FC = () => {
     [setCards]
   );
 
-  if (loading) return <PageState kind="loading" />;
-  if (error) return <PageState kind="error" message={error} />;
-  if (orderedCards.length === 0) {
+  const typeLabel = useCallback(
+    (cardType: string) => (TYPE_LABEL_KEY[cardType] ? t(TYPE_LABEL_KEY[cardType]) : cardType),
+    [t]
+  );
+
+  const rootStyle = { ['--pv-accent' as string]: accent } as React.CSSProperties;
+
+  if (loading) {
+    return <ReviewCardsSkeleton />;
+  }
+
+  if (error || flat.length === 0) {
     return (
-      <div className="rc-page">
-        <PageState kind="empty" title="No review cards yet" message="They'll appear once processing finishes." />
+      <div className="pv-root" style={rootStyle}>
+        <div className="pv-top">
+          <div className="pv-top-row">
+            <button type="button" className="pv-icon-btn" onClick={close} aria-label={t('close')}>
+              <X size={20} />
+            </button>
+            <span className="pv-title">{t('reviewCards')}</span>
+            <span style={{ width: 36 }} />
+          </div>
+        </div>
+        <div className="pv-center">{error ?? t('reviewCardsEmpty')}</div>
       </div>
     );
   }
 
-  const card = orderedCards[index];
-  const topic = topics.find((t) => t.index === card.topic_number);
-  const annotations = readAnnotations(card.metadata);
-  const rawCardText = card.card_content.map(blockRawMarkdownSource).join('\n\n');
+  const item = flat[index];
+  const group = groups[item.groupIndex];
+  const card = item.card;
+
+  /**
+   * flatリストの1件をカードとして描く。めくり中は前後2枚が同時に存在するため、
+   * 操作を受け付けるのは表側([interactive])だけにする。
+   */
+  const renderFace = (target: ReviewFlatItem, interactive: boolean) => {
+    const targetGroup = groups[target.groupIndex];
+    const targetImage = targetGroup.topic.image_path
+      ? imageUrls[targetGroup.topic.image_path] ?? null
+      : null;
+
+    if (!target.card) {
+      return (
+        <ReviewCoverCard
+          title={targetGroup.topic.topic_title}
+          kicker={`Topic ${target.groupIndex + 1}`}
+          imageUrl={targetImage}
+        />
+      );
+    }
+
+    const face = (
+      <ReviewCardFace
+        card={target.card}
+        annotations={readAnnotations(target.card.metadata)}
+        imageUrl={targetImage}
+        typeLabel={typeLabel(target.card.card_type)}
+      />
+    );
+
+    // 退場中のカードは見た目だけの残像なので、選択メニューは載せない。
+    if (!interactive) return face;
+
+    const activeCard = target.card;
+    return (
+      <AnnotationLayer
+        table="review_cards"
+        rowId={activeCard.id}
+        metadata={activeCard.metadata}
+        onMetadataChange={(metadata) => patchCard(activeCard.id, metadata)}
+        lectureId={lectureId!}
+        onOpenSource={setSourceSids}
+      >
+        {face}
+      </AnnotationLayer>
+    );
+  };
 
   const handleReaction = async (reaction: 'like' | 'dislike') => {
+    if (!card) return;
     const next = card.metadata?.reaction === reaction ? null : reaction;
     patchCard(card.id, { ...card.metadata, reaction: next });
     await updateReviewCardReaction(card.id, card.metadata, reaction);
   };
 
   const handleSave = async () => {
+    if (!card) return;
     patchCard(card.id, { ...card.metadata, saved: !card.metadata?.saved });
     await toggleSaved('review_cards', card.id, card.metadata);
   };
 
-  let seenSoFar = 0;
-
   return (
-    <div className="rc-page">
-      <header className="rc-header">
-        <div className="rc-header-row">
-          <button type="button" className="rc-icon-button" onClick={() => navigate(`/lectures/${lectureId}`)} aria-label="Close">
-            ✕
+    <div className="pv-root" style={rootStyle}>
+      <div className="pv-split">
+        {sourceSids && (
+          <TranscriptSheet lectureId={lectureId!} sids={sourceSids} onClose={() => setSourceSids(null)} />
+        )}
+
+        <div className="pv-column">
+      <header className="pv-top">
+        <div className="pv-top-row">
+          <button type="button" className="pv-icon-btn" onClick={close} aria-label={t('close')}>
+            <X size={20} />
           </button>
-          <span className="rc-header-title">{topic?.topic_title ?? 'Review cards'}</span>
+          <span className="pv-title">{group.topic.topic_title}</span>
           <span style={{ width: 36 }} />
         </div>
-        <div className="rc-toolbar-row">
-          <div className="rc-toolbar">
-            <button
-              type="button"
-              className={`icon-button ${card.metadata?.saved ? 'is-active' : ''}`}
-              onClick={handleSave}
-              aria-label="Save"
-              title="Save"
-            >
-              {card.metadata?.saved ? '★' : '☆'}
-            </button>
-            <ReactionBar reaction={card.metadata?.reaction ?? null} onChange={handleReaction} />
-          </div>
-          <span className="rc-counter">
-            {index + 1} / {orderedCards.length}
+
+        <div className="pv-tool-row">
+          <button
+            type="button"
+            className={`pv-icon-btn ${listOpen ? 'is-active' : ''}`}
+            onClick={() => setListOpen((v) => !v)}
+            aria-label={t('reviewCardsViewList')}
+            title={t('reviewCardsViewList')}
+          >
+            <LayoutGrid size={19} />
+          </button>
+
+          {card && (
+            <>
+              <span className="pv-divider" />
+              <button
+                type="button"
+                className={`pv-icon-btn pv-save-btn ${card.metadata?.saved ? 'is-saved' : ''}`}
+                onClick={handleSave}
+                aria-pressed={Boolean(card.metadata?.saved)}
+                aria-label={t('save')}
+                title={t('save')}
+              >
+                <Bookmark size={18} fill={card.metadata?.saved ? 'currentColor' : 'none'} />
+              </button>
+              <ReactionBar reaction={card.metadata?.reaction ?? null} onChange={handleReaction} />
+            </>
+          )}
+
+          <span className="pv-tool-spacer" />
+          <span className="pv-counter">
+            {index + 1} / {flat.length}
           </span>
         </div>
 
-        <div className="rc-progress">
-          {grouped.byTopic.map((group, gi) => (
-            <div className="rc-progress-group" key={gi}>
-              {group.map((c) => {
-                const cardGlobalIndex = seenSoFar;
-                seenSoFar += 1;
+        <div className="rcv-progress">
+          {groups.map((g, gi) => (
+            <div className="rcv-progress-group" key={g.topic.id}>
+              {Array.from({ length: g.cards.length + 1 }, (_, segIdx) => {
+                const flatIndex = g.startIndex + segIdx;
                 return (
                   <button
-                    key={c.id}
+                    key={flatIndex}
                     type="button"
-                    className={`rc-progress-seg ${cardGlobalIndex < index ? 'is-done' : ''} ${
-                      cardGlobalIndex === index ? 'is-current' : ''
+                    className={`rcv-seg ${flatIndex < index ? 'is-done' : ''} ${
+                      flatIndex === index ? 'is-current' : ''
                     }`}
-                    onClick={() => setIndex(cardGlobalIndex)}
-                    aria-label={`Card ${cardGlobalIndex + 1}`}
+                    onClick={() => goTo(flatIndex)}
+                    aria-label={`${gi + 1}-${segIdx + 1}`}
                   />
                 );
               })}
@@ -150,52 +336,76 @@ export const ReviewCardsPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="rc-card-area">
-        <AnnotationLayer
-          key={card.id}
-          table="review_cards"
-          rowId={card.id}
-          metadata={card.metadata}
-          onMetadataChange={(metadata) => patchCard(card.id, metadata)}
-          lectureId={lectureId!}
-        >
-          <article className="rc-card">
-            {topic && <p className="rc-topic-label">{topic.topic_title}</p>}
-            <div className="review-card-head">
-              {card.hero_emoji && <span className="review-card-emoji">{card.hero_emoji}</span>}
-              <div>
-                <span className="review-card-type">{CARD_TYPE_LABEL[card.card_type] ?? card.card_type}</span>
-                {card.title && <h1>{card.title}</h1>}
-              </div>
-            </div>
-
-            <div className="review-card-body">
-              {card.card_content.map((block, i) => (
-                <ReviewCardBlockView key={i} block={block} blockIdx={i} annotations={annotations} />
-              ))}
-            </div>
-
-            <footer className="review-card-foot">
-              <CitationLink lectureId={lectureId!} rawText={rawCardText} />
-            </footer>
-          </article>
-        </AnnotationLayer>
-      </div>
-
-      <div className="review-card-nav">
-        <button type="button" className="ghost" onClick={() => setIndex((i) => Math.max(i - 1, 0))} disabled={index === 0}>
-          ← Previous
-        </button>
+          <div className="rcv-stage" {...flipGestures}>
         <button
           type="button"
-          className="ghost"
-          onClick={() => setIndex((i) => Math.min(i + 1, orderedCards.length - 1))}
-          disabled={index === orderedCards.length - 1}
+          className="pv-nav-btn"
+          onClick={() => goTo(index - 1)}
+          disabled={index === 0}
+          aria-label={t('previous')}
         >
-          Next →
+          <ChevronLeft size={22} />
+        </button>
+
+        <div className="rcv-stack" data-dir={dir}>
+          {leaving !== null && flat[leaving] && (
+            <div className="rcv-layer is-leaving" key={`out-${leaving}`} aria-hidden="true">
+              {renderFace(flat[leaving], false)}
+            </div>
+          )}
+          <div className="rcv-layer is-entering" key={`in-${index}`}>
+            {renderFace(item, true)}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="pv-nav-btn"
+          onClick={() => goTo(index + 1)}
+          disabled={index === flat.length - 1}
+          aria-label={t('next')}
+        >
+          <ChevronRight size={22} />
         </button>
       </div>
-      <p className="rc-nav-hint">Use ← → keys, or drag the progress bar above</p>
+
+      <p className="pv-hint">
+        {stackedPanels ? t('reviewCardsNavHintTouch') : t('reviewCardsNavHint')}
+      </p>
+        </div>
+
+        {sourceSids && stackedPanels && (
+          <button
+            type="button"
+            className="pv-scrim"
+            onClick={() => setSourceSids(null)}
+            aria-label={t('close')}
+          />
+        )}
+      </div>
+
+      {listOpen && (
+        <>
+          <button
+            type="button"
+            className="pv-list-scrim"
+            onClick={() => setListOpen(false)}
+            aria-label={t('close')}
+          />
+          <ReviewCardListDrawer
+            title={t('reviewCardsListTitle')}
+            groups={groups}
+            imageUrls={imageUrls}
+            currentIndex={index}
+            typeLabel={typeLabel}
+            onSelect={(flatIndex) => {
+              goTo(flatIndex);
+              setListOpen(false);
+            }}
+            onClose={() => setListOpen(false)}
+          />
+        </>
+      )}
     </div>
   );
 };

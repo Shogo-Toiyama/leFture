@@ -36,16 +36,55 @@ function offsetWithin(container: HTMLElement, node: Node, nodeOffset: number): n
   return range.toString().length;
 }
 
-/** 現在の選択範囲が[container]内に収まっていればフラット化オフセットを返す。 */
-export function readSelectionOffsets(container: HTMLElement): SelectionOffsets | null {
+/**
+ * 現在の選択範囲を[container]のフラット化オフセットとして読む。
+ *
+ * 選択が[container]からはみ出している場合(段落をまたいでドラッグした、
+ * 行末から余白まで引っ張った等)は、[clip]がtrueなら[container]の内側だけを
+ * 切り出して返す。falseならnull。はみ出しただけでメニューが出ないと
+ * 「選択したのに何も起きない」状態になるため、UI側はclip付きで呼ぶ。
+ */
+export function readSelectionOffsets(
+  container: HTMLElement,
+  options: { clip?: boolean } = {}
+): SelectionOffsets | null {
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
 
   const range = selection.getRangeAt(0);
-  if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
+  const contained =
+    container.contains(range.startContainer) && container.contains(range.endContainer);
+
+  if (contained) return offsetsFromRange(container, range, range);
+  if (!options.clip) return null;
+
+  const bounds = document.createRange();
+  bounds.selectNodeContents(container);
+
+  let clipped: Range;
+  try {
+    clipped = range.cloneRange();
+    if (clipped.compareBoundaryPoints(Range.START_TO_START, bounds) < 0) {
+      clipped.setStart(bounds.startContainer, bounds.startOffset);
+    }
+    if (clipped.compareBoundaryPoints(Range.END_TO_END, bounds) > 0) {
+      clipped.setEnd(bounds.endContainer, bounds.endOffset);
+    }
+  } catch {
+    // 別ドキュメント/切り離されたノードなど、比較できない組み合わせ
     return null;
   }
 
+  // 交差していなければクリップ結果が空になるので、ここで自然に弾かれる
+  // (ツールバーの位置だけは選択全体の矩形を使う)。
+  return offsetsFromRange(container, clipped, range);
+}
+
+function offsetsFromRange(
+  container: HTMLElement,
+  range: Range,
+  rectSource: Range
+): SelectionOffsets | null {
   const startIdx = offsetWithin(container, range.startContainer, range.startOffset);
   const endIdx = offsetWithin(container, range.endContainer, range.endOffset);
   if (startIdx === endIdx) return null;
@@ -57,7 +96,7 @@ export function readSelectionOffsets(container: HTMLElement): SelectionOffsets |
     startIdx: Math.min(startIdx, endIdx),
     endIdx: Math.max(startIdx, endIdx),
     text,
-    rect: range.getBoundingClientRect(),
+    rect: rectSource.getBoundingClientRect(),
   };
 }
 

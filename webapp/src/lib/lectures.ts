@@ -12,6 +12,22 @@ export async function listLectures(courseId: string): Promise<Lecture[]> {
   return data as Lecture[];
 }
 
+/**
+ * トピックマップの lecture_num(1始まりの通し番号)割り当て専用。lecture_datetime
+ * ではなく created_at 昇順で数える -- バックエンドの `_fetch_live_lecture_order_sync`
+ * (helpers.py)と同じ基準に揃えないと、日時を編集した講義でズレる。
+ */
+export async function listLecturesByCreatedAt(courseId: string): Promise<Lecture[]> {
+  const { data, error } = await supabase
+    .from('lectures')
+    .select('*')
+    .eq('course_id', courseId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data as Lecture[];
+}
+
 export async function getLecture(lectureId: string): Promise<Lecture> {
   const { data, error } = await supabase.from('lectures').select('*').eq('id', lectureId).single();
   if (error) throw error;

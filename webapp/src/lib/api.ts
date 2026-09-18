@@ -60,3 +60,18 @@ function extractErrorMessage(body: unknown, path: string, status: number): strin
   }
   return `Request to ${path} failed with status ${status}`;
 }
+
+/**
+ * FastAPI側が {error_code, message} 形式で投げてきたときのerror_codeだけを
+ * 取り出す(例: switch-planのAPPLE_SUBSCRIPTION_ACTIVE)。単純な文字列detailの
+ * 場合や取り出せない場合はnull。
+ */
+export function extractErrorCode(err: unknown): string | null {
+  if (!(err instanceof ApiError)) return null;
+  const body = err.body;
+  if (typeof body !== 'object' || body === null || !('detail' in body)) return null;
+  const detail = (body as { detail: unknown }).detail;
+  if (typeof detail !== 'object' || detail === null || !('error_code' in detail)) return null;
+  const code = (detail as { error_code: unknown }).error_code;
+  return typeof code === 'string' ? code : null;
+}

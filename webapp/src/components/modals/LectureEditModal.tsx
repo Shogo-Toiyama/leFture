@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { ChevronRight, Folder } from 'lucide-react';
 import type { Lecture } from '../../types/lecture';
 import { useCourses } from '../../hooks/useCourses';
 import { updateLecture } from '../../lib/lectures';
 import { ModalDialog } from './ModalDialog';
 import { CoursePickerModal } from './CoursePickerModal';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { CourseIconGlyph } from '../../lib/courseIcons';
 
 export interface LectureEditModalProps {
   lecture: Lecture;
@@ -100,15 +102,31 @@ export const LectureEditModal: React.FC<LectureEditModalProps> = ({
               {selectedCourse ? (
                 <div className="selected-course-info">
                   <div
-                    className="selected-course-dot"
-                    style={{ backgroundColor: selectedCourseColor }}
-                  />
-                  <span className="selected-course-name">{selectedCourse.course_title}</span>
+                    className="selected-course-icon-badge"
+                    style={{
+                      backgroundColor: `${selectedCourseColor}20`,
+                      color: selectedCourseColor,
+                      borderColor: `${selectedCourseColor}44`,
+                    }}
+                  >
+                    <CourseIconGlyph icon={selectedCourse.metadata?.icon as string} size={18} />
+                  </div>
+                  <div className="selected-course-text-col">
+                    <span className="selected-course-name">{selectedCourse.course_title}</span>
+                    {selectedCourse.course_code && (
+                      <span className="selected-course-code">{selectedCourse.course_code}</span>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <span className="unassigned-course-text">{noCourseLabel}</span>
+                <div className="selected-course-info unassigned">
+                  <div className="selected-course-icon-badge unassigned-badge">
+                    <Folder size={18} />
+                  </div>
+                  <span className="unassigned-course-text">{noCourseLabel}</span>
+                </div>
               )}
-              <span className="selector-chevron">›</span>
+              <ChevronRight size={18} className="selector-chevron" />
             </div>
           </div>
 

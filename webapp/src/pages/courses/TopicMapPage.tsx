@@ -1,81 +1,92 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { RefreshCw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useTopicMap } from '../../hooks/useTopicMap';
-import { computeTopicMapLayout, colorForCluster } from '../../lib/topicMapLayout';
+import { useCourse } from '../../hooks/useCourse';
 import { apiFetch } from '../../lib/api';
+import { listLecturesByCreatedAt } from '../../lib/lectures';
+import { listLectureTopics } from '../../lib/content';
+import { lectureDisplayTitle } from '../../types/lecture';
+import type { Lecture } from '../../types/lecture';
+import { stripSidCitations } from '../../lib/sidCitation';
 import { PageState } from '../../components/PageState';
-
-interface Viewport {
-  scale: number;
-  tx: number;
-  ty: number;
-}
-
-const MIN_SCALE = 0.3;
-const MAX_SCALE = 3;
+import { TopicMapSkeleton } from '../../components/courses/TopicMapSkeleton';
+import { TopicMapCanvas, type TopicMapCanvasHandle } from '../../components/courses/topicMap/TopicMapCanvas';
+import { TopicMapDetailSheet, type TopicMapPanelData, type RelatedTopicEdge } from '../../components/courses/topicMap/TopicMapDetailSheet';
+import { computeTopicMapLayout } from '../../lib/topicMap/layout';
+import type { ClusterSelection } from '../../lib/topicMap/selection';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export const TopicMapPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const { language, t } = useLanguage();
+  const isJa = language === 'ja';
+
   const { map, isStale, loading, error } = useTopicMap(courseId);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const { course } = useCourse(courseId);
+  const canvasRef = useRef<TopicMapCanvasHandle>(null);
 
-  const [viewport, setViewport] = useState<Viewport>({ scale: 1, tx: 0, ty: 0 });
-  const [hovered, setHovered] = useState<string | null>(null);
   const [rebuilding, setRebuilding] = useState(false);
-  const dragState = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+  const [selection, setSelection] = useState<ClusterSelection | null>(null);
+  const [lecturesByCreatedAt, setLecturesByCreatedAt] = useState<Lecture[]>([]);
+  const [panelData, setPanelData] = useState<TopicMapPanelData | null>(null);
+  const [panelLectureId, setPanelLectureId] = useState<string | null>(null);
 
-  const layout = useMemo(() => (map ? computeTopicMapLayout(map) : null), [map]);
-  const nodeById = useMemo(() => new Map(layout?.nodes.map((n) => [n.id, n]) ?? []), [layout]);
-
-  // レイアウト計算後、グラフ全体が画面に収まる初期倍率・位置に合わせる。
+  // マップページ限定: トラックパッドのピンチ操作でブラウザ全体の画面がズームするのを防止し、
+  // マップキャンバスのズームに連動させる
   useEffect(() => {
-    const svg = svgRef.current;
-    if (!layout || layout.nodes.length === 0 || !svg) return;
-    const xs = layout.nodes.map((n) => n.x);
-    const ys = layout.nodes.map((n) => n.y);
-    const pad = 80;
-    const width = Math.max(...xs) - Math.min(...xs) + pad * 2;
-    const height = Math.max(...ys) - Math.min(...ys) + pad * 2;
-    const box = svg.getBoundingClientRect();
-    const scale = Math.min(Math.min(box.width / width, box.height / height), 1.4);
-    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-    setViewport({ scale, tx: box.width / 2 - cx * scale, ty: box.height / 2 - cy * scale });
-  }, [layout]);
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        // macOS等のトラックパッドピンチは ctrlKey=true の wheel イベント
+        e.preventDefault();
+        const factor = Math.exp(-e.deltaY * 0.01);
+        canvasRef.current?.zoomBy(factor);
+      }
+    };
 
-  const handleWheel = useCallback((event: React.WheelEvent<SVGSVGElement>) => {
-    event.preventDefault();
-    const svg = event.currentTarget.getBoundingClientRect();
-    const px = event.clientX - svg.left;
-    const py = event.clientY - svg.top;
-    setViewport((prev) => {
-      const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
-      const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, prev.scale * factor));
-      const ratio = scale / prev.scale;
-      return { scale, tx: px - (px - prev.tx) * ratio, ty: py - (py - prev.ty) * ratio };
-    });
+    const preventGesture = (e: Event) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('gesturestart', preventGesture, { passive: false });
+    window.addEventListener('gesturechange', preventGesture, { passive: false });
+    window.addEventListener('gestureend', preventGesture, { passive: false });
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('gesturestart', preventGesture);
+      window.removeEventListener('gesturechange', preventGesture);
+      window.removeEventListener('gestureend', preventGesture);
+    };
   }, []);
 
-  const handlePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (event.button !== 0) return;
-    (event.target as Element).setPointerCapture?.(event.pointerId);
-    dragState.current = { x: event.clientX, y: event.clientY, tx: viewport.tx, ty: viewport.ty };
-  };
+  useEffect(() => {
+    if (!courseId) return;
+    let cancelled = false;
+    listLecturesByCreatedAt(courseId)
+      .then((list) => {
+        if (!cancelled) setLecturesByCreatedAt(list);
+      })
+      .catch(() => {
+        /* レクチャー番号の解決に失敗しても、地図自体は表示を続ける */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
 
-  const handlePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    const drag = dragState.current;
-    if (!drag) return;
-    setViewport((prev) => ({
-      ...prev,
-      tx: drag.tx + (event.clientX - drag.x),
-      ty: drag.ty + (event.clientY - drag.y),
-    }));
-  };
+  const lectureNumBySourceLectureId = useMemo(() => {
+    const map = new Map<string, number>();
+    lecturesByCreatedAt.forEach((lecture, i) => map.set(lecture.id, i + 1));
+    return map;
+  }, [lecturesByCreatedAt]);
 
-  const endDrag = () => {
-    dragState.current = null;
-  };
+  const layout = useMemo(() => {
+    if (!map) return null;
+    return computeTopicMapLayout(map, lectureNumBySourceLectureId);
+  }, [map, lectureNumBySourceLectureId]);
 
   const rebuild = async () => {
     if (!courseId) return;
@@ -91,9 +102,150 @@ export const TopicMapPage: React.FC = () => {
     }
   };
 
-  if (loading) return <PageState kind="loading" />;
+  const selectedEntityLabel = useMemo(() => {
+    if (!map || !selection) return null;
+    if (selection.type === 'node') {
+      const node = map.nodes.find((n) => n.topic_id === selection.id);
+      if (node) return node.title;
+      const ghost = map.ghost_nodes.find((g) => g.ghost_id === selection.id);
+      return ghost?.name ?? null;
+    }
+    if (selection.type === 'lecture') {
+      return isJa ? `講義 ${selection.id}` : `Lecture ${selection.id}`;
+    }
+    return map.clusters.find((c) => c.cluster_id === selection.id)?.name ?? null;
+  }, [map, selection, isJa]);
+
+  // ノード/レクチャー選択が変わるたびに、詳細シートの中身を解決する
+  // (lecture_topic_detail_panel.dart の _loadPanelData 相当)。
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolve() {
+      if (!map || !selection || selection.type === 'cluster') {
+        setPanelData(null);
+        setPanelLectureId(null);
+        return;
+      }
+
+      if (selection.type === 'lecture') {
+        const lectureNum = Number(selection.id);
+        const lecture = lecturesByCreatedAt[lectureNum - 1];
+        if (!lecture) {
+          setPanelData(null);
+          setPanelLectureId(null);
+          return;
+        }
+        setPanelLectureId(lecture.id);
+        setPanelData({
+          courseTitle: course?.course_title ?? '',
+          lectureNum,
+          topicNum: null,
+          title: lectureDisplayTitle(lecture),
+          summary: lecture.summary ? stripSidCitations(lecture.summary) : null,
+          clusterName: null,
+          relatedTopics: [],
+        });
+        return;
+      }
+
+      // Topic View: ゴーストノードには詳細シートを出さない(Flutter版と同じ)。
+      const node = map.nodes.find((n) => n.topic_id === selection.id);
+      if (!node) {
+        setPanelData(null);
+        setPanelLectureId(null);
+        return;
+      }
+      const lecture = lecturesByCreatedAt.find((l) => l.id === node.source_lecture_id);
+      if (!lecture) {
+        setPanelData(null);
+        setPanelLectureId(null);
+        return;
+      }
+
+      const clusterName = node.cluster_id ? map.clusters.find((c) => c.cluster_id === node.cluster_id)?.name ?? null : null;
+      const relatedTopics: RelatedTopicEdge[] = [];
+      for (const edge of map.edges) {
+        const relationType = edge.relation_type.replace(/_/g, ' ');
+        if (edge.source_id === node.topic_id) {
+          const target = map.nodes.find((n) => n.topic_id === edge.target_id);
+          if (target) relatedTopics.push({ title: target.title, relationType, isOutgoing: true });
+        } else if (edge.target_id === node.topic_id) {
+          const source = map.nodes.find((n) => n.topic_id === edge.source_id);
+          if (source) relatedTopics.push({ title: source.title, relationType, isOutgoing: false });
+        }
+      }
+
+      let summary: string | null = null;
+      try {
+        const topics = await listLectureTopics(lecture.id);
+        const match = topics.find(
+          (t) => t.index === node.topic_index_in_lecture || t.topic_title === node.title
+        );
+        summary = match?.summary ? stripSidCitations(match.summary) : null;
+      } catch {
+        summary = null;
+      }
+      if (cancelled) return;
+
+      setPanelLectureId(lecture.id);
+      setPanelData({
+        courseTitle: course?.course_title ?? '',
+        lectureNum: lectureNumBySourceLectureId.get(node.source_lecture_id) ?? 0,
+        topicNum: node.topic_index_in_lecture,
+        title: node.title,
+        summary,
+        clusterName,
+        relatedTopics,
+      });
+    }
+
+    resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [map, selection, lecturesByCreatedAt, lectureNumBySourceLectureId, course]);
+
+  const handleSelectNode = useCallback((nodeId: string) => {
+    setSelection((prev) => (prev?.type === 'node' && prev.id === nodeId ? null : { type: 'node', id: nodeId }));
+  }, []);
+
+  const handleSelectCluster = useCallback((clusterId: string) => {
+    setSelection((prev) => (prev?.type === 'cluster' && prev.id === clusterId ? null : { type: 'cluster', id: clusterId }));
+  }, []);
+
+  const handleClearSelection = useCallback(() => setSelection(null), []);
+
+  const handleSelectLecture = useCallback(
+    (lectureNum: number) => {
+      setSelection((prev) => {
+        const same = prev?.type === 'lecture' && prev.id === String(lectureNum);
+        if (same) return null;
+        return { type: 'lecture', id: String(lectureNum) };
+      });
+      if (!(selection?.type === 'lecture' && selection.id === String(lectureNum))) {
+        canvasRef.current?.focusLecture(lectureNum);
+      }
+    },
+    [selection]
+  );
+
+  const handleCloseSheet = useCallback(() => {
+    // シートを閉じるだけ -- Lecture/Topic Viewの選択(ハイライト)自体は保持する。
+    setPanelData(null);
+    setPanelLectureId(null);
+  }, []);
+
+  const handleGoToLecture = useCallback(() => {
+    if (!panelLectureId) return;
+    setSelection(null);
+    setPanelData(null);
+    navigate(`/lectures/${panelLectureId}`);
+  }, [panelLectureId, navigate]);
+
+  if (loading) return <TopicMapSkeleton />;
   if (error) return <PageState kind="error" message={error} />;
-  if (!layout || layout.nodes.length === 0) {
+  if (!map || !layout || map.nodes.length === 0) {
     return (
       <PageState
         kind="empty"
@@ -104,111 +256,97 @@ export const TopicMapPage: React.FC = () => {
     );
   }
 
-  const hoveredNode = hovered ? nodeById.get(hovered) : null;
+  const viewMode = selection
+    ? selection.type === 'lecture'
+      ? 'lecture'
+      : selection.type === 'node'
+      ? 'topic'
+      : 'cluster'
+    : 'cluster';
+
+  const modeTitle =
+    viewMode === 'lecture'
+      ? t('topicMapModeLecture')
+      : viewMode === 'topic'
+      ? t('topicMapModeTopic')
+      : t('topicMapModeCluster');
+
+  const courseTitle = course?.course_title || (isJa ? 'コース' : 'Course');
 
   return (
-    <div className="map-page">
-      <header className="page-header">
-        <div>
-          <Link to={`/courses/${courseId}`} className="back-link">
-            ← Course
-          </Link>
-          <h1>Topic map</h1>
+    <div className="tm-page">
+      <header className="tm-header">
+        <div className="tm-header-bar">
+          <div className="tm-header-left">
+            <Link
+              to={`/courses/${courseId}`}
+              className="tm-back-btn"
+              title={courseTitle}
+              aria-label={isJa ? `${courseTitle}へ戻る` : `Back to ${courseTitle}`}
+            >
+              ← <span className="tm-back-btn-text">{courseTitle}</span>
+            </Link>
+          </div>
+
+          <div className="tm-header-center">
+            <h1 className="tm-mode-title">{modeTitle}</h1>
+            {selectedEntityLabel && <p className="tm-mode-subtitle">{selectedEntityLabel}</p>}
+          </div>
+
+          <div className="tm-header-right">
+            <div className="tm-app-bar-actions">
+              {isStale && (
+                <button type="button" className="tm-rebuild-btn" onClick={rebuild} disabled={rebuilding}>
+                  <RefreshCw size={14} className={rebuilding ? 'animate-spin' : ''} />
+                  <span className="tm-rebuild-label">{rebuilding ? (isJa ? '再構築中…' : 'Rebuilding…') : isJa ? 'マップを再構築' : 'Rebuild map'}</span>
+                </button>
+              )}
+              <button type="button" className="tm-zoom-btn" onClick={() => canvasRef.current?.zoomBy(1.15)} aria-label="Zoom in">
+                <ZoomIn size={18} />
+              </button>
+              <button type="button" className="tm-zoom-btn" onClick={() => canvasRef.current?.zoomBy(1 / 1.15)} aria-label="Zoom out">
+                <ZoomOut size={18} />
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="page-header-actions">
-          {isStale && (
-            <button type="button" onClick={rebuild} disabled={rebuilding}>
-              {rebuilding ? 'Rebuilding…' : 'Rebuild map'}
-            </button>
-          )}
-          <button type="button" className="ghost" onClick={() => setViewport((v) => ({ ...v, scale: v.scale * 1.15 }))}>
-            +
-          </button>
-          <button type="button" className="ghost" onClick={() => setViewport((v) => ({ ...v, scale: v.scale / 1.15 }))}>
-            −
-          </button>
-        </div>
-      </header>
 
-      {isStale && (
-        <p className="notice">This map may be out of date — lectures changed since it was last built.</p>
-      )}
-
-      <div className="map-canvas-wrap">
-        <svg
-          ref={svgRef}
-          className="topic-map-svg"
-          role="img"
-          aria-label="Topic map"
-          onWheel={handleWheel}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={endDrag}
-          onPointerLeave={endDrag}
-        >
-          <g transform={`translate(${viewport.tx}, ${viewport.ty}) scale(${viewport.scale})`}>
-            {layout.edges.map((edge, i) => {
-              const source = nodeById.get(edge.source);
-              const target = nodeById.get(edge.target);
-              if (!source || !target) return null;
-              const isTouched = hovered === edge.source || hovered === edge.target;
-              return (
-                <line
-                  key={i}
-                  x1={source.x}
-                  y1={source.y}
-                  x2={target.x}
-                  y2={target.y}
-                  className={`topic-map-edge ${isTouched ? 'is-active' : ''}`}
-                />
-              );
-            })}
-
-            {layout.nodes.map((node) => {
-              const radius = node.kind === 'ghost' ? 7 : 13;
-              const color = colorForCluster(node.clusterId, layout.clusterIds);
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${node.x}, ${node.y})`}
-                  className={`topic-map-node ${hovered === node.id ? 'is-hovered' : ''}`}
-                  onMouseEnter={() => setHovered(node.id)}
-                  onMouseLeave={() => setHovered((prev) => (prev === node.id ? null : prev))}
-                  onClick={() => {
-                    const source = map?.nodes.find((n) => n.topic_id === node.id);
-                    if (source) navigate(`/lectures/${source.source_lecture_id}`);
-                  }}
+        {lecturesByCreatedAt.length > 0 && (
+          <div className="tm-header-chips">
+            <div className="tm-lecture-chips">
+              {Array.from({ length: lecturesByCreatedAt.length }, (_, i) => i + 1).map((lectureNum) => (
+                <button
+                  key={lectureNum}
+                  type="button"
+                  className={`tm-lecture-chip ${selection?.type === 'lecture' && Number(selection.id) === lectureNum ? 'is-selected' : ''}`}
+                  onClick={() => handleSelectLecture(lectureNum)}
                 >
-                  <circle r={radius + 5} className="topic-map-node-halo" fill={color} />
-                  <circle r={radius} fill={color} opacity={node.kind === 'ghost' ? 0.45 : 1} />
-                  <text y={radius + 15} textAnchor="middle" className="topic-map-label">
-                    {node.label.length > 26 ? `${node.label.slice(0, 25)}…` : node.label}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        </svg>
-
-        {hoveredNode && (
-          <div className="map-hint">
-            <strong>{hoveredNode.label}</strong>
-            <span>{hoveredNode.kind === 'ghost' ? 'Related concept' : 'Click to open lecture'}</span>
+                  {t('topicMapLectureChip', { num: String(lectureNum) })}
+                </button>
+              ))}
+            </div>
           </div>
         )}
-      </div>
+      </header>
 
-      <ul className="topic-map-legend">
-        {map!.clusters.map((cluster) => (
-          <li key={cluster.cluster_id}>
-            <span
-              className="dot"
-              style={{ backgroundColor: colorForCluster(cluster.cluster_id, layout.clusterIds) }}
-            />
-            {cluster.name}
-          </li>
-        ))}
-      </ul>
+      <div className="tm-canvas-shell">
+        <TopicMapCanvas
+          ref={canvasRef}
+          data={map}
+          simulation={layout.simulation}
+          canvasSize={layout.canvasSize}
+          clusterIdByNodeId={layout.clusterIdByNodeId}
+          lectureNumByNodeId={layout.lectureNumByNodeId}
+          selection={selection}
+          onSelectNode={handleSelectNode}
+          onSelectCluster={handleSelectCluster}
+          onClearSelection={handleClearSelection}
+        />
+
+        {isStale && <p className="notice tm-stale-notice">{isJa ? 'このマップは最新でない可能性があります。' : 'This map may be out of date — lectures changed since it was last built.'}</p>}
+
+        <TopicMapDetailSheet data={panelData} onClose={handleCloseSheet} onGoToLecture={handleGoToLecture} />
+      </div>
     </div>
   );
 };

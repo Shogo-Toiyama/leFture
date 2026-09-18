@@ -8,8 +8,9 @@ import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useKeywords } from '../../hooks/useKeywords';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { startAnalysis, InsufficientCreditsError } from '../../lib/upload';
-import { updateFunFactReaction } from '../../lib/content';
-import { lectureDisplayTitle, DEAD_JOB_STATUSES } from '../../types/lecture';
+import { updateFunFactReaction, stripFunFactCitations } from '../../lib/content';
+import type { FunFact } from '../../types/content';
+import { lectureDisplayTitle, lectureCreditsUsedDisplay, DEAD_JOB_STATUSES } from '../../types/lecture';
 import { PipelineStepsList } from '../../components/PipelineStepsList';
 import { ReactionBar } from '../../components/ReactionBar';
 import { PageState } from '../../components/PageState';
@@ -94,6 +95,7 @@ export const LectureViewerPage: React.FC = () => {
         lectureDatetime={lecture.lecture_datetime}
         topics={topics}
         summary={lecture.summary}
+        creditsUsed={lectureCreditsUsedDisplay(lecture)}
         onEdit={() => setActiveModal('edit')}
       />
 
@@ -158,10 +160,7 @@ export const LectureViewerPage: React.FC = () => {
                 className="lecture-highlight-chip"
                 onClick={() => setActiveModal('announcements')}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chip-icon-svg">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
+                <span className="material-symbols-outlined chip-icon-glyph">campaign</span>
                 <span>{language === 'ja' ? 'お知らせ' : 'Announcements'}</span>
                 <span className="chip-count-badge">{announcements.length}</span>
               </button>
@@ -172,11 +171,7 @@ export const LectureViewerPage: React.FC = () => {
                 className="lecture-highlight-chip"
                 onClick={() => setActiveModal('keywords')}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chip-icon-svg">
-                  <circle cx="7.5" cy="15.5" r="5.5" />
-                  <path d="m21 2-9.6 9.6" />
-                  <path d="m15.5 7.5 3 3L22 7l-3-3" />
-                </svg>
+                <span className="material-symbols-outlined chip-icon-glyph">vpn_key</span>
                 <span>{language === 'ja' ? 'キーワード' : 'Keywords'}</span>
                 <span className="chip-count-badge">{keywords.length}</span>
               </button>
@@ -187,11 +182,7 @@ export const LectureViewerPage: React.FC = () => {
                 className="lecture-highlight-chip"
                 onClick={() => setActiveModal('topics')}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="chip-icon-svg">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
+                <span className="material-symbols-outlined chip-icon-glyph">hub</span>
                 <span>{language === 'ja' ? 'トピック' : 'Topics'}</span>
                 <span className="chip-count-badge">{topics.length}</span>
               </button>
@@ -208,11 +199,7 @@ export const LectureViewerPage: React.FC = () => {
                       className="action-nav-icon-wrap"
                       style={{ backgroundColor: 'rgba(255, 179, 0, 0.15)', color: 'var(--gold)' }}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="action-nav-svg">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                        <line x1="8" y1="21" x2="16" y2="21" />
-                        <line x1="12" y1="17" x2="12" y2="21" />
-                      </svg>
+                      <span className="material-symbols-outlined action-nav-glyph action-nav-glyph-review">style</span>
                     </div>
                     <span className="action-nav-title">{t('reviewCards')}</span>
                   </div>
@@ -228,13 +215,7 @@ export const LectureViewerPage: React.FC = () => {
                       className="action-nav-icon-wrap"
                       style={{ backgroundColor: 'rgba(255, 179, 0, 0.15)', color: 'var(--gold)' }}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="action-nav-svg">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                        <polyline points="10 9 9 9 8 9" />
-                      </svg>
+                      <span className="material-symbols-outlined action-nav-glyph action-nav-glyph-notes">description</span>
                     </div>
                     <span className="action-nav-title">{t('deepNotes')}</span>
                   </div>
@@ -243,16 +224,14 @@ export const LectureViewerPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* 3. Transcript */}
+                {/* 3. Transcript & Audio */}
                 <Link to={`/lectures/${lectureId}/transcript`} className="action-nav-card">
                   <div className="action-nav-left">
                     <div
                       className="action-nav-icon-wrap"
                       style={{ backgroundColor: 'rgba(255, 179, 0, 0.15)', color: 'var(--gold)' }}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="action-nav-svg">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
+                      <span className="material-symbols-outlined action-nav-glyph">receipt_long</span>
                     </div>
                     <span className="action-nav-title">{t('transcript')}</span>
                   </div>
@@ -266,57 +245,14 @@ export const LectureViewerPage: React.FC = () => {
               <div className="lecture-funfacts-column">
                 {funFacts.length > 0 ? (
                   <div className="fun-fact-stack">
-                    {funFacts.map((fact) => {
-                      const sources = fact.metadata?.sources && Array.isArray(fact.metadata.sources)
-                        ? (fact.metadata.sources as string[])
-                        : [];
-
-                      return (
-                        <article key={fact.id} className="fun-fact-card">
-                          <h3 className="fun-fact-title" style={{ color: 'var(--gold)' }}>
-                            {fact.title || t('funFact')}
-                          </h3>
-
-                          {fact.hook && <p className="fun-fact-hook">{fact.hook}</p>}
-
-                          {fact.hook && fact.body && <div className="fun-fact-divider" />}
-
-                          {fact.body && <p className="fun-fact-body">{fact.body}</p>}
-
-                          {/* Sources Links */}
-                          {sources.length > 0 && (
-                            <div className="fun-fact-sources-wrap">
-                              <span className="sources-label">{t('sources')}:</span>
-                              <div className="sources-chips">
-                                {sources.map((url, idx) => (
-                                  <a
-                                    key={idx}
-                                    href={url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="fun-fact-source-chip"
-                                    style={{ color: 'var(--gold)' }}
-                                  >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="source-link-icon">
-                                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                    </svg>
-                                    <span>{formatSourceHost(url)}</span>
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="fun-fact-card-footer">
-                            <ReactionBar
-                              reaction={fact.metadata?.reaction ?? null}
-                              onChange={(reaction) => handleFunFactReaction(fact.id, reaction)}
-                            />
-                          </div>
-                        </article>
-                      );
-                    })}
+                    {funFacts.map((fact) => (
+                      <ViewerFunFactCard
+                        key={fact.id}
+                        fact={fact}
+                        formatSourceHost={formatSourceHost}
+                        onReactionChange={(reaction) => handleFunFactReaction(fact.id, reaction)}
+                      />
+                    ))}
                   </div>
                 ) : (
                   <div className="fun-fact-empty-card">
@@ -368,6 +304,89 @@ export const LectureViewerPage: React.FC = () => {
           }}
         />
       )}
+    </div>
+  );
+};
+
+interface ViewerFunFactCardProps {
+  fact: FunFact;
+  formatSourceHost: (url: string) => string;
+  onReactionChange: (reaction: 'like' | 'dislike') => void;
+}
+
+const ViewerFunFactCard: React.FC<ViewerFunFactCardProps> = ({
+  fact,
+  formatSourceHost,
+  onReactionChange,
+}) => {
+  const { t, language } = useLanguage();
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+
+  const cleanHook = stripFunFactCitations(fact.hook);
+  const cleanBody = stripFunFactCitations(fact.body);
+  const sources =
+    fact.metadata?.sources && Array.isArray(fact.metadata.sources)
+      ? (fact.metadata.sources as string[])
+      : [];
+
+  return (
+    <div className="fun-fact-rainbow-wrapper">
+      <article className="fun-fact-card">
+        <h3 className="fun-fact-title" style={{ color: 'var(--gold)' }}>
+          {fact.title || t('funFact')}
+        </h3>
+
+        {cleanHook && <p className="fun-fact-hook">{cleanHook}</p>}
+
+        {cleanHook && cleanBody && <div className="fun-fact-divider" />}
+
+        {cleanBody && <p className="fun-fact-body">{cleanBody}</p>}
+
+        {/* Card Footer: Sources Accordion Button on Left, Reaction on Right */}
+        <div className="fun-fact-card-footer">
+          {sources.length > 0 ? (
+            <button
+              type="button"
+              className={`fun-fact-sources-toggle ${sourcesOpen ? 'is-open' : ''}`}
+              onClick={() => setSourcesOpen(!sourcesOpen)}
+              aria-expanded={sourcesOpen}
+            >
+              <span className="material-symbols-outlined sources-toggle-icon">link</span>
+              <span>{language === 'ja' ? 'ソース' : 'Sources'}</span>
+              <span className="sources-toggle-count">({sources.length})</span>
+              <span className="material-symbols-outlined sources-toggle-chevron">
+                {sourcesOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
+              </span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <ReactionBar
+            reaction={fact.metadata?.reaction ?? null}
+            onChange={onReactionChange}
+          />
+        </div>
+
+        {/* Expandable Sources Accordion Body */}
+        {sources.length > 0 && sourcesOpen && (
+          <div className="fun-fact-sources-accordion-panel">
+            {sources.map((url, idx) => (
+              <a
+                key={idx}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="fun-fact-accordion-source-item"
+                title={url}
+              >
+                <span className="material-symbols-outlined source-item-link-icon">open_in_new</span>
+                <span className="source-item-host">{formatSourceHost(url)}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </article>
     </div>
   );
 };

@@ -7,12 +7,17 @@ import { GalaxyView } from '../../components/GalaxyView';
 import { LectureTile } from '../../components/LectureTile';
 import { ReactionBar } from '../../components/ReactionBar';
 import { PageState } from '../../components/PageState';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { useUploadModal } from '../../context/UploadModalContext';
 
 /**
  * home_page.dart 準拠: ギャラクシー(固定高さ) → fun factsカルーセル →
  * "Courses ›" 見出し + 最近の講義リスト → 右下フローティングの録音(=アップロード)ボタン。
  */
 export const HomePage: React.FC = () => {
+  const { language } = useLanguage();
+  const isJa = language === 'ja';
+  const { openUploadModal } = useUploadModal();
   const { recentLectures, funFacts, loading } = useDashboard();
   const { courses } = useCourses();
   const [factIndex, setFactIndex] = useState(0);
@@ -67,7 +72,7 @@ export const HomePage: React.FC = () => {
                     {fact.hook} {fact.body}
                   </p>
                   <div className="fun-fact-slide-foot">
-                    <Link to={`/lectures/${fact.lecture_id}`}>Open lecture</Link>
+                    <Link to={`/lectures/${fact.lecture_id}`}>{isJa ? '講義を開く' : 'Open lecture'}</Link>
                     <ReactionBar
                       reaction={fact.metadata?.reaction ?? null}
                       onChange={(reaction) => handleReaction(fact.id, reaction)}
@@ -92,8 +97,8 @@ export const HomePage: React.FC = () => {
       )}
 
       <div className="home-section-header">
-        <h2>Courses</h2>
-        <Link to="/courses">All courses ›</Link>
+        <h2>{isJa ? 'コース一覧' : 'Courses'}</h2>
+        <Link to="/courses">{isJa ? 'すべてのコース ›' : 'All courses ›'}</Link>
       </div>
 
       {loading && <PageState kind="loading" />}
@@ -101,11 +106,11 @@ export const HomePage: React.FC = () => {
       {!loading && recentLectures.length === 0 && (
         <PageState
           kind="empty"
-          title="Nothing here yet"
-          message="Create a course and upload your first lecture recording to get started."
+          title={isJa ? 'まだ何もありません' : 'Nothing here yet'}
+          message={isJa ? 'コースを作成して、最初の講義録音をアップロードしましょう。' : 'Create a course and upload your first lecture recording to get started.'}
           action={
             <Link to="/courses">
-              <button type="button">Create a course</button>
+              <button type="button">{isJa ? 'コースを作成' : 'Create a course'}</button>
             </Link>
           }
         />
@@ -129,11 +134,15 @@ export const HomePage: React.FC = () => {
       )}
 
       <div className="record-fab-wrap">
-        <Link to="/courses" className="record-fab">
-          <button type="button" className="pill">
-            ✦ Upload recording
-          </button>
-        </Link>
+        <button
+          type="button"
+          className="record-fab"
+          onClick={() => openUploadModal()}
+        >
+          <span className="pill">
+            {isJa ? '✦ 録音をアップロード' : '✦ Upload recording'}
+          </span>
+        </button>
       </div>
     </div>
   );

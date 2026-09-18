@@ -1,29 +1,70 @@
-import React, { useState } from 'react';
-import type { Announcement } from '../../types/content';
+import React, { useState, useMemo } from 'react';
+import type { Announcement, AnnouncementType } from '../../types/content';
+import type { Lecture } from '../../types/lecture';
 import { toggleAnnouncementCompleted } from '../../lib/content';
 import { ModalDialog } from './ModalDialog';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 export interface AnnouncementsModalProps {
   announcements: Announcement[];
+  lectures?: Lecture[];
   onClose: () => void;
   onAnnouncementToggled?: (updated: Announcement) => void;
 }
 
+function getAnnouncementTypeConfig(type: string) {
+  switch (type.toUpperCase()) {
+    case 'TODO':
+      return { icon: 'task_alt', color: '#4ade80', bg: 'rgba(74, 222, 128, 0.14)', label: 'TODO' };
+    case 'EVENT':
+      return { icon: 'event', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.14)', label: 'EVENT' };
+    case 'INFO':
+      return { icon: 'info', color: '#d8b4fe', bg: 'rgba(216, 180, 254, 0.14)', label: 'INFO' };
+    case 'HINT':
+      return { icon: 'lightbulb', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.14)', label: 'HINT' };
+    default:
+      return { icon: 'star', color: '#FFB300', bg: 'rgba(255, 179, 0, 0.14)', label: type.toUpperCase() };
+  }
+}
+
+function formatAnnouncementDate(iso: string | null | undefined, lang: string): string {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
 export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   announcements,
+  lectures,
   onClose,
   onAnnouncementToggled,
 }) => {
   const { language } = useLanguage();
   const title = language === 'ja' ? 'お知らせ' : 'Announcements';
 
-  // Filter tabs: 'active' | 'completed' | 'all'
+  // 1. Status Filter: 'active' | 'completed' | 'all' (Flutter: statusFilter)
   const [filter, setFilter] = useState<'active' | 'completed' | 'all'>('active');
+  // 2. Type Filter: null | 'TODO' | 'EVENT' | 'INFO' | 'HINT' (Flutter: selectedType)
+  const [selectedType, setSelectedType] = useState<AnnouncementType | null>(null);
+
+  const activeCount = useMemo(() => announcements.filter((a) => !a.completed_at).length, [announcements]);
+  const completedCount = useMemo(() => announcements.filter((a) => Boolean(a.completed_at)).length, [announcements]);
+  const lectureTitleMap = useMemo(() => new Map(lectures?.map((l) => [l.id, l.title]) ?? []), [lectures]);
 
   const filtered = announcements.filter((a) => {
-    if (filter === 'active') return !a.completed_at;
-    if (filter === 'completed') return Boolean(a.completed_at);
+    if (filter === 'active' && a.completed_at) return false;
+    if (filter === 'completed' && !a.completed_at) return false;
+    if (selectedType && a.type.toUpperCase() !== selectedType.toUpperCase()) return false;
     return true;
   });
 
@@ -43,32 +84,63 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   };
 
   return (
-    <ModalDialog title={title} count={announcements.length} onClose={onClose} maxWidth={680}>
-      {/* Filter Tabs */}
-      <div className="announcements-filter-tabs">
+    <ModalDialog title={title} count={announcements.length} onClose={onClose} maxWidth={720}>
+      {/* ── 1. Status Filter (Flutter _SegmentItem Segment Bar) ── */}
+      <div className="announcements-segment-bar">
         <button
           type="button"
-          className={`announcement-tab-btn ${filter === 'active' ? 'is-active' : ''}`}
+          className={`announcements-segment-tab ${filter === 'active' ? 'is-selected' : ''}`}
           onClick={() => setFilter('active')}
         >
-          {language === 'ja' ? '未完了' : 'Active'}
+          {language === 'ja' ? `未完了 (${activeCount})` : `Active (${activeCount})`}
         </button>
         <button
           type="button"
-          className={`announcement-tab-btn ${filter === 'completed' ? 'is-active' : ''}`}
+          className={`announcements-segment-tab ${filter === 'completed' ? 'is-selected' : ''}`}
           onClick={() => setFilter('completed')}
         >
-          {language === 'ja' ? '完了済み' : 'Completed'}
+          {language === 'ja' ? `完了済み (${completedCount})` : `Completed (${completedCount})`}
         </button>
         <button
           type="button"
-          className={`announcement-tab-btn ${filter === 'all' ? 'is-active' : ''}`}
+          className={`announcements-segment-tab ${filter === 'all' ? 'is-selected' : ''}`}
           onClick={() => setFilter('all')}
         >
-          {language === 'ja' ? 'すべて' : 'All'}
+          {language === 'ja' ? `すべて (${announcements.length})` : `All (${announcements.length})`}
         </button>
       </div>
 
+      {/* ── 2. Type Filter Chips (Flutter _TypeChip Row) ── */}
+      <div className="announcements-type-chips-row">
+        <button
+          type="button"
+          className={`announcement-type-chip ${selectedType === null ? 'is-selected' : ''}`}
+          onClick={() => setSelectedType(null)}
+          style={{ '--chip-color': '#FFB300' } as React.CSSProperties}
+        >
+          <span className="material-symbols-outlined type-chip-icon">apps</span>
+          <span>{language === 'ja' ? 'すべて' : 'All'}</span>
+        </button>
+
+        {(['TODO', 'EVENT', 'INFO', 'HINT'] as const).map((t) => {
+          const cfg = getAnnouncementTypeConfig(t);
+          const isSelected = selectedType === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              className={`announcement-type-chip ${isSelected ? 'is-selected' : ''}`}
+              onClick={() => setSelectedType(isSelected ? null : t)}
+              style={{ '--chip-color': cfg.color } as React.CSSProperties}
+            >
+              <span className="material-symbols-outlined type-chip-icon">{cfg.icon}</span>
+              <span>{cfg.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── 3. Announcement List ── */}
       {filtered.length === 0 ? (
         <div className="modal-empty-state">
           <p>{language === 'ja' ? '該当するお知らせはありません' : 'No announcements in this view'}</p>
@@ -77,52 +149,96 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
         <div className="modal-item-list">
           {filtered.map((item) => {
             const isCompleted = Boolean(item.completed_at);
+            const typeConfig = getAnnouncementTypeConfig(item.type);
+            const lectureTitle = item.lecture_id ? lectureTitleMap.get(item.lecture_id) : null;
+            const formattedDate = formatAnnouncementDate(item.created_at, language);
 
             return (
               <div
                 key={item.id}
-                className={`announcement-item-card ${isCompleted ? 'is-completed' : ''}`}
+                className={`flutter-announcement-card ${isCompleted ? 'is-completed' : ''}`}
               >
-                <div className="announcement-card-top-row">
-                  <div className="announcement-meta-left">
-                    <span className={`announcement-type-pill type-${item.type.toLowerCase()}`}>
-                      {item.type}
-                    </span>
-                    {item.related_topic_title && (
-                      <span className="announcement-topic-tag">{item.related_topic_title}</span>
+                {/* Left: Type Icon (Colored Badge) */}
+                <div
+                  className="announcement-leading-icon"
+                  style={{
+                    color: typeConfig.color,
+                    backgroundColor: typeConfig.bg,
+                    border: `1px solid ${typeConfig.color}44`,
+                    opacity: isCompleted ? 0.65 : 1,
+                  }}
+                >
+                  <span className="material-symbols-outlined">
+                    {typeConfig.icon}
+                  </span>
+                </div>
+
+                {/* Middle: Content */}
+                <div className="announcement-content-area">
+                  {(lectureTitle || item.related_topic_title) && (
+                    <div className="announcement-header-tags">
+                      {lectureTitle && (
+                        <span className="announcement-lecture-tag" title={lectureTitle}>
+                          {lectureTitle}
+                        </span>
+                      )}
+                      {item.related_topic_title && (
+                        <span className="announcement-topic-tag">{item.related_topic_title}</span>
+                      )}
+                    </div>
+                  )}
+
+                  <h3 className={`announcement-tile-title ${isCompleted ? 'is-line-through' : ''}`}>
+                    {item.title || (language === 'ja' ? 'お知らせ' : 'Announcement')}
+                  </h3>
+
+                  {item.description && (
+                    <p className={`announcement-tile-desc ${isCompleted ? 'is-line-through' : ''}`}>
+                      {item.description}
+                    </p>
+                  )}
+
+                  {/* Meta / Timestamp row */}
+                  <div className="announcement-meta-subrow">
+                    {item.location && (
+                      <span className="announcement-location-info">
+                        <span className="material-symbols-outlined location-mini-icon">location_on</span>
+                        <span>{item.location}</span>
+                      </span>
+                    )}
+                    {formattedDate && (
+                      <span className="announcement-date-info">{formattedDate}</span>
                     )}
                   </div>
+                </div>
 
-                  {/* Completion Toggle Button */}
+                {/* Right: Square Checkmark Button (Done / Undo) */}
+                <div className="announcement-action-area">
                   <button
                     type="button"
-                    className={`announcement-complete-btn ${isCompleted ? 'is-done' : ''}`}
+                    className={`announcement-square-check ${isCompleted ? 'is-completed' : ''}`}
                     onClick={() => handleToggleDone(item)}
-                    title={isCompleted ? 'Mark as active' : 'Mark as completed'}
+                    title={
+                      isCompleted
+                        ? language === 'ja'
+                          ? 'クリックして未完了に戻す'
+                          : 'Click to mark as active'
+                        : language === 'ja'
+                        ? 'クリックして完了にする'
+                        : 'Click to mark as completed'
+                    }
+                    aria-label={isCompleted ? 'Mark uncompleted' : 'Mark completed'}
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="complete-check-svg">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      className="square-check-svg"
+                    >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </button>
                 </div>
-
-                <h3 className={`announcement-item-title ${isCompleted ? 'line-through-title' : ''}`}>
-                  {item.title || 'Untitled Announcement'}
-                </h3>
-
-                {item.description && (
-                  <p className="announcement-item-desc">{item.description}</p>
-                )}
-
-                {item.location && (
-                  <div className="announcement-extra-info">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="extra-info-icon">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    <span>{item.location}</span>
-                  </div>
-                )}
               </div>
             );
           })}

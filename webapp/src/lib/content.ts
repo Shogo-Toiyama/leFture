@@ -11,6 +11,18 @@ import type {
   TopicMapData,
 } from '../types/content';
 
+/**
+ * Fun Factの本文・Hookに含まれるWeb文献引用記法 (⟦1⟧, ⟦1, 2⟧, 〚1〛, [[1]] 等) を除去する。
+ * Flutter版 stripFunFactCitations 準拠。
+ */
+export function stripFunFactCitations(source: string | null | undefined): string {
+  if (!source) return '';
+  return source
+    .replace(/(?:⟦|〚|\[\[)\s*\d+[\d\s,，\-–—−]*\s*(?:⟧|〛|\]\])/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
 export async function listLectureTopics(lectureId: string): Promise<LectureTopic[]> {
   const { data, error } = await supabase
     .from('lecture_topics')
@@ -69,21 +81,45 @@ export async function listAnnouncements(
   lectureId?: string,
   courseId?: string
 ): Promise<Announcement[]> {
-  let query = supabase
-    .from('announcements')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
-
   if (lectureId) {
-    query = query.eq('lecture_id', lectureId);
-  } else if (courseId) {
-    query = query.eq('course_id', courseId);
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('lecture_id', lectureId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data as Announcement[]) || [];
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data as Announcement[];
+  if (courseId) {
+    // Announcements are associated with lectures via lecture_id.
+    // Fetch all active lectures for this course first.
+    const { data: lectures, error: lecErr } = await supabase
+      .from('lectures')
+      .select('id')
+      .eq('course_id', courseId)
+      .is('deleted_at', null);
+
+    if (lecErr) throw lecErr;
+    if (!lectures || lectures.length === 0) {
+      return [];
+    }
+
+    const lectureIds = lectures.map((l: { id: string }) => l.id);
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .in('lecture_id', lectureIds)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data as Announcement[]) || [];
+  }
+
+  return [];
 }
 
 export async function listKeywords(lectureId: string): Promise<Keyword[]> {

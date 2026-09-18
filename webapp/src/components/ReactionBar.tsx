@@ -7,28 +7,28 @@ interface ReactionBarProps {
   onChange: (reaction: 'like' | 'dislike') => void;
 }
 
-/** Flutter版(Icons.favorite/favorite_border + Icons.thumb_down/thumb_down_alt_outlined)に揃える。 */
+/** 枠線なしでそのまま置かれたスタイリッシュなアイコンボタン */
 export const ReactionBar: React.FC<ReactionBarProps> = ({ reaction, onChange }) => (
   <div className="reaction-bar">
     <button
       type="button"
-      className={`icon-button ${reaction === 'like' ? 'is-active' : ''}`}
+      className={`reaction-icon-btn ${reaction === 'like' ? 'is-liked' : ''}`}
       onClick={() => onChange('like')}
       aria-pressed={reaction === 'like'}
       aria-label="Helpful"
       title="Helpful"
     >
-      <Heart size={16} fill={reaction === 'like' ? 'currentColor' : 'none'} />
+      <Heart size={18} fill={reaction === 'like' ? 'currentColor' : 'none'} strokeWidth={2} />
     </button>
     <button
       type="button"
-      className={`icon-button ${reaction === 'dislike' ? 'is-active' : ''}`}
+      className={`reaction-icon-btn ${reaction === 'dislike' ? 'is-disliked' : ''}`}
       onClick={() => onChange('dislike')}
       aria-pressed={reaction === 'dislike'}
       aria-label="Not helpful"
       title="Not helpful"
     >
-      <ThumbsDown size={16} fill={reaction === 'dislike' ? 'currentColor' : 'none'} />
+      <ThumbsDown size={18} fill={reaction === 'dislike' ? 'currentColor' : 'none'} strokeWidth={2} />
     </button>
   </div>
 );

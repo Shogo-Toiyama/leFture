@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, Plus } from 'lucide-react';
+import { Search, X, Plus, Check } from 'lucide-react';
 import type { Course } from '../../types/course';
 import { useCourses } from '../../hooks/useCourses';
 import { ModalDialog } from './ModalDialog';
@@ -73,6 +73,7 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
                   type="button"
                   className="picker-search-clear"
                   onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
                 >
                   <X size={16} />
                 </button>
@@ -84,8 +85,9 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
               className="course-picker-add-btn"
               onClick={() => setShowCreateModal(true)}
               title={language === 'ja' ? '新規コース作成' : 'Create new course'}
+              aria-label={language === 'ja' ? '新規コース作成' : 'Create new course'}
             >
-              <Plus size={18} />
+              <Plus size={22} strokeWidth={2.4} />
             </button>
           </div>
 
@@ -104,19 +106,21 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
                   <div
                     className="picker-item-icon-wrap"
                     style={{
-                      backgroundColor: `${courseColor}22`,
+                      backgroundColor: `${courseColor}20`,
                       color: courseColor,
-                      borderColor: `${courseColor}44`,
+                      borderColor: `${courseColor}40`,
                     }}
                   >
-                    <CourseIconGlyph icon={c.metadata?.icon as string} size={18} className="picker-item-icon" />
+                    <CourseIconGlyph icon={c.metadata?.icon as string} size={20} className="picker-item-icon" />
                   </div>
                   <div className="picker-item-info">
-                    <span className="picker-item-title">{c.course_title}</span>
-                    {c.course_code && <span className="picker-item-code">{c.course_code}</span>}
+                    <div className="picker-item-title-row">
+                      <span className="picker-item-title">{c.course_title}</span>
+                      {c.course_code && <span className="picker-item-code-badge">{c.course_code}</span>}
+                    </div>
                   </div>
-                  <div className="picker-item-radio">
-                    <div className={`picker-radio-dot ${isSelected ? 'is-checked' : ''}`} />
+                  <div className={`picker-item-radio ${isSelected ? 'is-selected' : ''}`}>
+                    {isSelected && <Check size={14} strokeWidth={3} />}
                   </div>
                 </div>
               );
@@ -133,14 +137,14 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
           <div className="course-picker-footer">
             <button
               type="button"
-              className="keyword-btn-cancel"
+              className="picker-btn-cancel"
               onClick={onClose}
             >
               {cancelLabel}
             </button>
             <button
               type="button"
-              className="auth-submit-btn picker-btn-confirm"
+              className="picker-btn-confirm"
               onClick={handleConfirm}
               disabled={!selectedId}
             >

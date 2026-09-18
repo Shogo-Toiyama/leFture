@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
 import type { LectureTopic } from '../../types/content';
 import type { Course } from '../../types/course';
 import { TopicImage } from '../TopicImage';
+import { CreditStarIcon } from '../icons/CreditStarIcon';
 
 interface LectureHeroViewProps {
   course: Course | null;
@@ -10,6 +12,7 @@ interface LectureHeroViewProps {
   lectureDatetime: string;
   topics: LectureTopic[];
   summary?: string | null;
+  creditsUsed?: number | null;
   onEdit?: () => void;
 }
 
@@ -19,6 +22,7 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
   lectureDatetime,
   topics,
   summary,
+  creditsUsed,
   onEdit,
 }) => {
   const heroTopics = topics.filter((t) => t.image_path).slice(0, 6);
@@ -66,7 +70,7 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
 
       {/* Foreground Content */}
       <div className="lecture-hero-content">
-        {/* Top Nav: ‹ Course Name on Left, Edit Button on Right */}
+        {/* Top Nav: ‹ Course Name on Left, Credits Chip + Edit Button on Right */}
         <div className="lecture-hero-nav">
           <Link
             to={`/courses/${course?.id ?? ''}`}
@@ -79,20 +83,30 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
             <span className="hero-back-course-name">{courseTitle}</span>
           </Link>
 
-          {onEdit && (
-            <button
-              type="button"
-              className="lecture-hero-edit-btn"
-              onClick={onEdit}
-              title="Edit lecture"
-              aria-label="Edit lecture"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="hero-edit-svg">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-          )}
+          <div className="lecture-hero-nav-actions">
+            {creditsUsed != null && (
+              <div
+                className="lecture-credits-chip"
+                title={`${creditsUsed} credits used`}
+                aria-label={`${creditsUsed} credits used`}
+              >
+                <CreditStarIcon size={15} className="lecture-credits-icon" color="rgba(255, 255, 255, 0.85)" />
+                <span className="lecture-credits-value">{creditsUsed}</span>
+              </div>
+            )}
+
+            {onEdit && (
+              <button
+                type="button"
+                className="lecture-hero-edit-btn"
+                onClick={onEdit}
+                title="Edit lecture"
+                aria-label="Edit lecture"
+              >
+                <Pencil size={18} strokeWidth={2.2} className="hero-edit-svg" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Bottom Hero Info */}

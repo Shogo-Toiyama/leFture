@@ -1,41 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { fetchArtifactObjectUrl } from '../lib/artifacts';
+import { parsePreset, getGradientsForStyle, getTextColorForStyle } from '../lib/avatar';
 
 interface AvatarImageProps {
   /** 外部URL(ソーシャルログインのアバター)かR2のstorage_pathかpreset形式 */
   avatarUrl: string | null;
-  username?: string;
+  username?: string | null;
   size?: number;
-}
-
-const VIVID_GRADIENTS = [
-  'linear-gradient(135deg, #FF6B6B, #FF8E53)',
-  'linear-gradient(135deg, #4E65FF, #92EFFD)',
-  'linear-gradient(135deg, #FFB300, #F77737)',
-  'linear-gradient(135deg, #11998E, #38EF7D)',
-  'linear-gradient(135deg, #FC5C7D, #6A82FB)',
-  'linear-gradient(135deg, #7F00FF, #E100FF)',
-  'linear-gradient(135deg, #3A1C71, #D76D77)',
-  'linear-gradient(135deg, #00C6FF, #0072FF)',
-];
-
-function parsePreset(presetStr: string) {
-  const payload = presetStr.replace(/^preset:/, '');
-  const parts = payload.split(';');
-  let bgIndex = 0;
-  let iconName = 'initials';
-
-  for (const part of parts) {
-    const [key, val] = part.split('=');
-    if (key === 'bg_index') bgIndex = parseInt(val, 10) || 0;
-    if (key === 'icon') iconName = val || 'initials';
-  }
-  return { bgIndex, iconName };
 }
 
 export const AvatarImage: React.FC<AvatarImageProps> = ({
   avatarUrl,
-  username = 'Explorer',
+  username,
   size = 48,
 }) => {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -53,7 +29,10 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
   // イニシャルのプレースホルダーにフォールバックする。
   useEffect(() => {
     setExternalLoadFailed(false);
-  }, [cleanUrl]);
+    if (!isStoragePath) {
+      setObjectUrl(null);
+    }
+  }, [cleanUrl, isStoragePath]);
 
   useEffect(() => {
     if (!isStoragePath) return;
@@ -80,7 +59,8 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
     };
   }, [cleanUrl, isStoragePath]);
 
-  const initials = (username.trim() || 'EX')
+  const effectiveName = (username || '').trim() || 'Explorer';
+  const initials = effectiveName
     .split(' ')
     .filter(Boolean)
     .map((s) => s[0].toUpperCase())
@@ -91,7 +71,7 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
     return (
       <img
         src={cleanUrl}
-        alt={username}
+        alt={effectiveName}
         className="avatar-image"
         referrerPolicy="no-referrer"
         onError={() => setExternalLoadFailed(true)}
@@ -106,8 +86,11 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
   }
 
   if (isPreset) {
-    const { bgIndex } = parsePreset(cleanUrl);
-    const bg = VIVID_GRADIENTS[bgIndex % VIVID_GRADIENTS.length];
+    const { bgStyle, bgIndex, icon } = parsePreset(cleanUrl);
+    const gradients = getGradientsForStyle(bgStyle);
+    const bg = gradients[bgIndex % gradients.length];
+    const textColor = getTextColorForStyle(bgStyle, bgIndex);
+    const isClayIcon = icon && icon !== 'initials';
     return (
       <div
         className="avatar-preset"
@@ -119,14 +102,27 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#ffffff',
+          color: textColor,
           fontWeight: 700,
           fontSize: Math.round(size * 0.36),
           userSelect: 'none',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
+          position: 'relative',
         }}
       >
-        {initials}
+        {isClayIcon ? (
+          <img
+            src={`/avatars/${icon}`}
+            alt={effectiveName}
+            style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+            onError={(e) => {
+              (e.currentTarget as HTMLElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          initials
+        )}
       </div>
     );
   }
@@ -135,7 +131,7 @@ export const AvatarImage: React.FC<AvatarImageProps> = ({
     return (
       <img
         src={objectUrl}
-        alt={username}
+        alt={effectiveName}
         className="avatar-image"
         style={{
           width: size,
