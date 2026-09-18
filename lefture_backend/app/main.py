@@ -859,11 +859,22 @@ async def _fill_live_stripe_prices(rows: list[dict]) -> None:
 
     async def _fetch(row: dict) -> None:
         try:
-            price = await asyncio.to_thread(stripe.Price.retrieve, row["stripe_price_id"])
+            # stripe-pythonの既定タイムアウトは長い(数十秒)ため、Stripe側のネットワーク
+            # 障害/到達不能時にこのエンリッチ処理だけで一覧取得全体を巻き込んで
+            # ハングさせないよう、ここで短いタイムアウトを切る。/billing/plansや
+            # /billing/credit-packsはプラン選択・購入画面の初期表示に使われるため、
+            # 遅延はprice_usd=NULLのまま返すより悪い。
+            price = await asyncio.wait_for(
+                asyncio.to_thread(stripe.Price.retrieve, row["stripe_price_id"]),
+                timeout=5,
+            )
             unit_amount = price.get("unit_amount")
             if unit_amount is not None:
                 row["price_usd"] = unit_amount / 100
-        except stripe.error.StripeError as e:
+        except Exception as e:
+            # stripe.error.StripeError以外(ネットワーク到達不能・DNS失敗・
+            # asyncio.TimeoutError等)も含めて、この行の価格取得失敗が一覧
+            # エンドポイント全体を500にしてしまわないよう、ここで必ず握りつぶす。
             logger.error(f"Failed to fetch live Stripe price for {row['stripe_price_id']}: {e}", exc_info=True)
 
     await asyncio.gather(*(_fetch(row) for row in targets))
