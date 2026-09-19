@@ -1770,6 +1770,15 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
     charge_amount = max(0, round(new_price["unit_amount"] - unused_credit))
     currency = new_price["currency"]
 
+    # 新規サブスク作成時のsave_default_payment_method="on_subscription"は
+    # Subscription.default_payment_methodにしかカードを残さず、Customer側の
+    # invoice_settings.default_payment_methodは設定されない。この後作る単発の
+    # 日割りInvoiceはCustomerに紐づくため、明示的に支払い方法を渡さないと
+    # 「default_payment_methodが無い」で402になる。
+    default_payment_method = active_subscription["default_payment_method"]
+    if not default_payment_method:
+        raise HTTPException(status_code=402, detail="No payment method on file. Please update your payment method before upgrading.")
+
     invoice = None
     try:
         await asyncio.to_thread(
@@ -1785,6 +1794,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
             collection_method="charge_automatically",
             pending_invoice_items_behavior="include",
             auto_advance=False,
+            default_payment_method=default_payment_method,
         )
         invoice = await asyncio.to_thread(stripe.Invoice.finalize_invoice, invoice["id"])
         invoice = await asyncio.to_thread(stripe.Invoice.pay, invoice["id"])
@@ -1960,6 +1970,21 @@ async def _handle_stripe_subscription_invoice_paid(event: dict) -> dict:
     if not uid:
         logger.error(f"Stripe subscription {subscription_id} missing supabase_user_id metadata")
         return {"status": "ignored", "reason": "missing_metadata"}
+
+    # save_default_payment_method="on_subscription"(サブスク作成時に指定)は
+    # Subscription.default_payment_methodにしかカードを残さない。後で単発の
+    # Invoice(アップグレード日割り請求等)を作る際にCustomer側の既定カードが
+    # 必要になるため、初回決済成功のタイミングでCustomerにも書き戻しておく。
+    default_payment_method = subscription["default_payment_method"]
+    if default_payment_method:
+        try:
+            await asyncio.to_thread(
+                stripe.Customer.modify,
+                subscription["customer"],
+                invoice_settings={"default_payment_method": default_payment_method},
+            )
+        except stripe.error.StripeError as e:
+            logger.warning(f"Failed to set default payment method on customer for subscription {subscription_id}: {e}")
 
     try:
         await _notify_revenuecat_of_stripe_subscription(subscription_id, uid)
