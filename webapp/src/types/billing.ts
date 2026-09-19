@@ -7,6 +7,8 @@ export interface CreditSummary {
   current_period_end: string | null;
   /** 次回更新日に切り替わる予定の別プランのid(Apple同一サブスクグループの予約)。予約が無ければnull。 */
   pending_plan_id: string | null;
+  /** 現在アクティブなプランのid。プランを持っていなければnull。 */
+  plan_id: string | null;
   credits_per_usd: number;
   /** 0=Free, 1=Lite, 2=Core, 3=Max。 */
   tier_level: number;

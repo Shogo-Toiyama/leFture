@@ -178,10 +178,10 @@ const CurrentPlanCard: React.FC<{
   onCreditRateClick: () => void;
 }> = ({ summary, plans, isJa, onCreditRateClick }) => {
   // /billing/plans はstore_purchaseプランも含むため、単純な先頭要素ではなく
-  // summaryのmonthly_allocationと一致するプランを探す(_CurrentPlanCard 準拠)。
+  // summaryが返す現在のplan_idで引く。
   const activePlan = useMemo(
-    () => plans.find((p) => p.monthly_credit_amount === summary.monthly_allocation),
-    [plans, summary.monthly_allocation]
+    () => plans.find((p) => p.id === summary.plan_id),
+    [plans, summary.plan_id]
   );
 
   if (!activePlan) {

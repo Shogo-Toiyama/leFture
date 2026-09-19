@@ -1053,6 +1053,7 @@ async def billing_summary(request: Request):
         "has_active_plan": bool(row.get("has_active_plan")),
         "current_period_end": row.get("current_period_end"),
         "pending_plan_id": row.get("pending_plan_id"),
+        "plan_id": row.get("plan_id"),
         "credits_per_usd": CREDITS_PER_USD,
         "tier_level": tier_level,
         "gating_disabled": gating_disabled,
@@ -1271,7 +1272,13 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
     event_id = event.get("id")
     event_type = event.get("type")
     app_user_id = event.get("app_user_id")  # Purchases.logIn(supabaseUserId) によりSupabaseのuser idと一致する
-    product_id = event.get("product_id")
+    # RevenueCatはStripe由来のイベントでは、product_idにStripeの「Product ID」
+    # (prod_xxx)を入れ、Price ID(price_xxx)はprice_idという別フィールドで送ってくる。
+    # こちらのsubscription_plans/credit_packsが主に持っているのはPrice IDなので、
+    # Stripe由来のときはprice_idを優先する(Apple由来のイベントにはprice_idが
+    # 無いため、従来どおりproduct_idをそのまま使う)。prod_xxxしか来ない場合の
+    # 取りこぼしは、SQL側のstripe_product_id列での検索が受け止める。
+    product_id = event.get("price_id") or event.get("product_id")
     expiration_at_ms = event.get("expiration_at_ms")
 
     if not event_id or not event_type or not app_user_id:
@@ -1357,7 +1364,10 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
             # 待たず)にRevenueCatが即座に送ってくるイベント。new_product_idを
             # 「予約先」として記録するだけで、クレジット付与やプラン切り替え
             # 自体は行わない(それは後続の本物のRENEWALが担う)。
-            new_product_id = event.get("new_product_id")
+            # product_idと同様、Stripe由来ならPrice IDの方を優先する。
+            # new_price_idが提供されない場合はnew_product_id(prod_xxx)のまま渡し、
+            # SQL側のstripe_product_id検索に拾わせる。
+            new_product_id = event.get("new_price_id") or event.get("new_product_id")
             if not new_product_id:
                 logger.error(f"RevenueCat PRODUCT_CHANGE missing new_product_id: {event}")
                 return {"status": "ignored", "reason": "missing_fields"}
@@ -1827,6 +1837,18 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
     except stripe.error.StripeError as e:
         logger.error(f"Charged upgrade but failed to switch price for subscription {subscription_id}: {e}", exc_info=True)
         raise HTTPException(status_code=502, detail="Payment succeeded but failed to switch plan. Please contact support.")
+
+    # アップグレードの差額は「サブスクに紐づかない単発Invoice」で請求しているため、
+    # 新規契約時と違ってinvoice.payment_succeeded webhookがサブスクに結び付かず、
+    # RevenueCatへの通知経路が存在しない(=DB上のプランが永久に切り替わらない)。
+    # ここで明示的に通知して、RevenueCatに現在のサブスク状態を取り直させる。
+    # 通知に失敗してもStripe側の課金・切り替えは完了しているので、ユーザーには
+    # 成功を返す(次回更新時のRENEWALが通常経路でDBを追いつかせる)。
+    try:
+        await _notify_revenuecat_of_stripe_subscription(subscription_id, uid)
+    except Exception as e:
+        logger.error(f"Upgraded subscription {subscription_id} but failed to notify RevenueCat: {e}", exc_info=True)
+
     return {"status": "switched"}
 
 
@@ -2047,8 +2069,13 @@ async def billing_stripe_webhook(request: Request, stripe_signature: str = Heade
     stripe_price_id = metadata.get("stripe_price_id")
 
     if not uid or not stripe_price_id:
-        logger.error(f"Stripe payment_intent.succeeded missing metadata: {intent['id']}")
-        return {"status": "ignored", "reason": "missing_metadata"}
+        # サブスクの初回課金・アップグレード差額の請求もpayment_intent.succeededを
+        # 発火させるが、それらにこのmetadataは載らない(載せているのは
+        # create-credit-pack-paymentだけ)。つまりこれは異常ではなく
+        # 「クレジットパック購入ではない」という判別結果なので、エラーとして
+        # 記録しない —— ここをERRORで出していると毎回のサブスク課金でログが汚れ、
+        # 本物の設定ミスが埋もれる。
+        return {"status": "ignored", "reason": "not_a_credit_pack_payment"}
 
     admin_client = get_supabase_client()
     try:

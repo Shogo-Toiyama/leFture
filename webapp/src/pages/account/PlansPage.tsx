@@ -341,7 +341,7 @@ const PlanCard: React.FC<{
   isJa: boolean;
 }> = ({ plan, summary, currentTierLevel, switching, onAction, resuming, onResume, onCreditRateClick, isJa }) => {
   const { accent, isPremium, isStandard } = tierAccent(plan.tier_level);
-  const isCurrentPlan = summary.has_active_plan && plan.monthly_credit_amount === summary.monthly_allocation;
+  const isCurrentPlan = summary.has_active_plan && summary.plan_id === plan.id;
   const isPendingTarget = summary.pending_plan_id === plan.id;
   // 今のプランから、次回更新日に別プランへ切り替わることが予約されているか。
   // (isPendingTargetはその「切り替え先」のカードを指すのに対し、こちらは
