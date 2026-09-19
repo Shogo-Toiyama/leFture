@@ -330,6 +330,12 @@ class AuthController extends _$AuthController {
       state = e.code == GoogleSignInExceptionCode.canceled
           ? const AsyncData(null)
           : AsyncError(e, StackTrace.current);
+    } catch (e, st) {
+      // authenticate()がGoogleSignInException以外(PlatformExceptionなど)を
+      // 投げた場合や、IDトークンがnullだった場合にstateがAsyncLoadingのまま
+      // 固まってしまうのを防ぐ。
+      if (!ref.mounted) return;
+      state = AsyncError(e, st);
     }
   }
 

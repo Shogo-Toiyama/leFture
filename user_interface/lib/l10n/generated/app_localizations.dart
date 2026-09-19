@@ -758,6 +758,36 @@ abstract class AppLocalizations {
   /// **'Realtime transcription during recording is available on the Max plan.'**
   String get recordingRealtimeUpgradeDialogMessage;
 
+  /// Title of the dialog shown when the user tries to turn on Realtime transcribe but the app couldn't confirm their subscription status (offline, server error, etc.).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t verify your plan'**
+  String get recordingRealtimeUnresolvedDialogTitle;
+
+  /// Body text of the plan-unresolved dialog, asking the user to check their connection and retry turning on Realtime transcribe.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm your subscription status. Check your connection and try again.'**
+  String get recordingRealtimeUnresolvedDialogMessage;
+
+  /// Persistent banner shown during recording when Realtime transcribe was turned off right before this recording started because the current plan doesn't include it.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription is off for this recording — it requires the Max plan. We\'ll transcribe it after you finish recording instead.'**
+  String get recordingRealtimeDowngradedBannerRequiresUpgrade;
+
+  /// Persistent banner shown during recording when Realtime transcribe was turned off right before this recording started because the credit balance was too low.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription is off for this recording — not enough credits. We\'ll transcribe it after you finish recording instead.'**
+  String get recordingRealtimeDowngradedBannerInsufficientCredits;
+
+  /// Persistent banner shown during recording when Realtime transcribe was turned off right before this recording started because the app couldn't confirm the subscription status.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription is off for this recording — we couldn\'t confirm your plan. We\'ll transcribe it after you finish recording instead.'**
+  String get recordingRealtimeDowngradedBannerUnresolved;
+
   /// Generic button label used across upgrade-required dialogs to navigate to the Plans page.
   ///
   /// In en, this message translates to:

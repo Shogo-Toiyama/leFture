@@ -418,6 +418,27 @@ class RecordingPage extends HookConsumerWidget {
       hasFeatureProvider(plan_features.featureRealtimeTranscribe),
     );
 
+    // ★ 権利(プラン/クレジット)が失われた状態でRealtime TranscribeのトグルON
+    // (=pref/stateのtrue)だけが残っていた場合、無言で実際にOFFへ書き戻す。
+    // 以前はここでトグルの「表示」だけを`hasRealtimeFeature && state.realtimeTranscribe`
+    // でマスクしており、state自体はtrueのまま残っていた。そのため録音開始時に
+    // DBへisRealtime=trueが書き込まれ、実際は権限不足でチャンクが1件も
+    // 送られない、という食い違いが起きた(2026-09-19)。表示を誤魔化すのではなく
+    // 実体を直す——これでトグルは常に実際の状態を正直に表示する。
+    // 録音中(realtimeLocked)は変更できないため、idleの間だけ行う。
+    ref.listen(creditSummaryProvider, (previous, next) {
+      final summary = next.asData?.value;
+      if (summary == null) return; // 未解決/エラーの間は何もしない(不明ならそのまま)
+      final eligible =
+          summary.hasFeature(plan_features.featureRealtimeTranscribe) &&
+          summary.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
+      if (!eligible &&
+          state.phase == RecordingPhase.idle &&
+          state.realtimeTranscribe) {
+        controller.setRealtimeTranscribe(false);
+      }
+    });
+
     Future<void> showRealtimeLockedDialog() => showCustomDialog(
       context: context,
       title: l10n.recordingRealtimeLockedDialogTitle,
@@ -457,6 +478,15 @@ class RecordingPage extends HookConsumerWidget {
           if (confirmed == true && context.mounted) {
             context.push(AppRoutes.creditDetail);
           }
+        case RealtimeToggleResult.unresolved:
+          await showCustomDialog(
+            context: context,
+            title: l10n.recordingRealtimeUnresolvedDialogTitle,
+            message: l10n.recordingRealtimeUnresolvedDialogMessage,
+            icon: Icons.wifi_off_rounded,
+            confirmLabel: l10n.coursePageOkButton,
+            cancelLabel: null,
+          );
       }
     }
 
@@ -1150,6 +1180,56 @@ class RecordingPage extends HookConsumerWidget {
                                   ),
                                 ),
 
+                              // Realtime Transcribeが録音開始直前にダウングレード
+                              // された場合の常時表示バナー。裏で無言でチャンク送信を
+                              // スキップすると、ユーザーは何が起きたか分からず、
+                              // バックエンドは届かないチャンクを永久に待ち続ける事故に
+                              // なる(2026-09-19に実際に発生)。この録音セッション中は
+                              // ずっと表示し続ける(理由はセッション開始時に一度だけ
+                              // 確定し、以後変わらないため)。
+                              if (state.realtimeDowngradeReason != null &&
+                                  (state.phase == RecordingPhase.recording ||
+                                      state.phase == RecordingPhase.paused))
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.alertAmber.withValues(alpha: 0.15),
+                                      border: Border.all(color: AppColors.alertAmber, width: 1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.info_outline_rounded,
+                                          color: AppColors.alertAmber,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            switch (state.realtimeDowngradeReason!) {
+                                              RealtimeDowngradeReason.requiresUpgrade =>
+                                                l10n.recordingRealtimeDowngradedBannerRequiresUpgrade,
+                                              RealtimeDowngradeReason.insufficientCredits =>
+                                                l10n.recordingRealtimeDowngradedBannerInsufficientCredits,
+                                              RealtimeDowngradeReason.unresolved =>
+                                                l10n.recordingRealtimeDowngradedBannerUnresolved,
+                                            },
+                                            style: TextStyle(
+                                              color: AppColors.universe.textStarlight,
+                                              fontSize: 12,
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
                               // 3時間経過の警告(常時表示バナー)。授業中は画面を
                               // 伏せていることが多く、一瞬で消えるSnackBarでは
                               // 気づけないため、コース未選択の注意書きと同じ
@@ -1826,9 +1906,11 @@ class RecordingPage extends HookConsumerWidget {
                                                 : asrModelDownloadable
                                                 ? confirmAndDownloadAsrModel
                                                 : null),
-                                        value:
-                                            hasRealtimeFeature &&
-                                            state.realtimeTranscribe,
+                                        // ★ state.realtimeTranscribeをそのまま出す(hasRealtimeFeature
+                                        // によるマスクはしない)。権利を失った場合はref.listen
+                                        // (上のcreditSummaryProvider監視)がidle中に実際にstate/prefを
+                                        // falseへ書き戻すため、ここは常に実体と一致した値になる。
+                                        value: state.realtimeTranscribe,
                                         dimmed: realtimeLocked,
                                         onChanged: !hasRealtimeFeature
                                             ? null

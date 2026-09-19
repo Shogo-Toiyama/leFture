@@ -351,6 +351,25 @@ class AppLocalizationsJa extends AppLocalizations {
       '録音中のリアルタイム文字起こしはMaxプラン限定の機能です。';
 
   @override
+  String get recordingRealtimeUnresolvedDialogTitle => 'プランを確認できませんでした';
+
+  @override
+  String get recordingRealtimeUnresolvedDialogMessage =>
+      'サブスクリプションの状態を確認できませんでした。通信状態を確認して、もう一度お試しください。';
+
+  @override
+  String get recordingRealtimeDowngradedBannerRequiresUpgrade =>
+      'この録音ではリアルタイム文字起こしはOFFです(Maxプラン限定)。録音終了後にまとめて文字起こしします。';
+
+  @override
+  String get recordingRealtimeDowngradedBannerInsufficientCredits =>
+      'この録音ではリアルタイム文字起こしはOFFです(クレジット残高不足)。録音終了後にまとめて文字起こしします。';
+
+  @override
+  String get recordingRealtimeDowngradedBannerUnresolved =>
+      'この録音ではリアルタイム文字起こしはOFFです(プランを確認できませんでした)。録音終了後にまとめて文字起こしします。';
+
+  @override
   String get upgradeRequiredViewPlansButton => 'プランを見る';
 
   @override

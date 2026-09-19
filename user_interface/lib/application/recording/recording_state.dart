@@ -12,6 +12,25 @@ enum RecordingPhase {
   error,
 }
 
+/// Realtime Transcribeがこの録音セッションで無効化された理由。録音開始の
+/// 直前(RecordingController._startRecordingSession)に一度だけ確定し、
+/// セッション中は変わらない。RecordingPageはこれを見て「なぜ今回は録音後に
+/// まとめて文字起こしになるのか」を常時表示バナーでユーザーに伝える——
+/// 無言でチャンク送信だけをスキップすると、バックエンドが届かないチャンクを
+/// いつまでも待ち続ける事故になるため(2026-09-19に実際に発生)。
+enum RealtimeDowngradeReason {
+  /// 現在のプランがMax未満。
+  requiresUpgrade,
+
+  /// クレジット残高がkMinCreditsForRealtimeTranscribeに満たない。
+  insufficientCredits,
+
+  /// プラン/クレジット情報を確認できなかった(オフライン・サーバー障害等)。
+  /// 「分からなければ許可」は事故の元になるため、確認できない場合は常に
+  /// OFFとして扱う。
+  unresolved,
+}
+
 @immutable
 class RecordingState {
   const RecordingState({
@@ -24,6 +43,7 @@ class RecordingState {
     this.draftCourseId,
     this.autoStartAnalysis = true,
     this.realtimeTranscribe = false,
+    this.realtimeDowngradeReason,
     this.transientNotice,
     this.audioLevel = 0.0,
   });
@@ -37,6 +57,7 @@ class RecordingState {
   final String? draftCourseId;
   final bool autoStartAnalysis;
   final bool realtimeTranscribe;
+  final RealtimeDowngradeReason? realtimeDowngradeReason;
   // フェーズを変えるほどではない一回きりの通知(SnackBar等)。RecordingPageが
   // ref.listenで検知して表示した後、clearTransientNoticeで消す想定。
   // errorMessageと違い、phase==errorの時だけ表示されるものではない。
@@ -86,6 +107,8 @@ class RecordingState {
     bool forceClearCourseId = false,
     bool? autoStartAnalysis,
     bool? realtimeTranscribe,
+    RealtimeDowngradeReason? realtimeDowngradeReason,
+    bool clearRealtimeDowngradeReason = false,
     String? transientNotice,
     bool clearTransientNotice = false,
     double? audioLevel,
@@ -100,6 +123,11 @@ class RecordingState {
       draftCourseId: forceClearCourseId ? null : (courseId ?? draftCourseId),
       autoStartAnalysis: autoStartAnalysis ?? this.autoStartAnalysis,
       realtimeTranscribe: realtimeTranscribe ?? this.realtimeTranscribe,
+      // ★ 明示的な値渡しを常にclearRealtimeDowngradeReasonより優先する
+      // (_startRecordingSessionが新しいセッションの判定結果で「上書きしつつ
+      // 前回の値は必ず消す」を一度の呼び出しでやるため、両方を同時に渡す)。
+      realtimeDowngradeReason: realtimeDowngradeReason ??
+          (clearRealtimeDowngradeReason ? null : this.realtimeDowngradeReason),
       transientNotice: clearTransientNotice ? null : (transientNotice ?? this.transientNotice),
       audioLevel: audioLevel ?? this.audioLevel,
     );

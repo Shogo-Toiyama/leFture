@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/services/plan_entitlement_cache.dart';
 import '../auth/authed_http.dart';
 import '../../domain/entities/credit_pack_option.dart';
 import '../../domain/entities/credit_summary.dart';
@@ -32,7 +34,12 @@ class CreditRepository {
       throw Exception('Failed to fetch credit summary (${response.statusCode}): ${response.body}');
     }
 
-    return CreditSummary.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    final summary = CreditSummary.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    // 起動直後などまだこのFutureProviderが解決していない間、他の画面が
+    // 「楽観的に」参照できるよう端末に控えておく(PlanEntitlementCacheの
+    // ドキュメント参照)。失敗しても本処理は止めない。
+    unawaited(PlanEntitlementCache().save(summary));
+    return summary;
   }
 
   /// 今claimできる(claim_mode='self_serve'かつ無効化されていない)プラン一覧。

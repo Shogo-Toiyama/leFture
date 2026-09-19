@@ -364,6 +364,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Realtime transcription during recording is available on the Max plan.';
 
   @override
+  String get recordingRealtimeUnresolvedDialogTitle =>
+      'Couldn\'t verify your plan';
+
+  @override
+  String get recordingRealtimeUnresolvedDialogMessage =>
+      'We couldn\'t confirm your subscription status. Check your connection and try again.';
+
+  @override
+  String get recordingRealtimeDowngradedBannerRequiresUpgrade =>
+      'Realtime transcription is off for this recording — it requires the Max plan. We\'ll transcribe it after you finish recording instead.';
+
+  @override
+  String get recordingRealtimeDowngradedBannerInsufficientCredits =>
+      'Realtime transcription is off for this recording — not enough credits. We\'ll transcribe it after you finish recording instead.';
+
+  @override
+  String get recordingRealtimeDowngradedBannerUnresolved =>
+      'Realtime transcription is off for this recording — we couldn\'t confirm your plan. We\'ll transcribe it after you finish recording instead.';
+
+  @override
   String get upgradeRequiredViewPlansButton => 'View Plans';
 
   @override

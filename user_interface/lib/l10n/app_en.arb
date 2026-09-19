@@ -563,6 +563,31 @@
     "description": "Body text explaining that Realtime transcribe is a Max-plan-only feature."
   },
 
+  "recordingRealtimeUnresolvedDialogTitle": "Couldn't verify your plan",
+  "@recordingRealtimeUnresolvedDialogTitle": {
+    "description": "Title of the dialog shown when the user tries to turn on Realtime transcribe but the app couldn't confirm their subscription status (offline, server error, etc.)."
+  },
+
+  "recordingRealtimeUnresolvedDialogMessage": "We couldn't confirm your subscription status. Check your connection and try again.",
+  "@recordingRealtimeUnresolvedDialogMessage": {
+    "description": "Body text of the plan-unresolved dialog, asking the user to check their connection and retry turning on Realtime transcribe."
+  },
+
+  "recordingRealtimeDowngradedBannerRequiresUpgrade": "Realtime transcription is off for this recording — it requires the Max plan. We'll transcribe it after you finish recording instead.",
+  "@recordingRealtimeDowngradedBannerRequiresUpgrade": {
+    "description": "Persistent banner shown during recording when Realtime transcribe was turned off right before this recording started because the current plan doesn't include it."
+  },
+
+  "recordingRealtimeDowngradedBannerInsufficientCredits": "Realtime transcription is off for this recording — not enough credits. We'll transcribe it after you finish recording instead.",
+  "@recordingRealtimeDowngradedBannerInsufficientCredits": {
+    "description": "Persistent banner shown during recording when Realtime transcribe was turned off right before this recording started because the credit balance was too low."
+  },
+
+  "recordingRealtimeDowngradedBannerUnresolved": "Realtime transcription is off for this recording — we couldn't confirm your plan. We'll transcribe it after you finish recording instead.",
+  "@recordingRealtimeDowngradedBannerUnresolved": {
+    "description": "Persistent banner shown during recording when Realtime transcribe was turned off right before this recording started because the app couldn't confirm the subscription status."
+  },
+
   "upgradeRequiredViewPlansButton": "View Plans",
   "@upgradeRequiredViewPlansButton": {
     "description": "Generic button label used across upgrade-required dialogs to navigate to the Plans page."

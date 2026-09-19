@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 import 'package:lefture/core/services/audio_record/audio_chunker.dart';
 import 'package:lefture/core/services/background_task.dart';
 import 'package:lefture/core/services/audio_record/pcm_duration_utils.dart';
+import 'package:lefture/core/services/plan_entitlement_cache.dart';
 import 'package:lefture/application/recording/recovery/recording_finalize.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
@@ -69,6 +70,9 @@ enum RealtimeToggleResult {
 
   /// クレジット残高が[kMinCreditsForRealtimeTranscribe]に満たない。
   insufficientCredits,
+
+  /// プラン/クレジット情報を確認できなかった(オフライン・サーバー障害等)。
+  unresolved,
 }
 
 /// Flutter内部では録音言語の「自動判定」を[kAutoDetectLanguageCode]という
@@ -195,6 +199,14 @@ class RecordingController extends _$RecordingController {
   StreamSubscription? _audioStreamSub;
   int _currentChunkIndex = 0;
 
+  /// 録音開始時、[PlanEntitlementCache]を信用して楽観的にRealtimeで始めた
+  /// 場合にセットされる、本物の権限確認(バックエンド問い合わせ)の未消費
+  /// Future。実際に課金対象のアップロードが起きる直前([_confirmRealtimeBeforeFirstUpload])
+  /// で一度だけ消費される。nullなら「楽観的に始めていない(そもそも
+  /// Realtimeを使っていない、またはキャッシュが無く既にブロッキングで
+  /// 確定済み)」ことを意味する。
+  Future<RealtimeDowngradeReason?>? _pendingRealtimeEligibilityFuture;
+
   // 依存サービス
   RecordingRepositoryDrift get _repo => ref.read(recordingRepositoryDriftProvider);
   AudioRecorderService get _recorder => ref.read(audioRecorderServiceProvider);
@@ -252,19 +264,31 @@ class RecordingController extends _$RecordingController {
       await _recorder.resume();
       _startTimer();
 
-      if (state.realtimeTranscribe && _canUseRealtimeNow()) {
+      // ★ Realtimeを使うか自体は録音開始時([_startRecordingSession])に
+      // 一度だけ確定済み(state.realtimeTranscribe)。ここで権限を再判定しては
+      // いけない——セッション途中でクレジットが減った等の理由で無言のまま
+      // ON/OFFが切り替わると、DBのis_realtime・送信済みチャンク数と食い違う
+      // 事故になる(2026-09-19に実際に発生)。ここで見るのはオンデバイス字幕
+      // (Live ASR)のモデル有無だけ——これはRealtime可否とは別軸の懸念で、
+      // モデルが無くてもサーバー側チャンク送信自体は続行する。
+      if (state.realtimeTranscribe) {
         final recordingLanguage = ref.read(recordingLanguageControllerProvider);
-        // 一時停止で止めたLiveAsrControllerは再開のたびに新しいisolateを
-        // 起動し内部タイムスタンプが0から数え直しになるため、これまでの
-        // 経過秒数を渡して録音全体での位置を維持する(渡さないと再開後の
-        // 字幕がサーバー側watermarkフィルタで全て消えてしまう)。
-        ref.read(liveAsrControllerProvider.notifier).start(
-              recordingLanguage,
-              initialOffsetSec: state.elapsedSeconds.toDouble(),
-              // 同じ録音セッションの続き。直前まで画面に出ていたオンデバイス
-              // 字幕を一時停止のたびに消してしまわないようにする。
-              preserveHistory: true,
-            );
+        final modelManager = ref.read(asrModelManagerProvider.notifier);
+        final modelState = modelManager.statusForLanguage(recordingLanguage);
+        final modelUnavailable = modelState.status == AsrModelStatus.failed && !modelState.installed;
+        if (!modelUnavailable) {
+          // 一時停止で止めたLiveAsrControllerは再開のたびに新しいisolateを
+          // 起動し内部タイムスタンプが0から数え直しになるため、これまでの
+          // 経過秒数を渡して録音全体での位置を維持する(渡さないと再開後の
+          // 字幕がサーバー側watermarkフィルタで全て消えてしまう)。
+          ref.read(liveAsrControllerProvider.notifier).start(
+                recordingLanguage,
+                initialOffsetSec: state.elapsedSeconds.toDouble(),
+                // 同じ録音セッションの続き。直前まで画面に出ていたオンデバイス
+                // 字幕を一時停止のたびに消してしまわないようにする。
+                preserveHistory: true,
+              );
+        }
       }
 
       state = state.copyWith(phase: RecordingPhase.recording);
@@ -315,6 +339,43 @@ class RecordingController extends _$RecordingController {
     state = state.copyWith(phase: RecordingPhase.requestingPermission, clearErrorMessage: true);
 
     try {
+      // ★ Realtime Transcribeが実際に使えるか(プラン/クレジット)は、講義行を
+      // 作って DB に isRealtime を書き込むより前に確定させる。以前はこの判定を
+      // createDraftLectureの後で行っていたため、DBには isRealtime=true と
+      // 書かれたのに実際は1件もチャンクを送らない、という食い違いが起き、
+      // バックエンドが届かないチャンクを永久に待ち続ける事故になった
+      // (2026-09-19)。
+      //
+      // ただし本物の判定(_resolveRealtimeEligibility)はネットワーク往復を
+      // 要するため、これを毎回ブロッキングで待つと「録音ボタンを押しても
+      // マイクがすぐ起動しない」体験になる。そこで[PlanEntitlementCache]
+      // (前回成功した/billing/summaryの端末控え)が楽観的に「使えそう」と
+      // 言っている場合に限り、ここでは待たずに先へ進み、本物の判定は裏で
+      // 並行して走らせる([_pendingRealtimeEligibilityFuture])。実際に
+      // 課金対象のチャンクをアップロードする直前([_confirmRealtimeBeforeFirstUpload])
+      // で必ず一度だけこの結果を確認し、キャッシュが誤っていればそこで
+      // 初めてダウングレードする——その時点までチャンクは1件も送られて
+      // いないため、安全に取り消せる。
+      // キャッシュが無い/否定的な場合は賭けに出る理由が無いので、これまで
+      // 通りここでブロッキングに確定させる。
+      var effectiveRealtime = state.realtimeTranscribe;
+      RealtimeDowngradeReason? downgradeReason;
+      _pendingRealtimeEligibilityFuture = null;
+      if (effectiveRealtime) {
+        if (await _cachedOptimisticRealtimeEligible()) {
+          _pendingRealtimeEligibilityFuture = _resolveRealtimeEligibility();
+          DevLog.add('[StartSession] Realtime Transcribe starting optimistically from cache; confirming in background.');
+        } else {
+          downgradeReason = await _resolveRealtimeEligibility();
+          if (downgradeReason != null) {
+            effectiveRealtime = false;
+            DevLog.add(
+              '[StartSession] Realtime Transcribe downgraded before recording start: $downgradeReason',
+            );
+          }
+        }
+      }
+
       DevLog.add('[StartSession] 4/8 creating draft lecture...');
       final recordingLanguage = ref.read(recordingLanguageControllerProvider);
       final displayLanguage = ref.read(displayLanguageControllerProvider);
@@ -323,7 +384,7 @@ class RecordingController extends _$RecordingController {
         presetCourseId: state.courseId,
         presetTitle: state.title.isNotEmpty ? state.title : null,
         autoStartAnalysis: state.autoStartAnalysis,
-        isRealtime: state.realtimeTranscribe,
+        isRealtime: effectiveRealtime,
         recordingLanguage: _dbRecordingLanguage(recordingLanguage),
         displayLanguage: displayLanguage,
       );
@@ -338,7 +399,12 @@ class RecordingController extends _$RecordingController {
         }
       }
 
-      state = state.copyWith(currentLectureId: lectureId);
+      state = state.copyWith(
+        currentLectureId: lectureId,
+        realtimeTranscribe: effectiveRealtime,
+        clearRealtimeDowngradeReason: true,
+        realtimeDowngradeReason: downgradeReason,
+      );
       _startWatchingLecture(lectureId);
       // Recording Recoveryの誤検出防止(このIDは今録音中なので孤児ではない)。
       // 理由はRecordingRecoveryService.setActiveRecordingLectureIdのコメントを参照。
@@ -348,10 +414,13 @@ class RecordingController extends _$RecordingController {
 
       _chunker = AudioChunker(
         onChunkReady: (Uint8List chunkData, double startTimeSec) async {
-          // Realtime Transcribe が Off の場合、チャンク送信をスキップ
-          if (!state.realtimeTranscribe) {
-            DevLog.add('[Chunker] Realtime Transcribe is OFF, skipping chunk upload for Chunk $_currentChunkIndex');
-            _currentChunkIndex++;
+          // このセッションではRealtime Transcribeを使わない(ユーザーが
+          // 最初からOFFにしていた、キャッシュ無しでダウングレード確定済み、
+          // または本物の判定がここで初めてキャッシュの楽観を裏切った)。
+          // チャンクは送らず、カウンタも進めない——このセッションは通常の
+          // プレレコ経路(マスター音声のみ)として扱われ、expectedChunksは
+          // 0のまま送られるため、カウンタを進める意味自体が無い。
+          if (!await _confirmRealtimeBeforeFirstUpload()) {
             return;
           }
 
@@ -398,37 +467,35 @@ class RecordingController extends _$RecordingController {
         },
       );
 
-      // 設定時点ではクレジットが足りていても、録音開始までの間に別デバイス/
-      // 別セッションで使い切っている可能性があるため、ここでも再確認する
-      // (録音自体はブロックしない。Realtimeだけを止める)。
-      // モデルが「ダウンロード中/未確認」なだけならLiveAsrController.start()側が
-      // 静かにスキップしてくれる(今回のセッションだけ字幕無し)ので、ここで
-      // トグルまでは触らない。明確に`failed`(この言語用のモデルが結局
-      // 用意できなかった)の場合のみ、実体の無い設定として自動的にOffへ戻す。
-      final modelManager = ref.read(asrModelManagerProvider.notifier);
-      final modelState = modelManager.statusForLanguage(recordingLanguage);
-      // 手元にモデルが無く、かつ取得にも失敗している場合だけ「実体の無い設定」
-      // と見なす。オフラインでマニフェスト取得に失敗しただけ(モデルはある)なら
-      // そのまま使える。
-      final modelUnavailable = modelState.status == AsrModelStatus.failed && !modelState.installed;
-      if (state.realtimeTranscribe && modelUnavailable) {
-        DevLog.add('[StartSession] Realtime Transcribe disabled: no model available for "$recordingLanguage".');
-        state = state.copyWith(realtimeTranscribe: false);
-      } else if (state.realtimeTranscribe && _canUseRealtimeNow()) {
-        ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
-        // ダウンロード中/未確認のままでも録音自体はブロックしない
-        // (LiveAsrController側がダウンロード完了を検知して自動的に
-        // 再試行してくれるが、それまでは字幕が出ないことをここで一言
-        // 知らせておく)。
-        if (!modelManager.statusForLanguage(recordingLanguage).installed) {
-          DevLog.add('[StartSession] ASR model still downloading for "$recordingLanguage" — captions will start once ready.');
-          state = state.copyWith(
-            transientNotice: 'Speech model is still downloading — live captions will start once it\'s ready.',
+      // オンデバイス字幕(Live ASR)は、このセッションでRealtime Transcribeが
+      // 有効(effectiveRealtime)な場合のみ試みる。プラン/クレジット起因の
+      // ダウングレードとは別軸の懸念であるため、モデルが無くてもeffectiveRealtime
+      // 自体は変えない——サーバー側へのチャンク送信(文字起こし本体)は
+      // 字幕の有無に関わらず続行する。
+      if (effectiveRealtime) {
+        final modelManager = ref.read(asrModelManagerProvider.notifier);
+        final modelState = modelManager.statusForLanguage(recordingLanguage);
+        // 手元にモデルが無く、かつ取得にも失敗している場合だけ「使えない」と
+        // 見なす。オフラインでマニフェスト取得に失敗しただけ(モデルはある)
+        // なら字幕はそのまま使える。
+        final modelUnavailable = modelState.status == AsrModelStatus.failed && !modelState.installed;
+        if (!modelUnavailable) {
+          ref.read(liveAsrControllerProvider.notifier).start(recordingLanguage);
+          // ダウンロード中/未確認のままでも録音自体はブロックしない
+          // (LiveAsrController側がダウンロード完了を検知して自動的に
+          // 再試行してくれるが、それまでは字幕が出ないことをここで一言
+          // 知らせておく)。
+          if (!modelState.installed) {
+            DevLog.add('[StartSession] ASR model still downloading for "$recordingLanguage" — captions will start once ready.');
+            state = state.copyWith(
+              transientNotice: 'Speech model is still downloading — live captions will start once it\'s ready.',
+            );
+          }
+        } else {
+          DevLog.add(
+            '[StartSession] On-device captions unavailable for "$recordingLanguage" (model not ready); realtime chunk upload continues normally.',
           );
         }
-      } else if (state.realtimeTranscribe) {
-        DevLog.add('[StartSession] Realtime Transcribe disabled due to insufficient credits.');
-        state = state.copyWith(realtimeTranscribe: false);
       }
 
       // マスター音声の継続エンコード(named pipe + fragmented MP4)を、マイクを
@@ -508,7 +575,11 @@ class RecordingController extends _$RecordingController {
       await ref.read(liveAsrControllerProvider.notifier).stop();
     }
 
-    if (state.realtimeTranscribe) {
+    // ★ onChunkReadyと同じゲートを通す: キャッシュを信用して楽観的に
+    // 始めていた場合、ここが「実際にアップロードするかどうか」を初めて
+    // 確定させる最初の機会になりうる(録音開始後すぐに一時停止された場合、
+    // まだ1件もチャンクが来ていないことがあるため)。
+    if (await _confirmRealtimeBeforeFirstUpload()) {
       final flushed = _chunker?.flush();
       if (flushed != null && flushed.data.isNotEmpty) {
         final path = await _recorder.savePcmAsM4a(flushed.data, state.currentLectureId!);
@@ -561,50 +632,79 @@ class RecordingController extends _$RecordingController {
     }
   }
 
-  /// 現在のプラン・クレジット残高の両方でRealtimeが使える状態か。未取得
-  /// (ロード中/オフライン等)の場合は安全側に倒してfalseを返す。
+  /// 現在のプラン・クレジット残高の両方でRealtimeが使える状態かを判定する。
+  /// 使える場合はnull、使えない場合は理由を返す。
   ///
-  /// 実際にサーバーへ送り始める(＝Whisperコストが発生しうる)録音開始・再開の
-  /// 判定用。設定トグルの可否は[_canEnableRealtimeByTier]/
-  /// [_canEnableRealtimeByCredits]の方を使うこと。
-  bool _canUseRealtimeNow() {
-    final summary = ref.read(creditSummaryProvider).asData?.value;
-    if (summary == null) return false;
-    return summary.hasFeature(plan_features.featureRealtimeTranscribe) &&
-        summary.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
+  /// 未取得(ロード中)ならここで一度だけ解決を待つ。それでも分からない
+  /// (オフライン・サーバー障害等)場合は[RealtimeDowngradeReason.unresolved]
+  /// を返して「使えない」扱いにする——「分からなければ許可」にすると、
+  /// DBに書き込むisRealtimeと実際にチャンクを送るかどうかが食い違う事故に
+  /// なるため(2026-09-19に実際に発生)。設定トグル([setRealtimeTranscribe])と
+  /// 録音開始直前([_startRecordingSession])の両方がこれ1つだけを判定基準にする。
+  Future<RealtimeDowngradeReason?> _resolveRealtimeEligibility() async {
+    var summary = ref.read(creditSummaryProvider).asData?.value;
+    if (summary == null) {
+      try {
+        // ★ タイムアウトを必ず設定する。無いと、サーバー障害等でこの
+        // Futureが永久に解決しない場合、最初のチャンクのアップロードが
+        // ([_confirmRealtimeBeforeFirstUpload]経由で)無期限に止まってしまう。
+        summary = await ref
+            .read(creditSummaryProvider.future)
+            .timeout(const Duration(seconds: 30));
+      } catch (e, st) {
+        DevLog.add('⚠️ [Realtime] credit summary unavailable, treating Realtime as unavailable: $e\n$st');
+        return RealtimeDowngradeReason.unresolved;
+      }
+    }
+    if (!summary.hasFeature(plan_features.featureRealtimeTranscribe)) {
+      return RealtimeDowngradeReason.requiresUpgrade;
+    }
+    if (!summary.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe)) {
+      return RealtimeDowngradeReason.insufficientCredits;
+    }
+    return null;
   }
 
-  /// 設定変更のためのプラン判定。残高が未取得ならここで取得を待ち、それでも
-  /// 分からない(オフライン/API失敗)場合は許可する。
-  ///
-  /// 「分からない=拒否」にすると、実際は使えるプランなのに通信が済んでいない
-  /// だけでトグルがONにできず、しかもユーザーには理由が分からない、という
-  /// 状態になってしまうため。実際に使えない状態で録音を始めた場合は
-  /// [_canUseRealtimeNow]が改めて判定してRealtimeだけ無効化する。
-  Future<bool> _canEnableRealtimeByTier() async {
-    final cached = ref.read(creditSummaryProvider).asData?.value;
-    if (cached != null) return cached.hasFeature(plan_features.featureRealtimeTranscribe);
-    try {
-      final summary = await ref.read(creditSummaryProvider.future);
-      return summary.hasFeature(plan_features.featureRealtimeTranscribe);
-    } catch (e, st) {
-      DevLog.add('⚠️ [Realtime] credit summary unavailable (tier check), allowing the toggle anyway: $e\n$st');
-      return true;
-    }
+  /// [PlanEntitlementCache]に基づき、録音開始の瞬間に「楽観的に」Realtimeを
+  /// 使い始めてよさそうか。キャッシュはネットワーク応答を待たず端末内で
+  /// 即座に返る——録音開始(マイク起動・字幕表示)を実際のバックエンド応答
+  /// まで止めないために使う。ここでtrueが返っても、実際に課金対象の
+  /// アップロードを許可したわけではない([_confirmRealtimeBeforeFirstUpload]
+  /// が別途、本物の判定で確定させる)。
+  Future<bool> _cachedOptimisticRealtimeEligible() {
+    return PlanEntitlementCache().isOptimisticallyEligibleFor(
+      plan_features.featureRealtimeTranscribe,
+      minCredits: kMinCreditsForRealtimeTranscribe,
+    );
   }
 
-  /// 設定変更のためのクレジット判定。考え方は[_canEnableRealtimeByTier]と同じ
-  /// (不明なら許可し、実際の録音開始時に[_canUseRealtimeNow]で改めて厳密判定する)。
-  Future<bool> _canEnableRealtimeByCredits() async {
-    final cached = ref.read(creditSummaryProvider).asData?.value;
-    if (cached != null) return cached.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
-    try {
-      final summary = await ref.read(creditSummaryProvider.future);
-      return summary.hasAtLeastCredits(kMinCreditsForRealtimeTranscribe);
-    } catch (e, st) {
-      DevLog.add('⚠️ [Realtime] credit summary unavailable (credit check), allowing the toggle anyway: $e\n$st');
-      return true;
-    }
+  /// このセッションでRealtime Transcribeを続けてよいかを確定させる。
+  ///
+  /// [_pendingRealtimeEligibilityFuture]が立っている(=キャッシュを信用して
+  /// 楽観的に始めた)間は、実際に課金対象のアップロードが起きる**直前に
+  /// 必ず一度だけ**このメソッドを呼び、本物の判定結果を待つ。キャッシュが
+  /// 誤っていた(失効・改ざん等)場合はここで初めてダウングレードを確定させ、
+  /// オンデバイス字幕も止め、バナーを出す——この時点まで実際のチャンクは
+  /// 1件もWhisperへ送られていないため、無害に取り消せる。
+  ///
+  /// 一度消費すると[_pendingRealtimeEligibilityFuture]はnullに戻るため、
+  /// 2回目以降の呼び出しは即座に[state.realtimeTranscribe]を返すだけになる
+  /// (何度呼んでも安全)。呼び出し元は[_chunker]のonChunkReady・
+  /// [_pauseRecording]の末尾フラッシュ・[upload]の最終チャンクフラッシュの
+  /// 3箇所——いずれも「これから実際にアップロードするかどうか」を決める
+  /// 直前に呼ぶこと。
+  Future<bool> _confirmRealtimeBeforeFirstUpload() async {
+    final pending = _pendingRealtimeEligibilityFuture;
+    if (pending == null) return state.realtimeTranscribe;
+    _pendingRealtimeEligibilityFuture = null;
+    final reason = await pending;
+    if (reason == null) return true;
+    DevLog.add(
+      '[Realtime] downgraded before first real upload (cache was optimistic, actual check disagreed): $reason',
+    );
+    await ref.read(liveAsrControllerProvider.notifier).stop();
+    state = state.copyWith(realtimeTranscribe: false, realtimeDowngradeReason: reason);
+    return false;
   }
 
   Future<RealtimeToggleResult> setRealtimeTranscribe(bool value) async {
@@ -614,15 +714,24 @@ class RecordingController extends _$RecordingController {
 
     // 録音自体は常に可能なので、ここでブロックするのはRealtimeのON操作のみ。
     if (value) {
-      if (!await _canEnableRealtimeByTier()) {
-        return RealtimeToggleResult.requiresUpgrade;
-      }
-      if (!await _canEnableRealtimeByCredits()) {
-        return RealtimeToggleResult.insufficientCredits;
+      final reason = await _resolveRealtimeEligibility();
+      switch (reason) {
+        case RealtimeDowngradeReason.requiresUpgrade:
+          return RealtimeToggleResult.requiresUpgrade;
+        case RealtimeDowngradeReason.insufficientCredits:
+          return RealtimeToggleResult.insufficientCredits;
+        case RealtimeDowngradeReason.unresolved:
+          return RealtimeToggleResult.unresolved;
+        case null:
+          break;
       }
     }
 
-    state = state.copyWith(realtimeTranscribe: value, clearErrorMessage: true);
+    state = state.copyWith(
+      realtimeTranscribe: value,
+      clearErrorMessage: true,
+      clearRealtimeDowngradeReason: true,
+    );
     // Preferences に保存
     await RecordingPreferences().setRealtimeTranscribe(value);
     return RealtimeToggleResult.ok;
@@ -736,7 +845,10 @@ class RecordingController extends _$RecordingController {
       String? finalChunkPath;
       double? finalChunkStartTime;
       double? finalChunkEndTime;
-      if (state.realtimeTranscribe) {
+      // ★ onChunkReady/_pauseRecordingと同じゲートを通す。録音開始直後に
+      // 保存された場合、まだ1件もチャンクが来ておらず、ここが「実際に
+      // アップロードするかどうか」を初めて確定させる機会になりうる。
+      if (await _confirmRealtimeBeforeFirstUpload()) {
         final finalFlushed = _chunker?.flush();
         if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
           DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
