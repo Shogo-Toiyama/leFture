@@ -868,7 +868,7 @@ async def _fill_live_stripe_prices(rows: list[dict]) -> None:
                 asyncio.to_thread(stripe.Price.retrieve, row["stripe_price_id"]),
                 timeout=5,
             )
-            unit_amount = price.get("unit_amount")
+            unit_amount = price.to_dict().get("unit_amount")
             if unit_amount is not None:
                 row["price_usd"] = unit_amount / 100
         except Exception as e:
@@ -1513,7 +1513,7 @@ async def _create_new_stripe_subscription(customer_id: str, uid: str, plan_id: s
             items=[{"price": stripe_price_id}],
             payment_behavior="default_incomplete",
             payment_settings={"save_default_payment_method": "on_subscription"},
-            expand=["latest_invoice.payment_intent"],
+            expand=["latest_invoice.confirmation_secret"],
             metadata={
                 "supabase_user_id": uid,
                 "subscription_plan_id": plan_id,
@@ -1686,15 +1686,15 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         subscription = await _create_new_stripe_subscription(
             customer_id, uid, target_plan["id"], target_plan["stripe_price_id"]
         )
-        payment_intent = subscription["latest_invoice"]["payment_intent"]
-        return {"client_secret": payment_intent["client_secret"], "subscription_id": subscription["id"]}
+        confirmation_secret = subscription["latest_invoice"]["confirmation_secret"]
+        return {"client_secret": confirmation_secret["client_secret"], "subscription_id": subscription["id"]}
 
     # ケースB: Stripeサブスクが既にアクティブ → アップグレード/ダウングレード/解約。
     subscription_id = active_subscription["id"]
 
     # 前回ダウングレード予約済み等でSubscription Scheduleが付いている場合、
     # いったん解放してクリーンな状態から今回の判断をやり直す。
-    schedule_id = active_subscription.get("schedule")
+    schedule_id = active_subscription["schedule"]
     if schedule_id:
         try:
             await asyncio.to_thread(stripe.SubscriptionSchedule.release, schedule_id)
@@ -1820,15 +1820,15 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         invoice = await asyncio.to_thread(stripe.Invoice.pay, invoice["id"])
     except stripe.error.StripeError as e:
         logger.warning(f"Upgrade payment failed for subscription {subscription_id}: {e}")
-        if invoice is not None and invoice.get("status") == "open":
+        if invoice is not None and invoice["status"] == "open":
             try:
                 await asyncio.to_thread(stripe.Invoice.void_invoice, invoice["id"])
             except stripe.error.StripeError:
                 pass
         raise HTTPException(status_code=402, detail="Payment for the upgrade failed")
 
-    if invoice.get("status") != "paid":
-        if invoice.get("status") == "open":
+    if invoice["status"] != "paid":
+        if invoice["status"] == "open":
             try:
                 await asyncio.to_thread(stripe.Invoice.void_invoice, invoice["id"])
             except stripe.error.StripeError:
@@ -1918,7 +1918,7 @@ async def billing_stripe_resume_plan(request: Request):
         raise apple_managed_error()
 
     subscription_id = active_subscription["id"]
-    schedule_id = active_subscription.get("schedule")
+    schedule_id = active_subscription["schedule"]
     resumed = False
 
     if schedule_id:
@@ -1929,7 +1929,7 @@ async def billing_stripe_resume_plan(request: Request):
             raise HTTPException(status_code=502, detail="Failed to resume subscription")
         resumed = True
 
-    if active_subscription.get("cancel_at_period_end"):
+    if active_subscription["cancel_at_period_end"]:
         try:
             await asyncio.to_thread(stripe.Subscription.modify, subscription_id, cancel_at_period_end=False)
         except stripe.error.StripeError as e:
@@ -1989,7 +1989,7 @@ async def _handle_stripe_subscription_invoice_paid(event: dict) -> dict:
         return {"status": "already_processed", "event_type": "invoice.payment_succeeded"}
 
     invoice = event["data"]["object"]
-    subscription_id = invoice.get("subscription")
+    subscription_id = invoice["subscription"]
     if not subscription_id:
         # サブスクに紐づかない請求(単発invoice等)。今回のスコープ外なので無視する。
         return {"status": "ignored", "reason": "not_a_subscription_invoice"}
@@ -2000,7 +2000,7 @@ async def _handle_stripe_subscription_invoice_paid(event: dict) -> dict:
         logger.error(f"Failed to retrieve Stripe subscription {subscription_id}: {e}", exc_info=True)
         raise HTTPException(status_code=502, detail="Failed to look up subscription")
 
-    uid = (subscription.get("metadata") or {}).get("supabase_user_id")
+    uid = subscription["metadata"].to_dict().get("supabase_user_id")
     if not uid:
         logger.error(f"Stripe subscription {subscription_id} missing supabase_user_id metadata")
         return {"status": "ignored", "reason": "missing_metadata"}
@@ -2061,12 +2061,12 @@ async def billing_stripe_webhook(request: Request, stripe_signature: str = Heade
         return {"status": "ignored", "event_type": event_type}
 
     intent = event["data"]["object"]
-    metadata = intent.get("metadata") or {}
+    metadata = intent["metadata"].to_dict()
     uid = metadata.get("supabase_user_id")
     stripe_price_id = metadata.get("stripe_price_id")
 
     if not uid or not stripe_price_id:
-        logger.error(f"Stripe payment_intent.succeeded missing metadata: {intent.get('id')}")
+        logger.error(f"Stripe payment_intent.succeeded missing metadata: {intent['id']}")
         return {"status": "ignored", "reason": "missing_metadata"}
 
     admin_client = get_supabase_client()
