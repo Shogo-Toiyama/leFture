@@ -1688,6 +1688,12 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
     current_price_id = active_subscription["items"]["data"][0]["price"]["id"]
     current_item_id = active_subscription["items"]["data"][0]["id"]
 
+    if new_price_id == current_price_id:
+        # 既にこのプランがアクティブ(例: DB側の反映待ちで画面が古いプランを
+        # 表示している間に同じプランを再選択した)。上で予約は既に解除・
+        # クリア済みなので、無駄なSubscription Scheduleは作らずそのまま終える。
+        return {"status": "already_current"}
+
     current_plan_res = await asyncio.to_thread(
         lambda: admin_client.table("subscription_plans")
             .select("tier_level")
@@ -1935,7 +1941,11 @@ async def _handle_stripe_subscription_invoice_paid(event: dict) -> dict:
         return {"status": "already_processed", "event_type": "invoice.payment_succeeded"}
 
     invoice = event["data"]["object"]
-    subscription_id = invoice["subscription"]
+    # 2025年のAPIバージョン変更(Basil)でInvoice.subscriptionは
+    # parent.subscription_details.subscriptionへ移動している。
+    parent = invoice["parent"]
+    subscription_details = parent["subscription_details"] if parent else None
+    subscription_id = subscription_details["subscription"] if subscription_details else None
     if not subscription_id:
         # サブスクに紐づかない請求(単発invoice等)。今回のスコープ外なので無視する。
         return {"status": "ignored", "reason": "not_a_subscription_invoice"}

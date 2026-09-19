@@ -2,6 +2,7 @@ name = "lefture-email-worker"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 # Cloudflare Email Sending (send_email binding)
 # Workers Paidプランが適用された環境で、任意の宛先へのメール送信が可能になります。
