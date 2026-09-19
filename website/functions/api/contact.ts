@@ -19,6 +19,8 @@ interface Env {
   SUPABASE_URL?: string;
   SUPABASE_SECRET_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
+  EMAIL_WORKER_URL?: string;
+  EMAIL_WORKER_SECRET?: string;
   RESEND_API_KEY?: string;
   ADMIN_EMAIL?: string;
   FROM_EMAIL?: string;
@@ -464,58 +466,100 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
       }
     }
 
-    // 4. Send Emails via Resend API
-    const resendApiKey = env.RESEND_API_KEY;
+    // 4. Send Emails via Cloudflare Email Worker (or Resend Fallback)
     const adminEmail = env.ADMIN_EMAIL || 'lefture.app@gmail.com';
     const fromAddress = env.FROM_EMAIL || 'support@lefture.com';
     const emailContent = getEmailContent(lang);
 
-    if (resendApiKey) {
-      const emailHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      };
+    // Prepare attachment payload if image exists
+    const emailAttachments: { filename: string; content: string; type?: string }[] = [];
+    if (attachmentFile && attachmentBuffer) {
+      emailAttachments.push({
+        filename: attachmentFile.name,
+        content: bufferToBase64(attachmentBuffer),
+        type: attachmentFile.type || 'image/png',
+      });
+    }
 
-      // Prepare attachment payload for Resend if image exists
-      const emailAttachments = [];
-      if (attachmentFile && attachmentBuffer) {
-        emailAttachments.push({
-          filename: attachmentFile.name,
-          content: bufferToBase64(attachmentBuffer),
+    const sendContactEmail = async (payload: {
+      to: string;
+      subject: string;
+      html: string;
+      reply_to?: string;
+      attachments?: { filename: string; content: string; type?: string }[];
+    }) => {
+      // 4-A. Cloudflare Email Worker が設定されている場合
+      if (env.EMAIL_WORKER_URL && env.EMAIL_WORKER_SECRET) {
+        let workerUrl = env.EMAIL_WORKER_URL.trim().replace(/\/+$/, '');
+        if (!workerUrl.endsWith('/send')) {
+          workerUrl += '/send';
+        }
+        const res = await fetch(workerUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.EMAIL_WORKER_SECRET}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: payload.to,
+            subject: payload.subject,
+            html: payload.html,
+            from_name: 'leFture Support',
+            from_address: fromAddress,
+            reply_to: payload.reply_to,
+            attachments: payload.attachments,
+          }),
         });
+        if (!res.ok) {
+          throw new Error(`Email worker error (${res.status}): ${await res.text()}`);
+        }
+        return;
       }
 
-      // Email 1: Admin Notification
-      const adminEmailPromise = fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: emailHeaders,
-        body: JSON.stringify({
-          from: `leFture Support <${fromAddress}>`,
-          to: [adminEmail],
-          reply_to: userEmail,
-          subject: `${emailContent.SUPPORT_ADMIN_SUBJECT.replace('{ticket_code}', ticketCode)}${storagePath ? ' 📷' : ''}`,
-          html: buildAdminNotificationEmail(ticketCode, userName, userEmail, category, message, userAgent, storagePath, lang),
-          attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
-        }),
-      }).catch((e) => console.error('Failed to send admin notification email:', e));
+      // 4-B. 従来の Resend フォールバック
+      if (env.RESEND_API_KEY) {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: `leFture Support <${fromAddress}>`,
+            to: [payload.to],
+            reply_to: payload.reply_to,
+            subject: payload.subject,
+            html: payload.html,
+            attachments: payload.attachments && payload.attachments.length > 0 ? payload.attachments : undefined,
+          }),
+        });
+        if (!res.ok) {
+          throw new Error(`Resend error (${res.status}): ${await res.text()}`);
+        }
+        return;
+      }
 
-      // Email 2: User Auto-Acknowledgment
-      const userAckEmailPromise = fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: emailHeaders,
-        body: JSON.stringify({
-          from: `leFture Support <${fromAddress}>`,
-          to: [userEmail],
-          subject: emailContent.SUPPORT_ACK_SUBJECT.replace('{ticket_code}', ticketCode),
-          html: buildUserAckEmail(userName, ticketCode, category, message, !!storagePath, lang),
-        }),
-      }).catch((e) => console.error('Failed to send user ack email:', e));
+      console.warn('Neither EMAIL_WORKER nor RESEND_API_KEY is configured on Cloudflare Pages. Skipping email.');
+    };
 
-      // Fire both email tasks concurrently
-      await Promise.allSettled([adminEmailPromise, userAckEmailPromise]);
-    } else {
-      console.warn('RESEND_API_KEY is not configured on Cloudflare Pages. Skipping email delivery.');
-    }
+    // Email 1: Admin Notification
+    const adminEmailPromise = sendContactEmail({
+      to: adminEmail,
+      reply_to: userEmail,
+      subject: `${emailContent.SUPPORT_ADMIN_SUBJECT.replace('{ticket_code}', ticketCode)}${storagePath ? ' 📷' : ''}`,
+      html: buildAdminNotificationEmail(ticketCode, userName, userEmail, category, message, userAgent, storagePath, lang),
+      attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
+    }).catch((e) => console.error('Failed to send admin notification email:', e));
+
+    // Email 2: User Auto-Acknowledgment
+    const userAckEmailPromise = sendContactEmail({
+      to: userEmail,
+      subject: emailContent.SUPPORT_ACK_SUBJECT.replace('{ticket_code}', ticketCode),
+      html: buildUserAckEmail(userName, ticketCode, category, message, !!storagePath, lang),
+    }).catch((e) => console.error('Failed to send user ack email:', e));
+
+    // Fire both email tasks concurrently
+    await Promise.allSettled([adminEmailPromise, userAckEmailPromise]);
 
     return new Response(
       JSON.stringify({

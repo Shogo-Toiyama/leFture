@@ -6,6 +6,8 @@ interface Env {
   SUPABASE_URL?: string;
   SUPABASE_SECRET_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
+  EMAIL_WORKER_URL?: string;
+  EMAIL_WORKER_SECRET?: string;
   RESEND_API_KEY?: string;
   ADMIN_EMAIL?: string;
   FROM_EMAIL?: string;
@@ -333,50 +335,88 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       }
     }
 
-    // 2. Send Emails via Resend API
-    const resendApiKey = env.RESEND_API_KEY;
+    // 2. Send Emails via Cloudflare Email Worker (or Resend Fallback)
     const adminEmail = env.ADMIN_EMAIL || 'lefture.app@gmail.com';
     const fromAddress = env.FROM_EMAIL || 'support@lefture.com';
 
-    if (resendApiKey) {
-      const emailHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      };
+    const userSubject = lang.toLowerCase().startsWith('ja')
+      ? '【leFture】Android クローズドテストへの参加申請を受け付けました'
+      : '[leFture] Android Closed Beta Request Received';
 
-      // Email 1: Admin Notification to lefture.app@gmail.com
-      const adminEmailPromise = fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: emailHeaders,
-        body: JSON.stringify({
-          from: `leFture Closed Beta <${fromAddress}>`,
-          to: [adminEmail],
-          reply_to: email,
-          subject: `【leFture】Android Closed Test 参加申請 (${email})`,
-          html: buildAdminNotificationEmail(ticketCode, email, name, lang, submittedAt),
-        }),
-      }).catch((e) => console.error('Failed to send admin notification email:', e));
+    const sendSingleEmail = async (payload: {
+      to: string;
+      subject: string;
+      html: string;
+      reply_to?: string;
+    }) => {
+      // 2-A. Cloudflare Email Worker が設定されている場合
+      if (env.EMAIL_WORKER_URL && env.EMAIL_WORKER_SECRET) {
+        let workerUrl = env.EMAIL_WORKER_URL.trim().replace(/\/+$/, '');
+        if (!workerUrl.endsWith('/send')) {
+          workerUrl += '/send';
+        }
+        const res = await fetch(workerUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.EMAIL_WORKER_SECRET}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: payload.to,
+            subject: payload.subject,
+            html: payload.html,
+            from_name: 'leFture',
+            from_address: fromAddress,
+            reply_to: payload.reply_to,
+          }),
+        });
+        if (!res.ok) {
+          throw new Error(`Email worker error (${res.status}): ${await res.text()}`);
+        }
+        return;
+      }
 
-      // Email 2: User Confirmation
-      const userSubject = lang.toLowerCase().startsWith('ja')
-        ? '【leFture】Android クローズドテストへの参加申請を受け付けました'
-        : '[leFture] Android Closed Beta Request Received';
+      // 2-B. 従来の Resend フォールバック
+      if (env.RESEND_API_KEY) {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: `leFture <${fromAddress}>`,
+            to: [payload.to],
+            reply_to: payload.reply_to,
+            subject: payload.subject,
+            html: payload.html,
+          }),
+        });
+        if (!res.ok) {
+          throw new Error(`Resend error (${res.status}): ${await res.text()}`);
+        }
+        return;
+      }
 
-      const userEmailPromise = fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: emailHeaders,
-        body: JSON.stringify({
-          from: `leFture <${fromAddress}>`,
-          to: [email],
-          subject: userSubject,
-          html: buildUserConfirmationEmail(name, email, lang),
-        }),
-      }).catch((e) => console.error('Failed to send user confirmation email:', e));
+      console.warn('Neither EMAIL_WORKER nor RESEND_API_KEY is configured. Skipping email.');
+    };
 
-      await Promise.allSettled([adminEmailPromise, userEmailPromise]);
-    } else {
-      console.warn('RESEND_API_KEY is not configured. Emails were not sent.');
-    }
+    // Email 1: Admin Notification to lefture.app@gmail.com
+    const adminEmailPromise = sendSingleEmail({
+      to: adminEmail,
+      subject: `【leFture】Android Closed Test 参加申請 (${email})`,
+      html: buildAdminNotificationEmail(ticketCode, email, name, lang, submittedAt),
+      reply_to: email,
+    }).catch((e) => console.error('Failed to send admin notification email:', e));
+
+    // Email 2: User Confirmation
+    const userEmailPromise = sendSingleEmail({
+      to: email,
+      subject: userSubject,
+      html: buildUserConfirmationEmail(name, email, lang),
+    }).catch((e) => console.error('Failed to send user confirmation email:', e));
+
+    await Promise.allSettled([adminEmailPromise, userEmailPromise]);
 
     return new Response(
       JSON.stringify({

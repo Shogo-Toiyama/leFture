@@ -1,0 +1,17 @@
+name = "lefture-email-worker"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare Email Sending (send_email binding)
+# Workers Paidプランが適用された環境で、任意の宛先へのメール送信が可能になります。
+[[send_email]]
+name = "EMAIL"
+
+# 機密ではない環境変数
+[vars]
+DEFAULT_FROM_EMAIL = "hello@lefture.com"
+DEFAULT_FROM_NAME = "leFture"
+
+# 共有認証シークレット (EMAIL_WORKER_SECRET) は、
+# wrangler secret put EMAIL_WORKER_SECRET で設定します。
