@@ -1,0 +1,22 @@
+-- grant_credit_pack_purchaseの旧シグネチャ(3引数版)を削除する。
+--
+-- 20260923000000_add_stripe_price_ids.sqlでp_event_type(DEFAULT付き)を
+-- 足した際にCREATE OR REPLACEを使ったが、PostgreSQLは「名前+引数型」で
+-- 関数を同一視するため、これは置き換えではなく新しい関数の追加になっていた。
+-- 結果、3引数版と4引数版がDBに併存し、main.pyが3キーでRPCを呼ぶと
+-- (4引数版も第4引数がDEFAULTのため呼べてしまい)PostgRESTが候補を
+-- 選べずPGRST203で500を返していた:
+--   Could not choose the best candidate function between:
+--     public.grant_credit_pack_purchase(p_user_id, p_event_id, p_product_id),
+--     public.grant_credit_pack_purchase(p_user_id, p_event_id, p_product_id, p_event_type)
+-- これによりNON_RENEWING_PURCHASE(追加クレジットパック購入)のwebhookが
+-- 全滅し、課金済みユーザーにクレジットが付与されていなかった。
+--
+-- 残す4引数版はp_event_typeがDEFAULT 'NON_RENEWING_PURCHASE'なので、
+-- main.py側の3キー呼び出しはそのまま動く(アプリ側の変更は不要)。
+-- 付与自体はrevenuecat_webhook_events.event_idのUNIQUEで冪等なため、
+-- RevenueCatのリトライで保留分は安全に回収される。
+--
+-- 教訓: 既存関数の引数を増減する変更は、必ず旧シグネチャのDROP FUNCTIONを
+-- セットで書くこと。CREATE OR REPLACEだけではオーバーロードが残る。
+DROP FUNCTION IF EXISTS public.grant_credit_pack_purchase(uuid, text, text);
