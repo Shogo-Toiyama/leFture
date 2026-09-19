@@ -21,7 +21,22 @@ final creditRepositoryProvider = Provider<CreditRepository>((ref) {
 /// (主にCustomAppBar経由で)ほぼ常時watchされ続ける想定なので、通常のnavigation
 /// では再フェッチされない。claim後などは`ref.invalidate(creditSummaryProvider)`
 /// で明示的に更新する。
+///
+/// autoDisposeでない裏返しとして、一度エラーになるとそのエラーがキャッシュされ
+/// 続け、画面遷移では再取得されない。2026-09-19にセッションが失効した際、
+/// 原因が解消してもアプリを再起動するまでクレジットが読めないままだったのは
+/// これが理由。認証状態が変わった時だけは自分で取り直す。
 final creditSummaryProvider = FutureProvider<CreditSummary>((ref) async {
+  final sub = Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+    // tokenRefreshed: 失効していたセッションが復帰した直後
+    // signedIn:      別アカウントも含め、ログインし直した直後
+    if (state.event == AuthChangeEvent.tokenRefreshed ||
+        state.event == AuthChangeEvent.signedIn) {
+      ref.invalidateSelf();
+    }
+  });
+  ref.onDispose(sub.cancel);
+
   return ref.watch(creditRepositoryProvider).fetchSummary();
 });
 

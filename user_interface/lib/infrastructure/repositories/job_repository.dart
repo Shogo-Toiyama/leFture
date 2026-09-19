@@ -1,18 +1,19 @@
 // lib/infrastructure/repositories/job_repository.dart
 import 'dart:convert';
 import 'dart:developer' as dev;
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/app_config.dart';
 import '../../core/utils/network_constants.dart';
+import '../auth/authed_http.dart';
 import '../../domain/entities/processing_jobs.dart';
 import '../../domain/entities/processing_task.dart';
 import '../../domain/exceptions/insufficient_credits_exception.dart';
 
 class JobRepository {
   final SupabaseClient _supabase;
+  final AuthedHttpClient _http;
 
-  JobRepository(this._supabase);
+  JobRepository(this._supabase) : _http = AuthedHttpClient(_supabase);
 
   static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
@@ -172,25 +173,14 @@ class JobRepository {
             .eq('lecture_id', lectureId)
             .timeout(networkTimeout);
 
-    final jwt = _supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot start analysis.');
-    }
-
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/start-analysis'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({
-            'lecture_id': lectureId,
-            'expected_chunks': resolvedExpectedChunks,
-            'force': force,
-          }),
-        )
-        .timeout(networkTimeout);
+    final response = await _http.post(
+      Uri.parse('$_cloudRunBaseUrl/start-analysis'),
+      payload: {
+        'lecture_id': lectureId,
+        'expected_chunks': resolvedExpectedChunks,
+        'force': force,
+      },
+    );
 
     if (response.statusCode == 402) {
       // バックエンドの/start-analysisは{"error_code": ..., "message": ...}を
@@ -231,25 +221,14 @@ class JobRepository {
     required String displayLanguageCode,
     required DateTime lectureDatetime,
   }) async {
-    final jwt = _supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot seed tutorial.');
-    }
-
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/seed-tutorial'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({
-            'course_id': courseId,
-            'display_language': displayLanguageCode,
-            'lecture_datetime': lectureDatetime.toUtc().toIso8601String(),
-          }),
-        )
-        .timeout(networkTimeout);
+    final response = await _http.post(
+      Uri.parse('$_cloudRunBaseUrl/seed-tutorial'),
+      payload: {
+        'course_id': courseId,
+        'display_language': displayLanguageCode,
+        'lecture_datetime': lectureDatetime.toUtc().toIso8601String(),
+      },
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -267,20 +246,8 @@ class JobRepository {
   /// 生成されて「削除したはずの講義に全部ぶら下がる」状態になる。
   /// ジョブの行自体は消さないので、ゴミ箱から復元すればStart Analysisでやり直せる。
   Future<void> cancelJobsForLecture({required String lectureId}) async {
-    final jwt = _supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot cancel jobs.');
-    }
-
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/lectures/$lectureId/cancel-jobs'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-        )
-        .timeout(networkTimeout);
+    final response = await _http
+        .post(Uri.parse('$_cloudRunBaseUrl/lectures/$lectureId/cancel-jobs'));
 
     // 404はSupabase側にまだlectures行が無い(＝サーバー側にジョブも存在し得ない)
     // ケース。オフライン録音を一度もアップロードせずに削除した場合に起きるので、
@@ -299,21 +266,10 @@ class JobRepository {
   /// (カスケードリトライ)。ジョブ全体は作り直さないので、影響範囲外の
   /// 完了済みタスクは無駄にならない。
   Future<void> retryTask({required String taskId}) async {
-    final jwt = _supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot retry task.');
-    }
-
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/retry-task'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({'task_id': taskId}),
-        )
-        .timeout(networkTimeout);
+    final response = await _http.post(
+      Uri.parse('$_cloudRunBaseUrl/retry-task'),
+      payload: {'task_id': taskId},
+    );
 
     if (response.statusCode != 200) {
       throw Exception(

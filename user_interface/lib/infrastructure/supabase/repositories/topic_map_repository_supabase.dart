@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:lefture/core/config/app_config.dart';
+import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -36,13 +36,7 @@ class TopicMapRepositorySupabase {
     return TopicMapData.fromJson(mapJson, isStale: row?['is_stale'] as bool? ?? false);
   }
 
-  String get _jwt {
-    final jwt = supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot reach the topic map service.');
-    }
-    return jwt;
-  }
+  AuthedHttpClient get _http => AuthedHttpClient(supabase);
 
   /// Lectureの削除、またはCourse間の移動が起きた瞬間に呼ぶ。LLMは呼ばず、
   /// バックエンド側でpending_removals/pending_additionsに記録して
@@ -55,17 +49,13 @@ class TopicMapRepositorySupabase {
     required String lectureId,
     required String action,
   }) async {
-    final response = await http.post(
+    final response = await _http.post(
       Uri.parse('$_cloudRunBaseUrl/topic-map/mark-stale'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_jwt',
-      },
-      body: jsonEncode({
+      payload: {
         'course_id': courseId,
         'lecture_id': lectureId,
         'action': action,
-      }),
+      },
     );
 
     if (response.statusCode != 200) {
@@ -79,13 +69,12 @@ class TopicMapRepositorySupabase {
   /// 場合や、既に別の再構成が進行中の場合は409を返す -- その場合はレスポンス
   /// bodyの`detail`(ユーザー向けの日本語メッセージ)だけを例外に載せて投げる。
   Future<void> reconstruct({required String courseId}) async {
-    final response = await http.post(
+    // LLMによる修復を同期実行するため数秒かかりうる。元々タイムアウトを
+    // 掛けていなかったので、ここでも掛けない(nullを明示する)。
+    final response = await _http.post(
       Uri.parse('$_cloudRunBaseUrl/topic-map/reconstruct'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_jwt',
-      },
-      body: jsonEncode({'course_id': courseId}),
+      payload: {'course_id': courseId},
+      timeout: null,
     );
 
     if (response.statusCode != 200) {

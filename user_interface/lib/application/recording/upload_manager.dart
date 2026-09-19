@@ -11,6 +11,7 @@ import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/core/utils/network_constants.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
+import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart' show StreamProvider;
@@ -871,25 +872,16 @@ class UploadManager {
     required String lectureId,
     required int expectedChunks,
   }) async {
-    final session = supabase.auth.currentSession;
-    final jwt = session?.accessToken;
-
-    if (jwt == null) {
-      throw Exception('ログインしていません。分析を開始できません。');
-    }
-
     final url = Uri.parse('${AppConfig.backendBaseUrl}/start-analysis');
 
-    final response = await http.post(
+    // 元々タイムアウトを掛けていなかったので、ここでも掛けない(nullを明示)。
+    final response = await AuthedHttpClient(supabase).post(
       url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $jwt',
-      },
-      body: jsonEncode({
+      payload: {
         'lecture_id': lectureId,
         'expected_chunks': expectedChunks,
-      }),
+      },
+      timeout: null,
     );
 
     if (response.statusCode == 200 || response.statusCode == 202) {

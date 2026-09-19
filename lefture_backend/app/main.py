@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, ClientOptions
+from supabase import create_client, ClientOptions, AuthError, AuthRetryableError
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
@@ -62,7 +62,7 @@ DEAD_JOB_STATUSES = ("FAILED", "ERROR", "CANCELLED")
 # 起こされ、新しいジョブの書き込みと衝突する。
 CANCELLABLE_TASK_STATUSES = ["PENDING", "QUEUED", "WAITING", "RUNNING", "FAILED"]
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_client, get_supabase_auth_client
 from app.core.r2_storage import storage_service
 from app.services.helpers.credits import (
     CREDITS_PER_USD,
@@ -262,32 +262,109 @@ class AsrModelDownloadUrlRequest(BaseModel):
 
 
 # ---------------------------------------------------------
+# 認証 (JWT検証) — 全エンドポイント共通
+# ---------------------------------------------------------
+def _bearer_token(request: Request) -> str:
+    """AuthorizationヘッダからJWTを取り出す。無ければ401。"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    return token
+
+
+def _authenticate_request(request: Request):
+    """
+    AuthorizationヘッダのJWTをSupabase Authで検証し、userを返す。
+
+    以前はこの処理が全エンドポイントにコピペで散らばっており、例外の扱いが
+    バラバラだった。特にget_user()が投げるAuthApiErrorを捕まえていない
+    エンドポイント(/billing/summary等)では、単なるセッション失効が500として
+    返っていた。500だとクライアントは「サーバー障害」と解釈して再認証に
+    進めないため、死んだトークンを送り続ける無限ループになる
+    (2026-09-19にクレジット表示が最大1時間読めなくなった事象の直接原因)。
+
+    方針:
+      - 認証の失敗は必ず401で返す(クライアントが再認証の判断をできるように)
+      - GoTrueが返すerror_code(bad_jwt / session_not_found / user_not_found 等)を
+        必ずログに残す。これが無いと「なぜ弾かれたか」がログから復元できない
+      - Auth自体が落ちている場合(5xx系=AuthRetryableError)だけは401ではなく503。
+        401にするとクライアントが不要なサインアウトをしてしまうため
+
+    この関数は同期HTTPを行うので、asyncエンドポイントからは
+    _get_authenticated_user_id_async()等のasync版を使うこと。
+    """
+    token = _bearer_token(request)
+    try:
+        user_res = get_supabase_auth_client().auth.get_user(token)
+    except AuthRetryableError as e:
+        logger.error(f"Supabase Auth unavailable while verifying JWT: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
+    except AuthError as e:
+        code = getattr(e, "code", None) or "unknown"
+        status = getattr(e, "status", None)
+        logger.warning(f"JWT rejected by Supabase Auth: code={code} status={status} message={e}")
+        raise HTTPException(status_code=401, detail=f"Invalid or expired session ({code})")
+    except Exception as e:
+        logger.warning(f"JWT verification failed: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+    if not user_res or not user_res.user:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+
+    return user_res.user
+
+
+async def _get_authenticated_user(request: Request):
+    """認証済みユーザー本体(email/user_metadata等)が必要な場合に使う。"""
+    return await asyncio.to_thread(_authenticate_request, request)
+
+
+async def _get_authenticated_user_id(request: Request) -> str:
+    """認証済みユーザーのidだけが必要な場合に使う(ほとんどのエンドポイント)。
+
+    get_user()はSupabase Authへの同期HTTP呼び出しなので、必ず
+    asyncio.to_threadでイベントループの外に出す。ここを同期のまま呼ぶと、
+    検証の往復(実測150ms前後)の間そのワーカーのイベントループが止まり、
+    同一インスタンスに相乗りしている他のリクエストまで待たされる。
+    """
+    user = await asyncio.to_thread(_authenticate_request, request)
+    return user.id
+
+
+def _build_user_client_from_request(request: Request):
+    """AuthorizationヘッダのJWTを検証し、そのユーザー権限のSupabaseクライアントを返す (RLS適用)。
+
+    RLSを効かせた読み書きが必要なエンドポイント専用。ここだけはユーザーごとに
+    Authorizationヘッダを固定したクライアントが要るため、リクエストごとに
+    create_client()する(検証だけで済む他のエンドポイントは、使い回しの
+    get_supabase_auth_client()を使うので新規接続を張らない)。
+    """
+    token = _bearer_token(request)
+    user = _authenticate_request(request)
+    user_client = create_client(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
+    return user_client, user.id
+
+
+async def _get_user_client_from_request(request: Request):
+    """_build_user_client_from_request()をイベントループの外で実行する版。"""
+    return await asyncio.to_thread(_build_user_client_from_request, request)
+
+
+# ---------------------------------------------------------
 # 分析開始 (start_analysis)
 # ---------------------------------------------------------
 @app.post("/start-analysis")
 async def start_analysis(payload: StartAnalysisRequest, request: Request):
     print(f"🚀 Start Analysis called for Lecture: {payload.lecture_id}, Chunks: {payload.expected_chunks}")
-
-    # 1. Flutterから送られてきたJWTトークンを取得
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    
-    token = auth_header.replace("Bearer ", "").strip()
-
-    # 2. ユーザーの権限でSupabaseクライアントを作成 (RLS突破)
-    user_client = create_client(
-        SUPABASE_URL, 
-        SUPABASE_PUBLISHABLE_KEY, 
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-
-    # 3. トークンからユーザー情報を取得
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-    
-    user_id = user_res.user.id
+    user_id = await _get_authenticated_user_id(request)
 
      # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
     admin_client = get_supabase_client()
@@ -623,21 +700,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 # ---------------------------------------------------------
 @app.post("/seed-tutorial")
 async def seed_tutorial(payload: SeedTutorialRequest, request: Request):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-    user_id = user_res.user.id
+    user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -799,20 +862,7 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
     実際の検証(プランの有効性・claim_mode・二重claim防止)は全て
     claim_plan() SQL関数側でアトミックに行う。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-    user_id = user_res.user.id
+    user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -891,19 +941,7 @@ async def billing_plans(request: Request):
     引き続き担保する。store_purchaseプランの有効化はRevenueCat Webhook
     経由でのみ行われ、/billing/claim-planでは弾かれる)。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
+    await _get_authenticated_user_id(request)  # 認証チェックのみ(user_idは使わない)
 
     admin_client = get_supabase_client()
 
@@ -944,19 +982,7 @@ async def billing_credit_packs(request: Request):
     させないための一覧取得エンドポイント。実際の付与はRevenueCat Webhook
     (NON_RENEWING_PURCHASEイベント → grant_credit_pack_purchase())経由でのみ行う。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
+    await _get_authenticated_user_id(request)  # 認証チェックのみ(user_idは使わない)
 
     admin_client = get_supabase_client()
 
@@ -994,20 +1020,7 @@ async def billing_summary(request: Request):
     しきい値計算(例: Realtime可否の$0.1判定)のために自前でハードコードした
     レートを持たずに済むようにする。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-    user_id = user_res.user.id
+    user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -1058,20 +1071,7 @@ async def billing_history(request: Request):
     見せると「クレジットを失った」という誤解を招くため、数字を出さない
     区切りエントリ(reset_reason: "renewed" | "plan_changed")として返す。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = await asyncio.to_thread(lambda: user_client.auth.get_user(token))
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-    user_id = user_res.user.id
+    user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -1408,25 +1408,7 @@ async def billing_stripe_create_credit_pack_payment(payload: CreateCreditPackPay
     金額はStripe側のPrice(credit_packs.stripe_price_id)から取得するので、
     クライアントから金額を受け取らない(改ざん防止)。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    try:
-        user_client = create_client(
-            SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
     try:
@@ -1575,25 +1557,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
       と同じ結果になる。Appleの購読はこちらから解約できない(既知の制限。
       ユーザーはiOS側で自分で解約する必要がある)。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    try:
-        user_client = create_client(
-            SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
     try:
@@ -1864,25 +1828,7 @@ async def billing_stripe_resume_plan(request: Request):
     cancel_at_period_end)が見つからない場合は、Apple経由の予約だと判断して
     APPLE_MANAGED_SUBSCRIPTIONを返す。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    try:
-        user_client = create_client(
-            SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -2145,20 +2091,7 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
     PENDINGへの書き戻しは既存のSupabase Webhook経由で
     /webhook/orchestrator の is_manually_retried 分岐が自動的に拾って再enqueueする。
     """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-    user_id = user_res.user.id
+    user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -2459,35 +2392,15 @@ async def worker_complete_master_audio_upload(payload: MasterAudioUploadComplete
 # ---------------------------------------------------------
 # 🎙️ オンデバイスASR(sherpa_onnx)のモデル配布
 # ---------------------------------------------------------
-def _authenticate_request(request: Request) -> str:
-    """AuthorizationヘッダのJWTを検証し、user_idを返す。R2上のASRモデル自体は
-    ユーザーに紐付かない共有アセットだが、他エンドポイントと同様ログイン済み
-    ユーザーからの呼び出しであることだけは確認しておく。"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    token = auth_header.replace("Bearer ", "").strip()
-    try:
-        user_client = create_client(
-            SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        return user_res.user.id
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+# R2上のASRモデル自体はユーザーに紐付かない共有アセットだが、他エンドポイントと
+# 同様、ログイン済みユーザーからの呼び出しであることだけは確認しておく。
 
 
 @app.post("/asr-models/manifest")
 async def get_asr_models_manifest(request: Request):
     """録音言語ごとのオンデバイスASRモデル一覧(engineCompatVersion/modelVersion
     込みのマニフェスト)を返す。R2の asr_models/manifest.json をそのまま返すだけ。"""
-    _authenticate_request(request)
+    await _get_authenticated_user_id(request)  # 認証チェックのみ(user_idは使わない)
 
     from app.core.r2_storage import storage_service
     try:
@@ -2501,7 +2414,7 @@ async def get_asr_models_manifest(request: Request):
 async def get_asr_model_download_url(payload: AsrModelDownloadUrlRequest, request: Request):
     """指定model_idのtar.gzを取得するための署名付きGET URLをその場で発行する。
     署名URLには最大7日の有効期限があるため、マニフェストに埋め込まず毎回発行する。"""
-    _authenticate_request(request)
+    await _get_authenticated_user_id(request)  # 認証チェックのみ(user_idは使わない)
 
     from app.core.r2_storage import storage_service
     try:
@@ -3316,7 +3229,7 @@ async def cancel_lecture_jobs_endpoint(lecture_id: str, request: Request):
     /start-analysisのDEAD_JOB_STATUSESにも含まれるので、復元後の再実行は
     force無しでも新規ジョブとして通る。
     """
-    uid = _authenticate_request(request)
+    uid = await _get_authenticated_user_id(request)
     admin_client = get_supabase_client()
 
     lec_res = await asyncio.to_thread(
@@ -3361,7 +3274,7 @@ async def hard_delete_lecture_endpoint(lecture_id: str, request: Request):
     Supabase側のカスケード設定に依存せず、_hard_delete_lecture が
     子テーブル・R2ファイルまで含めて明示的に削除する。
     """
-    uid = _authenticate_request(request)
+    uid = await _get_authenticated_user_id(request)
     admin_client = get_supabase_client()
 
     lec_res = await asyncio.to_thread(
@@ -3389,7 +3302,7 @@ async def hard_delete_lecture_endpoint(lecture_id: str, request: Request):
 @app.post("/courses/{course_id}/hard-delete")
 async def hard_delete_course_endpoint(course_id: str, request: Request):
     """ゴミ箱に入っているコース1件を、配下の講義ごと完全削除する。"""
-    uid = _authenticate_request(request)
+    uid = await _get_authenticated_user_id(request)
     admin_client = get_supabase_client()
 
     course_res = await asyncio.to_thread(
@@ -3422,7 +3335,7 @@ async def empty_trash_endpoint(request: Request):
     try/exceptしてカウントし、1件の失敗が他のアイテムの削除を止めないようにする。
     失敗したidは呼び出し元(Flutter)がローカルのTrashに残せるよう返す。
     """
-    uid = _authenticate_request(request)
+    uid = await _get_authenticated_user_id(request)
     admin_client = get_supabase_client()
 
     # 1. ゴミ箱内のコースを先に処理する(配下の講義も_hard_delete_course内で一緒に消える)
@@ -3782,25 +3695,6 @@ class RegisterDeviceRequest(BaseModel):
     platform: str  # "ios" | "android"
 
 
-def _get_user_client_from_request(request: Request):
-    """AuthorizationヘッダのJWTを検証し、そのユーザー権限のSupabaseクライアントを返す (RLS適用)"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    user_client = create_client(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY,
-        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-    )
-    user_res = user_client.auth.get_user(token)
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-
-    return user_client, user_res.user.id
-
-
 @app.post("/devices/register")
 async def register_device(payload: RegisterDeviceRequest, request: Request):
     """FCMデバイストークンを登録する。device_tokenはUNIQUEなので、
@@ -3808,7 +3702,7 @@ async def register_device(payload: RegisterDeviceRequest, request: Request):
     if payload.platform not in ("ios", "android"):
         raise HTTPException(status_code=400, detail="platform must be 'ios' or 'android'")
 
-    _, user_id = _get_user_client_from_request(request)
+    _, user_id = await _get_user_client_from_request(request)
     try:
         # UPSERTでdevice_tokenが別ユーザーの既存行と衝突する場合、そのUPDATEは
         # 「今のユーザーが既に所有する行」しか許さないRLS(user_devices_update_own)
@@ -3833,7 +3727,7 @@ async def register_device(payload: RegisterDeviceRequest, request: Request):
 @app.post("/devices/unregister")
 async def unregister_device(payload: RegisterDeviceRequest, request: Request):
     """ログアウト時などにデバイストークンを削除する"""
-    user_client, user_id = _get_user_client_from_request(request)
+    user_client, user_id = await _get_user_client_from_request(request)
     try:
         user_client.table("user_devices").delete().eq("device_token", payload.device_token).eq("user_id", user_id).execute()
         return {"success": True}
@@ -4014,23 +3908,7 @@ async def support_request_upload_url(
     request: Request,
 ):
     """お問い合わせ添付ファイル用の署名付きアップロードURLを発行する"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    token = auth_header.replace("Bearer ", "").strip()
-
-    try:
-        user_client = create_client(
-            SUPABASE_URL, 
-            SUPABASE_PUBLISHABLE_KEY, 
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    uid = await _get_authenticated_user_id(request)
 
     from app.services.task_runners import storage_service
     upload_url, storage_path = await asyncio.to_thread(
@@ -4053,23 +3931,7 @@ async def profile_request_avatar_upload_url(
     request: Request,
 ):
     """ユーザーカスタムアバター画像用の R2 署名付きアップロードURLを発行する"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    token = auth_header.replace("Bearer ", "").strip()
-
-    try:
-        user_client = create_client(
-            SUPABASE_URL, 
-            SUPABASE_PUBLISHABLE_KEY, 
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    uid = await _get_authenticated_user_id(request)
 
     from app.services.task_runners import storage_service
     upload_url, storage_path = await asyncio.to_thread(
@@ -4087,25 +3949,10 @@ async def support_submit(
     request: Request,
 ):
     """お問い合わせ内容を受け取り、Supabase DBに保存、自動返信＆管理者へのメール通知を行う"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    token = auth_header.replace("Bearer ", "").strip()
-
-    try:
-        user_client = create_client(
-            SUPABASE_URL, 
-            SUPABASE_PUBLISHABLE_KEY, 
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-        user_email = user_res.user.email
-        display_name = (user_res.user.user_metadata or {}).get("display_name", "")
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    user = await _get_authenticated_user(request)
+    uid = user.id
+    user_email = user.email
+    display_name = (user.user_metadata or {}).get("display_name", "")
 
     # 1. ランダムなお問い合わせコード生成 (LFT-XXXXXX)
     import random
@@ -4223,23 +4070,7 @@ async def support_submit(
 @app.post("/auth/delete-account")
 async def auth_delete_account(request: Request):
     """ユーザーのアカウントを削除する。auth.usersから削除するため、Admin APIを呼び出す。"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    token = auth_header.replace("Bearer ", "").strip()
-
-    try:
-        user_client = create_client(
-            SUPABASE_URL, 
-            SUPABASE_PUBLISHABLE_KEY, 
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
-        user_res = user_client.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="Unauthorized user")
-        uid = user_res.user.id
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 

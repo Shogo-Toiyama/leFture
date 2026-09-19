@@ -1,34 +1,23 @@
 // lib/infrastructure/repositories/push_notification_repository.dart
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/app_config.dart';
-import '../../core/utils/network_constants.dart';
+import '../auth/authed_http.dart';
 
 class PushNotificationRepository {
   final SupabaseClient _supabase;
+  final AuthedHttpClient _http;
 
-  PushNotificationRepository(this._supabase);
+  PushNotificationRepository(this._supabase)
+      : _http = AuthedHttpClient(_supabase);
 
   static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
-  /// ログイン直後(特にコールドスタート時の永続化セッション復元)は、
-  /// currentSessionが「期限切れだが自動リフレッシュがまだ完了していない」
-  /// トークンを保持していることがある。その場合だけ明示的にリフレッシュを
-  /// 待ってから使う(healthyならリフレッシュAPIを叩かないので余計なコストは無い)。
-  Future<String?> _validAccessToken() async {
-    var session = _supabase.auth.currentSession;
-    if (session == null) return null;
-    if (session.isExpired) {
-      try {
-        final res = await _supabase.auth.refreshSession();
-        session = res.session;
-      } catch (_) {
-        return null;
-      }
-    }
-    return session?.accessToken;
-  }
+  /// 「期限切れだが自動リフレッシュがまだ完了していない」トークンを送らない
+  /// ための処理は、以前このクラスだけが_validAccessToken()として持っていたが、
+  /// 現在はAuthedHttpClientに集約してある(401時の再試行もそちらが行う)。
+  /// ここではデバイス登録がfire-and-forgetである点だけを扱う —
+  /// 未ログインなら何もしない。
+  bool get _hasSession => _supabase.auth.currentSession != null;
 
   /// FCMデバイストークンをバックエンドに登録する。
   /// device_tokenはバックエンド側でUNIQUE制約になっており、同じ端末で
@@ -37,22 +26,15 @@ class PushNotificationRepository {
     required String deviceToken,
     required String platform,
   }) async {
-    final jwt = await _validAccessToken();
-    if (jwt == null) return;
+    if (!_hasSession) return;
 
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/devices/register'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({
-            'device_token': deviceToken,
-            'platform': platform,
-          }),
-        )
-        .timeout(networkTimeout);
+    final response = await _http.post(
+      Uri.parse('$_cloudRunBaseUrl/devices/register'),
+      payload: {
+        'device_token': deviceToken,
+        'platform': platform,
+      },
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -66,21 +48,20 @@ class PushNotificationRepository {
     required String deviceToken,
     required String platform,
   }) async {
-    final jwt = await _validAccessToken();
-    if (jwt == null) return;
+    if (!_hasSession) return;
 
-    await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/devices/unregister'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({
-            'device_token': deviceToken,
-            'platform': platform,
-          }),
-        )
-        .timeout(networkTimeout);
+    try {
+      await _http.post(
+        Uri.parse('$_cloudRunBaseUrl/devices/unregister'),
+        payload: {
+          'device_token': deviceToken,
+          'platform': platform,
+        },
+      );
+    } on SessionExpiredException {
+      // サインアウト処理の一部として呼ばれるため、その時点でセッションが
+      // 既に失効しているのは異常ではない。解除できなくてもサインアウト自体は
+      // 続行させる(サーバー側のdevice_tokenは次のログイン時に付け替わる)。
+    }
   }
 }

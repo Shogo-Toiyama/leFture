@@ -10,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:lefture/core/config/app_config.dart';
+import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/infrastructure/repositories/backend_warmup.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
@@ -65,12 +66,13 @@ class ContactPage extends HookConsumerWidget {
       isSubmitting.value = true;
       errorMessage.value = null;
 
-      final jwt = supabase.auth.currentSession?.accessToken;
-      if (jwt == null) {
+      if (supabase.auth.currentSession == null) {
         errorMessage.value = l10n.contactAuthError;
         isSubmitting.value = false;
         return;
       }
+      // トークンの事前リフレッシュ・401時の再試行・再ログイン誘導はここが担う。
+      final authedHttp = AuthedHttpClient(supabase);
 
       try {
         statusMessage.value = l10n.contactConnecting;
@@ -90,17 +92,14 @@ class ContactPage extends HookConsumerWidget {
           statusMessage.value = l10n.contactPreparingUpload;
 
           // Request presigned URL from backend (with 30s timeout)
-          final presignedRes = await http.post(
+          final presignedRes = await authedHttp.post(
             Uri.parse('$_baseUrl/support/request-upload-url'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $jwt',
-            },
-            body: jsonEncode({
+            payload: {
               'file_name': file.name,
               'content_type': _guessContentType(file.name),
-            }),
-          ).timeout(const Duration(seconds: 30));
+            },
+            timeout: const Duration(seconds: 30),
+          );
 
           if (presignedRes.statusCode != 200) {
             throw Exception('Failed to request upload URL: ${presignedRes.body}');
@@ -139,19 +138,16 @@ class ContactPage extends HookConsumerWidget {
         };
 
         // 2. Submit ticket metadata to backend (with 30s timeout)
-        final submitRes = await http.post(
+        final submitRes = await authedHttp.post(
           Uri.parse('$_baseUrl/support/submit'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({
+          payload: {
             'category': selectedCategory.value,
             'message': messageController.text,
             'attachment_urls': attachmentR2Path != null ? [attachmentR2Path] : [],
             'device_info': deviceInfo,
-          }),
-        ).timeout(const Duration(seconds: 30));
+          },
+          timeout: const Duration(seconds: 30),
+        );
 
         if (submitRes.statusCode != 200) {
           throw Exception('Failed to submit support ticket: ${submitRes.body}');

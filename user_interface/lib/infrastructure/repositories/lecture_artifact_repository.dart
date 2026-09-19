@@ -4,13 +4,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 
+import '../auth/authed_http.dart';
 import '../../core/utils/connectivity_utils.dart';
-import '../../core/utils/network_constants.dart';
 import '../../domain/entities/lecture_data.dart';
 import '../local_db/app_database.dart';
 
@@ -83,18 +82,13 @@ class LectureArtifactRepository {
       throw ArtifactOfflineException(storagePath: storagePath);
     }
 
-    final token = _supabase.auth.currentSession?.accessToken;
-    if (token == null) {
-      throw ArtifactFetchException('token is null', storagePath: storagePath);
-    }
-
     try {
-      final response = await http.get(
-        Uri.parse('$_workerBaseUrl/$storagePath'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(networkTimeout);
+      // 宛先はCloud RunではなくCloudflare Worker側だが、検証しているJWTは同じ
+      // Supabaseのものなので、期限切れの事前リフレッシュと401リトライは
+      // 同じように効く(元コードのコメントにあった「トークン未リフレッシュ(401)」が
+      // まさにこれで自動復帰する)。
+      final response = await AuthedHttpClient(_supabase)
+          .get(Uri.parse('$_workerBaseUrl/$storagePath'));
       if (response.statusCode != 200) {
         // まだ生成されていない(404)、トークン未リフレッシュ(401)等。
         debugPrint('Artifact GET ${response.statusCode}: $storagePath');

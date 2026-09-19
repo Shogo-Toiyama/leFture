@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
-import '../../core/utils/network_constants.dart';
+import '../auth/authed_http.dart';
 import '../../domain/entities/asr_model_manifest.dart';
 
 /// [AsrModelRepository.downloadModelArchive]がユーザー操作(pauseDownload)に
@@ -28,32 +28,17 @@ class ModelDownloadHandle {
 }
 
 class AsrModelRepository {
-  final SupabaseClient _supabase;
+  final AuthedHttpClient _http;
 
-  AsrModelRepository(this._supabase);
+  AsrModelRepository(SupabaseClient supabase)
+      : _http = AuthedHttpClient(supabase);
 
   static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
-  String _requireJwt() {
-    final jwt = _supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot reach ASR model backend.');
-    }
-    return jwt;
-  }
-
   /// 録音言語ごとのASRモデル一覧(engineCompatVersion/modelVersion込み)を取得する。
   Future<AsrModelManifest> fetchManifest() async {
-    final jwt = _requireJwt();
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/asr-models/manifest'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-        )
-        .timeout(networkTimeout);
+    final response =
+        await _http.post(Uri.parse('$_cloudRunBaseUrl/asr-models/manifest'));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch ASR manifest (${response.statusCode}): ${response.body}');
@@ -64,17 +49,10 @@ class AsrModelRepository {
   /// 指定modelIdのモデル本体(tar.gz)を取得するための署名付きURLをその場で発行してもらう。
   /// 署名URLは最大7日で失効するため、ダウンロード直前に毎回取り直す。
   Future<String> fetchDownloadUrl(String modelId) async {
-    final jwt = _requireJwt();
-    final response = await http
-        .post(
-          Uri.parse('$_cloudRunBaseUrl/asr-models/download-url'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwt',
-          },
-          body: jsonEncode({'model_id': modelId}),
-        )
-        .timeout(networkTimeout);
+    final response = await _http.post(
+      Uri.parse('$_cloudRunBaseUrl/asr-models/download-url'),
+      payload: {'model_id': modelId},
+    );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch ASR model download URL (${response.statusCode}): ${response.body}');

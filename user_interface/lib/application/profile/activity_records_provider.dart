@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/core/config/app_config.dart';
+import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/core/utils/text_preview.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
@@ -452,13 +452,9 @@ class TrashController {
 
   static const _backendBaseUrl = AppConfig.backendBaseUrl;
 
-  static String _requireJwt() {
-    final jwt = supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in. Cannot delete trash item.');
-    }
-    return jwt;
-  }
+  /// 期限切れトークンの事前リフレッシュ・401時の再試行・再ログイン誘導は
+  /// AuthedHttpClientが面倒を見る。
+  static AuthedHttpClient get _http => AuthedHttpClient(supabase);
 
   /// 講義・コースの完全削除は、子テーブル(keywords/lecture_transcripts/
   /// processing_jobs/R2ファイル等)まで含めてバックエンドの _hard_delete_lecture/
@@ -474,13 +470,10 @@ class TrashController {
     final db = ref.read(appDatabaseProvider);
 
     if (record.type == ActivityRecordType.course) {
-      final jwt = _requireJwt();
-      final response = await http
-          .post(
-            Uri.parse('$_backendBaseUrl/courses/${record.id}/hard-delete'),
-            headers: {'Authorization': 'Bearer $jwt'},
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _http.post(
+        Uri.parse('$_backendBaseUrl/courses/${record.id}/hard-delete'),
+        timeout: const Duration(seconds: 30),
+      );
       // 404 = バックエンド側では既に削除済み(前回の呼び出しが実は成功していた/
       // 二重タップ等)。これはエラーではなく「削除完了」として扱い、ローカルの
       // 掃除だけ行う。404以外の失敗だけを本当の失敗として例外送出する。
@@ -491,13 +484,10 @@ class TrashController {
       }
       await db.hardDeleteCourseCascade(record.id);
     } else if (record.type == ActivityRecordType.lecture) {
-      final jwt = _requireJwt();
-      final response = await http
-          .post(
-            Uri.parse('$_backendBaseUrl/lectures/${record.id}/hard-delete'),
-            headers: {'Authorization': 'Bearer $jwt'},
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _http.post(
+        Uri.parse('$_backendBaseUrl/lectures/${record.id}/hard-delete'),
+        timeout: const Duration(seconds: 30),
+      );
       // 404 = バックエンド側では既に削除済み。同上の理由でエラー扱いにしない。
       if (response.statusCode != 200 && response.statusCode != 404) {
         throw Exception(
@@ -535,13 +525,10 @@ class TrashController {
       );
     }
 
-    final jwt = _requireJwt();
-    final response = await http
-        .post(
-          Uri.parse('$_backendBaseUrl/trash/empty'),
-          headers: {'Authorization': 'Bearer $jwt'},
-        )
-        .timeout(const Duration(seconds: 60));
+    final response = await _http.post(
+      Uri.parse('$_backendBaseUrl/trash/empty'),
+      timeout: const Duration(seconds: 60),
+    );
     if (response.statusCode != 200) {
       throw Exception(
         'Failed to empty trash (${response.statusCode}): ${response.body}',

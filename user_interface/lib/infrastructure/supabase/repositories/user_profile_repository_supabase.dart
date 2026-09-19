@@ -7,6 +7,7 @@ import 'package:lefture/domain/entities/user_profile.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/core/config/app_config.dart';
+import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -161,21 +162,15 @@ class UserProfileRepositorySupabase {
         contentType = 'image/jpeg';
     }
 
-    final token = supabase.auth.currentSession?.accessToken;
-    if (token == null) throw StateError('Not authenticated');
-
     // 1. R2 署名付きアップロードURLを取得
-    final presignedRes = await http.post(
+    final presignedRes = await AuthedHttpClient(supabase).post(
       Uri.parse('${AppConfig.backendBaseUrl}/profile/request-avatar-upload-url'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
+      payload: {
         'file_name': fileName,
         'content_type': contentType,
-      }),
-    ).timeout(const Duration(seconds: 20));
+      },
+      timeout: const Duration(seconds: 20),
+    );
 
     if (presignedRes.statusCode != 200) {
       throw StateError('Failed to request avatar upload URL: HTTP ${presignedRes.statusCode}');

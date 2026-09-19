@@ -189,8 +189,14 @@ export const AccountPage: React.FC = () => {
       : Math.max(0, Math.min(1, totalBalance / maxCapacity));
 
   // ── サインアウト実行 ───────────────────────────────────────
+  // scope: 'local' を必ず明示する。supabase-jsのsignOut()は既定が
+  // scope: 'global' で、このブラウザだけでなく「そのユーザーの全端末」の
+  // セッションを失効させてしまう(gotrue-dart側の既定はlocalなので、
+  // モバイル→Webの向きでは起きない非対称な挙動)。
+  // 実際に2026-09-19、ここからのサインアウトでiOSアプリのセッションが
+  // 巻き添えで失効し、アプリ側のクレジット表示が読めなくなる事故が起きた。
   const handleConfirmSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     navigate('/sign-in', { replace: true });
   };
 

@@ -1,10 +1,9 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
-import '../../core/utils/network_constants.dart';
+import '../auth/authed_http.dart';
 import '../../domain/entities/credit_pack_option.dart';
 import '../../domain/entities/credit_summary.dart';
 import '../../domain/entities/credit_usage_item.dart';
@@ -18,24 +17,16 @@ class DeviceAlreadyClaimedException implements Exception {
 }
 
 class CreditRepository {
-  final SupabaseClient _supabase;
-  CreditRepository(this._supabase);
+  CreditRepository(SupabaseClient supabase) : _http = AuthedHttpClient(supabase);
+
+  /// 期限切れトークンの事前リフレッシュと、401を受けた時の1回リトライ／
+  /// 再ログイン誘導はAuthedHttpClientに集約している。
+  final AuthedHttpClient _http;
 
   static const _cloudRunBaseUrl = AppConfig.backendBaseUrl;
 
-  String get _jwt {
-    final jwt = _supabase.auth.currentSession?.accessToken;
-    if (jwt == null) {
-      throw Exception('Not logged in.');
-    }
-    return jwt;
-  }
-
   Future<CreditSummary> fetchSummary() async {
-    final response = await http.get(
-      Uri.parse('$_cloudRunBaseUrl/billing/summary'),
-      headers: {'Authorization': 'Bearer $_jwt'},
-    ).timeout(networkTimeout);
+    final response = await _http.get(Uri.parse('$_cloudRunBaseUrl/billing/summary'));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch credit summary (${response.statusCode}): ${response.body}');
@@ -46,10 +37,7 @@ class CreditRepository {
 
   /// 今claimできる(claim_mode='self_serve'かつ無効化されていない)プラン一覧。
   Future<List<PlanOption>> fetchClaimablePlans() async {
-    final response = await http.get(
-      Uri.parse('$_cloudRunBaseUrl/billing/plans'),
-      headers: {'Authorization': 'Bearer $_jwt'},
-    ).timeout(networkTimeout);
+    final response = await _http.get(Uri.parse('$_cloudRunBaseUrl/billing/plans'));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch plans (${response.statusCode}): ${response.body}');
@@ -70,14 +58,8 @@ class CreditRepository {
     if (deviceId != null && deviceId.isNotEmpty) {
       payload['device_id'] = deviceId;
     }
-    final response = await http.post(
-      Uri.parse('$_cloudRunBaseUrl/billing/claim-plan'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_jwt',
-      },
-      body: jsonEncode(payload),
-    ).timeout(networkTimeout);
+    final response = await _http
+        .post(Uri.parse('$_cloudRunBaseUrl/billing/claim-plan'), payload: payload);
 
     if (response.statusCode != 200) {
       if (response.body.contains('DEVICE_ALREADY_CLAIMED')) {
@@ -89,10 +71,7 @@ class CreditRepository {
 
   /// 購入可能な追加クレジットパック一覧(都度課金、非サブスク)。
   Future<List<CreditPackOption>> fetchCreditPacks() async {
-    final response = await http.get(
-      Uri.parse('$_cloudRunBaseUrl/billing/credit-packs'),
-      headers: {'Authorization': 'Bearer $_jwt'},
-    ).timeout(networkTimeout);
+    final response = await _http.get(Uri.parse('$_cloudRunBaseUrl/billing/credit-packs'));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch credit packs (${response.statusCode}): ${response.body}');
@@ -107,10 +86,7 @@ class CreditRepository {
 
   /// 1時間ごとのクレジット利用履歴を取得する。
   Future<List<CreditUsageItem>> fetchUsageHistory() async {
-    final response = await http.get(
-      Uri.parse('$_cloudRunBaseUrl/billing/history'),
-      headers: {'Authorization': 'Bearer $_jwt'},
-    ).timeout(networkTimeout);
+    final response = await _http.get(Uri.parse('$_cloudRunBaseUrl/billing/history'));
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch usage history (${response.statusCode}): ${response.body}');

@@ -39,3 +39,41 @@ def get_supabase_client() -> Client:
             )
 
         return _client
+
+
+_auth_client: Client | None = None
+_auth_client_lock = threading.Lock()
+
+
+def get_supabase_auth_client() -> Client:
+    """
+    JWT検証(auth.get_user)専用の、プロセス内で使い回すクライアント。
+
+    get_supabase_client()と分けてあるのは鍵が違うため — こちらは
+    publishable key(＝クライアント相当の権限)で、検証したいトークンは
+    get_user(token)の引数として1回ごとに渡す(supabase_authは呼び出しごとに
+    Authorizationヘッダをそのトークンで上書きするので、クライアントを
+    共有してもユーザーが混ざることはない)。
+
+    以前は認証のたびにcreate_client()しており、認証付きリクエスト1本ごとに
+    新規のTCP/TLSハンドシェイクが発生していた(get_supabase_client()が
+    管理者クライアントについて解消したのと同じ問題が、認証側に残っていた)。
+    """
+    global _auth_client
+    if _auth_client is not None:
+        return _auth_client
+
+    with _auth_client_lock:
+        if _auth_client is None:
+            url: str = os.environ.get("SUPABASE_URL")
+            key: str = os.environ.get("SUPABASE_PUBLISHABLE_KEY")
+
+            if not url or not key:
+                raise ValueError("Supabase credentials not found in env vars")
+
+            _auth_client = create_client(
+                url,
+                key,
+                options=ClientOptions(httpx_client=httpx.Client(limits=_HTTPX_LIMITS)),
+            )
+        return _auth_client
