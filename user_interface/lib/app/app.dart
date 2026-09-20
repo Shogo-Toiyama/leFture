@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/router.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
+import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/notifications/push_notification_service.dart';
 import 'package:lefture/application/profile/display_language_controller.dart';
 import 'package:lefture/application/purchases/purchases_identity_provider.dart';
@@ -26,6 +27,13 @@ class MyApp extends ConsumerWidget {
 
     // クレジット情報の自動ポーリング（録音中・バックエンド処理中・クレジットページ表示中）を監視
     ref.watch(creditPollingProvider);
+
+    // セッションが復帰(tokenRefreshed)・再ログイン(signedIn)した直後に
+    // creditSummaryProviderを再取得させる。★ credit_providers.dart側で
+    // creditSummaryProvider自身からこれをwatch/readすることは絶対に禁止
+    // (CircularDependencyError、あるいはBehaviorSubjectの再送による無限
+    // ループになる。詳細はcreditSummaryAuthWatcherProviderのコメント参照)。
+    ref.watch(creditSummaryAuthWatcherProvider);
 
     // RevenueCatのapp_user_idをログイン中のSupabase user idと同期させ続ける
     ref.watch(purchasesIdentityProvider);
