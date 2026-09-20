@@ -326,7 +326,7 @@ export const en: Translations = {
     messagePlaceholder: 'Please describe your inquiry or feedback in detail.',
     attachmentLabel: 'Attach Screenshot (Optional)',
     attachmentHint: 'Drag and drop an image, or click to browse',
-    attachmentMax: 'PNG, JPG, WEBP (Max 5MB)',
+    attachmentMax: 'PNG, JPG, WEBP (large images are compressed automatically)',
     removeAttachment: 'Remove image',
     submitButton: 'Send Inquiry',
     submitting: 'Sending...',

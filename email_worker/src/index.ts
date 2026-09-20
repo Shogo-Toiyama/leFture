@@ -61,6 +61,23 @@ function jsonResponse(status: number, data: Record<string, any>): Response {
   });
 }
 
+/**
+ * base64文字列をバイト列にデコードする。
+ * env.EMAIL.send() の attachments[].content は string も受け付ける型になっているが、
+ * 実際にbase64文字列をそのまま渡すとデコードされずに「base64のテキスト自体」が
+ * 添付ファイルの内容として送信されてしまう(元ファイルの約4/3倍のサイズになり、
+ * 画像として開けない不具合の原因になっていた)。ArrayBufferView に変換して渡すことで、
+ * 実際のバイナリとして正しく送信する。
+ */
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 /** タイミング攻撃耐性を持つ文字列比較 */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
@@ -170,7 +187,7 @@ export default {
             ? attachments.map((att): EmailAttachment => ({
                 disposition: 'attachment',
                 filename: att.filename,
-                content: att.content,
+                content: base64ToBytes(att.content),
                 type: att.type || 'application/octet-stream',
               }))
             : undefined,

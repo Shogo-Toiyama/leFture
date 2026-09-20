@@ -45,7 +45,6 @@ const EMAIL_CONTENT_EN = {
   SUPPORT_APP_NAME: "leFture Support",
   SUPPORT_DESK_APP_NAME: "leFture Support Desk",
   FOOTER_IGNORE_NOTE: "If you did not request this email, you can safely ignore it.",
-  FOOTER_COPYRIGHT: `&copy; ${new Date().getFullYear()} leFture. All rights reserved.`,
   SUPPORT_ACK_SUBJECT: "leFture Support - Inquiry Received [{ticket_code}]",
   SUPPORT_ACK_HEADING: "Inquiry Received",
   SUPPORT_ACK_BODY: "Thank you for contacting leFture Support. We have received your report and our team is currently reviewing your message.",
@@ -63,7 +62,6 @@ const EMAIL_CONTENT_JA = {
   SUPPORT_APP_NAME: "leFture サポート",
   SUPPORT_DESK_APP_NAME: "leFture サポートデスク",
   FOOTER_IGNORE_NOTE: "本メールにお心当たりがない場合は、破棄していただけますようお願いいたします。",
-  FOOTER_COPYRIGHT: `&copy; ${new Date().getFullYear()} leFture. All rights reserved.`,
   SUPPORT_ACK_SUBJECT: "【leFture サポート】お問い合わせを受領いたしました [{ticket_code}]",
   SUPPORT_ACK_HEADING: "お問い合わせを受領いたしました",
   SUPPORT_ACK_BODY: "leFture サポートにお問い合わせいただきありがとうございます。ご送信いただいた内容を正常に受け付けました。担当チームにて順次確認・対応を行っております。",
@@ -164,7 +162,7 @@ function emailFooter(lang?: string): string {
             color:${COLOR_TEXT_MUTED} !important;
             font-family:${FONT_STACK};
           ">
-            ${c.FOOTER_COPYRIGHT}
+            &copy; ${new Date().getFullYear()} leFture. All rights reserved.
           </p>
         </td>
       </tr>

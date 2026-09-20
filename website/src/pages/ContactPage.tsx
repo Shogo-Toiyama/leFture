@@ -5,6 +5,46 @@ import { Mail, Send, CheckCircle2, AlertCircle, Loader2, Copy, Check, X, UploadC
 import { CustomSelect } from '../components/CustomSelect';
 import { usePageMeta } from '../lib/usePageMeta';
 
+// Cloudflare's send_email binding caps the whole message (headers + html +
+// attachments) at 5 MiB, and base64-encoding an attachment inflates it by
+// ~1.37x, so the actual file needs to stay comfortably under that.
+const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+
+// Re-encodes oversized images (iPhone screenshots in particular are often
+// 5-10MB PNGs) down to a JPEG under MAX_ATTACHMENT_BYTES, so users don't have
+// to manually compress screenshots before attaching them.
+async function compressImageFile(file: File, maxDimension = 1920): Promise<File> {
+  if (file.size <= MAX_ATTACHMENT_BYTES) return file;
+
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, width, height);
+
+    // Try progressively lower JPEG quality until it fits under the cap.
+    for (const quality of [0.85, 0.7, 0.55, 0.4]) {
+      const blob: Blob | null = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+      );
+      if (blob && blob.size <= MAX_ATTACHMENT_BYTES) {
+        const newName = file.name.replace(/\.\w+$/, '') + '.jpg';
+        return new File([blob], newName, { type: 'image/jpeg' });
+      }
+    }
+    return file;
+  } finally {
+    bitmap.close();
+  }
+}
+
 export const ContactPage: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -22,6 +62,7 @@ export const ContactPage: React.FC = () => {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,21 +107,35 @@ export const ContactPage: React.FC = () => {
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrorMsg('Please select a valid image file (PNG, JPG, WEBP).');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('Image size must be less than 5MB.');
+    setIsCompressing(true);
+    setErrorMsg(null);
+    let finalFile = file;
+    try {
+      finalFile = await compressImageFile(file);
+    } catch (err) {
+      console.error('Image compression failed, falling back to original file:', err);
+    } finally {
+      setIsCompressing(false);
+    }
+
+    // Cloudflare's send_email binding caps the whole message (headers + html +
+    // attachments) at 5 MiB, and base64-encoding an attachment inflates it by
+    // ~1.37x, so keep a safety margin even after compression.
+    if (finalFile.size > MAX_ATTACHMENT_BYTES) {
+      setErrorMsg('This image is too large even after compression. Please choose a smaller one.');
       return;
     }
 
     if (previewUrl) URL.revokeObjectURL(previewUrl);
 
-    setAttachment(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setAttachment(finalFile);
+    setPreviewUrl(URL.createObjectURL(finalFile));
     setErrorMsg(null);
   };
 
@@ -345,7 +400,22 @@ export const ContactPage: React.FC = () => {
                 }}
               />
 
-              {previewUrl ? (
+              {isCompressing ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '12px',
+                  color: 'var(--text-comet)',
+                  fontSize: '0.85rem',
+                }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  Compressing image…
+                </div>
+              ) : previewUrl ? (
                 <div style={{
                   position: 'relative',
                   display: 'flex',

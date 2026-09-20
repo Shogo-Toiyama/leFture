@@ -326,7 +326,7 @@ export const ja: Translations = {
     messagePlaceholder: 'ご質問やご要望を詳しくご記入ください。',
     attachmentLabel: 'スクリーンショット添付（任意）',
     attachmentHint: '画像をドラッグ＆ドロップ、またはクリックして選択',
-    attachmentMax: 'PNG, JPG, WEBP（最大 5MB）',
+    attachmentMax: 'PNG, JPG, WEBP（大きい画像は自動で圧縮されます）',
     removeAttachment: '画像を削除',
     submitButton: '送信する',
     submitting: '送信中...',
