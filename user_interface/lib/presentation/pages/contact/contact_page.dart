@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:lefture/core/config/app_config.dart';
@@ -34,9 +36,14 @@ class ContactPage extends HookConsumerWidget {
     final selectedCategory = useState<String>('bug');
     final messageController = useTextEditingController();
     
-    // Attachment state
-    final selectedFile = useState<PlatformFile?>(null);
-    
+    // Attachment state. Holds the final bytes/name/content-type to upload,
+    // which may differ from what the user picked (e.g. a HEIC photo gets
+    // converted to JPEG, see pickAttachment below).
+    final attachmentBytes = useState<Uint8List?>(null);
+    final attachmentFileName = useState<String?>(null);
+    final attachmentContentType = useState<String?>(null);
+    final isCompressingAttachment = useState(false);
+
     // Loading/Success states
     final isSubmitting = useState(false);
     final submissionSuccess = useState(false);
@@ -44,15 +51,69 @@ class ContactPage extends HookConsumerWidget {
     final errorMessage = useState<String?>(null);
     final statusMessage = useState<String?>(null);
 
+    void clearAttachment() {
+      attachmentBytes.value = null;
+      attachmentFileName.value = null;
+      attachmentContentType.value = null;
+    }
+
     // Pick file
     Future<void> pickAttachment() async {
       try {
         final result = await FilePicker.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'txt'],
+          allowedExtensions: ['jpg', 'jpeg', 'png', 'heic', 'heif', 'pdf', 'txt'],
+          withData: true,
         );
-        if (result != null && result.files.isNotEmpty) {
-          selectedFile.value = result.files.first;
+        if (result == null || result.files.isEmpty) return;
+
+        final picked = result.files.first;
+        final rawBytes = picked.bytes ?? await File(picked.path!).readAsBytes();
+        final lowerName = picked.name.toLowerCase();
+        final isImage = lowerName.endsWith('.png') ||
+            lowerName.endsWith('.jpg') ||
+            lowerName.endsWith('.jpeg') ||
+            lowerName.endsWith('.heic') ||
+            lowerName.endsWith('.heif');
+
+        if (!isImage) {
+          attachmentBytes.value = rawBytes;
+          attachmentFileName.value = picked.name;
+          attachmentContentType.value = _guessContentType(picked.name);
+          return;
+        }
+
+        isCompressingAttachment.value = true;
+        try {
+          // Resize + re-encode as JPEG. This also converts HEIC/HEIF (the
+          // default format for iPhone photos) into something every mail
+          // client and browser can actually render.
+          final compressedBytes = await FlutterImageCompress.compressWithList(
+            rawBytes,
+            minWidth: 1920,
+            minHeight: 1920,
+            quality: 80,
+          );
+          // The plugin doesn't always throw when a device can't decode the
+          // source (e.g. HEIC on an Android without a hardware codec, or a
+          // desktop platform it doesn't support) - it can also just return an
+          // empty list. Treat that the same as a thrown error.
+          if (compressedBytes.isEmpty) {
+            throw StateError('flutter_image_compress returned no bytes');
+          }
+          final dotIndex = picked.name.lastIndexOf('.');
+          final baseName = dotIndex == -1 ? picked.name : picked.name.substring(0, dotIndex);
+          attachmentBytes.value = compressedBytes;
+          attachmentFileName.value = '$baseName.jpg';
+          attachmentContentType.value = 'image/jpeg';
+        } catch (e) {
+          // Compression/conversion unavailable here - upload the original
+          // file as-is rather than blocking the attachment entirely.
+          attachmentBytes.value = rawBytes;
+          attachmentFileName.value = picked.name;
+          attachmentContentType.value = _guessContentType(picked.name);
+        } finally {
+          isCompressingAttachment.value = false;
         }
       } catch (e) {
         errorMessage.value = l10n.contactFailedToPickFile(e.toString());
@@ -86,17 +147,19 @@ class ContactPage extends HookConsumerWidget {
         String? attachmentR2Path;
 
         // 1. If attachment is selected, upload to R2
-        if (selectedFile.value != null) {
-          final file = selectedFile.value!;
-          
+        if (attachmentBytes.value != null && attachmentFileName.value != null) {
+          final fileName = attachmentFileName.value!;
+          final contentType = attachmentContentType.value ?? _guessContentType(fileName);
+          final fileBytes = attachmentBytes.value!;
+
           statusMessage.value = l10n.contactPreparingUpload;
 
           // Request presigned URL from backend (with 30s timeout)
           final presignedRes = await authedHttp.post(
             Uri.parse('$_baseUrl/support/request-upload-url'),
             payload: {
-              'file_name': file.name,
-              'content_type': _guessContentType(file.name),
+              'file_name': fileName,
+              'content_type': contentType,
             },
             timeout: const Duration(seconds: 30),
           );
@@ -112,11 +175,10 @@ class ContactPage extends HookConsumerWidget {
           statusMessage.value = l10n.contactUploadingAttachment;
 
           // PUT file bytes to R2 (with 30s timeout)
-          final fileBytes = file.bytes ?? await File(file.path!).readAsBytes();
           final putRes = await http.put(
             Uri.parse(uploadUrl),
             headers: {
-              'Content-Type': _guessContentType(file.name),
+              'Content-Type': contentType,
             },
             body: fileBytes,
           ).timeout(const Duration(seconds: 30));
@@ -305,7 +367,9 @@ class ContactPage extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         GestureDetector(
-                          onTap: selectedFile.value == null ? pickAttachment : null,
+                          onTap: (attachmentFileName.value == null && !isCompressingAttachment.value)
+                              ? pickAttachment
+                              : null,
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                             decoration: BoxDecoration(
@@ -313,14 +377,30 @@ class ContactPage extends HookConsumerWidget {
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: AppColors.universe.glassBorder),
                             ),
-                            child: selectedFile.value != null
+                            child: isCompressingAttachment.value
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.starGold),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        l10n.contactCompressingAttachment,
+                                        style: TextStyle(color: AppColors.universe.textComet, fontSize: 14),
+                                      ),
+                                    ],
+                                  )
+                                : attachmentFileName.value != null
                                 ? Row(
                                     children: [
                                       const Icon(Icons.insert_drive_file_outlined, color: AppColors.starGold),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          selectedFile.value!.name,
+                                          attachmentFileName.value!,
                                           style: TextStyle(color: AppColors.universe.textStarlight),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -328,7 +408,7 @@ class ContactPage extends HookConsumerWidget {
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.close, color: AppColors.correctionRed),
-                                        onPressed: () => selectedFile.value = null,
+                                        onPressed: clearAttachment,
                                       ),
                                     ],
                                   )
@@ -492,6 +572,8 @@ class ContactPage extends HookConsumerWidget {
     final lower = fileName.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    if (lower.endsWith('.heic')) return 'image/heic';
+    if (lower.endsWith('.heif')) return 'image/heif';
     if (lower.endsWith('.pdf')) return 'application/pdf';
     if (lower.endsWith('.txt')) return 'text/plain';
     return 'application/octet-stream';

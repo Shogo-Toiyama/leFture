@@ -37,6 +37,7 @@ class UserProfileRepositorySupabase {
       final newUid = data.session?.user.id;
       if (newUid != _lastUid) {
         _cachedOnboardingCompleted = null;
+        _cachedAiRecordingProfileShareConsent = null;
         _lastUid = newUid;
       }
     });
@@ -262,8 +263,15 @@ class UserProfileRepositorySupabase {
   static const _tutorialCreatedMetadataKey = 'tutorial_created_at';
   static const _displayLanguageMetadataKey = 'display_language';
   static const _recordingLanguageMetadataKey = 'recording_language';
+  // Apple審査(Guideline 5.1.1(i)/5.1.2(i))対応: 録音音声とプロフィール情報を
+  // 文字起こし・ノート生成のためサードパーティAIサービスへ送信することへの
+  // 明示同意。キー名は他のAI関連同意(将来追加されうるチャット機能など)と
+  // 混同しないよう、対象データと目的を含めて具体的にしてある。
+  static const _aiRecordingProfileShareConsentMetadataKey =
+      'ai_recording_profile_share_consent_at';
   bool? _cachedOnboardingCompleted;
   bool? _cachedTutorialCompleted;
+  bool? _cachedAiRecordingProfileShareConsent;
 
   /// 初回オンボーディング(プロフィール設定・Recording Language・Realtime
   /// Recording ON/OFF)を完了済みかどうか。ローカルにプロフィール行が
@@ -327,6 +335,76 @@ class UserProfileRepositorySupabase {
       _cachedOnboardingCompleted = true;
     }
     return completed;
+  }
+
+  /// 録音音声・プロフィール情報をサードパーティAIサービスへ送信すること
+  /// (文字起こし・要約・ノート生成のため)に、ユーザーが既に同意済みかどうか。
+  /// Apple Guideline 5.1.1(i)/5.1.2(i)対応で、最初のアップロード操作の直前に
+  /// 一度だけ同意ダイアログを出すために使う。
+  Future<bool> hasConsentedToAiRecordingProfileShare() async {
+    if (_cachedAiRecordingProfileShareConsent == true) {
+      return true;
+    }
+
+    final uid = _requireUid();
+    var existing = await _db.getUserProfile(uid);
+    if (existing?.metadataJson == null) {
+      try {
+        await getCurrentProfile().timeout(const Duration(seconds: 6));
+      } catch (_) {
+        // オフライン等で取得できない場合は、既存のローカルキャッシュのみで進める。
+      }
+      existing = await _db.getUserProfile(uid);
+    }
+    if (existing?.metadataJson == null) {
+      return false;
+    }
+    final metadata = Map<String, dynamic>.from(
+      jsonDecode(existing!.metadataJson!) as Map,
+    );
+    final consented =
+        metadata[_aiRecordingProfileShareConsentMetadataKey] != null;
+    if (consented) {
+      _cachedAiRecordingProfileShareConsent = true;
+    }
+    return consented;
+  }
+
+  /// 録音音声・プロフィール情報のサードパーティAI送信への同意をmetadataに
+  /// 記録し、サーバーにも同期する。
+  Future<void> markAiRecordingProfileShareConsent() async {
+    _cachedAiRecordingProfileShareConsent = true;
+    final uid = _requireUid();
+
+    try {
+      await getCurrentProfile();
+    } catch (_) {}
+
+    final existing = await _db.getUserProfile(uid);
+    final metadata = existing?.metadataJson != null
+        ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
+        : <String, dynamic>{};
+
+    if (metadata[_aiRecordingProfileShareConsentMetadataKey] != null) return;
+
+    metadata[_aiRecordingProfileShareConsentMetadataKey] = DateTime.now()
+        .toUtc()
+        .toIso8601String();
+
+    await _db.upsertUserProfile(
+      LocalUserProfilesCompanion(
+        id: Value(uid),
+        metadataJson: Value(jsonEncode(metadata)),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    await _db.enqueueOutbox(
+      entityType: 'user_profile',
+      entityId: uid,
+      op: 'update',
+    );
+    await _pushOutboxImmediately();
   }
 
   /// チュートリアル講義を完了（閲覧済み）した日時。未完了ならnull。

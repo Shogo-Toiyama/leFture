@@ -75,6 +75,7 @@ dependencies:
   sign_in_with_apple: ^7.0.1
   package_info_plus: ^9.0.1
   android_intent_plus: ^6.1.0
+  flutter_image_compress: ^2.5.1
 
 dev_dependencies:
   flutter_test:

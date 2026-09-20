@@ -473,6 +473,46 @@
     "description": "Close button label on the recording-consent-laws informational dialog."
   },
 
+  "aiSharingConsentDialogTitle": "About AI Data Processing",
+  "@aiSharingConsentDialogTitle": {
+    "description": "Title of the dialog shown once, right before the user's first upload, disclosing that their recording and profile data are sent to third-party AI services (Apple Guideline 5.1.1(i)/5.1.2(i) compliance)."
+  },
+
+  "aiSharingConsentDialogMessage": "Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.",
+  "@aiSharingConsentDialogMessage": {
+    "description": "Short body text of the AI-sharing consent dialog, summarizing what is shared before the user expands the details section."
+  },
+
+  "aiSharingConsentDialogDetailsToggle": "See details",
+  "@aiSharingConsentDialogDetailsToggle": {
+    "description": "Label for the expandable section (e.g. ExpansionTile) inside the AI-sharing consent dialog that reveals the full list of data sent and which AI services receive it."
+  },
+
+  "aiSharingConsentDialogDetailsBody": "Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), TogetherAI, and similar providers — summaries, notes, and quiz generation\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.",
+  "@aiSharingConsentDialogDetailsBody": {
+    "description": "Expanded detail text inside the AI-sharing consent dialog, listing the exact categories of data sent and the specific third-party AI services/models that receive them, plus a note that PII (name/email) is excluded."
+  },
+
+  "aiSharingConsentDialogPrivacyPolicyLink": "Privacy Policy",
+  "@aiSharingConsentDialogPrivacyPolicyLink": {
+    "description": "Tappable link text inside the AI-sharing consent dialog that navigates to the in-app Privacy Policy page (AppRoutes.privacyPolicy)."
+  },
+
+  "aiSharingConsentDialogContactLink": "Contact Us",
+  "@aiSharingConsentDialogContactLink": {
+    "description": "Tappable link text inside the AI-sharing consent dialog that navigates to the in-app Contact page (AppRoutes.contact), for users with questions about AI data sharing."
+  },
+
+  "aiSharingConsentDialogCancelButton": "Cancel",
+  "@aiSharingConsentDialogCancelButton": {
+    "description": "Cancel button on the AI-sharing consent dialog. Dismisses the dialog without recording consent and without proceeding with the upload."
+  },
+
+  "aiSharingConsentDialogAgreeButton": "Agree & Continue",
+  "@aiSharingConsentDialogAgreeButton": {
+    "description": "Primary confirm button on the AI-sharing consent dialog. Records the user's consent and proceeds with the upload that triggered the dialog."
+  },
+
   "recordingDiscardButtonLabel": "Discard Recording",
   "@recordingDiscardButtonLabel": {
     "description": "Text button (with a trash icon) below the recording controls that opens the discard-recording confirmation dialog. Different from recordingDiscardConfirmButton, which is the dialog's own confirm action."
@@ -4015,6 +4055,8 @@
   "@contactPreparingUpload": { "description": "Status message while preparing file upload." },
   "contactUploadingAttachment": "Uploading attachment...",
   "@contactUploadingAttachment": { "description": "Status message while uploading attachment." },
+  "contactCompressingAttachment": "Compressing image...",
+  "@contactCompressingAttachment": { "description": "Status message while compressing a picked image attachment." },
   "contactSubmittingTicket": "Submitting support ticket...",
   "@contactSubmittingTicket": { "description": "Status message while submitting ticket." },
   "contactTimeoutError": "Connection timed out. Please check your network and try again, or email us at support@lefture.com.",

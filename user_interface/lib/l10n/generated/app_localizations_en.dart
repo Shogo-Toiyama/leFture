@@ -303,6 +303,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingConsentInfoDialogCloseButton => 'Close';
 
   @override
+  String get aiSharingConsentDialogTitle => 'About AI Data Processing';
+
+  @override
+  String get aiSharingConsentDialogMessage =>
+      'Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.';
+
+  @override
+  String get aiSharingConsentDialogDetailsToggle => 'See details';
+
+  @override
+  String get aiSharingConsentDialogDetailsBody =>
+      'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), TogetherAI, and similar providers — summaries, notes, and quiz generation\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.';
+
+  @override
+  String get aiSharingConsentDialogPrivacyPolicyLink => 'Privacy Policy';
+
+  @override
+  String get aiSharingConsentDialogContactLink => 'Contact Us';
+
+  @override
+  String get aiSharingConsentDialogCancelButton => 'Cancel';
+
+  @override
+  String get aiSharingConsentDialogAgreeButton => 'Agree & Continue';
+
+  @override
   String get recordingDiscardButtonLabel => 'Discard Recording';
 
   @override
@@ -2520,6 +2546,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactUploadingAttachment => 'Uploading attachment...';
+
+  @override
+  String get contactCompressingAttachment => 'Compressing image...';
 
   @override
   String get contactSubmittingTicket => 'Submitting support ticket...';

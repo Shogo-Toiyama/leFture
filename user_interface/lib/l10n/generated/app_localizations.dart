@@ -650,6 +650,54 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get recordingConsentInfoDialogCloseButton;
 
+  /// Title of the dialog shown once, right before the user's first upload, disclosing that their recording and profile data are sent to third-party AI services (Apple Guideline 5.1.1(i)/5.1.2(i) compliance).
+  ///
+  /// In en, this message translates to:
+  /// **'About AI Data Processing'**
+  String get aiSharingConsentDialogTitle;
+
+  /// Short body text of the AI-sharing consent dialog, summarizing what is shared before the user expands the details section.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.'**
+  String get aiSharingConsentDialogMessage;
+
+  /// Label for the expandable section (e.g. ExpansionTile) inside the AI-sharing consent dialog that reveals the full list of data sent and which AI services receive it.
+  ///
+  /// In en, this message translates to:
+  /// **'See details'**
+  String get aiSharingConsentDialogDetailsToggle;
+
+  /// Expanded detail text inside the AI-sharing consent dialog, listing the exact categories of data sent and the specific third-party AI services/models that receive them, plus a note that PII (name/email) is excluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), TogetherAI, and similar providers — summaries, notes, and quiz generation\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.'**
+  String get aiSharingConsentDialogDetailsBody;
+
+  /// Tappable link text inside the AI-sharing consent dialog that navigates to the in-app Privacy Policy page (AppRoutes.privacyPolicy).
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get aiSharingConsentDialogPrivacyPolicyLink;
+
+  /// Tappable link text inside the AI-sharing consent dialog that navigates to the in-app Contact page (AppRoutes.contact), for users with questions about AI data sharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get aiSharingConsentDialogContactLink;
+
+  /// Cancel button on the AI-sharing consent dialog. Dismisses the dialog without recording consent and without proceeding with the upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aiSharingConsentDialogCancelButton;
+
+  /// Primary confirm button on the AI-sharing consent dialog. Records the user's consent and proceeds with the upload that triggered the dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Agree & Continue'**
+  String get aiSharingConsentDialogAgreeButton;
+
   /// Text button (with a trash icon) below the recording controls that opens the discard-recording confirmation dialog. Different from recordingDiscardConfirmButton, which is the dialog's own confirm action.
   ///
   /// In en, this message translates to:
@@ -4465,6 +4513,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uploading attachment...'**
   String get contactUploadingAttachment;
+
+  /// Status message while compressing a picked image attachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressing image...'**
+  String get contactCompressingAttachment;
 
   /// Status message while submitting ticket.
   ///
