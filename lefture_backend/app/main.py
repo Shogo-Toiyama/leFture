@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, ClientOptions, AuthError, AuthRetryableError
+from supabase import create_client, ClientOptions, AuthError, AuthApiError, AuthRetryableError
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
@@ -288,11 +288,17 @@ def _authenticate_request(request: Request):
     (2026-09-19にクレジット表示が最大1時間読めなくなった事象の直接原因)。
 
     方針:
-      - 認証の失敗は必ず401で返す(クライアントが再認証の判断をできるように)
+      - 「GoTrueがトークンを見て明確に拒否した」場合だけ401で返す
+        (クライアントはこの401を見てセッションを破棄し再ログインに誘導する)
+      - それ以外 — Auth自体が落ちている(5xx系=AuthRetryableError)、
+        GoTrueのレート制限(429)、backend↔Supabase Auth間の生の通信失敗
+        (httpx.HTTPError — ConnectError/ReadTimeout/RemoteProtocolError等。
+        これらはsupabase_authのAuthError系に変換されずここまで素通りしてくる)
+        — は全て503で返す。401にするとクライアントが不要なサインアウトを
+        してしまうため(2026-09-20、一時的な通信失敗で頻繁にログアウトされる
+        事象の直接原因だった)
       - GoTrueが返すerror_code(bad_jwt / session_not_found / user_not_found 等)を
         必ずログに残す。これが無いと「なぜ弾かれたか」がログから復元できない
-      - Auth自体が落ちている場合(5xx系=AuthRetryableError)だけは401ではなく503。
-        401にするとクライアントが不要なサインアウトをしてしまうため
 
     この関数は同期HTTPを行うので、asyncエンドポイントからは
     _get_authenticated_user_id_async()等のasync版を使うこと。
@@ -303,14 +309,33 @@ def _authenticate_request(request: Request):
     except AuthRetryableError as e:
         logger.error(f"Supabase Auth unavailable while verifying JWT: {e}", exc_info=True)
         raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
-    except AuthError as e:
+    except AuthApiError as e:
         code = getattr(e, "code", None) or "unknown"
         status = getattr(e, "status", None)
         logger.warning(f"JWT rejected by Supabase Auth: code={code} status={status} message={e}")
+        if status == 429:
+            # レート制限。トークンが無効なわけではないので401にしてはいけない。
+            raise HTTPException(status_code=503, detail="Authentication service rate limited")
         raise HTTPException(status_code=401, detail=f"Invalid or expired session ({code})")
+    except AuthError as e:
+        # AuthApiError以外のAuthError(例: AuthUnknownError)。GoTrueがJWTの
+        # 中身まで見て拒否したと確定できないため、安全側に倒して503にする。
+        code = getattr(e, "code", None) or "unknown"
+        logger.warning(f"Unexpected auth error while verifying JWT: code={code} message={e}")
+        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
+    except httpx.HTTPError as e:
+        # backend→Supabase Auth間の生の通信失敗(ConnectError/ReadTimeout/
+        # RemoteProtocolError等)。supabase_authはHTTPStatusError/RuntimeError
+        # しかAuthRetryableErrorに変換しないため、httpx側の例外はここまで
+        # ラップされずに素通りしてくる。トークンの正当性とは無関係なので401
+        # にしてはいけない。
+        logger.error(f"Network error while verifying JWT: {type(e).__name__}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
     except Exception as e:
-        logger.warning(f"JWT verification failed: {type(e).__name__}: {e}")
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
+        # ここに来るのは真に想定外のエラーのみ。トークンが不正だと確定した
+        # わけではないため、クライアントを不要にサインアウトさせないよう503にする。
+        logger.error(f"Unexpected error verifying JWT: {type(e).__name__}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
 
     if not user_res or not user_res.user:
         raise HTTPException(status_code=401, detail="Unauthorized user")

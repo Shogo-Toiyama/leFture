@@ -30,6 +30,15 @@ class SessionExpiredException implements Exception {
 ///   2. それでも駄目ならローカルのセッションを破棄する
 ///      (onAuthStateChangeが発火し、router.dartのredirectが/sign_inへ飛ばす)
 /// ことで、アプリを再起動しなくても復帰できるようにする。
+///
+/// 追記(2026-09-20): 上記の対策が「一時的な通信失敗」まで巻き添えで
+/// ログアウトさせてしまい、頻繁なログアウトを引き起こした。バックグラウンド
+/// 復帰直後や、backendからSupabase Authへの接続が一瞬失敗した程度では
+/// リフレッシュトークン自体は生きているため、絶対にサインアウトしてはいけない。
+/// gotrue-dartは「リトライ可能(ネットワーク断/タイムアウト/5xx)」と
+/// 「確定的な拒否(リフレッシュトークンが無効・使用済み・失効)」を
+/// [AuthRetryableFetchException] で区別して投げてくれるので、ここではその
+/// 区別に乗って「確定的な拒否のときだけ」セッションを破棄する。
 class AuthedHttpClient {
   AuthedHttpClient(this._supabase);
 
@@ -54,11 +63,24 @@ class AuthedHttpClient {
     return session.accessToken;
   }
 
+  /// リフレッシュを試みる。
+  ///
+  /// - リフレッシュトークン自体が確定的に無効/失効している場合([AuthException]、
+  ///   [AuthSessionMissingException]を含む。gotrue-dartはこの時点で
+  ///   `_removeSession()` + `signedOut` を既に発火済み)は `null` を返す。
+  ///   呼び出し元はこれを「再ログインが必要」として扱ってよい。
+  /// - ネットワーク断・タイムアウト・Supabase Auth側の一時的な5xx等、
+  ///   後で直る可能性がある失敗は [AuthRetryableFetchException] として
+  ///   gotrue-dartが投げてくる。これは握りつぶさずそのまま再スローする —
+  ///   ここで `catch (_)` して null を返すと、単なる通信の瞬断まで
+  ///   「セッション失効」に化けてサインアウトしてしまう(2026-09-20に発覚した
+  ///   頻繁ログアウトの直接原因)。呼び出し元は通常の通信エラーとして扱う。
   Future<Session?> _refreshSession() async {
     try {
       return (await _supabase.auth.refreshSession()).session;
-    } catch (_) {
-      // リフレッシュトークンごと失効している場合はここに来る。
+    } on AuthRetryableFetchException {
+      rethrow;
+    } on AuthException {
       return null;
     }
   }
