@@ -1522,6 +1522,22 @@ class RecordingPage extends HookConsumerWidget {
                                 state: state,
                                 controller: controller,
                                 isBusy: isBusy,
+                                onIdleStart: () async {
+                                  // Realtime Transcribeが有効な場合、録音開始
+                                  // 直後(数十秒後)には最初の音声チャンクが
+                                  // Whisperへ自動送信されてしまうため、実際に
+                                  // 送信が起き得る録音開始の前に同意を確認する。
+                                  if (state.realtimeTranscribe) {
+                                    if (!await _ensureAiSharingConsent(
+                                      context,
+                                      ref,
+                                      l10n,
+                                    )) {
+                                      return;
+                                    }
+                                  }
+                                  await controller.toggleStartStopResume();
+                                },
                               ),
                               const SizedBox(height: 16),
 
@@ -3454,11 +3470,19 @@ class _MicButton extends HookWidget {
     required this.state,
     required this.controller,
     required this.isBusy,
+    this.onIdleStart,
   });
 
   final RecordingState state;
   final RecordingController controller;
   final bool isBusy;
+
+  /// Idle状態からのタップ(=録音開始)だけを差し替えるためのフック。
+  /// Realtime Transcribe有効時のAI送信同意チェック([_ensureAiSharingConsent])
+  /// をBuildContext/WidgetRefを持つ親(RecordingPage)側で挟めるようにするため、
+  /// 指定されていればidleタップ時はこちらを呼び、controller.toggleStartStopResume()
+  /// は呼ばない(呼ぶかどうかの判断も含めてこのコールバック内で行う)。
+  final VoidCallback? onIdleStart;
 
   @override
   Widget build(BuildContext context) {
@@ -3492,7 +3516,15 @@ class _MicButton extends HookWidget {
         : (isRecording ? AppColors.correctionRed : AppColors.starGold);
 
     return GestureDetector(
-      onTap: canTap ? () => controller.toggleStartStopResume() : null,
+      onTap: canTap
+          ? () {
+              if (state.phase == RecordingPhase.idle && onIdleStart != null) {
+                onIdleStart!();
+              } else {
+                controller.toggleStartStopResume();
+              }
+            }
+          : null,
       child: SizedBox(
         width: 200,
         height: 200,
