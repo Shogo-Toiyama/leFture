@@ -1533,6 +1533,26 @@ class AppLocalizationsJa extends AppLocalizations {
       'Freeプランへの切り替えは、現在のサブスクリプションを解約することを意味します。解約はApple側の設定からのみ行えます: 「設定」アプリを開き、自分の名前をタップ→「サブスクリプション」(またはApp Storeアプリを開き、プロフィールをタップ→「サブスクリプション」)。現在のプランと付与済みのクレジットは、今の請求期間が終わるまでそのまま有効です。';
 
   @override
+  String get plansWebSubscriptionActiveTitle => 'ウェブでのサブスクリプションが有効です';
+
+  @override
+  String get plansWebSubscriptionActiveMessage =>
+      '現在ウェブサイト経由でサブスクリプションが有効になっています。このままAppleでの購入を続けると、ウェブ側のサブスクリプションは自動的に解約され、未消化期間分は返金されます。';
+
+  @override
+  String get plansWebSubscriptionActiveConfirmButton => 'Appleで続ける';
+
+  @override
+  String get plansWebSubscriptionActiveCancelButton => 'キャンセル';
+
+  @override
+  String get plansWebSubscriptionCancelFailedTitle => 'ウェブでのサブスクリプションがまだ有効です';
+
+  @override
+  String get plansWebSubscriptionCancelFailedMessage =>
+      '新しいプランは有効になりましたが、ウェブ側のサブスクリプションを自動解約できませんでした。自動的に再試行されますので、特に操作は不要です。';
+
+  @override
   String get plansDisclosure =>
       'leFtureのサブスクリプションは、現在の期間終了の24時間前までにキャンセルしない限り、毎月自動的に更新されます。購入確認時にApple IDアカウントに課金されます。サブスクリプションはいつでも端末のアカウント設定から管理・キャンセルできます。プランのダウングレードは即時ではなく、次回請求期間の開始時に反映されます。それまでは現在のプランとクレジットがそのまま有効です。';
 

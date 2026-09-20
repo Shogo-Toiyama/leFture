@@ -28,12 +28,13 @@ export const createCreditPackPayment = (creditPackId: string) =>
  */
 export type SwitchPlanResult =
   | { client_secret: string; subscription_id: string }
-  | { status: 'claimed' | 'switched' | 'scheduled_downgrade' | 'scheduled_cancel' | 'already_current' };
+  | { status: 'claimed' | 'switched' | 'scheduled_downgrade' | 'scheduled_cancel' | 'already_current' }
+  | { status: 'requires_confirmation'; reason: 'apple_pending_cancellation'; discount_usd: number; charge_usd: number };
 
-export const switchPlan = (planId: string) =>
+export const switchPlan = (planId: string, options?: { confirmAppleDiscount?: boolean }) =>
   apiFetch<SwitchPlanResult>('/billing/stripe/switch-plan', {
     method: 'POST',
-    body: JSON.stringify({ plan_id: planId }),
+    body: JSON.stringify({ plan_id: planId, confirm_apple_discount: options?.confirmAppleDiscount ?? false }),
   });
 
 /**

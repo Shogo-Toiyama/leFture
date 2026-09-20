@@ -1597,6 +1597,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Switching to the Free plan means canceling your current subscription, which Apple requires you to do from your device: open Settings, tap your name, then Subscriptions (or open the App Store app and tap your profile, then Subscriptions). Your current plan stays active — and your credits stay available — until the end of the current billing period.';
 
   @override
+  String get plansWebSubscriptionActiveTitle =>
+      'You have an active web subscription';
+
+  @override
+  String get plansWebSubscriptionActiveMessage =>
+      'You\'re currently subscribed through the website. If you continue with this Apple purchase, your web subscription will be canceled automatically and you\'ll be refunded for the unused time on it.';
+
+  @override
+  String get plansWebSubscriptionActiveConfirmButton => 'Continue with Apple';
+
+  @override
+  String get plansWebSubscriptionActiveCancelButton => 'Cancel';
+
+  @override
+  String get plansWebSubscriptionCancelFailedTitle =>
+      'Your web subscription is still active';
+
+  @override
+  String get plansWebSubscriptionCancelFailedMessage =>
+      'Your new plan is active, but we couldn\'t automatically cancel your web subscription just now. We\'ll keep retrying automatically — no action is needed from you.';
+
+  @override
   String get plansDisclosure =>
       'leFture subscriptions renew automatically each month unless canceled at least 24 hours before the end of the current period. Payment will be charged to your Apple ID account at confirmation of purchase. You can manage or cancel your subscription anytime in your device\'s account settings. Plan downgrades take effect at the start of your next billing period, not immediately — your current plan and credits stay active until then.';
 

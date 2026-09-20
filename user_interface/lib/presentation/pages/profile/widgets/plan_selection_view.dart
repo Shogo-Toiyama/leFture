@@ -212,10 +212,92 @@ class PlanSelectionView extends HookConsumerWidget {
       }
     }
 
+    // 購入前の予告ダイアログ。RevenueCatのオンデバイスCustomerInfoはUXの
+    // ためのヒントに過ぎず(古い/不正確な場合がありうる)、安全性はここに
+    // 依存させない — 実際の解約はバックエンドがStripe APIをライブに
+    // 問い合わせて行う(cancelStripeForPlatformSwitch)。ユーザーがここで
+    // キャンセルすればApple購入自体を中止する。
+    Future<bool> confirmWebSubscriptionWillBeCancelled() async {
+      if (!context.mounted) return false;
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1F29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.plansWebSubscriptionActiveTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(l10n.plansWebSubscriptionActiveMessage, style: const TextStyle(color: Colors.white70, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.plansWebSubscriptionActiveCancelButton, style: const TextStyle(color: Colors.white60)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.plansWebSubscriptionActiveConfirmButton, style: const TextStyle(color: AppColors.starGold, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+      return result ?? false;
+    }
+
+    Future<void> showWebSubscriptionCancelFailedDialog() async {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1F29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.plansWebSubscriptionCancelFailedTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Text(l10n.plansWebSubscriptionCancelFailedMessage, style: const TextStyle(color: Colors.white70, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.creditDetailOkButton, style: const TextStyle(color: AppColors.starGold)),
+            ),
+          ],
+        ),
+      );
+    }
+
     Future<void> handlePurchase(PlanOption plan, Package package, {required PlanChangeOutcome outcome}) async {
       purchasingPlanId.value = plan.id;
       try {
+        bool webSubscriptionMayBeActive = false;
+        try {
+          webSubscriptionMayBeActive = await ref.read(creditRepositoryProvider).hasActiveStripeSubscription();
+        } catch (e) {
+          DevLog.add('⚠️ [Plans] failed to check active web subscription: $e');
+        }
+        if (webSubscriptionMayBeActive) {
+          final shouldContinue = await confirmWebSubscriptionWillBeCancelled();
+          if (!shouldContinue) {
+            purchasingPlanId.value = null;
+            return;
+          }
+        }
+
         await Purchases.purchase(PurchaseParams.package(package));
+
+        // Apple購入が成立した後にWeb(Stripe)側を解約する(この順序が重要:
+        // 逆順だとユーザーがApple購入シートをキャンセルした時点で「解約・
+        // 返金だけ実行され、何も買えていない」という損失が発生するため)。
+        // 失敗してもブロックしない(バックエンド側のパトロールが後から
+        // 回収するため、購入自体は成立させる)。
+        if (webSubscriptionMayBeActive) {
+          try {
+            final status = await ref.read(creditRepositoryProvider).cancelStripeForPlatformSwitch();
+            if (status != 'cancelled' && status != 'no_active_subscription' && context.mounted) {
+              await showWebSubscriptionCancelFailedDialog();
+            }
+          } catch (e) {
+            DevLog.add('⚠️ [Plans] failed to cancel web subscription after Apple purchase: $e');
+            if (context.mounted) {
+              await showWebSubscriptionCancelFailedDialog();
+            }
+          }
+        }
+
         if (context.mounted) {
           // ダウングレードは即時反映されない(次回更新日まで元のプランのまま)ため、
           // お祝い演出は誤解を招く。

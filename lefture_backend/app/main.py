@@ -1294,6 +1294,13 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
     # 下のset_pending_plan_change経由で「予約状態」の表示用に拾う(実際の
     # クレジット付与・プラン切り替えには一切関与しない)。
     #
+    # ただしAppleのCANCELLATION(event["store"] == "APP_STORE")だけは、
+    # クロスプラットフォーム乗り換え(Apple→Web割引)の判定用に
+    # auto_renew_disabledフラグを立てる。ステータス・クレジットには一切
+    # 触れない点は変わらない。Stripeの契約もRevenueCat経由でCANCELLATIONが
+    # 届く(cancel_at_period_end=trueにしただけ、ダウングレード予約含む)ため、
+    # Apple由来かどうかをevent["store"]で厳密に絞る必要がある。
+    #
     # BILLING_ISSUE(更新時の決済失敗)は無視してはいけない: App Store Connectで
     # Billing Grace Period(28日)を設定しているため、Appleは決済リトライ中も
     # サブスクを「有効」として扱うが、こちらの前回付与クレジットのexpires_at
@@ -1317,6 +1324,27 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
                     "p_period_end": period_end_iso,
                 }).execute()
             )
+            if (
+                event_type == "INITIAL_PURCHASE"
+                and event.get("store") == "APP_STORE"
+                # Sandbox(TestFlight/StoreKitのテスト購入)のイベントでこれを走らせては
+                # いけない。同じapp_user_idの「本物のStripeサブスク」を即時解約して
+                # 実際に返金してしまうため。クレジット付与がSandboxでも走るのは
+                # 既存の挙動だが、こちらは取り返しがつかない。
+                and event.get("environment") == "PRODUCTION"
+            ):
+                # クロスプラットフォーム乗り換え(Web→Apple)対応: Appleでの新規
+                # 購入が成立した直後、ユーザーがStripe側の契約を解約し忘れて
+                # 実質二重課金になっているケースをここで即座に検出・解消する。
+                # Flutter側からの明示的な/billing/stripe/cancel-for-platform-switch
+                # 呼び出しとは独立した経路(クライアントがApple購入後にこの
+                # エンドポイントを呼べなかった場合の保険)。失敗してもwebhook
+                # 自体は200を返す(_attempt_cancel_stripe_for_platform_switchが
+                # 失敗をretryキューに積む)。
+                try:
+                    await _attempt_cancel_stripe_for_platform_switch(admin_client, app_user_id)
+                except Exception as e:
+                    logger.warning(f"Cross-platform Stripe cleanup failed for user {app_user_id}: {e}")
         elif event_type == "BILLING_ISSUE":
             # Grace Period中は決済がまだ成功していないため新規クレジットの
             # 積み増しは行わず、既存クレジットをGrace Period終了日
@@ -1340,6 +1368,17 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
                 return {"status": "ignored", "reason": "missing_fields"}
             await asyncio.to_thread(
                 lambda: admin_client.rpc("expire_store_subscription", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
+                    "p_product_id": product_id,
+                }).execute()
+            )
+        elif event_type == "CANCELLATION" and event.get("store") == "APP_STORE":
+            if not product_id:
+                logger.error(f"RevenueCat CANCELLATION missing product_id: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("mark_apple_subscription_auto_renew_disabled", {
                     "p_user_id": app_user_id,
                     "p_event_id": event_id,
                     "p_product_id": product_id,
@@ -1518,6 +1557,9 @@ async def _create_new_stripe_subscription(customer_id: str, uid: str, plan_id: s
 
 class SwitchPlanRequest(BaseModel):
     plan_id: str
+    # Apple解約予約済み(auto_renew_disabled)ユーザー向けの割引プレビュー確認フラグ。
+    # False(デフォルト)で叩くと課金は一切発生させず、割引額のプレビューだけ返す。
+    confirm_apple_discount: bool = False
 
 
 async def _mark_stripe_pending_plan(admin_client, uid: str, plan_id: str) -> None:
@@ -1629,32 +1671,129 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         if not target_plan.get("stripe_price_id"):
             raise HTTPException(status_code=400, detail="This plan is not available for web purchase")
 
-        # Stripeにアクティブなサブスクが無いのにclaim_mode='store_purchase'のプランが
-        # 既にactiveなら、それはApple経由としか有り得ない。こちらから解約できない
-        # (ユーザーがiOS側で自分で解約する必要がある)ため、二重課金を避けて
-        # ここで明確にブロックする。webapp側はこのerror_codeを見て
-        # 「Appleを解約してからWebで購読してください」という案内を出す。
+        # 現在のactiveなmapping(プラットフォーム問わず)をtier比較とApple判定の
+        # 両方に使う。claim_modeはプラン行の属性でApple/Stripeどちらの契約かを
+        # 区別できない(1tier1行でstore_product_id/stripe_price_idを両方持つ設計)
+        # ため、「ここに来ている時点でStripeにアクティブなサブスクが無いことは
+        # 確定済み」という消去法でのみ、claim_mode='store_purchase'ならApple経由と
+        # 判断できる。この消去法はこの分岐の中でしか使えないので、他の場所で
+        # 同じ判定を再利用しない。
         try:
-            other_store_res = await asyncio.to_thread(
+            current_mapping_res = await asyncio.to_thread(
                 lambda: admin_client.table("user_subscription_mappings")
-                    .select("id, subscription_plans!user_subscription_mappings_plan_id_fkey!inner(claim_mode)")
+                    .select(
+                        "id, auto_renew_disabled, current_period_end, "
+                        "subscription_plans!user_subscription_mappings_plan_id_fkey!inner("
+                        "claim_mode, tier_level, billing_interval_months, stripe_price_id)"
+                    )
                     .eq("user_id", uid)
                     .eq("status", "active")
-                    .eq("subscription_plans.claim_mode", "store_purchase")
+                    # maybe_single()は使わない: Accept: application/vnd.pgrst.object+json
+                    # が付くため、activeなmappingが2行以上あると406になり、それを
+                    # 下のexceptが503に変えてしまう(=そのユーザーはプラン変更が
+                    # 恒久的に不能になる)。「1ユーザー1active」を保証するDB制約は
+                    # 存在せず(UNIQUEは(user_id, plan_id)のみ)、statusにactiveを書く
+                    # 経路も多数あるため、複数行を許容して最も期間の長いものを採る。
+                    .order("current_period_end", desc=True)
+                    .limit(1)
                     .execute()
             )
         except Exception as e:
-            logger.error(f"Error checking existing store_purchase mapping for user {uid}: {e}", exc_info=True)
+            logger.error(f"Error checking current active mapping for user {uid}: {e}", exc_info=True)
             raise HTTPException(status_code=503, detail="Billing service temporarily unavailable")
 
-        if other_store_res.data:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "error_code": "APPLE_SUBSCRIPTION_ACTIVE",
-                    "message": "You already have an active subscription through the App Store. Please cancel it in your iOS device settings before subscribing on the web.",
-                },
+        current_mapping_rows = (current_mapping_res.data or []) if current_mapping_res else []
+        current_mapping = current_mapping_rows[0] if current_mapping_rows else None
+        current_plan_info = current_mapping["subscription_plans"] if current_mapping else None
+        current_tier = current_plan_info.get("tier_level") if current_plan_info else None
+
+        # この機能は常に「アップグレード」方向にのみ対応する(年額プランが無く、
+        # 同tier/ダウングレード方向のプラットフォーム間移動は今回スコープ外)。
+        # これにより割引額が新プラン価格を上回るケースも起きない。
+        if current_tier is not None and target_plan["tier_level"] <= current_tier:
+            raise HTTPException(status_code=403, detail="This plan is not an upgrade from your current plan.")
+
+        if current_plan_info and current_plan_info.get("claim_mode") == "store_purchase":
+            if not current_mapping.get("auto_renew_disabled"):
+                # まだ解約意思が無い: こちらから強制解約できない(ユーザーが
+                # iOS側で自分で解約する必要がある)ため、二重課金を避けて
+                # ここで明確にブロックする。webapp側はこのerror_codeを見て
+                # 案内を出す。
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error_code": "APPLE_SUBSCRIPTION_ACTIVE",
+                        "message": "You already have an active subscription through the App Store. Turn off auto-renew in your iOS device settings to unlock a discounted switch to this web plan.",
+                    },
+                )
+
+            # 解約予約済み: Appleへの返金はできないが、こちら側の値引きとして
+            # Apple残存期間分をStripe請求から割り引く。price_usdは有料プランで
+            # 常にNULL(実価格はApp Store側が正)なので、代理値として自社の
+            # Stripe定価(unit_amount)をライブ取得して使う。Appleの手数料
+            # (15〜30%)分のスプレッドは自社負担になる、意識的な割り切り。
+            apple_plan = current_plan_info
+            try:
+                apple_price = await asyncio.to_thread(stripe.Price.retrieve, apple_plan["stripe_price_id"])
+                new_price = await asyncio.to_thread(stripe.Price.retrieve, target_plan["stripe_price_id"])
+            except stripe.error.StripeError as e:
+                logger.error(f"Failed to retrieve prices for Apple->Stripe switch (user {uid}): {e}", exc_info=True)
+                raise HTTPException(status_code=502, detail="Failed to look up plan pricing")
+
+            # current_period_startはRENEWAL時に更新されない既知の制限があり
+            # (2ヶ月目以降、初回購入時刻に固定されたまま)、そのまま分母に使うと
+            # 期間が実際より長く計算されて割引が不当に小さくなる。DBの列は
+            # 直さず、この計算専用にbilling_interval_monthsから期間開始を
+            # 逆算する(30日/月の近似。カレンダー精度は求めない)。
+            period_end_raw = current_mapping["current_period_end"]
+            period_end_dt = (
+                datetime.fromisoformat(period_end_raw.replace("Z", "+00:00"))
+                if isinstance(period_end_raw, str) else period_end_raw
             )
+            interval_months = apple_plan.get("billing_interval_months") or 1
+            period_start_est = period_end_dt - timedelta(days=30 * interval_months)
+            now_dt = datetime.now(timezone.utc)
+
+            total_seconds = (period_end_dt - period_start_est).total_seconds()
+            remaining_seconds = max(0.0, (period_end_dt - now_dt).total_seconds())
+            remaining_fraction = min(1.0, remaining_seconds / total_seconds) if total_seconds > 0 else 0.0
+
+            discount_cents = round(apple_price["unit_amount"] * remaining_fraction)
+            charge_cents = max(0, new_price["unit_amount"] - discount_cents)
+
+            if not payload.confirm_apple_discount:
+                # プレビューのみ。まだ何も課金・作成しない。
+                return {
+                    "status": "requires_confirmation",
+                    "reason": "apple_pending_cancellation",
+                    "discount_usd": discount_cents / 100,
+                    "charge_usd": charge_cents / 100,
+                }
+
+            customer_id = customer_id or await _get_or_create_stripe_customer(admin_client, uid)
+
+            if discount_cents > 0:
+                # 冪等性: confirm_apple_discountの再送・ダブルクリック・
+                # Payment Element離脱後の再試行で割引が多重生成されないよう、
+                # 同じmetadataを持つ未消化のpending invoice itemが既にあれば
+                # 再利用し、無ければ新規作成する。
+                existing_items = await asyncio.to_thread(
+                    stripe.InvoiceItem.list, customer=customer_id, pending=True, limit=100
+                )
+                already_pending = any(
+                    item.get("metadata", {}).get("purpose") == "apple_platform_switch_discount"
+                    and item.get("metadata", {}).get("user_id") == uid
+                    for item in existing_items["data"]
+                )
+                if not already_pending:
+                    await asyncio.to_thread(
+                        stripe.InvoiceItem.create,
+                        customer=customer_id,
+                        amount=-discount_cents,
+                        currency=new_price["currency"],
+                        description="Discount for remaining time on App Store subscription",
+                        metadata={"purpose": "apple_platform_switch_discount", "user_id": uid},
+                    )
 
         customer_id = customer_id or await _get_or_create_stripe_customer(admin_client, uid)
         subscription = await _create_new_stripe_subscription(
@@ -1850,6 +1989,274 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         logger.error(f"Upgraded subscription {subscription_id} but failed to notify RevenueCat: {e}", exc_info=True)
 
     return {"status": "switched"}
+
+
+async def _resolve_invoice_charge_id(invoice_id: str) -> str | None:
+    """
+    Invoiceの決済に対応するCharge IDを返す(返金対象を特定するため)。
+
+    Invoice.charge / Invoice.payment_intent は2025-03-31.basil以降のAPIバージョンで
+    削除されており(このコードベースが使うstripe-python 15系の既定は
+    2026-08-26.dahlia)、invoice["charge"]は常にNoneになる。同じAPI変更で
+    current_period_startがSubscription直下からSubscription Itemへ移動したのと同じ
+    世代の変更。現行の参照経路は
+      Invoice → InvoicePayment → payment.payment_intent → PaymentIntent.latest_charge
+    なので、それを辿る。type='charge'(PaymentIntentを伴わない古い決済)の場合だけは
+    payment.chargeに直接Charge IDが入る。
+    """
+    try:
+        payments = await asyncio.to_thread(
+            stripe.InvoicePayment.list, invoice=invoice_id, status="paid", limit=10
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to list payments for invoice {invoice_id}: {e}", exc_info=True)
+        return None
+
+    for payment in payments["data"]:
+        detail = payment.get("payment") or {}
+        charge_id = detail.get("charge")
+        if charge_id:
+            return charge_id
+
+        payment_intent_id = detail.get("payment_intent")
+        if not payment_intent_id:
+            continue
+        try:
+            payment_intent = await asyncio.to_thread(stripe.PaymentIntent.retrieve, payment_intent_id)
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to retrieve payment intent {payment_intent_id}: {e}", exc_info=True)
+            continue
+        if payment_intent.get("latest_charge"):
+            return payment_intent["latest_charge"]
+
+    return None
+
+
+async def _cancel_stripe_subscription_for_platform_switch(admin_client, uid: str) -> dict:
+    """
+    ユーザーのアクティブなStripeサブスクを即時解約し、未消化期間分を日割りで
+    返金する。Apple IAP購入成功後にFlutter側から呼ばれる想定(cancel-for-
+    platform-switchエンドポイント)だが、_patrol_reconcile_cross_platform_
+    subscriptionsからも同じ関数を呼ぶため、ここに切り出してある。
+
+    アクティブなStripeサブスクが既に無ければ何もせず返す(=何度呼んでも安全。
+    Flutter側のリトライ・パトロールからの再実行いずれでも安全)。
+    """
+    profile_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles")
+            .select("stripe_customer_id")
+            .eq("id", uid)
+            .maybe_single()
+            .execute()
+    )
+    customer_id = profile_res.data.get("stripe_customer_id") if profile_res and profile_res.data else None
+    if not customer_id:
+        return {"status": "no_active_subscription"}
+
+    try:
+        subs = await asyncio.to_thread(stripe.Subscription.list, customer=customer_id, status="active", limit=1)
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to list Stripe subscriptions for customer {customer_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to look up current subscription")
+
+    if not subs["data"]:
+        return {"status": "no_active_subscription"}
+
+    active_subscription = subs["data"][0]
+    subscription_id = active_subscription["id"]
+    current_item = active_subscription["items"]["data"][0]
+    current_stripe_price_id = current_item["price"]["id"]
+    period_start = current_item["current_period_start"]
+    period_end = current_item["current_period_end"]
+    now_ts = time.time()
+
+    total_seconds = period_end - period_start
+    remaining_seconds = max(0, period_end - now_ts)
+    remaining_fraction = (remaining_seconds / total_seconds) if total_seconds > 0 else 0
+
+    try:
+        current_price = await asyncio.to_thread(stripe.Price.retrieve, current_stripe_price_id)
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to retrieve price for subscription {subscription_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to look up plan pricing")
+
+    unused_credit_cents = round(current_price["unit_amount"] * remaining_fraction)
+
+    # 直近の「サブスク本体」のInvoiceを選ぶ。同一プラットフォーム内アップグレード
+    # 直後だと、直近Invoiceが差額請求用の単発Invoiceのことがあり、その決済額は
+    # 月額満額よりずっと小さいため、返金額がそれを超えないようクランプする。
+    refund_amount = 0
+    charge_id = None
+    try:
+        invoices = await asyncio.to_thread(
+            stripe.Invoice.list, subscription=subscription_id, status="paid", limit=10
+        )
+        invoice_list = invoices["data"]
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to list invoices for subscription {subscription_id}: {e}", exc_info=True)
+        invoice_list = []
+
+    target_invoice = next(
+        (inv for inv in invoice_list if inv.get("billing_reason") in ("subscription_create", "subscription_cycle")),
+        None,
+    )
+    if target_invoice is not None:
+        charge_id = await _resolve_invoice_charge_id(target_invoice["id"])
+        if charge_id:
+            try:
+                charge = await asyncio.to_thread(stripe.Charge.retrieve, charge_id)
+                refundable = max(0, charge["amount"] - charge["amount_refunded"])
+                refund_amount = min(unused_credit_cents, refundable)
+            except stripe.error.StripeError as e:
+                logger.error(f"Failed to retrieve charge {charge_id} for subscription {subscription_id}: {e}", exc_info=True)
+                refund_amount = 0
+        else:
+            logger.error(
+                f"Could not resolve a charge for invoice {target_invoice['id']} "
+                f"(subscription {subscription_id}) - cancelling without refund"
+            )
+
+    if refund_amount > 0 and charge_id:
+        try:
+            await asyncio.to_thread(stripe.Refund.create, charge=charge_id, amount=refund_amount)
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to refund charge {charge_id} for subscription {subscription_id}: {e}", exc_info=True)
+            # 返金に失敗しても解約自体は進める(返金漏れの方が、解約されずに
+            # 課金され続けるより実害が小さい)。
+
+    try:
+        await asyncio.to_thread(stripe.Subscription.delete, subscription_id, prorate=False)
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to cancel subscription {subscription_id} for user {uid}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to cancel web subscription")
+
+    # DB更新は「このStripeサブスクに対応するplan_idの行」だけをピンポイントで
+    # expiredにする。Apple購入のRevenueCat webhookがまだ届いていない場合、
+    # ユーザーのactiveなmappingが依然このStripeプランのままの可能性がある一方、
+    # 逆にApple側のwebhookが先に届いていれば既にこの行はexpired済みのはず。
+    # 「ユーザーの現在activeな行を無条件にexpiredにする」実装だと、後者の場合に
+    # 誤って新しく切り替わったApple側のmappingを壊してしまうため、必ず
+    # plan_idで絞り込む。
+    try:
+        plan_lookup_res = await asyncio.to_thread(
+            lambda: admin_client.table("subscription_plans")
+                .select("id")
+                .eq("stripe_price_id", current_stripe_price_id)
+                .maybe_single()
+                .execute()
+        )
+        stripe_plan_id = plan_lookup_res.data.get("id") if plan_lookup_res and plan_lookup_res.data else None
+    except Exception as e:
+        logger.warning(f"Failed to resolve plan for stripe price {current_stripe_price_id}: {e}")
+        stripe_plan_id = None
+
+    if stripe_plan_id:
+        try:
+            await asyncio.to_thread(
+                lambda: admin_client.table("user_subscription_mappings")
+                    .update({"status": "expired"})
+                    .eq("user_id", uid)
+                    .eq("plan_id", stripe_plan_id)
+                    .eq("status", "active")
+                    .execute()
+            )
+        except Exception as e:
+            logger.warning(f"Cancelled Stripe subscription {subscription_id} but failed to update mapping status for user {uid}: {e}")
+
+    return {"status": "cancelled", "refunded_usd": refund_amount / 100}
+
+
+async def _attempt_cancel_stripe_for_platform_switch(admin_client, uid: str) -> dict:
+    """
+    _cancel_stripe_subscription_for_platform_switchを呼び、失敗したら
+    platform_switch_cancellation_retriesに行を積んでパトロール
+    (_patrol_reconcile_cross_platform_subscriptions)に委ねる。呼び出し元
+    (RevenueCat webhook、/billing/stripe/cancel-for-platform-switch)の
+    処理自体は失敗させない。成功時は既存のretry行があれば掃除する。
+    """
+    try:
+        result = await _cancel_stripe_subscription_for_platform_switch(admin_client, uid)
+        try:
+            await asyncio.to_thread(
+                lambda: admin_client.table("platform_switch_cancellation_retries")
+                    .delete()
+                    .eq("user_id", uid)
+                    .execute()
+            )
+        except Exception:
+            pass
+        return result
+    except Exception as e:
+        logger.warning(f"Failed to cancel Stripe subscription for platform switch (user {uid}), queued for retry: {e}")
+        try:
+            await asyncio.to_thread(
+                lambda: admin_client.table("platform_switch_cancellation_retries")
+                    .upsert({"user_id": uid})
+                    .execute()
+            )
+        except Exception as e2:
+            logger.error(f"Failed to queue platform-switch cancellation retry for user {uid}: {e2}", exc_info=True)
+        return {"status": "cancellation_failed_queued_for_retry"}
+
+
+@app.post("/billing/stripe/cancel-for-platform-switch")
+async def billing_stripe_cancel_for_platform_switch(request: Request):
+    """
+    Apple IAP購入が成功した直後に、Flutter側から呼ばれる。ユーザーがWeb
+    (Stripe)の契約を残したままAppleでも契約してしまう(=実際の二重課金が
+    継続する)のを防ぐため、Stripeサブスクを即時解約し、未消化期間分を
+    日割りで返金する。
+
+    実行順序は意図的に「Apple購入が先、これは後」にしてある: 逆順(先に
+    Stripeを解約・返金してからApple購入)だと、ユーザーがApple購入シートを
+    キャンセルした時点で「解約・返金だけ実行され、何も買えていない」という
+    損失が発生するため。この順序なら、ここが失敗しても損失は発生しない
+    (失敗はretryキューに積まれ、_patrol_reconcile_cross_platform_
+    subscriptionsが後から回収する。RevenueCat webhook側にも同じ処理を
+    ベストエフォートで仕込んであるため、このエンドポイント自体が呼ばれ
+    なくても大抵は先に解消される)。
+
+    注意: webhook側と違い、ここには「Sandbox購入では走らせない」ガードが
+    無い(呼び出し元のクライアントが購入環境を自己申告する形になり、信頼
+    境界として使えないため)。StoreKit Sandbox/TestFlightでの購入テストは
+    必ず開発用バックエンドに向けて行うこと — 本番バックエンドに向けると、
+    そのアカウントの本物のStripeサブスクが即時解約+返金される。
+    """
+    uid = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    return await _attempt_cancel_stripe_for_platform_switch(admin_client, uid)
+
+
+@app.get("/billing/stripe/has-active-subscription")
+async def billing_stripe_has_active_subscription(request: Request):
+    """
+    Flutter側がApple IAP購入前に「今Stripeがアクティブか」を確認するための
+    軽量エンドポイント。claim_modeはApple/Stripeを区別できない(1tier1行の
+    設計)ため、常にStripe APIへライブ問い合わせして答える — この値を
+    /billing/summaryのような頻繁にポーリングされるエンドポイントの恒久
+    フィールドにはしない。
+    """
+    uid = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+
+    profile_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_profiles")
+            .select("stripe_customer_id")
+            .eq("id", uid)
+            .maybe_single()
+            .execute()
+    )
+    customer_id = profile_res.data.get("stripe_customer_id") if profile_res and profile_res.data else None
+    if not customer_id:
+        return {"active": False}
+
+    try:
+        subs = await asyncio.to_thread(stripe.Subscription.list, customer=customer_id, status="active", limit=1)
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to list Stripe subscriptions for customer {customer_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=502, detail="Failed to look up current subscription")
+
+    return {"active": bool(subs["data"])}
 
 
 @app.post("/billing/stripe/resume-plan")
@@ -3582,6 +3989,63 @@ async def _patrol_renew_subscriptions() -> dict:
     return {"due": len(due_mappings), "enqueued": enqueued, "failed": failed}
 
 
+async def _patrol_reconcile_cross_platform_subscriptions() -> dict:
+    """
+    Stripe→Apple乗り換え(Apple購入成功後にStripeを即時解約+返金する設計、
+    _cancel_stripe_subscription_for_platform_switch参照)の解約呼び出しが
+    失敗した場合の再試行。platform_switch_cancellation_retriesに積まれた
+    ユーザーだけを対象にする(全ユーザーをStripe APIでスキャンして「現在の
+    契約と食い違うプラン」を機械的に検出する方式は、同一プラットフォーム内
+    アップグレード直後の伝播待ちの数秒〜数十秒を誤検出し、正常なStripe
+    サブスクを誤解約・誤返金するリスクがあるため採用しない)。
+    """
+    admin_client = get_supabase_client()
+
+    retry_res = await asyncio.to_thread(
+        lambda: admin_client.table("platform_switch_cancellation_retries")
+            .select("user_id")
+            .execute()
+    )
+    pending = retry_res.data or []
+
+    reconciled = 0
+    failed = 0
+    for row in pending:
+        uid = row["user_id"]
+        try:
+            result = await _attempt_cancel_stripe_subscription_for_platform_switch_retry(admin_client, uid)
+            if result:
+                reconciled += 1
+            else:
+                failed += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Failed to reconcile queued platform-switch cancellation for user {uid}: {e}")
+
+    return {"pending": len(pending), "reconciled": reconciled, "failed": failed}
+
+
+async def _attempt_cancel_stripe_subscription_for_platform_switch_retry(admin_client, uid: str) -> bool:
+    """パトロール専用の薄いラッパー。成功したらretry行を消してTrueを返す。
+    失敗したら行を残したままFalseを返す(次回パトロールで再試行)。"""
+    try:
+        await _cancel_stripe_subscription_for_platform_switch(admin_client, uid)
+    except Exception as e:
+        print(f"⚠️ Retry of platform-switch cancellation still failing for user {uid}: {e}")
+        return False
+
+    try:
+        await asyncio.to_thread(
+            lambda: admin_client.table("platform_switch_cancellation_retries")
+                .delete()
+                .eq("user_id", uid)
+                .execute()
+        )
+    except Exception:
+        pass
+    return True
+
+
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
     ("advance_stalled_dags", _patrol_advance_stalled_dags),
@@ -3591,6 +4055,7 @@ PATROL_CHECKS = [
     ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
     ("materialize_dormant_expired_grants", _patrol_materialize_dormant_expired_grants),
     ("renew_subscriptions", _patrol_renew_subscriptions),
+    ("reconcile_cross_platform_subscriptions", _patrol_reconcile_cross_platform_subscriptions),
 ]
 
 

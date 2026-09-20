@@ -11,6 +11,7 @@ import { tierAccent, planIconAsset } from '../../lib/planTheme';
 import { PageState } from '../../components/PageState';
 import { StripeCheckoutModal } from '../../components/modals/StripeCheckoutModal';
 import { PlanCelebrationDialog } from '../../components/modals/PlanCelebrationDialog';
+import { ConfirmModal } from '../../components/modals/ConfirmModal';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { CreditStarIcon } from '../../components/icons/CreditStarIcon';
 import { PlansSkeleton } from '../../components/account/PlansSkeleton';
@@ -60,6 +61,7 @@ function formatPrice(plan: PlanOption, isJa: boolean): string {
 }
 
 type PendingCheckout = { plan: PlanOption; clientSecret: string };
+type PendingAppleDiscount = { plan: PlanOption; discountUsd: number; chargeUsd: number };
 
 /**
  * プラン一覧・比較ページ。plan_selection_view.dart / plan_card.dart の
@@ -82,11 +84,70 @@ export const PlansPage: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<PendingCheckout | null>(null);
+  const [pendingAppleDiscount, setPendingAppleDiscount] = useState<PendingAppleDiscount | null>(null);
   const [celebration, setCelebration] = useState<PlanOption | null>(null);
   const [creditRateOpen, setCreditRateOpen] = useState(false);
 
   const sortedPlans = useMemo(() => [...plans].sort((a, b) => a.tier_level - b.tier_level), [plans]);
   const currentTierLevel = summary?.has_active_plan ? summary.tier_level : 0;
+
+  const applySwitchPlanResult = async (plan: PlanOption, result: SwitchPlanResult) => {
+    if ('client_secret' in result) {
+      setPendingCheckout({ plan, clientSecret: result.client_secret });
+      return;
+    }
+    switch (result.status) {
+      case 'claimed':
+        // Freeプランの初回claimは同一リクエスト内でDBを直接更新するため、
+        // 反映待ちは不要(Flutter版もここはお祝い演出の対象外)。
+        await refetch();
+        break;
+      case 'switched': {
+        // 即時アップグレード。DBへの反映(RevenueCat往復)を確認できたら祝う。
+        const synced = await waitForPlanSync(plan.id);
+        await refetch();
+        if (synced) setCelebration(plan);
+        break;
+      }
+      case 'already_current':
+        await refetch();
+        break;
+      case 'scheduled_downgrade':
+        setNotice(
+          isJa
+            ? 'プランの変更は次回更新日から反映されます。それまでは現在のプランのままです。'
+            : 'Your plan change will take effect at your next renewal. Until then, your current plan stays active.'
+        );
+        await refetch();
+        break;
+      case 'scheduled_cancel':
+        setNotice(
+          isJa
+            ? '次回更新日にFreeプランへ切り替わります。それまでは現在のプランのままです。'
+            : 'You will switch to the Free plan at your next renewal. Until then, your current plan stays active.'
+        );
+        await refetch();
+        break;
+      case 'requires_confirmation':
+        // App Storeで解約予約済み: Apple残存期間分の割引額を確認してもらってから
+        // 実際の契約(confirm_apple_discount=true)に進む。
+        setPendingAppleDiscount({ plan, discountUsd: result.discount_usd, chargeUsd: result.charge_usd });
+        break;
+    }
+  };
+
+  const handlePlanActionError = (err: unknown) => {
+    const code = extractErrorCode(err);
+    if (code === 'APPLE_SUBSCRIPTION_ACTIVE') {
+      setError(
+        isJa
+          ? 'すでにApp Store経由の購読が有効です。iOS端末の設定で自動更新をオフにすると、Apple残存期間分を割引した上でウェブに切り替えられます。'
+          : 'You already have an active subscription through the App Store. Turn off auto-renew in your iOS device settings to unlock a discounted switch to this web plan.'
+      );
+    } else {
+      setError(err instanceof ApiError ? err.message : isJa ? 'プランの変更に失敗しました' : 'Failed to change plan');
+    }
+  };
 
   const handlePlanAction = async (plan: PlanOption) => {
     setSwitchingId(plan.id);
@@ -94,54 +155,25 @@ export const PlansPage: React.FC = () => {
     setNotice(null);
     try {
       const result: SwitchPlanResult = await switchPlan(plan.id);
-      if ('client_secret' in result) {
-        setPendingCheckout({ plan, clientSecret: result.client_secret });
-        return;
-      }
-      switch (result.status) {
-        case 'claimed':
-          // Freeプランの初回claimは同一リクエスト内でDBを直接更新するため、
-          // 反映待ちは不要(Flutter版もここはお祝い演出の対象外)。
-          await refetch();
-          break;
-        case 'switched': {
-          // 即時アップグレード。DBへの反映(RevenueCat往復)を確認できたら祝う。
-          const synced = await waitForPlanSync(plan.id);
-          await refetch();
-          if (synced) setCelebration(plan);
-          break;
-        }
-        case 'already_current':
-          await refetch();
-          break;
-        case 'scheduled_downgrade':
-          setNotice(
-            isJa
-              ? 'プランの変更は次回更新日から反映されます。それまでは現在のプランのままです。'
-              : 'Your plan change will take effect at your next renewal. Until then, your current plan stays active.'
-          );
-          await refetch();
-          break;
-        case 'scheduled_cancel':
-          setNotice(
-            isJa
-              ? '次回更新日にFreeプランへ切り替わります。それまでは現在のプランのままです。'
-              : 'You will switch to the Free plan at your next renewal. Until then, your current plan stays active.'
-          );
-          await refetch();
-          break;
-      }
+      await applySwitchPlanResult(plan, result);
     } catch (err) {
-      const code = extractErrorCode(err);
-      if (code === 'APPLE_SUBSCRIPTION_ACTIVE') {
-        setError(
-          isJa
-            ? 'すでにApp Store経由の購読が有効です。ウェブで購読する前に、iOS端末の設定でその購読を解約してください。'
-            : 'You already have an active subscription through the App Store. Please cancel it in your iOS device settings before subscribing on the web.'
-        );
-      } else {
-        setError(err instanceof ApiError ? err.message : isJa ? 'プランの変更に失敗しました' : 'Failed to change plan');
-      }
+      handlePlanActionError(err);
+    } finally {
+      setSwitchingId(null);
+    }
+  };
+
+  const handleConfirmAppleDiscount = async () => {
+    if (!pendingAppleDiscount) return;
+    const { plan } = pendingAppleDiscount;
+    setPendingAppleDiscount(null);
+    setSwitchingId(plan.id);
+    setError(null);
+    try {
+      const result = await switchPlan(plan.id, { confirmAppleDiscount: true });
+      await applySwitchPlanResult(plan, result);
+    } catch (err) {
+      handlePlanActionError(err);
     } finally {
       setSwitchingId(null);
     }
@@ -353,6 +385,22 @@ export const PlansPage: React.FC = () => {
       {celebration && (
         <PlanCelebrationDialog plan={celebration} isJa={isJa} onClose={() => setCelebration(null)} />
       )}
+
+      <ConfirmModal
+        open={pendingAppleDiscount != null}
+        onClose={() => setPendingAppleDiscount(null)}
+        onConfirm={handleConfirmAppleDiscount}
+        title={isJa ? 'App Storeの残存期間を割引' : 'Discount for your App Store time'}
+        message={
+          pendingAppleDiscount
+            ? isJa
+              ? `App Storeでの残り期間分として $${pendingAppleDiscount.discountUsd.toFixed(2)} を割引し、今回は $${pendingAppleDiscount.chargeUsd.toFixed(2)} を請求します。App Store側の購読は自動更新オフのまま契約期間の終了時に失効します。`
+              : `We'll discount $${pendingAppleDiscount.discountUsd.toFixed(2)} for your remaining time on the App Store and charge $${pendingAppleDiscount.chargeUsd.toFixed(2)} today. Your App Store subscription will stay off auto-renew and expire at the end of its current period.`
+            : null
+        }
+        confirmLabel={isJa ? '続行して契約する' : 'Continue & subscribe'}
+        cancelLabel={isJa ? 'キャンセル' : 'Cancel'}
+      />
 
       {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
     </div>

@@ -2852,6 +2852,42 @@ abstract class AppLocalizations {
   /// **'Switching to the Free plan means canceling your current subscription, which Apple requires you to do from your device: open Settings, tap your name, then Subscriptions (or open the App Store app and tap your profile, then Subscriptions). Your current plan stays active — and your credits stay available — until the end of the current billing period.'**
   String get plansManageSubscriptionMessage;
 
+  /// Title of the confirmation dialog shown before an Apple in-app purchase when the user is detected to already have an active Stripe (web) subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an active web subscription'**
+  String get plansWebSubscriptionActiveTitle;
+
+  /// Body text explaining that continuing with the Apple purchase will trigger an automatic cancellation and prorated refund of the user's existing web (Stripe) subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re currently subscribed through the website. If you continue with this Apple purchase, your web subscription will be canceled automatically and you\'ll be refunded for the unused time on it.'**
+  String get plansWebSubscriptionActiveMessage;
+
+  /// Confirm button label for the dialog warning that continuing will cancel+refund the user's web subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get plansWebSubscriptionActiveConfirmButton;
+
+  /// Cancel button label for the dialog warning about the active web subscription; dismissing it aborts the Apple purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get plansWebSubscriptionActiveCancelButton;
+
+  /// Title of the informational (OK-only) dialog shown after a successful Apple purchase when the app failed to automatically cancel the user's existing web subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your web subscription is still active'**
+  String get plansWebSubscriptionCancelFailedTitle;
+
+  /// Body text reassuring the user that the backend retries the cancellation automatically (via a periodic patrol job) after a failed immediate attempt.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new plan is active, but we couldn\'t automatically cancel your web subscription just now. We\'ll keep retrying automatically — no action is needed from you.'**
+  String get plansWebSubscriptionCancelFailedMessage;
+
   /// Required App Store subscription disclosure paragraph shown in the scrollable area below the plan cards, per Apple App Review Guideline 3.1.2 (must disclose subscription length, auto-renewal, and that payment is charged to the Apple ID account). Also clarifies that downgrades are deferred to the next renewal, matching Apple's own StoreKit subscription-group behavior.
   ///
   /// In en, this message translates to:

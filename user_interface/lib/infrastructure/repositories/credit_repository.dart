@@ -105,4 +105,41 @@ class CreditRepository {
         .toList();
     return historyList;
   }
+
+  /// Apple IAP購入前に、既にアクティブなWeb(Stripe)契約が無いか確認する。
+  /// claim_modeはApple/Stripeどちらの契約かを区別できない(1tier1行の設計)
+  /// ため、常にバックエンド経由でStripe APIへライブ問い合わせして答える —
+  /// これはUXのための事前ヒントであり、安全性はここに依存させない
+  /// (実際の解約はPurchases.purchase()成功後にcancelStripeForPlatformSwitch
+  /// を呼ぶことで担保する)。
+  Future<bool> hasActiveStripeSubscription() async {
+    final response =
+        await _http.get(Uri.parse('$_cloudRunBaseUrl/billing/stripe/has-active-subscription'));
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to check active web subscription (${response.statusCode}): ${response.body}');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['active'] as bool? ?? false;
+  }
+
+  /// Apple IAP購入成功直後に呼ぶ。ユーザーがWeb(Stripe)の契約を残したまま
+  /// Appleでも契約してしまう(=実際の二重課金が継続する)のを防ぐため、
+  /// バックエンド側でStripeサブスクを即時解約し、未消化期間分を日割りで
+  /// 返金する。失敗してもこの呼び出し自体は例外を投げず
+  /// (バックエンド側のパトロールが後から回収するため)、状態文字列を返す。
+  Future<String> cancelStripeForPlatformSwitch() async {
+    final response = await _http
+        .post(Uri.parse('$_cloudRunBaseUrl/billing/stripe/cancel-for-platform-switch'));
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to cancel web subscription (${response.statusCode}): ${response.body}');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['status'] as String? ?? 'unknown';
+  }
 }
