@@ -46,9 +46,9 @@ export const PurchaseCreditsPage: React.FC = () => {
     }
   };
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = async () => {
     setPendingCheckout(null);
-    void waitAndRefetch(refetch);
+    await waitAndRefetch(refetch);
   };
 
   // クレジット量順にソート

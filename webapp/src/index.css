@@ -11871,6 +11871,10 @@ a.lecture-tile-card:hover {
   font-size: 0.88rem;
   backdrop-filter: blur(6px);
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
 }
 
 .plans-action-btn:hover:not(:disabled) {
@@ -11954,6 +11958,10 @@ a.lecture-tile-card:hover {
   font-weight: 700;
   font-size: 0.76rem;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .plans-resume-btn:hover:not(:disabled) {
@@ -12370,6 +12378,112 @@ a.lecture-tile-card:hover {
   .plans-compare {
     min-width: 680px;
   }
+}
+
+/* --------------------------------------------------------------------------
+   プラン変更お祝いダイアログ — plan_change_dialogs.dart の
+   showUpgradeCelebrationDialogに相当。プランカラーの光る星屑がアイコンから
+   放射状に開花する(パーティクル本体はPlanCelebrationDialog.tsxのcanvasで描画、
+   ここはダイアログ本体の見た目のみ)。
+   -------------------------------------------------------------------------- */
+
+.plan-celebration-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(10, 12, 22, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.plan-celebration-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.plan-celebration-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 300px;
+  padding: 1.75rem 1.5rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-radius: 22px;
+  background: #1e1f29;
+  border: 1.4px solid var(--plan-accent);
+  box-shadow: 0 0 34px color-mix(in srgb, var(--plan-accent) 35%, transparent);
+  animation: planCelebrationPopIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes planCelebrationPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.plan-celebration-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--plan-accent) 18%, transparent);
+  border: 1.5px solid var(--plan-accent);
+  padding: 13px;
+  margin-bottom: 1rem;
+}
+
+.plan-celebration-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.plan-celebration-title {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 0.6rem;
+}
+
+.plan-celebration-message {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+}
+
+.plan-celebration-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: var(--plan-accent);
+  color: #000;
+  font-size: 0.94rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.plan-celebration-btn:hover {
+  filter: brightness(1.08);
 }
 
 /* --------------------------------------------------------------------------

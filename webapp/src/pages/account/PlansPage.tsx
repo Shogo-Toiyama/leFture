@@ -1,15 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, X, ExternalLink } from 'lucide-react';
+import { Check, X, ExternalLink, Loader2 } from 'lucide-react';
 import { useCreditSummary } from '../../hooks/useCreditSummary';
 import { usePlans } from '../../hooks/usePlans';
-import { switchPlan, resumePlan, type SwitchPlanResult } from '../../lib/billing';
+import { switchPlan, resumePlan, getCreditSummary, type SwitchPlanResult } from '../../lib/billing';
 import { ApiError, extractErrorCode } from '../../lib/api';
 import { toDisplayCredits } from '../../types/billing';
 import type { CreditSummary, PlanOption } from '../../types/billing';
 import { tierAccent, planIconAsset } from '../../lib/planTheme';
 import { PageState } from '../../components/PageState';
 import { StripeCheckoutModal } from '../../components/modals/StripeCheckoutModal';
+import { PlanCelebrationDialog } from '../../components/modals/PlanCelebrationDialog';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { CreditStarIcon } from '../../components/icons/CreditStarIcon';
 import { PlansSkeleton } from '../../components/account/PlansSkeleton';
@@ -30,12 +31,25 @@ function weeklyLectureEstimate(monthlyCreditsMicro: number): number {
   return Math.max(1, Math.round(toDisplayCredits(monthlyCreditsMicro) / 100 / 4.1));
 }
 
-/** webhookの反映(RevenueCat往復含む)を待つための短時間リトライ。他ページと同じ考え方。 */
-async function waitAndRefetch(refetch: () => Promise<void>) {
-  for (let i = 0; i < 4; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    await refetch();
+/**
+ * switch-planのレスポンス(claimed/switched)はStripe側の処理完了時点のもので、
+ * DBへの反映はStripe→webhook→RevenueCat→webhookという経路を経て数秒遅れて届く。
+ * ここで実際にplan_idが切り替わるまで待ってから「完了」を伝える —
+ * でないと、ローディングが消えた直後にまだ古いプランのまま、ということが起こる。
+ * 最大約9.6秒待って確認できなければ静かに諦める(反映自体は裏側で続くので、
+ * 画面は変わらないままだが失敗扱いにはしない)。
+ */
+async function waitForPlanSync(targetPlanId: string): Promise<boolean> {
+  for (let i = 0; i < 12; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const s = await getCreditSummary();
+      if (s.plan_id === targetPlanId) return true;
+    } catch {
+      // 一時的な取得失敗は無視してリトライを続ける。
+    }
   }
+  return false;
 }
 
 function formatPrice(plan: PlanOption, isJa: boolean): string {
@@ -45,7 +59,7 @@ function formatPrice(plan: PlanOption, isJa: boolean): string {
   return amount;
 }
 
-type PendingCheckout = { planId: string; planName: string; clientSecret: string };
+type PendingCheckout = { plan: PlanOption; clientSecret: string };
 
 /**
  * プラン一覧・比較ページ。plan_selection_view.dart / plan_card.dart の
@@ -68,6 +82,7 @@ export const PlansPage: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<PendingCheckout | null>(null);
+  const [celebration, setCelebration] = useState<PlanOption | null>(null);
   const [creditRateOpen, setCreditRateOpen] = useState(false);
 
   const sortedPlans = useMemo(() => [...plans].sort((a, b) => a.tier_level - b.tier_level), [plans]);
@@ -80,12 +95,22 @@ export const PlansPage: React.FC = () => {
     try {
       const result: SwitchPlanResult = await switchPlan(plan.id);
       if ('client_secret' in result) {
-        setPendingCheckout({ planId: plan.id, planName: plan.name, clientSecret: result.client_secret });
+        setPendingCheckout({ plan, clientSecret: result.client_secret });
         return;
       }
       switch (result.status) {
         case 'claimed':
-        case 'switched':
+          // Freeプランの初回claimは同一リクエスト内でDBを直接更新するため、
+          // 反映待ちは不要(Flutter版もここはお祝い演出の対象外)。
+          await refetch();
+          break;
+        case 'switched': {
+          // 即時アップグレード。DBへの反映(RevenueCat往復)を確認できたら祝う。
+          const synced = await waitForPlanSync(plan.id);
+          await refetch();
+          if (synced) setCelebration(plan);
+          break;
+        }
         case 'already_current':
           await refetch();
           break;
@@ -122,9 +147,14 @@ export const PlansPage: React.FC = () => {
     }
   };
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = async () => {
+    if (!pendingCheckout) return;
+    const { plan } = pendingCheckout;
+    // モーダルは(StripeCheckoutModal側で)この関数が解決するまで開いたままになる。
+    const synced = await waitForPlanSync(plan.id);
+    await refetch();
     setPendingCheckout(null);
-    void waitAndRefetch(refetch);
+    if (synced) setCelebration(plan);
   };
 
   const handleResumePlan = async () => {
@@ -313,11 +343,15 @@ export const PlansPage: React.FC = () => {
 
       {pendingCheckout && (
         <StripeCheckoutModal
-          title={pendingCheckout.planName}
+          title={pendingCheckout.plan.name}
           clientSecret={pendingCheckout.clientSecret}
           onClose={() => setPendingCheckout(null)}
           onSuccess={handleCheckoutSuccess}
         />
+      )}
+
+      {celebration && (
+        <PlanCelebrationDialog plan={celebration} isJa={isJa} onClose={() => setCelebration(null)} />
       )}
 
       {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
@@ -357,6 +391,7 @@ const PlanCard: React.FC<{
         <span className="plans-badge is-current">{isJa ? '現在のプラン' : 'CURRENT PLAN'}</span>
         {hasScheduledChange && (
           <button type="button" className="plans-resume-btn" onClick={onResume} disabled={resuming}>
+            {resuming && <Loader2 size={13} className="animate-spin" />}
             {resuming ? (isJa ? '処理中…' : 'Working…') : isJa ? '現在のプランを維持する' : 'Keep Current Plan'}
           </button>
         )}
@@ -385,6 +420,7 @@ const PlanCard: React.FC<{
     }`;
     action = (
       <button type="button" className={btnClass} onClick={onAction} disabled={switching}>
+        {switching && <Loader2 size={14} className="animate-spin" />}
         {switching ? (isJa ? '処理中…' : 'Working…') : label}
       </button>
     );

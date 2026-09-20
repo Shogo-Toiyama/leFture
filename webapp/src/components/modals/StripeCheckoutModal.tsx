@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { ModalDialog } from './ModalDialog';
@@ -24,7 +25,13 @@ export interface StripeCheckoutModalProps {
   title: string;
   clientSecret: string;
   onClose: () => void;
-  onSuccess: () => void;
+  /**
+   * 決済自体はここで完了するが、DB側のプラン反映はStripe→webhook→RevenueCat→
+   * webhookという経路を経るため数秒遅れる。onSuccessはその反映確認まで待つ
+   * (Promiseが解決するまで)実装を渡すこと。待っている間もこのモーダルを開いた
+   * まま「処理中」表示を続ける(反映前にモーダルが消えて宙ぶらりんにしない)。
+   */
+  onSuccess: () => Promise<void>;
 }
 
 export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
@@ -42,7 +49,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   );
 };
 
-const CheckoutForm: React.FC<{ onClose: () => void; onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+const CheckoutForm: React.FC<{ onClose: () => void; onSuccess: () => Promise<void> }> = ({ onClose, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { language } = useLanguage();
@@ -71,7 +78,9 @@ const CheckoutForm: React.FC<{ onClose: () => void; onSuccess: () => void }> = (
     }
 
     if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing')) {
-      onSuccess();
+      // 決済自体は完了。ここから先(反映確認)もsubmitting=trueのまま続け、
+      // onSuccess側が実際にプランが切り替わるまで待ってからこのモーダルを閉じる。
+      await onSuccess();
       return;
     }
 
@@ -88,6 +97,7 @@ const CheckoutForm: React.FC<{ onClose: () => void; onSuccess: () => void }> = (
           {isJa ? 'キャンセル' : 'Cancel'}
         </button>
         <button type="submit" className="auth-submit-btn" disabled={!stripe || submitting}>
+          {submitting && <Loader2 size={15} className="animate-spin" />}
           {submitting ? (isJa ? '処理中…' : 'Processing…') : isJa ? '支払う' : 'Pay'}
         </button>
       </div>
