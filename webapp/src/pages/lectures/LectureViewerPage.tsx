@@ -358,6 +358,12 @@ export const LectureViewerPage: React.FC = () => {
           onAnnouncementToggled={(updated) => {
             setAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
           }}
+          onAnnouncementUpdated={(updated) => {
+            setAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+          }}
+          onAnnouncementDeleted={(id) => {
+            setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+          }}
           enableTranscriptView
         />
       )}

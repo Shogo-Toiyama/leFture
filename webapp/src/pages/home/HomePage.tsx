@@ -365,6 +365,8 @@ export const HomePage: React.FC = () => {
           lectures={recentLectures}
           onClose={() => setAnnouncementsOpen(false)}
           onAnnouncementToggled={handleAnnouncementToggled}
+          onAnnouncementUpdated={handleAnnouncementToggled}
+          onAnnouncementDeleted={(id) => setAnnouncements((prev) => prev.filter((a) => a.id !== id))}
         />
       )}
 

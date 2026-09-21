@@ -109,7 +109,7 @@ export const AccountPage: React.FC = () => {
 
   // トランスミッション用
   const [announcementsModalOpen, setAnnouncementsModalOpen] = useState(false);
-  const { announcements } = useAnnouncements();
+  const { announcements, setAnnouncements } = useAnnouncements();
 
   const handleTransmissionsClick = () => {
     if (!announcements || announcements.length === 0) {
@@ -711,6 +711,15 @@ export const AccountPage: React.FC = () => {
         <AnnouncementsModal
           announcements={announcements}
           onClose={() => setAnnouncementsModalOpen(false)}
+          onAnnouncementToggled={(updated) => {
+            setAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+          }}
+          onAnnouncementUpdated={(updated) => {
+            setAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+          }}
+          onAnnouncementDeleted={(id) => {
+            setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+          }}
         />
       )}
 

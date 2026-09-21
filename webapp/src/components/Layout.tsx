@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useProfile } from '../hooks/useProfile';
 import { getCreditSummary } from '../lib/billing';
@@ -8,6 +8,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { isLanguage } from '../i18n/translations';
 import { useUploadModal } from '../context/UploadModalContext';
 import { UploadModal } from './modals/UploadModal';
+import { PageState } from './PageState';
 
 const RING_RADIUS = 15;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -109,7 +110,9 @@ export const Layout: React.FC = () => {
       </header>
 
       <main className="app-main">
-        <Outlet />
+        <Suspense fallback={<PageState kind="loading" />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <UploadModal

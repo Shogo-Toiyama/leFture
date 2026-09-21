@@ -1,11 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import type { Announcement, AnnouncementType } from '../../types/content';
 import type { Lecture } from '../../types/lecture';
-import { toggleAnnouncementCompleted } from '../../lib/content';
+import { toggleAnnouncementCompleted, deleteAnnouncement } from '../../lib/content';
 import { expandSidRange } from '../../lib/sidCitation';
 import { ModalDialog } from './ModalDialog';
 import { TranscriptSheet } from '../transcript/TranscriptSheet';
+import { AnnouncementEditModal } from './AnnouncementEditModal';
+import { ConfirmModal } from './ConfirmModal';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 export interface AnnouncementsModalProps {
@@ -13,6 +16,8 @@ export interface AnnouncementsModalProps {
   lectures?: Lecture[];
   onClose: () => void;
   onAnnouncementToggled?: (updated: Announcement) => void;
+  onAnnouncementUpdated?: (updated: Announcement) => void;
+  onAnnouncementDeleted?: (id: string) => void;
   /**
    * trueにすると、カードのクリックは(該当sidがあれば)講義への遷移ではなく
    * トランスクリプトの該当範囲をこのモーダルに被せて表示する動作になる。
@@ -58,11 +63,35 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   lectures,
   onClose,
   onAnnouncementToggled,
+  onAnnouncementUpdated,
+  onAnnouncementDeleted,
   enableTranscriptView,
 }) => {
   const { t, locale } = useLanguage();
   const navigate = useNavigate();
   const title = t('announcementsTitle');
+
+  const [localAnnouncements, setLocalAnnouncements] = useState<Announcement[]>(announcements);
+  useEffect(() => {
+    setLocalAnnouncements(announcements);
+  }, [announcements]);
+
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [deletingAnnouncement, setDeletingAnnouncement] = useState<Announcement | null>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!activeMenuId) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('.announcement-menu-wrap')) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [activeMenuId]);
 
   // 1. Status Filter: 'active' | 'completed' | 'all' (Flutter: statusFilter)
   const [filter, setFilter] = useState<'active' | 'completed' | 'all'>('active');
@@ -74,11 +103,11 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
     null
   );
 
-  const activeCount = useMemo(() => announcements.filter((a) => !a.completed_at).length, [announcements]);
-  const completedCount = useMemo(() => announcements.filter((a) => Boolean(a.completed_at)).length, [announcements]);
+  const activeCount = useMemo(() => localAnnouncements.filter((a) => !a.completed_at).length, [localAnnouncements]);
+  const completedCount = useMemo(() => localAnnouncements.filter((a) => Boolean(a.completed_at)).length, [localAnnouncements]);
   const lectureTitleMap = useMemo(() => new Map(lectures?.map((l) => [l.id, l.title]) ?? []), [lectures]);
 
-  const filtered = announcements.filter((a) => {
+  const filtered = localAnnouncements.filter((a) => {
     if (filter === 'active' && a.completed_at) return false;
     if (filter === 'completed' && !a.completed_at) return false;
     if (selectedType && a.type.toUpperCase() !== selectedType.toUpperCase()) return false;
@@ -108,17 +137,38 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
         ...item,
         completed_at: nextCompleted ? new Date().toISOString() : null,
       };
+      setLocalAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
       onAnnouncementToggled?.(updated);
     } catch (err) {
       console.error('Failed to toggle announcement completion:', err);
     }
   };
 
+  const handleAnnouncementUpdated = (updated: Announcement) => {
+    setLocalAnnouncements((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+    onAnnouncementUpdated?.(updated);
+    setEditingAnnouncement(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingAnnouncement) return;
+    const id = deletingAnnouncement.id;
+    try {
+      await deleteAnnouncement(id);
+      setLocalAnnouncements((prev) => prev.filter((a) => a.id !== id));
+      onAnnouncementDeleted?.(id);
+      setDeletingAnnouncement(null);
+    } catch (err) {
+      console.error('Failed to delete announcement:', err);
+    }
+  };
+
   return (
-    <ModalDialog
-      title={title}
-      count={announcements.length}
-      onClose={onClose}
+    <>
+      <ModalDialog
+        title={title}
+        count={localAnnouncements.length}
+        onClose={onClose}
       maxWidth={720}
       sidePanel={
         transcriptTarget ? (
@@ -289,7 +339,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                   )}
                 </div>
 
-                {/* Right: Square Checkmark Button (Done / Undo) */}
+                {/* Right: Square Checkmark Button & 3-dots Menu */}
                 <div className="announcement-action-area">
                   <button
                     type="button"
@@ -314,6 +364,74 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </button>
+
+                  {/* Three-dots Menu */}
+                  <div
+                    className="course-card-menu-wrap announcement-menu-wrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className={`course-card-menu-btn announcement-menu-btn ${activeMenuId === item.id ? 'is-active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setActiveMenuId((prev) => (prev === item.id ? null : item.id));
+                      }}
+                      aria-label="Announcement options"
+                      aria-expanded={activeMenuId === item.id}
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+
+                    {activeMenuId === item.id && (
+                      <div className="course-card-dropdown announcement-dropdown">
+                        <button
+                          type="button"
+                          className="course-dropdown-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setActiveMenuId(null);
+                            handleToggleDone(item);
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                            {isCompleted ? 'undo' : 'check_circle'}
+                          </span>
+                          <span>{isCompleted ? t('announcementsMarkActive') : t('announcementsMarkCompleted')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="course-dropdown-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setActiveMenuId(null);
+                            setEditingAnnouncement(item);
+                          }}
+                        >
+                          <Pencil size={14} />
+                          <span>{t('edit')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="course-dropdown-item is-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setActiveMenuId(null);
+                            setDeletingAnnouncement(item);
+                          }}
+                        >
+                          <Trash2 size={14} />
+                          <span>{t('delete')}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -321,5 +439,30 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
         </div>
       )}
     </ModalDialog>
-  );
+
+    {editingAnnouncement && (
+      <AnnouncementEditModal
+        announcement={editingAnnouncement}
+        onClose={() => setEditingAnnouncement(null)}
+        onAnnouncementUpdated={handleAnnouncementUpdated}
+      />
+    )}
+
+    {deletingAnnouncement && (
+      <ConfirmModal
+        open={Boolean(deletingAnnouncement)}
+        onClose={() => setDeletingAnnouncement(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('announcementDeleteTitle')}
+        message={t('announcementDeleteMessage').replace(
+          '{title}',
+          deletingAnnouncement.title?.trim() || t('announcementDefaultTitle')
+        )}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
+        isDanger
+      />
+    )}
+  </>
+);
 };

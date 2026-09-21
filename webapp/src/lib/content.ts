@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type {
   Announcement,
+  AnnouncementType,
   ContentMetadata,
   DeepNote,
   FunFact,
@@ -214,5 +215,39 @@ export async function toggleAnnouncementCompleted(id: string, isCompleted: boole
     updated_at: new Date().toISOString(),
   };
   const { error } = await supabase.from('announcements').update(payload).eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateAnnouncement(
+  id: string,
+  updates: {
+    title?: string;
+    description?: string | null;
+    type?: AnnouncementType;
+  }
+): Promise<Announcement> {
+  const payload: Record<string, unknown> = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase
+    .from('announcements')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Announcement;
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('announcements')
+    .update({
+      deleted_at: now,
+      updated_at: now,
+    })
+    .eq('id', id);
   if (error) throw error;
 }

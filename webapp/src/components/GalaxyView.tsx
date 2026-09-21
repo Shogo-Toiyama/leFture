@@ -290,9 +290,10 @@ interface ShootingStar {
 
 interface GalaxyViewProps {
   className?: string;
+  enableShootingStars?: boolean;
 }
 
-export const GalaxyView: React.FC<GalaxyViewProps> = ({ className }) => {
+export const GalaxyView: React.FC<GalaxyViewProps> = ({ className, enableShootingStars = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -546,7 +547,7 @@ export const GalaxyView: React.FC<GalaxyViewProps> = ({ className }) => {
         ctx!.drawImage(starSprites[stars.type[i]], x - r, y - r, r * 2, r * 2);
       }
 
-      if (!reduced) {
+      if (enableShootingStars && !reduced) {
         shootingCooldown -= dt;
         if (shootingCooldown <= 0 && shooting.length < 3) {
           spawnShootingStar();

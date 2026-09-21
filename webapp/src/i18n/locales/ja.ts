@@ -209,7 +209,7 @@ export const ja: Record<keyof typeof en, string> = {
   planChanged: 'プランが変更されました',
   renewed: '更新されました',
   creditsDelta: '{delta} クレジット',
-  planPriceFree: '無料',
+  planPriceFree: '$0',
   perMonth: ' / 月',
   plansTitle: 'プラン',
   plansTagline: 'leFtureでプレミアム機能を解放しよう',
@@ -363,7 +363,7 @@ export const ja: Record<keyof typeof en, string> = {
   customColorHex: 'カラーコード',
   ok: '決定',
 
-  // Announcements Modal
+  // Announcements Modal & Actions
   announcementsTitle: 'お知らせ',
   announcementsActive: '未完了 ({count})',
   announcementsCompleted: '完了済み ({count})',
@@ -374,6 +374,19 @@ export const ja: Record<keyof typeof en, string> = {
   announcementsViewInTranscript: 'トランスクリプトで確認',
   announcementsMarkActive: '未完了に戻す',
   announcementsMarkCompleted: '完了にする',
+  announcementDeleteTitle: 'お知らせを削除しますか？',
+  announcementDeleteMessage: '本当に「{title}」を削除しますか？',
+  announcementEditTitle: 'アナウンスを編集',
+  announcementEditType: '種類',
+  announcementEditTitleLabel: 'タイトル',
+  announcementEditTitleHint: 'アナウンスのタイトル',
+  announcementEditDescriptionLabel: '説明',
+  announcementEditDescriptionHint: '追加の詳細（任意）',
+  announcementEditTitleRequired: 'タイトルを入力してください。',
+  announcementTypeTodo: 'やること',
+  announcementTypeEvent: 'イベント',
+  announcementTypeHint: 'ヒント',
+  announcementTypeInfo: '情報',
 
   // Course Picker Modal
   coursePickerTitle: 'コースを選択',

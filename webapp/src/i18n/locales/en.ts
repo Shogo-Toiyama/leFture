@@ -207,7 +207,7 @@ export const en = {
   planChanged: 'Plan Changed',
   renewed: 'Renewed',
   creditsDelta: '{delta} credits',
-  planPriceFree: 'Free',
+  planPriceFree: '$0',
   perMonth: ' / mo',
   plansTitle: 'Plans',
   plansTagline: 'Get premium access on leFture',
@@ -363,7 +363,7 @@ export const en = {
   customColorHex: 'Hex Code',
   ok: 'OK',
 
-  // Announcements Modal
+  // Announcements Modal & Actions
   announcementsTitle: 'Announcements',
   announcementsActive: 'Active ({count})',
   announcementsCompleted: 'Completed ({count})',
@@ -372,8 +372,21 @@ export const en = {
   announcementsEmpty: 'No announcements in this view',
   announcementDefaultTitle: 'Announcement',
   announcementsViewInTranscript: 'View in transcript',
-  announcementsMarkActive: 'Mark active',
-  announcementsMarkCompleted: 'Mark completed',
+  announcementsMarkActive: 'Mark as Todo',
+  announcementsMarkCompleted: 'Mark as Done',
+  announcementDeleteTitle: 'Delete Announcement?',
+  announcementDeleteMessage: 'Are you sure you want to delete "{title}"?',
+  announcementEditTitle: 'Edit Announcement',
+  announcementEditType: 'Type',
+  announcementEditTitleLabel: 'Title',
+  announcementEditTitleHint: 'Announcement title',
+  announcementEditDescriptionLabel: 'Description',
+  announcementEditDescriptionHint: 'Additional details (optional)',
+  announcementEditTitleRequired: 'Title cannot be empty.',
+  announcementTypeTodo: 'Todo',
+  announcementTypeEvent: 'Event',
+  announcementTypeHint: 'Hint',
+  announcementTypeInfo: 'Info',
 
   // Course Picker Modal
   coursePickerTitle: 'Select Course',

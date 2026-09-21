@@ -533,8 +533,12 @@ label {
 .page-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  padding: 0.5rem 0;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 6rem;
+  box-sizing: border-box;
 }
 
 .skeleton {
@@ -548,8 +552,9 @@ label {
 
 .skeleton-title {
   height: 26px;
-  width: 42%;
-  margin-bottom: 0.4rem;
+  width: 38%;
+  max-width: 240px;
+  margin-bottom: 0.5rem;
 }
 
 .skeleton-line {
@@ -3289,13 +3294,17 @@ button.glass-row:hover,
   line-height: 1;
 }
 
-/* Right Action: Square Checkmark (Done / Undo) */
+/* Right Action: Square Checkmark (Done / Undo) & Three-Dots Menu */
 .announcement-action-area {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   flex-shrink: 0;
-  padding-top: 0.15rem;
+  align-self: stretch;
+  margin-top: -0.95rem;
+  margin-bottom: -0.95rem;
+  padding: 0;
 }
 
 .announcement-square-check {
@@ -3347,6 +3356,92 @@ button.glass-row:hover,
   background: #16a34a;
   border-color: #22c55e;
   box-shadow: 0 0 14px rgba(74, 222, 128, 0.55);
+}
+
+.announcement-menu-wrap {
+  position: relative;
+}
+
+.announcement-menu-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--comet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.announcement-menu-btn:hover,
+.announcement-menu-btn.is-active {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--starlight);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.announcement-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 100;
+  min-width: 160px;
+}
+
+.dropdown-material-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Announcement Edit Modal */
+.announcement-type-selector-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.announcement-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--comet);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.announcement-type-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--starlight);
+}
+
+.announcement-type-chip.is-selected {
+  font-weight: 600;
+  border-width: 1.5px;
+}
+
+.announcement-desc-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+  font-family: inherit;
 }
 
 .announcement-extra-info {
