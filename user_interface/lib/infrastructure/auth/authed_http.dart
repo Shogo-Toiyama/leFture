@@ -103,8 +103,8 @@ class AuthedHttpClient {
   /// [timeout] は呼び出し元が元々使っていた値をそのまま引き継げるようにしてある
   /// (アカウント削除30秒、ゴミ箱を空にする60秒など、処理によって妥当な長さが
   /// 違うため)。nullを渡すとタイムアウトを掛けない。
-  Future<http.Response> _send(
-    Future<http.Response> Function(Map<String, String> headers) request, {
+  Future<T> _send<T extends http.BaseResponse>(
+    Future<T> Function(Map<String, String> headers) request, {
     Map<String, String> extraHeaders = const {},
     Duration? timeout,
   }) async {
@@ -113,7 +113,7 @@ class AuthedHttpClient {
           'Authorization': 'Bearer $token',
         };
 
-    Future<http.Response> run(String token) {
+    Future<T> run(String token) {
       final future = request(headersWith(token));
       return timeout == null ? future : future.timeout(timeout);
     }
@@ -160,6 +160,22 @@ class AuthedHttpClient {
         extraHeaders: payload == null
             ? const {}
             : const {'Content-Type': 'application/json'},
+        timeout: timeout,
+      );
+
+  /// ファイル添付(multipart)用。[build] は呼ばれるたびに新しいリクエストを
+  /// 組み立てること — MultipartRequestは一度sendすると再利用できないため、
+  /// 401後の再試行で作り直しが必要になる。
+  Future<http.StreamedResponse> sendMultipart(
+    Future<http.MultipartRequest> Function() build, {
+    Duration? timeout,
+  }) =>
+      _send(
+        (h) async {
+          final request = await build();
+          request.headers.addAll(h);
+          return request.send();
+        },
         timeout: timeout,
       );
 }

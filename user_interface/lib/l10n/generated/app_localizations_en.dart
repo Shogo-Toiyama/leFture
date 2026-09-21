@@ -3255,4 +3255,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get creditRateModalBuyCreditsButtonAndroid => 'View Credit Options';
+
+  @override
+  String get accountSuspendedTitle => 'Account Suspended';
+
+  @override
+  String get accountSuspendedBody =>
+      'This account has been suspended due to a violation of our Terms of Service. You can still view your existing lectures and notes, but recording, analysis, credit purchases, and plan changes are unavailable. If you believe this is a mistake, please contact support.';
+
+  @override
+  String get accountSuspendedContactButton => 'Contact Support';
+
+  @override
+  String get accountSuspendedPlansNotice =>
+      'Your account is suspended. You can cancel your subscription here, but other plan changes are unavailable.';
+
+  @override
+  String get plansSuspendedButton => 'Unavailable While Suspended';
 }

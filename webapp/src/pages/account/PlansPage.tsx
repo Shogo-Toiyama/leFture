@@ -9,6 +9,7 @@ import { toDisplayCredits } from '../../types/billing';
 import type { CreditSummary, PlanOption } from '../../types/billing';
 import { tierAccent, planIconAsset } from '../../lib/planTheme';
 import { PageState } from '../../components/PageState';
+import { AccountSuspendedNotice } from '../../components/AccountSuspendedNotice';
 import { StripeCheckoutModal } from '../../components/modals/StripeCheckoutModal';
 import { PlanCelebrationDialog } from '../../components/modals/PlanCelebrationDialog';
 import { ConfirmModal } from '../../components/modals/ConfirmModal';
@@ -240,6 +241,7 @@ export const PlansPage: React.FC = () => {
           <PageState kind="error" message={summaryError ?? plansError ?? undefined} />
         )}
 
+        {summary?.suspended && <AccountSuspendedNotice variant="plans" />}
         {notice && <p className="notice">{notice}</p>}
         {error && <p className="notice notice-error">{error}</p>}
 
@@ -432,12 +434,16 @@ const PlanCard: React.FC<{
   // store_purchaseかつStripe価格が無いプランは、ウェブからは購入できない(Apple専用)。
   const isPurchasableOnWeb = plan.claim_mode === 'self_serve' || Boolean(plan.stripe_price_id);
 
+  // 停止中は有料プランへの操作(購入・アップグレード・解約取消)をすべて塞ぐ。
+  // Free(self_serve)への切り替え=解約だけは通す。
+  const blockedBySuspension = summary.suspended && plan.claim_mode !== 'self_serve';
+
   let action: React.ReactNode;
   if (isCurrentPlan) {
     action = (
       <>
         <span className="plans-badge is-current">{isJa ? '現在のプラン' : 'CURRENT PLAN'}</span>
-        {hasScheduledChange && (
+        {hasScheduledChange && !summary.suspended && (
           <button type="button" className="plans-resume-btn" onClick={onResume} disabled={resuming}>
             {resuming && <Loader2 size={13} className="animate-spin" />}
             {resuming ? (isJa ? '処理中…' : 'Working…') : isJa ? '現在のプランを維持する' : 'Keep Current Plan'}
@@ -447,6 +453,8 @@ const PlanCard: React.FC<{
     );
   } else if (isPendingTarget) {
     action = <span className="plans-badge is-pending">{isJa ? '変更予約中' : 'SCHEDULED'}</span>;
+  } else if (blockedBySuspension) {
+    action = <span className="plans-badge is-ios-only">{isJa ? '停止中は利用できません' : 'Unavailable while suspended'}</span>;
   } else if (!isPurchasableOnWeb) {
     action = <span className="plans-badge is-ios-only">{isJa ? 'iOSアプリのみ' : 'iOS app only'}</span>;
   } else {

@@ -20,6 +20,7 @@ import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/infrastructure/repositories/credit_repository.dart' show DeviceAlreadyClaimedException;
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/account_suspended_gate.dart';
 import 'package:lefture/presentation/widgets/android_web_redirect_notice_card.dart';
 
 import 'plan_card_carousel.dart';
@@ -453,7 +454,12 @@ class PlanSelectionView extends HookConsumerWidget {
       final isPendingTargetSelected = pendingPlan != null && selectedPlan.id == pendingPlan.id;
       final isCurrentWithPendingChange = purchaseState.isCurrentPlan && pendingPlan != null;
 
-      if (isPendingTargetSelected) {
+      if (summary.suspended && !selectedPlan.isSelfServe) {
+        // 停止中は有料プランへの操作(購入・アップグレード・ダウングレード予約)を
+        // すべて塞ぐ。Freeへの切り替え(=解約)だけは下の分岐のまま通す。
+        continueLabel = l10n.plansSuspendedButton;
+        onContinue = null;
+      } else if (isPendingTargetSelected) {
         // 既にこのプランへの切り替えが予約済み。二重予約を避けるため無効化。
         continueLabel = l10n.plansScheduledButton;
         onContinue = null;
@@ -573,6 +579,7 @@ class PlanSelectionView extends HookConsumerWidget {
                     child: Column(
                       children: [
                         header,
+                        if (summary != null && summary.suspended) const AccountSuspendedBanner(),
                         if (isLoadingPlans) ...[
                           SizedBox(
                             height: carouselHeight + 56,

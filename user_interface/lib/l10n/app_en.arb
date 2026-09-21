@@ -4922,5 +4922,26 @@
   "creditRateModalBuyCreditsButtonAndroid": "View Credit Options",
   "@creditRateModalBuyCreditsButtonAndroid": {
     "description": "Android-only replacement for creditRateModalBuyCreditsButton. Avoids any 'buy/purchase' wording since the destination page has no in-app purchase capability on Android."
+  },
+
+  "accountSuspendedTitle": "Account Suspended",
+  "@accountSuspendedTitle": {
+    "description": "Title of the full-screen notice shown instead of the recording / credit purchase pages while the account is suspended by the operator for a Terms of Service violation."
+  },
+  "accountSuspendedBody": "This account has been suspended due to a violation of our Terms of Service. You can still view your existing lectures and notes, but recording, analysis, credit purchases, and plan changes are unavailable. If you believe this is a mistake, please contact support.",
+  "@accountSuspendedBody": {
+    "description": "Body text of the account-suspended notice. Explains what still works (viewing) and what doesn't, and invites the user to contact support."
+  },
+  "accountSuspendedContactButton": "Contact Support",
+  "@accountSuspendedContactButton": {
+    "description": "Button on the account-suspended notice that opens the in-app contact form."
+  },
+  "accountSuspendedPlansNotice": "Your account is suspended. You can cancel your subscription here, but other plan changes are unavailable.",
+  "@accountSuspendedPlansNotice": {
+    "description": "Banner shown at the top of the Plans page while suspended. Cancelling a paid subscription (switching to Free) must stay possible, so this explains that only that action still works."
+  },
+  "plansSuspendedButton": "Unavailable While Suspended",
+  "@plansSuspendedButton": {
+    "description": "Disabled floating button label on the Plans page when a paid plan is centered while the account is suspended."
   }
 }

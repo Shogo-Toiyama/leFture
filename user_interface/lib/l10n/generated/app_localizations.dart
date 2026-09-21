@@ -5755,6 +5755,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Credit Options'**
   String get creditRateModalBuyCreditsButtonAndroid;
+
+  /// Title of the full-screen notice shown instead of the recording / credit purchase pages while the account is suspended by the operator for a Terms of Service violation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Suspended'**
+  String get accountSuspendedTitle;
+
+  /// Body text of the account-suspended notice. Explains what still works (viewing) and what doesn't, and invites the user to contact support.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been suspended due to a violation of our Terms of Service. You can still view your existing lectures and notes, but recording, analysis, credit purchases, and plan changes are unavailable. If you believe this is a mistake, please contact support.'**
+  String get accountSuspendedBody;
+
+  /// Button on the account-suspended notice that opens the in-app contact form.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support'**
+  String get accountSuspendedContactButton;
+
+  /// Banner shown at the top of the Plans page while suspended. Cancelling a paid subscription (switching to Free) must stay possible, so this explains that only that action still works.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is suspended. You can cancel your subscription here, but other plan changes are unavailable.'**
+  String get accountSuspendedPlansNotice;
+
+  /// Disabled floating button label on the Plans page when a paid plan is centered while the account is suspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable While Suspended'**
+  String get plansSuspendedButton;
 }
 
 class _AppLocalizationsDelegate

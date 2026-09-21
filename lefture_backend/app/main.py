@@ -383,6 +383,52 @@ async def _get_user_client_from_request(request: Request):
     return await asyncio.to_thread(_build_user_client_from_request, request)
 
 
+async def _require_lecture_owner(admin_client, lecture_id: str, user_id: str, extra_columns: str = "") -> dict:
+    """
+    lecture_idの講義が認証済みユーザー自身のものであることを確認して行を返す。
+    無ければ404、他人のものなら403。lecture_idはクライアント申告値なので、
+    音声アップロード・分析開始のようにlecture_idだけで書き込み先が決まる
+    エンドポイントでは必ずこれを通す。
+    """
+    select_cols = f"user_id, {extra_columns}" if extra_columns else "user_id"
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures").select(select_cols).eq("id", lecture_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Lecture {lecture_id} not found")
+    if row["user_id"] != user_id:
+        logger.warning(f"User {user_id} attempted to access lecture {lecture_id} owned by {row['user_id']}")
+        raise HTTPException(status_code=403, detail="You do not have access to this lecture")
+    return row
+
+
+async def _is_account_suspended(admin_client, user_id: str) -> bool:
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("account_suspensions").select("user_id").eq("user_id", user_id).maybe_single().execute()
+    )
+    return bool(res and res.data)
+
+
+async def _reject_if_suspended(admin_client, user_id: str) -> None:
+    """
+    停止中アカウントからの「閲覧以外」の操作を403で止める。録音(リアルタイム含む)・
+    分析・クレジット購入・プラン変更など、新しいデータや課金を生む入口に置く。
+    サブスク解約(Freeへの降格)・閲覧・サポート問い合わせ・アカウント削除には
+    置かないこと —— 制限したまま課金だけ続く状態や、異議申立ての手段を
+    奪う状態を作らないため。
+    """
+    if await _is_account_suspended(admin_client, user_id):
+        logger.warning(f"Rejected request from suspended account {user_id}")
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error_code": "ACCOUNT_SUSPENDED",
+                "message": "This account has been suspended. Please contact support.",
+            },
+        )
+
+
 # ---------------------------------------------------------
 # 分析開始 (start_analysis)
 # ---------------------------------------------------------
@@ -393,6 +439,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
 
      # 管理者クライアントを取得 (RLSをバイパスして安全に書き込むため)
     admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, user_id)
 
     # 3.4 クレジット残高ゲート: 新規ジョブの受付だけをブロックする。
     # 実際の消費(consume_credits)は各タスク完了後の事後計測なので、進行中の
@@ -445,7 +492,7 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
     # 「検証自体ができなかった(503)」を明確に区別する。
     try:
         lec_res = await asyncio.to_thread(
-            lambda: admin_client.table("lectures").select("course_id, audio_path").eq("id", payload.lecture_id).maybe_single().execute()
+            lambda: admin_client.table("lectures").select("user_id, course_id, audio_path").eq("id", payload.lecture_id).maybe_single().execute()
         )
     except Exception as e:
         # ここに来るのは通信断やDB障害など「待てば直るかもしれない」失敗だけ。
@@ -463,6 +510,10 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             status_code=404,
             detail="This lecture hasn't reached the server yet. Its audio is still on your device — keep the app open until the upload finishes, then try again."
         )
+
+    if lecture_row["user_id"] != user_id:
+        logger.warning(f"User {user_id} attempted to start analysis on lecture {payload.lecture_id} owned by {lecture_row['user_id']}")
+        raise HTTPException(status_code=403, detail="You do not have access to this lecture")
 
     if not lecture_row.get("course_id"):
         raise HTTPException(
@@ -890,6 +941,7 @@ async def claim_plan(payload: ClaimPlanRequest, request: Request):
     user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, user_id)
 
     try:
         rpc_params = {"p_user_id": user_id, "p_plan_id": payload.plan_id}
@@ -1070,8 +1122,13 @@ async def billing_summary(request: Request):
     # 値がそのままクライアントに渡ってもUIロック表示のヒントとしてしか使われず、
     # 悪用の余地は無い。
     gating_disabled = is_gating_disabled_for_user(user_id)
+    # suspended: 停止中かどうか。クライアントは録音・購入・プラン変更の入口を
+    # 停止バナーに差し替えるヒントとしてだけ使う。実際の拒否は各エンドポイントの
+    # _reject_if_suspended()が行うので、この値を改ざんしても何も通らない。
+    suspended = await _is_account_suspended(admin_client, user_id)
 
     return {
+        "suspended": suspended,
         "credit_balance": row.get("credit_balance"),
         "monthly_allocation": row.get("monthly_allocation"),
         "extra_credit_balance": row.get("extra_credit_balance"),
@@ -1326,13 +1383,18 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
     # 届く(cancel_at_period_end=trueにしただけ、ダウングレード予約含む)ため、
     # Apple由来かどうかをevent["store"]で厳密に絞る必要がある。
     #
+    # UNCANCELLATION(期限切れ前に自動更新をオンに戻した)はその逆操作で、
+    # フラグを下ろすだけ。クレジットは付与しない —— 期間も決済も進んで
+    # いないのに満額を付与し直すと、自動更新のオフ→オン往復だけで同一期間内に
+    # 残高が何度でも満額に戻ってしまう。
+    #
     # BILLING_ISSUE(更新時の決済失敗)は無視してはいけない: App Store Connectで
     # Billing Grace Period(28日)を設定しているため、Appleは決済リトライ中も
     # サブスクを「有効」として扱うが、こちらの前回付与クレジットのexpires_at
     # (前回current_period_end + 6時間の猶予)はRENEWALが来ないまま過ぎてしまい、
     # 実質数時間でクレジットが消えてしまう。下のBILLING_ISSUE分岐で
     # handle_billing_issue() を呼び、Grace Period終了日までクレジットを維持する。
-    GRANT_EVENT_TYPES = {"INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION"}
+    GRANT_EVENT_TYPES = {"INITIAL_PURCHASE", "RENEWAL"}
 
     try:
         if event_type in GRANT_EVENT_TYPES:
@@ -1404,6 +1466,17 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
                 return {"status": "ignored", "reason": "missing_fields"}
             await asyncio.to_thread(
                 lambda: admin_client.rpc("mark_apple_subscription_auto_renew_disabled", {
+                    "p_user_id": app_user_id,
+                    "p_event_id": event_id,
+                    "p_product_id": product_id,
+                }).execute()
+            )
+        elif event_type == "UNCANCELLATION" and event.get("store") == "APP_STORE":
+            if not product_id:
+                logger.error(f"RevenueCat UNCANCELLATION missing product_id: {event}")
+                return {"status": "ignored", "reason": "missing_fields"}
+            await asyncio.to_thread(
+                lambda: admin_client.rpc("mark_apple_subscription_auto_renew_enabled", {
                     "p_user_id": app_user_id,
                     "p_event_id": event_id,
                     "p_product_id": product_id,
@@ -1485,6 +1558,7 @@ async def billing_stripe_create_credit_pack_payment(payload: CreateCreditPackPay
     uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, uid)
     try:
         pack_res = await asyncio.to_thread(
             lambda: admin_client.table("credit_packs")
@@ -1652,6 +1726,10 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
     target_plan = plan_res.data if plan_res else None
     if not target_plan or target_plan.get("disabled_at"):
         raise HTTPException(status_code=404, detail="Plan not found")
+
+    # 停止中でもFree(self_serve)への切り替え=有料サブスクの解約だけは通す。
+    if target_plan["claim_mode"] != "self_serve":
+        await _reject_if_suspended(admin_client, uid)
 
     profile_res = await asyncio.to_thread(
         lambda: admin_client.table("user_profiles")
@@ -2301,6 +2379,7 @@ async def billing_stripe_resume_plan(request: Request):
     uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, uid)
 
     profile_res = await asyncio.to_thread(
         lambda: admin_client.table("user_profiles")
@@ -2588,6 +2667,7 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
     user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, user_id)
 
     task_res = await asyncio.to_thread(
         lambda: admin_client.table("processing_tasks").select("id, job_id, task_type, status")
@@ -2770,6 +2850,7 @@ async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(
 # ---------------------------------------------------------
 @app.post("/worker/transcribe-chunk")
 async def worker_transcribe_chunk(
+    request: Request,
     lecture_id: str = Form(...),
     start_time: float = Form(...),
     chunk_index: int = Form(...),
@@ -2782,6 +2863,11 @@ async def worker_transcribe_chunk(
     が非同期に行うため、Cloudflare Whisper側がハングしてもこのリクエスト自体は
     詰まらない。
     """
+    user_id = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, user_id)
+    await _require_lecture_owner(admin_client, lecture_id, user_id)
+
     if not file:
         raise HTTPException(status_code=400, detail="No audio file provided")
 
@@ -2830,15 +2916,12 @@ MASTER_AUDIO_CONTENT_TYPE = "audio/x-m4a"
 
 
 @app.post("/worker/request-master-audio-upload-url")
-async def worker_request_master_audio_upload_url(payload: MasterAudioUploadUrlRequest):
+async def worker_request_master_audio_upload_url(payload: MasterAudioUploadUrlRequest, request: Request):
     """マスター音声をR2へ直接PUTするための署名付きURLを発行する。"""
-    supabase = get_supabase_client()
-    res = await asyncio.to_thread(
-        lambda: supabase.table("lectures").select("user_id").eq("id", payload.lecture_id).single().execute()
-    )
-    if not res.data:
-        raise HTTPException(status_code=404, detail=f"Lecture {payload.lecture_id} not found")
-    uid = res.data["user_id"]
+    uid = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, uid)
+    await _require_lecture_owner(admin_client, payload.lecture_id, uid)
 
     from app.services.task_runners import storage_service
     upload_url, storage_path = await asyncio.to_thread(
@@ -2853,18 +2936,15 @@ async def worker_request_master_audio_upload_url(payload: MasterAudioUploadUrlRe
 
 
 @app.post("/worker/complete-master-audio-upload")
-async def worker_complete_master_audio_upload(payload: MasterAudioUploadCompleteRequest):
+async def worker_complete_master_audio_upload(payload: MasterAudioUploadCompleteRequest, request: Request):
     """
     Flutterが直接R2へのPUTを終えた後に呼ぶ。クライアントの自己申告を鵜呑みにせず、
     実際にR2上にファイルが存在することを確認してからaudio_pathを更新する。
     """
+    uid = await _get_authenticated_user_id(request)
     supabase = get_supabase_client()
-    res = await asyncio.to_thread(
-        lambda: supabase.table("lectures").select("user_id").eq("id", payload.lecture_id).single().execute()
-    )
-    if not res.data:
-        raise HTTPException(status_code=404, detail=f"Lecture {payload.lecture_id} not found")
-    uid = res.data["user_id"]
+    await _reject_if_suspended(supabase, uid)
+    await _require_lecture_owner(supabase, payload.lecture_id, uid)
 
     from app.services.task_runners import storage_service
     storage_path = f"{uid}/{payload.lecture_id}/master_audio.m4a"
@@ -4484,6 +4564,7 @@ async def profile_request_avatar_upload_url(
 ):
     """ユーザーカスタムアバター画像用の R2 署名付きアップロードURLを発行する"""
     uid = await _get_authenticated_user_id(request)
+    await _reject_if_suspended(get_supabase_client(), uid)
 
     from app.services.task_runners import storage_service
     upload_url, storage_path = await asyncio.to_thread(

@@ -14,6 +14,8 @@ export interface CreditSummary {
   tier_level: number;
   /** kill-switch(実機テスト用許可リスト含む)。trueならhasFeature()は常にtrueを返す。 */
   gating_disabled: boolean;
+  /** 運営による停止中。閲覧のみ可。録音・購入・プラン変更の入口はUIで塞ぐ(拒否自体はバックエンド)。 */
+  suspended: boolean;
 }
 
 export interface PlanOption {

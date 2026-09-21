@@ -11,6 +11,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { CoursePickerModal } from './CoursePickerModal';
 import { CourseIconGlyph } from '../../lib/courseIcons';
 import { LanguageSelectionSheet } from '../account/LanguageSelectionSheet';
+import { AccountSuspendedNotice } from '../AccountSuspendedNotice';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.m4a,.wav,.aac,.aiff,.caf,.flac,.ogg';
 
@@ -66,6 +67,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const [hasPlan, setHasPlan] = useState(true);
+  const [suspended, setSuspended] = useState(false);
 
   // Sync initialCourseId when modal opens
   useEffect(() => {
@@ -95,6 +97,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       .then((summary) => {
         setCredits(toDisplayCredits(summary.credit_balance));
         setHasPlan(summary.has_active_plan);
+        setSuspended(summary.suspended);
       })
       .catch(() => setCredits(null));
   }, [open]);
@@ -113,7 +116,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   if (!open) return null;
 
-  const blocked = credits !== null && (!hasPlan || credits <= 0);
+  const blocked = suspended || (credits !== null && (!hasPlan || credits <= 0));
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
 
   const pickFile = (next: File | null) => {
@@ -226,7 +229,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           <form className="upload-modal-form" onSubmit={handleSubmit}>
             {/* Scrollable Body Content */}
             <div className="upload-modal-body">
-              {blocked && (
+              {suspended && <AccountSuspendedNotice />}
+              {blocked && !suspended && (
                 <div className="upload-notice-error">
                   <AlertCircle size={18} className="upload-notice-icon" />
                   <span>

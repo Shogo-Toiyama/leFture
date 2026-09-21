@@ -3113,4 +3113,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get creditRateModalBuyCreditsButtonAndroid => 'クレジットについて見る';
+
+  @override
+  String get accountSuspendedTitle => 'アカウント停止中';
+
+  @override
+  String get accountSuspendedBody =>
+      '利用規約違反のため、このアカウントは停止されています。既存の講義やノートの閲覧は引き続き可能ですが、録音・分析・クレジット購入・プラン変更はご利用いただけません。心当たりがない場合はサポートまでご連絡ください。';
+
+  @override
+  String get accountSuspendedContactButton => 'サポートに連絡';
+
+  @override
+  String get accountSuspendedPlansNotice =>
+      'アカウントが停止中です。サブスクリプションの解約は可能ですが、その他のプラン変更はご利用いただけません。';
+
+  @override
+  String get plansSuspendedButton => '停止中は利用できません';
 }

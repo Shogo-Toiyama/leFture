@@ -10,6 +10,7 @@ import 'package:lefture/core/services/background_task.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/core/utils/network_constants.dart';
+import 'package:lefture/domain/exceptions/account_suspended_exception.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -256,8 +257,8 @@ class UploadManager {
         } catch (e) {
           final nextAttempt = job.attemptCount + 1;
 
-          if (e is InsufficientCreditsException) {
-            // クレジット不足は「待てば直る」類の失敗ではないため、指数バックオフで
+          if (e is InsufficientCreditsException || e is AccountSuspendedException) {
+            // クレジット不足・アカウント停止は「待てば直る」類の失敗ではないため、指数バックオフで
             // 延々とリトライしても無意味(かつCloud Runへの無駄なリクエストが
             // 積み重なる)。nextRetryAtを事実上「無期限」に設定して自動リトライを
             // 止める一方、statusは'retry_wait'のまま・lastErrorも残すことで、
@@ -265,7 +266,7 @@ class UploadManager {
             // ようにする——UI側はこのlastErrorを見てクレジット不足ダイアログを出す。
             // ユーザーがクレジットを追加した後は、手動の「Start Analysis」ボタン
             // (別経路のJobRepository.startAnalysis)で再開できる。
-            DevLog.add('💳 [UploadManager] ${job.kind}#${job.id.substring(0, 8)} failed: insufficient credits, will not auto-retry: $e');
+            DevLog.add('💳 [UploadManager] ${job.kind}#${job.id.substring(0, 8)} failed: not retryable (credits/suspension), will not auto-retry: $e');
             await _repo.updateJobStatus(
               jobId: job.id,
               status: 'retry_wait',
@@ -609,31 +610,40 @@ class UploadManager {
     // Cloud RunのURL
     final uri = Uri.parse('${AppConfig.backendBaseUrl}/worker/transcribe-chunk');
 
-    final request = http.MultipartRequest('POST', uri);
+    Future<http.MultipartRequest> buildRequest() async {
+      final request = http.MultipartRequest('POST', uri);
 
-    // Cloud Run側が「どのデータか」分かるようにメタデータを送る
-    request.fields['lecture_id'] = lectureId;
-    request.fields['chunk_index'] = chunkIndex.toString();
-    request.fields['start_time'] = startTime.toString();
-    if (whisperContext.isNotEmpty) {
-      request.fields['whisper_context'] = whisperContext;
+      // Cloud Run側が「どのデータか」分かるようにメタデータを送る
+      request.fields['lecture_id'] = lectureId;
+      request.fields['chunk_index'] = chunkIndex.toString();
+      request.fields['start_time'] = startTime.toString();
+      if (whisperContext.isNotEmpty) {
+        request.fields['whisper_context'] = whisperContext;
+      }
+
+      // M4A(AAC)ファイルをバイナリとして添付
+      request.files.add(await http.MultipartFile.fromPath('file', localPath));
+      return request;
     }
-    
-    // M4A(AAC)ファイルをバイナリとして添付
-    request.files.add(await http.MultipartFile.fromPath('file', localPath));
 
     // 送信してレスポンスを待つ
     // ★ タイムアウトを必ず設定する: Cloud Run側がハングした場合、これが無いと
     // _processQueue の直列ループが永久に停止し、以降の全チャンクが送信されなくなる。
-    final response = await request.send().timeout(
-      const Duration(seconds: 90),
-      onTimeout: () => throw TimeoutException(
+    final http.StreamedResponse response;
+    try {
+      response = await AuthedHttpClient(supabase).sendMultipart(
+        buildRequest,
+        timeout: const Duration(seconds: 90),
+      );
+    } on TimeoutException {
+      throw TimeoutException(
         'Cloud Run timed out while transcribing chunk $chunkIndex',
-      ),
-    );
+      );
+    }
 
     if (response.statusCode != 200) {
       final respStr = await response.stream.bytesToString();
+      AccountSuspendedException.throwIfMatches(response.statusCode, respStr);
       throw Exception('Cloud Run error (${response.statusCode}): $respStr');
     }
 
@@ -655,20 +665,21 @@ class UploadManager {
     final requestUrlUri = Uri.parse(
       '${AppConfig.backendBaseUrl}/worker/request-master-audio-upload-url',
     );
-    final requestUrlResponse = await http
-        .post(
-          requestUrlUri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'lecture_id': lectureId}),
-        )
-        .timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException(
-            'Cloud Run timed out while requesting master audio upload URL for lecture $lectureId',
-          ),
-        );
+    final http.Response requestUrlResponse;
+    try {
+      requestUrlResponse = await AuthedHttpClient(supabase).post(
+        requestUrlUri,
+        payload: {'lecture_id': lectureId},
+        timeout: const Duration(seconds: 30),
+      );
+    } on TimeoutException {
+      throw TimeoutException(
+        'Cloud Run timed out while requesting master audio upload URL for lecture $lectureId',
+      );
+    }
 
     if (requestUrlResponse.statusCode != 200) {
+      AccountSuspendedException.throwIfMatches(requestUrlResponse.statusCode, requestUrlResponse.body);
       throw Exception(
         'Cloud Run request-upload-url error (${requestUrlResponse.statusCode}): ${requestUrlResponse.body}',
       );
@@ -738,20 +749,21 @@ class UploadManager {
       '${AppConfig.backendBaseUrl}/worker/complete-master-audio-upload',
     );
 
-    final completeResponse = await http
-        .post(
-          completeUri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'lecture_id': lectureId}),
-        )
-        .timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException(
-            'Cloud Run timed out while completing master audio upload for lecture $lectureId',
-          ),
-        );
+    final http.Response completeResponse;
+    try {
+      completeResponse = await AuthedHttpClient(supabase).post(
+        completeUri,
+        payload: {'lecture_id': lectureId},
+        timeout: const Duration(seconds: 30),
+      );
+    } on TimeoutException {
+      throw TimeoutException(
+        'Cloud Run timed out while completing master audio upload for lecture $lectureId',
+      );
+    }
 
     if (completeResponse.statusCode != 200) {
+      AccountSuspendedException.throwIfMatches(completeResponse.statusCode, completeResponse.body);
       throw Exception(
         'Cloud Run complete-upload error (${completeResponse.statusCode}): ${completeResponse.body}',
       );
@@ -888,6 +900,8 @@ class UploadManager {
       DevLog.add('🚀 start_analysis (Cloud Run) の呼び出し成功！');
       return;
     }
+
+    AccountSuspendedException.throwIfMatches(response.statusCode, response.body);
 
     if (response.statusCode == 402) {
       // job_repository.dart(手動Start Analysisボタン側)と同じパース処理。

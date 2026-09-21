@@ -46,6 +46,7 @@ import 'package:lefture/presentation/pages/topic_map/topic_map_page.dart';
 import 'package:lefture/application/profile/activity_records_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/profile/activity_records_page.dart';
+import 'package:lefture/presentation/widgets/account_suspended_gate.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -552,7 +553,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.purchaseCredits,
-        builder: (context, state) => const PurchaseCreditsPage(),
+        builder: (context, state) => const AccountSuspendedGate(child: PurchaseCreditsPage()),
       ),
       GoRoute(
         path: AppRoutes.plans,
@@ -615,9 +616,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           return MaterialPage(
             fullscreenDialog: true, // これで下から出てくるモーダルになります
-            child: RecordingPage(
-              initialTab: initialTab,
-              initialCourseId: initialCourseId,
+            child: AccountSuspendedGate(
+              child: RecordingPage(
+                initialTab: initialTab,
+                initialCourseId: initialCourseId,
+              ),
             ),
           );
         },

@@ -18,6 +18,7 @@ class CreditSummary {
     required this.creditsPerUsd,
     required this.tierLevel,
     required this.gatingDisabled,
+    required this.suspended,
   });
 
   /// 1 表示クレジット = 1,000,000 内部単位(μクレジット)。バックエンドの
@@ -53,6 +54,10 @@ class CreditSummary {
   /// 効いているか。実機テスト用にREAL_GATING_TEST_USER_IDSへ登録された
   /// アカウントだけfalseになり、本来のtierLevel判定を受ける。
   final bool gatingDisabled;
+
+  /// 運営によりアカウントが停止されているか。停止中は閲覧のみ可能で、
+  /// 録音・分析・購入・プラン変更の入口はUIで塞ぐ(実際の拒否はバックエンド)。
+  final bool suspended;
 
   /// この機能がtierLevel的に使えるかどうか(plan_features.dart参照)。
   bool hasFeature(String featureKey) =>
@@ -96,6 +101,7 @@ class CreditSummary {
       tierLevel: (json['tier_level'] as int?) ?? plan_features.tierFree,
       // フィールド欠落時(古いキャッシュ等)はこれまで通りの「全機能開放」に倒す。
       gatingDisabled: (json['gating_disabled'] as bool?) ?? true,
+      suspended: (json['suspended'] as bool?) ?? false,
     );
   }
 }

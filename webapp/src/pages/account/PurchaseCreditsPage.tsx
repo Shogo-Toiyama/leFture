@@ -8,6 +8,7 @@ import { createCreditPackPayment } from '../../lib/billing';
 import { toDisplayCredits } from '../../types/billing';
 import { ApiError } from '../../lib/api';
 import { PageState } from '../../components/PageState';
+import { AccountSuspendedNotice } from '../../components/AccountSuspendedNotice';
 import { StripeCheckoutModal } from '../../components/modals/StripeCheckoutModal';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { CreditPackIllustration } from '../../components/account/CreditPackIllustration';
@@ -68,6 +69,8 @@ export const PurchaseCreditsPage: React.FC = () => {
             ← {isJa ? 'クレジット' : 'Credits'}
           </Link>
         </div>
+
+        {summary?.suspended && <AccountSuspendedNotice />}
 
         <div className="purchase-credits-title-row">
           <div>
@@ -133,7 +136,7 @@ export const PurchaseCreditsPage: React.FC = () => {
                     type="button"
                     className="purchase-credit-card-btn"
                     onClick={() => handleBuyPack(pack.id, pack.name)}
-                    disabled={isProcessing || startingCheckoutId !== null}
+                    disabled={isProcessing || startingCheckoutId !== null || Boolean(summary?.suspended)}
                   >
                     {isProcessing ? (
                       <span className="purchase-btn-loading">
