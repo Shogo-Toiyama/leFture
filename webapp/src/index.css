@@ -3721,6 +3721,31 @@ button.glass-row:hover,
   gap: 0.85rem;
 }
 
+/* 自動更新条件・金額の開示。支払いボタンの直上に置き、フッター注意書きより
+   はっきり読めるコントラストにする(小さすぎる/薄すぎる開示は法的に無効扱いされうる) */
+.stripe-checkout-disclosure {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+  color: var(--starlight);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.stripe-checkout-consent {
+  margin: -0.4rem 0 0;
+  color: var(--comet);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.stripe-checkout-consent a {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
 /* Edit Course Selector Box in LectureEditModal */
 .edit-course-selector-box {
   display: flex;

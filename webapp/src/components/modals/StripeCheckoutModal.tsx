@@ -21,9 +21,24 @@ const APPEARANCE: Appearance = {
   },
 };
 
+/**
+ * 「今日いくら請求され、その後どうなるか」の開示に必要な情報。
+ * カリフォルニア州自動更新法(ARL)/連邦ROSCAは、自動更新の条件・解約方法・
+ * 金額を「同意ボタンの視覚的近傍に」明示することを求めるため、Plansページの
+ * フッターではなくこのモーダル内の支払いボタン直上に出す。
+ * amountCentsはStripeが実際に請求する額(Apple乗り換え割引等の適用後)。
+ */
+export interface CheckoutCharge {
+  amountCents: number;
+  currency: string;
+  /** 自動更新サブスクなら定価と周期。クレジットパック(都度)ならnull。 */
+  recurring: { priceUsd: number; intervalMonths: number } | null;
+}
+
 export interface StripeCheckoutModalProps {
   title: string;
   clientSecret: string;
+  charge: CheckoutCharge;
   onClose: () => void;
   /**
    * 決済自体はここで完了するが、DB側のプラン反映はStripe→webhook→RevenueCat→
@@ -37,23 +52,62 @@ export interface StripeCheckoutModalProps {
 export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   title,
   clientSecret,
+  charge,
   onClose,
   onSuccess,
 }) => {
   return (
     <ModalDialog title={title} onClose={onClose} maxWidth={480}>
       <Elements stripe={stripePromise} options={{ clientSecret, appearance: APPEARANCE }}>
-        <CheckoutForm onClose={onClose} onSuccess={onSuccess} />
+        <CheckoutForm charge={charge} onClose={onClose} onSuccess={onSuccess} />
       </Elements>
     </ModalDialog>
   );
 };
 
-const CheckoutForm: React.FC<{ onClose: () => void; onSuccess: () => Promise<void> }> = ({ onClose, onSuccess }) => {
+function formatMoney(amountCents: number, currency: string, locale: string): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currency.toUpperCase() }).format(amountCents / 100);
+}
+
+const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; isJa: boolean }> = ({ charge, isJa }) => {
+  const locale = isJa ? 'ja-JP' : 'en-US';
+  const today = formatMoney(charge.amountCents, charge.currency, locale);
+  const { recurring } = charge;
+
+  if (!recurring) {
+    return (
+      <p className="stripe-checkout-disclosure">
+        {isJa
+          ? `本日のご請求額: ${today}（1回限りのお支払いです。自動更新はありません）。`
+          : `Today's charge: ${today}. This is a one-time payment and will not renew.`}
+      </p>
+    );
+  }
+
+  const renewal = formatMoney(Math.round(recurring.priceUsd * 100), 'usd', locale);
+  const every =
+    recurring.intervalMonths === 1
+      ? isJa ? '毎月' : 'every month'
+      : isJa ? `${recurring.intervalMonths}か月ごと` : `every ${recurring.intervalMonths} months`;
+  return (
+    <p className="stripe-checkout-disclosure">
+      {isJa
+        ? `本日のご請求額: ${today}。以降、解約されるまで${every}${renewal}が自動的に請求されます。解約はいつでもPlansページから行え、現在の請求期間の終了時に反映されます。`
+        : `Today's charge: ${today}. Your subscription then renews automatically at ${renewal} ${every} until you cancel. You can cancel anytime from the Plans page; cancellation takes effect at the end of the current billing period.`}
+    </p>
+  );
+};
+
+const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSuccess: () => Promise<void> }> = ({
+  charge,
+  onClose,
+  onSuccess,
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const { language } = useLanguage();
   const isJa = language === 'ja';
+  const payLabel = `${isJa ? '支払う' : 'Pay'} ${formatMoney(charge.amountCents, charge.currency, isJa ? 'ja-JP' : 'en-US')}`;
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -92,13 +146,31 @@ const CheckoutForm: React.FC<{ onClose: () => void; onSuccess: () => Promise<voi
     <form className="stripe-checkout-form" onSubmit={handleSubmit}>
       <PaymentElement />
       {errorMessage && <p className="notice notice-error">{errorMessage}</p>}
+      <CheckoutDisclosure charge={charge} isJa={isJa} />
+      <p className="stripe-checkout-consent">
+        {isJa ? (
+          <>
+            「{payLabel}」を押すことで、
+            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">利用規約</a>
+            および
+            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
+            に同意したものとみなされます。
+          </>
+        ) : (
+          <>
+            By clicking "{payLabel}" you agree to the{' '}
+            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and{' '}
+            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+          </>
+        )}
+      </p>
       <div className="stripe-checkout-actions">
         <button type="button" className="keyword-btn-cancel" onClick={onClose} disabled={submitting}>
           {isJa ? 'キャンセル' : 'Cancel'}
         </button>
         <button type="submit" className="auth-submit-btn" disabled={!stripe || submitting}>
           {submitting && <Loader2 size={15} className="animate-spin" />}
-          {submitting ? (isJa ? '処理中…' : 'Processing…') : isJa ? '支払う' : 'Pay'}
+          {submitting ? (isJa ? '処理中…' : 'Processing…') : payLabel}
         </button>
       </div>
     </form>

@@ -1596,7 +1596,11 @@ async def billing_stripe_create_credit_pack_payment(payload: CreateCreditPackPay
         logger.error(f"Stripe error creating PaymentIntent for credit pack {pack['id']}: {e}", exc_info=True)
         raise HTTPException(status_code=502, detail="Failed to create payment")
 
-    return {"client_secret": intent["client_secret"]}
+    return {
+        "client_secret": intent["client_secret"],
+        "amount_cents": intent["amount"],
+        "currency": intent["currency"],
+    }
 
 
 # ---------------------------------------------------------
@@ -1903,8 +1907,16 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
         subscription = await _create_new_stripe_subscription(
             customer_id, uid, target_plan["id"], target_plan["stripe_price_id"]
         )
-        confirmation_secret = subscription["latest_invoice"]["confirmation_secret"]
-        return {"client_secret": confirmation_secret["client_secret"], "subscription_id": subscription["id"]}
+        latest_invoice = subscription["latest_invoice"]
+        confirmation_secret = latest_invoice["confirmation_secret"]
+        # amount_dueはApple乗り換え割引(負のInvoiceItem)適用後の「今日実際に
+        # 請求される額」。チェックアウト画面の開示文(自動更新法対応)に使う。
+        return {
+            "client_secret": confirmation_secret["client_secret"],
+            "subscription_id": subscription["id"],
+            "amount_due_cents": latest_invoice["amount_due"],
+            "currency": latest_invoice["currency"],
+        }
 
     # ケースB: Stripeサブスクが既にアクティブ → アップグレード/ダウングレード/解約。
     subscription_id = active_subscription["id"]

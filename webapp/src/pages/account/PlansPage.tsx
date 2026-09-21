@@ -61,7 +61,7 @@ function formatPrice(plan: PlanOption, isJa: boolean): string {
   return amount;
 }
 
-type PendingCheckout = { plan: PlanOption; clientSecret: string };
+type PendingCheckout = { plan: PlanOption; clientSecret: string; amountDueCents: number; currency: string };
 type PendingAppleDiscount = { plan: PlanOption; discountUsd: number; chargeUsd: number };
 
 /**
@@ -94,7 +94,12 @@ export const PlansPage: React.FC = () => {
 
   const applySwitchPlanResult = async (plan: PlanOption, result: SwitchPlanResult) => {
     if ('client_secret' in result) {
-      setPendingCheckout({ plan, clientSecret: result.client_secret });
+      setPendingCheckout({
+        plan,
+        clientSecret: result.client_secret,
+        amountDueCents: result.amount_due_cents,
+        currency: result.currency,
+      });
       return;
     }
     switch (result.status) {
@@ -379,6 +384,14 @@ export const PlansPage: React.FC = () => {
         <StripeCheckoutModal
           title={pendingCheckout.plan.name}
           clientSecret={pendingCheckout.clientSecret}
+          charge={{
+            amountCents: pendingCheckout.amountDueCents,
+            currency: pendingCheckout.currency,
+            recurring: {
+              priceUsd: pendingCheckout.plan.price_usd ?? 0,
+              intervalMonths: pendingCheckout.plan.billing_interval_months,
+            },
+          }}
           onClose={() => setPendingCheckout(null)}
           onSuccess={handleCheckoutSuccess}
         />

@@ -15,7 +15,7 @@ export const listCreditPacks = () =>
   apiFetch<{ packs: CreditPackOption[] }>('/billing/credit-packs').then((r) => r.packs);
 
 export const createCreditPackPayment = (creditPackId: string) =>
-  apiFetch<{ client_secret: string }>('/billing/stripe/create-credit-pack-payment', {
+  apiFetch<{ client_secret: string; amount_cents: number; currency: string }>('/billing/stripe/create-credit-pack-payment', {
     method: 'POST',
     body: JSON.stringify({ credit_pack_id: creditPackId }),
   });
@@ -27,7 +27,7 @@ export const createCreditPackPayment = (creditPackId: string) =>
  * (claim/即時アップグレード/次回更新時の予約のいずれか)。
  */
 export type SwitchPlanResult =
-  | { client_secret: string; subscription_id: string }
+  | { client_secret: string; subscription_id: string; amount_due_cents: number; currency: string }
   | { status: 'claimed' | 'switched' | 'scheduled_downgrade' | 'scheduled_cancel' | 'already_current' }
   | { status: 'requires_confirmation'; reason: 'apple_pending_cancellation'; discount_usd: number; charge_usd: number };
 

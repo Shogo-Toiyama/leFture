@@ -30,7 +30,12 @@ export const PurchaseCreditsPage: React.FC = () => {
 
   const [startingCheckoutId, setStartingCheckoutId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [pendingCheckout, setPendingCheckout] = useState<{ title: string; clientSecret: string } | null>(null);
+  const [pendingCheckout, setPendingCheckout] = useState<{
+    title: string;
+    clientSecret: string;
+    amountCents: number;
+    currency: string;
+  } | null>(null);
 
   const totalBalance = summary ? toDisplayCredits(summary.credit_balance) : 0;
 
@@ -38,8 +43,8 @@ export const PurchaseCreditsPage: React.FC = () => {
     setStartingCheckoutId(packId);
     setCheckoutError(null);
     try {
-      const { client_secret } = await createCreditPackPayment(packId);
-      setPendingCheckout({ title: packName, clientSecret: client_secret });
+      const { client_secret, amount_cents, currency } = await createCreditPackPayment(packId);
+      setPendingCheckout({ title: packName, clientSecret: client_secret, amountCents: amount_cents, currency });
     } catch (err) {
       setCheckoutError(err instanceof ApiError ? err.message : isJa ? '購入開始に失敗しました' : 'Failed to start purchase');
     } finally {
@@ -184,6 +189,7 @@ export const PurchaseCreditsPage: React.FC = () => {
         <StripeCheckoutModal
           title={pendingCheckout.title}
           clientSecret={pendingCheckout.clientSecret}
+          charge={{ amountCents: pendingCheckout.amountCents, currency: pendingCheckout.currency, recurring: null }}
           onClose={() => setPendingCheckout(null)}
           onSuccess={handleCheckoutSuccess}
         />
