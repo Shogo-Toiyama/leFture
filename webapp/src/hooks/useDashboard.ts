@@ -10,7 +10,7 @@ export interface DashboardData {
   funFacts: FunFact[];
   announcements: Announcement[];
   setAnnouncements: React.Dispatch<React.SetStateAction<Announcement[]>>;
-  /** 講義の総数(最近の講義6件とは別に、ヒーローの統計表示で使う)。 */
+  /** 講義の総数(最近の講義12件とは別に、ヒーローの統計表示で使う)。 */
   lectureCount: number;
   loading: boolean;
 }
@@ -32,13 +32,13 @@ export function useDashboard(): DashboardData {
         .select('*')
         .is('deleted_at', null)
         .order('lecture_datetime', { ascending: false })
-        .limit(6),
+        .limit(12),
       supabase
         .from('fun_facts')
         .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
-        .limit(6),
+        .limit(5),
       // ここだけthrowしうるので、失敗してもダッシュボード全体がロード中で止まらないようにする
       listRecentAnnouncements(20).catch(() => [] as Announcement[]),
       supabase
