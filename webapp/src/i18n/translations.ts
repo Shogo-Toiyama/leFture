@@ -205,6 +205,22 @@ export const translations = {
     creditRateMaxDurationNotice:
       '※ Maximum recording duration is 3.5 hours. Recordings longer than 3.5 hours cannot be processed.',
     creditRateModalBuyCreditsButton: 'Buy Credits',
+
+    // Stripe checkout disclosure (word order/placement is language-specific;
+    // each locale's dict controls where {amount}/{renewal}/{interval} land)
+    stripeCheckoutPayButton: 'Pay {amount}',
+    stripeCheckoutPayButtonProcessing: 'Processing…',
+    stripeCheckoutEveryMonth: 'every month',
+    stripeCheckoutEveryNMonths: 'every {n} months',
+    stripeCheckoutDisclosureOneTime: "Today's charge: {amount}. This is a one-time payment and will not renew.",
+    stripeCheckoutDisclosureRecurring:
+      "Today's charge: {amount}. Your subscription then renews automatically at {renewal} {interval} until you cancel. You can cancel anytime from the Plans page; cancellation takes effect at the end of the current billing period.",
+    stripeCheckoutConsent: 'By clicking "{payLabel}" you agree to the {terms} and {privacy}.',
+    stripeCheckoutTermsLink: 'Terms of Service',
+    stripeCheckoutPrivacyLink: 'Privacy Policy',
+    stripeCheckoutCancelButton: 'Cancel',
+    stripeCheckoutPaymentFailed: 'Payment failed',
+    stripeCheckoutPaymentIncomplete: 'Payment did not complete',
   },
   ja: {
     // Brand & Common
@@ -409,6 +425,21 @@ export const translations = {
     creditRateRow4Duration: '2時間30分 〜 3時間30分',
     creditRateMaxDurationNotice: '※ 1回の最大録音時間は3時間30分です。3時間30分以上の録音はできません。',
     creditRateModalBuyCreditsButton: 'クレジット購入',
+
+    // Stripe checkout disclosure
+    stripeCheckoutPayButton: '{amount}を支払う',
+    stripeCheckoutPayButtonProcessing: '処理中…',
+    stripeCheckoutEveryMonth: '毎月',
+    stripeCheckoutEveryNMonths: '{n}か月ごと',
+    stripeCheckoutDisclosureOneTime: '本日のご請求額: {amount}。1回限りのお支払いです。自動更新はありません。',
+    stripeCheckoutDisclosureRecurring:
+      '本日のご請求額: {amount}。以降、解約されるまで{interval}{renewal}が自動的に請求されます。解約はいつでもPlansページから行え、現在の請求期間の終了時に反映されます。',
+    stripeCheckoutConsent: '「{payLabel}」を押すことで、{terms}および{privacy}に同意したものとみなされます。',
+    stripeCheckoutTermsLink: '利用規約',
+    stripeCheckoutPrivacyLink: 'プライバシーポリシー',
+    stripeCheckoutCancelButton: 'キャンセル',
+    stripeCheckoutPaymentFailed: '決済に失敗しました',
+    stripeCheckoutPaymentIncomplete: '決済が完了しませんでした',
   },
 } as const;
 

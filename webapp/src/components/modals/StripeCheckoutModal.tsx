@@ -5,6 +5,7 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { ModalDialog } from './ModalDialog';
 import { STRIPE_PUBLISHABLE_KEY } from '../../lib/env';
 import { useLanguage } from '../../i18n/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 
 // loadStripeはPromiseをキャッシュする設計なので、レンダーごとに再生成せず
 // モジュールスコープで一度だけ呼ぶ(Stripe公式推奨パターン)。
@@ -69,31 +70,54 @@ function formatMoney(amountCents: number, currency: string, locale: string): str
   return new Intl.NumberFormat(locale, { style: 'currency', currency: currency.toUpperCase() }).format(amountCents / 100);
 }
 
-const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; isJa: boolean }> = ({ charge, isJa }) => {
-  const locale = isJa ? 'ja-JP' : 'en-US';
-  const today = formatMoney(charge.amountCents, charge.currency, locale);
+/**
+ * "{key}"トークンを含むテンプレート文字列を、対応するReactノードで置き換える。
+ * 語順は言語辞書側(translations.ts)のテンプレート文字列だけが決める — ここでは
+ * トークンの位置を探して差し込むだけなので、新しい言語を追加しても、その言語の
+ * 辞書内でトークンの順序を自由に入れ替えられれば正しく動く。
+ */
+function interpolate(template: string, values: Record<string, React.ReactNode>): React.ReactNode {
+  const tokenPattern = /\{([a-zA-Z]+)\}/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tokenPattern.exec(template)) !== null) {
+    if (match.index > lastIndex) parts.push(template.slice(lastIndex, match.index));
+    const value = values[match[1]];
+    parts.push(value !== undefined ? <React.Fragment key={match.index}>{value}</React.Fragment> : match[0]);
+    lastIndex = tokenPattern.lastIndex;
+  }
+  if (lastIndex < template.length) parts.push(template.slice(lastIndex));
+  return parts;
+}
+
+type Translate = (key: TranslationKey, params?: Record<string, string>) => string;
+
+function buildPayLabel(charge: CheckoutCharge, language: string, t: Translate): string {
+  const amount = formatMoney(charge.amountCents, charge.currency, language);
+  return t('stripeCheckoutPayButton', { amount });
+}
+
+const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; language: string; t: Translate }> = ({
+  charge,
+  language,
+  t,
+}) => {
+  const amount = formatMoney(charge.amountCents, charge.currency, language);
   const { recurring } = charge;
 
   if (!recurring) {
-    return (
-      <p className="stripe-checkout-disclosure">
-        {isJa
-          ? `本日のご請求額: ${today}（1回限りのお支払いです。自動更新はありません）。`
-          : `Today's charge: ${today}. This is a one-time payment and will not renew.`}
-      </p>
-    );
+    return <p className="stripe-checkout-disclosure">{t('stripeCheckoutDisclosureOneTime', { amount })}</p>;
   }
 
-  const renewal = formatMoney(Math.round(recurring.priceUsd * 100), 'usd', locale);
-  const every =
+  const renewal = formatMoney(Math.round(recurring.priceUsd * 100), 'usd', language);
+  const interval =
     recurring.intervalMonths === 1
-      ? isJa ? '毎月' : 'every month'
-      : isJa ? `${recurring.intervalMonths}か月ごと` : `every ${recurring.intervalMonths} months`;
+      ? t('stripeCheckoutEveryMonth')
+      : t('stripeCheckoutEveryNMonths', { n: String(recurring.intervalMonths) });
   return (
     <p className="stripe-checkout-disclosure">
-      {isJa
-        ? `本日のご請求額: ${today}。以降、解約されるまで${every}${renewal}が自動的に請求されます。解約はいつでもPlansページから行え、現在の請求期間の終了時に反映されます。`
-        : `Today's charge: ${today}. Your subscription then renews automatically at ${renewal} ${every} until you cancel. You can cancel anytime from the Plans page; cancellation takes effect at the end of the current billing period.`}
+      {t('stripeCheckoutDisclosureRecurring', { amount, renewal, interval })}
     </p>
   );
 };
@@ -105,9 +129,8 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
 }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
-  const payLabel = `${isJa ? '支払う' : 'Pay'} ${formatMoney(charge.amountCents, charge.currency, isJa ? 'ja-JP' : 'en-US')}`;
+  const { language, t } = useLanguage();
+  const payLabel = buildPayLabel(charge, language, t);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -126,7 +149,7 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
     });
 
     if (error) {
-      setErrorMessage(error.message ?? (isJa ? '決済に失敗しました' : 'Payment failed'));
+      setErrorMessage(error.message ?? t('stripeCheckoutPaymentFailed'));
       setSubmitting(false);
       return;
     }
@@ -138,7 +161,7 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
       return;
     }
 
-    setErrorMessage(isJa ? '決済が完了しませんでした' : 'Payment did not complete');
+    setErrorMessage(t('stripeCheckoutPaymentIncomplete'));
     setSubmitting(false);
   };
 
@@ -146,31 +169,28 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
     <form className="stripe-checkout-form" onSubmit={handleSubmit}>
       <PaymentElement />
       {errorMessage && <p className="notice notice-error">{errorMessage}</p>}
-      <CheckoutDisclosure charge={charge} isJa={isJa} />
+      <CheckoutDisclosure charge={charge} language={language} t={t} />
       <p className="stripe-checkout-consent">
-        {isJa ? (
-          <>
-            「{payLabel}」を押すことで、
-            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">利用規約</a>
-            および
-            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
-            に同意したものとみなされます。
-          </>
-        ) : (
-          <>
-            By clicking "{payLabel}" you agree to the{' '}
-            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and{' '}
-            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
-          </>
-        )}
+        {interpolate(t('stripeCheckoutConsent', { payLabel }), {
+          terms: (
+            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">
+              {t('stripeCheckoutTermsLink')}
+            </a>
+          ),
+          privacy: (
+            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">
+              {t('stripeCheckoutPrivacyLink')}
+            </a>
+          ),
+        })}
       </p>
       <div className="stripe-checkout-actions">
         <button type="button" className="keyword-btn-cancel" onClick={onClose} disabled={submitting}>
-          {isJa ? 'キャンセル' : 'Cancel'}
+          {t('stripeCheckoutCancelButton')}
         </button>
         <button type="submit" className="auth-submit-btn" disabled={!stripe || submitting}>
           {submitting && <Loader2 size={15} className="animate-spin" />}
-          {submitting ? (isJa ? '処理中…' : 'Processing…') : payLabel}
+          {submitting ? t('stripeCheckoutPayButtonProcessing') : payLabel}
         </button>
       </div>
     </form>
