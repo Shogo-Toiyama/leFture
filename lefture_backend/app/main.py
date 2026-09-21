@@ -12,6 +12,7 @@ import json
 import time
 import uuid
 import hmac
+import html as html_lib
 import asyncio
 import logging
 from typing import Optional
@@ -4164,6 +4165,75 @@ PATROL_CHECKS = [
 ]
 
 
+ABUSE_ALERT_EMAIL = os.getenv("ABUSE_ALERT_EMAIL", "lefture.app@gmail.com")
+UPGRADE_CYCLING_WINDOW_DAYS = int(os.getenv("UPGRADE_CYCLING_WINDOW_DAYS", "60"))
+UPGRADE_CYCLING_MIN_GRANTS = int(os.getenv("UPGRADE_CYCLING_MIN_GRANTS", "3"))
+
+
+async def _patrol_detect_upgrade_cycling() -> dict:
+    """
+    毎日1回、detect_upgrade_cycling_suspects()で「短期間にストア課金の付与が
+    集中しているアカウント」を拾い、ABUSE_ALERT_EMAILへ判断材料をメールする。
+    閾値判定はSQL側、人が見て警告/停止を決める前提なのでここでは何もしない。
+    過去24時間に付与が無いユーザーはSQL側で除外されるため、同じ人が毎日
+    通知されることはない。
+    """
+    admin_client = get_supabase_client()
+    res = await asyncio.to_thread(
+        lambda: admin_client.rpc("detect_upgrade_cycling_suspects", {
+            "p_window_days": UPGRADE_CYCLING_WINDOW_DAYS,
+            "p_min_grants": UPGRADE_CYCLING_MIN_GRANTS,
+            "p_recent_hours": 24,
+        }).execute()
+    )
+    suspects = res.data or []
+    if not suspects:
+        return {"suspects": 0}
+
+    def credits(micro) -> str:
+        return "-" if micro is None else f"{int(micro) / 1_000_000:,.0f}"
+
+    def fmt_ts(value) -> str:
+        return (value or "")[:16].replace("T", " ")
+
+    sections = []
+    for s in suspects:
+        rows = "".join(
+            f"<tr><td>{fmt_ts(g.get('granted_at'))}</td><td>{g.get('plan_name') or '?'}</td>"
+            f"<td>{'initial' if (g.get('source') or '').endswith('initial_store') else 'renewal'}</td>"
+            f"<td align='right'>{credits(g.get('amount'))}</td>"
+            f"<td align='right'>{credits(g.get('reset_amount'))}</td></tr>"
+            for g in (s.get("grants") or [])
+        )
+        sections.append(
+            f"<h3>{html_lib.escape(s.get('email') or '(no email)')}</h3>"
+            f"<p><code>{s['user_id']}</code><br>"
+            f"registered: {fmt_ts(s.get('user_created_at'))}<br>"
+            f"current plan: {s.get('current_plan_name') or '-'}"
+            f"{' → pending downgrade to ' + s['pending_plan_name'] if s.get('pending_plan_name') else ''}<br>"
+            f"grants in {UPGRADE_CYCLING_WINDOW_DAYS}d: <b>{s['grant_count']}</b> "
+            f"(granted {credits(s.get('granted_in_window'))} / consumed {credits(s.get('consumed_in_window'))} credits)</p>"
+            "<table border='1' cellpadding='4' cellspacing='0'>"
+            "<tr><th>granted at (UTC)</th><th>plan</th><th>kind</th><th>granted</th><th>old plan left at switch</th></tr>"
+            f"{rows}</table>"
+        )
+
+    html = (
+        f"<p>{len(suspects)} account(s) had {UPGRADE_CYCLING_MIN_GRANTS}+ store subscription grants "
+        f"within {UPGRADE_CYCLING_WINDOW_DAYS} days, with at least one in the last 24h.</p>"
+        "<p><i>\"old plan left at switch\" = credits zeroed from the previous plan at that grant. "
+        "\"-\" means nothing was left to zero (used up before upgrading), which is the strongest signal.</i></p>"
+        + "<hr>".join(sections)
+    )
+    subject = f"[Lefture] Upgrade cycling suspects: {len(suspects)} account(s)"
+    try:
+        await send_important_notification(ABUSE_ALERT_EMAIL, subject, html)
+    except Exception as e:
+        logger.error(f"Failed to send upgrade cycling alert: {e}", exc_info=True)
+        return {"suspects": len(suspects), "email_error": str(e)}
+    return {"suspects": len(suspects), "notified": ABUSE_ALERT_EMAIL}
+
+
 async def _patrol_enqueue_audio_chunks_cleanup() -> dict:
     """
     毎日UTC PATROL_DAILY_HOUR_UTC時付近に1回だけ、patrol()から呼ばれる。
@@ -4254,6 +4324,12 @@ async def patrol():
         except Exception as e:
             results["cleanup_audio_chunks"] = {"error": str(e)}
             print(f"⚠️ Patrol check 'cleanup_audio_chunks' failed: {e}")
+
+        try:
+            results["detect_upgrade_cycling"] = await _patrol_detect_upgrade_cycling()
+        except Exception as e:
+            results["detect_upgrade_cycling"] = {"error": str(e)}
+            print(f"⚠️ Patrol check 'detect_upgrade_cycling' failed: {e}")
 
         # 毎月1日(:00付近)に1回だけ、R2バケット全体の直接スイープを走らせる(孤児チャンクのバックストップ)
         if now.day == 1:
