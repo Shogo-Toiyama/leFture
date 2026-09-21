@@ -13,8 +13,7 @@ export const ChangePasswordSheet: React.FC<{
   open: boolean;
   onClose: () => void;
 }> = ({ open, onClose }) => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,7 +24,7 @@ export const ChangePasswordSheet: React.FC<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setError(isJa ? 'パスワードが一致しません' : 'Passwords do not match');
+      setError(t('passwordsDoNotMatch'));
       return;
     }
     setSaving(true);
@@ -41,7 +40,7 @@ export const ChangePasswordSheet: React.FC<{
         onClose();
       }, 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : (isJa ? 'パスワードの更新に失敗しました' : 'Failed to update password'));
+      setError(err instanceof Error ? err.message : t('failedToUpdatePassword'));
     } finally {
       setSaving(false);
     }
@@ -51,15 +50,15 @@ export const ChangePasswordSheet: React.FC<{
     <AdaptiveSheet
       open={open}
       onClose={onClose}
-      title={isJa ? 'パスワードを変更' : 'Change Password'}
-      subtitle={isJa ? '新しいパスワードを入力してください' : 'Enter a secure new password for your account'}
+      title={t('changePasswordTitle')}
+      subtitle={t('changePasswordSubtitle')}
     >
       <form className="sheet-form" onSubmit={handleSubmit}>
         {error && <p className="auth-error">{error}</p>}
-        {success && <p className="auth-success">{isJa ? 'パスワードを更新しました！' : 'Password updated successfully!'}</p>}
+        {success && <p className="auth-success">{t('passwordUpdatedSuccess')}</p>}
 
         <div className="sheet-form-field">
-          <label className="sheet-field-label">{isJa ? '新しいパスワード' : 'New Password'}</label>
+          <label className="sheet-field-label">{t('newPasswordLabel')}</label>
           <input
             type="password"
             className="sheet-input"
@@ -67,12 +66,12 @@ export const ChangePasswordSheet: React.FC<{
             minLength={8}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder={isJa ? '8文字以上' : 'At least 8 characters'}
+            placeholder={t('newPasswordPlaceholder')}
           />
         </div>
 
         <div className="sheet-form-field">
-          <label className="sheet-field-label">{isJa ? 'パスワード（確認）' : 'Confirm New Password'}</label>
+          <label className="sheet-field-label">{t('confirmNewPasswordLabel')}</label>
           <input
             type="password"
             className="sheet-input"
@@ -80,13 +79,13 @@ export const ChangePasswordSheet: React.FC<{
             minLength={8}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder={isJa ? 'もう一度入力してください' : 'Re-enter new password'}
+            placeholder={t('confirmNewPasswordPlaceholder')}
           />
         </div>
 
         <div className="sheet-actions">
           <button type="submit" className="btn btn-primary" disabled={saving || success}>
-            {saving ? (isJa ? '更新中…' : 'Updating…') : (isJa ? 'パスワードを更新' : 'Update Password')}
+            {saving ? t('updatingPasswordButton') : t('updatePasswordButton')}
           </button>
         </div>
       </form>
@@ -100,8 +99,7 @@ export const ChangeEmailSheet: React.FC<{
   onClose: () => void;
   currentEmail?: string;
 }> = ({ open, onClose, currentEmail }) => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
 
   const [newEmail, setNewEmail] = useState('');
   const [saving, setSaving] = useState(false);
@@ -117,7 +115,7 @@ export const ChangeEmailSheet: React.FC<{
       if (updateError) throw updateError;
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : (isJa ? 'メールアドレスの変更に失敗しました' : 'Failed to change email'));
+      setError(err instanceof Error ? err.message : t('failedToChangeEmail'));
     } finally {
       setSaving(false);
     }
@@ -127,35 +125,31 @@ export const ChangeEmailSheet: React.FC<{
     <AdaptiveSheet
       open={open}
       onClose={onClose}
-      title={isJa ? 'メールアドレスを変更' : 'Change Email'}
-      subtitle={isJa ? 'アカウントの主要メールアドレスを更新します' : 'Update your primary account email address'}
+      title={t('changeEmailTitle')}
+      subtitle={t('changeEmailSubtitle')}
     >
       <form className="sheet-form" onSubmit={handleSubmit}>
         {error && <p className="auth-error">{error}</p>}
         {sent ? (
           <div className="sheet-success-box">
-            <p style={{ margin: 0, fontWeight: 600 }}>{isJa ? '確認メールを送信しました！' : 'Verification email sent!'}</p>
+            <p style={{ margin: 0, fontWeight: 600 }}>{t('verificationEmailSent')}</p>
             <p className="muted" style={{ fontSize: '0.85rem', marginTop: '0.4rem' }}>
-              {isJa ? (
-                <><strong>{newEmail}</strong> に届いたリンクをクリックして変更を完了してください。</>
-              ) : (
-                <>Please check your inbox at <strong>{newEmail}</strong> to confirm the change.</>
-              )}
+              {t('verificationEmailInstructions', { email: newEmail })}
             </p>
             <button type="button" className="btn btn-ghost" style={{ marginTop: '1rem' }} onClick={onClose}>
-              {isJa ? '閉じる' : 'Done'}
+              {t('done')}
             </button>
           </div>
         ) : (
           <>
             {currentEmail && (
               <p className="muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
-                {isJa ? '現在のメールアドレス: ' : 'Current email: '}<strong>{currentEmail}</strong>
+                {t('currentEmailLabel')}<strong>{currentEmail}</strong>
               </p>
             )}
 
             <div className="sheet-form-field">
-              <label className="sheet-field-label">{isJa ? '新しいメールアドレス' : 'New Email Address'}</label>
+              <label className="sheet-field-label">{t('newEmailLabel')}</label>
               <input
                 type="email"
                 className="sheet-input"
@@ -168,7 +162,7 @@ export const ChangeEmailSheet: React.FC<{
 
             <div className="sheet-actions">
               <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? (isJa ? '送信中…' : 'Sending…') : (isJa ? '確認メールを送信' : 'Send Verification')}
+                {saving ? t('sendingVerificationButton') : t('sendVerificationButton')}
               </button>
             </div>
           </>
@@ -185,8 +179,7 @@ export const DeleteAccountModal: React.FC<{
   user: User | null;
   profile: UserProfile | null;
 }> = ({ open, onClose, user, profile }) => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const isEmail = hasEmailIdentity(user);
   const [confirmInput, setConfirmInput] = useState('');
@@ -208,33 +201,31 @@ export const DeleteAccountModal: React.FC<{
       }
       navigate('/account-deleted', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : (isJa ? 'アカウントの削除に失敗しました' : 'Failed to delete account'));
+      setError(err instanceof Error ? err.message : t('failedToDeleteAccount'));
     } finally {
       setDeleting(false);
     }
   };
 
+  const defaultUsername = t('explorerDefaultName');
+
   return (
-    <Modal open={open} onClose={onClose} title={isJa ? 'アカウントを削除' : 'Delete Account'}>
+    <Modal open={open} onClose={onClose} title={t('deleteAccountTitle')}>
       <div style={{ color: 'var(--universe-text, #f2f2f2)' }}>
         <p style={{ marginTop: 0, color: 'var(--comet)' }}>
-          {isJa ? (
-            <>アカウントおよびすべてのコース・講義・関連データがローカルとクラウドの両方から完全に削除されます。<strong style={{ color: '#ff8b85' }}>この操作は取り消せません。</strong></>
-          ) : (
-            <>This permanently deletes your account, all courses, lectures, and associated data from both local and cloud storage. <strong style={{ color: '#ff8b85' }}>This action cannot be undone.</strong></>
-          )}
+          {t('deleteAccountWarningMessage')}
         </p>
 
         <label style={{ display: 'block', margin: '1rem 0 0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>
           {isEmail
-            ? (isJa ? '確認のためパスワードを入力してください:' : 'Enter your password to confirm:')
-            : (isJa ? `確認のためユーザー名 ("${profile?.username || '探検者'}") を入力してください:` : `Type your username ("${profile?.username || 'Explorer'}") to confirm:`)}
+            ? t('deleteAccountPasswordPrompt')
+            : t('deleteAccountConfirmationUsername', { username: profile?.username || defaultUsername })}
         </label>
         <input
           type={isEmail ? 'password' : 'text'}
           value={confirmInput}
           onChange={(e) => setConfirmInput(e.target.value)}
-          placeholder={isEmail ? (isJa ? 'パスワード' : 'Password') : profile?.username || (isJa ? '探検者' : 'Explorer')}
+          placeholder={isEmail ? t('deleteAccountPasswordLabel') : profile?.username || defaultUsername}
           style={{
             width: '100%',
             padding: '0.65rem 0.85rem',
@@ -263,7 +254,7 @@ export const DeleteAccountModal: React.FC<{
               fontWeight: 600,
             }}
           >
-            {isJa ? 'キャンセル' : 'Cancel'}
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -279,7 +270,7 @@ export const DeleteAccountModal: React.FC<{
             onClick={handleDelete}
             disabled={!isConfirmed || deleting}
           >
-            {deleting ? (isJa ? '削除中…' : 'Deleting…') : (isJa ? 'アカウントを削除' : 'Delete Account')}
+            {deleting ? t('deletingAccountButton') : t('deleteAccountConfirmButton')}
           </button>
         </div>
       </div>

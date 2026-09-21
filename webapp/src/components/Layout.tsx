@@ -5,6 +5,7 @@ import { getCreditSummary } from '../lib/billing';
 import { toDisplayCredits } from '../types/billing';
 import { AvatarImage } from './AvatarImage';
 import { useLanguage } from '../i18n/LanguageContext';
+import { isLanguage } from '../i18n/translations';
 import { useUploadModal } from '../context/UploadModalContext';
 import { UploadModal } from './modals/UploadModal';
 
@@ -22,7 +23,7 @@ export const Layout: React.FC = () => {
 
   useEffect(() => {
     const profLang = profile?.metadata?.display_language;
-    if ((profLang === 'ja' || profLang === 'en') && profLang !== language) {
+    if (isLanguage(profLang) && profLang !== language) {
       setLanguage(profLang);
     }
   }, [profile?.metadata?.display_language, language, setLanguage]);

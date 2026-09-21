@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchArtifactObjectUrl } from '../lib/artifacts';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface AudioArtifact {
   url: string | null;
@@ -14,6 +15,7 @@ interface AudioArtifact {
  * 一度blobに落としてから再生する。
  */
 export function useAudioArtifact(storagePath: string | null | undefined): AudioArtifact {
+  const { t } = useLanguage();
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(storagePath));
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function useAudioArtifact(storagePath: string | null | undefined): AudioA
         setUrl(objectUrl);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load audio');
+        if (!cancelled) setError(err instanceof Error ? err.message : t('failedToLoadAudio'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -51,7 +53,7 @@ export function useAudioArtifact(storagePath: string | null | undefined): AudioA
       cancelled = true;
       if (created) URL.revokeObjectURL(created);
     };
-  }, [storagePath]);
+  }, [storagePath, t]);
 
   return { url, loading, error };
 }

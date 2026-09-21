@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getProfile } from '../lib/profile';
 import type { UserProfile } from '../types/profile';
+import { useLanguage } from '../i18n/LanguageContext';
 
 // Shared module-level cache and subscriber listeners to keep all instances (Header, Account, etc.) in sync
 let cachedProfile: UserProfile | null = null;
@@ -22,6 +23,7 @@ export function notifyProfileUpdate(updated: UserProfile) {
 }
 
 export function useProfile() {
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [loading, setLoading] = useState(!isFetched);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function useProfile() {
           setError(null);
         })
         .catch((err) => {
-          setError(err instanceof Error ? err.message : 'Failed to load profile');
+          setError(err instanceof Error ? err.message : t('failedToLoadProfile'));
         })
         .finally(() => {
           setLoading(false);
@@ -50,7 +52,7 @@ export function useProfile() {
     return () => {
       listeners.delete(listener);
     };
-  }, []);
+  }, [t]);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -58,12 +60,12 @@ export function useProfile() {
       await mutateProfile();
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load profile');
+      setError(err instanceof Error ? err.message : t('failedToLoadProfile'));
       throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   return { profile, loading, error, refetch, setProfile };
 }

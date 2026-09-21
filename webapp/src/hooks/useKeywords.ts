@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { listKeywords } from '../lib/content';
 import type { Keyword } from '../types/content';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export function useKeywords(lectureId: string | undefined) {
+  const { t } = useLanguage();
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,9 +14,9 @@ export function useKeywords(lectureId: string | undefined) {
     setLoading(true);
     listKeywords(lectureId)
       .then(setKeywords)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load keywords'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('failedToLoadKeywords')))
       .finally(() => setLoading(false));
-  }, [lectureId]);
+  }, [lectureId, t]);
 
   return { keywords, setKeywords, loading, error };
 }

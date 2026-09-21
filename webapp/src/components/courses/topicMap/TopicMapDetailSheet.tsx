@@ -34,18 +34,17 @@ interface TopicMapDetailSheetProps {
  * に統一している。
  */
 export const TopicMapDetailSheet: React.FC<TopicMapDetailSheetProps> = ({ data, onClose, onGoToLecture }) => {
-  const { language, t } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
   const open = data !== null;
 
   const breadcrumb = data
     ? [
         data.courseTitle,
-        isJa ? `講義 ${data.lectureNum}` : `Lecture ${data.lectureNum}`,
-        data.topicNum != null ? (isJa ? `トピック ${data.topicNum}` : `Topic ${data.topicNum}`) : null,
+        t('topicMapLectureLabel', { num: String(data.lectureNum) }),
+        data.topicNum != null ? t('topicMapTopicLabel', { num: String(data.topicNum) }) : null,
       ]
         .filter(Boolean)
-        .join(isJa ? ' ・ ' : ', ')
+        .join(t('topicMapSeparator'))
     : '';
 
   const hasSummary = Boolean(data?.summary?.trim());
@@ -68,7 +67,7 @@ export const TopicMapDetailSheet: React.FC<TopicMapDetailSheetProps> = ({ data, 
               type="button"
               className="tmds-close-btn"
               onClick={onClose}
-              aria-label={isJa ? '閉じる' : 'Close'}
+              aria-label={t('close')}
             >
               <X size={20} />
             </button>

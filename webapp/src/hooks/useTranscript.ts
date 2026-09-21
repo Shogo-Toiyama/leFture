@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { getLecture } from '../lib/lectures';
 import { fetchTranscriptArtifact, ArtifactFetchError } from '../lib/artifacts';
 import type { TranscriptSentence } from '../types/content';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export function useTranscript(lectureId: string | undefined) {
+  const { t } = useLanguage();
   const [sentences, setSentences] = useState<TranscriptSentence[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,9 +24,9 @@ export function useTranscript(lectureId: string | undefined) {
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ArtifactFetchError) {
-          setError('Transcript is not available yet.');
+          setError(t('transcriptNotAvailable'));
         } else {
-          setError(err instanceof Error ? err.message : 'Failed to load transcript');
+          setError(err instanceof Error ? err.message : t('failedToLoadTranscript'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -34,7 +36,7 @@ export function useTranscript(lectureId: string | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [lectureId]);
+  }, [lectureId, t]);
 
   return { sentences, loading, error };
 }

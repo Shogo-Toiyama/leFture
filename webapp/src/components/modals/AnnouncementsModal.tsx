@@ -37,12 +37,12 @@ export function getAnnouncementTypeConfig(type: string) {
   }
 }
 
-function formatAnnouncementDate(iso: string | null | undefined, lang: string): string {
+function formatAnnouncementDate(iso: string | null | undefined, locale: string): string {
   if (!iso) return '';
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
+    return d.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -60,9 +60,9 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
   onAnnouncementToggled,
   enableTranscriptView,
 }) => {
-  const { language } = useLanguage();
+  const { t, locale } = useLanguage();
   const navigate = useNavigate();
-  const title = language === 'ja' ? 'お知らせ' : 'Announcements';
+  const title = t('announcementsTitle');
 
   // 1. Status Filter: 'active' | 'completed' | 'all' (Flutter: statusFilter)
   const [filter, setFilter] = useState<'active' | 'completed' | 'all'>('active');
@@ -137,21 +137,21 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
           className={`announcements-segment-tab ${filter === 'active' ? 'is-selected' : ''}`}
           onClick={() => setFilter('active')}
         >
-          {language === 'ja' ? `未完了 (${activeCount})` : `Active (${activeCount})`}
+          {t('announcementsActive', { count: activeCount })}
         </button>
         <button
           type="button"
           className={`announcements-segment-tab ${filter === 'completed' ? 'is-selected' : ''}`}
           onClick={() => setFilter('completed')}
         >
-          {language === 'ja' ? `完了済み (${completedCount})` : `Completed (${completedCount})`}
+          {t('announcementsCompleted', { count: completedCount })}
         </button>
         <button
           type="button"
           className={`announcements-segment-tab ${filter === 'all' ? 'is-selected' : ''}`}
           onClick={() => setFilter('all')}
         >
-          {language === 'ja' ? `すべて (${announcements.length})` : `All (${announcements.length})`}
+          {t('announcementsAll', { count: announcements.length })}
         </button>
       </div>
 
@@ -164,18 +164,18 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
           style={{ '--chip-color': '#FFB300' } as React.CSSProperties}
         >
           <span className="material-symbols-outlined type-chip-icon">apps</span>
-          <span>{language === 'ja' ? 'すべて' : 'All'}</span>
+          <span>{t('announcementsAllTab')}</span>
         </button>
 
-        {(['TODO', 'EVENT', 'INFO', 'HINT'] as const).map((t) => {
-          const cfg = getAnnouncementTypeConfig(t);
-          const isSelected = selectedType === t;
+        {(['TODO', 'EVENT', 'INFO', 'HINT'] as const).map((tType) => {
+          const cfg = getAnnouncementTypeConfig(tType);
+          const isSelected = selectedType === tType;
           return (
             <button
-              key={t}
+              key={tType}
               type="button"
               className={`announcement-type-chip ${isSelected ? 'is-selected' : ''}`}
-              onClick={() => setSelectedType(isSelected ? null : t)}
+              onClick={() => setSelectedType(isSelected ? null : tType)}
               style={{ '--chip-color': cfg.color } as React.CSSProperties}
             >
               <span className="material-symbols-outlined type-chip-icon">{cfg.icon}</span>
@@ -188,7 +188,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
       {/* ── 3. Announcement List ── */}
       {filtered.length === 0 ? (
         <div className="modal-empty-state">
-          <p>{language === 'ja' ? '該当するお知らせはありません' : 'No announcements in this view'}</p>
+          <p>{t('announcementsEmpty')}</p>
         </div>
       ) : (
         <div className="modal-item-list">
@@ -196,7 +196,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
             const isCompleted = Boolean(item.completed_at);
             const typeConfig = getAnnouncementTypeConfig(item.type);
             const lectureTitle = item.lecture_id ? lectureTitleMap.get(item.lecture_id) : null;
-            const formattedDate = formatAnnouncementDate(item.created_at, language);
+            const formattedDate = formatAnnouncementDate(item.created_at, locale);
             const hasTranscript = Boolean(item.start_sid && item.end_sid);
             const isActivatable =
               !isCompleted && (enableTranscriptView ? hasTranscript : Boolean(item.lecture_id));
@@ -252,7 +252,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                   )}
 
                   <h3 className={`announcement-tile-title ${isCompleted ? 'is-line-through' : ''}`}>
-                    {item.title || (language === 'ja' ? 'お知らせ' : 'Announcement')}
+                    {item.title || t('announcementDefaultTitle')}
                   </h3>
 
                   {item.description && (
@@ -284,7 +284,7 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                       }}
                     >
                       <span className="material-symbols-outlined">receipt_long</span>
-                      <span>{language === 'ja' ? 'トランスクリプトで確認' : 'View in transcript'}</span>
+                      <span>{t('announcementsViewInTranscript')}</span>
                     </button>
                   )}
                 </div>
@@ -300,12 +300,8 @@ export const AnnouncementsModal: React.FC<AnnouncementsModalProps> = ({
                     }}
                     title={
                       isCompleted
-                        ? language === 'ja'
-                          ? 'クリックして未完了に戻す'
-                          : 'Click to mark as active'
-                        : language === 'ja'
-                        ? 'クリックして完了にする'
-                        : 'Click to mark as completed'
+                        ? t('announcementsMarkActive')
+                        : t('announcementsMarkCompleted')
                     }
                     aria-label={isCompleted ? 'Mark uncompleted' : 'Mark completed'}
                   >

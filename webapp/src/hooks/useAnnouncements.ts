@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { listAnnouncements } from '../lib/content';
 import type { Announcement } from '../types/content';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export function useAnnouncements(lectureId?: string, courseId?: string) {
+  const { t } = useLanguage();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,9 +14,9 @@ export function useAnnouncements(lectureId?: string, courseId?: string) {
     setLoading(true);
     listAnnouncements(lectureId, courseId)
       .then(setAnnouncements)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load announcements'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('failedToLoadAnnouncements')))
       .finally(() => setLoading(false));
-  }, [lectureId, courseId]);
+  }, [lectureId, courseId, t]);
 
   return { announcements, setAnnouncements, loading, error };
 }

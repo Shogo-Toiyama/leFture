@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface PageStateProps {
   kind: 'loading' | 'error' | 'empty';
@@ -9,6 +10,7 @@ interface PageStateProps {
 
 /** ローディング/エラー/空状態の共通表示。ローディングはスケルトンで表す。 */
 export const PageState: React.FC<PageStateProps> = ({ kind, title, message, action }) => {
+  const { t } = useLanguage();
   if (kind === 'loading') {
     return (
       <div className="page-skeleton" aria-busy="true" aria-live="polite">
@@ -25,7 +27,7 @@ export const PageState: React.FC<PageStateProps> = ({ kind, title, message, acti
       <span className="page-state-glyph" aria-hidden="true">
         {kind === 'error' ? '!' : '✦'}
       </span>
-      <h2>{title ?? (kind === 'error' ? 'Something went wrong' : 'Nothing here yet')}</h2>
+      <h2>{title ?? (kind === 'error' ? t('somethingWentWrong') : t('nothingHereYet'))}</h2>
       {message && <p>{message}</p>}
       {action && <div className="page-state-action">{action}</div>}
     </div>

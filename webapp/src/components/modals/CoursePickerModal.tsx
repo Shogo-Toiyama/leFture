@@ -18,18 +18,18 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
   onClose,
   onSelectCourse,
 }) => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const { courses, refetch } = useCourses();
 
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedCourseId ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const title = language === 'ja' ? 'コースを選択' : 'Select Course';
-  const searchPlaceholder = language === 'ja' ? 'コースを検索…' : 'Search courses…';
-  const confirmLabel = language === 'ja' ? 'このコースを選択' : 'Select Course';
-  const cancelLabel = language === 'ja' ? 'キャンセル' : 'Cancel';
-  const noResultsText = language === 'ja' ? 'コースが見つかりません' : 'No courses found';
+  const title = t('coursePickerTitle');
+  const searchPlaceholder = t('coursePickerSearchPlaceholder');
+  const confirmLabel = t('coursePickerConfirm');
+  const cancelLabel = t('cancel');
+  const noResultsText = t('coursePickerNoResults');
 
   const filteredCourses = courses.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
@@ -84,8 +84,8 @@ export const CoursePickerModal: React.FC<CoursePickerModalProps> = ({
               type="button"
               className="course-picker-add-btn"
               onClick={() => setShowCreateModal(true)}
-              title={language === 'ja' ? '新規コース作成' : 'Create new course'}
-              aria-label={language === 'ja' ? '新規コース作成' : 'Create new course'}
+              title={t('coursePickerCreateNew')}
+              aria-label={t('coursePickerCreateNew')}
             >
               <Plus size={22} strokeWidth={2.4} />
             </button>

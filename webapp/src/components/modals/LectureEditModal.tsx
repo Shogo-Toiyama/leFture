@@ -19,7 +19,7 @@ export const LectureEditModal: React.FC<LectureEditModalProps> = ({
   onClose,
   onLectureUpdated,
 }) => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const { courses } = useCourses();
 
   // Format date for <input type="datetime-local"> (YYYY-MM-DDTHH:mm)
@@ -46,17 +46,17 @@ export const LectureEditModal: React.FC<LectureEditModalProps> = ({
   const selectedCourse = courses.find((c) => c.id === courseId);
   const selectedCourseColor = (selectedCourse?.metadata?.color as string) || '#FFB300';
 
-  const modalTitle = language === 'ja' ? '講義を編集' : 'Edit Lecture';
-  const courseLabel = language === 'ja' ? 'コース' : 'Course';
-  const noCourseLabel = language === 'ja' ? 'コース未設定' : 'No Course (Unassigned)';
-  const datetimeLabel = language === 'ja' ? '講義日時' : 'Lecture Date & Time';
-  const titleLabel = language === 'ja' ? 'タイトル' : 'Title';
+  const modalTitle = t('editLectureTitle');
+  const courseLabel = t('lectureCourse');
+  const noCourseLabel = t('lectureNoCourse');
+  const datetimeLabel = t('lectureDateTime');
+  const titleLabel = t('lectureTitle');
   const defaultSuffix = lecture.title_generated
-    ? (language === 'ja' ? `${lecture.title_generated}（デフォルト）` : `${lecture.title_generated} (Default)`)
-    : (language === 'ja' ? '無題の講義' : 'Untitled Lecture');
-  const saveLabel = language === 'ja' ? '保存' : 'Save';
-  const savingLabel = language === 'ja' ? '保存中…' : 'Saving…';
-  const cancelLabel = language === 'ja' ? 'キャンセル' : 'Cancel';
+    ? t('lectureTitleDefaultSuffix', { title: lecture.title_generated })
+    : t('lectureUntitled');
+  const saveLabel = t('save');
+  const savingLabel = t('saving');
+  const cancelLabel = t('cancel');
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +74,7 @@ export const LectureEditModal: React.FC<LectureEditModalProps> = ({
       onLectureUpdated?.(updated);
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to update lecture');
+      setErrorMsg(err instanceof Error ? err.message : t('failedToUpdateLecture'));
     } finally {
       setSaving(false);
     }

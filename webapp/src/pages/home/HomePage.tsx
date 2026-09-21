@@ -31,8 +31,7 @@ import type { Lecture } from '../../types/lecture';
  * 側で切り替えるので、DOMは共通のまま。
  */
 export const HomePage: React.FC = () => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
   const { openUploadModal } = useUploadModal();
   const navigate = useNavigate();
   const {
@@ -75,13 +74,12 @@ export const HomePage: React.FC = () => {
   };
 
   const handleDeleteLecture = async (lecture: Lecture) => {
-    const msg = isJa ? '講義を削除しますか？' : 'Delete this lecture?';
-    if (!window.confirm(msg)) return;
+    if (!window.confirm(t('deleteLectureConfirm'))) return;
     try {
       await softDeleteLecture(lecture.id);
       setRecentLectures((prev) => prev.filter((l) => l.id !== lecture.id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete lecture');
+      alert(err instanceof Error ? err.message : t('deleteLectureFailed'));
     }
   };
 
@@ -94,15 +92,14 @@ export const HomePage: React.FC = () => {
   };
 
   const announcementSummary = (item: Announcement) =>
-    item.title?.trim() || item.description?.trim() || (isJa ? 'お知らせ' : 'Announcement');
-  const noAnnouncementsText = isJa ? 'お知らせはありません' : 'No announcements';
-  const seeAllLabel = isJa ? 'すべて見る' : 'See all';
+    item.title?.trim() || item.description?.trim() || t('announcement');
+  const noAnnouncementsText = t('noAnnouncements');
+  const seeAllLabel = t('seeAllAnnouncements');
 
-  const heroStat = isJa
-    ? `${courses.length}コース · ${lectureCount}件の講義`
-    : `${courses.length} ${courses.length === 1 ? 'course' : 'courses'} · ${lectureCount} ${
-        lectureCount === 1 ? 'lecture' : 'lectures'
-      }`;
+  const heroStat = t('homeHeroStat', {
+    courses: String(courses.length),
+    lectures: String(lectureCount),
+  });
 
   return (
     <div className="home-page">
@@ -112,7 +109,7 @@ export const HomePage: React.FC = () => {
           900px未満だけ display:contents で解除し、Flutter版と同じ個別配置に戻す。 */}
       <div className="home-sidebar">
       {/* お知らせ: モバイルでは銀河の上の1行バー、ワイドでは左カラムのパネル */}
-      <section className="home-announce" aria-label={isJa ? 'お知らせ' : 'Announcements'}>
+      <section className="home-announce" aria-label={t('announcements')}>
         <button
           type="button"
           className="home-announce-bar"
@@ -145,7 +142,7 @@ export const HomePage: React.FC = () => {
         <div className="home-announce-panel">
           <div className="home-panel-head">
             <div className="home-panel-head-left">
-              <h2>{isJa ? 'お知らせ' : 'Announcements'}</h2>
+              <h2>{t('announcements')}</h2>
               {activeAnnouncements.length > 0 && (
                 <span className="home-announce-count">{activeAnnouncements.length}</span>
               )}
@@ -199,16 +196,16 @@ export const HomePage: React.FC = () => {
       {/* コース: モバイルは横スクロールのチップ、ワイドでは左カラムの縦リスト */}
       <section className="home-courses">
         <div className="home-panel-head">
-          <h2>{isJa ? 'コース' : 'Courses'}</h2>
+          <h2>{t('courses')}</h2>
           <Link to="/courses" className="home-panel-more">
-            {isJa ? 'すべてのコース' : 'All courses'}
+            {t('allCoursesNav')}
             <ChevronRight size={14} />
           </Link>
         </div>
 
         {courses.length > 0 && (
           <ul className="home-course-list">
-            {courses.slice(0, 6).map((course) => {
+            {courses.slice(0, 5).map((course) => {
               const accent = course.metadata?.color || DEFAULT_COURSE_COLOR;
               return (
                 <li key={course.id}>
@@ -239,20 +236,20 @@ export const HomePage: React.FC = () => {
       <section className="home-hero">
         <GalaxyView />
         <div className="home-hero-caption">
-          <span className="home-hero-eyebrow">{isJa ? 'あなたの銀河' : 'Your galaxy'}</span>
+          <span className="home-hero-eyebrow">{t('yourGalaxy')}</span>
           <strong className="home-hero-stat">{heroStat}</strong>
         </div>
         <button type="button" className="home-upload-cta" onClick={() => openUploadModal()}>
           <Sparkles size={17} strokeWidth={2.2} />
-          <span>{isJa ? '録音をアップロード' : 'Upload recording'}</span>
+          <span>{t('uploadRecordingHome')}</span>
         </button>
       </section>
 
       {/* Fun Facts: モバイルは横スクロールのカルーセル、ワイドでは右カラムの縦積み */}
-      {funFactsState.length > 0 && (
+      {funFactsState.slice(0, 5).length > 0 && (
         <section className="home-facts">
           <div className="home-panel-head">
-            <h2>{isJa ? '最新のファンファクト' : 'Latest fun facts'}</h2>
+            <h2>{t('latestFunFacts')}</h2>
           </div>
 
           <div
@@ -264,7 +261,7 @@ export const HomePage: React.FC = () => {
               setFactIndex(Math.round(el.scrollLeft / (width + 12)));
             }}
           >
-            {funFactsState.map((fact) => (
+            {funFactsState.slice(0, 5).map((fact) => (
               <div key={fact.id} className="home-fact-rainbow-wrapper">
                 <article
                   className="home-fact-card"
@@ -284,7 +281,7 @@ export const HomePage: React.FC = () => {
                   </p>
                   <div className="home-fact-foot">
                     <span className="home-fact-open-hint">
-                      {isJa ? '講義を開く' : 'Open lecture'}
+                      {t('openLecture')}
                     </span>
                     {/* カード全体のクリックに巻き込まれないよう伝播を止める */}
                     <span onClick={(e) => e.stopPropagation()}>
@@ -300,7 +297,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="home-fact-dots">
-            {funFactsState.map((fact, i) => (
+            {funFactsState.slice(0, 5).map((fact, i) => (
               <button
                 key={fact.id}
                 type="button"
@@ -316,12 +313,12 @@ export const HomePage: React.FC = () => {
       {/* 最近の講義 */}
       <section className="home-main">
         <div className="home-panel-head">
-          <h2>{isJa ? '最近の講義' : 'Recent lectures'}</h2>
+          <h2>{t('recentLectures')}</h2>
         </div>
 
         {loading && (
           <ul className="home-lecture-grid">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <li key={i}>
                 <LectureTileSkeleton />
               </li>
@@ -332,15 +329,11 @@ export const HomePage: React.FC = () => {
         {!loading && recentLectures.length === 0 && (
           <PageState
             kind="empty"
-            title={isJa ? 'まだ何もありません' : 'Nothing here yet'}
-            message={
-              isJa
-                ? 'コースを作成して、最初の講義録音をアップロードしましょう。'
-                : 'Create a course and upload your first lecture recording to get started.'
-            }
+            title={t('nothingHereYet')}
+            message={t('nothingHereYetHomeDesc')}
             action={
               <Link to="/courses">
-                <button type="button">{isJa ? 'コースを作成' : 'Create a course'}</button>
+                <button type="button">{t('createCourseHome')}</button>
               </Link>
             }
           />
@@ -348,7 +341,7 @@ export const HomePage: React.FC = () => {
 
         {!loading && recentLectures.length > 0 && (
           <ul className="home-lecture-grid">
-            {recentLectures.map((lecture) => {
+            {recentLectures.slice(0, 12).map((lecture) => {
               const course = courseById.get(lecture.course_id);
               return (
                 <li key={lecture.id}>

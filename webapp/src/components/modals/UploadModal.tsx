@@ -48,8 +48,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   initialCourseId,
 }) => {
   const navigate = useNavigate();
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { language, t } = useLanguage();
   const { profile, refetch: refetchProfile } = useProfile();
   const { courses } = useCourses();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,9 +85,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     if (profile?.metadata?.recording_language) {
       setRecordingLanguage(profile.metadata.recording_language);
     } else {
-      setRecordingLanguage(isJa ? 'ja' : 'en');
+      setRecordingLanguage(language);
     }
-  }, [profile, isJa]);
+  }, [profile, language]);
 
   // Check credits
   useEffect(() => {
@@ -140,21 +139,21 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   const stepLabelMap: Record<UploadProgress['step'], string> = {
-    'requesting-url': isJa ? 'アップロードの準備中…' : 'Preparing upload…',
-    uploading: isJa ? '音声をアップロード中…' : 'Uploading audio…',
-    finalizing: isJa ? '処理を完了中…' : 'Finalising…',
-    'starting-analysis': isJa ? 'AI分析を開始中…' : 'Starting analysis…',
-    done: isJa ? '完了' : 'Done',
+    'requesting-url': t('uploadPreparing'),
+    uploading: t('uploadUploading'),
+    finalizing: t('uploadFinalizing'),
+    'starting-analysis': t('uploadStartingAnalysis'),
+    done: t('uploadDone'),
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedCourseId) {
-      setError(isJa ? 'コースを選択してください。' : 'Please select a course.');
+      setError(t('uploadSelectCourseError'));
       return;
     }
     if (!file) {
-      setError(isJa ? '音声ファイルを選択してください。' : 'Please choose an audio file.');
+      setError(t('uploadSelectAudioError'));
       return;
     }
 
@@ -162,7 +161,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
 
     try {
-      const displayLang = profile?.metadata?.display_language || (isJa ? 'ja' : 'en');
+      const displayLang = profile?.metadata?.display_language || language;
       const lecture = await createDraftLecture({
         courseId: selectedCourseId,
         title,
@@ -185,7 +184,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       onClose();
       navigate(`/lectures/${lecture.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : isJa ? 'アップロードに失敗しました' : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('uploadFailed'));
       setSubmitting(false);
       setProgress(null);
     }
@@ -205,21 +204,15 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {/* Header */}
           <div className="upload-modal-header">
             <div className="upload-modal-header-info">
-              <h2 className="upload-modal-title">
-                {isJa ? '録音をアップロード' : 'Upload a Recording'}
-              </h2>
-              <p className="upload-modal-subtitle">
-                {isJa
-                  ? '音声ファイルをアップロードすると、文字起こしと講義資料の自動生成を開始します。'
-                  : "Drop an audio file and we'll transcribe it and build your study material."}
-              </p>
+              <h2 className="upload-modal-title">{t('uploadTitle')}</h2>
+              <p className="upload-modal-subtitle">{t('uploadModalSubtitle')}</p>
             </div>
             <button
               type="button"
               className="upload-modal-close-btn"
               onClick={onClose}
               disabled={submitting}
-              aria-label={isJa ? '閉じる' : 'Close'}
+              aria-label={t('close')}
             >
               <X size={26} strokeWidth={2} />
             </button>
@@ -234,13 +227,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <div className="upload-notice-error">
                   <AlertCircle size={18} className="upload-notice-icon" />
                   <span>
-                    {hasPlan
-                      ? isJa
-                        ? 'クレジットの残高がありません。'
-                        : "You've run out of credits."
-                      : isJa
-                        ? '有効なプランがありません。'
-                        : "You don't have an active plan yet."}
+                    {hasPlan ? t('uploadNoCreditsError') : t('uploadNoPlanError')}
                   </span>
                   <button
                     type="button"
@@ -250,7 +237,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                       navigate('/account/credits');
                     }}
                   >
-                    {isJa ? 'クレジットを管理 →' : 'Manage credits →'}
+                    {t('uploadManageCredits')}
                   </button>
                 </div>
               )}
@@ -279,9 +266,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                       <span className="upload-course-title">
                         {selectedCourse
                           ? selectedCourse.course_title
-                          : isJa
-                            ? 'コースを選択…'
-                            : 'Select a course…'}
+                          : t('uploadSelectCoursePlaceholder')}
                       </span>
                       {selectedCourse?.course_code && (
                         <span className="upload-course-code">{selectedCourse.course_code}</span>
@@ -290,7 +275,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   </div>
                   <div className="upload-course-selector-right">
                     <span className="upload-course-change-text">
-                      {selectedCourse ? (isJa ? '変更' : 'Change') : isJa ? '選択' : 'Select'}
+                      {selectedCourse ? t('changeCourse') : t('selectCourse')}
                     </span>
                     <ChevronRight size={16} />
                   </div>
@@ -331,7 +316,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                         <span className="upload-dropzone-filesize">
                           {formatBytes(file.size)} ·{' '}
                           <span className="upload-dropzone-change-hint">
-                            {isJa ? 'クリックして別のファイルを選択' : 'click to choose a different file'}
+                            {t('uploadClickToChangeFile')}
                           </span>
                         </span>
                       </div>
@@ -342,12 +327,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                         <Upload size={32} />
                       </div>
                       <strong className="upload-dropzone-prompt">
-                        {isJa ? 'ここに音声ファイルをドロップ' : 'Drop your recording here'}
+                        {t('uploadDropAudioHere')}
                       </strong>
                       <span className="upload-dropzone-formats">
-                        {isJa
-                          ? 'またはクリックして選択 · mp3, m4a, wav, aac, flac, ogg'
-                          : 'or click to browse · mp3, m4a, wav, aac, flac, ogg'}
+                        {t('uploadDropFormats')}
                       </span>
                     </div>
                   )}
@@ -361,11 +344,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   className="upload-text-input"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    isJa
-                      ? '講義タイトル（未入力の場合は自動生成）'
-                      : "Lecture Title (Left blank, we'll name it for you)"
-                  }
+                  placeholder={t('uploadTitlePlaceholder')}
                   disabled={submitting}
                 />
               </div>
@@ -383,7 +362,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                       <Mic size={17} />
                     </span>
                     <div className="upload-language-text">
-                      <span className="upload-language-title">{isJa ? '録音言語' : 'Recording Language'}</span>
+                      <span className="upload-language-title">{t('recordingLanguage')}</span>
                       <span className="upload-language-value">{getLanguageLabel(recordingLanguage)}</span>
                     </div>
                   </div>
@@ -427,20 +406,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 onClick={onClose}
                 disabled={submitting}
               >
-                {isJa ? 'キャンセル' : 'Cancel'}
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 className="upload-submit-btn"
                 disabled={submitting || !file || !selectedCourseId || blocked}
               >
-                {submitting
-                  ? isJa
-                    ? 'アップロード中…'
-                    : 'Uploading…'
-                  : isJa
-                    ? '✦ アップロードして分析を開始'
-                    : '✦ Upload and Analyse'}
+                {submitting ? t('uploadSubmitting') : t('uploadSubmit')}
               </button>
             </div>
           </form>

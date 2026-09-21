@@ -25,8 +25,7 @@ async function waitAndRefetch(refetch: () => Promise<void>) {
 export const PurchaseCreditsPage: React.FC = () => {
   const { summary, loading: summaryLoading, refetch } = useCreditSummary(false);
   const { packs, loading, error } = useCreditPacks();
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t, formatNumber } = useLanguage();
 
   const [startingCheckoutId, setStartingCheckoutId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -35,18 +34,25 @@ export const PurchaseCreditsPage: React.FC = () => {
     clientSecret: string;
     amountCents: number;
     currency: string;
+    creditAmount: number;
   } | null>(null);
 
   const totalBalance = summary ? toDisplayCredits(summary.credit_balance) : 0;
 
-  const handleBuyPack = async (packId: string, packName: string) => {
+  const handleBuyPack = async (packId: string, packName: string, creditAmount: number) => {
     setStartingCheckoutId(packId);
     setCheckoutError(null);
     try {
       const { client_secret, amount_cents, currency } = await createCreditPackPayment(packId);
-      setPendingCheckout({ title: packName, clientSecret: client_secret, amountCents: amount_cents, currency });
+      setPendingCheckout({
+        title: packName,
+        clientSecret: client_secret,
+        amountCents: amount_cents,
+        currency,
+        creditAmount,
+      });
     } catch (err) {
-      setCheckoutError(err instanceof ApiError ? err.message : isJa ? '購入開始に失敗しました' : 'Failed to start purchase');
+      setCheckoutError(err instanceof ApiError ? err.message : t('purchaseCreditsFailed'));
     } finally {
       setStartingCheckoutId(null);
     }
@@ -71,7 +77,7 @@ export const PurchaseCreditsPage: React.FC = () => {
         {/* ── ヘッダー ── */}
         <div className="purchase-credits-head">
           <Link to="/account/credits" className="back-link">
-            ← {isJa ? 'クレジット' : 'Credits'}
+            ← {t('creditsTitle')}
           </Link>
         </div>
 
@@ -79,23 +85,21 @@ export const PurchaseCreditsPage: React.FC = () => {
 
         <div className="purchase-credits-title-row">
           <div>
-            <h1 className="purchase-credits-title">{isJa ? 'クレジットを購入' : 'Buy Credits'}</h1>
+            <h1 className="purchase-credits-title">{t('purchaseCreditsTitle')}</h1>
             <p className="purchase-credits-subtitle">
-              {isJa
-                ? '有効期限なし・必要なときにいつでも使える追加クレジットです。'
-                : 'Non-expiring additional credits for generating notes, cards, and more.'}
+              {t('purchaseCreditsSubtitle')}
             </p>
           </div>
 
           {/* 現在のクレジット残高バッジ */}
           <div className="purchase-credits-badge">
             <span className="purchase-credits-badge-label">
-              {isJa ? '現在のクレジット残高' : 'Current Credits'}
+              {t('currentCreditsBalance')}
             </span>
             <div className="purchase-credits-badge-val">
               <CreditStarIcon size={15} color="var(--star-gold, #fbc02d)" />
               <span>
-                {summaryLoading ? (isJa ? '…' : '…') : `${totalBalance.toLocaleString()} ${isJa ? 'クレジット' : 'credits'}`}
+                {summaryLoading ? '…' : `${formatNumber(totalBalance)} ${t('credits')}`}
               </span>
             </div>
           </div>
@@ -110,7 +114,7 @@ export const PurchaseCreditsPage: React.FC = () => {
         {!loading && !error && sortedPacks.length === 0 && (
           <div className="purchase-credits-empty">
             <p className="muted">
-              {isJa ? '現在購入可能なクレジットパックはありません。' : 'No credit packs currently available.'}
+              {t('noCreditPacksAvailable')}
             </p>
           </div>
         )}
@@ -133,20 +137,20 @@ export const PurchaseCreditsPage: React.FC = () => {
                   <div className="purchase-credit-card-amount">
                     <CreditStarIcon size={18} color="#c084fc" className="purchase-credit-amount-star" />
                     <span className="purchase-credit-amount-num">{displayCredit}</span>
-                    <span className="purchase-credit-amount-unit">{isJa ? 'クレジット' : 'credits'}</span>
+                    <span className="purchase-credit-amount-unit">{t('credits')}</span>
                   </div>
 
                   {/* 3. 購入ボタン（価格表示） */}
                   <button
                     type="button"
                     className="purchase-credit-card-btn"
-                    onClick={() => handleBuyPack(pack.id, pack.name)}
+                    onClick={() => handleBuyPack(pack.id, pack.name, displayCredit)}
                     disabled={isProcessing || startingCheckoutId !== null || Boolean(summary?.suspended)}
                   >
                     {isProcessing ? (
                       <span className="purchase-btn-loading">
                         <RefreshCw size={14} className="animate-spin" />
-                        {isJa ? '準備中…' : 'Starting…'}
+                        {t('purchaseCreditsStarting')}
                       </span>
                     ) : (
                       priceLabel
@@ -161,24 +165,22 @@ export const PurchaseCreditsPage: React.FC = () => {
         {/* ── 下部説明 & リンク ── */}
         <div className="purchase-credits-footer">
           <p className="purchase-credits-disclosure">
-            {isJa
-              ? '購入した追加クレジットは有効期限がなく、月間クレジットが不足した際に自動的に消費されます。'
-              : 'Purchased additional credits never expire and are automatically consumed when monthly credits are depleted.'}
+            {t('purchaseCreditsDisclosure')}
           </p>
 
           <div className="purchase-credits-links">
             <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">
-              {isJa ? '利用規約' : 'Terms of Service'}
+              {t('termsOfService')}
               <ExternalLink size={11} />
             </a>
             <span className="purchase-credits-dot">•</span>
             <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">
-              {isJa ? 'プライバシーポリシー' : 'Privacy Policy'}
+              {t('privacyPolicy')}
               <ExternalLink size={11} />
             </a>
             <span className="purchase-credits-dot">•</span>
             <a href="https://lefture.com/contact" target="_blank" rel="noopener noreferrer">
-              {isJa ? 'お問い合わせ' : 'Contact Us'}
+              {t('contactUs')}
               <ExternalLink size={11} />
             </a>
           </div>
@@ -188,6 +190,7 @@ export const PurchaseCreditsPage: React.FC = () => {
       {pendingCheckout && (
         <StripeCheckoutModal
           title={pendingCheckout.title}
+          creditAmount={pendingCheckout.creditAmount}
           clientSecret={pendingCheckout.clientSecret}
           charge={{ amountCents: pendingCheckout.amountCents, currency: pendingCheckout.currency, recurring: null }}
           onClose={() => setPendingCheckout(null)}

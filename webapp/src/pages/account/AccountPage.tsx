@@ -43,44 +43,27 @@ import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { ChangeAvatarSheet } from '../../components/account/ChangeAvatarSheet';
 import { LanguageSelectionSheet, type LanguageSheetMode } from '../../components/account/LanguageSelectionSheet';
+import { recordingLanguageNativeName } from '../../i18n/recordingLanguages';
 import {
   ChangePasswordSheet,
   ChangeEmailSheet,
   DeleteAccountModal,
 } from '../../components/account/AccountAuthSheets';
 
-function getLanguageLabel(code: string | undefined): string {
-  switch (code) {
-    case 'en':
-      return 'English';
-    case 'ja':
-      return '日本語';
-    case 'zh':
-      return '中文';
-    case 'es':
-      return 'Español';
-    case 'fr':
-      return 'Français';
-    case 'de':
-      return 'Deutsch';
-    case 'ko':
-      return '한국어';
-    default:
-      return '日本語';
-  }
+function getLanguageLabel(code: string | undefined, currentLanguage: string): string {
+  return recordingLanguageNativeName(code || 'ja', currentLanguage);
 }
 
 export const AccountPage: React.FC = () => {
   const { profile, loading, refetch } = useProfile();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t, language } = useLanguage();
 
   const { summary, loading: creditLoading } = useCreditSummary(false);
 
   // ── インライン名前編集 ─────────────────────────────────────
-  const displayName = profile?.username || (isJa ? '探検者' : 'Explorer');
+  const displayName = profile?.username || t('explorerDefaultName');
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(displayName);
   const [savingName, setSavingName] = useState(false);
@@ -102,7 +85,7 @@ export const AccountPage: React.FC = () => {
       await refetch();
       setIsEditingName(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update username');
+      alert(err instanceof Error ? err.message : t('failedToUpdateUsername'));
     } finally {
       setSavingName(false);
     }
@@ -130,11 +113,7 @@ export const AccountPage: React.FC = () => {
 
   const handleTransmissionsClick = () => {
     if (!announcements || announcements.length === 0) {
-      showToast(
-        language === 'ja'
-          ? '現在利用可能なお知らせはありません。'
-          : 'No transmissions available at this time.'
-      );
+      showToast(t('noTransmissionsToast'));
     } else {
       setAnnouncementsModalOpen(true);
     }
@@ -215,7 +194,7 @@ export const AccountPage: React.FC = () => {
             onClick={() => setAvatarSheetOpen(true)}
             role="button"
             tabIndex={0}
-            title={isJa ? 'アバターを変更' : 'Change avatar'}
+            title={t('changeAvatarTitle')}
           >
             <AvatarImage avatarUrl={profile?.avatar_url ?? null} size={72} username={displayName} />
             <span className="account-avatar-edit-badge">
@@ -247,7 +226,7 @@ export const AccountPage: React.FC = () => {
                   className="account-icon-btn is-save"
                   onClick={handleSaveName}
                   disabled={savingName}
-                  title={isJa ? '保存' : 'Save'}
+                  title={t('save')}
                 >
                   <Check size={18} />
                 </button>
@@ -259,7 +238,7 @@ export const AccountPage: React.FC = () => {
                     setNameInput(displayName);
                   }}
                   disabled={savingName}
-                  title={isJa ? 'キャンセル' : 'Cancel'}
+                  title={t('cancel')}
                 >
                   <X size={18} />
                 </button>
@@ -271,7 +250,7 @@ export const AccountPage: React.FC = () => {
                   type="button"
                   className="account-edit-name-btn"
                   onClick={() => setIsEditingName(true)}
-                  title={isJa ? '名前を編集' : 'Edit display name'}
+                  title={t('editDisplayName')}
                 >
                   <Edit2 size={16} />
                 </button>
@@ -281,17 +260,17 @@ export const AccountPage: React.FC = () => {
         </div>
 
         {/* ── Credit Card (Flutter _CreditCard 準拠) ─────────────── */}
-        <Link to="/account/credits" className="credit-card-interactive" title={isJa ? 'クレジット詳細を表示' : 'View Credit Details'}>
+        <Link to="/account/credits" className="credit-card-interactive" title={t('viewCreditDetails')}>
           <div className="credit-card-top-row">
             <div className="credit-card-title-group">
               <span className="credit-card-icon-pill">
                 <CreditStarIcon size={16} color="var(--star-gold, #fbc02d)" />
               </span>
-              <span className="credit-card-title">{isJa ? 'クレジット残高' : 'Credit balance'}</span>
+              <span className="credit-card-title">{t('creditBalance')}</span>
             </div>
             <div className="credit-card-value-group">
               {creditLoading ? (
-                <span className="credit-card-loading-val">{isJa ? '読み込み中…' : 'Loading…'}</span>
+                <span className="credit-card-loading-val">{t('loading')}</span>
               ) : (
                 <>
                   <span className="credit-card-bold-val">{totalBalance}</span>
@@ -335,7 +314,7 @@ export const AccountPage: React.FC = () => {
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <p className="glass-section-label">
         <User size={15} className="section-label-icon" color="var(--star-gold, #fbc02d)" />
-        <span>{isJa ? 'プロフィール' : 'Profile'}</span>
+        <span>{t('profileSectionTitle')}</span>
       </p>
       <div className="glass-card">
         {/* 1. About You */}
@@ -343,10 +322,10 @@ export const AccountPage: React.FC = () => {
           <div className="account-preview-tile-body">
             <div className="account-preview-tag">
               <User size={14} />
-              <span>{isJa ? '自己紹介' : 'ABOUT YOU'}</span>
+              <span>{t('aboutYouSection')}</span>
             </div>
             <p className="account-preview-desc">
-              {profile?.bio?.trim() ? profile.bio : (isJa ? 'まだ自己紹介が設定されていません。' : 'No description set yet.')}
+              {profile?.bio?.trim() ? profile.bio : t('noBioYet')}
             </p>
           </div>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -359,10 +338,10 @@ export const AccountPage: React.FC = () => {
           <div className="account-preview-tile-body">
             <div className="account-preview-tag">
               <Sparkles size={14} />
-              <span>{isJa ? '興味・関心' : 'INTERESTS'}</span>
+              <span>{t('interestsSection')}</span>
             </div>
             <p className="account-preview-desc">
-              {profile?.interests?.trim() ? profile.interests : (isJa ? 'まだ興味・関心が設定されていません。' : 'No interests set yet.')}
+              {profile?.interests?.trim() ? profile.interests : t('noInterestsYet')}
             </p>
           </div>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -375,10 +354,10 @@ export const AccountPage: React.FC = () => {
           <div className="account-preview-tile-body">
             <div className="account-preview-tag">
               <Flag size={14} />
-              <span>{isJa ? '将来の夢' : 'FUTURE DREAMS'}</span>
+              <span>{t('futureDreamsSection')}</span>
             </div>
             <p className="account-preview-desc">
-              {profile?.future_goals?.trim() ? profile.future_goals : (isJa ? 'まだ将来の夢が設定されていません。' : 'No future dream set yet.')}
+              {profile?.future_goals?.trim() ? profile.future_goals : t('noFutureDreamsYet')}
             </p>
           </div>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -390,7 +369,7 @@ export const AccountPage: React.FC = () => {
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <p className="glass-section-label">
         <Bookmark size={15} className="section-label-icon" color="var(--star-gold, #fbc02d)" />
-        <span>{isJa ? 'アクティビティ' : 'Activity'}</span>
+        <span>{t('activitySection')}</span>
       </p>
       <div className="glass-card">
         {/* Saved */}
@@ -399,8 +378,8 @@ export const AccountPage: React.FC = () => {
             <Bookmark size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? '保存済み' : 'Saved'}</span>
-            <span className="glass-row-sub">{isJa ? '復習カード・詳細ノート・キーワード' : 'Review Cards · Deep Notes · Keywords'}</span>
+            <span className="glass-row-title">{t('savedSectionTitle')}</span>
+            <span className="glass-row-sub">{t('savedSectionSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
@@ -413,8 +392,8 @@ export const AccountPage: React.FC = () => {
             <Heart size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? '高評価' : 'Likes'}</span>
-            <span className="glass-row-sub">{isJa ? '復習カード・詳細ノート・ファンファクト' : 'Review Cards · Deep Notes · Fun Facts'}</span>
+            <span className="glass-row-title">{t('likesSectionTitle')}</span>
+            <span className="glass-row-sub">{t('likesSectionSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
@@ -427,8 +406,8 @@ export const AccountPage: React.FC = () => {
             <ThumbsDown size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? '低評価' : 'Dislikes'}</span>
-            <span className="glass-row-sub">{isJa ? '復習カード・詳細ノート・ファンファクト' : 'Review Cards · Deep Notes · Fun Facts'}</span>
+            <span className="glass-row-title">{t('dislikesSectionTitle')}</span>
+            <span className="glass-row-sub">{t('dislikesSectionSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
@@ -441,8 +420,8 @@ export const AccountPage: React.FC = () => {
             <Megaphone size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? 'お知らせ' : 'Announcements'}</span>
-            <span className="glass-row-sub">{isJa ? '完了済みのものを含む' : 'Including completed items'}</span>
+            <span className="glass-row-title">{t('announcementsSectionTitle')}</span>
+            <span className="glass-row-sub">{t('announcementsSectionSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
@@ -456,9 +435,9 @@ export const AccountPage: React.FC = () => {
           </span>
           <span className="glass-row-text">
             <span className="glass-row-title" style={{ color: 'var(--correction-red, #ff5252)' }}>
-              {isJa ? 'ゴミ箱' : 'Trash'}
+              {t('trashSectionTitle')}
             </span>
-            <span className="glass-row-sub">{isJa ? '削除されたコース・講義' : 'Deleted courses & lectures'}</span>
+            <span className="glass-row-sub">{t('trashSectionSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
@@ -469,7 +448,7 @@ export const AccountPage: React.FC = () => {
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <p className="glass-section-label">
         <Rocket size={15} className="section-label-icon" color="var(--star-gold, #fbc02d)" />
-        <span>{isJa ? 'アプリケーション' : 'Application'}</span>
+        <span>{t('applicationSection')}</span>
       </p>
       <div className="glass-card">
         {/* Transmissions */}
@@ -482,8 +461,8 @@ export const AccountPage: React.FC = () => {
             <Radio size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? 'トランスミッション' : 'Transmissions'}</span>
-            <span className="glass-row-sub">{isJa ? '最新情報とアップデート' : 'What\'s new & updates'}</span>
+            <span className="glass-row-title">{t('transmissionsTitle')}</span>
+            <span className="glass-row-sub">{t('transmissionsSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </button>
@@ -496,8 +475,8 @@ export const AccountPage: React.FC = () => {
             <Rocket size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? 'オンボーディング' : 'Onboarding'}</span>
-            <span className="glass-row-sub">{isJa ? '初期設定のやり直し' : 'Revisit initial setup'}</span>
+            <span className="glass-row-title">{t('onboardingTitle')}</span>
+            <span className="glass-row-sub">{t('onboardingSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
@@ -514,8 +493,8 @@ export const AccountPage: React.FC = () => {
             <GraduationCap size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? 'チュートリアル' : 'Tutorial'}</span>
-            <span className="glass-row-sub">{isJa ? '使い方ガイド' : 'Interactive guide'}</span>
+            <span className="glass-row-title">{t('tutorialTitle')}</span>
+            <span className="glass-row-sub">{t('tutorialSub')}</span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </button>
@@ -526,7 +505,7 @@ export const AccountPage: React.FC = () => {
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <p className="glass-section-label">
         <Shield size={15} className="section-label-icon" color="var(--comet, #8e99a6)" />
-        <span>{isJa ? '設定' : 'Settings'}</span>
+        <span>{t('settingsSection')}</span>
       </p>
 
       {/* 1. Preferences */}
@@ -540,9 +519,9 @@ export const AccountPage: React.FC = () => {
             <Mic size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? '録音言語' : 'Recording Language'}</span>
+            <span className="glass-row-title">{t('recordingLanguageLabel')}</span>
             <span className="glass-row-sub">
-              {getLanguageLabel(profile?.metadata?.recording_language)}
+              {getLanguageLabel(profile?.metadata?.recording_language, language)}
             </span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -559,9 +538,9 @@ export const AccountPage: React.FC = () => {
             <Globe size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? '表示言語' : 'Display Language'}</span>
+            <span className="glass-row-title">{t('displayLanguage')}</span>
             <span className="glass-row-sub">
-              {getLanguageLabel(profile?.metadata?.display_language)}
+              {getLanguageLabel(profile?.metadata?.display_language, language)}
             </span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -580,7 +559,7 @@ export const AccountPage: React.FC = () => {
             <ShieldCheck size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? 'プライバシーポリシー' : 'Privacy Policy'}</span>
+            <span className="glass-row-title">{t('privacyPolicy')}</span>
           </span>
           <ExternalLink size={16} className="glass-row-chevron" style={{ opacity: 0.6 }} />
         </a>
@@ -597,7 +576,7 @@ export const AccountPage: React.FC = () => {
             <Gavel size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? '利用規約' : 'Terms of Service'}</span>
+            <span className="glass-row-title">{t('termsOfService')}</span>
           </span>
           <ExternalLink size={16} className="glass-row-chevron" style={{ opacity: 0.6 }} />
         </a>
@@ -614,7 +593,7 @@ export const AccountPage: React.FC = () => {
             <Mail size={17} />
           </span>
           <span className="glass-row-text">
-            <span className="glass-row-title">{isJa ? 'お問い合わせ' : 'Contact Us'}</span>
+            <span className="glass-row-title">{t('contactUs')}</span>
           </span>
           <ExternalLink size={16} className="glass-row-chevron" style={{ opacity: 0.6 }} />
         </a>
@@ -632,7 +611,7 @@ export const AccountPage: React.FC = () => {
               <Mail size={17} />
             </span>
             <span className="glass-row-text">
-              <span className="glass-row-title">{isJa ? 'メールアドレスを変更' : 'Change Email'}</span>
+              <span className="glass-row-title">{t('changeEmailTitle')}</span>
             </span>
             <ChevronRight size={18} className="glass-row-chevron" />
           </button>
@@ -648,7 +627,7 @@ export const AccountPage: React.FC = () => {
               <Lock size={17} />
             </span>
             <span className="glass-row-text">
-              <span className="glass-row-title">{isJa ? 'パスワードを変更' : 'Change Password'}</span>
+              <span className="glass-row-title">{t('changePasswordTitle')}</span>
             </span>
             <ChevronRight size={18} className="glass-row-chevron" />
           </button>
@@ -667,7 +646,7 @@ export const AccountPage: React.FC = () => {
           </span>
           <span className="glass-row-text">
             <span className="glass-row-title" style={{ color: 'var(--correction-red, #ff5252)' }}>
-              {isJa ? 'サインアウト' : 'Sign Out'}
+              {t('signOutButton')}
             </span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -685,7 +664,7 @@ export const AccountPage: React.FC = () => {
           </span>
           <span className="glass-row-text">
             <span className="glass-row-title" style={{ color: 'var(--correction-red, #ff5252)' }}>
-              {isJa ? 'アカウントを削除' : 'Delete Account'}
+              {t('deleteAccountTitle')}
             </span>
           </span>
           <ChevronRight size={18} className="glass-row-chevron" />
@@ -740,10 +719,10 @@ export const AccountPage: React.FC = () => {
         open={showSignOutModal}
         onClose={() => setShowSignOutModal(false)}
         onConfirm={handleConfirmSignOut}
-        title={isJa ? 'サインアウト' : 'Sign Out'}
-        message={isJa ? 'アカウントからサインアウトしますか？' : 'Are you sure you want to sign out of your account?'}
-        confirmLabel={isJa ? 'サインアウト' : 'Sign Out'}
-        cancelLabel={isJa ? 'キャンセル' : 'Cancel'}
+        title={t('signOutConfirmTitle')}
+        message={t('signOutConfirmMessage')}
+        confirmLabel={t('signOutButton')}
+        cancelLabel={t('cancel')}
         isDanger={true}
       />
 

@@ -24,8 +24,7 @@ export const CreditsPage: React.FC = () => {
   const { summary, loading, error, refetch: refetchSummary } = useCreditSummary(true);
   const { history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useCreditHistory();
   const { plans } = usePlans();
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
 
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [creditRateOpen, setCreditRateOpen] = useState(false);
@@ -44,12 +43,10 @@ export const CreditsPage: React.FC = () => {
         <div className="credits-error">
           <WifiOff size={36} />
           <p className="muted">
-            {isJa
-              ? 'クレジット情報を読み込めませんでした。接続を確認してもう一度お試しください。'
-              : 'Could not load credit info. Check your connection and try again.'}
+            {t('creditsLoadError')}
           </p>
           <button type="button" className="ghost" onClick={handleRetry}>
-            {isJa ? '再試行' : 'Retry'}
+            {t('retry')}
           </button>
         </div>
       </div>
@@ -60,18 +57,17 @@ export const CreditsPage: React.FC = () => {
     <div className="account-page credits-page">
       <div className="credits-page-head">
         <Link to="/account" className="back-link">
-          ← {isJa ? 'アカウント' : 'Account'}
+          ← {t('creditsBackToAccount')}
         </Link>
       </div>
-      <h1>{isJa ? 'クレジット' : 'Credits'}</h1>
+      <h1>{t('creditsTitle')}</h1>
 
-      <MonthlyCreditCard summary={summary} isJa={isJa} />
+      <MonthlyCreditCard summary={summary} />
 
       {summary.has_active_plan && (
         <CurrentPlanCard
           summary={summary}
           plans={plans}
-          isJa={isJa}
           onCreditRateClick={() => setCreditRateOpen(true)}
         />
       )}
@@ -82,7 +78,6 @@ export const CreditsPage: React.FC = () => {
         error={historyError}
         expanded={historyExpanded}
         onExpand={() => setHistoryExpanded(true)}
-        isJa={isJa}
       />
 
       {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
@@ -94,8 +89,9 @@ export const CreditsPage: React.FC = () => {
 // 月間クレジット
 // ─────────────────────────────────────────────────────────────────────────
 
-const MonthlyCreditCard: React.FC<{ summary: CreditSummary; isJa: boolean }> = ({ summary, isJa }) => {
-  if (!summary.has_active_plan) return <NoActivePlanCard isJa={isJa} />;
+const MonthlyCreditCard: React.FC<{ summary: CreditSummary }> = ({ summary }) => {
+  const { t, formatDate } = useLanguage();
+  if (!summary.has_active_plan) return <NoActivePlanCard />;
 
   const totalBalance = toDisplayCredits(summary.credit_balance);
   const monthlyAllocation = toDisplayCredits(summary.monthly_allocation);
@@ -114,7 +110,7 @@ const MonthlyCreditCard: React.FC<{ summary: CreditSummary; isJa: boolean }> = (
   return (
     <section className="glass-card credits-card">
       <div className="credits-card-head">
-        <span className="credits-card-title">{isJa ? '月間クレジット' : 'Monthly Credits'}</span>
+        <span className="credits-card-title">{t('monthlyCredits')}</span>
         <span className="credits-balance-value">
           <span className={isDepleted ? 'is-depleted' : 'is-gold'}>{monthlyBalance}</span>
           <span className="credits-balance-denom"> / {monthlyAllocation}</span>
@@ -141,31 +137,32 @@ const MonthlyCreditCard: React.FC<{ summary: CreditSummary; isJa: boolean }> = (
       <div className="credits-card-foot">
         {summary.current_period_end ? (
           <span className="muted">
-            {isJa
-              ? `${new Date(summary.current_period_end).toLocaleDateString()}にリセット`
-              : `Resets on ${new Date(summary.current_period_end).toLocaleDateString()}`}
+            {t('creditsResetsOn', { date: formatDate(summary.current_period_end) })}
           </span>
         ) : (
           <span />
         )}
         <Link to="/account/credits/purchase" className="credits-buy-link">
-          {isJa ? 'クレジットを購入 ＞' : 'Buy Credits ＞'}
+          {t('buyCreditsNav')}
         </Link>
       </div>
     </section>
   );
 };
 
-const NoActivePlanCard: React.FC<{ isJa: boolean }> = ({ isJa }) => (
-  <Link to="/account/plans" className="credits-noplan-card">
-    <img src="/img/plan_icons/stardust.webp" alt="" className="credits-noplan-img" aria-hidden="true" />
-    <span className="credits-noplan-title">{isJa ? '有効なプランがありません' : 'No active plan'}</span>
-    <span className="credits-noplan-subtitle">
-      {isJa ? 'プランを選んで、講義資料の生成を始めましょう。' : 'Choose a plan to start generating lecture materials.'}
-    </span>
-    <span className="credits-noplan-button">{isJa ? 'プランを見る' : 'View Plans'}</span>
-  </Link>
-);
+const NoActivePlanCard: React.FC = () => {
+  const { t } = useLanguage();
+  return (
+    <Link to="/account/plans" className="credits-noplan-card">
+      <img src="/img/plan_icons/stardust.webp" alt="" className="credits-noplan-img" aria-hidden="true" />
+      <span className="credits-noplan-title">{t('noActivePlan')}</span>
+      <span className="credits-noplan-subtitle">
+        {t('noActivePlanSubtitle')}
+      </span>
+      <span className="credits-noplan-button">{t('viewPlans')}</span>
+    </Link>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────
 // 現在のプラン
@@ -174,9 +171,9 @@ const NoActivePlanCard: React.FC<{ isJa: boolean }> = ({ isJa }) => (
 const CurrentPlanCard: React.FC<{
   summary: CreditSummary;
   plans: PlanOption[];
-  isJa: boolean;
   onCreditRateClick: () => void;
-}> = ({ summary, plans, isJa, onCreditRateClick }) => {
+}> = ({ summary, plans, onCreditRateClick }) => {
+  const { t, formatDate } = useLanguage();
   // /billing/plans はstore_purchaseプランも含むため、単純な先頭要素ではなく
   // summaryが返す現在のplan_idで引く。
   const activePlan = useMemo(
@@ -194,9 +191,10 @@ const CurrentPlanCard: React.FC<{
   const pendingPlan = plans.find((p) => p.id === summary.pending_plan_id);
   const pendingPlanNote =
     pendingPlan && summary.current_period_end
-      ? isJa
-        ? `${new Date(summary.current_period_end).toLocaleDateString()}に${pendingPlan.name}へ切り替わります`
-        : `Switching to ${pendingPlan.name} on ${new Date(summary.current_period_end).toLocaleDateString()}`
+      ? t('creditsSwitchingPlanNote', {
+          plan: pendingPlan.name,
+          date: formatDate(summary.current_period_end),
+        })
       : null;
 
   return (
@@ -206,23 +204,21 @@ const CurrentPlanCard: React.FC<{
     >
       <img src={planIconAsset(activePlan.tier_level)} alt="" className="credits-plan-img" aria-hidden="true" />
       <div className="credits-plan-head">
-        <span className="credits-plan-label">{isJa ? '現在のプラン' : 'Current Plan'}</span>
-        <span className="credits-plan-badge">{isJa ? '有効' : 'ACTIVE'}</span>
+        <span className="credits-plan-label">{t('currentPlan')}</span>
+        <span className="credits-plan-badge">{t('planActiveBadge')}</span>
       </div>
       <h2 className="credits-plan-name">{activePlan.name}</h2>
       <button type="button" className="credits-plan-credits" onClick={onCreditRateClick}>
-        {isJa ? `${creditsCount}クレジット / 月` : `${creditsCount} credits / month`}
+        {t('creditsMonthlyAmount', { amount: creditsCount })}
       </button>
       {summary.current_period_end && (
         <p className="credits-plan-reset">
-          {isJa
-            ? `${new Date(summary.current_period_end).toLocaleDateString()}にリセット`
-            : `Resets on ${new Date(summary.current_period_end).toLocaleDateString()}`}
+          {t('creditsResetsOn', { date: formatDate(summary.current_period_end) })}
         </p>
       )}
       {pendingPlanNote && <p className="credits-plan-pending">{pendingPlanNote}</p>}
       <Link to="/account/plans" className="credits-plan-button">
-        {isJa ? 'プランを見る・変更する' : 'View & Change Plans'}
+        {t('viewAndChangePlans')}
       </Link>
     </section>
   );
@@ -238,31 +234,31 @@ const HistoryCard: React.FC<{
   error: string | null;
   expanded: boolean;
   onExpand: () => void;
-  isJa: boolean;
-}> = ({ items, loading, error, expanded, onExpand, isJa }) => {
+}> = ({ items, loading, error, expanded, onExpand }) => {
+  const { t } = useLanguage();
   const displayItems = expanded ? items : items.slice(0, HISTORY_PAGE_SIZE);
   const hasMore = items.length > HISTORY_PAGE_SIZE;
 
   return (
     <section className="glass-card credits-card">
       <div className="credits-card-head">
-        <span className="credits-card-title">{isJa ? '利用履歴' : 'Usage History'}</span>
-        <span className="muted">{isJa ? '1時間ごとの集計' : 'Hourly summary'}</span>
+        <span className="credits-card-title">{t('usageHistory')}</span>
+        <span className="muted">{t('hourlySummary')}</span>
       </div>
 
       {loading && <CreditsHistorySkeleton />}
 
-      {!loading && error && <p className="muted">{isJa ? '利用履歴を読み込めませんでした。' : 'Could not load usage history.'}</p>}
+      {!loading && error && <p className="muted">{t('usageHistoryLoadError')}</p>}
 
       {!loading && !error && items.length === 0 && (
-        <p className="muted">{isJa ? '最近の利用履歴はありません。' : 'No recent usage activity recorded.'}</p>
+        <p className="muted">{t('noUsageHistory')}</p>
       )}
 
       {!loading && !error && items.length > 0 && (
         <ul className="credits-history-list">
           {displayItems.map((item) => (
             <li key={item.id}>
-              <HistoryRow item={item} isJa={isJa} />
+              <HistoryRow item={item} />
             </li>
           ))}
         </ul>
@@ -271,26 +267,20 @@ const HistoryCard: React.FC<{
       {!loading && !error && hasMore && !expanded && (
         <button type="button" className="credits-history-more" onClick={onExpand}>
           <ChevronDown size={16} />
-          {isJa ? `もっと見る（残り${items.length - HISTORY_PAGE_SIZE}件）` : `View More (${items.length - HISTORY_PAGE_SIZE} more)`}
+          {t('viewMoreWithCount', { count: items.length - HISTORY_PAGE_SIZE })}
         </button>
       )}
     </section>
   );
 };
 
-const HistoryRow: React.FC<{ item: CreditHistoryItem; isJa: boolean }> = ({ item, isJa }) => {
+const HistoryRow: React.FC<{ item: CreditHistoryItem }> = ({ item }) => {
+  const { t } = useLanguage();
   if (item.kind === 'reset') {
     // 具体的な数字を出すと「クレジットを失った」という誤解を招くため、
     // 数字を持たない区切りラベルとして描く(_HistoryTile 準拠。plan_changed以外は
     // すべてRenewed扱いになるのはFlutter側と同じ仕様)。
-    const label =
-      item.reset_reason === 'plan_changed'
-        ? isJa
-          ? 'プランが変更されました'
-          : 'Plan Changed'
-        : isJa
-          ? '更新されました'
-          : 'Renewed';
+    const label = item.reset_reason === 'plan_changed' ? t('planChanged') : t('renewed');
     return (
       <div className="credits-history-reset">
         <span className="credits-history-reset-line" />
@@ -311,7 +301,7 @@ const HistoryRow: React.FC<{ item: CreditHistoryItem; isJa: boolean }> = ({ item
         <span className="credits-history-date muted">{item.date_label}</span>
       </span>
       <span className={`credits-history-delta ${isPositive ? 'is-positive' : ''}`}>
-        {isJa ? `${item.formatted_delta} クレジット` : `${item.formatted_delta} credits`}
+        {t('creditsDelta', { delta: item.formatted_delta })}
       </span>
     </div>
   );

@@ -17,10 +17,18 @@ export interface Lecture {
   updated_at: string;
 }
 
-export function lectureDisplayTitle(lecture: Pick<Lecture, 'title' | 'title_generated'>): string {
+/**
+ * fallbackは呼び出し元がt('lectureUntitled')を渡すこと(このファイルはReact
+ * コンポーネント外のプレーンユーティリティなのでuseLanguage()のtを直接呼べない)。
+ * 省略時は未ローカライズの英語文字列に倒す。
+ */
+export function lectureDisplayTitle(
+  lecture: Pick<Lecture, 'title' | 'title_generated'>,
+  fallback: string = 'Untitled lecture'
+): string {
   if (lecture.title && lecture.title.trim().length > 0) return lecture.title;
   if (lecture.title_generated && lecture.title_generated.trim().length > 0) return lecture.title_generated;
-  return 'Untitled lecture';
+  return fallback;
 }
 
 /**

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listLectures } from '../lib/lectures';
 import type { Lecture } from '../types/lecture';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export function useLectures(courseId: string | undefined) {
+  const { t } = useLanguage();
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,11 +16,11 @@ export function useLectures(courseId: string | undefined) {
     try {
       setLectures(await listLectures(courseId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load lectures');
+      setError(err instanceof Error ? err.message : t('failedToLoadLectures'));
     } finally {
       setLoading(false);
     }
-  }, [courseId]);
+  }, [courseId, t]);
 
   useEffect(() => {
     refetch();

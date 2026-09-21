@@ -27,7 +27,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
   profile,
   onUpdated,
 }) => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const [selectedIcon, setSelectedIcon] = useState<string>('initials');
   const [selectedBgStyle, setSelectedBgStyle] = useState<number>(0);
   const [selectedBgIndex, setSelectedBgIndex] = useState<number>(2);
@@ -88,7 +88,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
       await onUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update avatar');
+      setError(err instanceof Error ? err.message : t('failedToUpdateAvatar'));
     } finally {
       setSaving(false);
     }
@@ -106,7 +106,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
       await onUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload photo');
+      setError(err instanceof Error ? err.message : t('failedToUploadPhoto'));
     } finally {
       setUploading(false);
     }
@@ -122,20 +122,18 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
       await onUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to restore social avatar');
+      setError(err instanceof Error ? err.message : t('failedToRestoreSocialAvatar'));
     } finally {
       setSaving(false);
     }
   };
 
-  const isJa = language === 'ja';
-
   return (
     <AdaptiveSheet
       open={open}
       onClose={onClose}
-      title={isJa ? 'アバターを変更' : 'Change Avatar'}
-      subtitle={isJa ? 'イニシャル、クレイアバター、背景色、または写真を設定' : 'Choose initials, clay character, background color, or upload a photo'}
+      title={t('changeAvatarTitle')}
+      subtitle={t('changeAvatarSubtitle')}
     >
       <div className="avatar-sheet-content">
         {error && <p className="auth-error">{error}</p>}
@@ -190,7 +188,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
             }}
           >
             <Upload size={17} />
-            <span>{uploading ? (isJa ? 'アップロード中…' : 'Uploading…') : (isJa ? 'フォトライブラリから選択' : 'Choose from Photo Library')}</span>
+            <span>{uploading ? t('uploading') : t('chooseFromPhotoLibrary')}</span>
             <input
               type="file"
               accept="image/*"
@@ -221,7 +219,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
               disabled={saving || uploading}
             >
               <RotateCcw size={14} />
-              <span>{language === 'ja' ? 'ソーシャルアカウントの画像に戻す' : 'Restore Social Account Photo'}</span>
+              <span>{t('restoreSocialPhoto')}</span>
             </button>
           )}
         </div>
@@ -234,7 +232,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
             onClick={() => setActiveTab('icons')}
           >
             <User size={16} />
-            <span>{isJa ? 'アイコン' : 'Icons'}</span>
+            <span>{t('avatarTabIcons')}</span>
           </button>
           <button
             type="button"
@@ -242,7 +240,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
             onClick={() => setActiveTab('backgrounds')}
           >
             <Palette size={16} />
-            <span>{isJa ? '背景色' : 'Backgrounds'}</span>
+            <span>{t('avatarTabBackgrounds')}</span>
           </button>
         </div>
 
@@ -282,7 +280,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
                     fontWeight: 600,
                   }}
                 >
-                  {isJa ? 'イニシャル' : 'Initials'}
+                  {t('avatarInitials')}
                 </span>
                 {selectedIcon === 'initials' && (
                   <span className="avatar-preset-badge">
@@ -385,7 +383,7 @@ export const ChangeAvatarSheet: React.FC<ChangeAvatarSheetProps> = ({
             onClick={handleSavePreset}
             disabled={saving || uploading}
           >
-            {saving ? (isJa ? '保存中…' : 'Saving…') : (isJa ? 'アバターに設定' : 'Set as Avatar')}
+            {saving ? t('saving') : t('setAsAvatar')}
           </button>
         </div>
       </div>

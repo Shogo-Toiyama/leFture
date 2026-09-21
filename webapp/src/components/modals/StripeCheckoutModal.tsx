@@ -1,26 +1,15 @@
-import React, { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, X } from 'lucide-react';
 import { loadStripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { ModalDialog } from './ModalDialog';
 import { STRIPE_PUBLISHABLE_KEY } from '../../lib/env';
-import { useLanguage } from '../../i18n/LanguageContext';
-import type { TranslationKey } from '../../i18n/translations';
+import { useLanguage, type Translate } from '../../i18n/LanguageContext';
+import { planIconAsset } from '../../lib/planTheme';
+import { CreditPackIllustration } from '../account/CreditPackIllustration';
 
 // loadStripeはPromiseをキャッシュする設計なので、レンダーごとに再生成せず
 // モジュールスコープで一度だけ呼ぶ(Stripe公式推奨パターン)。
 const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
-
-const APPEARANCE: Appearance = {
-  theme: 'night',
-  variables: {
-    colorPrimary: '#FFB300',
-    colorBackground: '#171b2b',
-    colorText: '#f2f2f2',
-    colorDanger: '#e53935',
-    borderRadius: '10px',
-  },
-};
 
 /**
  * 「今日いくら請求され、その後どうなるか」の開示に必要な情報。
@@ -41,6 +30,8 @@ export interface StripeCheckoutModalProps {
   clientSecret: string;
   charge: CheckoutCharge;
   onClose: () => void;
+  tierLevel?: number;
+  creditAmount?: number;
   /**
    * 決済自体はここで完了するが、DB側のプラン反映はStripe→webhook→RevenueCat→
    * webhookという経路を経るため数秒遅れる。onSuccessはその反映確認まで待つ
@@ -50,19 +41,113 @@ export interface StripeCheckoutModalProps {
   onSuccess: () => Promise<void>;
 }
 
+type CheckoutTheme = 'red' | 'blue' | 'purple' | 'gold';
+
 export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   title,
   clientSecret,
   charge,
   onClose,
+  tierLevel,
+  creditAmount,
   onSuccess,
 }) => {
+  const { t, locale } = useLanguage();
+
+  const checkoutTheme: CheckoutTheme = React.useMemo(() => {
+    if (creditAmount !== undefined) return 'purple';
+    if (tierLevel === 2) return 'red';
+    if (tierLevel === 1) return 'blue';
+    if (tierLevel !== undefined && tierLevel >= 3) return 'purple';
+    return 'gold';
+  }, [creditAmount, tierLevel]);
+
+  const appearance: Appearance = React.useMemo(() => {
+    const primaryColorMap: Record<CheckoutTheme, string> = {
+      red: '#FB7185',
+      blue: '#38BDF8',
+      purple: '#C084FC',
+      gold: '#FFB300',
+    };
+    return {
+      theme: 'night',
+      variables: {
+        colorPrimary: primaryColorMap[checkoutTheme],
+        colorBackground: '#171b2b',
+        colorText: '#f2f2f2',
+        colorDanger: '#e53935',
+        borderRadius: '12px',
+      },
+    };
+  }, [checkoutTheme]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const formattedAmount = formatMoney(charge.amountCents, charge.currency, locale);
+
   return (
-    <ModalDialog title={title} onClose={onClose} maxWidth={480}>
-      <Elements stripe={stripePromise} options={{ clientSecret, appearance: APPEARANCE }}>
-        <CheckoutForm charge={charge} onClose={onClose} onSuccess={onSuccess} />
-      </Elements>
-    </ModalDialog>
+    <div className="lecture-modal-backdrop stripe-checkout-backdrop" onClick={onClose}>
+      <div
+        className={`stripe-checkout-modal-card theme-${checkoutTheme}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── ヒーローヘッダー ── */}
+        <div className="stripe-checkout-hero">
+          <div className="stripe-checkout-hero-aurora" aria-hidden="true" />
+          <div className="stripe-checkout-hero-glow" aria-hidden="true" />
+
+          {/* 背景にうっすら浮かび上がるプラン画像 / クレジットベクター */}
+          {tierLevel !== undefined && (
+            <img
+              src={planIconAsset(tierLevel)}
+              alt=""
+              className="stripe-checkout-hero-bg-art"
+              aria-hidden="true"
+            />
+          )}
+          {creditAmount !== undefined && (
+            <div className="stripe-checkout-hero-bg-art is-vector" aria-hidden="true">
+              <CreditPackIllustration creditAmount={creditAmount} size={150} />
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="stripe-checkout-hero-close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+
+          <h2 className="stripe-checkout-hero-title">{title}</h2>
+
+          <div className="stripe-checkout-hero-price-row">
+            <span className="stripe-checkout-hero-price">{formattedAmount}</span>
+            {charge.recurring && (
+              <span className="stripe-checkout-hero-interval">
+                {charge.recurring.intervalMonths === 1
+                  ? t('stripeCheckoutHeroMonth')
+                  : t('stripeCheckoutHeroNMonths', { n: String(charge.recurring.intervalMonths) })}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ── フォームコンテンツ ── */}
+        <div className="stripe-checkout-body">
+          <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
+            <CheckoutForm charge={charge} onClose={onClose} onSuccess={onSuccess} />
+          </Elements>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -91,26 +176,24 @@ function interpolate(template: string, values: Record<string, React.ReactNode>):
   return parts;
 }
 
-type Translate = (key: TranslationKey, params?: Record<string, string>) => string;
-
-function buildPayLabel(charge: CheckoutCharge, language: string, t: Translate): string {
-  const amount = formatMoney(charge.amountCents, charge.currency, language);
+function buildPayLabel(charge: CheckoutCharge, locale: string, t: Translate): string {
+  const amount = formatMoney(charge.amountCents, charge.currency, locale);
   return t('stripeCheckoutPayButton', { amount });
 }
 
-const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; language: string; t: Translate }> = ({
+const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; locale: string; t: Translate }> = ({
   charge,
-  language,
+  locale,
   t,
 }) => {
-  const amount = formatMoney(charge.amountCents, charge.currency, language);
+  const amount = formatMoney(charge.amountCents, charge.currency, locale);
   const { recurring } = charge;
 
   if (!recurring) {
     return <p className="stripe-checkout-disclosure">{t('stripeCheckoutDisclosureOneTime', { amount })}</p>;
   }
 
-  const renewal = formatMoney(Math.round(recurring.priceUsd * 100), 'usd', language);
+  const renewal = formatMoney(Math.round(recurring.priceUsd * 100), 'usd', locale);
   const interval =
     recurring.intervalMonths === 1
       ? t('stripeCheckoutEveryMonth')
@@ -129,8 +212,8 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
 }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const { language, t } = useLanguage();
-  const payLabel = buildPayLabel(charge, language, t);
+  const { locale, t } = useLanguage();
+  const payLabel = buildPayLabel(charge, locale, t);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -169,7 +252,7 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
     <form className="stripe-checkout-form" onSubmit={handleSubmit}>
       <PaymentElement />
       {errorMessage && <p className="notice notice-error">{errorMessage}</p>}
-      <CheckoutDisclosure charge={charge} language={language} t={t} />
+      <CheckoutDisclosure charge={charge} locale={locale} t={t} />
       <p className="stripe-checkout-consent">
         {interpolate(t('stripeCheckoutConsent', { payLabel }), {
           terms: (
@@ -185,12 +268,18 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
         })}
       </p>
       <div className="stripe-checkout-actions">
-        <button type="button" className="keyword-btn-cancel" onClick={onClose} disabled={submitting}>
+        <button type="button" className="stripe-checkout-btn-cancel" onClick={onClose} disabled={submitting}>
           {t('stripeCheckoutCancelButton')}
         </button>
-        <button type="submit" className="auth-submit-btn" disabled={!stripe || submitting}>
-          {submitting && <Loader2 size={15} className="animate-spin" />}
-          {submitting ? t('stripeCheckoutPayButtonProcessing') : payLabel}
+        <button type="submit" className="stripe-checkout-btn-pay" disabled={!stripe || submitting}>
+          {submitting ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>{t('stripeCheckoutPayButtonProcessing')}</span>
+            </>
+          ) : (
+            <span>{payLabel}</span>
+          )}
         </button>
       </div>
     </form>

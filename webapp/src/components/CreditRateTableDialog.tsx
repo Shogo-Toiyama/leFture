@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { CreditStarIcon } from './icons/CreditStarIcon';
 
@@ -41,7 +42,7 @@ export const CreditRateTableDialog: React.FC<CreditRateTableDialogProps> = ({ on
           </span>
           <h3 className="credit-rate-title">{t('creditRateModalTitle')}</h3>
           <button type="button" className="credit-rate-close-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <X size={18} />
           </button>
         </div>
 

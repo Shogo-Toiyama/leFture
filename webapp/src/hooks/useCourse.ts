@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { getCourse } from '../lib/courses';
 import type { Course } from '../types/course';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export function useCourse(courseId?: string) {
+  const { t } = useLanguage();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(Boolean(courseId));
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function useCourse(courseId?: string) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load course');
+          setError(err instanceof Error ? err.message : t('failedToLoadCourse'));
           setLoading(false);
         }
       });
@@ -35,7 +37,7 @@ export function useCourse(courseId?: string) {
     return () => {
       cancelled = true;
     };
-  }, [courseId]);
+  }, [courseId, t]);
 
   return { course, loading, error };
 }

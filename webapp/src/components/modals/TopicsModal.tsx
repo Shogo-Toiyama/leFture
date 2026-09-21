@@ -17,11 +17,11 @@ export const TopicsModal: React.FC<TopicsModalProps> = ({
   topics,
   onClose,
 }) => {
-  const { language } = useLanguage();
-  const title = language === 'ja' ? 'トピック' : 'Topics';
-  const reviewCardsLabel = language === 'ja' ? '復習カード' : 'Review Cards';
-  const deepNotesLabel = language === 'ja' ? '詳細ノート' : 'Deep Notes';
-  const emptyStateText = language === 'ja' ? '利用可能なトピックがまだありません' : 'No topics available yet';
+  const { t } = useLanguage();
+  const title = t('topicsTitle');
+  const reviewCardsLabel = t('reviewCards');
+  const deepNotesLabel = t('deepNotes');
+  const emptyStateText = t('topicsEmpty');
 
   return (
     <ModalDialog title={title} count={topics.length} onClose={onClose} maxWidth={720}>

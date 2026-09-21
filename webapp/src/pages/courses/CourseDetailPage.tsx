@@ -30,7 +30,7 @@ import { UpgradeRequiredDialog } from '../../components/UpgradeRequiredDialog';
 export const CourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const { openUploadModal } = useUploadModal();
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -63,7 +63,7 @@ export const CourseDetailPage: React.FC = () => {
     if (!courseId) return;
     getCourse(courseId)
       .then(setCourse)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load course'));
+      .catch((err) => setError(err instanceof Error ? err.message : t('failedToLoadCourse')));
   };
 
   useEffect(() => {
@@ -122,26 +122,21 @@ export const CourseDetailPage: React.FC = () => {
   const activeAnnouncements = announcements.filter((a) => !a.completed_at);
   const latestAnnouncement = activeAnnouncements[0] ?? null;
 
-  const backLabel = language === 'ja' ? 'コース一覧' : 'Courses';
-  const noAnnouncementsText = language === 'ja' ? 'お知らせはありません' : 'No announcements';
-  const topicMapTitle = language === 'ja' ? 'トピックマップ' : 'Topic Map';
-  const lecturesSectionTitle = language === 'ja' ? '講義' : 'Lectures';
-  const newLectureLabel = language === 'ja' ? '新規講義' : 'New Lecture';
-  const noLecturesTitle = language === 'ja' ? '講義がまだありません' : 'No lectures yet';
-  const noLecturesDesc = language === 'ja'
-    ? '講義音声をアップロードして、AI学習ノートを作成しましょう。'
-    : 'Upload a lecture recording to generate AI notes and review materials.';
+  const backLabel = t('courseListPageTitle');
+  const noAnnouncementsText = t('noAnnouncementsCourseDetail');
+  const topicMapTitle = t('topicMapCourseDetail');
+  const lecturesSectionTitle = t('lecturesSectionTitle');
+  const newLectureLabel = t('newLectureLabel');
+  const noLecturesTitle = t('noLecturesYetTitle');
+  const noLecturesDesc = t('noLecturesYetDesc');
 
   const handleDeleteLecture = async (lecture: Lecture) => {
-    const msg = language === 'ja'
-      ? '講義を削除しますか？'
-      : 'Delete this lecture?';
-    if (!window.confirm(msg)) return;
+    if (!window.confirm(t('deleteLectureConfirm'))) return;
     try {
       await softDeleteLecture(lecture.id);
       await refetchLectures();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete lecture');
+      alert(err instanceof Error ? err.message : t('deleteLectureFailed'));
     }
   };
 
@@ -212,7 +207,7 @@ export const CourseDetailPage: React.FC = () => {
             type="button"
             className="course-edit-circle-btn"
             onClick={() => setEditCourseOpen(true)}
-            title={language === 'ja' ? 'コースを編集' : 'Edit course'}
+            title={t('editCourseTooltip')}
           >
             <Pencil size={22} strokeWidth={2.2} className="course-edit-svg" />
           </button>
@@ -243,7 +238,7 @@ export const CourseDetailPage: React.FC = () => {
             type="button"
             className="course-details-icon-btn"
             onClick={() => setDetailsModalOpen(true)}
-            title={language === 'ja' ? 'コース詳細情報' : 'Course Details'}
+            title={t('courseDetailsTooltip')}
           >
             <Info size={18} className="course-dns-svg" />
           </button>
@@ -267,7 +262,7 @@ export const CourseDetailPage: React.FC = () => {
                   lock
                 </span>
                 <span className="locked-content-caption" style={{ color: topicMapLockColor }}>
-                  {language === 'ja' ? 'Liteプラン以上で利用可能' : 'Available on Lite plan or above'}
+                  {t('availableOnLitePlan')}
                 </span>
               </div>
             ) : topicMapLayout && topicMapData && topicMapData.nodes.length > 0 ? (

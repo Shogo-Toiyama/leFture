@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getLecture } from '../lib/lectures';
 import type { Lecture, ProcessingJob, ProcessingTask } from '../types/lecture';
 import { DEAD_JOB_STATUSES } from '../types/lecture';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -12,6 +13,7 @@ const POLL_INTERVAL_MS = 5000;
  * フォールバックとして常に低頻度ポーリングも並行して行う(webapp実装プラン参照)。
  */
 export function useProcessingStatus(lectureId: string | undefined) {
+  const { t } = useLanguage();
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const [job, setJob] = useState<ProcessingJob | null>(null);
   const [tasks, setTasks] = useState<ProcessingTask[]>([]);
@@ -48,11 +50,11 @@ export function useProcessingStatus(lectureId: string | undefined) {
       }
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load processing status');
+      setError(err instanceof Error ? err.message : t('failedToLoadProcessingStatus'));
     } finally {
       setLoading(false);
     }
-  }, [lectureId]);
+  }, [lectureId, t]);
 
   useEffect(() => {
     refetch();

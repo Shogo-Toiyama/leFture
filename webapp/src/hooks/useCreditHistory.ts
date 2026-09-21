@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listCreditHistory } from '../lib/billing';
 import type { CreditHistoryItem } from '../types/billing';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export function useCreditHistory() {
+  const { t } = useLanguage();
   const [history, setHistory] = useState<CreditHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,11 +15,11 @@ export function useCreditHistory() {
       setHistory(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load credit history');
+      setError(err instanceof Error ? err.message : t('failedToLoadCreditHistory'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     refetch();

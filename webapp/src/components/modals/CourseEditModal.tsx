@@ -44,7 +44,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
   preselectedYearName,
   preselectedTermName,
 }) => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const isEditing = Boolean(existingCourse);
 
   // 属性リストを取得 (サジェスト用)
@@ -150,41 +150,36 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
   }, [icon]);
 
   // 多言語ラベル
-  const isJa = language === 'ja';
-  const modalTitle = isEditing
-    ? (isJa ? 'コースを編集' : 'Edit Course')
-    : (isJa ? 'コースを作成' : 'Create Course');
-  const previewLabel = isJa ? 'デザインプレビュー' : 'Design Preview';
-  const titlePlaceholder = isJa ? 'コース名を入力…' : 'Enter course title…';
-  const colorLabel = isJa ? 'コースカラー' : 'Course Color';
-  const iconLabel = isJa ? 'コースアイコン' : 'Course Icon';
-  const customColorTitle = isJa ? 'カスタムカラーを選択' : 'Select custom color';
-  const yearLabel = isJa ? '開講年度' : 'Year';
-  const yearPlaceholder = isJa ? '例: 2026' : 'e.g. 2026';
-  const termLabel = isJa ? '開講学期' : 'Term';
-  const termPlaceholder = isJa ? '例: Fall / 秋学期' : 'e.g. Fall / Spring';
-  const moreInfoLabel = isJa ? '詳細情報（任意）' : 'More Information (Optional)';
-  const codeLabel = isJa ? 'コースコード' : 'Course Code';
-  const codePlaceholder = isJa ? '例: CS101' : 'e.g. CS101';
-  const profLabel = isJa ? '担当教員' : 'Professor';
-  const profPlaceholder = isJa ? '例: 山田 太郎' : 'e.g. Prof. Smith';
-  const schoolLabel = isJa ? '学部・研究科・機関' : 'School / Faculty';
-  const schoolPlaceholder = isJa ? '例: 理工学部' : 'e.g. School of Engineering';
-  const subjectLabel = isJa ? '科目区分・分野' : 'Subject / Field';
-  const subjectPlaceholder = isJa ? '例: 情報科学' : 'e.g. Computer Science';
-  const summaryLabel = isJa ? '概要・シラバス' : 'Summary / Syllabus';
-  const summaryPlaceholder = isJa ? '講義の目的や到達目標、シラバスなど' : 'Course overview, objectives, syllabus, etc.';
-  const saveLabel = isEditing
-    ? (isJa ? '保存する' : 'Save')
-    : (isJa ? '作成する' : 'Create');
-  const cancelLabel = isJa ? 'キャンセル' : 'Cancel';
+  const modalTitle = isEditing ? t('editCourseTitle') : t('createCourseTitle');
+  const previewLabel = t('designPreview');
+  const titlePlaceholder = t('courseTitlePlaceholder');
+  const colorLabel = t('courseColorLabel');
+  const iconLabel = t('courseIconLabel');
+  const customColorTitle = t('customColorSelect');
+  const yearLabel = t('courseYear');
+  const yearPlaceholder = t('courseYearPlaceholder');
+  const termLabel = t('courseTerm');
+  const termPlaceholder = t('courseTermPlaceholder');
+  const moreInfoLabel = t('moreInfoOptional');
+  const codeLabel = t('courseCode');
+  const codePlaceholder = t('courseCodePlaceholder');
+  const profLabel = t('professor');
+  const profPlaceholder = t('profPlaceholder');
+  const schoolLabel = t('school');
+  const schoolPlaceholder = t('schoolPlaceholder');
+  const subjectLabel = t('subject');
+  const subjectPlaceholder = t('subjectPlaceholder');
+  const summaryLabel = t('summary');
+  const summaryPlaceholder = t('summaryPlaceholder');
+  const saveLabel = isEditing ? t('saveCourseButton') : t('createCourseButton');
+  const cancelLabel = t('cancel');
 
   const isCustomColor = !COURSE_PRESET_COLORS.includes(color);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setErrorMsg(isJa ? 'コース名を入力してください' : 'Please enter a course title');
+      setErrorMsg(t('courseTitleRequiredError'));
       titleInputRef.current?.focus();
       return;
     }
@@ -216,7 +211,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
       onCourseSaved?.(result);
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to save course');
+      setErrorMsg(err instanceof Error ? err.message : t('failedToSaveCourse'));
     } finally {
       setSaving(false);
     }
@@ -344,7 +339,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
               const firstIcon = cat.iconNames[0];
               return (
                 <button
-                  key={cat.titleEn}
+                  key={cat.categoryKey}
                   type="button"
                   role="tab"
                   aria-selected={isCatActive}
@@ -365,7 +360,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
                     size={16}
                     className="course-category-icon-glyph"
                   />
-                  <span>{isJa ? cat.titleJa : cat.titleEn}</span>
+                  <span>{t(cat.categoryKey)}</span>
                 </button>
               );
             })}
@@ -592,7 +587,7 @@ export const CourseEditModal: React.FC<CourseEditModalProps> = ({
             {saving ? (
               <>
                 <Loader2 size={16} className="course-btn-spinner" />
-                <span>{isJa ? '保存中…' : 'Saving…'}</span>
+                <span>{t('saving')}</span>
               </>
             ) : (
               saveLabel

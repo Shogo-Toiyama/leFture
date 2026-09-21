@@ -106,8 +106,7 @@ export const CustomColorPickerDialog: React.FC<CustomColorPickerDialogProps> = (
   onClose,
   onSelectColor,
 }) => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
 
   const initialHsl = hexToHsl(initialColor);
   const [hue, setHue] = useState(initialHsl.h);
@@ -134,12 +133,12 @@ export const CustomColorPickerDialog: React.FC<CustomColorPickerDialogProps> = (
     }
   };
 
-  const titleText = isJa ? 'カスタムカラー' : 'Custom Color';
-  const hueLabel = isJa ? '色相 (Hue)' : 'Hue';
-  const lightnessLabel = isJa ? '明るさ (Lightness)' : 'Lightness';
-  const hexLabel = isJa ? 'カラーコード' : 'Hex Code';
-  const cancelText = isJa ? 'キャンセル' : 'Cancel';
-  const okText = isJa ? '決定' : 'OK';
+  const titleText = t('customColorTitle');
+  const hueLabel = t('customColorHue');
+  const lightnessLabel = t('customColorLightness');
+  const hexLabel = t('customColorHex');
+  const cancelText = t('cancel');
+  const okText = t('ok');
 
   const lightnessGradientLow = hslToHex(hue, 0.8, 0.4);
   const lightnessGradientMid = hslToHex(hue, 0.8, 0.7);

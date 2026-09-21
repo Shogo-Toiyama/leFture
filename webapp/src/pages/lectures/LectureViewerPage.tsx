@@ -44,7 +44,7 @@ export const LectureViewerPage: React.FC = () => {
   const navigate = useNavigate();
   const blockedReason = (location.state as { analysisBlockedReason?: string } | null)?.analysisBlockedReason;
 
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { lecture, job, tasks, loading, error, refetch } = useProcessingStatus(lectureId);
   const { course } = useCourse(lecture?.course_id);
   const { topics } = useLectureTopics(lectureId);
@@ -83,7 +83,7 @@ export const LectureViewerPage: React.FC = () => {
       await startAnalysis(lectureId, force);
       await refetch();
     } catch (err) {
-      setStartError(err instanceof InsufficientCreditsError ? err.message : 'Failed to start analysis.');
+      setStartError(err instanceof InsufficientCreditsError ? err.message : t('failedToStartAnalysis'));
     } finally {
       setStarting(false);
     }
@@ -128,7 +128,7 @@ export const LectureViewerPage: React.FC = () => {
       {/* 1. Full Viewport Hero View */}
       <LectureHeroView
         course={course}
-        lectureTitle={lectureDisplayTitle(lecture)}
+        lectureTitle={lectureDisplayTitle(lecture, t('lectureUntitled'))}
         lectureDatetime={lecture.lecture_datetime}
         topics={topics}
         summary={lecture.summary}
@@ -209,7 +209,7 @@ export const LectureViewerPage: React.FC = () => {
                 <span className="material-symbols-outlined chip-icon-glyph">
                   {isAnnouncementsLocked ? 'lock' : 'campaign'}
                 </span>
-                <span>{language === 'ja' ? 'お知らせ' : 'Announcements'}</span>
+                <span>{t('announcements')}</span>
                 {!isAnnouncementsLocked && <span className="chip-count-badge">{announcements.length}</span>}
               </button>
 
@@ -230,7 +230,7 @@ export const LectureViewerPage: React.FC = () => {
                 <span className="material-symbols-outlined chip-icon-glyph">
                   {isKeywordsLocked ? 'lock' : 'vpn_key'}
                 </span>
-                <span>{language === 'ja' ? 'キーワード' : 'Keywords'}</span>
+                <span>{t('keywordsTitle')}</span>
                 {!isKeywordsLocked && <span className="chip-count-badge">{keywords.length}</span>}
               </button>
 
@@ -241,7 +241,7 @@ export const LectureViewerPage: React.FC = () => {
                 onClick={() => setActiveModal('topics')}
               >
                 <span className="material-symbols-outlined chip-icon-glyph">hub</span>
-                <span>{language === 'ja' ? 'トピック' : 'Topics'}</span>
+                <span>{t('topicsTitle')}</span>
                 <span className="chip-count-badge">{topics.length}</span>
               </button>
             </div>
@@ -414,7 +414,7 @@ const ViewerFunFactCard: React.FC<ViewerFunFactCardProps> = ({
   formatSourceHost,
   onReactionChange,
 }) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [sourcesOpen, setSourcesOpen] = useState(false);
 
   const cleanHook = stripFunFactCitations(fact.hook);
@@ -447,7 +447,7 @@ const ViewerFunFactCard: React.FC<ViewerFunFactCardProps> = ({
               aria-expanded={sourcesOpen}
             >
               <span className="material-symbols-outlined sources-toggle-icon">link</span>
-              <span>{language === 'ja' ? 'ソース' : 'Sources'}</span>
+              <span>{t('sources')}</span>
               <span className="sources-toggle-count">({sources.length})</span>
               <span className="material-symbols-outlined sources-toggle-chevron">
                 {sourcesOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}

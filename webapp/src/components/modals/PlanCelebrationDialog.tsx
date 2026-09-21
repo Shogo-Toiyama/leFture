@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { tierAccent, planIconAsset } from '../../lib/planTheme';
 import type { PlanOption } from '../../types/billing';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 /**
  * アップグレード(または初回購入)成立時に表示するお祝いダイアログ。
@@ -123,9 +124,9 @@ function drawParticle(ctx: CanvasRenderingContext2D, p: Particle, originX: numbe
 
 export const PlanCelebrationDialog: React.FC<{
   plan: PlanOption;
-  isJa: boolean;
   onClose: () => void;
-}> = ({ plan, isJa, onClose }) => {
+}> = ({ plan, onClose }) => {
+  const { t } = useLanguage();
   const { accent } = tierAccent(plan.tier_level);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -188,15 +189,13 @@ export const PlanCelebrationDialog: React.FC<{
           <img src={planIconAsset(plan.tier_level)} alt="" />
         </div>
         <h2 className="plan-celebration-title">
-          {isJa ? `${plan.name}へようこそ!` : `Welcome to ${plan.name}!`}
+          {t('celebrationWelcome', { plan: plan.name })}
         </h2>
         <p className="plan-celebration-message">
-          {isJa
-            ? '新しいプランはもう有効になっています。クレジットはまもなく反映されます。'
-            : 'Your new plan is active now, and your credits are on their way.'}
+          {t('celebrationMessage')}
         </p>
         <button type="button" className="plan-celebration-btn" onClick={onClose}>
-          {isJa ? 'はじめよう!' : "Let's go!"}
+          {t('celebrationLetsGo')}
         </button>
       </div>
     </div>

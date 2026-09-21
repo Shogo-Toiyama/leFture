@@ -17,9 +17,9 @@ export const KeywordsModal: React.FC<KeywordsModalProps> = ({
   onClose,
   onKeywordUpdated,
 }) => {
-  const { language } = useLanguage();
-  const title = language === 'ja' ? 'キーワード' : 'Keywords';
-  const emptyText = language === 'ja' ? 'まだ何もありません' : 'Nothing here yet';
+  const { t } = useLanguage();
+  const title = t('keywordsTitle');
+  const emptyText = t('keywordsEmpty');
 
   // State for inline editing
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -133,14 +133,14 @@ export const KeywordsModal: React.FC<KeywordsModalProps> = ({
                             className="auth-input keyword-edit-input"
                             value={editWord}
                             onChange={(e) => setEditWord(e.target.value)}
-                            placeholder={language === 'ja' ? '単語・用語' : 'Keyword'}
+                            placeholder={t('keywordPlaceholder')}
                             autoFocus
                           />
                           <textarea
                             className="auth-input keyword-edit-textarea"
                             value={editDef}
                             onChange={(e) => setEditDef(e.target.value)}
-                            placeholder={language === 'ja' ? '説明・定義' : 'Definition'}
+                            placeholder={t('definitionPlaceholder')}
                             rows={3}
                           />
                           <div className="keyword-edit-actions">
@@ -150,7 +150,7 @@ export const KeywordsModal: React.FC<KeywordsModalProps> = ({
                               onClick={handleCancelEdit}
                               disabled={saving}
                             >
-                              {language === 'ja' ? 'キャンセル' : 'Cancel'}
+                              {t('cancel')}
                             </button>
                             <button
                               type="button"
@@ -158,9 +158,7 @@ export const KeywordsModal: React.FC<KeywordsModalProps> = ({
                               onClick={() => handleSaveEdit(k)}
                               disabled={saving || !editWord.trim()}
                             >
-                              {saving
-                                ? (language === 'ja' ? '保存中…' : 'Saving…')
-                                : (language === 'ja' ? '保存' : 'Save')}
+                              {saving ? t('saving') : t('save')}
                             </button>
                           </div>
                         </div>
@@ -170,7 +168,7 @@ export const KeywordsModal: React.FC<KeywordsModalProps> = ({
                     return (
                       <div key={k.id} className="keyword-item-card">
                         <div className="keyword-item-main-row">
-                          <h4 className="keyword-item-word">{k.keyword || 'Untitled Term'}</h4>
+                          <h4 className="keyword-item-word">{k.keyword || t('untitledTerm')}</h4>
                           <div className="keyword-item-actions">
                             <button
                               type="button"

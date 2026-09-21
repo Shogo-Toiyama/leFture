@@ -40,12 +40,9 @@ function groupCourses(
   courses: Course[],
   yearNames: Map<string, string>,
   termNames: Map<string, string>,
-  language: string
+  noYearLabel: string,
+  noTermLabel: string
 ): YearGroup[] {
-  // 英語表記を Flutter 版と一致（"No Year" / "No Term"）
-  const noYearLabel = language === 'ja' ? '年度未設定' : 'No Year';
-  const noTermLabel = language === 'ja' ? '学期未設定' : 'No Term';
-
   const years = new Map<string, Map<string, Course[]>>();
 
   for (const course of courses) {
@@ -71,7 +68,7 @@ function groupCourses(
 }
 
 export const CourseListPage: React.FC = () => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { courses, loading, error, refetch } = useCourses();
   const years = useCourseAttributes('year');
@@ -85,19 +82,19 @@ export const CourseListPage: React.FC = () => {
 
   const yearNames = useMemo(() => new Map(years.map((a) => [a.id, a.attribute_name])), [years]);
   const termNames = useMemo(() => new Map(terms.map((a) => [a.id, a.attribute_name])), [terms]);
-  const groups = useMemo(() => groupCourses(courses, yearNames, termNames, language), [courses, yearNames, termNames, language]);
+  const noYearLabel = t('noYearLabel');
+  const noTermLabel = t('noTermLabel');
+  const groups = useMemo(
+    () => groupCourses(courses, yearNames, termNames, noYearLabel, noTermLabel),
+    [courses, yearNames, termNames, noYearLabel, noTermLabel]
+  );
 
-  const pageTitle = language === 'ja' ? 'コース一覧' : 'Courses';
-  const newCourseLabel = language === 'ja' ? '新規コース' : 'New Course';
-  const newCourseButtonText = language === 'ja' ? '+ 新規コース' : '+ New Course';
-  const emptyTitle = language === 'ja' ? 'コースがまだありません' : 'No courses yet';
-  const emptySubtitle = language === 'ja'
-    ? 'コースを作成して、最初の講義録音をアップロードしましょう。'
-    : 'Create a course, then upload your first lecture recording.';
-  const deleteConfirmMessage = (title: string) =>
-    language === 'ja'
-      ? `コース「${title}」を削除しますか？講義は保持されますがコースは非表示になります。`
-      : `Delete course "${title}"? Its lectures stay in your account but the course will be hidden.`;
+  const pageTitle = t('courseListPageTitle');
+  const newCourseLabel = t('newCourseLabel');
+  const newCourseButtonText = t('newCourseButtonText');
+  const emptyTitle = t('noCoursesYetTitle');
+  const emptySubtitle = t('noCoursesYetSubtitle');
+  const deleteConfirmMessage = (title: string) => t('deleteCourseConfirm', { title });
 
   // ドロップダウンメニュー外クリック・Escキーでクローズ
   useEffect(() => {
@@ -139,7 +136,7 @@ export const CourseListPage: React.FC = () => {
       await softDeleteCourse(course.id);
       await refetch();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete course');
+      alert(err instanceof Error ? err.message : t('failedToDeleteCourse'));
     }
   };
 
@@ -316,7 +313,7 @@ export const CourseListPage: React.FC = () => {
                                           }}
                                         >
                                           <Pencil size={15} />
-                                          <span>{language === 'ja' ? '編集' : 'Edit'}</span>
+                                          <span>{t('edit')}</span>
                                         </button>
                                         <button
                                           type="button"
@@ -327,7 +324,7 @@ export const CourseListPage: React.FC = () => {
                                           }}
                                         >
                                           <Trash2 size={15} />
-                                          <span>{language === 'ja' ? '削除' : 'Delete'}</span>
+                                          <span>{t('delete')}</span>
                                         </button>
                                       </div>
                                     )}

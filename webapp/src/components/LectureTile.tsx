@@ -24,16 +24,16 @@ export const LectureTile: React.FC<LectureTileProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { language } = useLanguage();
+  const { t, locale } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const firstTopicImagePath = useFirstTopicImagePath(lecture.id);
   const targetUrl = to || `/lectures/${lecture.id}`;
   const accent = courseColor || '#FFB300';
-  const title = lectureDisplayTitle(lecture);
+  const title = lectureDisplayTitle(lecture, t('lectureUntitled'));
 
   const formattedDate = new Date(lecture.lecture_datetime).toLocaleDateString(
-    language === 'ja' ? 'ja-JP' : 'en-US',
+    locale,
     {
       year: 'numeric',
       month: 'short',
@@ -128,7 +128,7 @@ export const LectureTile: React.FC<LectureTileProps> = ({
                   }}
                 >
                   <Pencil size={15} />
-                  <span>{language === 'ja' ? '編集' : 'Edit'}</span>
+                  <span>{t('edit')}</span>
                 </button>
               )}
               {onDelete && (
@@ -143,7 +143,7 @@ export const LectureTile: React.FC<LectureTileProps> = ({
                   }}
                 >
                   <Trash2 size={15} />
-                  <span>{language === 'ja' ? '削除' : 'Delete'}</span>
+                  <span>{t('delete')}</span>
                 </button>
               )}
             </div>

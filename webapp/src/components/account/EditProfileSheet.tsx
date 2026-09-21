@@ -18,8 +18,7 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
   profile,
   onUpdated,
 }) => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
 
   const initialBio = profile?.bio ?? '';
   const initialInterests = profile?.interests ?? '';
@@ -77,7 +76,7 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
       await onUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
+      setError(err instanceof Error ? err.message : t('failedToUpdateProfile'));
     } finally {
       setSaving(false);
     }
@@ -88,24 +87,24 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
       <AdaptiveSheet
         open={open}
         onClose={handleRequestClose}
-        title={isJa ? 'プロフィールを編集' : 'Edit Profile'}
-        subtitle={isJa ? 'プロフィール情報と学習の目標を設定' : 'Personalize your profile details and learning goals'}
+        title={t('editProfileTitle')}
+        subtitle={t('editProfileSubtitle')}
       >
         <form className="edit-profile-sheet-form" onSubmit={handleSubmit}>
           {error && <p className="auth-error">{error}</p>}
 
           <div className="sheet-form-field">
             <label htmlFor="sheet-bio" className="sheet-field-label">
-              {isJa ? '自己紹介' : 'About you'}
+              {t('aboutYou')}
             </label>
             <p className="sheet-field-hint">
-              {isJa ? 'あなた自身や学んでいることについての簡単な紹介' : 'A brief description of yourself and what you study'}
+              {t('aboutYouSubtitle')}
             </p>
             <textarea
               id="sheet-bio"
               className="sheet-textarea"
               rows={3}
-              placeholder={isJa ? '例: AIや宇宙物理学に興味がある情報科学専攻の学生' : 'e.g. Computer Science student interested in AI and astronomy'}
+              placeholder={t('aboutYouPlaceholder')}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
             />
@@ -113,16 +112,16 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
 
           <div className="sheet-form-field">
             <label htmlFor="sheet-interests" className="sheet-field-label">
-              {isJa ? '興味・関心' : 'Interests'}
+              {t('interests')}
             </label>
             <p className="sheet-field-hint">
-              {isJa ? '興味のあるテーマや研究分野など' : 'Topics, subjects, and hobbies you enjoy'}
+              {t('interestsSubtitle')}
             </p>
             <textarea
               id="sheet-interests"
               className="sheet-textarea"
               rows={3}
-              placeholder={isJa ? '例: 宇宙天文学、機械学習、UIデザイン' : 'e.g. Astrophysics, Machine Learning, UI Design'}
+              placeholder={t('interestsPlaceholder')}
               value={interests}
               onChange={(e) => setInterests(e.target.value)}
             />
@@ -130,16 +129,16 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
 
           <div className="sheet-form-field">
             <label htmlFor="sheet-goals" className="sheet-field-label">
-              {isJa ? '将来の夢・目標' : 'Future goals'}
+              {t('futureGoals')}
             </label>
             <p className="sheet-field-hint">
-              {isJa ? '学習を通じて達成したい目標や将来像' : 'What you aim to achieve with your learning'}
+              {t('futureGoalsSubtitle')}
             </p>
             <textarea
               id="sheet-goals"
               className="sheet-textarea"
               rows={3}
-              placeholder={isJa ? '例: 系外惑星の研究に携わる、AIスタートアップを立ち上げる' : 'e.g. Conduct research in exoplanets, launch an AI startup'}
+              placeholder={t('futureGoalsPlaceholder')}
               value={futureGoals}
               onChange={(e) => setFutureGoals(e.target.value)}
             />
@@ -150,9 +149,9 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
               type="submit"
               className="btn btn-primary"
               disabled={!isDirty || saving}
-              title={!isDirty ? (isJa ? '変更はありません' : 'No changes made yet') : undefined}
+              title={!isDirty ? t('noChangesYet') : undefined}
             >
-              {saving ? (isJa ? '保存中…' : 'Saving…') : (isJa ? '変更を保存' : 'Save Changes')}
+              {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
         </form>
@@ -162,10 +161,10 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
         open={showDiscardConfirm}
         onClose={() => setShowDiscardConfirm(false)}
         onConfirm={handleForceDiscard}
-        title={isJa ? '変更を破棄しますか？' : 'Discard unsaved changes?'}
-        message={isJa ? '保存されていない変更があります。破棄して閉じますか？' : 'You have unsaved changes in your profile. Are you sure you want to discard your edits and close?'}
-        confirmLabel={isJa ? '破棄する' : 'Discard Changes'}
-        cancelLabel={isJa ? '編集を続ける' : 'Keep Editing'}
+        title={t('discardChangesTitle')}
+        message={t('discardChangesMessage')}
+        confirmLabel={t('discardChangesButton')}
+        cancelLabel={t('keepEditingButton')}
         isDanger={true}
       />
     </>

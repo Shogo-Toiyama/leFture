@@ -26,7 +26,7 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
   resolvedAttributes,
   onClose,
 }) => {
-  const { language } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const existingYears = useCourseAttributes('year');
   const existingTerms = useCourseAttributes('term');
@@ -57,13 +57,13 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
     (course.subject_id ? existingSubjects.find((s) => s.id === course.subject_id)?.attribute_name : undefined);
 
   const title = course.course_title;
-  const codeLabel = language === 'ja' ? 'コード' : 'Course Code';
-  const professorLabel = language === 'ja' ? '教授' : 'Professor';
-  const schoolLabel = language === 'ja' ? '学校' : 'School';
-  const subjectLabel = language === 'ja' ? '科目' : 'Subject';
-  const termLabel = language === 'ja' ? '学期・年度' : 'Term & Year';
-  const createdLabel = language === 'ja' ? '作成日' : 'Created';
-  const summaryLabel = language === 'ja' ? '概要' : 'Summary';
+  const codeLabel = t('courseCode');
+  const professorLabel = t('professor');
+  const schoolLabel = t('school');
+  const subjectLabel = t('subject');
+  const termLabel = t('termAndYear');
+  const createdLabel = t('created');
+  const summaryLabel = t('summary');
 
   const rows: { icon: LucideIcon; label: string; value: string }[] = [];
 
@@ -96,7 +96,7 @@ export const CourseDetailsModal: React.FC<CourseDetailsModalProps> = ({
   // 6. 作成日 (Icons.schedule)
   if (course.created_at) {
     const formattedDate = new Date(course.created_at).toLocaleDateString(
-      language === 'ja' ? 'ja-JP' : 'en-US',
+      locale,
       {
         year: 'numeric',
         month: 'short',

@@ -5,6 +5,7 @@ import type { LectureTopic } from '../../types/content';
 import type { Course } from '../../types/course';
 import { TopicImage } from '../TopicImage';
 import { CreditStarIcon } from '../icons/CreditStarIcon';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface LectureHeroViewProps {
   course: Course | null;
@@ -27,18 +28,19 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
   onEdit,
   onCreditsChipClick,
 }) => {
-  const heroTopics = topics.filter((t) => t.image_path).slice(0, 6);
+  const { t, locale } = useLanguage();
+  const heroTopics = topics.filter((topic) => topic.image_path).slice(0, 6);
   const courseColor = (course?.metadata?.color as string) || '#FFB300';
-  const courseTitle = course?.course_title || 'Course';
+  const courseTitle = course?.course_title || t('untitledCourse');
 
-  const formattedDate = new Date(lectureDatetime).toLocaleDateString(undefined, {
+  const formattedDate = new Date(lectureDatetime).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     weekday: 'short',
   });
 
-  const formattedTime = new Date(lectureDatetime).toLocaleTimeString(undefined, {
+  const formattedTime = new Date(lectureDatetime).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
   });

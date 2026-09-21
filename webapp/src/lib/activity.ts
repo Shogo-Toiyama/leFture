@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { apiFetch } from './api';
 import { stripFunFactCitations } from './content';
+import type { Translate } from '../i18n/LanguageContext';
 
 export type ActivityType = 'saved' | 'likes' | 'dislikes' | 'announcements' | 'trash';
 
@@ -41,9 +42,11 @@ export function plainTextPreview(text: string | null | undefined, maxLength = 14
 }
 
 /**
- * Fetch all activity items from Supabase for the given activity type
+ * Fetch all activity items from Supabase for the given activity type.
+ * tはこのファイルがReactコンポーネント外のplain関数のため、呼び出し元
+ * (useLanguage()を持つコンポーネント)から渡してもらう必要がある。
  */
-export async function fetchActivityRecords(type: ActivityType): Promise<ActivityRecord[]> {
+export async function fetchActivityRecords(type: ActivityType, t: Translate): Promise<ActivityRecord[]> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData?.user?.id;
   if (!uid) return [];
@@ -90,7 +93,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
             list.push({
               id: c.id,
               type: 'reviewCard',
-              title: c.title || 'Review Card',
+              title: c.title || t('activityReviewCardFallbackTitle'),
               content: plainTextPreview(snippet),
               dateTime: c.updated_at || c.created_at || new Date().toISOString(),
               lectureId: c.lecture_id,
@@ -122,7 +125,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
               (t) => t.lecture_id === n.lecture_id && t.index === n.topic_number
             );
             const title =
-              topic?.topic_title?.trim() || `Deep Note (Topic ${n.topic_number ?? 1})`;
+              topic?.topic_title?.trim() || t('activityDeepNoteFallbackTitle', { n: n.topic_number ?? 1 });
             list.push({
               id: n.id,
               type: 'deepNote',
@@ -152,7 +155,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
             list.push({
               id: k.id,
               type: 'keyword',
-              title: k.keyword?.trim() || 'Keyword',
+              title: k.keyword?.trim() || t('badgeKeyword'),
               content: plainTextPreview(k.definition),
               dateTime: k.updated_at || k.created_at || new Date().toISOString(),
               lectureId: k.lecture_id,
@@ -192,7 +195,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
             list.push({
               id: c.id,
               type: 'reviewCard',
-              title: c.title || 'Review Card',
+              title: c.title || t('activityReviewCardFallbackTitle'),
               content: plainTextPreview(snippet),
               dateTime: c.updated_at || c.created_at || new Date().toISOString(),
               lectureId: c.lecture_id,
@@ -224,7 +227,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
               (t) => t.lecture_id === n.lecture_id && t.index === n.topic_number
             );
             const title =
-              topic?.topic_title?.trim() || `Deep Note (Topic ${n.topic_number ?? 1})`;
+              topic?.topic_title?.trim() || t('activityDeepNoteFallbackTitle', { n: n.topic_number ?? 1 });
             list.push({
               id: n.id,
               type: 'deepNote',
@@ -255,7 +258,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
             list.push({
               id: f.id,
               type: 'funFact',
-              title: f.title || 'Fun Fact',
+              title: f.title || t('badgeFunFact'),
               content: plainTextPreview(f.hook || f.body),
               dateTime: f.updated_at || f.created_at || new Date().toISOString(),
               lectureId: f.lecture_id,
@@ -281,7 +284,7 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
           list.push({
             id: a.id,
             type: 'announcement',
-            title: a.title || 'Announcement',
+            title: a.title || t('announcementDefaultTitle'),
             content: plainTextPreview(a.description || ''),
             dateTime: a.created_at || new Date().toISOString(),
             lectureId: a.lecture_id,
@@ -309,8 +312,8 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
           list.push({
             id: c.id,
             type: 'course',
-            title: c.title || c.course_code || 'Untitled Course',
-            content: c.course_code || 'Course',
+            title: c.title || c.course_code || t('untitledCourse'),
+            content: c.course_code || t('lectureCourse'),
             dateTime: c.deleted_at || c.updated_at || new Date().toISOString(),
             courseId: c.id,
           });
@@ -327,12 +330,12 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
 
       if (lectures) {
         for (const l of lectures) {
-          const displayTitle = l.title?.trim() || l.title_generated?.trim() || 'Untitled Lecture';
+          const displayTitle = l.title?.trim() || l.title_generated?.trim() || t('lectureUntitled');
           list.push({
             id: l.id,
             type: 'lecture',
             title: displayTitle,
-            content: 'Lecture',
+            content: t('activityTypeLecture'),
             dateTime: l.deleted_at || l.updated_at || new Date().toISOString(),
             lectureId: l.id,
             courseId: l.course_id,
@@ -353,8 +356,8 @@ export async function fetchActivityRecords(type: ActivityType): Promise<Activity
           list.push({
             id: a.id,
             type: 'announcement',
-            title: a.title || 'Announcement',
-            content: plainTextPreview(a.description || 'Announcement'),
+            title: a.title || t('announcementDefaultTitle'),
+            content: plainTextPreview(a.description || t('announcementDefaultTitle')),
             dateTime: a.deleted_at || a.updated_at || new Date().toISOString(),
             lectureId: a.lecture_id,
             courseId: lectureCourseMap[a.lecture_id],

@@ -3,7 +3,7 @@ import React from 'react';
 export const PurchaseCreditsSkeleton: React.FC = () => {
   return (
     <div className="purchase-credits-grid" aria-busy="true" aria-live="polite">
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="purchase-credit-card" style={{ pointerEvents: 'none' }}>
           <div className="purchase-credit-card-illustration">
             <span className="skeleton" style={{ width: '100%', height: '100%', borderRadius: 14 }} />

@@ -20,8 +20,7 @@ import { useLanguage } from '../../i18n/LanguageContext';
 export const TopicMapPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { language, t } = useLanguage();
-  const isJa = language === 'ja';
+  const { t } = useLanguage();
 
   const { map, isStale, loading, error } = useTopicMap(courseId);
   const { course } = useCourse(courseId);
@@ -111,10 +110,10 @@ export const TopicMapPage: React.FC = () => {
       return ghost?.name ?? null;
     }
     if (selection.type === 'lecture') {
-      return isJa ? `講義 ${selection.id}` : `Lecture ${selection.id}`;
+      return t('topicMapLectureLabel', { num: String(selection.id) });
     }
     return map.clusters.find((c) => c.cluster_id === selection.id)?.name ?? null;
-  }, [map, selection, isJa]);
+  }, [map, selection, t]);
 
   // ノード/レクチャー選択が変わるたびに、詳細シートの中身を解決する
   // (lecture_topic_detail_panel.dart の _loadPanelData 相当)。
@@ -141,7 +140,7 @@ export const TopicMapPage: React.FC = () => {
           courseTitle: course?.course_title ?? '',
           lectureNum,
           topicNum: null,
-          title: lectureDisplayTitle(lecture),
+          title: lectureDisplayTitle(lecture, t('lectureUntitled')),
           summary: lecture.summary ? stripSidCitations(lecture.summary) : null,
           clusterName: null,
           relatedTopics: [],
@@ -271,7 +270,7 @@ export const TopicMapPage: React.FC = () => {
       ? t('topicMapModeTopic')
       : t('topicMapModeCluster');
 
-  const courseTitle = course?.course_title || (isJa ? 'コース' : 'Course');
+  const courseTitle = course?.course_title || t('course');
 
   return (
     <div className="tm-page">
@@ -282,7 +281,7 @@ export const TopicMapPage: React.FC = () => {
               to={`/courses/${courseId}`}
               className="tm-back-btn"
               title={courseTitle}
-              aria-label={isJa ? `${courseTitle}へ戻る` : `Back to ${courseTitle}`}
+              aria-label={t('backToCourse', { course: courseTitle })}
             >
               ← <span className="tm-back-btn-text">{courseTitle}</span>
             </Link>
@@ -298,7 +297,7 @@ export const TopicMapPage: React.FC = () => {
               {isStale && (
                 <button type="button" className="tm-rebuild-btn" onClick={rebuild} disabled={rebuilding}>
                   <RefreshCw size={14} className={rebuilding ? 'animate-spin' : ''} />
-                  <span className="tm-rebuild-label">{rebuilding ? (isJa ? '再構築中…' : 'Rebuilding…') : isJa ? 'マップを再構築' : 'Rebuild map'}</span>
+                  <span className="tm-rebuild-label">{rebuilding ? t('topicMapRebuilding') : t('topicMapRebuild')}</span>
                 </button>
               )}
               <button type="button" className="tm-zoom-btn" onClick={() => canvasRef.current?.zoomBy(1.15)} aria-label="Zoom in">
@@ -343,7 +342,7 @@ export const TopicMapPage: React.FC = () => {
           onClearSelection={handleClearSelection}
         />
 
-        {isStale && <p className="notice tm-stale-notice">{isJa ? 'このマップは最新でない可能性があります。' : 'This map may be out of date — lectures changed since it was last built.'}</p>}
+        {isStale && <p className="notice tm-stale-notice">{t('topicMapStaleNotice')}</p>}
 
         <TopicMapDetailSheet data={panelData} onClose={handleCloseSheet} onGoToLecture={handleGoToLecture} />
       </div>

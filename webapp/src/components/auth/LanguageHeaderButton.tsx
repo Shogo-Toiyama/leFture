@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
+const LANGUAGE_OPTIONS = [
+  { code: 'en' as const, label: 'English' },
+  { code: 'ja' as const, label: '日本語' },
+];
+
 export const LanguageHeaderButton: React.FC = () => {
   const { language, setLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -45,28 +50,20 @@ export const LanguageHeaderButton: React.FC = () => {
 
       {open && (
         <div className="language-dropdown-menu">
-          <button
-            type="button"
-            className={`language-option ${language === 'en' ? 'is-active' : ''}`}
-            onClick={() => {
-              setLanguage('en');
-              setOpen(false);
-            }}
-          >
-            <span>English</span>
-            {language === 'en' && <span className="lang-check">✓</span>}
-          </button>
-          <button
-            type="button"
-            className={`language-option ${language === 'ja' ? 'is-active' : ''}`}
-            onClick={() => {
-              setLanguage('ja');
-              setOpen(false);
-            }}
-          >
-            <span>日本語</span>
-            {language === 'ja' && <span className="lang-check">✓</span>}
-          </button>
+          {LANGUAGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.code}
+              type="button"
+              className={`language-option ${language === opt.code ? 'is-active' : ''}`}
+              onClick={() => {
+                setLanguage(opt.code);
+                setOpen(false);
+              }}
+            >
+              <span>{opt.label}</span>
+              {language === opt.code && <span className="lang-check">✓</span>}
+            </button>
+          ))}
         </div>
       )}
     </div>

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { ConfirmModal } from '../../components/modals/ConfirmModal';
 import { useLanguage } from '../../i18n/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 import {
   fetchActivityRecords,
   toggleSaveRecord,
@@ -45,70 +46,70 @@ interface ActivityMeta {
   filters: { label: string; value: string }[];
 }
 
-const getActivityMeta = (type: string, isJa: boolean): ActivityMeta => {
+const getActivityMeta = (type: string, t: (k: TranslationKey) => string): ActivityMeta => {
   const map: Record<string, ActivityMeta> = {
     saved: {
-      title: isJa ? '保存済み' : 'Saved',
-      subtitle: isJa ? '復習カード · 詳細ノート · キーワード' : 'Review Cards · Deep Notes · Keywords',
+      title: t('activitySavedTitle'),
+      subtitle: t('activitySavedSubtitle'),
       icon: <Bookmark size={22} />,
       iconColor: 'var(--star-gold, #fbc02d)',
       iconBg: 'rgba(251, 192, 45, 0.15)',
       filters: [
-        { label: isJa ? 'すべて' : 'All', value: 'all' },
-        { label: isJa ? '復習カード' : 'Review Cards', value: 'reviewCard' },
-        { label: isJa ? '詳細ノート' : 'Deep Notes', value: 'deepNote' },
-        { label: isJa ? 'キーワード' : 'Keywords', value: 'keyword' },
+        { label: t('filterAll'), value: 'all' },
+        { label: t('filterReviewCard'), value: 'reviewCard' },
+        { label: t('filterDeepNote'), value: 'deepNote' },
+        { label: t('filterKeyword'), value: 'keyword' },
       ],
     },
     likes: {
-      title: isJa ? '高評価' : 'Likes',
-      subtitle: isJa ? '復習カード · 詳細ノート · 豆知識' : 'Review Cards · Deep Notes · Fun Facts',
+      title: t('activityLikesTitle'),
+      subtitle: t('activityLikesSubtitle'),
       icon: <Heart size={22} />,
       iconColor: 'var(--correction-red, #ff5252)',
       iconBg: 'rgba(229, 57, 53, 0.15)',
       filters: [
-        { label: isJa ? 'すべて' : 'All', value: 'all' },
-        { label: isJa ? '復習カード' : 'Review Cards', value: 'reviewCard' },
-        { label: isJa ? '詳細ノート' : 'Deep Notes', value: 'deepNote' },
-        { label: isJa ? '豆知識' : 'Fun Facts', value: 'funFact' },
+        { label: t('filterAll'), value: 'all' },
+        { label: t('filterReviewCard'), value: 'reviewCard' },
+        { label: t('filterDeepNote'), value: 'deepNote' },
+        { label: t('filterFunFact'), value: 'funFact' },
       ],
     },
     dislikes: {
-      title: isJa ? '低評価' : 'Dislikes',
-      subtitle: isJa ? '復習カード · 詳細ノート · 豆知識' : 'Review Cards · Deep Notes · Fun Facts',
+      title: t('activityDislikesTitle'),
+      subtitle: t('activityDislikesSubtitle'),
       icon: <ThumbsDown size={22} />,
       iconColor: '#2196f3',
       iconBg: 'rgba(33, 150, 243, 0.15)',
       filters: [
-        { label: isJa ? 'すべて' : 'All', value: 'all' },
-        { label: isJa ? '復習カード' : 'Review Cards', value: 'reviewCard' },
-        { label: isJa ? '詳細ノート' : 'Deep Notes', value: 'deepNote' },
-        { label: isJa ? '豆知識' : 'Fun Facts', value: 'funFact' },
+        { label: t('filterAll'), value: 'all' },
+        { label: t('filterReviewCard'), value: 'reviewCard' },
+        { label: t('filterDeepNote'), value: 'deepNote' },
+        { label: t('filterFunFact'), value: 'funFact' },
       ],
     },
     announcements: {
-      title: isJa ? 'お知らせ' : 'Announcements',
-      subtitle: isJa ? '完了した項目を含む' : 'Including completed items',
+      title: t('activityAnnouncementsTitle'),
+      subtitle: t('activityAnnouncementsSubtitle'),
       icon: <Megaphone size={22} />,
       iconColor: '#ba68c8',
       iconBg: 'rgba(186, 104, 200, 0.15)',
       filters: [
-        { label: isJa ? 'すべて' : 'All', value: 'all' },
-        { label: isJa ? '未完了' : 'Active', value: 'active' },
-        { label: isJa ? '完了済み' : 'Completed', value: 'completed' },
+        { label: t('filterAll'), value: 'all' },
+        { label: t('filterActive'), value: 'active' },
+        { label: t('filterCompleted'), value: 'completed' },
       ],
     },
     trash: {
-      title: isJa ? 'ゴミ箱' : 'Trash',
-      subtitle: isJa ? 'ゴミ箱の項目は30日後に完全に削除されます' : 'Items in trash will be permanently deleted after 30 days',
+      title: t('activityTrashTitle'),
+      subtitle: t('activityTrashSubtitle'),
       icon: <Trash2 size={22} />,
       iconColor: 'var(--correction-red, #ff5252)',
       iconBg: 'rgba(229, 57, 53, 0.15)',
       filters: [
-        { label: isJa ? 'すべて' : 'All', value: 'all' },
-        { label: isJa ? 'コース' : 'Courses', value: 'course' },
-        { label: isJa ? '講義' : 'Lectures', value: 'lecture' },
-        { label: isJa ? 'お知らせ' : 'Announcements', value: 'announcement' },
+        { label: t('filterAll'), value: 'all' },
+        { label: t('filterCourse'), value: 'course' },
+        { label: t('filterLecture'), value: 'lecture' },
+        { label: t('filterAnnouncement'), value: 'announcement' },
       ],
     },
   };
@@ -126,11 +127,10 @@ const ANNOUNCEMENT_TYPES = [
 ];
 
 export const ActivityRecordsPlaceholderPage: React.FC = () => {
-  const { language } = useLanguage();
-  const isJa = language === 'ja';
+  const { t, formatDate } = useLanguage();
   const { type = 'saved' } = useParams<{ type: string }>();
   const activityType = (VALID_TYPES.has(type) ? type : 'saved') as ActivityType;
-  const meta = useMemo(() => getActivityMeta(activityType, isJa), [activityType, isJa]);
+  const meta = useMemo(() => getActivityMeta(activityType, t), [activityType, t]);
   const navigate = useNavigate();
 
   const [rawRecords, setRawRecords] = useState<ActivityRecord[]>([]);
@@ -161,17 +161,17 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchActivityRecords(activityType);
+      const data = await fetchActivityRecords(activityType, t);
       setRawRecords(data);
       setPendingOverrides({});
       setRemovedRecordIds(new Set());
     } catch (err: unknown) {
       console.error('Failed to load activity records:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load records from cloud');
+      setError(err instanceof Error ? err.message : t('loadActivityFailed'));
     } finally {
       setLoading(false);
     }
-  }, [activityType]);
+  }, [activityType, t]);
 
   useEffect(() => {
     loadRecords();
@@ -214,20 +214,6 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
     });
   }, [mergedRecords, activityType, activeFilter, selectedAnnouncementType]);
 
-  // Format date helper
-  const formatDate = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return '';
-    }
-  };
-
   // Card click navigation
   const handleCardClick = (r: ActivityRecord) => {
     if (activityType === 'trash') return;
@@ -254,7 +240,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       setPendingOverrides(nextOverrides);
       try {
         await toggleSaveRecord(record, true);
-        showToast(isJa ? '保存済みに戻しました' : 'Item saved again');
+        showToast(t('toastItemSavedAgain'));
       } catch (err) {
         console.error(err);
       }
@@ -263,7 +249,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       setPendingOverrides(nextOverrides);
       try {
         await toggleSaveRecord(record, false);
-        showToast(isJa ? '保存済みから削除しました' : 'Item removed from saved');
+        showToast(t('toastItemRemovedFromSaved'));
       } catch (err) {
         console.error(err);
       }
@@ -276,13 +262,14 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
     const isPending = Boolean(pendingOverrides[record.id]);
     const nextOverrides = { ...pendingOverrides };
     const reaction = activityType === 'likes' ? 'like' : 'dislike';
+    const reactionLabel = reaction === 'like' ? t('reactionLike') : t('reactionDislike');
 
     if (isPending) {
       delete nextOverrides[record.id];
       setPendingOverrides(nextOverrides);
       try {
         await updateReactionRecord(record, reaction);
-        showToast(isJa ? (reaction === 'like' ? '高評価に戻しました' : '低評価に戻しました') : `Item ${reaction} restored`);
+        showToast(t('toastItemReactionRestored').replace('{reaction}', reactionLabel));
       } catch (err) {
         console.error(err);
       }
@@ -291,7 +278,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       setPendingOverrides(nextOverrides);
       try {
         await updateReactionRecord(record, null);
-        showToast(isJa ? (reaction === 'like' ? '高評価を解除しました' : '低評価を解除しました') : `Item un-${reaction}d`);
+        showToast(t('toastItemReactionRemoved').replace('{reaction}', reactionLabel));
       } catch (err) {
         console.error(err);
       }
@@ -325,7 +312,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
     setRemovedRecordIds((prev) => new Set(prev).add(record.id));
     try {
       await softDeleteAnnouncement(record.id);
-      showToast(isJa ? 'お知らせをゴミ箱に移動しました' : 'Announcement moved to trash');
+      showToast(t('toastAnnouncementMovedToTrash'));
     } catch (err) {
       console.error(err);
       setRemovedRecordIds((prev) => {
@@ -342,7 +329,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
     setRemovedRecordIds((prev) => new Set(prev).add(record.id));
     try {
       await restoreTrashRecord(record);
-      showToast(isJa ? `「${record.title}」を復元しました` : `Restored "${record.title}"`);
+      showToast(t('toastRecordRestored').replace('{title}', record.title));
     } catch (err) {
       console.error(err);
       setRemovedRecordIds((prev) => {
@@ -350,7 +337,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         next.delete(record.id);
         return next;
       });
-      showToast(isJa ? 'アイテムの復元に失敗しました' : 'Failed to restore item');
+      showToast(t('toastRecordRestoreFailed'));
     }
   };
 
@@ -364,10 +351,10 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
     try {
       await deleteTrashRecordPermanently(item);
       setRemovedRecordIds((prev) => new Set(prev).add(item.id));
-      showToast(isJa ? `「${item.title}」を完全に削除しました` : `Permanently deleted "${item.title}"`);
+      showToast(t('toastRecordPermanentlyDeleted').replace('{title}', item.title));
     } catch (err) {
       console.error(err);
-      showToast(isJa ? 'アイテムの完全削除に失敗しました' : 'Failed to permanently delete item');
+      showToast(t('toastRecordPermanentDeleteFailed'));
     } finally {
       setDeletingRecordIds((prev) => {
         const next = new Set(prev);
@@ -387,10 +374,10 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       await emptyTrashRecords(trashItems);
       setRawRecords([]);
       setPendingOverrides({});
-      showToast(isJa ? 'ゴミ箱を空にしました' : 'Trash emptied successfully');
+      showToast(t('toastTrashEmptied'));
     } catch (err) {
       console.error(err);
-      showToast(isJa ? 'ゴミ箱を空にできませんでした' : 'Failed to empty trash');
+      showToast(t('toastTrashEmptyFailed'));
     } finally {
       setLoading(false);
     }
@@ -403,28 +390,28 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         return (
           <span className="activity-type-badge">
             <BookOpen size={11} />
-            {isJa ? '復習カード' : 'Review Card'}
+            {t('badgeReviewCard')}
           </span>
         );
       case 'deepNote':
         return (
           <span className="activity-type-badge">
             <FileText size={11} />
-            {isJa ? '詳細ノート' : 'Deep Note'}
+            {t('badgeDeepNote')}
           </span>
         );
       case 'keyword':
         return (
           <span className="activity-type-badge">
             <Tag size={11} />
-            {isJa ? 'キーワード' : 'Keyword'}
+            {t('badgeKeyword')}
           </span>
         );
       case 'funFact':
         return (
           <span className="activity-type-badge">
             <Sparkles size={11} />
-            {isJa ? '豆知識' : 'Fun Fact'}
+            {t('badgeFunFact')}
           </span>
         );
       case 'announcement': {
@@ -432,7 +419,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         return (
           <span className={`activity-type-badge ${badgeClass}`}>
             <Megaphone size={11} />
-            {record.announcementType?.toUpperCase() || (isJa ? 'お知らせ' : 'ANNOUNCEMENT')}
+            {record.announcementType?.toUpperCase() || t('announcementBadgeDefault')}
           </span>
         );
       }
@@ -440,14 +427,14 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         return (
           <span className="activity-type-badge">
             <GraduationCap size={11} />
-            {isJa ? 'コース' : 'Course'}
+            {t('badgeCourse')}
           </span>
         );
       case 'lecture':
         return (
           <span className="activity-type-badge">
             <Mic size={11} />
-            {isJa ? '講義' : 'Lecture'}
+            {t('badgeLecture')}
           </span>
         );
       default:
@@ -467,7 +454,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       <div className="profile-detail-top-nav">
         <Link to="/account" className="back-link" style={{ margin: 0 }}>
           <ArrowLeft size={18} />
-          <span>{isJa ? 'アカウント' : 'Account'}</span>
+          <span>{t('account')}</span>
         </Link>
         {activityType === 'trash' && mergedRecords.length > 0 && (
           <button
@@ -483,7 +470,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
             onClick={() => setEmptyTrashModalOpen(true)}
           >
             <Trash2 size={16} />
-            {isJa ? 'ゴミ箱を空にする' : 'Empty Trash'}
+            {t('emptyTrashButton')}
           </button>
         )}
       </div>
@@ -508,7 +495,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       {activityType === 'trash' && (
         <div className="activity-trash-banner">
           <Info size={18} className="activity-trash-banner-icon" />
-          <div>{isJa ? 'ゴミ箱の項目は30日後に完全に削除されます。' : 'Items in trash will be permanently deleted after 30 days.'}</div>
+          <div>{t('trashRetentionBanner')}</div>
         </div>
       )}
 
@@ -534,7 +521,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
             className={`activity-filter-pill ${selectedAnnouncementType === null ? 'is-active' : ''}`}
             onClick={() => setSelectedAnnouncementType(null)}
           >
-            {isJa ? 'すべての種類' : 'All Types'}
+            {t('allTypes')}
           </button>
           {ANNOUNCEMENT_TYPES.map((t) => (
             <button
@@ -557,7 +544,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
       {/* ── Items Found Count ──────────────────────────────────── */}
       {!loading && !error && (
         <div style={{ margin: '0.75rem 0 0.25rem', fontSize: '0.84rem', color: 'var(--comet)' }}>
-          {filteredRecords.length} {isJa ? '件のアイテム' : (filteredRecords.length === 1 ? 'item found' : 'items found')}
+          {t('itemsFound').replace('{count}', String(filteredRecords.length))}
         </div>
       )}
 
@@ -566,13 +553,13 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         <div className="glass-card activity-empty-box" style={{ marginTop: '1.25rem' }}>
           <Loader2 size={32} className="spin" style={{ color: 'var(--star-gold, #fbc02d)' }} />
           <p className="muted" style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-            {isJa ? 'クラウドから履歴を読み込み中…' : 'Loading records from cloud…'}
+            {t('loadingRecords')}
           </p>
         </div>
       ) : error ? (
         <div className="glass-card activity-empty-box" style={{ marginTop: '1.25rem' }}>
           <AlertCircle size={36} style={{ color: 'var(--correction-red, #ff5252)' }} />
-          <h3 style={{ margin: '0.75rem 0 0.25rem' }}>{isJa ? 'アクティビティの読み込みに失敗しました' : 'Failed to load activity'}</h3>
+          <h3 style={{ margin: '0.75rem 0 0.25rem' }}>{t('loadActivityFailed')}</h3>
           <p className="muted" style={{ margin: 0, fontSize: '0.88rem', maxWidth: '360px' }}>
             {error}
           </p>
@@ -582,20 +569,20 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
             style={{ marginTop: '1rem' }}
             onClick={loadRecords}
           >
-            {isJa ? '再試行' : 'Retry'}
+            {t('retry')}
           </button>
         </div>
       ) : filteredRecords.length === 0 ? (
         <div className="glass-card activity-empty-box" style={{ marginTop: '1.25rem' }}>
           <Inbox size={40} className="activity-empty-icon" />
-          <h3 style={{ margin: '0.5rem 0 0.25rem' }}>{isJa ? 'アイテムが見つかりません' : 'No items found'}</h3>
+          <h3 style={{ margin: '0.5rem 0 0.25rem' }}>{t('noItemsFound')}</h3>
           <p
             className="muted"
             style={{ margin: 0, fontSize: '0.88rem', maxWidth: '320px', textAlign: 'center' }}
           >
             {activityType === 'trash'
-              ? (isJa ? 'ゴミ箱は空です。削除した講義やコースがここに表示されます。' : 'Your trash is empty. Deleted lectures or courses will appear here.')
-              : (isJa ? `"${activeFilter}" に一致するアイテムはありません。` : `You do not have any ${meta.title.toLowerCase()} items matching "${activeFilter}".`)}
+              ? t('trashEmptyNotice')
+              : t('noMatchingFilterItems').replace('{filter}', activeFilter)}
           </p>
         </div>
       ) : (
@@ -619,14 +606,14 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                       <h3 className="activity-card-title">{record.title}</h3>
                     </div>
                     <div className="activity-card-meta">
-                      <span>{isJa ? `${formatDate(record.dateTime)} に削除` : `Deleted on ${formatDate(record.dateTime)}`}</span>
+                      <span>{t('deletedOnDate').replace('{date}', formatDate(record.dateTime))}</span>
                     </div>
                   </div>
                   <div className="activity-card-actions">
                     <button
                       type="button"
                       className="activity-action-btn active-gold"
-                      title={isJa ? 'アイテムを復元' : 'Restore Item'}
+                      title={t('restoreItemAction')}
                       onClick={(e) => handleRestoreItem(record, e)}
                     >
                       <RotateCcw size={18} />
@@ -634,7 +621,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                     <button
                       type="button"
                       className="activity-action-btn active-red"
-                      title={isJa ? '完全に削除' : 'Delete Permanently'}
+                      title={t('deletePermanentlyAction')}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSingleDeleteRecord(record);
@@ -661,7 +648,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                     className="activity-action-btn"
                     style={{ padding: 0, color: isCompleted ? '#4caf50' : 'var(--comet)' }}
                     onClick={(e) => handleToggleAnnouncement(record, e)}
-                    title={isCompleted ? (isJa ? '未完了に戻す' : 'Mark Active') : (isJa ? '完了にする' : 'Mark Completed')}
+                    title={isCompleted ? t('markActive') : t('markCompleted')}
                   >
                     {isCompleted ? <CheckCircle2 size={22} /> : <Circle size={22} />}
                   </button>
@@ -686,7 +673,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                     <div className="activity-card-meta">
                       <span>{formatDate(record.dateTime)}</span>
                       {isCompleted && (
-                        <span style={{ color: '#4caf50', fontWeight: 600 }}>{isJa ? '完了' : 'Completed'}</span>
+                        <span style={{ color: '#4caf50', fontWeight: 600 }}>{t('completedBadge')}</span>
                       )}
                     </div>
                   </div>
@@ -694,7 +681,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                     <button
                       type="button"
                       className="activity-action-btn"
-                      title={isJa ? 'ゴミ箱に移動' : 'Move to trash'}
+                      title={t('moveToTrashAction')}
                       onClick={(e) => handleDeleteAnnouncement(record, e)}
                     >
                       <Trash2 size={16} />
@@ -738,16 +725,16 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                            ? handleToggleSave(record, e)
                           : handleToggleReaction(record, e)
                       }
-                      title={isJa ? '元に戻す' : 'Undo action'}
+                      title={t('undoAction')}
                     >
                       <RotateCcw size={13} />
-                      {isJa ? '元に戻す' : 'Undo'}
+                      {t('undoAction')}
                     </button>
                   ) : isSavedType ? (
                     <button
                       type="button"
                       className="activity-action-btn active-gold"
-                      title={isJa ? '保存済みから削除' : 'Remove from Saved'}
+                      title={t('removeFromSavedAction')}
                       onClick={(e) => handleToggleSave(record, e)}
                     >
                       <Bookmark size={20} fill="currentColor" />
@@ -756,7 +743,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                     <button
                       type="button"
                       className="activity-action-btn active-red"
-                      title={isJa ? '高評価を解除' : 'Remove Like'}
+                      title={t('removeLikeAction')}
                       onClick={(e) => handleToggleReaction(record, e)}
                     >
                       <Heart size={20} fill="currentColor" />
@@ -765,7 +752,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
                     <button
                       type="button"
                       className="activity-action-btn active-blue"
-                      title={isJa ? '低評価を解除' : 'Remove Dislike'}
+                      title={t('removeDislikeAction')}
                       onClick={(e) => handleToggleReaction(record, e)}
                     >
                       <ThumbsDown size={20} fill="currentColor" />
@@ -806,10 +793,10 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         open={emptyTrashModalOpen}
         onClose={() => setEmptyTrashModalOpen(false)}
         onConfirm={handleConfirmEmptyTrash}
-        title={isJa ? 'ゴミ箱を空にする' : 'Empty Trash'}
-        message={isJa ? 'ゴミ箱内のすべてのアイテムがクラウドおよびストレージから完全に削除されます。この操作は取り消せません。' : 'All items in your trash will be permanently deleted from both cloud and storage. This action cannot be undone.'}
-        confirmLabel={isJa ? 'ゴミ箱を空にする' : 'Empty Trash'}
-        cancelLabel={isJa ? 'キャンセル' : 'Cancel'}
+        title={t('emptyTrashButton')}
+        message={t('emptyTrashConfirmMessage')}
+        confirmLabel={t('emptyTrashButton')}
+        cancelLabel={t('cancel')}
         isDanger={true}
       />
 
@@ -818,10 +805,10 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
         open={Boolean(singleDeleteRecord)}
         onClose={() => setSingleDeleteRecord(null)}
         onConfirm={handleConfirmSingleDelete}
-        title={isJa ? `「${singleDeleteRecord?.title || 'アイテム'}」を完全に削除しますか？` : `Permanently delete "${singleDeleteRecord?.title || 'Item'}"?`}
-        message={isJa ? 'このアイテムは完全に削除されます。この操作は取り消せません。' : 'This item will be permanently removed. This action cannot be undone.'}
-        confirmLabel={isJa ? '完全に削除' : 'Delete'}
-        cancelLabel={isJa ? 'キャンセル' : 'Cancel'}
+        title={t('singleDeleteConfirmTitle').replace('{title}', singleDeleteRecord?.title || t('itemLabel'))}
+        message={t('singleDeleteConfirmMessage')}
+        confirmLabel={t('deletePermanentlyAction')}
+        cancelLabel={t('cancel')}
         isDanger={true}
       />
     </div>
