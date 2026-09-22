@@ -133,10 +133,13 @@ export const PurchaseCreditsPage: React.FC = () => {
                     <CreditPackIllustration creditAmount={displayCredit} />
                   </div>
 
-                  {/* 2. クレジット量ラベル */}
+                  {/* 2. クレジット量ラベル(数字+単位を縦積みにして、幅が狭くても
+                       「クレジット」等の単位ラベルが不格好に折り返さないようにする) */}
                   <div className="purchase-credit-card-amount">
-                    <CreditStarIcon size={18} color="#c084fc" className="purchase-credit-amount-star" />
-                    <span className="purchase-credit-amount-num">{displayCredit}</span>
+                    <div className="purchase-credit-amount-row">
+                      <CreditStarIcon size={18} color="#c084fc" className="purchase-credit-amount-star" />
+                      <span className="purchase-credit-amount-num">{displayCredit}</span>
+                    </div>
                     <span className="purchase-credit-amount-unit">{t('credits')}</span>
                   </div>
 

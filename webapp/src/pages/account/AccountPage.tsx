@@ -34,6 +34,7 @@ import { useCreditSummary } from '../../hooks/useCreditSummary';
 import { updateProfileFields } from '../../lib/profile';
 import { hasEmailIdentity } from '../../lib/account';
 import { supabase } from '../../lib/supabase';
+import { seedTutorial } from '../../lib/tutorial';
 import { toDisplayCredits } from '../../types/billing';
 import { AvatarImage } from '../../components/AvatarImage';
 import { AccountPageSkeleton } from '../../components/account/AccountPageSkeleton';
@@ -135,9 +136,13 @@ export const AccountPage: React.FC = () => {
           navigate(`/lectures/${tut.id}`);
           return;
         }
+        // オンボーディング完了時のseedが(オフライン等で)失敗したユーザー向けの再試行
+        const lectureId = await seedTutorial(language);
+        navigate(`/lectures/${lectureId}`);
+        return;
       }
     } catch (err) {
-      console.error('Failed to find tutorial lecture:', err);
+      console.error('Failed to find or seed tutorial lecture:', err);
     }
     navigate('/onboarding');
   };

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import { markOnboardingCompleted } from '../../lib/profile';
+import { seedTutorial } from '../../lib/tutorial';
+import { isLanguage } from '../../i18n/translations';
 import { LanguageHeaderButton } from '../../components/auth/LanguageHeaderButton';
 import { OnboardingTopBar } from './OnboardingTopBar';
 import { OnboardingIntroStep } from './steps/OnboardingIntroStep';
@@ -36,6 +38,10 @@ export const OnboardingWizard: React.FC = () => {
   useEffect(() => {
     if (step === 'done') {
       markOnboardingCompleted(profile?.metadata ?? null);
+      const displayLanguage = profile?.metadata?.display_language;
+      seedTutorial(isLanguage(displayLanguage) ? displayLanguage : 'ja').catch((e) => {
+        console.error('Failed to seed tutorial lecture', e);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);

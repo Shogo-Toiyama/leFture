@@ -52,7 +52,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   creditAmount,
   onSuccess,
 }) => {
-  const { t, locale } = useLanguage();
+  const { t, locale, language } = useLanguage();
 
   const checkoutTheme: CheckoutTheme = React.useMemo(() => {
     if (creditAmount !== undefined) return 'purple';
@@ -142,7 +142,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
 
         {/* ── フォームコンテンツ ── */}
         <div className="stripe-checkout-body">
-          <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
+          <Elements stripe={stripePromise} options={{ clientSecret, appearance, locale: language }}>
             <CheckoutForm charge={charge} onClose={onClose} onSuccess={onSuccess} />
           </Elements>
         </div>

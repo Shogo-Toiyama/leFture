@@ -227,7 +227,7 @@ export const PlansContent: React.FC<PlansContentProps> = ({ header, onPlanActiva
   const loading = summaryLoading || plansLoading;
   // カード列と比較表で同じ列定義を共有し、上下の列をぴたりと揃える。
   // 幅が十分にある時は横幅いっぱいに自然に広がり、横スクロールなしでそのまま表示される。
-  const gridColumns = `minmax(150px, 1.1fr) repeat(${sortedPlans.length}, minmax(160px, 1fr))`;
+  const gridColumns = `minmax(clamp(88px, 26vw, 150px), 1.1fr) repeat(${sortedPlans.length}, minmax(clamp(78px, 20vw, 160px), 1fr))`;
 
   const showContinueWithCurrent = Boolean(onPlanActivated) && Boolean(summary?.has_active_plan);
 

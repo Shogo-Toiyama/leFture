@@ -73,6 +73,10 @@ export const TopicMapCanvas = forwardRef<TopicMapCanvasHandle, TopicMapCanvasPro
   const hasFitOnce = useRef(false);
   const dragState = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null);
   const suppressNextClick = useRef(false);
+  // アクティブなタッチポインタ(pointerId -> 現在位置)。2本になったらピンチ
+  // ズームへ切り替える(ドラッグは1本指専用のまま)。
+  const activePointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchState = useRef<{ dist: number; midX: number; midY: number } | null>(null);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -199,13 +203,61 @@ export const TopicMapCanvas = forwardRef<TopicMapCanvasHandle, TopicMapCanvasPro
     [effectiveMinScale, viewport]
   );
 
+  const pinchMidpoint = (pts: { x: number; y: number }[]) => ({
+    x: (pts[0].x + pts[1].x) / 2,
+    y: (pts[0].y + pts[1].y) / 2,
+  });
+
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
     (e.target as Element).setPointerCapture?.(e.pointerId);
-    dragState.current = { x: e.clientX, y: e.clientY, tx: transform.tx, ty: transform.ty, moved: false };
+    activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointers.current.size === 2) {
+      // 2本目のタッチが乗った瞬間にピンチへ切り替え、1本指ドラッグは打ち切る。
+      dragState.current = null;
+      const pts = Array.from(activePointers.current.values());
+      const mid = pinchMidpoint(pts);
+      pinchState.current = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), midX: mid.x, midY: mid.y };
+    } else if (activePointers.current.size === 1) {
+      pinchState.current = null;
+      dragState.current = { x: e.clientX, y: e.clientY, tx: transform.tx, ty: transform.ty, moved: false };
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (activePointers.current.has(e.pointerId)) {
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    if (activePointers.current.size === 2 && pinchState.current) {
+      const pts = Array.from(activePointers.current.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const mid = pinchMidpoint(pts);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const px = mid.x - rect.left;
+      const py = mid.y - rect.top;
+      const prev = pinchState.current;
+      if (prev.dist > 1 && dist > 1) {
+        const factor = dist / prev.dist;
+        const minScale = effectiveMinScale(viewport.width, viewport.height);
+        const prevPx = prev.midX - rect.left;
+        const prevPy = prev.midY - rect.top;
+        setTransform((t) => {
+          const scale = Math.min(MAX_SCALE, Math.max(minScale, t.scale * factor));
+          // ピンチの中点が動いた分(=2本指パン)も、拡大の起点になる中点自体が
+          // 動いた分も両方、同じ計算式で一度に反映する: 直前の中点の下にあった
+          // コンテンツ座標を求め、新しい中点・新しい縮尺でも同じ座標がその
+          // 位置に来るように逆算する。
+          const cx = (prevPx - t.tx) / t.scale;
+          const cy = (prevPy - t.ty) / t.scale;
+          return { scale, tx: px - cx * scale, ty: py - cy * scale };
+        });
+      }
+      pinchState.current = { dist, midX: mid.x, midY: mid.y };
+      return;
+    }
+
     const drag = dragState.current;
     if (!drag) return;
     const dx = e.clientX - drag.x;
@@ -214,7 +266,21 @@ export const TopicMapCanvas = forwardRef<TopicMapCanvasHandle, TopicMapCanvasPro
     setTransform((prev) => ({ ...prev, tx: drag.tx + dx, ty: drag.ty + dy }));
   };
 
-  const endDrag = () => {
+  const endDrag = (e: React.PointerEvent<SVGSVGElement>) => {
+    activePointers.current.delete(e.pointerId);
+
+    if (activePointers.current.size < 2) {
+      pinchState.current = null;
+    }
+
+    if (activePointers.current.size === 1) {
+      // ピンチ中に1本指を離した時、残った指でそのままパンを続けられるように
+      // (指を離した瞬間の座標へ飛ばず)ドラッグ状態を引き継いで再開する。
+      const [remaining] = Array.from(activePointers.current.values());
+      dragState.current = { x: remaining.x, y: remaining.y, tx: transform.tx, ty: transform.ty, moved: false };
+      return;
+    }
+
     if (dragState.current?.moved) suppressNextClick.current = true;
     dragState.current = null;
   };
@@ -350,6 +416,7 @@ export const TopicMapCanvas = forwardRef<TopicMapCanvasHandle, TopicMapCanvasPro
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
+        onPointerCancel={endDrag}
         role="img"
         aria-label="Topic map"
       >
