@@ -38,12 +38,6 @@
   display: block;
 }
 
-.header-logo-title-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .header-logo-text {
   font-family: var(--font-brand);
   font-size: 1.35rem;
@@ -51,23 +45,6 @@
   letter-spacing: 0.05em;
   color: var(--text-starlight);
   line-height: 1;
-}
-
-.header-beta-badge {
-  font-family: var(--font-heading);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background-color: rgba(255, 179, 0, 0.12);
-  color: var(--accent);
-  border: 1px solid rgba(255, 179, 0, 0.3);
-  margin-left: 2px;
-  line-height: 1;
-  display: inline-block;
-  white-space: nowrap;
 }
 
 /* Header Right Actions */
@@ -117,23 +94,8 @@
     height: 30px;
   }
 
-  /* leFture と Beta を縦並びにして横幅を大幅節約 */
-  .header-logo-title-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-
   .header-logo-text {
     font-size: 1.15rem;
-  }
-
-  .header-beta-badge {
-    font-size: 0.55rem;
-    padding: 1px 5px;
-    margin-left: 0;
-    border-radius: 4px;
   }
 
   .header-actions {

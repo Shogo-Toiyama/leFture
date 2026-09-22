@@ -1,12 +1,10 @@
 /**
  * Outbound links used across the site.
  *
- * TODO(shogo): replace APP_STORE_URL with the real listing once the app is
- * published — e.g. https://apps.apple.com/jp/app/lefture/id0000000000
- * It is referenced by the header CTA, the hero CTA, and the closing CTA, so
+ * Referenced by the header CTA, the hero CTA, and the closing CTA, so
  * changing it here updates all three.
  */
-export const APP_STORE_URL = 'https://testflight.apple.com/join/8bpTxR8F';
+export const APP_STORE_URL = 'https://apps.apple.com/us/app/lefture/id6792620779';
 
 /**
  * TODO(shogo): set this to the production origin (no trailing slash) so the

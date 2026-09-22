@@ -129,6 +129,8 @@ export interface DownloadModalTranslations {
   androidTitle: string;
   androidDesc: string;
   androidBadge: string;
+  webappTitle: string;
+  webappDesc: string;
   note: string;
   form: {
     back: string;

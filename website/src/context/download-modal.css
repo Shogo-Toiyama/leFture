@@ -178,6 +178,12 @@
   color: #3DDC84; /* Official Android Green */
 }
 
+.platform-card-icon--web {
+  background: linear-gradient(135deg, #2b2210 0%, #382c14 100%);
+  border: 1px solid rgba(255, 179, 0, 0.25);
+  color: var(--color-star-gold);
+}
+
 /* Platform content */
 .platform-card-content {
   flex: 1;
@@ -305,6 +311,37 @@
 
 .platform-card--android:focus-visible {
   outline: 2px solid #3DDC84;
+  outline-offset: 2px;
+}
+
+/* Web app interactive card */
+.platform-card--web {
+  cursor: pointer;
+}
+
+.platform-card--web:hover {
+  background: rgba(255, 179, 0, 0.06);
+  border-color: rgba(255, 179, 0, 0.45);
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 24px -6px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 179, 0, 0.15);
+}
+
+.platform-card--web:hover .platform-card-icon {
+  transform: scale(1.05);
+  border-color: rgba(255, 179, 0, 0.5);
+}
+
+.platform-card--web:hover .platform-card-action {
+  background: var(--color-star-gold);
+  color: #0D0D14;
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(255, 179, 0, 0.3);
+}
+
+.platform-card--web:focus-visible {
+  outline: 2px solid var(--color-star-gold);
   outline-offset: 2px;
 }
 

@@ -27,10 +27,7 @@ export const Header: React.FC = () => {
             decoding="async"
             className="header-logo-img"
           />
-          <div className="header-logo-title-group">
-            <span className="header-logo-text">leFture</span>
-            <span className="header-beta-badge">Beta</span>
-          </div>
+          <span className="header-logo-text">leFture</span>
         </Link>
 
         {/* Header Right Actions (Custom Language Dropdown & Download App CTA Button) */}

@@ -358,6 +358,12 @@ label {
   text-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
 }
 
+.app-topbar-brand-suffix {
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 
 .app-topbar-account {
   display: flex;

@@ -67,7 +67,9 @@ export const Layout: React.FC = () => {
       <header className="app-topbar">
         <Link to="/" className="app-topbar-home" title="leFture Home">
           <img src="/img/logo-icon.webp" alt="leFture Logo" className="app-topbar-logo" />
-          <span className="app-topbar-brand-name">leFture</span>
+          <span className="app-topbar-brand-name">
+            leFture<span className="app-topbar-brand-suffix"> app</span>
+          </span>
         </Link>
 
         <div className="app-topbar-account">

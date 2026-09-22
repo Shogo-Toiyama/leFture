@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { useTranslation } from '../i18n/LanguageContext';
 import { AppleLogo } from '../components/AppleLogo';
 import { AndroidLogo } from '../components/AndroidLogo';
-import { APP_STORE_URL } from '../lib/links';
-import { X, ChevronRight, ArrowLeft, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { APP_STORE_URL, WEBAPP_URL } from '../lib/links';
+import { X, ChevronRight, ArrowLeft, CheckCircle2, Loader2, AlertCircle, Globe } from 'lucide-react';
 import './download-modal.css';
 
 interface DownloadModalContextValue {
@@ -207,6 +207,32 @@ export const DownloadModalProvider: React.FC<{ children: React.ReactNode }> = ({
                       <ChevronRight size={18} />
                     </div>
                   </button>
+
+                  {/* Web App Card */}
+                  <a
+                    href={WEBAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="platform-card platform-card--web"
+                    onClick={closeModal}
+                  >
+                    <div className="platform-card-icon platform-card-icon--web">
+                      <Globe size={26} />
+                    </div>
+                    <div className="platform-card-content">
+                      <div className="platform-card-top">
+                        <span className="platform-card-name">
+                          {t.downloadModal.webappTitle}
+                        </span>
+                      </div>
+                      <p className="platform-card-desc">
+                        {t.downloadModal.webappDesc}
+                      </p>
+                    </div>
+                    <div className="platform-card-action">
+                      <ChevronRight size={18} />
+                    </div>
+                  </a>
                 </div>
 
                 <p className="download-modal-note">
