@@ -132,6 +132,14 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 400px) {
+  .site-header-container {
+    gap: 6px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
   .site-header .header-cta-btn {
     padding: 0 8px;
     height: 30px;

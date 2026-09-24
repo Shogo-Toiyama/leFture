@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/router.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/activity/activity_ping_service.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/notifications/push_notification_service.dart';
@@ -40,6 +41,10 @@ class MyApp extends ConsumerWidget {
 
     // Push通知(FCM)のトークン登録・受信・タップ遷移を監視
     ref.watch(pushNotificationServiceProvider);
+
+    // 利用状況のping(user_activity_hours)。他のkeepAliveサービスと同じく、
+    // ここでwatchしないとインスタンス自体が作られずpingが一度も飛ばない。
+    ref.watch(activityPingServiceProvider);
 
 
     // ★ UploadManagerはkeepAlive:trueだが、誰かがこのProviderをwatch/readする

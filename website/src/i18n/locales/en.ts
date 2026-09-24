@@ -287,7 +287,7 @@ export const en: Translations = {
         answer:
           'You can permanently delete your leFture account and all associated personal data (recorded lectures, transcripts, detailed notes, and profile data) at any time through our web application.\nPlease click the button below to access the web app, sign in to your account, and proceed with account deletion.',
         action: {
-          label: 'Open Account Deletion (app.lefture.com)',
+          label: 'Open Web App (app.lefture.com)',
           url: 'https://app.lefture.com',
         },
         note: '* Note: Email accounts require password re-verification, while Google/Apple sign-in requires confirming your username. All deletions are immediate and irreversible.',

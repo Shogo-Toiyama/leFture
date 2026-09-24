@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n/LanguageContext';
 import { useDownloadModal } from '../context/DownloadModalContext';
 import { LanguageDropdown } from './LanguageDropdown';
+import { HamburgerMenu } from './HamburgerMenu';
 import { Smartphone } from 'lucide-react';
 import './header.css';
 
@@ -30,7 +31,7 @@ export const Header: React.FC = () => {
           <span className="header-logo-text">leFture</span>
         </Link>
 
-        {/* Header Right Actions (Custom Language Dropdown & Download App CTA Button) */}
+        {/* Header Right Actions (Language Dropdown, CTA Button, Hamburger Menu) */}
         <div className="header-actions">
           <LanguageDropdown />
 
@@ -49,6 +50,8 @@ export const Header: React.FC = () => {
               <span className="header-cta-line2">{ctaLine2}</span>
             </span>
           </button>
+
+          <HamburgerMenu />
         </div>
       </div>
     </header>

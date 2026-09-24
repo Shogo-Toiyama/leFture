@@ -19,9 +19,10 @@ from typing import Optional
 from urllib.parse import urlencode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
-from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header
+from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, ClientOptions, AuthError, AuthApiError, AuthRetryableError
+# AuthError系の例外処理はJWT検証と一緒に app/core/auth.py へ移した。
+from supabase import create_client, ClientOptions
 from nltk.tokenize import sent_tokenize
 from pydantic import BaseModel
 from google.cloud import tasks_v2
@@ -63,7 +64,8 @@ DEAD_JOB_STATUSES = ("FAILED", "ERROR", "CANCELLED")
 # 起こされ、新しいジョブの書き込みと衝突する。
 CANCELLABLE_TASK_STATUSES = ["PENDING", "QUEUED", "WAITING", "RUNNING", "FAILED"]
 
-from app.core.supabase import get_supabase_client, get_supabase_auth_client
+from app.core.supabase import get_supabase_client
+from app.core.internal_auth import require_internal_caller, internal_task_headers
 from app.core.r2_storage import storage_service
 from app.services.helpers.credits import (
     CREDITS_PER_USD,
@@ -132,6 +134,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Adminダッシュボード(/admin/*)。ルーター単位でrequire_adminが掛かっており、
+# 個別のルートで書き忘れても素通りしない。実装と「できてはいけないこと」の
+# 一覧は app/api/admin.py の冒頭を参照。
+from app.api.admin import router as admin_router
+app.include_router(admin_router)
 
 
 @app.get("/health")
@@ -265,83 +273,11 @@ class AsrModelDownloadUrlRequest(BaseModel):
 # ---------------------------------------------------------
 # 認証 (JWT検証) — 全エンドポイント共通
 # ---------------------------------------------------------
-def _bearer_token(request: Request) -> str:
-    """AuthorizationヘッダからJWTを取り出す。無ければ401。"""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    token = auth_header.replace("Bearer ", "").strip()
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    return token
-
-
-def _authenticate_request(request: Request):
-    """
-    AuthorizationヘッダのJWTをSupabase Authで検証し、userを返す。
-
-    以前はこの処理が全エンドポイントにコピペで散らばっており、例外の扱いが
-    バラバラだった。特にget_user()が投げるAuthApiErrorを捕まえていない
-    エンドポイント(/billing/summary等)では、単なるセッション失効が500として
-    返っていた。500だとクライアントは「サーバー障害」と解釈して再認証に
-    進めないため、死んだトークンを送り続ける無限ループになる
-    (2026-09-19にクレジット表示が最大1時間読めなくなった事象の直接原因)。
-
-    方針:
-      - 「GoTrueがトークンを見て明確に拒否した」場合だけ401で返す
-        (クライアントはこの401を見てセッションを破棄し再ログインに誘導する)
-      - それ以外 — Auth自体が落ちている(5xx系=AuthRetryableError)、
-        GoTrueのレート制限(429)、backend↔Supabase Auth間の生の通信失敗
-        (httpx.HTTPError — ConnectError/ReadTimeout/RemoteProtocolError等。
-        これらはsupabase_authのAuthError系に変換されずここまで素通りしてくる)
-        — は全て503で返す。401にするとクライアントが不要なサインアウトを
-        してしまうため(2026-09-20、一時的な通信失敗で頻繁にログアウトされる
-        事象の直接原因だった)
-      - GoTrueが返すerror_code(bad_jwt / session_not_found / user_not_found 等)を
-        必ずログに残す。これが無いと「なぜ弾かれたか」がログから復元できない
-
-    この関数は同期HTTPを行うので、asyncエンドポイントからは
-    _get_authenticated_user_id_async()等のasync版を使うこと。
-    """
-    token = _bearer_token(request)
-    try:
-        user_res = get_supabase_auth_client().auth.get_user(token)
-    except AuthRetryableError as e:
-        logger.error(f"Supabase Auth unavailable while verifying JWT: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
-    except AuthApiError as e:
-        code = getattr(e, "code", None) or "unknown"
-        status = getattr(e, "status", None)
-        logger.warning(f"JWT rejected by Supabase Auth: code={code} status={status} message={e}")
-        if status == 429:
-            # レート制限。トークンが無効なわけではないので401にしてはいけない。
-            raise HTTPException(status_code=503, detail="Authentication service rate limited")
-        raise HTTPException(status_code=401, detail=f"Invalid or expired session ({code})")
-    except AuthError as e:
-        # AuthApiError以外のAuthError(例: AuthUnknownError)。GoTrueがJWTの
-        # 中身まで見て拒否したと確定できないため、安全側に倒して503にする。
-        code = getattr(e, "code", None) or "unknown"
-        logger.warning(f"Unexpected auth error while verifying JWT: code={code} message={e}")
-        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
-    except httpx.HTTPError as e:
-        # backend→Supabase Auth間の生の通信失敗(ConnectError/ReadTimeout/
-        # RemoteProtocolError等)。supabase_authはHTTPStatusError/RuntimeError
-        # しかAuthRetryableErrorに変換しないため、httpx側の例外はここまで
-        # ラップされずに素通りしてくる。トークンの正当性とは無関係なので401
-        # にしてはいけない。
-        logger.error(f"Network error while verifying JWT: {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
-    except Exception as e:
-        # ここに来るのは真に想定外のエラーのみ。トークンが不正だと確定した
-        # わけではないため、クライアントを不要にサインアウトさせないよう503にする。
-        logger.error(f"Unexpected error verifying JWT: {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail="Authentication service temporarily unavailable")
-
-    if not user_res or not user_res.user:
-        raise HTTPException(status_code=401, detail="Unauthorized user")
-
-    return user_res.user
+# JWT検証の実装本体は app/core/auth.py に移した。Adminルーター
+# (app/api/admin.py)と同じ実装を共有するため —— 認証の分岐が2箇所に
+# 増えると、片方だけ直し忘れたときに片方だけ穴が開く。
+# 既存の呼び出し箇所を触らずに済むよう、ここでは別名だけ残しておく。
+from app.core.auth import _bearer_token, _authenticate_request
 
 
 async def _get_authenticated_user(request: Request):
@@ -1343,12 +1279,15 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
     grant_store_subscription_credits() / expire_store_subscription() SQL関数側で
     アトミックに行う(同じevent_idの再送でも二重付与しない)。
     """
-    if REVENUECAT_WEBHOOK_SECRET:
-        if not hmac.compare_digest((authorization or "").strip(), REVENUECAT_WEBHOOK_SECRET):
-            logger.warning("Rejected RevenueCat webhook: bad/missing Authorization header")
-            raise HTTPException(status_code=401, detail="Unauthorized webhook")
-    else:
-        logger.warning("REVENUECAT_WEBHOOK_SECRET not set - skipping webhook verification (INSECURE)")
+    # ★ 未設定時に検証をスキップしてはいけない。このエンドポイントはクレジットを
+    #   付与する(=課金相当の価値を発行する)ため、素通しは「誰でも自分に好きなだけ
+    #   クレジットを付与できる」ことを意味する。Stripe webhook側と同じく全拒否にする。
+    if not REVENUECAT_WEBHOOK_SECRET:
+        logger.error("REVENUECAT_WEBHOOK_SECRET is not configured; rejecting RevenueCat webhook")
+        raise HTTPException(status_code=503, detail="Webhook is not configured")
+    if not hmac.compare_digest((authorization or "").strip(), REVENUECAT_WEBHOOK_SECRET):
+        logger.warning("Rejected RevenueCat webhook: bad/missing Authorization header")
+        raise HTTPException(status_code=401, detail="Unauthorized webhook")
 
     body = await request.json()
     event = body.get("event", {})
@@ -2665,6 +2604,29 @@ def _compute_cascade_task_types(all_tasks: list, target_task_type: str) -> set:
     return affected
 
 
+async def _load_task_and_job(admin_client, task_id: str) -> tuple[dict, dict]:
+    """task_idからタスク行と、それが属するジョブ行を引く。無ければ404。
+
+    所有者チェックはここではしない —— 呼び出し側の文脈で違うため
+    (/retry-task は本人であることを要求し、Adminダッシュボードは要求しない)。
+    """
+    task_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_tasks").select("id, job_id, task_type, status")
+            .eq("id", task_id).single().execute()
+    )
+    if not task_res.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task = task_res.data
+
+    job_res = await asyncio.to_thread(
+        lambda: admin_client.table("processing_jobs").select("id, user_id, lecture_id")
+            .eq("id", task["job_id"]).single().execute()
+    )
+    if not job_res.data:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return task, job_res.data
+
+
 @app.post("/retry-task")
 async def retry_task(payload: RetryTaskRequest, request: Request):
     """
@@ -2682,22 +2644,22 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
     admin_client = get_supabase_client()
     await _reject_if_suspended(admin_client, user_id)
 
-    task_res = await asyncio.to_thread(
-        lambda: admin_client.table("processing_tasks").select("id, job_id, task_type, status")
-            .eq("id", payload.task_id).single().execute()
-    )
-    if not task_res.data:
-        raise HTTPException(status_code=404, detail="Task not found")
-    task = task_res.data
+    task, job = await _load_task_and_job(admin_client, payload.task_id)
 
     # タスク→ジョブ経由で所有者を検証（他人のタスクを操作できないように）
-    job_res = await asyncio.to_thread(
-        lambda: admin_client.table("processing_jobs").select("id, user_id, lecture_id")
-            .eq("id", task["job_id"]).single().execute()
-    )
-    if not job_res.data or job_res.data["user_id"] != user_id:
+    if job["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to retry this task")
 
+    return await _perform_task_retry(admin_client, task, job)
+
+
+async def _perform_task_retry(admin_client, task: dict, job: dict) -> dict:
+    """
+    リトライ本体(所有者チェックより後ろの部分)。/retry-task と
+    Adminダッシュボードの /admin/tasks/{id}/retry が同じ実装を共有するために
+    切り出してある —— 復旧手順が2箇所に分かれると、片方だけ直したときに
+    もう片方が壊れた状態のまま残るため。
+    """
     if task["status"] not in ("FAILED", "COMPLETED"):
         raise HTTPException(
             status_code=400,
@@ -2733,7 +2695,7 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
 
     # 再生成スキップ用のR2キャッシュを持つtask_typeが対象に含まれていたら、
     # あわせてキャッシュも消して確実に再生成させる
-    uid, lecture_id = job_res.data["user_id"], job_res.data["lecture_id"]
+    uid, lecture_id = job["user_id"], job["lecture_id"]
     from app.core.r2_storage import storage_service
     for task_type, prefix_fn in _CACHED_TASK_TYPE_PREFIXES.items():
         if task_type in affected_types:
@@ -2747,7 +2709,7 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
 
     return {
         "message": "Task queued for retry",
-        "task_id": payload.task_id,
+        "task_id": task["id"],
         "affected_task_types": sorted(affected_types),
     }
 
@@ -2757,7 +2719,14 @@ async def retry_task(payload: RetryTaskRequest, request: Request):
 @app.post("/webhook/orchestrator")
 async def orchestrator_webhook(request: Request, x_webhook_secret: str = Header(None)):
     # 0. セキュリティチェック: SupabaseのWebhookからのリクエストか検証
-    if WEBHOOK_SECRET and x_webhook_secret != WEBHOOK_SECRET:
+    #
+    # ★ 以前は `if WEBHOOK_SECRET and ...` だったため、WEBHOOK_SECRETが未設定の
+    #   環境ではこのエンドポイントが誰でも叩ける状態になっていた。「設定漏れなら
+    #   素通し」はフェイルオープンで、最も危険な失敗の仕方。未設定なら全拒否にする。
+    if not WEBHOOK_SECRET:
+        logger.error("WEBHOOK_SECRET is not configured; rejecting orchestrator webhook")
+        raise HTTPException(status_code=503, detail="Webhook is not configured")
+    if not x_webhook_secret or not hmac.compare_digest(x_webhook_secret, WEBHOOK_SECRET):
         print("🔒 Unauthorized webhook attempt blocked.")
         raise HTTPException(status_code=401, detail="Unauthorized webhook")
 
@@ -2901,7 +2870,7 @@ async def worker_transcribe_chunk(
 # ---------------------------------------------------------
 # リアルタイム・トランスクライブ処理（Cloud Tasksから呼ばれる非同期ワーカー）
 # ---------------------------------------------------------
-@app.post("/worker/transcribe-chunk-process")
+@app.post("/worker/transcribe-chunk-process", dependencies=[Depends(require_internal_caller)])
 async def worker_transcribe_chunk_process(payload: TranscribeChunkPayload):
     """
     /worker/transcribe-chunk がenqueueしたタスクを実際に処理する。
@@ -3048,7 +3017,7 @@ TASK_ROUTES = {
 # ---------------------------------------------------------
 # 1. 【表の顔: 受付窓口】指揮者からの依頼を受ける
 # ---------------------------------------------------------
-@app.post("/enqueue-task", status_code=202)
+@app.post("/enqueue-task", status_code=202, dependencies=[Depends(require_internal_caller)])
 async def enqueue_task(payload: EnqueuePayload):
     """
     指揮者(Edge Function)から呼ばれ、Cloud Tasksにジョブを登録する。
@@ -3094,7 +3063,7 @@ async def enqueue_task(payload: EnqueuePayload):
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}{route_path}",  # 割り出された専用の裏口を叩く！
-            "headers": {"Content-Type": "application/json"},
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
             "body": json.dumps(worker_payload).encode(),
             "oidc_token": {
                 "service_account_email": SERVICE_ACCOUNT_EMAIL,
@@ -3156,7 +3125,7 @@ async def enqueue_transcribe_chunk_task(
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}/worker/transcribe-chunk-process",
-            "headers": {"Content-Type": "application/json"},
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
             "body": json.dumps(worker_payload).encode(),
             "oidc_token": {
                 "service_account_email": SERVICE_ACCOUNT_EMAIL,
@@ -3200,7 +3169,7 @@ async def enqueue_renew_subscription_task(mapping_id: str) -> None:
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}/worker/renew-subscription",
-            "headers": {"Content-Type": "application/json"},
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
             "body": json.dumps(worker_payload).encode(),
             "oidc_token": {
                 "service_account_email": SERVICE_ACCOUNT_EMAIL,
@@ -3234,7 +3203,7 @@ async def enqueue_cleanup_audio_chunks_task(user_id: str, lecture_id: str) -> No
         "http_request": {
             "http_method": tasks_v2.HttpMethod.POST,
             "url": f"{CLOUD_RUN_URL}/worker/cleanup-audio-chunks",
-            "headers": {"Content-Type": "application/json"},
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
             "body": json.dumps(worker_payload).encode(),
             "oidc_token": {
                 "service_account_email": SERVICE_ACCOUNT_EMAIL,
@@ -3279,64 +3248,64 @@ async def _run_worker_task(request: Request, payload: WorkerPayload, task_fn) ->
         raise
     return {"status": "success"}
 
-@app.post("/worker/check-and-assemble")
+@app.post("/worker/check-and-assemble", dependencies=[Depends(require_internal_caller)])
 async def worker_check_and_assemble(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_check_and_assemble_transcript_task)
 
-@app.post("/worker/transcribe-master")
+@app.post("/worker/transcribe-master", dependencies=[Depends(require_internal_caller)])
 async def worker_transcribe_master(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_transcribe_master_task)
 
-@app.post("/worker/role-classification")
+@app.post("/worker/role-classification", dependencies=[Depends(require_internal_caller)])
 async def worker_role_classification(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_role_classification_task)
 
-@app.post("/worker/core-extraction")
+@app.post("/worker/core-extraction", dependencies=[Depends(require_internal_caller)])
 async def worker_core_extraction(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_core_extraction_task)
 
-@app.post("/worker/announcement-generation")
+@app.post("/worker/announcement-generation", dependencies=[Depends(require_internal_caller)])
 async def worker_announcement_generation(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_announcement_generation_task)
 
-@app.post("/worker/topic-mapping")
+@app.post("/worker/topic-mapping", dependencies=[Depends(require_internal_caller)])
 async def worker_topic_mapping(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_topic_mapping_task)
 
-@app.post("/worker/review-card")
+@app.post("/worker/review-card", dependencies=[Depends(require_internal_caller)])
 async def worker_review_card(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_review_card_task)
 
-@app.post("/worker/image-prompt-generation")
+@app.post("/worker/image-prompt-generation", dependencies=[Depends(require_internal_caller)])
 async def worker_image_prompt_generation(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_image_prompt_generation_task)
 
-@app.post("/worker/image-rendering")
+@app.post("/worker/image-rendering", dependencies=[Depends(require_internal_caller)])
 async def worker_image_rendering(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_image_rendering_task)
 
-@app.post("/worker/fun-fact-brainstorming")
+@app.post("/worker/fun-fact-brainstorming", dependencies=[Depends(require_internal_caller)])
 async def worker_fun_fact_brainstorming(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_fun_fact_brainstorming_task)
 
-@app.post("/worker/fun-fact-search")
+@app.post("/worker/fun-fact-search", dependencies=[Depends(require_internal_caller)])
 async def worker_fun_fact_search(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_fun_fact_search_task)
 
-@app.post("/worker/fun-facts-generation")
+@app.post("/worker/fun-facts-generation", dependencies=[Depends(require_internal_caller)])
 async def worker_fun_facts_generation(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_fun_facts_task)
 
-@app.post("/worker/detail-contents")
+@app.post("/worker/detail-contents", dependencies=[Depends(require_internal_caller)])
 async def worker_detail_contents(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_detail_contents_task)
 
-@app.post("/worker/finalize-job")
+@app.post("/worker/finalize-job", dependencies=[Depends(require_internal_caller)])
 async def worker_finalize_job(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_finalize_job_task)
 
 
-@app.post("/worker/renew-subscription")
+@app.post("/worker/renew-subscription", dependencies=[Depends(require_internal_caller)])
 async def worker_renew_subscription(payload: RenewSubscriptionPayload):
     """
     /maintenance/renew-subscriptions がenqueueしたタスクを実際に処理する。
@@ -3350,7 +3319,7 @@ async def worker_renew_subscription(payload: RenewSubscriptionPayload):
     return {"status": "success"}
 
 
-@app.post("/worker/cleanup-audio-chunks")
+@app.post("/worker/cleanup-audio-chunks", dependencies=[Depends(require_internal_caller)])
 async def worker_cleanup_audio_chunks(payload: CleanupAudioChunksPayload):
     """
     _patrol_enqueue_audio_chunks_cleanup がenqueueしたタスクを実際に処理する。
@@ -3398,13 +3367,40 @@ async def worker_cleanup_audio_chunks(payload: CleanupAudioChunksPayload):
 # reconstructはLLM呼び出しを1回含むため数秒かかりうるが、依存関係のない単発処理
 # なのでCloud Tasksのキューに乗せず、リクエストの中で同期的に完結させている。
 
+async def _require_course_owner(admin_client, course_id: str, user_id: str) -> None:
+    """course_idがそのユーザー自身のCourseであることを確認する。
+
+    course_idはクライアント申告値なので、それだけで書き込み先が決まる
+    エンドポイント(/topic-map/*)では必ずこれを通すこと。
+    """
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("courses").select("user_id").eq("id", course_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Course {course_id} not found")
+    if row["user_id"] != user_id:
+        logger.warning(f"User {user_id} attempted to access course {course_id} owned by {row['user_id']}")
+        raise HTTPException(status_code=403, detail="You do not have access to this course")
+
+
 @app.post("/topic-map/mark-stale")
-async def topic_map_mark_stale(payload: TopicMapMarkStaleRequest):
+async def topic_map_mark_stale(payload: TopicMapMarkStaleRequest, request: Request):
     """
     Lectureの削除・Course移動が起きた瞬間にFlutterから呼ばれる。LLMは呼ばず、
     pending_removals/pending_additionsに記録してis_staleを立てるだけ。
     実際のグラフ修復は「Recreate Topic Map」操作かPatrolのアイドルタイムアウトが行う。
+
+    ★ 以前はこのエンドポイントに認証が無く、course_id/lecture_idさえ知っていれば
+      誰でも他人のTopic Mapをstaleにできる(=他人のグラフを壊せる)状態だった。
+      クライアント(Flutter/webapp)は元からAuthorizationヘッダを送っているので、
+      検証を足してもクライアント側の変更は要らない。
     """
+    user_id = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    await _require_course_owner(admin_client, payload.course_id, user_id)
+    await _require_lecture_owner(admin_client, payload.lecture_id, user_id)
+
     if payload.action not in ("remove", "add"):
         raise HTTPException(status_code=400, detail=f"Invalid action: {payload.action}")
 
@@ -3429,11 +3425,19 @@ async def topic_map_mark_stale(payload: TopicMapMarkStaleRequest):
 
 
 @app.post("/topic-map/reconstruct")
-async def topic_map_reconstruct(payload: TopicMapReconstructRequest):
+async def topic_map_reconstruct(payload: TopicMapReconstructRequest, request: Request):
     """
     「Recreate Topic Map」ボタンから呼ばれる。pending_removals/pending_additionsを
     まとめて消化し、Phase A(決定的除去)→Phase B(LLMによる修復)を同期的に実行する。
+
+    ★ 以前は認証が無かった。LLMを1回叩く=実費が出る処理なので、course_idを
+      総当たりするだけで無制限にコストを発生させられる状態でもあった。
     """
+    user_id = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    await _require_course_owner(admin_client, payload.course_id, user_id)
+    await _reject_if_suspended(admin_client, user_id)
+
     try:
         result = await run_topic_map_reconstruction_task(payload.course_id)
     except Exception as e:
@@ -3830,6 +3834,16 @@ async def cancel_lecture_jobs_endpoint(lecture_id: str, request: Request):
     if not lecture or lecture["user_id"] != uid:
         raise HTTPException(status_code=404, detail="Lecture not found")
 
+    cancelled = await _cancel_jobs_for_lecture(admin_client, lecture_id)
+    return {"success": True, "cancelled_jobs": cancelled}
+
+
+async def _cancel_jobs_for_lecture(admin_client, lecture_id: str) -> int:
+    """
+    講義の未完了ジョブとそのタスクをCANCELLEDにする本体(所有者チェックより
+    後ろの部分)。/lectures/{id}/cancel-jobs と Adminダッシュボードの
+    /admin/lectures/{id}/cancel-jobs が同じ実装を共有するために切り出してある。
+    """
     jobs_res = await asyncio.to_thread(
         lambda: admin_client.table("processing_jobs").select("id")
             .eq("lecture_id", lecture_id).neq("status", "COMPLETED").execute()
@@ -3851,7 +3865,7 @@ async def cancel_lecture_jobs_endpoint(lecture_id: str, request: Request):
         )
 
     print(f"🛑 Cancelled {len(job_ids)} job(s) for lecture {lecture_id}")
-    return {"success": True, "cancelled_jobs": len(job_ids)}
+    return len(job_ids)
 
 
 @app.post("/lectures/{lecture_id}/hard-delete")
@@ -4296,7 +4310,7 @@ async def _patrol_sweep_r2_audio_chunks() -> dict:
     )
 
 
-@app.post("/maintenance/sweep-r2-audio-chunks")
+@app.post("/maintenance/sweep-r2-audio-chunks", dependencies=[Depends(require_internal_caller)])
 async def sweep_r2_audio_chunks_endpoint():
     """
     R2バケット全体を直接走査して7日以上前の audio_chunks を一括削除する手動実行用エンドポイント。
@@ -4304,7 +4318,7 @@ async def sweep_r2_audio_chunks_endpoint():
     return await _patrol_sweep_r2_audio_chunks()
 
 
-@app.post("/maintenance/patrol")
+@app.post("/maintenance/patrol", dependencies=[Depends(require_internal_caller)])
 async def patrol():
     """
     Cloud Schedulerから10分おきに呼ばれる、汎用メンテナンスのディスパッチャー。
@@ -4357,55 +4371,21 @@ async def patrol():
 # ---------------------------------------------------------
 # 📧 メール送信エンドポイント
 # ---------------------------------------------------------
-
-class SendVerificationEmailRequest(BaseModel):
-    to: str
-    verification_link: str
-
-
-class SendPasswordResetEmailRequest(BaseModel):
-    to: str
-    reset_link: str
-
-
-class SendNotificationEmailRequest(BaseModel):
-    to: str
-    subject: str
-    html: str
-
-
-@app.post("/email/send-verification")
-async def email_send_verification(payload: SendVerificationEmailRequest):
-    """ユーザー登録確認メールを送信する"""
-    try:
-        result = await send_verification_email(payload.to, payload.verification_link)
-        return {"success": True, **result}
-    except Exception as e:
-        print(f"❌ Failed to send verification email: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-
-
-@app.post("/email/send-password-reset")
-async def email_send_password_reset(payload: SendPasswordResetEmailRequest):
-    """パスワードリセットメールを送信する"""
-    try:
-        result = await send_password_reset_email(payload.to, payload.reset_link)
-        return {"success": True, **result}
-    except Exception as e:
-        print(f"❌ Failed to send password reset email: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-
-
-@app.post("/email/send-notification")
-async def email_send_notification(payload: SendNotificationEmailRequest):
-    """汎用通知メールを送信する"""
-    try:
-        result = await send_important_notification(payload.to, payload.subject, payload.html)
-        return {"success": True, **result}
-    except Exception as e:
-        print(f"❌ Failed to send notification email: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-
+# /email/send-verification, /email/send-password-reset, /email/send-notification
+# の3本は削除した。
+#
+# 理由: 認証が一切なく、宛先・件名・HTML本文を呼び出し側が自由に指定できる
+# 「誰でも使える公開メールリレー」になっていた。URLを知った第三者が、検証済みの
+# 自社ドメインから任意のHTMLメールを送れる(=フィッシングの踏み台にされ、
+# 送信ドメインのレピュテーションを焼かれる)状態だった。
+#
+# しかもこの3本はリポジトリ内のどこからも呼ばれていない。実際のメール送信は
+# Supabase Authの「Send Email Hook」を署名検証付きで受ける /auth/send-email に
+# 一本化済みで、この3本は移行時の残骸。認証を足すより消すのが正しい。
+#
+# 内部からメールを送りたい場合は app/services/email_service.py の
+# send_verification_email() / send_important_notification() を直接呼ぶこと
+# (HTTPエンドポイントとして外に出す必要はない)。
 
 # ---------------------------------------------------------
 # 📱 Push通知 — デバイストークン登録
@@ -4488,13 +4468,15 @@ class SupabaseEmailHookRequest(BaseModel):
 def _verify_supabase_hook_signature(raw_body: bytes, headers: dict) -> None:
     """
     Supabase Auth Hook の Standard Webhooks 署名を検証する。
-    SEND_EMAIL_HOOK_SECRET 未設定時は(既存のWEBHOOK_SECRETと同様)検証をスキップするが、
-    本番では必ず設定すること。値は Supabase Dashboard > Authentication > Hooks の
-    Send Email Hook に表示される "v1,whsec_..." 形式のシークレットをそのまま使う。
+    値は Supabase Dashboard > Authentication > Hooks の Send Email Hook に
+    表示される "v1,whsec_..." 形式のシークレットをそのまま使う。
+
+    ★ 未設定時は検証をスキップせず全拒否する。スキップすると、このエンドポイントが
+      「任意の宛先へ確認メール/パスワードリセットメールを送らせられる窓口」になる。
     """
     if not SEND_EMAIL_HOOK_SECRET:
-        print("⚠️  SEND_EMAIL_HOOK_SECRET is not set - skipping signature verification (INSECURE)")
-        return
+        logger.error("SEND_EMAIL_HOOK_SECRET is not configured; rejecting Supabase auth email hook")
+        raise HTTPException(status_code=503, detail="Email hook is not configured")
 
     secret = SEND_EMAIL_HOOK_SECRET
     if secret.startswith("v1,"):

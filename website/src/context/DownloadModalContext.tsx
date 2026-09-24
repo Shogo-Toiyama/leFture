@@ -158,7 +158,7 @@ export const DownloadModalProvider: React.FC<{ children: React.ReactNode }> = ({
                 </div>
 
                 <div className="download-modal-platforms">
-                  {/* iOS Card */}
+                  {/* iOS Card (Production) */}
                   <a
                     href={APP_STORE_URL}
                     target="_blank"
@@ -184,31 +184,7 @@ export const DownloadModalProvider: React.FC<{ children: React.ReactNode }> = ({
                     </div>
                   </a>
 
-                  {/* Android Card (Active: click opens signup form) */}
-                  <button
-                    type="button"
-                    className="platform-card platform-card--android"
-                    onClick={() => setViewState('android_form')}
-                  >
-                    <div className="platform-card-icon platform-card-icon--android">
-                      <AndroidLogo size={28} />
-                    </div>
-                    <div className="platform-card-content">
-                      <div className="platform-card-top">
-                        <span className="platform-card-name">
-                          {t.downloadModal.androidTitle}
-                        </span>
-                      </div>
-                      <p className="platform-card-desc">
-                        {t.downloadModal.androidDesc}
-                      </p>
-                    </div>
-                    <div className="platform-card-action">
-                      <ChevronRight size={18} />
-                    </div>
-                  </button>
-
-                  {/* Web App Card */}
+                  {/* Web App Card (Production) */}
                   <a
                     href={WEBAPP_URL}
                     target="_blank"
@@ -233,6 +209,34 @@ export const DownloadModalProvider: React.FC<{ children: React.ReactNode }> = ({
                       <ChevronRight size={18} />
                     </div>
                   </a>
+
+                  {/* Divider separating iOS & Web (Production) from Android (Beta) */}
+                  <div className="download-modal-divider" role="separator" />
+
+                  {/* Android Card (Beta: click opens signup form) */}
+                  <button
+                    type="button"
+                    className="platform-card platform-card--android"
+                    onClick={() => setViewState('android_form')}
+                  >
+                    <div className="platform-card-icon platform-card-icon--android">
+                      <AndroidLogo size={28} />
+                    </div>
+                    <div className="platform-card-content">
+                      <div className="platform-card-top">
+                        <span className="platform-card-name">
+                          {t.downloadModal.androidTitle}
+                        </span>
+                        <span className="platform-chip-beta">Beta</span>
+                      </div>
+                      <p className="platform-card-desc">
+                        {t.downloadModal.androidDesc}
+                      </p>
+                    </div>
+                    <div className="platform-card-action">
+                      <ChevronRight size={18} />
+                    </div>
+                  </button>
                 </div>
 
                 <p className="download-modal-note">

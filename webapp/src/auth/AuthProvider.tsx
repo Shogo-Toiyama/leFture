@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { startActivityPing } from '../lib/activityPing';
 
 interface AuthContextValue {
   session: Session | null;
@@ -26,6 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.subscription.unsubscribe();
   }, []);
+
+  // ログイン中だけ、利用状況のping(user_activity_hours)を送る。
+  // ここに置いているのは、AuthProviderが全ページの外側で常に生きていて
+  // セッションの有無を知っている唯一の場所だから。詳細はlib/activityPing.ts。
+  useEffect(() => {
+    if (!session) return;
+    return startActivityPing();
+  }, [session?.user.id]);
 
   return (
     <AuthContext.Provider value={{ session, user: session?.user ?? null, loading }}>

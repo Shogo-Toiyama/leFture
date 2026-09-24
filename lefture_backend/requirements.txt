@@ -8,6 +8,9 @@ google-genai
 openai
 tiktoken
 google-cloud-tasks
+# 内部エンドポイント(/worker, /maintenance)に届くCloud Tasks/SchedulerのOIDCトークン検証用。
+# google-cloud-tasksの推移的依存でもあるが、直接importしているので明示する。
+google-auth
 nltk
 pydub
 httpx
