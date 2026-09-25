@@ -366,6 +366,60 @@ async def _reject_if_suspended(admin_client, user_id: str) -> None:
         )
 
 
+def _legacy_audio_upload_fallback_enabled() -> bool:
+    """既定はfalse(=認証必須)。Cloud Runの環境変数で明示的に有効化したときだけ緩む。"""
+    return os.getenv("LEGACY_AUDIO_UPLOAD_FALLBACK", "false").strip().lower() in ("true", "1", "yes")
+
+
+async def _resolve_audio_upload_uid(request: Request, admin_client, lecture_id: str) -> str:
+    """
+    音声アップロード系3エンドポイント(/worker/transcribe-chunk,
+    request-master-audio-upload-url, complete-master-audio-upload)の
+    「誰の音声か」を決める処理。
+
+    この3つは2026-09-20(901a68b)で無認証からJWT必須に変えた。ところが同時に
+    出したクライアント更新はストア審査を通る必要があるため、それ以前のビルドは
+    Authorizationヘッダを付けずに叩き続け、録音が1つもアップロードできない
+    状態になる(2026-09-21以降、成功0件で4日間401が続いた)。ローカルの音声は
+    端末に残りリトライも続くので復旧はできるが、その間ユーザーは録音が
+    一切処理されない。
+
+    そのため「ヘッダが無いリクエストだけ」旧挙動(lecture_idからuser_idを引く)に
+    落とす一時的な逃げ道を用意する。ヘッダがある新ビルドは従来通り厳格に
+    所有者チェックまで行うので、緩むのは旧ビルドの経路だけ。
+
+    ★ これはストア審査が通るまでの暫定措置。LEGACY_AUDIO_UPLOAD_FALLBACKを
+      falseにする(または環境変数を消す)だけで塞がるようにしてあるので、
+      新バージョンが行き渡ったら必ず無効化すること。再デプロイは不要。
+      緩めている間は、lecture_id(UUID)を知っている第三者が他人の講義へ
+      音声を差し込めるのが既知のリスク(901a68b以前と同じ水準)。
+      無効化の判断材料として、フォールバックを通った回数はWARNINGで残す。
+    """
+    if request.headers.get("Authorization"):
+        uid = await _get_authenticated_user_id(request)
+        await _reject_if_suspended(admin_client, uid)
+        await _require_lecture_owner(admin_client, lecture_id, uid)
+        return uid
+
+    if not _legacy_audio_upload_fallback_enabled():
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("lectures").select("user_id").eq("id", lecture_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Lecture {lecture_id} not found")
+
+    uid = row["user_id"]
+    await _reject_if_suspended(admin_client, uid)
+    logger.warning(
+        f"LEGACY_AUDIO_UPLOAD_FALLBACK: accepted unauthenticated audio upload for "
+        f"lecture {lecture_id} (uid {uid}) — client is an app build from before 2026-09-20"
+    )
+    return uid
+
+
 # ---------------------------------------------------------
 # 分析開始 (start_analysis)
 # ---------------------------------------------------------
@@ -2845,10 +2899,8 @@ async def worker_transcribe_chunk(
     が非同期に行うため、Cloudflare Whisper側がハングしてもこのリクエスト自体は
     詰まらない。
     """
-    user_id = await _get_authenticated_user_id(request)
     admin_client = get_supabase_client()
-    await _reject_if_suspended(admin_client, user_id)
-    await _require_lecture_owner(admin_client, lecture_id, user_id)
+    await _resolve_audio_upload_uid(request, admin_client, lecture_id)
 
     if not file:
         raise HTTPException(status_code=400, detail="No audio file provided")
@@ -2900,10 +2952,8 @@ MASTER_AUDIO_CONTENT_TYPE = "audio/x-m4a"
 @app.post("/worker/request-master-audio-upload-url")
 async def worker_request_master_audio_upload_url(payload: MasterAudioUploadUrlRequest, request: Request):
     """マスター音声をR2へ直接PUTするための署名付きURLを発行する。"""
-    uid = await _get_authenticated_user_id(request)
     admin_client = get_supabase_client()
-    await _reject_if_suspended(admin_client, uid)
-    await _require_lecture_owner(admin_client, payload.lecture_id, uid)
+    uid = await _resolve_audio_upload_uid(request, admin_client, payload.lecture_id)
 
     from app.services.task_runners import storage_service
     upload_url, storage_path = await asyncio.to_thread(
@@ -2923,10 +2973,8 @@ async def worker_complete_master_audio_upload(payload: MasterAudioUploadComplete
     Flutterが直接R2へのPUTを終えた後に呼ぶ。クライアントの自己申告を鵜呑みにせず、
     実際にR2上にファイルが存在することを確認してからaudio_pathを更新する。
     """
-    uid = await _get_authenticated_user_id(request)
     supabase = get_supabase_client()
-    await _reject_if_suspended(supabase, uid)
-    await _require_lecture_owner(supabase, payload.lecture_id, uid)
+    uid = await _resolve_audio_upload_uid(request, supabase, payload.lecture_id)
 
     from app.services.task_runners import storage_service
     storage_path = f"{uid}/{payload.lecture_id}/master_audio.m4a"
