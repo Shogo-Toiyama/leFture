@@ -12951,6 +12951,29 @@ a.lecture-tile-card:hover {
   font-weight: 600;
 }
 
+/*
+ * トライアル時、$0の直下に「元の価格」を表示する行。0.7倍ほどに縮小し、
+ * 色を落として取り消し線を入れることで「本来はこの値段だが、今は無料」を
+ * $0より控えめに示す。
+ */
+.plans-card-price-original {
+  margin: -0.05rem 0 0.5rem;
+}
+
+.plans-card-price-original .plans-card-price-amount {
+  font-size: 1.33rem;
+  color: var(--comet);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.plans-card-price-original .plans-card-price-unit {
+  font-size: 0.6rem;
+  color: var(--comet);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
 .plans-card-action {
   width: 100%;
   display: flex;
@@ -13043,6 +13066,38 @@ a.lecture-tile-card:hover {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-border);
   color: var(--comet);
+}
+
+/*
+ * 無料トライアルのバッジ。プラン名の縦の流れには乗せず、カード右上に
+ * リボンとして固定配置する(Flutter版のバッジ位置に合わせる。
+ * .plans-cardのposition: relativeを基準に絶対配置)。
+ */
+.plans-trial-badge {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 3;
+  display: inline-block;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f43f5e 0%, #a855f7 55%, #06b6d4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.5);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.plans-trial-note {
+  margin: -0.3rem 0 0.5rem;
+  max-width: 17rem;
+  color: var(--comet);
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 /*

@@ -1558,6 +1558,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plansUltimateBadge => '✦ ULTIMATE';
 
   @override
+  String trialDurationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trialDurationWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weeks',
+      one: '1 week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trialDurationMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months',
+      one: '1 month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trialDurationYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count years',
+      one: '1 year',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String plansFreeTrialBadge(String duration) {
+    return 'FREE TRIAL · $duration';
+  }
+
+  @override
+  String plansFreeTrialPriceNote(String duration) {
+    return 'Free for $duration, then billed automatically. Cancel anytime.';
+  }
+
+  @override
+  String plansStartFreeTrialButton(String duration) {
+    return 'Try Free for $duration';
+  }
+
+  @override
   String get plansCurrentPlanButton => 'Current Plan';
 
   @override

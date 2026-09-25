@@ -27,7 +27,15 @@ export const createCreditPackPayment = (creditPackId: string) =>
  * (claim/即時アップグレード/次回更新時の予約のいずれか)。
  */
 export type SwitchPlanResult =
-  | { client_secret: string; subscription_id: string; amount_due_cents: number; currency: string }
+  | {
+      client_secret: string;
+      client_secret_kind: 'payment' | 'setup';
+      subscription_id: string;
+      amount_due_cents: number;
+      currency: string;
+      /** client_secret_kind==='setup'(トライアル開始)の時だけ入る、トライアル期間(暦月)。 */
+      trial_period_months?: number;
+    }
   | { status: 'claimed' | 'switched' | 'scheduled_downgrade' | 'scheduled_cancel' | 'already_current' }
   | { status: 'requires_confirmation'; reason: 'apple_pending_cancellation'; discount_usd: number; charge_usd: number };
 

@@ -45,7 +45,57 @@ class PlanCard extends StatelessWidget {
     final subtitle = plan.localizedSubtitle(languageCode);
     final weeklyLectures = math.max(1, (plan.monthlyCreditAmountDisplay / 100.0 / 4.1).round());
     final formattedCredits = NumberFormat.decimalPattern().format(plan.monthlyCreditAmountDisplay);
+    final trialPeriod = state.trialPeriod;
+    final showOverflowTrialBadge = trialPeriod != null && !state.isCurrentPlan && !isPendingTarget;
 
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _buildCardBody(context, l10n, themeColor, isPremium, isStandard, subtitle, weeklyLectures, formattedCredits),
+        if (showOverflowTrialBadge)
+          Positioned(
+            top: 10,
+            right: -16,
+            child: Transform.rotate(
+              angle: 0.24,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF43F5E), Color(0xFFA855F7), Color(0xFF06B6D4)],
+                  ),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFFA855F7).withValues(alpha: 0.55), blurRadius: 14, spreadRadius: 1),
+                  ],
+                ),
+                child: Text(
+                  l10n.plansFreeTrialBadge(trialPeriod.localizedDuration(l10n)),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCardBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    Color themeColor,
+    bool isPremium,
+    bool isStandard,
+    String? subtitle,
+    int weeklyLectures,
+    String formattedCredits,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -231,6 +281,11 @@ class PlanCard extends StatelessWidget {
                               ),
                             ),
                           ),
+                        ] else if (state.trialPeriod != null) ...[
+                          // 無料トライアルバッジはこの行には置かず、カード右端に
+                          // はみ出すリボンとして外側のStackで描画する(下記)。
+                          // ここでは「おすすめ」バッジに競合させないための空枠。
+                          const SizedBox.shrink(),
                         ] else if (isPremium) ...[
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -314,11 +369,50 @@ class PlanCard extends StatelessWidget {
                     // Androidでは価格を一切表示しない(Freeプランの"$0"表記も含め、
                     // Google Playに「アプリ内で購入させようとしている」と見なされ
                     // うる金額表記を画面内から完全に排除するため)。
-                    if (!Platform.isAndroid)
-                      Text(
-                        state.priceLabel,
-                        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                      ),
+                    if (!Platform.isAndroid) ...[
+                      if (state.trialPeriod != null)
+                        // トライアル中は通常価格を0.7倍ほどに縮めてグレーアウト+
+                        // 取り消し線で脇に残しつつ、右側の$0を主役として通常サイズで置く。
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              state.priceLabel,
+                              style: TextStyle(
+                                color: AppColors.universe.textComet.withValues(alpha: 0.75),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                decoration: TextDecoration.lineThrough,
+                                decorationThickness: 1.5,
+                                decorationColor: AppColors.universe.textComet.withValues(alpha: 0.75),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '\$0',
+                              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
+                            ),
+                          ],
+                        )
+                      else
+                        Text(
+                          state.priceLabel,
+                          style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
+                        ),
+                      // トライアル対象の時は、上の価格が「今日請求される額」だと
+                      // 誤読されないよう、直下に無料期間と自動課金の開示を添える。
+                      if (state.trialPeriod != null)
+                        Text(
+                          l10n.plansFreeTrialPriceNote(state.trialPeriod!.localizedDuration(l10n)),
+                          style: TextStyle(
+                            color: AppColors.universe.textStarlight.withValues(alpha: 0.9),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                          ),
+                        ),
+                    ],
                   ],
                 ),
               ),

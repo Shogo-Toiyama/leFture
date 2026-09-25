@@ -28,6 +28,16 @@ export interface PlanOption {
   store_product_id: string | null;
   stripe_price_id: string | null;
   tier_level: number;
+  /**
+   * Web(Stripe)でこのプランの無料トライアルを受けられる月数(暦月)。対象外ならnull。
+   * switch-planが実際の付与判定に使うのと同じ条件・同じ期間がサーバー側で入る
+   * ため、バッジを出したのに課金される(またはその逆)というズレは起きない。
+   * 日数ではなく暦月なのは、Apple側の導入オファーが暦月単位でしか設定できず、
+   * 日数で持つとプラットフォーム間で実際の長さがズレるため。
+   * Apple側のトライアル可否はApple ID単位でStoreKitしか知らないため、これは
+   * Web限定の判定(iOSはRevenueCat SDKで別途判定する)。
+   */
+  trial_period_months: number | null;
 }
 
 export interface CreditPackOption {

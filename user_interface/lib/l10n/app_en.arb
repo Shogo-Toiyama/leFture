@@ -2498,6 +2498,63 @@
     "description": "Badge shown on the Premium tier card highlighting it as the top-tier flagship plan."
   },
 
+  "trialDurationDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@trialDurationDays": {
+    "description": "Free trial length expressed in days, interpolated into trial labels. Kept in the store's own unit rather than converted, so the stated length always matches the real one.",
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+
+  "trialDurationWeeks": "{count, plural, =1{1 week} other{{count} weeks}}",
+  "@trialDurationWeeks": {
+    "description": "Free trial length expressed in weeks, interpolated into trial labels.",
+    "placeholders": { "count": { "type": "int", "example": "2" } }
+  },
+
+  "trialDurationMonths": "{count, plural, =1{1 month} other{{count} months}}",
+  "@trialDurationMonths": {
+    "description": "Free trial length expressed in calendar months, interpolated into trial labels. This is the unit the App Store and our Stripe trial are both configured in.",
+    "placeholders": { "count": { "type": "int", "example": "1" } }
+  },
+
+  "trialDurationYears": "{count, plural, =1{1 year} other{{count} years}}",
+  "@trialDurationYears": {
+    "description": "Free trial length expressed in years, interpolated into trial labels.",
+    "placeholders": { "count": { "type": "int", "example": "1" } }
+  },
+
+  "plansFreeTrialBadge": "FREE TRIAL · {duration}",
+  "@plansFreeTrialBadge": {
+    "description": "Badge shown on a pricing card when the App Store says this Apple ID is still eligible for the product's free introductory offer. Replaces the RECOMMENDED badge while it applies. {duration} comes from trialDuration* (e.g. \"1 month\").",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1 month"
+      }
+    }
+  },
+
+  "plansFreeTrialPriceNote": "Free for {duration}, then billed automatically. Cancel anytime.",
+  "@plansFreeTrialPriceNote": {
+    "description": "Disclosure line shown directly under the price on a pricing card with an available free trial, so the price is not read as being charged today.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1 month"
+      }
+    }
+  },
+
+  "plansStartFreeTrialButton": "Try Free for {duration}",
+  "@plansStartFreeTrialButton": {
+    "description": "Floating call-to-action button label shown instead of Continue/Upgrade when the selected plan starts with a free trial for this Apple ID.",
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1 month"
+      }
+    }
+  },
+
   "plansCurrentPlanButton": "Current Plan",
   "@plansCurrentPlanButton": {
     "description": "Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action."

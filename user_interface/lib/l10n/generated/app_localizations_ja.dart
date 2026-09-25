@@ -1494,6 +1494,61 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansUltimateBadge => '✦ 最上位';
 
   @override
+  String trialDurationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count日間',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trialDurationWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count週間',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trialDurationMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countヶ月',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String trialDurationYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count年',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String plansFreeTrialBadge(String duration) {
+    return '$duration無料トライアル';
+  }
+
+  @override
+  String plansFreeTrialPriceNote(String duration) {
+    return '$durationは無料。終了後に自動で課金されます(いつでも解約可能)。';
+  }
+
+  @override
+  String plansStartFreeTrialButton(String duration) {
+    return '$duration無料で試す';
+  }
+
+  @override
   String get plansCurrentPlanButton => '現在有効なプラン';
 
   @override

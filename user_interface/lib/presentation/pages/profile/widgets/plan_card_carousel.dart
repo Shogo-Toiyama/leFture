@@ -28,6 +28,7 @@ class PlanCardCarousel extends StatefulWidget {
     required this.offerings,
     required this.purchasingPlanId,
     required this.pendingPlanId,
+    this.introEligibility,
   });
 
   final List<PlanOption> plans;
@@ -36,6 +37,10 @@ class PlanCardCarousel extends StatefulWidget {
   final CreditSummary? summary;
   final Offerings? offerings;
   final String? purchasingPlanId;
+
+  /// 商品ID → この端末のApple IDの無料トライアル資格
+  /// (revenueCatIntroEligibilityProvider)。未取得ならトライアル表記は出さない。
+  final Map<String, IntroEligibility>? introEligibility;
 
   /// summary.pendingPlanIdをそのまま受け渡す(予約先プランのカードに
   /// 「NEXT PLAN」チップを出すため)。
@@ -222,6 +227,7 @@ class _PlanCardCarouselState extends State<PlanCardCarousel> with SingleTickerPr
       plan: plan,
       summary: widget.summary,
       offerings: widget.offerings,
+      introEligibility: widget.introEligibility,
     );
 
     return IgnorePointer(

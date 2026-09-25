@@ -62,7 +62,14 @@ function formatPrice(plan: PlanOption, freeLabel: string): string {
   return amount;
 }
 
-type PendingCheckout = { plan: PlanOption; clientSecret: string; amountDueCents: number; currency: string };
+type PendingCheckout = {
+  plan: PlanOption;
+  clientSecret: string;
+  clientSecretKind: 'payment' | 'setup';
+  amountDueCents: number;
+  currency: string;
+  trialMonths?: number;
+};
 type PendingAppleDiscount = { plan: PlanOption; discountUsd: number; chargeUsd: number };
 
 export interface PlansContentProps {
@@ -115,8 +122,10 @@ export const PlansContent: React.FC<PlansContentProps> = ({ header, onPlanActiva
       setPendingCheckout({
         plan,
         clientSecret: result.client_secret,
+        clientSecretKind: result.client_secret_kind,
         amountDueCents: result.amount_due_cents,
         currency: result.currency,
+        trialMonths: result.trial_period_months,
       });
       return;
     }
@@ -375,6 +384,8 @@ export const PlansContent: React.FC<PlansContentProps> = ({ header, onPlanActiva
           title={pendingCheckout.plan.name}
           tierLevel={pendingCheckout.plan.tier_level}
           clientSecret={pendingCheckout.clientSecret}
+          clientSecretKind={pendingCheckout.clientSecretKind}
+          trialPeriodMonths={pendingCheckout.trialMonths}
           charge={{
             amountCents: pendingCheckout.amountDueCents,
             currency: pendingCheckout.currency,
@@ -449,6 +460,17 @@ const PlanCard: React.FC<{
   // Free(self_serve)への切り替え=解約だけは通す。
   const blockedBySuspension = summary.suspended && plan.claim_mode !== 'self_serve';
 
+  // 「今このカードを押したら無料トライアルで始まる」時だけトライアル表記を出す。
+  // trial_period_monthsはサーバー側の付与判定と同じ条件で入るので、ここでは
+  // 「そもそも今このカードから購入できる状態か」だけを重ねて見る。
+  const trialMonths = plan.trial_period_months;
+  const showTrial =
+    trialMonths != null &&
+    !isCurrentPlan &&
+    !isPendingTarget &&
+    !blockedBySuspension &&
+    isPurchasableOnWeb;
+
   let action: React.ReactNode;
   if (isCurrentPlan) {
     action = (
@@ -471,7 +493,13 @@ const PlanCard: React.FC<{
   } else {
     const isStartFree = !summary.has_active_plan && plan.claim_mode === 'self_serve';
     const isUpgrade = !isStartFree && plan.tier_level > currentTierLevel;
-    const label = isStartFree ? t('plansStartFree') : isUpgrade ? t('plansUpgrade') : t('plansDowngrade');
+    const label = showTrial
+      ? t('plansStartFreeTrial', { n: String(trialMonths) })
+      : isStartFree
+        ? t('plansStartFree')
+        : isUpgrade
+          ? t('plansUpgrade')
+          : t('plansDowngrade');
     const btnClass = `plans-action-btn ${
       isUpgrade ? (isPremium ? 'is-upgrade is-premium-upgrade' : 'is-upgrade') : 'is-downgrade'
     }`;
@@ -515,15 +543,29 @@ const PlanCard: React.FC<{
       {/* 背景に大きく溶け込む固定サイズ画像 */}
       <img src={planIconAsset(plan.tier_level)} alt="" className="plans-card-bg-fixed" aria-hidden="true" />
 
+      {/* トライアルバッジはカード左上にリボンとして固定配置(プラン名の縦の流れには乗せない)。 */}
+      {showTrial && (
+        <span className="plans-trial-badge">{t('plansFreeTrialBadge', { n: String(trialMonths) })}</span>
+      )}
+
       <div className="plans-card-body">
         <div className="plans-card-info">
           <h2 className="plans-card-name">{plan.name}</h2>
-          <p className="plans-card-price">
+          {showTrial && (
+            <p className="plans-card-price">
+              <span className="plans-card-price-amount">$0</span>
+              {plan.price_usd != null && plan.price_usd > 0 && (
+                <span className="plans-card-price-unit">{t('perMonth')}</span>
+              )}
+            </p>
+          )}
+          <p className={`plans-card-price ${showTrial ? 'plans-card-price-original' : ''}`}>
             <span className="plans-card-price-amount">{formatPrice(plan, t('planPriceFree'))}</span>
             {plan.price_usd != null && plan.price_usd > 0 && (
               <span className="plans-card-price-unit">{t('perMonth')}</span>
             )}
           </p>
+          {showTrial && <p className="plans-trial-note">{t('plansFreeTrialThenPrice')}</p>}
           <button type="button" className="plans-card-credits-compact" onClick={onCreditRateClick}>
             <CreditStarIcon size={12} color="var(--star-gold, #fbc02d)" />
             <span>

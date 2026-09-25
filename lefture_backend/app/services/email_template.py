@@ -338,6 +338,53 @@ def build_email_change_email(new_email: str, confirmation_link: str, lang: str =
     return email_wrapper(body)
 
 
+def build_trial_ending_reminder_email(
+    display_name: str,
+    plan_name: str,
+    end_date: str,
+    renewal_price: str,
+    renewal_interval: str,
+    manage_plan_link: str,
+    lang: str = "en",
+) -> str:
+    """
+    無料トライアル終了リマインダーメール。米国複数州の自動更新法が要求する
+    開示事項(プラン名・金額・請求頻度・解約方法)を情報ボックスとして明示する。
+    """
+    c = get_email_content(lang)
+    greeting = f"Hi {display_name},<br/><br/>" if display_name else ""
+    body_text = c.TRIAL_ENDING_BODY.format(plan_name=plan_name, end_date=end_date)
+
+    info_block = f"""
+    <div style="
+      background:{COLOR_CARD_BORDER};
+      border-radius:12px;
+      padding:20px;
+      margin:20px 0;
+      color:{COLOR_TEXT_MAIN};
+      font-family:{FONT_STACK};
+      font-size:{FONT_SIZE_BODY};
+      line-height:1.6;
+    ">
+      <p style="margin:0 0 8px 0;"><strong>{c.TRIAL_ENDING_INFO_PLAN_LABEL}:</strong> {plan_name}</p>
+      <p style="margin:0 0 8px 0;"><strong>{c.TRIAL_ENDING_INFO_PRICE_LABEL}:</strong> {renewal_price} ({renewal_interval})</p>
+      <p style="margin:0;"><strong>{c.TRIAL_ENDING_INFO_DATE_LABEL}:</strong> {end_date}</p>
+    </div>
+    """
+
+    body = (
+        email_header()
+        + email_heading(c.TRIAL_ENDING_HEADING)
+        + email_text(f"{greeting}{body_text}")
+        + info_block
+        + email_button(c.TRIAL_ENDING_BUTTON, manage_plan_link)
+        + email_divider()
+        + email_text(c.TRIAL_ENDING_FOOTER_NOTE, muted=True)
+        + email_footer(lang=lang)
+    )
+    return email_wrapper(body)
+
+
 def build_support_user_ack_email(
     display_name: str,
     ticket_code: str,

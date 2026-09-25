@@ -2780,6 +2780,48 @@ abstract class AppLocalizations {
   /// **'✦ ULTIMATE'**
   String get plansUltimateBadge;
 
+  /// Free trial length expressed in days, interpolated into trial labels. Kept in the store's own unit rather than converted, so the stated length always matches the real one.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String trialDurationDays(int count);
+
+  /// Free trial length expressed in weeks, interpolated into trial labels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 week} other{{count} weeks}}'**
+  String trialDurationWeeks(int count);
+
+  /// Free trial length expressed in calendar months, interpolated into trial labels. This is the unit the App Store and our Stripe trial are both configured in.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month} other{{count} months}}'**
+  String trialDurationMonths(int count);
+
+  /// Free trial length expressed in years, interpolated into trial labels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 year} other{{count} years}}'**
+  String trialDurationYears(int count);
+
+  /// Badge shown on a pricing card when the App Store says this Apple ID is still eligible for the product's free introductory offer. Replaces the RECOMMENDED badge while it applies. {duration} comes from trialDuration* (e.g. "1 month").
+  ///
+  /// In en, this message translates to:
+  /// **'FREE TRIAL · {duration}'**
+  String plansFreeTrialBadge(String duration);
+
+  /// Disclosure line shown directly under the price on a pricing card with an available free trial, so the price is not read as being charged today.
+  ///
+  /// In en, this message translates to:
+  /// **'Free for {duration}, then billed automatically. Cancel anytime.'**
+  String plansFreeTrialPriceNote(String duration);
+
+  /// Floating call-to-action button label shown instead of Continue/Upgrade when the selected plan starts with a free trial for this Apple ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Free for {duration}'**
+  String plansStartFreeTrialButton(String duration);
+
   /// Disabled button label on a pricing card when it is the user's current plan, replacing the normal call-to-action.
   ///
   /// In en, this message translates to:

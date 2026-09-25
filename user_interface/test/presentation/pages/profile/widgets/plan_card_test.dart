@@ -6,11 +6,15 @@ import 'package:lefture/presentation/pages/profile/widgets/plan_card.dart';
 import 'package:lefture/presentation/pages/profile/widgets/plan_purchase_state.dart';
 
 void main() {
+  const oneMonthTrial = TrialPeriod(count: 1, unit: TrialPeriodUnit.month);
+
   Widget buildTestWidget({
     required PlanOption plan,
     Locale locale = const Locale('ja'),
     TextScaler textScaler = TextScaler.noScaling,
     double height = 600,
+    TrialPeriod? trialPeriod,
+    String priceLabel = '\$0',
   }) {
     return MaterialApp(
       locale: locale,
@@ -24,10 +28,11 @@ void main() {
               height: height,
               child: PlanCard(
                 plan: plan,
-                state: const PlanPurchaseState(
+                state: PlanPurchaseState(
                   isCurrentPlan: false,
                   package: null,
-                  priceLabel: '\$0',
+                  priceLabel: priceLabel,
+                  trialPeriod: trialPeriod,
                 ),
                 isPurchasing: false,
                 isPendingTarget: false,
@@ -160,6 +165,54 @@ void main() {
       expect(find.text('約週5回の講義'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(4));
       // No FlutterError / overflow thrown
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('PlanCard shows the free trial badge and disclosure when a trial applies', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(plan: maxPlan, trialPeriod: oneMonthTrial, priceLabel: '\$29.99'),
+      );
+      await tester.pump();
+
+      expect(find.text('1ヶ月無料トライアル'), findsOneWidget);
+      expect(find.text('1ヶ月は無料。終了後に自動で課金されます(いつでも解約可能)。'), findsOneWidget);
+      // トライアル表記がある間は「おすすめ」バッジは同じ枠を譲る。
+      expect(find.text('★ おすすめ'), findsNothing);
+
+      // $0が主役(通常サイズ)として右側に表示され、元の価格は左側に0.7倍ほど
+      // 縮小してグレー+取り消し線で残る。
+      expect(find.text('\$0'), findsOneWidget);
+      final originalPriceFinder = find.text('\$29.99');
+      expect(originalPriceFinder, findsOneWidget);
+      final originalPriceWidget = tester.widget<Text>(originalPriceFinder);
+      expect(originalPriceWidget.style?.decoration, TextDecoration.lineThrough);
+      expect(originalPriceWidget.style?.fontSize, lessThan(32));
+
+      final zeroPriceWidget = tester.widget<Text>(find.text('\$0'));
+      expect(zeroPriceWidget.style?.fontSize, 32);
+      expect(zeroPriceWidget.style?.decoration, isNot(TextDecoration.lineThrough));
+    });
+
+    testWidgets('PlanCard shows the recommended badge again when no trial applies', (tester) async {
+      await tester.pumpWidget(buildTestWidget(plan: maxPlan));
+      await tester.pump();
+
+      expect(find.text('★ おすすめ'), findsOneWidget);
+      expect(find.textContaining('無料トライアル'), findsNothing);
+    });
+
+    testWidgets('PlanCard with a free trial does not overflow when text is scaled to 1.35x', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          plan: maxPlan,
+          textScaler: const TextScaler.linear(1.35),
+          height: 450.0 * 1.35,
+          trialPeriod: oneMonthTrial,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('1ヶ月無料トライアル'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

@@ -65,6 +65,7 @@ class PlanSelectionView extends HookConsumerWidget {
     final summaryAsync = ref.watch(creditSummaryProvider);
     final plansAsync = ref.watch(claimablePlansProvider);
     final offeringsAsync = ref.watch(revenueCatOfferingsProvider);
+    final introEligibilityAsync = ref.watch(revenueCatIntroEligibilityProvider);
 
     final purchasingPlanId = useState<String?>(null);
 
@@ -449,6 +450,7 @@ class PlanSelectionView extends HookConsumerWidget {
         plan: selectedPlan,
         summary: summary,
         offerings: offeringsAsync.asData?.value,
+        introEligibility: introEligibilityAsync.asData?.value,
       );
 
       final isPendingTargetSelected = pendingPlan != null && selectedPlan.id == pendingPlan.id;
@@ -515,7 +517,12 @@ class PlanSelectionView extends HookConsumerWidget {
             onContinue = () => handleClaimFree(selectedPlan);
           }
         } else if (purchaseState.package != null) {
-          continueLabel = actionLabel;
+          // カードにトライアルのバッジを出している時は、CTAの文言も揃える
+          // (カードは「無料」なのにボタンは「アップグレード」という
+          //  食い違いを作らない)。購入処理自体は通常と同じ経路。
+          continueLabel = purchaseState.trialPeriod != null
+              ? l10n.plansStartFreeTrialButton(purchaseState.trialPeriod!.localizedDuration(l10n))
+              : actionLabel;
           onContinue = () => handlePurchase(
                 selectedPlan,
                 purchaseState.package!,
@@ -628,6 +635,7 @@ class PlanSelectionView extends HookConsumerWidget {
                               onPageChanged: (i) => selectedIndex.value = i,
                               summary: summary,
                               offerings: offeringsAsync.asData?.value,
+                              introEligibility: introEligibilityAsync.asData?.value,
                               purchasingPlanId: purchasingPlanId.value,
                               pendingPlanId: summary?.pendingPlanId,
                             ),

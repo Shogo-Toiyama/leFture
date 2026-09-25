@@ -11,6 +11,7 @@ from app.services.email_template import (
     build_email_change_email,
     build_password_reset_email,
     build_signup_email,
+    build_trial_ending_reminder_email,
 )
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,29 @@ async def send_email_change_email(
     c = get_email_content(lang)
     html = build_email_change_email(new_email, confirmation_link, lang=lang)
     return await send_email(to, c.EMAIL_CHANGE_SUBJECT, html)
+
+
+async def send_trial_ending_reminder_email(
+    to: str,
+    plan_name: str,
+    end_date: str,
+    renewal_price: str,
+    renewal_interval: str,
+    manage_plan_link: str,
+    display_name: str = "",
+    lang: str = "en",
+) -> dict:
+    """
+    無料トライアル終了リマインダーメール。呼び出し側(トライアル終了日を監視する
+    ワーカー等)がend_date/renewal_price等を渡す。日付・金額の書式化はここでは
+    行わない(呼び出し側でロケールに応じて整形済みの文字列を渡す前提)。
+    """
+    c = get_email_content(lang)
+    html = build_trial_ending_reminder_email(
+        display_name, plan_name, end_date, renewal_price, renewal_interval, manage_plan_link, lang=lang
+    )
+    subject = c.TRIAL_ENDING_SUBJECT.format(plan_name=plan_name, end_date=end_date)
+    return await send_email(to, subject, html)
 
 
 async def send_important_notification(

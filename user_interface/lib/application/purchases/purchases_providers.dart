@@ -20,3 +20,34 @@ final revenueCatOfferingsProvider = FutureProvider.autoDispose<Offerings?>((ref)
     return null;
   }
 });
+
+/// 商品ID → 「この端末のApple IDが実際にその商品の無料トライアル(導入オファー)を
+/// 受けられるか」のStoreKit判定。
+///
+/// バックエンドの課金履歴(/billing/plansのtrial_period_months)はWeb(Stripe)の
+/// トライアル可否しか表さない —— Appleのトライアル資格はApple ID単位で
+/// App Store側にしか履歴が無く、こちらのアカウント履歴からは判定できない。
+/// そのためiOSでのトライアル表記は必ずこちらを判定材料にする(ウェブで課金済みの
+/// ユーザーがApple側ではまだ資格を持つ、という食い違いもこれで正しく出る)。
+///
+/// Androidはストア課金を一切行わない(RevenueCatもAndroid用キー未構成。
+/// SDK自体もAndroidでは常にunknownを返す)ため、即座に空を返す。
+final revenueCatIntroEligibilityProvider =
+    FutureProvider.autoDispose<Map<String, IntroEligibility>>((ref) async {
+  if (Platform.isAndroid) return const {};
+
+  final offerings = await ref.watch(revenueCatOfferingsProvider.future);
+  final productIds = offerings?.current?.availablePackages
+          .map((pkg) => pkg.storeProduct.identifier)
+          .toList(growable: false) ??
+      const <String>[];
+  if (productIds.isEmpty) return const {};
+
+  try {
+    return await Purchases.checkTrialOrIntroductoryPriceEligibility(productIds);
+  } on PlatformException {
+    // 資格判定が取れない時はバッジを出さない(出してから「実は課金される」より、
+    // 出さずに実際は無料だった方が害が小さい)。
+    return const {};
+  }
+});

@@ -226,6 +226,9 @@ export const ja: Record<keyof typeof en, string> = {
   contactSupport: 'サポートに連絡',
   plansIosOnlyBadge: 'iOSアプリのみ',
   plansStartFree: 'Freeプランで始める',
+  plansStartFreeTrial: '{n}ヶ月間無料で試す',
+  plansFreeTrialBadge: '{n}ヶ月無料トライアル',
+  plansFreeTrialThenPrice: 'トライアル期間中は無料。終了後に自動で課金されます(いつでも解約可能)。',
   plansUpgrade: 'アップグレード',
   plansDowngrade: 'ダウングレード',
   plansWorking: '処理中…',
@@ -313,14 +316,19 @@ export const ja: Record<keyof typeof en, string> = {
 
   // Stripe checkout disclosure
   stripeCheckoutPayButton: '{amount}を支払う',
+  stripeCheckoutStartTrialButton: '{n}ヶ月間の無料トライアルを開始',
   stripeCheckoutPayButtonProcessing: '処理中…',
   stripeCheckoutEveryMonth: '毎月',
   stripeCheckoutEveryNMonths: '{n}か月ごと',
   stripeCheckoutHeroMonth: ' / 月',
   stripeCheckoutHeroNMonths: ' / {n}ヶ月ごと',
+  stripeCheckoutHeroFreeTrial: '無料トライアル',
+  stripeCheckoutHeroFreeTrialMonths: '{n}ヶ月間無料',
   stripeCheckoutDisclosureOneTime: '本日のご請求額: {amount}。1回限りのお支払いです。自動更新はありません。',
   stripeCheckoutDisclosureRecurring:
     '本日のご請求額: {amount}。以降、解約されるまで{interval}{renewal}が自動的に請求されます。解約はいつでもPlansページから行え、現在の請求期間の終了時に反映されます。',
+  stripeCheckoutDisclosureTrial:
+    '{months}ヶ月間無料でお試しいただけます(本日の請求はありません)。トライアル終了時に解約されていない場合、自動的に{interval}{renewal}が請求されます。解約はいつでもPlansページから行えます。',
   stripeCheckoutConsent: '「{payLabel}」を押すことで、{terms}および{privacy}に同意したものとみなされます。',
   stripeCheckoutTermsLink: '利用規約',
   stripeCheckoutPrivacyLink: 'プライバシーポリシー',

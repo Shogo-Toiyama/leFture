@@ -195,6 +195,7 @@ export const PurchaseCreditsPage: React.FC = () => {
           title={pendingCheckout.title}
           creditAmount={pendingCheckout.creditAmount}
           clientSecret={pendingCheckout.clientSecret}
+          clientSecretKind="payment"
           charge={{ amountCents: pendingCheckout.amountCents, currency: pendingCheckout.currency, recurring: null }}
           onClose={() => setPendingCheckout(null)}
           onSuccess={handleCheckoutSuccess}

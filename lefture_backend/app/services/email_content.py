@@ -59,6 +59,28 @@ class EmailContentEN:
     SUPPORT_ADMIN_BODY = "A new support ticket has been submitted by a user:"
     SUPPORT_ADMIN_FOOTER_NOTE = "Replying directly to this email will respond to the user's email address (<strong>{user_email}</strong>)."
 
+    # --- Trial Ending Reminder ---
+    # 送信タイミング(トライアル終了の7日前)は複数州の自動更新法(カリフォルニア州
+    # ARL等)が要求する通知期間(トライアル終了の3〜21日前)に収まるよう選んでいる。
+    # 金額・頻度・解約方法の明示も同法が求める開示事項に対応する。
+    TRIAL_ENDING_SUBJECT = "Your leFture {plan_name} trial ends on {end_date}"
+    TRIAL_ENDING_HEADING = "Your Free Trial Is Ending Soon"
+    TRIAL_ENDING_BODY = (
+        "Your free trial of the <strong>{plan_name}</strong> plan ends on "
+        "<strong>{end_date}</strong>. After that, your subscription will "
+        "automatically continue and your payment method will be charged "
+        "unless you cancel before then."
+    )
+    TRIAL_ENDING_INFO_PLAN_LABEL = "Plan"
+    TRIAL_ENDING_INFO_PRICE_LABEL = "Price after trial"
+    TRIAL_ENDING_INFO_DATE_LABEL = "First charge date"
+    TRIAL_ENDING_BUTTON = "Manage or Cancel Subscription"
+    TRIAL_ENDING_FOOTER_NOTE = (
+        "You can cancel anytime before the trial ends from the Plans page in "
+        "your account, at no charge. If you take no action, your subscription "
+        "continues automatically."
+    )
+
 
 class EmailContentJA:
     """日本語用メール文言定義"""
@@ -106,6 +128,27 @@ class EmailContentJA:
     SUPPORT_ADMIN_HEADING = "[要対応] 新規サポートお問い合わせ"
     SUPPORT_ADMIN_BODY = "ユーザーより新しいサポート問い合わせが送信されました："
     SUPPORT_ADMIN_FOOTER_NOTE = "このメールに直接返信すると、ユーザーのメールアドレス（<strong>{user_email}</strong>）へ返信されます。"
+
+    # --- Trial Ending Reminder ---
+    # 送信タイミング(トライアル終了の7日前)は米国複数州の自動更新法(カリフォルニア州
+    # ARL等、トライアル終了の3〜21日前に通知を義務付け)に収まるよう選んでいる。
+    # 日本の特商法には同種の「終了前通知」の明文義務は無いが、同じ体験に揃える。
+    TRIAL_ENDING_SUBJECT = "【leFture】{plan_name}プランの無料トライアルは{end_date}に終了します"
+    TRIAL_ENDING_HEADING = "無料トライアルはまもなく終了します"
+    TRIAL_ENDING_BODY = (
+        "ご利用中の<strong>{plan_name}</strong>プランの無料トライアルは"
+        "<strong>{end_date}</strong>に終了します。それ以降は自動的に有料プランへ"
+        "移行し、登録済みのお支払い方法に課金されます。継続を希望されない場合は、"
+        "それまでに解約手続きをお願いいたします。"
+    )
+    TRIAL_ENDING_INFO_PLAN_LABEL = "プラン"
+    TRIAL_ENDING_INFO_PRICE_LABEL = "トライアル終了後の料金"
+    TRIAL_ENDING_INFO_DATE_LABEL = "初回課金日"
+    TRIAL_ENDING_BUTTON = "プランを管理・解約する"
+    TRIAL_ENDING_FOOTER_NOTE = (
+        "トライアル終了前であれば、アカウントのPlansページからいつでも無料で"
+        "解約いただけます。特に操作がない場合、そのまま自動的にご契約が継続します。"
+    )
 
 
 def get_email_content(lang: str) -> Type[EmailContentEN]:

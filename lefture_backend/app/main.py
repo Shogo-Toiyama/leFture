@@ -12,6 +12,7 @@ import json
 import time
 import uuid
 import hmac
+import calendar
 import html as html_lib
 import asyncio
 import logging
@@ -86,6 +87,7 @@ from app.services.email_service import (
     send_password_reset_email,
     send_email_change_email,
     send_important_notification,
+    send_trial_ending_reminder_email,
 )
 from app.services.task_runners import (
     receive_transcribe_chunk,
@@ -1008,8 +1010,15 @@ async def billing_plans(request: Request):
     実際の購入操作の可否はclaim_plan() SQL関数側のclaim_modeチェックが
     引き続き担保する。store_purchaseプランの有効化はRevenueCat Webhook
     経由でのみ行われ、/billing/claim-planでは弾かれる)。
+
+    trial_period_monthsは「このユーザーがWeb(Stripe)でこのプランの無料トライアルを
+    何ヶ月受けられるか(対象外ならnull)」で、switch-planが実際に付与判定に使うのと
+    同じ条件・同じ期間を返す(表示と実挙動がズレないよう、判定関数と定数を
+    共有する)。Apple経由のトライアル可否はApple ID単位でStoreKitしか
+    知らないため、この値はiOS側のバッジ表示には使わない(Flutter側は
+    Purchases.checkTrialOrIntroductoryPriceEligibilityで自分で判定する)。
     """
-    await _get_authenticated_user_id(request)  # 認証チェックのみ(user_idは使わない)
+    uid = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
 
@@ -1036,6 +1045,17 @@ async def billing_plans(request: Request):
             continue
         plan.pop("disabled_at", None)
         claimable.append(plan)
+
+    has_paid_before = await _user_has_ever_had_paid_plan(admin_client, uid)
+    for plan in claimable:
+        eligible = (
+            plan.get("tier_level") == _TRIAL_ELIGIBLE_PLAN_TIER_LEVEL
+            and bool(plan.get("stripe_price_id"))
+            and not has_paid_before
+        )
+        # 期間もサーバーから返す(「1ヶ月」という表記をクライアント側に
+        # ハードコードさせないため。nullは対象外)。
+        plan["trial_period_months"] = _TRIAL_PERIOD_MONTHS if eligible else None
 
     await _fill_live_stripe_prices(claimable)
 
@@ -1633,7 +1653,69 @@ async def _get_or_create_stripe_customer(admin_client, uid: str) -> str:
     return customer["id"]
 
 
-async def _create_new_stripe_subscription(customer_id: str, uid: str, plan_id: str, stripe_price_id: str):
+# Web版Maxプラン(DB上のname='Premium', tier_level=3)限定の初回無料トライアル。
+# 「過去に一度もプランを持ったことがないユーザーだけ」に絞るのは
+# _user_has_ever_had_paid_plan() が担う。Apple側の同種トライアルとの二重取りは
+# こちらから検知できないため、規約上の許容として割り切る(コードでは防がない)。
+#
+# 期間は「日数」ではなく「暦月」で持つ。App Store Connectの導入オファーは
+# 3日/1週間/2週間/1ヶ月/…という選択肢しか無く30日を選べないため、Stripe側を
+# trial_period_days=30にすると同じ「無料トライアル」がプラットフォームで
+# 28〜31日ずれる(2月なら実際28日なのに「30日間無料」と表示してしまう)。
+# Stripeはtrial_endにunix timestampを直接渡せるので、そちらで暦月に揃える。
+_TRIAL_ELIGIBLE_PLAN_TIER_LEVEL = 3
+_TRIAL_PERIOD_MONTHS = 1
+
+
+def _add_calendar_months(dt: datetime, months: int) -> datetime:
+    """dtのmonthsヶ月後(暦月)。月末は繰り上げずにその月の末日へ丸める
+    (1/31の1ヶ月後は2/28、App Store/Stripeの月次サブスクと同じ挙動)。"""
+    month_index = dt.month - 1 + months
+    year = dt.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+# トライアル終了リマインダーメールを送るタイミング(終了の何日前か)。
+# カリフォルニア州ARL等、米国複数州の自動更新法がトライアル終了3〜21日前の
+# 通知を義務付けており、7日はその範囲に収まる一般的な目安値。
+_TRIAL_REMINDER_DAYS_BEFORE = 7
+
+
+async def _user_has_ever_had_paid_plan(admin_client, uid: str) -> bool:
+    """
+    このuidが過去に(プラットフォーム問わず、現在activeかどうかも問わず)
+    有料プランを持ったことがあるか。claim_plan/grant_store_subscription_credits/
+    このファイルのswitch-plan、いずれの経路でもuser_subscription_mappings行は
+    (user_id, plan_id)へのUPSERTで、解約後もstatusが変わるだけで行は消えないため、
+    「1行でも claim_mode <> 'self_serve' があるか」が履歴確認として使える。
+    """
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("user_subscription_mappings")
+            .select("subscription_plans!user_subscription_mappings_plan_id_fkey!inner(claim_mode)")
+            .eq("user_id", uid)
+            .execute()
+    )
+    rows = res.data or []
+    return any(row["subscription_plans"]["claim_mode"] != "self_serve" for row in rows)
+
+
+async def _create_new_stripe_subscription(
+    customer_id: str, uid: str, plan_id: str, stripe_price_id: str, trial_months: int | None = None
+):
+    trial_kwargs = {}
+    if trial_months:
+        # trial_period_days(日数)ではなくtrial_end(時刻)で指定する。
+        # Apple側の導入オファーが暦月単位でしか設定できないため、
+        # 「1ヶ月無料」の実際の長さを両プラットフォームで一致させる。
+        trial_end = _add_calendar_months(datetime.now(timezone.utc), trial_months)
+        trial_kwargs["trial_end"] = int(trial_end.timestamp())
+        # トライアル中はpayment_behavior=default_incompleteでも$0請求のため
+        # PaymentIntentが発生しない(pending_setup_intentでカードだけ登録させる)。
+        # カードが結局登録されないまま試用期間が終わった場合は、無料引き延ばしを
+        # 防ぐためサブスク自体を自動キャンセルする。
+        trial_kwargs["trial_settings"] = {"end_behavior": {"missing_payment_method": "cancel"}}
+
     try:
         return await asyncio.to_thread(
             stripe.Subscription.create,
@@ -1641,11 +1723,12 @@ async def _create_new_stripe_subscription(customer_id: str, uid: str, plan_id: s
             items=[{"price": stripe_price_id}],
             payment_behavior="default_incomplete",
             payment_settings={"save_default_payment_method": "on_subscription"},
-            expand=["latest_invoice.confirmation_secret"],
+            expand=["latest_invoice.confirmation_secret", "pending_setup_intent"],
             metadata={
                 "supabase_user_id": uid,
                 "subscription_plan_id": plan_id,
             },
+            **trial_kwargs,
         )
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error creating Subscription for plan {plan_id}: {e}", exc_info=True)
@@ -1897,15 +1980,53 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
                     )
 
         customer_id = customer_id or await _get_or_create_stripe_customer(admin_client, uid)
+
+        trial_months = None
+        if (
+            target_plan.get("tier_level") == _TRIAL_ELIGIBLE_PLAN_TIER_LEVEL
+            and not await _user_has_ever_had_paid_plan(admin_client, uid)
+        ):
+            # トライアルは$0請求書が即座にpaid扱いになりRevenueCat通知→クレジット
+            # 付与まで進む(invoice.payment_succeededを待つ通常課金と違い、実際の
+            # 支払いなしで進む)。user_subscription_mappingsへの反映はRevenueCatの
+            # 折り返しwebhookを待つため数秒ラグがあり、_user_has_ever_had_paid_plan()
+            # だけでは連打(二重にトライアルsubscriptionを作られる)を防げない。
+            # Stripe側は即時一貫性があるため、ここで直接確認する。
+            try:
+                existing_subs = await asyncio.to_thread(
+                    stripe.Subscription.list, customer=customer_id, status="all", limit=10
+                )
+            except stripe.error.StripeError as e:
+                logger.error(f"Failed to list Stripe subscriptions for trial guard (customer {customer_id}): {e}", exc_info=True)
+                raise HTTPException(status_code=502, detail="Failed to look up current subscription")
+            if not any(s["status"] in ("trialing", "incomplete", "active", "past_due") for s in existing_subs["data"]):
+                trial_months = _TRIAL_PERIOD_MONTHS
+
         subscription = await _create_new_stripe_subscription(
-            customer_id, uid, target_plan["id"], target_plan["stripe_price_id"]
+            customer_id, uid, target_plan["id"], target_plan["stripe_price_id"], trial_months=trial_months
         )
+
+        pending_setup_intent = subscription.get("pending_setup_intent")
+        if pending_setup_intent:
+            # トライアル適用時: 初回請求が$0のためPaymentIntentは作られず、代わりに
+            # カード登録用のSetupIntentが返る。フロントはconfirmPaymentではなく
+            # confirmSetupでこのclient_secretを確定させる必要がある。
+            return {
+                "client_secret": pending_setup_intent["client_secret"],
+                "client_secret_kind": "setup",
+                "subscription_id": subscription["id"],
+                "amount_due_cents": 0,
+                "currency": subscription["items"]["data"][0]["price"]["currency"],
+                "trial_period_months": trial_months,
+            }
+
         latest_invoice = subscription["latest_invoice"]
         confirmation_secret = latest_invoice["confirmation_secret"]
         # amount_dueはApple乗り換え割引(負のInvoiceItem)適用後の「今日実際に
         # 請求される額」。チェックアウト画面の開示文(自動更新法対応)に使う。
         return {
             "client_secret": confirmation_secret["client_secret"],
+            "client_secret_kind": "payment",
             "subscription_id": subscription["id"],
             "amount_due_cents": latest_invoice["amount_due"],
             "currency": latest_invoice["currency"],
@@ -2576,6 +2697,17 @@ async def billing_stripe_webhook(request: Request, stripe_signature: str = Heade
 
     if event_type == "invoice.payment_succeeded":
         return await _handle_stripe_subscription_invoice_paid(event)
+
+    if event_type == "invoice.paid":
+        # トライアル開始時の$0請求書はamount_due=0のまま自動的にpaid扱いになり、
+        # invoice.payment_succeededは発火しない(invoice.paidだけが飛んでくる)。
+        # 通常の課金はinvoice.payment_succeeded側で既に処理しているので、ここは
+        # $0請求書(トライアル開始)だけを拾う。それ以外のinvoice.paidは無視する
+        # (invoice.payment_succeededと二重にRevenueCat通知を送らないため)。
+        invoice = event["data"]["object"]
+        if invoice.get("amount_due") == 0:
+            return await _handle_stripe_subscription_invoice_paid(event)
+        return {"status": "ignored", "reason": "non_zero_invoice_paid_handled_by_payment_succeeded"}
 
     if event_type != "payment_intent.succeeded":
         return {"status": "ignored", "event_type": event_type}
@@ -4308,6 +4440,153 @@ async def _patrol_detect_upgrade_cycling() -> dict:
     return {"suspects": len(suspects), "notified": ABUSE_ALERT_EMAIL}
 
 
+def _format_trial_reminder_date(unix_ts: int, lang: str) -> str:
+    """トライアル終了リマインダーメール本文用の日付表示。ロケール差はこの
+    2パターンのみなので、標準ライブラリのlocaleモジュール(OS依存の
+    ロケールデータが必要で環境によって壊れやすい)には頼らず、直接組み立てる。"""
+    dt = datetime.fromtimestamp(unix_ts, tz=timezone.utc)
+    if lang and lang.lower().startswith("ja"):
+        return f"{dt.year}年{dt.month}月{dt.day}日"
+    return dt.strftime("%B %d, %Y")
+
+
+async def _patrol_send_trial_ending_reminders() -> dict:
+    """
+    毎日1回、_TRIAL_REMINDER_DAYS_BEFORE日後にトライアルが終わるStripeサブスクを
+    検出してリマインダーメールを送る。米国複数州の自動更新法(カリフォルニア州ARL等、
+    トライアル終了の3〜21日前の通知を義務付け)への対応。
+
+    トライアル中かどうかの判定はStripe自体(status='trialing')を直接見る
+    ——このアプリのDB(user_subscription_mappings)はStripe/Apple問わず
+    'active'としか記録しないため、トライアル中か通常課金中かをDBだけでは
+    区別できない。Apple経由のトライアルはそもそもStripeを経由しないため、
+    ここには出てこない(Apple側の同種の通知はApple自身が担う)。
+
+    冪等性はrevenuecat_webhook_eventsを「送った/送っていない」の汎用台帳として
+    流用する(テーブル名は歴史的経緯だが、event_id text主キーの単純な冪等性
+    チェックとして安全に共用できる。20260909000000のコメント参照)。
+    サブスクIDから作った合成キーで、同じサブスクに二度送らないようにする。
+    """
+    admin_client = get_supabase_client()
+
+    try:
+        trialing_subs = await asyncio.to_thread(
+            lambda: list(stripe.Subscription.list(status="trialing", limit=100).auto_paging_iter())
+        )
+    except stripe.error.StripeError as e:
+        logger.error(f"Failed to list trialing subscriptions for reminder patrol: {e}", exc_info=True)
+        return {"error": str(e)}
+
+    now = datetime.now(timezone.utc)
+    target_date = (now + timedelta(days=_TRIAL_REMINDER_DAYS_BEFORE)).date()
+
+    sent = 0
+    already_sent = 0
+    errors = 0
+
+    for sub in trialing_subs:
+        trial_end = sub.get("trial_end")
+        if not trial_end:
+            continue
+        if datetime.fromtimestamp(trial_end, tz=timezone.utc).date() != target_date:
+            continue
+
+        subscription_id = sub["id"]
+        reminder_key = f"trial_reminder:{subscription_id}"
+
+        try:
+            existing = await asyncio.to_thread(
+                lambda: admin_client.table("revenuecat_webhook_events")
+                    .select("event_id")
+                    .eq("event_id", reminder_key)
+                    .maybe_single()
+                    .execute()
+            )
+            if existing and existing.data:
+                already_sent += 1
+                continue
+        except Exception as e:
+            logger.error(f"Failed to check trial reminder idempotency for {subscription_id}: {e}", exc_info=True)
+            errors += 1
+            continue
+
+        metadata = sub["metadata"].to_dict()
+        uid = metadata.get("supabase_user_id")
+        plan_id = metadata.get("subscription_plan_id")
+        if not uid or not plan_id:
+            logger.error(f"Trialing subscription {subscription_id} missing metadata for reminder")
+            errors += 1
+            continue
+
+        try:
+            user_res = await asyncio.to_thread(admin_client.auth.admin.get_user_by_id, uid)
+            user = user_res.user if user_res else None
+            if not user or not user.email:
+                raise RuntimeError("user or email not found")
+        except Exception as e:
+            logger.error(f"Failed to look up user {uid} for trial reminder: {e}", exc_info=True)
+            errors += 1
+            continue
+
+        user_metadata = user.user_metadata or {}
+        display_name = user_metadata.get("display_name", "")
+        lang = user_metadata.get("display_language", "en")
+
+        try:
+            plan_res = await asyncio.to_thread(
+                lambda: admin_client.table("subscription_plans")
+                    .select("name")
+                    .eq("id", plan_id)
+                    .maybe_single()
+                    .execute()
+            )
+            plan_name = (plan_res.data or {}).get("name") or "Max"
+        except Exception as e:
+            logger.error(f"Failed to look up plan name for {plan_id}: {e}", exc_info=True)
+            plan_name = "Max"
+
+        price_item = sub["items"]["data"][0]["price"]
+        unit_amount = price_item.get("unit_amount")
+        renewal_price = f"${unit_amount / 100:,.2f}" if unit_amount is not None else "-"
+        interval = (price_item.get("recurring") or {}).get("interval") or "month"
+        if lang and lang.lower().startswith("ja"):
+            renewal_interval = {"month": "毎月", "year": "毎年"}.get(interval, interval)
+        else:
+            renewal_interval = {"month": "every month", "year": "every year"}.get(interval, f"every {interval}")
+
+        end_date_str = _format_trial_reminder_date(trial_end, lang)
+
+        try:
+            await send_trial_ending_reminder_email(
+                to=user.email,
+                plan_name=plan_name,
+                end_date=end_date_str,
+                renewal_price=renewal_price,
+                renewal_interval=renewal_interval,
+                manage_plan_link="https://app.lefture.com/account/plans",
+                display_name=display_name,
+                lang=lang,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send trial ending reminder for {subscription_id}: {e}", exc_info=True)
+            errors += 1
+            continue
+
+        try:
+            await asyncio.to_thread(
+                lambda: admin_client.table("revenuecat_webhook_events")
+                    .insert({"event_id": reminder_key, "event_type": "TRIAL_REMINDER_SENT"})
+                    .execute()
+            )
+        except Exception as e:
+            # 既に他プロセスが同時に処理し終えていた場合のunique制約違反等。
+            # メール送信自体は成功しているので致命的ではない。
+            logger.warning(f"Could not record trial reminder idempotency marker for {subscription_id}: {e}")
+        sent += 1
+
+    return {"sent": sent, "already_sent": already_sent, "errors": errors, "target_date": target_date.isoformat()}
+
+
 async def _patrol_enqueue_audio_chunks_cleanup() -> dict:
     """
     毎日UTC PATROL_DAILY_HOUR_UTC時付近に1回だけ、patrol()から呼ばれる。
@@ -4404,6 +4683,12 @@ async def patrol():
         except Exception as e:
             results["detect_upgrade_cycling"] = {"error": str(e)}
             print(f"⚠️ Patrol check 'detect_upgrade_cycling' failed: {e}")
+
+        try:
+            results["send_trial_ending_reminders"] = await _patrol_send_trial_ending_reminders()
+        except Exception as e:
+            results["send_trial_ending_reminders"] = {"error": str(e)}
+            print(f"⚠️ Patrol check 'send_trial_ending_reminders' failed: {e}")
 
         # 毎月1日(:00付近)に1回だけ、R2バケット全体の直接スイープを走らせる(孤児チャンクのバックストップ)
         if now.day == 1:

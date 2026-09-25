@@ -28,6 +28,14 @@ export interface CheckoutCharge {
 export interface StripeCheckoutModalProps {
   title: string;
   clientSecret: string;
+  /**
+   * 'setup'は無料トライアル開始時: 今日の請求が$0のためPaymentIntentが存在せず、
+   * 代わりにカード登録用のSetupIntentのclient_secretが渡ってくる。この場合は
+   * confirmPaymentではなくconfirmSetupで確定させる必要がある。
+   */
+  clientSecretKind: 'payment' | 'setup';
+  /** clientSecretKind==='setup'の時だけ渡される、トライアル期間(暦月)。 */
+  trialPeriodMonths?: number;
   charge: CheckoutCharge;
   onClose: () => void;
   tierLevel?: number;
@@ -46,6 +54,8 @@ type CheckoutTheme = 'red' | 'blue' | 'purple' | 'gold';
 export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   title,
   clientSecret,
+  clientSecretKind,
+  trialPeriodMonths,
   charge,
   onClose,
   tierLevel,
@@ -89,6 +99,8 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  const isTrialSetup = clientSecretKind === 'setup';
+  const trialMonths = trialPeriodMonths ?? null;
   const formattedAmount = formatMoney(charge.amountCents, charge.currency, locale);
 
   return (
@@ -129,13 +141,23 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
           <h2 className="stripe-checkout-hero-title">{title}</h2>
 
           <div className="stripe-checkout-hero-price-row">
-            <span className="stripe-checkout-hero-price">{formattedAmount}</span>
-            {charge.recurring && (
-              <span className="stripe-checkout-hero-interval">
-                {charge.recurring.intervalMonths === 1
-                  ? t('stripeCheckoutHeroMonth')
-                  : t('stripeCheckoutHeroNMonths', { n: String(charge.recurring.intervalMonths) })}
+            {isTrialSetup ? (
+              <span className="stripe-checkout-hero-price">
+                {trialMonths !== null
+                  ? t('stripeCheckoutHeroFreeTrialMonths', { n: String(trialMonths) })
+                  : t('stripeCheckoutHeroFreeTrial')}
               </span>
+            ) : (
+              <>
+                <span className="stripe-checkout-hero-price">{formattedAmount}</span>
+                {charge.recurring && (
+                  <span className="stripe-checkout-hero-interval">
+                    {charge.recurring.intervalMonths === 1
+                      ? t('stripeCheckoutHeroMonth')
+                      : t('stripeCheckoutHeroNMonths', { n: String(charge.recurring.intervalMonths) })}
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -143,7 +165,13 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
         {/* ── フォームコンテンツ ── */}
         <div className="stripe-checkout-body">
           <Elements stripe={stripePromise} options={{ clientSecret, appearance, locale: language }}>
-            <CheckoutForm charge={charge} onClose={onClose} onSuccess={onSuccess} />
+            <CheckoutForm
+              charge={charge}
+              clientSecretKind={clientSecretKind}
+              trialMonths={trialMonths}
+              onClose={onClose}
+              onSuccess={onSuccess}
+            />
           </Elements>
         </div>
       </div>
@@ -176,18 +204,36 @@ function interpolate(template: string, values: Record<string, React.ReactNode>):
   return parts;
 }
 
-function buildPayLabel(charge: CheckoutCharge, locale: string, t: Translate): string {
+function buildPayLabel(charge: CheckoutCharge, locale: string, t: Translate, trialMonths: number | null): string {
+  if (trialMonths !== null) {
+    return t('stripeCheckoutStartTrialButton', { n: String(trialMonths) });
+  }
   const amount = formatMoney(charge.amountCents, charge.currency, locale);
   return t('stripeCheckoutPayButton', { amount });
 }
 
-const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; locale: string; t: Translate }> = ({
+const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; locale: string; t: Translate; trialMonths: number | null }> = ({
   charge,
   locale,
   t,
+  trialMonths,
 }) => {
-  const amount = formatMoney(charge.amountCents, charge.currency, locale);
   const { recurring } = charge;
+
+  if (trialMonths !== null && recurring) {
+    const renewal = formatMoney(Math.round(recurring.priceUsd * 100), 'usd', locale);
+    const interval =
+      recurring.intervalMonths === 1
+        ? t('stripeCheckoutEveryMonth')
+        : t('stripeCheckoutEveryNMonths', { n: String(recurring.intervalMonths) });
+    return (
+      <p className="stripe-checkout-disclosure">
+        {t('stripeCheckoutDisclosureTrial', { months: String(trialMonths), renewal, interval })}
+      </p>
+    );
+  }
+
+  const amount = formatMoney(charge.amountCents, charge.currency, locale);
 
   if (!recurring) {
     return <p className="stripe-checkout-disclosure">{t('stripeCheckoutDisclosureOneTime', { amount })}</p>;
@@ -205,15 +251,17 @@ const CheckoutDisclosure: React.FC<{ charge: CheckoutCharge; locale: string; t: 
   );
 };
 
-const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSuccess: () => Promise<void> }> = ({
-  charge,
-  onClose,
-  onSuccess,
-}) => {
+const CheckoutForm: React.FC<{
+  charge: CheckoutCharge;
+  clientSecretKind: 'payment' | 'setup';
+  trialMonths: number | null;
+  onClose: () => void;
+  onSuccess: () => Promise<void>;
+}> = ({ charge, clientSecretKind, trialMonths, onClose, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { locale, t } = useLanguage();
-  const payLabel = buildPayLabel(charge, locale, t);
+  const payLabel = buildPayLabel(charge, locale, t, clientSecretKind === 'setup' ? trialMonths : null);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -225,11 +273,32 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
     setSubmitting(true);
     setErrorMessage(null);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: 'if_required',
-      confirmParams: { return_url: window.location.href },
-    });
+    // トライアル開始時はclient_secretがSetupIntentのものなので、confirmPaymentでは
+    // なくconfirmSetupで確定させる(PaymentIntent用のメソッドをSetupIntentの
+    // client_secretに対して呼ぶとStripe.js側でエラーになる)。
+    let error: { message?: string } | undefined;
+    let succeededOrProcessing = false;
+
+    if (clientSecretKind === 'setup') {
+      const result = await stripe.confirmSetup({
+        elements,
+        redirect: 'if_required',
+        confirmParams: { return_url: window.location.href },
+      });
+      error = result.error;
+      succeededOrProcessing =
+        !!result.setupIntent && (result.setupIntent.status === 'succeeded' || result.setupIntent.status === 'processing');
+    } else {
+      const result = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+        confirmParams: { return_url: window.location.href },
+      });
+      error = result.error;
+      succeededOrProcessing =
+        !!result.paymentIntent &&
+        (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'processing');
+    }
 
     if (error) {
       setErrorMessage(error.message ?? t('stripeCheckoutPaymentFailed'));
@@ -237,9 +306,10 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
       return;
     }
 
-    if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing')) {
-      // 決済自体は完了。ここから先(反映確認)もsubmitting=trueのまま続け、
-      // onSuccess側が実際にプランが切り替わるまで待ってからこのモーダルを閉じる。
+    if (succeededOrProcessing) {
+      // 決済(またはカード登録)自体は完了。ここから先(反映確認)もsubmitting=true
+      // のまま続け、onSuccess側が実際にプランが切り替わるまで待ってから
+      // このモーダルを閉じる。
       await onSuccess();
       return;
     }
@@ -252,7 +322,7 @@ const CheckoutForm: React.FC<{ charge: CheckoutCharge; onClose: () => void; onSu
     <form className="stripe-checkout-form" onSubmit={handleSubmit}>
       <PaymentElement />
       {errorMessage && <p className="notice notice-error">{errorMessage}</p>}
-      <CheckoutDisclosure charge={charge} locale={locale} t={t} />
+      <CheckoutDisclosure charge={charge} locale={locale} t={t} trialMonths={clientSecretKind === 'setup' ? trialMonths : null} />
       <p className="stripe-checkout-consent">
         {interpolate(t('stripeCheckoutConsent', { payLabel }), {
           terms: (

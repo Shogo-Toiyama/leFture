@@ -224,6 +224,9 @@ export const en = {
   contactSupport: 'Contact support',
   plansIosOnlyBadge: 'iOS app only',
   plansStartFree: 'Start with Free',
+  plansStartFreeTrial: 'Start {n}-month free trial',
+  plansFreeTrialBadge: '{n}-MONTH FREE TRIAL',
+  plansFreeTrialThenPrice: 'Free during the trial, then billed automatically. Cancel anytime.',
   plansUpgrade: 'Upgrade',
   plansDowngrade: 'Downgrade',
   plansWorking: 'Working…',
@@ -312,14 +315,19 @@ export const en = {
 
   // Stripe checkout disclosure
   stripeCheckoutPayButton: 'Pay {amount}',
+  stripeCheckoutStartTrialButton: 'Start {n}-month free trial',
   stripeCheckoutPayButtonProcessing: 'Processing…',
   stripeCheckoutEveryMonth: 'every month',
   stripeCheckoutEveryNMonths: 'every {n} months',
   stripeCheckoutHeroMonth: ' / month',
   stripeCheckoutHeroNMonths: ' / {n} mo',
+  stripeCheckoutHeroFreeTrial: 'Free trial',
+  stripeCheckoutHeroFreeTrialMonths: 'Free for {n} month',
   stripeCheckoutDisclosureOneTime: "Today's charge: {amount}. This is a one-time payment and will not renew.",
   stripeCheckoutDisclosureRecurring:
     "Today's charge: {amount}. Your subscription then renews automatically at {renewal} {interval} until you cancel. You can cancel anytime from the Plans page; cancellation takes effect at the end of the current billing period.",
+  stripeCheckoutDisclosureTrial:
+    "Free for {months} month, no charge today. Your card will be charged {renewal} {interval} automatically when the trial ends, unless you cancel first. You can cancel anytime from the Plans page.",
   stripeCheckoutConsent: 'By clicking "{payLabel}" you agree to the {terms} and {privacy}.',
   stripeCheckoutTermsLink: 'Terms of Service',
   stripeCheckoutPrivacyLink: 'Privacy Policy',
