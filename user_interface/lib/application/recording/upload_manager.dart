@@ -11,6 +11,8 @@ import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/core/utils/network_constants.dart';
 import 'package:lefture/domain/exceptions/account_suspended_exception.dart';
+import 'package:lefture/domain/errors/app_error.dart';
+import 'package:lefture/application/errors/error_reporter.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -267,10 +269,15 @@ class UploadManager {
             // ユーザーがクレジットを追加した後は、手動の「Start Analysis」ボタン
             // (別経路のJobRepository.startAnalysis)で再開できる。
             DevLog.add('💳 [UploadManager] ${job.kind}#${job.id.substring(0, 8)} failed: not retryable (credits/suspension), will not auto-retry: $e');
+            // lastErrorはJSONの封筒で持つ。以前は e.toString() を入れていたため
+            // 型情報が消え、NotStartedView側が
+            // "InsufficientCreditsException(CODE): msg" という書式を正規表現で
+            // パースし直していた(_parseInsufficientCreditsError)。
+            // 封筒にすれば code を読むだけで済む。
             await _repo.updateJobStatus(
               jobId: job.id,
               status: 'retry_wait',
-              lastError: e.toString(),
+              lastError: AppError.from(e, origin: 'upload_manager.${job.kind}').encode(),
               nextRetryAt: DateTime.now().toUtc().add(const Duration(days: 3650)),
               attemptCount: nextAttempt,
             );
@@ -291,10 +298,17 @@ class UploadManager {
           // ここに集約しておけば、今後どこで例外が投げられても必ず可視化される。
           DevLog.add('❌ [UploadManager] ${job.kind}#${job.id.substring(0, 8)} failed (attempt $nextAttempt, next retry in ${delaySeconds}s): $e');
 
+          final appError = AppError.from(e, origin: 'upload_manager.${job.kind}');
+
+          // リトライを使い切ってからではなく、最初の失敗時点で報告する。
+          // ErrorReporterが同一fingerprintの連投を潰すので、バックオフ中の
+          // 再失敗で二重に届くことはない。
+          reportAppError(appError);
+
           await _repo.updateJobStatus(
             jobId: job.id,
             status: 'retry_wait',
-            lastError: e.toString(),
+            lastError: appError.encode(),
             nextRetryAt: nextRetry,
             attemptCount: nextAttempt,
           );
@@ -866,10 +880,13 @@ class UploadManager {
       '(attempt $nextAttempt, next retry in ${delaySeconds}s): $error',
     );
 
+    final appError = AppError.from(error, origin: 'upload_manager.masterAudio');
+    reportAppError(appError);
+
     await _repo.updateJobStatus(
       jobId: job.id,
       status: 'retry_wait',
-      lastError: error,
+      lastError: appError.encode(),
       nextRetryAt: nextRetry,
       attemptCount: nextAttempt,
     );

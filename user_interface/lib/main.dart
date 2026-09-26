@@ -9,6 +9,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/application/errors/error_reporter.dart';
+import 'package:lefture/domain/errors/app_error.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
@@ -32,6 +34,15 @@ const googleWebServerClientId =
 
 void _logUncaughtError(Object error, StackTrace stack) {
   DevLog.add('🔴 [UNCAUGHT ERROR] $error\n$stack');
+
+  // 捕まえ損ねた例外は、リリースビルドでは画面に何も出ない
+  // (ErrorWidget.builderが未設定なのでbuild中の例外は灰色のボックスになる)。
+  // つまり**これまで開発者に一切届いていなかったクラス**のエラーで、
+  // 自動報告の恩恵が最も大きい。ErrorReporter側で
+  // 同一fingerprintの連投は潰されるので、毎フレーム投げても溢れない。
+  reportAppError(
+    AppError.from(error, origin: 'main.uncaught', stack: stack),
+  );
 }
 
 // バックグラウンド/終了状態でのFCM受信を処理するトップレベル関数。
@@ -86,8 +97,17 @@ Future<void> main() async {
     // 設定の永続化を初期化
     await RecordingPreferences().init();
 
+    // ProviderScopeを自前のContainerで作るのは、Riverpodの外側
+    // (runZonedGuarded / FlutterError.onError / PlatformDispatcher.onError)
+    // からもエラー報告を投げられるようにするため。
+    final container = ProviderContainer();
+    installErrorReporter(container.read(errorReporterProvider));
+    // 前回起動時にオフラインで送れずキューに残った分を、起動直後に流す。
+    unawaited(container.read(errorReporterProvider).flush());
+
     runApp(
-      ProviderScope(
+      UncontrolledProviderScope(
+        container: container,
         child: MyApp(),
       ),
     );

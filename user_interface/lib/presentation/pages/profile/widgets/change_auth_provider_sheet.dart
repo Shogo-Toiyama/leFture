@@ -8,6 +8,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/presentation/widgets/social_sign_in_button.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChangeAuthProviderSheet extends HookConsumerWidget {
@@ -49,7 +50,11 @@ class ChangeAuthProviderSheet extends HookConsumerWidget {
       isSubmitting.value = false;
       if (result.hasError) {
         DevLog.add('[LinkFlow] pre-browser error: ${result.error}');
-        errorMessage.value = result.error.toString().replaceAll('Exception: ', '');
+        errorMessage.value = snagMessageFor(
+          l10n,
+          result.error!,
+          origin: 'change_auth_provider.submit',
+        );
         return;
       }
       DevLog.add('[LinkFlow] browser launched, awaiting OAuth callback...');

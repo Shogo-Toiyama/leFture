@@ -955,11 +955,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statusViewFailedLabel => '失敗';
 
   @override
-  String statusScaffoldErrorPrefix(String error) {
-    return 'エラー: $error';
-  }
-
-  @override
   String get statusScaffoldSyncingTitle => '音声を同期しています...';
 
   @override
@@ -2043,11 +2038,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get courseDetailsSheetCreatedLabel => '作成日';
-
-  @override
-  String courseAnnouncementsSheetLoadError(String error) {
-    return 'エラー: $error';
-  }
 
   @override
   String get audioPlayerBarTopicIndexTitle => 'トピック目次';
@@ -3180,4 +3170,91 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get plansSuspendedButton => '停止中は利用できません';
+
+  @override
+  String get snagTitle => 'こちらの不具合です';
+
+  @override
+  String snagBody(String action) {
+    return '$actionの途中で、こちら側で問題が発生しました。開発者には自動で通知済みで、すでに確認を進めています。数分おいてから、もう一度お試しください。';
+  }
+
+  @override
+  String get snagBodyNoAction =>
+      'こちら側で問題が発生しました。開発者には自動で通知済みで、すでに確認を進めています。数分おいてから、もう一度お試しください。';
+
+  @override
+  String get snagNothingLost => 'データは失われていません。';
+
+  @override
+  String snagReported(String time) {
+    return '通知済み · $time';
+  }
+
+  @override
+  String get snagReportQueued => 'オンライン復帰時に通知します';
+
+  @override
+  String get snagEscape => 'お急ぎの場合は、このコードを添えてお問い合わせください。';
+
+  @override
+  String get snagContactButton => 'お問い合わせ';
+
+  @override
+  String get snagRetryButton => 'もう一度試す';
+
+  @override
+  String snagShort(String action) {
+    return '$actionに失敗しました。こちら側の問題で、通知済みです。';
+  }
+
+  @override
+  String snagTechnicalDetails(String code) {
+    return '技術情報 · $code';
+  }
+
+  @override
+  String get snagCopyReport => 'レポートをコピー';
+
+  @override
+  String get errOffline => 'インターネットに接続されていません。通信環境をご確認のうえ、もう一度お試しください。';
+
+  @override
+  String get errTimeout => 'サーバーの応答に通常より時間がかかっています。少し時間をおいてもう一度お試しください。';
+
+  @override
+  String get errSessionExpired => 'セッションの有効期限が切れました。もう一度サインインしてください。';
+
+  @override
+  String get errInvalidCredentials => 'メールアドレスまたはパスワードが正しくありません。';
+
+  @override
+  String get errEmailNotConfirmed => 'サインインの前に、メールアドレスの確認を完了してください。';
+
+  @override
+  String get errEmailAlreadyRegistered => 'このメールアドレスのアカウントは既に存在します。';
+
+  @override
+  String get errWeakPassword => 'パスワードは6文字以上で設定してください。';
+
+  @override
+  String get errInvalidEmail => '有効なメールアドレスを入力してください。';
+
+  @override
+  String get errMissingEmail => 'メールアドレスを入力してください。';
+
+  @override
+  String get errMissingPassword => 'パスワードを入力してください。';
+
+  @override
+  String get errRateLimited => 'リクエストが多すぎます。数分おいてからもう一度お試しください。';
+
+  @override
+  String get errSamePassword => '新しいパスワードは、現在のパスワードと異なるものにしてください。';
+
+  @override
+  String get errSameEmail => '新しいメールアドレスは、現在のものと異なるものにしてください。';
+
+  @override
+  String get errAccountSuspended => 'このアカウントは停止されています。';
 }

@@ -12569,6 +12569,736 @@ class LocalUserProfilesCompanion extends UpdateCompanion<LocalUserProfile> {
   }
 }
 
+class $LocalErrorReportsTable extends LocalErrorReports
+    with TableInfo<$LocalErrorReportsTable, LocalErrorReport> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalErrorReportsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _fingerprintMeta = const VerificationMeta(
+    'fingerprint',
+  );
+  @override
+  late final GeneratedColumn<String> fingerprint = GeneratedColumn<String>(
+    'fingerprint',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _refCodeMeta = const VerificationMeta(
+    'refCode',
+  );
+  @override
+  late final GeneratedColumn<String> refCode = GeneratedColumn<String>(
+    'ref_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originMeta = const VerificationMeta('origin');
+  @override
+  late final GeneratedColumn<String> origin = GeneratedColumn<String>(
+    'origin',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _occurrenceCountMeta = const VerificationMeta(
+    'occurrenceCount',
+  );
+  @override
+  late final GeneratedColumn<int> occurrenceCount = GeneratedColumn<int>(
+    'occurrence_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _firstSeenAtMeta = const VerificationMeta(
+    'firstSeenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> firstSeenAt = GeneratedColumn<DateTime>(
+    'first_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _lastSeenAtMeta = const VerificationMeta(
+    'lastSeenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSeenAt = GeneratedColumn<DateTime>(
+    'last_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _attemptCountMeta = const VerificationMeta(
+    'attemptCount',
+  );
+  @override
+  late final GeneratedColumn<int> attemptCount = GeneratedColumn<int>(
+    'attempt_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextRetryAtMeta = const VerificationMeta(
+    'nextRetryAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextRetryAt = GeneratedColumn<DateTime>(
+    'next_retry_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _givenUpMeta = const VerificationMeta(
+    'givenUp',
+  );
+  @override
+  late final GeneratedColumn<bool> givenUp = GeneratedColumn<bool>(
+    'given_up',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("given_up" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    fingerprint,
+    refCode,
+    code,
+    origin,
+    payloadJson,
+    occurrenceCount,
+    firstSeenAt,
+    lastSeenAt,
+    attemptCount,
+    nextRetryAt,
+    givenUp,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_error_reports';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalErrorReport> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('fingerprint')) {
+      context.handle(
+        _fingerprintMeta,
+        fingerprint.isAcceptableOrUnknown(
+          data['fingerprint']!,
+          _fingerprintMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fingerprintMeta);
+    }
+    if (data.containsKey('ref_code')) {
+      context.handle(
+        _refCodeMeta,
+        refCode.isAcceptableOrUnknown(data['ref_code']!, _refCodeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_refCodeMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('origin')) {
+      context.handle(
+        _originMeta,
+        origin.isAcceptableOrUnknown(data['origin']!, _originMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_originMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('occurrence_count')) {
+      context.handle(
+        _occurrenceCountMeta,
+        occurrenceCount.isAcceptableOrUnknown(
+          data['occurrence_count']!,
+          _occurrenceCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('first_seen_at')) {
+      context.handle(
+        _firstSeenAtMeta,
+        firstSeenAt.isAcceptableOrUnknown(
+          data['first_seen_at']!,
+          _firstSeenAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+        _lastSeenAtMeta,
+        lastSeenAt.isAcceptableOrUnknown(
+          data['last_seen_at']!,
+          _lastSeenAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('attempt_count')) {
+      context.handle(
+        _attemptCountMeta,
+        attemptCount.isAcceptableOrUnknown(
+          data['attempt_count']!,
+          _attemptCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_retry_at')) {
+      context.handle(
+        _nextRetryAtMeta,
+        nextRetryAt.isAcceptableOrUnknown(
+          data['next_retry_at']!,
+          _nextRetryAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('given_up')) {
+      context.handle(
+        _givenUpMeta,
+        givenUp.isAcceptableOrUnknown(data['given_up']!, _givenUpMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalErrorReport map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalErrorReport(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      fingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fingerprint'],
+      )!,
+      refCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref_code'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      origin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origin'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      occurrenceCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}occurrence_count'],
+      )!,
+      firstSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}first_seen_at'],
+      )!,
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_seen_at'],
+      )!,
+      attemptCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_count'],
+      )!,
+      nextRetryAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_retry_at'],
+      ),
+      givenUp: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}given_up'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalErrorReportsTable createAlias(String alias) {
+    return $LocalErrorReportsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalErrorReport extends DataClass
+    implements Insertable<LocalErrorReport> {
+  final int id;
+
+  /// 同じ原因をまとめる指紋([AppError.fingerprint])。
+  final String fingerprint;
+
+  /// ユーザーに見せた参照コード(`ERR-7K2M9Q`)。問い合わせとの突合に使う。
+  final String refCode;
+  final String code;
+  final String origin;
+
+  /// [AppError]本体 + 端末コンテキスト(画面・アプリ版・OS等)のJSON。
+  final String payloadJson;
+
+  /// この行が代表している発生回数。嵐はここに集約される。
+  final int occurrenceCount;
+  final DateTime firstSeenAt;
+  final DateTime lastSeenAt;
+
+  /// 送信リトライ管理(LocalOutbox / LocalUploadJobs と同じパターン)。
+  final int attemptCount;
+  final DateTime? nextRetryAt;
+  final bool givenUp;
+  const LocalErrorReport({
+    required this.id,
+    required this.fingerprint,
+    required this.refCode,
+    required this.code,
+    required this.origin,
+    required this.payloadJson,
+    required this.occurrenceCount,
+    required this.firstSeenAt,
+    required this.lastSeenAt,
+    required this.attemptCount,
+    this.nextRetryAt,
+    required this.givenUp,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['fingerprint'] = Variable<String>(fingerprint);
+    map['ref_code'] = Variable<String>(refCode);
+    map['code'] = Variable<String>(code);
+    map['origin'] = Variable<String>(origin);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['occurrence_count'] = Variable<int>(occurrenceCount);
+    map['first_seen_at'] = Variable<DateTime>(firstSeenAt);
+    map['last_seen_at'] = Variable<DateTime>(lastSeenAt);
+    map['attempt_count'] = Variable<int>(attemptCount);
+    if (!nullToAbsent || nextRetryAt != null) {
+      map['next_retry_at'] = Variable<DateTime>(nextRetryAt);
+    }
+    map['given_up'] = Variable<bool>(givenUp);
+    return map;
+  }
+
+  LocalErrorReportsCompanion toCompanion(bool nullToAbsent) {
+    return LocalErrorReportsCompanion(
+      id: Value(id),
+      fingerprint: Value(fingerprint),
+      refCode: Value(refCode),
+      code: Value(code),
+      origin: Value(origin),
+      payloadJson: Value(payloadJson),
+      occurrenceCount: Value(occurrenceCount),
+      firstSeenAt: Value(firstSeenAt),
+      lastSeenAt: Value(lastSeenAt),
+      attemptCount: Value(attemptCount),
+      nextRetryAt: nextRetryAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextRetryAt),
+      givenUp: Value(givenUp),
+    );
+  }
+
+  factory LocalErrorReport.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalErrorReport(
+      id: serializer.fromJson<int>(json['id']),
+      fingerprint: serializer.fromJson<String>(json['fingerprint']),
+      refCode: serializer.fromJson<String>(json['refCode']),
+      code: serializer.fromJson<String>(json['code']),
+      origin: serializer.fromJson<String>(json['origin']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      occurrenceCount: serializer.fromJson<int>(json['occurrenceCount']),
+      firstSeenAt: serializer.fromJson<DateTime>(json['firstSeenAt']),
+      lastSeenAt: serializer.fromJson<DateTime>(json['lastSeenAt']),
+      attemptCount: serializer.fromJson<int>(json['attemptCount']),
+      nextRetryAt: serializer.fromJson<DateTime?>(json['nextRetryAt']),
+      givenUp: serializer.fromJson<bool>(json['givenUp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'fingerprint': serializer.toJson<String>(fingerprint),
+      'refCode': serializer.toJson<String>(refCode),
+      'code': serializer.toJson<String>(code),
+      'origin': serializer.toJson<String>(origin),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'occurrenceCount': serializer.toJson<int>(occurrenceCount),
+      'firstSeenAt': serializer.toJson<DateTime>(firstSeenAt),
+      'lastSeenAt': serializer.toJson<DateTime>(lastSeenAt),
+      'attemptCount': serializer.toJson<int>(attemptCount),
+      'nextRetryAt': serializer.toJson<DateTime?>(nextRetryAt),
+      'givenUp': serializer.toJson<bool>(givenUp),
+    };
+  }
+
+  LocalErrorReport copyWith({
+    int? id,
+    String? fingerprint,
+    String? refCode,
+    String? code,
+    String? origin,
+    String? payloadJson,
+    int? occurrenceCount,
+    DateTime? firstSeenAt,
+    DateTime? lastSeenAt,
+    int? attemptCount,
+    Value<DateTime?> nextRetryAt = const Value.absent(),
+    bool? givenUp,
+  }) => LocalErrorReport(
+    id: id ?? this.id,
+    fingerprint: fingerprint ?? this.fingerprint,
+    refCode: refCode ?? this.refCode,
+    code: code ?? this.code,
+    origin: origin ?? this.origin,
+    payloadJson: payloadJson ?? this.payloadJson,
+    occurrenceCount: occurrenceCount ?? this.occurrenceCount,
+    firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+    lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+    attemptCount: attemptCount ?? this.attemptCount,
+    nextRetryAt: nextRetryAt.present ? nextRetryAt.value : this.nextRetryAt,
+    givenUp: givenUp ?? this.givenUp,
+  );
+  LocalErrorReport copyWithCompanion(LocalErrorReportsCompanion data) {
+    return LocalErrorReport(
+      id: data.id.present ? data.id.value : this.id,
+      fingerprint: data.fingerprint.present
+          ? data.fingerprint.value
+          : this.fingerprint,
+      refCode: data.refCode.present ? data.refCode.value : this.refCode,
+      code: data.code.present ? data.code.value : this.code,
+      origin: data.origin.present ? data.origin.value : this.origin,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      occurrenceCount: data.occurrenceCount.present
+          ? data.occurrenceCount.value
+          : this.occurrenceCount,
+      firstSeenAt: data.firstSeenAt.present
+          ? data.firstSeenAt.value
+          : this.firstSeenAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+      attemptCount: data.attemptCount.present
+          ? data.attemptCount.value
+          : this.attemptCount,
+      nextRetryAt: data.nextRetryAt.present
+          ? data.nextRetryAt.value
+          : this.nextRetryAt,
+      givenUp: data.givenUp.present ? data.givenUp.value : this.givenUp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalErrorReport(')
+          ..write('id: $id, ')
+          ..write('fingerprint: $fingerprint, ')
+          ..write('refCode: $refCode, ')
+          ..write('code: $code, ')
+          ..write('origin: $origin, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('occurrenceCount: $occurrenceCount, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextRetryAt: $nextRetryAt, ')
+          ..write('givenUp: $givenUp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    fingerprint,
+    refCode,
+    code,
+    origin,
+    payloadJson,
+    occurrenceCount,
+    firstSeenAt,
+    lastSeenAt,
+    attemptCount,
+    nextRetryAt,
+    givenUp,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalErrorReport &&
+          other.id == this.id &&
+          other.fingerprint == this.fingerprint &&
+          other.refCode == this.refCode &&
+          other.code == this.code &&
+          other.origin == this.origin &&
+          other.payloadJson == this.payloadJson &&
+          other.occurrenceCount == this.occurrenceCount &&
+          other.firstSeenAt == this.firstSeenAt &&
+          other.lastSeenAt == this.lastSeenAt &&
+          other.attemptCount == this.attemptCount &&
+          other.nextRetryAt == this.nextRetryAt &&
+          other.givenUp == this.givenUp);
+}
+
+class LocalErrorReportsCompanion extends UpdateCompanion<LocalErrorReport> {
+  final Value<int> id;
+  final Value<String> fingerprint;
+  final Value<String> refCode;
+  final Value<String> code;
+  final Value<String> origin;
+  final Value<String> payloadJson;
+  final Value<int> occurrenceCount;
+  final Value<DateTime> firstSeenAt;
+  final Value<DateTime> lastSeenAt;
+  final Value<int> attemptCount;
+  final Value<DateTime?> nextRetryAt;
+  final Value<bool> givenUp;
+  const LocalErrorReportsCompanion({
+    this.id = const Value.absent(),
+    this.fingerprint = const Value.absent(),
+    this.refCode = const Value.absent(),
+    this.code = const Value.absent(),
+    this.origin = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.occurrenceCount = const Value.absent(),
+    this.firstSeenAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextRetryAt = const Value.absent(),
+    this.givenUp = const Value.absent(),
+  });
+  LocalErrorReportsCompanion.insert({
+    this.id = const Value.absent(),
+    required String fingerprint,
+    required String refCode,
+    required String code,
+    required String origin,
+    required String payloadJson,
+    this.occurrenceCount = const Value.absent(),
+    this.firstSeenAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.attemptCount = const Value.absent(),
+    this.nextRetryAt = const Value.absent(),
+    this.givenUp = const Value.absent(),
+  }) : fingerprint = Value(fingerprint),
+       refCode = Value(refCode),
+       code = Value(code),
+       origin = Value(origin),
+       payloadJson = Value(payloadJson);
+  static Insertable<LocalErrorReport> custom({
+    Expression<int>? id,
+    Expression<String>? fingerprint,
+    Expression<String>? refCode,
+    Expression<String>? code,
+    Expression<String>? origin,
+    Expression<String>? payloadJson,
+    Expression<int>? occurrenceCount,
+    Expression<DateTime>? firstSeenAt,
+    Expression<DateTime>? lastSeenAt,
+    Expression<int>? attemptCount,
+    Expression<DateTime>? nextRetryAt,
+    Expression<bool>? givenUp,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fingerprint != null) 'fingerprint': fingerprint,
+      if (refCode != null) 'ref_code': refCode,
+      if (code != null) 'code': code,
+      if (origin != null) 'origin': origin,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (occurrenceCount != null) 'occurrence_count': occurrenceCount,
+      if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (attemptCount != null) 'attempt_count': attemptCount,
+      if (nextRetryAt != null) 'next_retry_at': nextRetryAt,
+      if (givenUp != null) 'given_up': givenUp,
+    });
+  }
+
+  LocalErrorReportsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? fingerprint,
+    Value<String>? refCode,
+    Value<String>? code,
+    Value<String>? origin,
+    Value<String>? payloadJson,
+    Value<int>? occurrenceCount,
+    Value<DateTime>? firstSeenAt,
+    Value<DateTime>? lastSeenAt,
+    Value<int>? attemptCount,
+    Value<DateTime?>? nextRetryAt,
+    Value<bool>? givenUp,
+  }) {
+    return LocalErrorReportsCompanion(
+      id: id ?? this.id,
+      fingerprint: fingerprint ?? this.fingerprint,
+      refCode: refCode ?? this.refCode,
+      code: code ?? this.code,
+      origin: origin ?? this.origin,
+      payloadJson: payloadJson ?? this.payloadJson,
+      occurrenceCount: occurrenceCount ?? this.occurrenceCount,
+      firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      attemptCount: attemptCount ?? this.attemptCount,
+      nextRetryAt: nextRetryAt ?? this.nextRetryAt,
+      givenUp: givenUp ?? this.givenUp,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (fingerprint.present) {
+      map['fingerprint'] = Variable<String>(fingerprint.value);
+    }
+    if (refCode.present) {
+      map['ref_code'] = Variable<String>(refCode.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (origin.present) {
+      map['origin'] = Variable<String>(origin.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (occurrenceCount.present) {
+      map['occurrence_count'] = Variable<int>(occurrenceCount.value);
+    }
+    if (firstSeenAt.present) {
+      map['first_seen_at'] = Variable<DateTime>(firstSeenAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<DateTime>(lastSeenAt.value);
+    }
+    if (attemptCount.present) {
+      map['attempt_count'] = Variable<int>(attemptCount.value);
+    }
+    if (nextRetryAt.present) {
+      map['next_retry_at'] = Variable<DateTime>(nextRetryAt.value);
+    }
+    if (givenUp.present) {
+      map['given_up'] = Variable<bool>(givenUp.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalErrorReportsCompanion(')
+          ..write('id: $id, ')
+          ..write('fingerprint: $fingerprint, ')
+          ..write('refCode: $refCode, ')
+          ..write('code: $code, ')
+          ..write('origin: $origin, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('occurrenceCount: $occurrenceCount, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('attemptCount: $attemptCount, ')
+          ..write('nextRetryAt: $nextRetryAt, ')
+          ..write('givenUp: $givenUp')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -12603,6 +13333,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $LocalCacheEntriesTable(this);
   late final $LocalUserProfilesTable localUserProfiles =
       $LocalUserProfilesTable(this);
+  late final $LocalErrorReportsTable localErrorReports =
+      $LocalErrorReportsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -12626,6 +13358,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localSyncCursors,
     localCacheEntries,
     localUserProfiles,
+    localErrorReports,
   ];
 }
 
@@ -18716,6 +19449,360 @@ typedef $$LocalUserProfilesTableProcessedTableManager =
       LocalUserProfile,
       PrefetchHooks Function()
     >;
+typedef $$LocalErrorReportsTableCreateCompanionBuilder =
+    LocalErrorReportsCompanion Function({
+      Value<int> id,
+      required String fingerprint,
+      required String refCode,
+      required String code,
+      required String origin,
+      required String payloadJson,
+      Value<int> occurrenceCount,
+      Value<DateTime> firstSeenAt,
+      Value<DateTime> lastSeenAt,
+      Value<int> attemptCount,
+      Value<DateTime?> nextRetryAt,
+      Value<bool> givenUp,
+    });
+typedef $$LocalErrorReportsTableUpdateCompanionBuilder =
+    LocalErrorReportsCompanion Function({
+      Value<int> id,
+      Value<String> fingerprint,
+      Value<String> refCode,
+      Value<String> code,
+      Value<String> origin,
+      Value<String> payloadJson,
+      Value<int> occurrenceCount,
+      Value<DateTime> firstSeenAt,
+      Value<DateTime> lastSeenAt,
+      Value<int> attemptCount,
+      Value<DateTime?> nextRetryAt,
+      Value<bool> givenUp,
+    });
+
+class $$LocalErrorReportsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalErrorReportsTable> {
+  $$LocalErrorReportsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fingerprint => $composableBuilder(
+    column: $table.fingerprint,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get refCode => $composableBuilder(
+    column: $table.refCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get occurrenceCount => $composableBuilder(
+    column: $table.occurrenceCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextRetryAt => $composableBuilder(
+    column: $table.nextRetryAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get givenUp => $composableBuilder(
+    column: $table.givenUp,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalErrorReportsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalErrorReportsTable> {
+  $$LocalErrorReportsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fingerprint => $composableBuilder(
+    column: $table.fingerprint,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get refCode => $composableBuilder(
+    column: $table.refCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get occurrenceCount => $composableBuilder(
+    column: $table.occurrenceCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextRetryAt => $composableBuilder(
+    column: $table.nextRetryAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get givenUp => $composableBuilder(
+    column: $table.givenUp,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalErrorReportsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalErrorReportsTable> {
+  $$LocalErrorReportsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get fingerprint => $composableBuilder(
+    column: $table.fingerprint,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get refCode =>
+      $composableBuilder(column: $table.refCode, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get origin =>
+      $composableBuilder(column: $table.origin, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get occurrenceCount => $composableBuilder(
+    column: $table.occurrenceCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get attemptCount => $composableBuilder(
+    column: $table.attemptCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get nextRetryAt => $composableBuilder(
+    column: $table.nextRetryAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get givenUp =>
+      $composableBuilder(column: $table.givenUp, builder: (column) => column);
+}
+
+class $$LocalErrorReportsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalErrorReportsTable,
+          LocalErrorReport,
+          $$LocalErrorReportsTableFilterComposer,
+          $$LocalErrorReportsTableOrderingComposer,
+          $$LocalErrorReportsTableAnnotationComposer,
+          $$LocalErrorReportsTableCreateCompanionBuilder,
+          $$LocalErrorReportsTableUpdateCompanionBuilder,
+          (
+            LocalErrorReport,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalErrorReportsTable,
+              LocalErrorReport
+            >,
+          ),
+          LocalErrorReport,
+          PrefetchHooks Function()
+        > {
+  $$LocalErrorReportsTableTableManager(
+    _$AppDatabase db,
+    $LocalErrorReportsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalErrorReportsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalErrorReportsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalErrorReportsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> fingerprint = const Value.absent(),
+                Value<String> refCode = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String> origin = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<int> occurrenceCount = const Value.absent(),
+                Value<DateTime> firstSeenAt = const Value.absent(),
+                Value<DateTime> lastSeenAt = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime?> nextRetryAt = const Value.absent(),
+                Value<bool> givenUp = const Value.absent(),
+              }) => LocalErrorReportsCompanion(
+                id: id,
+                fingerprint: fingerprint,
+                refCode: refCode,
+                code: code,
+                origin: origin,
+                payloadJson: payloadJson,
+                occurrenceCount: occurrenceCount,
+                firstSeenAt: firstSeenAt,
+                lastSeenAt: lastSeenAt,
+                attemptCount: attemptCount,
+                nextRetryAt: nextRetryAt,
+                givenUp: givenUp,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String fingerprint,
+                required String refCode,
+                required String code,
+                required String origin,
+                required String payloadJson,
+                Value<int> occurrenceCount = const Value.absent(),
+                Value<DateTime> firstSeenAt = const Value.absent(),
+                Value<DateTime> lastSeenAt = const Value.absent(),
+                Value<int> attemptCount = const Value.absent(),
+                Value<DateTime?> nextRetryAt = const Value.absent(),
+                Value<bool> givenUp = const Value.absent(),
+              }) => LocalErrorReportsCompanion.insert(
+                id: id,
+                fingerprint: fingerprint,
+                refCode: refCode,
+                code: code,
+                origin: origin,
+                payloadJson: payloadJson,
+                occurrenceCount: occurrenceCount,
+                firstSeenAt: firstSeenAt,
+                lastSeenAt: lastSeenAt,
+                attemptCount: attemptCount,
+                nextRetryAt: nextRetryAt,
+                givenUp: givenUp,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalErrorReportsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalErrorReportsTable,
+      LocalErrorReport,
+      $$LocalErrorReportsTableFilterComposer,
+      $$LocalErrorReportsTableOrderingComposer,
+      $$LocalErrorReportsTableAnnotationComposer,
+      $$LocalErrorReportsTableCreateCompanionBuilder,
+      $$LocalErrorReportsTableUpdateCompanionBuilder,
+      (
+        LocalErrorReport,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalErrorReportsTable,
+          LocalErrorReport
+        >,
+      ),
+      LocalErrorReport,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -18756,4 +19843,6 @@ class $AppDatabaseManager {
       $$LocalCacheEntriesTableTableManager(_db, _db.localCacheEntries);
   $$LocalUserProfilesTableTableManager get localUserProfiles =>
       $$LocalUserProfilesTableTableManager(_db, _db.localUserProfiles);
+  $$LocalErrorReportsTableTableManager get localErrorReports =>
+      $$LocalErrorReportsTableTableManager(_db, _db.localErrorReports);
 }

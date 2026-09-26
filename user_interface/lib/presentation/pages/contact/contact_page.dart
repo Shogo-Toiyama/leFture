@@ -18,6 +18,7 @@ import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class ContactPage extends HookConsumerWidget {
   const ContactPage({super.key});
@@ -116,7 +117,9 @@ class ContactPage extends HookConsumerWidget {
           isCompressingAttachment.value = false;
         }
       } catch (e) {
-        errorMessage.value = l10n.contactFailedToPickFile(e.toString());
+        errorMessage.value = l10n.contactFailedToPickFile(
+          snagMessageFor(l10n, e, origin: 'contact_page.pickFile'),
+        );
       }
     }
 
@@ -222,7 +225,9 @@ class ContactPage extends HookConsumerWidget {
         if (e is TimeoutException || e.toString().contains('TimeoutException')) {
           errorMessage.value = l10n.contactTimeoutError;
         } else {
-          errorMessage.value = l10n.contactSubmissionError(e.toString().replaceAll('Exception: ', ''));
+          errorMessage.value = l10n.contactSubmissionError(
+            snagMessageFor(l10n, e, origin: 'contact_page.submit'),
+          );
         }
       } finally {
         isSubmitting.value = false;

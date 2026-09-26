@@ -8,6 +8,7 @@ import 'package:lefture/presentation/pages/course/widgets/course_create_sheet.da
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 
 class CoursePickerResult {
@@ -186,7 +187,11 @@ class CoursePickerSheet extends HookConsumerWidget {
             child: coursesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator(color: AppColors.starGold)),
               error: (e, _) => Center(
-                child: Text(l10n.coursePickerErrorLoading(e.toString()), style: const TextStyle(color: AppColors.correctionRed)),
+                child: SnagAsyncError(
+                  error: e,
+                  origin: 'course_picker_sheet.load',
+                  compact: true,
+                ),
               ),
               data: (courses) {
                 final query = searchCtl.text.trim().toLowerCase();

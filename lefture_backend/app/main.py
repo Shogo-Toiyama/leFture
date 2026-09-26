@@ -8,6 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
+import re
 import json
 import time
 import uuid
@@ -4358,6 +4359,150 @@ async def _attempt_cancel_stripe_subscription_for_platform_switch_retry(admin_cl
     return True
 
 
+# このプロジェクトの管理者向けメールは全てABUSE_ALERT_EMAIL
+# (lefture.app@gmail.com)に固定しているので、専用のenv変数は作らずそれを使う。
+# 1日2回(UTC 0時 / 12時固定)。patrol自体が:00付近と:30付近に走るので、
+# ここで時だけ見ればよく、タイムゾーン計算は一切要らない。
+ERROR_DIGEST_HOURS_UTC = [0, 12]
+ERROR_EVENT_RETENTION_DAYS = 30
+# 管理者ダッシュボードのURL。ドメイン(app.lefture.com)は決まっているが、
+# クライアントエラー一覧ページのパスがまだ無いため、今は空にしてメール本文の
+# 「ダッシュボードを開く」ボタン自体を出さない(email_templateはdashboard_urlが
+# 空ならボタンを描画しない)。パスが決まったらここに1行足すだけでよい。
+#   例: ADMIN_DASHBOARD_URL = "https://app.lefture.com/admin/client-errors"
+ADMIN_DASHBOARD_URL = ""
+
+
+async def _patrol_send_client_error_digest() -> dict:
+    """クライアントエラーのダイジェストメールを送る(1日2回)。
+
+    載せるのは「新規 or 前回通知時よりカウントが増えた」グループだけ。
+    グループ自体は永続だが、通知は差分でしか出さないので、直っていない
+    既知のエラーが毎回受信箱を埋めることはない。
+    status='ignored' のグループは完全に除外する。
+
+    新規もカウント増もゼロなら**何も送らない**。ただしそれだと「静か」と
+    「パイプラインが壊れた」の区別が付かないので、日曜だけハートビートを送る。
+    """
+    admin_client = get_supabase_client()
+    now = datetime.now(timezone.utc)
+
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("client_error_groups")
+            .select("*")
+            .neq("status", "ignored")
+            .order("total_count", desc=True)
+            .limit(50)
+            .execute()
+    )
+    all_groups = res.data or []
+
+    changed = []
+    for g in all_groups:
+        total = g.get("total_count") or 0
+        last_notified_count = g.get("count_at_last_notify") or 0
+        if g.get("last_notified_at") is None:
+            g["is_new"] = True
+            g["delta"] = total
+            changed.append(g)
+        elif total > last_notified_count:
+            g["is_new"] = False
+            g["delta"] = total - last_notified_count
+            changed.append(g)
+
+    # 新規を先に、その中で発生回数の多い順
+    changed.sort(key=lambda g: (not g["is_new"], -g["delta"]))
+
+    window_hours = 24 // max(1, len(ERROR_DIGEST_HOURS_UTC))
+
+    if not changed:
+        # 日曜のダイジェスト枠でだけハートビートを送る
+        if now.weekday() == 6 and now.hour == ERROR_DIGEST_HOURS_UTC[0]:
+            try:
+                from app.services.email_service import send_email
+                from app.services.email_template import build_client_error_heartbeat_email
+                await send_email(
+                    to=ABUSE_ALERT_EMAIL,
+                    subject="[leFture] No new client errors this week",
+                    html=build_client_error_heartbeat_email(168),
+                    from_address="support@lefture.com",
+                    from_name="leFture Error Digest",
+                )
+                return {"sent": "heartbeat"}
+            except Exception as e:
+                print(f"⚠️ Failed to send error heartbeat: {e}")
+                return {"error": str(e)}
+        return {"sent": 0, "reason": "nothing new"}
+
+    total_events = sum(g["delta"] for g in changed)
+    new_count = sum(1 for g in changed if g["is_new"])
+
+    try:
+        from app.services.email_service import send_email
+        from app.services.email_template import build_client_error_digest_email
+
+        subject = (
+            f"[leFture] {new_count} new group(s) / {total_events} event(s) "
+            f"(last {window_hours}h)"
+            if new_count
+            else f"[leFture] {total_events} new event(s) in {len(changed)} known group(s)"
+        )
+
+        await send_email(
+            to=ABUSE_ALERT_EMAIL,
+            subject=subject,
+            html=build_client_error_digest_email(
+                groups=changed,
+                window_hours=window_hours,
+                total_events=total_events,
+                dashboard_url=ADMIN_DASHBOARD_URL,
+            ),
+            from_address="support@lefture.com",
+            from_name="leFture Error Digest",
+        )
+    except Exception as e:
+        # 送信に失敗したら last_notified を進めない —— 次回に持ち越す。
+        print(f"❌ Failed to send client error digest: {e}")
+        return {"error": str(e)}
+
+    # 送信できた分だけ「通知済み」を進める。
+    for g in changed:
+        try:
+            await asyncio.to_thread(
+                lambda fp=g["fingerprint"], c=g.get("total_count") or 0:
+                    admin_client.table("client_error_groups").update({
+                        "last_notified_at": now.isoformat(),
+                        "count_at_last_notify": c,
+                    }).eq("fingerprint", fp).execute()
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to mark group {g['fingerprint'][:8]}… as notified: {e}")
+
+    return {"sent": len(changed), "new": new_count, "events": total_events}
+
+
+async def _patrol_purge_old_client_errors() -> dict:
+    """個別サンプル(client_error_events)を保持期間で刈る。
+
+    グループ(集計)は残す —— 「いつから出ているか」は消したくないため。
+    容量を食うのは全文コンテキストを持つeventの方なので、そちらだけ消す。
+    """
+    admin_client = get_supabase_client()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=ERROR_EVENT_RETENTION_DAYS)).isoformat()
+    try:
+        res = await asyncio.to_thread(
+            lambda: admin_client.table("client_error_events")
+                .delete().lt("received_at", cutoff).execute()
+        )
+        return {"deleted_events": len(res.data or [])}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# このプロジェクトの管理者向け通知メールは全てこのアドレスに固定している。
+ABUSE_ALERT_EMAIL = os.getenv("ABUSE_ALERT_EMAIL", "lefture.app@gmail.com")
+
+
 PATROL_CHECKS = [
     ("reap_stale_dag_tasks", _patrol_reap_stale_dag_tasks),
     ("advance_stalled_dags", _patrol_advance_stalled_dags),
@@ -4371,7 +4516,6 @@ PATROL_CHECKS = [
 ]
 
 
-ABUSE_ALERT_EMAIL = os.getenv("ABUSE_ALERT_EMAIL", "lefture.app@gmail.com")
 UPGRADE_CYCLING_WINDOW_DAYS = int(os.getenv("UPGRADE_CYCLING_WINDOW_DAYS", "60"))
 UPGRADE_CYCLING_MIN_GRANTS = int(os.getenv("UPGRADE_CYCLING_MIN_GRANTS", "3"))
 
@@ -4690,6 +4834,12 @@ async def patrol():
             results["send_trial_ending_reminders"] = {"error": str(e)}
             print(f"⚠️ Patrol check 'send_trial_ending_reminders' failed: {e}")
 
+        try:
+            results["purge_old_client_errors"] = await _patrol_purge_old_client_errors()
+        except Exception as e:
+            results["purge_old_client_errors"] = {"error": str(e)}
+            print(f"⚠️ Patrol check 'purge_old_client_errors' failed: {e}")
+
         # 毎月1日(:00付近)に1回だけ、R2バケット全体の直接スイープを走らせる(孤児チャンクのバックストップ)
         if now.day == 1:
             try:
@@ -4697,6 +4847,16 @@ async def patrol():
             except Exception as e:
                 results["sweep_orphan_r2_chunks"] = {"error": str(e)}
                 print(f"⚠️ Patrol check 'sweep_orphan_r2_chunks' failed: {e}")
+
+    # クライアントエラーのダイジェストは1日2回(既定 UTC 0時/12時)なので、
+    # PATROL_DAILY_HOUR_UTC の日次枠とは別に判定する。:00付近側だけを通して
+    # 1つの枠で2回走らないようにするのは日次枠と同じ考え方。
+    if now.hour in ERROR_DIGEST_HOURS_UTC and now.minute < PATROL_TIME_WINDOW_TOLERANCE_MINUTES:
+        try:
+            results["client_error_digest"] = await _patrol_send_client_error_digest()
+        except Exception as e:
+            results["client_error_digest"] = {"error": str(e)}
+            print(f"⚠️ Patrol check 'client_error_digest' failed: {e}")
 
     return results
 
@@ -4726,6 +4886,218 @@ async def patrol():
 class RegisterDeviceRequest(BaseModel):
     device_token: str
     platform: str  # "ios" | "android"
+
+
+# ---------------------------------------------------------
+# 🐞 クライアントエラー収集
+# ---------------------------------------------------------
+# Flutter側で起きた「予期せぬエラー」を受け取り、fingerprint単位で集計する。
+# ダイジェストメール(_patrol_send_client_error_digest)と管理者ダッシュボードが
+# ここに溜まったものを読む。
+#
+# 設計上の約束:
+#   * 認証は任意。サインイン画面のエラーこそ一番知りたいので、未ログインでも
+#     受け付ける(その場合 user_id は NULL、device_id だけで識別する)。
+#   * 失敗しても必ず2xxを返す。レート制限で捨てた場合も202。クライアントは
+#     2xxならローカルキューを消してよい —— 「エラー報告が失敗したエラー」を
+#     再送し続けるループを作らないため。
+#   * 生の本文にはuidやストレージパス、まれにトークン断片が混ざり得るので、
+#     保存前に _mask_error_text() でマスクする。
+
+CLIENT_ERROR_RATE_LIMIT_PER_HOUR = 200
+CLIENT_ERROR_SAMPLES_PER_GROUP = 5
+CLIENT_ERROR_SAMPLE_WINDOW_HOURS = 12
+
+
+class ClientErrorReport(BaseModel):
+    fingerprint: str
+    ref_code: str | None = None
+    code: str
+    origin: str
+    occurrence_count: int = 1
+    first_seen_at: str | None = None
+    last_seen_at: str | None = None
+    error: dict = {}
+    route: str | None = None
+    breadcrumbs: list[str] = []
+    suppressed: int = 0
+
+
+class ClientErrorBatch(BaseModel):
+    device_id: str
+    app_version: str | None = None
+    platform: str | None = None
+    os_version: str | None = None
+    locale: str | None = None
+    is_authenticated: bool = False
+    dropped_distinct: int = 0
+    reports: list[ClientErrorReport] = []
+
+
+# JWT・署名付きURL・メールアドレスなど、エラー本文に紛れ込むと困るものを潰す。
+# 完全な防御ではなく「うっかり保存してしまう」のを防ぐための最低限。
+_ERROR_MASK_PATTERNS = [
+    (re.compile(r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"), "<jwt>"),
+    (re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"), "<email>"),
+    (re.compile(r"(?i)(signature|token|key|secret|password)=[^&\s\"]+"), r"\1=<redacted>"),
+]
+
+
+def _mask_error_text(text):
+    if not text:
+        return text
+    out = str(text)
+    for pattern, replacement in _ERROR_MASK_PATTERNS:
+        out = pattern.sub(replacement, out)
+    return out[:4000]
+
+
+def _merge_unique(existing, value, limit=20):
+    """配列カラムに値を足す(重複なし・上限あり)。"""
+    items = list(existing or [])
+    if value and value not in items:
+        items.append(value)
+    return items[-limit:]
+
+
+@app.post("/client-errors/report")
+async def client_errors_report(payload: ClientErrorBatch, request: Request):
+    """クライアントのエラーレポートをまとめて受け取る。常に2xxを返す。"""
+    if not payload.reports:
+        return {"accepted": 0}
+
+    admin_client = get_supabase_client()
+    now = datetime.now(timezone.utc)
+
+    # 認証は任意。付いていれば user_id を紐づけるが、検証に失敗しても
+    # 匿名として受け付ける(報告を落とさないことを優先する)。
+    user_id = None
+    if payload.is_authenticated:
+        try:
+            user = await asyncio.to_thread(_authenticate_request, request)
+            user_id = user.id
+        except Exception:
+            user_id = None
+
+    # --- レート制限(device_id単位) ---
+    # 専用のミドルウェアは用意せず、直近1時間のevent数を数えるだけで足りる
+    # (client_error_events_device_idx があるので安い)。
+    try:
+        since = (now - timedelta(hours=1)).isoformat()
+        recent = await asyncio.to_thread(
+            lambda: admin_client.table("client_error_events")
+                .select("id", count="exact")
+                .eq("device_id", payload.device_id)
+                .gte("received_at", since)
+                .limit(1)
+                .execute()
+        )
+        if (recent.count or 0) >= CLIENT_ERROR_RATE_LIMIT_PER_HOUR:
+            print(f"🚧 client-errors: rate limited device={payload.device_id[:8]}…")
+            return {"accepted": 0, "rate_limited": True}
+    except Exception as e:
+        print(f"⚠️ client-errors: rate limit check failed (accepting anyway): {e}")
+
+    accepted = 0
+    for report in payload.reports:
+        try:
+            err = report.error or {}
+            raw = _mask_error_text(err.get("raw"))
+            occurrences = max(1, report.occurrence_count) + max(0, report.suppressed)
+
+            # --- グループのupsert ---
+            existing_res = await asyncio.to_thread(
+                lambda fp=report.fingerprint: admin_client.table("client_error_groups")
+                    .select("*").eq("fingerprint", fp).maybe_single().execute()
+            )
+            existing = existing_res.data if existing_res else None
+
+            if existing:
+                group_patch = {
+                    "last_seen_at": now.isoformat(),
+                    "total_count": (existing.get("total_count") or 0) + occurrences,
+                    "sample_message": raw or existing.get("sample_message"),
+                    "affected_device_ids": _merge_unique(
+                        existing.get("affected_device_ids"), payload.device_id
+                    ),
+                    "app_versions": _merge_unique(existing.get("app_versions"), payload.app_version),
+                    "platforms": _merge_unique(existing.get("platforms"), payload.platform),
+                }
+                if user_id:
+                    group_patch["affected_user_ids"] = _merge_unique(
+                        existing.get("affected_user_ids"), user_id, limit=100
+                    )
+                await asyncio.to_thread(
+                    lambda fp=report.fingerprint, patch=group_patch:
+                        admin_client.table("client_error_groups")
+                            .update(patch).eq("fingerprint", fp).execute()
+                )
+            else:
+                await asyncio.to_thread(
+                    lambda r=report, raw=raw, occ=occurrences:
+                        admin_client.table("client_error_groups").insert({
+                            "fingerprint": r.fingerprint,
+                            "code": r.code,
+                            "origin": r.origin,
+                            "sample_message": raw,
+                            "first_seen_at": now.isoformat(),
+                            "last_seen_at": now.isoformat(),
+                            "total_count": occ,
+                            "affected_user_ids": [user_id] if user_id else [],
+                            "affected_device_ids": [payload.device_id],
+                            "app_versions": [payload.app_version] if payload.app_version else [],
+                            "platforms": [payload.platform] if payload.platform else [],
+                        }).execute()
+                )
+
+            # --- サンプル(event)を保存するか ---
+            # 1グループ CLIENT_ERROR_SAMPLE_WINDOW_HOURS 時間あたり
+            # CLIENT_ERROR_SAMPLES_PER_GROUP 件まで。これを超えた分は
+            # グループのカウントにだけ反映され、全文は保存しない。
+            window_start = (now - timedelta(hours=CLIENT_ERROR_SAMPLE_WINDOW_HOURS)).isoformat()
+            samples = await asyncio.to_thread(
+                lambda fp=report.fingerprint: admin_client.table("client_error_events")
+                    .select("id", count="exact")
+                    .eq("fingerprint", fp)
+                    .gte("received_at", window_start)
+                    .limit(1)
+                    .execute()
+            )
+            if (samples.count or 0) < CLIENT_ERROR_SAMPLES_PER_GROUP:
+                await asyncio.to_thread(
+                    lambda r=report, e=err, raw=raw, occ=occurrences:
+                        admin_client.table("client_error_events").insert({
+                            "fingerprint": r.fingerprint,
+                            "user_id": user_id,
+                            "device_id": payload.device_id,
+                            "occurred_at": r.last_seen_at or now.isoformat(),
+                            "occurrence_count": occ,
+                            "code": r.code,
+                            "origin": r.origin,
+                            "raw_message": raw,
+                            "stack": _mask_error_text(e.get("stack")),
+                            "breadcrumbs": [_mask_error_text(b) for b in (r.breadcrumbs or [])][-40:],
+                            "http_status": e.get("http"),
+                            "backend_code": e.get("backend_code"),
+                            "route": r.route,
+                            "app_version": payload.app_version,
+                            "platform": payload.platform,
+                            "os_version": payload.os_version,
+                            "locale": payload.locale,
+                            "is_authenticated": payload.is_authenticated,
+                            "ref_code": r.ref_code,
+                        }).execute()
+                )
+
+            accepted += 1
+        except Exception as e:
+            # 1件の失敗で残りを落とさない。
+            print(f"⚠️ client-errors: failed to store {report.fingerprint[:8]}…: {e}")
+
+    if payload.dropped_distinct:
+        print(f"🚧 client-errors: device dropped {payload.dropped_distinct} distinct group(s) locally")
+
+    return {"accepted": accepted}
 
 
 @app.post("/devices/register")

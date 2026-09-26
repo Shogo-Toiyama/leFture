@@ -38,6 +38,7 @@ EMAIL_MAX_WIDTH = "600px"
 
 
 import datetime
+import html as html_lib
 from app.services.email_content import get_email_content, EmailContentEN
 
 # ---------------------------------------------------------------------------
@@ -491,3 +492,108 @@ def build_support_admin_notification_email(
     )
     return email_wrapper(body)
 
+
+
+def build_client_error_digest_email(
+    groups: list[dict],
+    window_hours: int,
+    total_events: int,
+    dashboard_url: str = "",
+) -> str:
+    """クライアントエラーのダイジェストメール（管理者向け・1日2回）。
+
+    [groups]は「新規、または前回通知時よりカウントが増えた」グループだけが
+    渡ってくる（statusが'ignored'のものは呼び出し側で除外済み）。
+    新規を先頭に、その中で発生回数の多い順に並べる。
+
+    読む順番を「何人に起きているか → どこで → 何が」にしてあるのは、
+    まず影響範囲を見て対応の優先度を決めたいため。1人だけに起きている
+    エラーと、全ユーザーに起きているエラーは扱いが違う。
+    """
+    rows = []
+    for g in groups:
+        is_new = g.get("is_new", False)
+        users = len(g.get("affected_user_ids") or [])
+        devices = len(g.get("affected_device_ids") or [])
+        delta = g.get("delta", 0)
+
+        badge = (
+            '<span style="background:#FFB300;color:#2A1C00;font-size:10px;font-weight:700;'
+            'padding:2px 6px;border-radius:4px;letter-spacing:.04em;">NEW</span>'
+            if is_new
+            else '<span style="color:#8E99A6;font-size:11px;">+%d since last digest</span>' % delta
+        )
+
+        versions = ", ".join(g.get("app_versions") or []) or "—"
+        platforms = ", ".join(g.get("platforms") or []) or "—"
+        sample = html_lib.escape((g.get("sample_message") or "")[:400])
+
+        rows.append(f"""
+        <tr>
+          <td style="padding:14px 0;border-bottom:1px solid #E0E0E0;">
+            <div style="margin-bottom:6px;">{badge}</div>
+            <div style="font-size:15px;font-weight:700;color:#3E3228;margin-bottom:2px;">
+              {html_lib.escape(g.get("code") or "UNKNOWN")}
+            </div>
+            <div style="font-size:12px;color:#8D8D8D;font-family:monospace;margin-bottom:8px;">
+              {html_lib.escape(g.get("origin") or "")}
+            </div>
+            <div style="font-size:13px;color:#3E3228;margin-bottom:8px;">
+              <strong>{g.get("total_count", 0)}</strong> events ·
+              <strong>{users}</strong> user(s) ·
+              <strong>{devices}</strong> device(s)
+            </div>
+            <div style="font-size:12px;color:#8D8D8D;margin-bottom:8px;">
+              {html_lib.escape(versions)} &nbsp;|&nbsp; {html_lib.escape(platforms)}
+            </div>
+            <div style="font-family:monospace;font-size:11px;color:#B3261E;background:#FAF5E9;
+                        border:1px solid #E0E0E0;border-radius:6px;padding:8px;word-break:break-all;">
+              {sample}
+            </div>
+            <div style="font-size:11px;color:#8D8D8D;margin-top:6px;font-family:monospace;">
+              fp: {html_lib.escape(g.get("fingerprint") or "")}
+            </div>
+          </td>
+        </tr>
+        """)
+
+    dashboard_link = (
+        email_button("Open the dashboard", dashboard_url) if dashboard_url else ""
+    )
+
+    body = f"""
+    {email_heading("Client error digest")}
+    {email_text(
+        f"<strong>{len(groups)}</strong> error group(s) need attention — "
+        f"<strong>{total_events}</strong> event(s) in the last {window_hours} hours. "
+        "Groups marked <strong>NEW</strong> have never been seen before."
+    )}
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+      {''.join(rows)}
+    </table>
+    {email_divider()}
+    {email_text(
+        "Set a group's status to <code>ignored</code> in client_error_groups to drop it "
+        "from this digest. Full samples (stack, breadcrumbs, route) are in client_error_events.",
+        muted=True,
+    )}
+    {dashboard_link}
+    """
+    return email_wrapper(body)
+
+
+def build_client_error_heartbeat_email(window_hours: int) -> str:
+    """異常が無かったことを知らせる週1回のハートビート。
+
+    「何も届かない」と「収集が壊れている」を区別できるようにするためだけの
+    メール。これが止まったらパイプライン自体を疑う。
+    """
+    body = f"""
+    {email_heading("No new client errors")}
+    {email_text(
+        f"Nothing new in the last {window_hours} hours. "
+        "This weekly note exists so that silence stays meaningful — "
+        "if it stops arriving, the reporting pipeline itself is the thing to check."
+    )}
+    """
+    return email_wrapper(body)

@@ -1004,11 +1004,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusViewFailedLabel => 'Failed';
 
   @override
-  String statusScaffoldErrorPrefix(String error) {
-    return 'Error: $error';
-  }
-
-  @override
   String get statusScaffoldSyncingTitle => 'Syncing Audio...';
 
   @override
@@ -2133,11 +2128,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courseDetailsSheetCreatedLabel => 'Created';
-
-  @override
-  String courseAnnouncementsSheetLoadError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get audioPlayerBarTopicIndexTitle => 'Topic Index';
@@ -3326,4 +3316,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plansSuspendedButton => 'Unavailable While Suspended';
+
+  @override
+  String get snagTitle => 'That\'s on us — not you.';
+
+  @override
+  String snagBody(String action) {
+    return 'Something broke on our side while $action. Our developer has already been notified automatically and is on it. Try again in a few minutes.';
+  }
+
+  @override
+  String get snagBodyNoAction =>
+      'Something broke on our side. Our developer has already been notified automatically and is on it. Try again in a few minutes.';
+
+  @override
+  String get snagNothingLost => 'Nothing was lost.';
+
+  @override
+  String snagReported(String time) {
+    return 'Reported · $time';
+  }
+
+  @override
+  String get snagReportQueued => 'Will report when you\'re back online';
+
+  @override
+  String get snagEscape => 'Can\'t wait? Contact us with this code.';
+
+  @override
+  String get snagContactButton => 'Contact us';
+
+  @override
+  String get snagRetryButton => 'Try again';
+
+  @override
+  String snagShort(String action) {
+    return '$action didn\'t work — our side, not yours. We\'ve been notified.';
+  }
+
+  @override
+  String snagTechnicalDetails(String code) {
+    return 'Technical details · $code';
+  }
+
+  @override
+  String get snagCopyReport => 'Copy report';
+
+  @override
+  String get errOffline =>
+      'No internet connection. Please check your network and try again.';
+
+  @override
+  String get errTimeout =>
+      'The server is taking longer than usual to respond. Please try again in a moment.';
+
+  @override
+  String get errSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get errInvalidCredentials => 'Incorrect email address or password.';
+
+  @override
+  String get errEmailNotConfirmed =>
+      'Please verify your email address before signing in.';
+
+  @override
+  String get errEmailAlreadyRegistered =>
+      'An account with this email address already exists.';
+
+  @override
+  String get errWeakPassword => 'Password must be at least 6 characters long.';
+
+  @override
+  String get errInvalidEmail => 'Please enter a valid email address.';
+
+  @override
+  String get errMissingEmail => 'Please enter your email address.';
+
+  @override
+  String get errMissingPassword => 'Please enter a password.';
+
+  @override
+  String get errRateLimited =>
+      'Too many requests. Please wait a few minutes before trying again.';
+
+  @override
+  String get errSamePassword =>
+      'Your new password must be different from your old password.';
+
+  @override
+  String get errSameEmail =>
+      'Your new email must be different from your current email.';
+
+  @override
+  String get errAccountSuspended => 'This account has been suspended.';
 }

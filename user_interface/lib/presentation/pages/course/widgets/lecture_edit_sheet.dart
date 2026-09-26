@@ -11,6 +11,7 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 
 class LectureEditSheet extends HookConsumerWidget {
@@ -67,7 +68,7 @@ class LectureEditSheet extends HookConsumerWidget {
           Navigator.of(context).pop();
         }
       } catch (e) {
-        errorMsg.value = e.toString();
+        errorMsg.value = snagMessageFor(l10n, e, origin: 'lecture_edit_sheet.save');
       } finally {
         isSubmitting.value = false;
       }

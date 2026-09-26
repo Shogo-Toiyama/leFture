@@ -39,6 +39,7 @@ import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_sele
 
 import 'package:lefture/presentation/widgets/course_tile.dart';
 import 'package:lefture/presentation/widgets/lecture_tile.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 /// コース一覧 / コース内授業一覧 を兼ねるページ
 ///
@@ -95,7 +96,7 @@ class _CourseTreeView extends ConsumerWidget {
                 ),
                 error: (e, _) => Center(
                   child: Text(
-                    l10n.coursePageLoadError(e.toString()),
+                    l10n.coursePageLoadError(safeErrorText(l10n, e, 'course_page.load')),
                     style: const TextStyle(color: AppColors.correctionRed),
                   ),
                 ),
@@ -1230,7 +1231,11 @@ class _CourseLectureListView extends ConsumerWidget {
       await showCustomDialog(
         context: context,
         title: l10n.coursePageRecreateErrorTitle,
-        message: state.error.toString().replaceFirst('Exception: ', ''),
+        message: snagMessageFor(
+          l10n,
+          state.error!,
+          origin: 'course_page.recreateTopicMap',
+        ),
         confirmLabel: l10n.coursePageOkButton,
         cancelLabel: null,
         icon: Icons.error_outline,

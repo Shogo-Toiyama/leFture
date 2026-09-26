@@ -491,6 +491,45 @@ class LocalUserProfiles extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+
+/// 開発者へ送る前のエラーレポートを溜めておくキュー。
+///
+/// なぜ[LocalOutbox]を使わないか:
+///   1. Outboxは entityType/entityId を手掛かりに、push時点でLocal*テーブル
+///      から毎回payloadを組み直す設計。エラーは「その瞬間のスナップショット」
+///      であり、後から読み直せる実体が無いので噛み合わない。
+///   2. OutboxSyncServiceはメンテナンス中・強制アップデート中にpushを止める。
+///      そこは**最もエラーを知りたい時間帯**なので、止まってはいけない。
+///
+/// 1行 = 1 fingerprint。同じ失敗が連続しても行は増えず[occurrenceCount]が
+/// 増えるだけなので、「1秒間に何十行」のエラー嵐でもDBは1行しか使わない。
+class LocalErrorReports extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// 同じ原因をまとめる指紋([AppError.fingerprint])。
+  TextColumn get fingerprint => text()();
+
+  /// ユーザーに見せた参照コード(`ERR-7K2M9Q`)。問い合わせとの突合に使う。
+  TextColumn get refCode => text()();
+
+  TextColumn get code => text()();
+  TextColumn get origin => text()();
+
+  /// [AppError]本体 + 端末コンテキスト(画面・アプリ版・OS等)のJSON。
+  TextColumn get payloadJson => text()();
+
+  /// この行が代表している発生回数。嵐はここに集約される。
+  IntColumn get occurrenceCount => integer().withDefault(const Constant(1))();
+
+  DateTimeColumn get firstSeenAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get lastSeenAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// 送信リトライ管理(LocalOutbox / LocalUploadJobs と同じパターン)。
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get nextRetryAt => dateTime().nullable()();
+  BoolColumn get givenUp => boolean().withDefault(const Constant(false))();
+}
+
 @DriftDatabase(
   tables: [
     LocalOutbox,
@@ -511,6 +550,7 @@ class LocalUserProfiles extends Table {
     LocalSyncCursors,
     LocalCacheEntries,
     LocalUserProfiles,
+    LocalErrorReports,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -520,7 +560,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -733,8 +773,119 @@ class AppDatabase extends _$AppDatabase {
         // バージョン25: LocalLectures に creditsUsed を追加
         await _addColumnIfMissing(m, localLectures, localLectures.creditsUsed);
       }
+      if (from < 26) {
+        // バージョン26: LocalErrorReports を新設(開発者へのエラー報告キュー)。
+        // 新テーブルの追加なので既存データには一切触れない。
+        await m.createTable(localErrorReports);
+      }
     },
   );
+
+  // --- Error Reports (開発者へのエラー報告キュー) ---
+
+  /// エラー1件をキューに積む。
+  ///
+  /// 同じ[fingerprint]の未送信行が既にあれば、**新しい行は作らず**
+  /// occurrenceCount を増やして lastSeenAt を更新する。これがエラー嵐に
+  /// 対するDB側の防波堤(ローカルDBに残る行は指紋ごとに1行だけ)。
+  ///
+  /// [refCode]は最初に積まれたものを保つ — ユーザーが画面で見たコードと、
+  /// あとで届くレポートのコードを一致させたいため。
+  Future<void> enqueueErrorReport({
+    required String fingerprint,
+    required String refCode,
+    required String code,
+    required String origin,
+    required String payloadJson,
+  }) async {
+    final existing = await (select(localErrorReports)
+          ..where((t) => t.fingerprint.equals(fingerprint) & t.givenUp.equals(false))
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      await (update(localErrorReports)..where((t) => t.id.equals(existing.id))).write(
+        LocalErrorReportsCompanion(
+          occurrenceCount: Value(existing.occurrenceCount + 1),
+          lastSeenAt: Value(DateTime.now()),
+          // 最新の payload に差し替える(直近の状況の方が診断に使えるため)
+          payloadJson: Value(payloadJson),
+        ),
+      );
+      return;
+    }
+
+    await into(localErrorReports).insert(
+      LocalErrorReportsCompanion.insert(
+        fingerprint: fingerprint,
+        refCode: refCode,
+        code: code,
+        origin: origin,
+        payloadJson: payloadJson,
+      ),
+    );
+  }
+
+  /// 送信可能なレポートを取り出す(バックオフ待ちと諦め済みは除く)。
+  Future<List<LocalErrorReport>> dequeuePendingErrorReports({int limit = 50}) {
+    final now = DateTime.now();
+    return (select(localErrorReports)
+          ..where((t) =>
+              t.givenUp.equals(false) &
+              (t.nextRetryAt.isNull() | t.nextRetryAt.isSmallerOrEqualValue(now)))
+          ..orderBy([(t) => OrderingTerm(expression: t.firstSeenAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  /// 未送信のレポート件数。UIの「通知済み / オンライン復帰時に通知します」の
+  /// 出し分けに使う。
+  Future<int> countPendingErrorReports() async {
+    final rows = await (select(localErrorReports)
+          ..where((t) => t.givenUp.equals(false)))
+        .get();
+    return rows.length;
+  }
+
+  Future<void> deleteErrorReportIds(List<int> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(localErrorReports)..where((t) => t.id.isIn(ids))).go();
+  }
+
+  /// 送信失敗を記録する。指数バックオフ(1分→上限1時間)、10回で諦める。
+  ///
+  /// 諦めた行を削除しないのは、エラー報告自体が届かない状況そのものが
+  /// 診断材料になるため(次回オンライン時に givenUp 件数だけ同送する)。
+  Future<void> recordErrorReportFailure(int id) async {
+    final row = await (select(localErrorReports)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) return;
+
+    final attempt = row.attemptCount + 1;
+    final backoffSeconds = (60 * (1 << (attempt - 1).clamp(0, 6))).clamp(60, 3600);
+
+    await (update(localErrorReports)..where((t) => t.id.equals(id))).write(
+      LocalErrorReportsCompanion(
+        attemptCount: Value(attempt),
+        nextRetryAt: Value(DateTime.now().add(Duration(seconds: backoffSeconds))),
+        givenUp: Value(attempt >= 10),
+      ),
+    );
+  }
+
+  /// 溜まりすぎたキューを刈る。端末が長期間オフラインでも、ディスクと
+  /// 送信時の帯域が無制限に膨らまないようにするための上限。
+  Future<void> pruneErrorReports({int maxRows = 200, Duration maxAge = const Duration(days: 3)}) async {
+    final cutoff = DateTime.now().subtract(maxAge);
+    await (delete(localErrorReports)..where((t) => t.firstSeenAt.isSmallerThanValue(cutoff))).go();
+
+    final rows = await (select(localErrorReports)
+          ..orderBy([(t) => OrderingTerm(expression: t.lastSeenAt, mode: OrderingMode.desc)]))
+        .get();
+    if (rows.length > maxRows) {
+      await deleteErrorReportIds(rows.sublist(maxRows).map((r) => r.id).toList());
+    }
+  }
 
   /// `Migrator.addColumn`のラッパー。まれに(開発中のホットリスタート等で)
   /// ADD COLUMN自体は成功したのにDrift内部のuser_version更新がそこまで

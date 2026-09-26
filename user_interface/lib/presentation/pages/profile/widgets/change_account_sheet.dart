@@ -7,6 +7,7 @@ import 'package:lefture/infrastructure/supabase/pending_auth_action.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 現在のプロバイダー(Google/Apple)は変えず、そのプロバイダー内で
@@ -59,7 +60,11 @@ class ChangeAccountSheet extends HookConsumerWidget {
       isSubmitting.value = false;
       if (result.hasError) {
         DevLog.add('[AccountFlow] pre-browser error: ${result.error}');
-        errorMessage.value = result.error.toString().replaceAll('Exception: ', '');
+        errorMessage.value = snagMessageFor(
+          l10n,
+          result.error!,
+          origin: 'change_account.submit',
+        );
         return;
       }
       DevLog.add('[AccountFlow] browser launched, awaiting OAuth callback...');

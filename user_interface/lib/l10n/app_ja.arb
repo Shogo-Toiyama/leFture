@@ -1,6 +1,5 @@
 {
   "@@locale": "ja",
-
   "signInWelcomeTitle": "おかえりなさい",
   "signInSubtitle": "サインインして学習を続けましょう",
   "emailLabel": "メールアドレス",
@@ -15,7 +14,6 @@
   "continueWithEmail": "メールアドレスで登録",
   "signInNoAccountPrompt": "アカウントをお持ちでない方は ",
   "createAccountLink": "アカウントを作成",
-
   "signUpSuccessSnackbar": "アカウントを作成しました！確認メールをご確認ください。",
   "signUpErrorAgreeTerms": "利用規約に同意してください",
   "signUpTitle": "leFtureに参加する",
@@ -69,7 +67,6 @@
   "passwordStrengthFair": "普通",
   "passwordStrengthGood": "良い",
   "passwordStrengthStrong": "強い",
-
   "recordingCourseLabel": "コース",
   "recordingNoCourseSelected": "コースが選択されていません",
   "recordingRealtimeOnBadge": "リアルタイムON",
@@ -167,7 +164,6 @@
   "recordingReactionRevisitLabel": "後で",
   "recordingNoteInputHint": "メモを書く...",
   "recordingMomentsEmptyHint": "下のリアクションをタップするか、メモを追加すると、ここに表示されます。",
-
   "coursePickerTitle": "コースを選択",
   "coursePickerCancelButton": "キャンセル",
   "coursePickerSearchHint": "コースを検索...",
@@ -176,7 +172,6 @@
   "coursePickerEmptySearchResults": "該当するコースがありません",
   "coursePickerConfirmButton": "確定",
   "coursePickerContinueWithoutCourseButton": "コースなしで続ける",
-
   "lectureViewerErrorPrefix": "エラー: {error}",
   "lectureViewerLectureNotFound": "講義が見つかりません",
   "lectureViewerUntitledLecture": "無題の講義",
@@ -200,7 +195,6 @@
   "lectureViewerTopicCardDeepNotes": "詳細ノート",
   "lectureViewerTopicEmptyState": "利用可能なトピックがまだありません",
   "lectureViewerInfoSheetEmptyState": "まだ何もありません",
-
   "lectureViewerPartialFailureBanner": "一部のコンテンツを生成できませんでした",
   "lectureViewerPipelineDetailsSheetTitle": "解析の進捗",
   "pipelineStepsCancelledLabel": "キャンセル済み",
@@ -214,7 +208,6 @@
   "pipelineStepsRetryTooltip": "ここから再試行",
   "pipelineStepsRetryingLabel": "再試行しています...",
   "pipelineStepsRetryThisStepButton": "このステップを再試行",
-
   "notStartedNoActivePlanTitle": "有効なプランがありません",
   "notStartedOutOfCreditsTitle": "クレジット不足",
   "notStartedNoAllocationMessage": "講義を解析するには、先にプランを選択する必要があります。",
@@ -271,11 +264,9 @@
   "recoveryDeleteConfirmMessage": "この操作は取り消せません。この音声は一度もアップロードされていないため、ここで削除すると完全に失われます。",
   "recoveryDeleteConfirmButton": "削除",
   "recoveryCancelButton": "キャンセル",
-
   "topicPreviewSaveTooltip": "保存",
   "topicPreviewLikeTooltip": "いいね",
   "topicPreviewReadNoteButton": "ノートを読む",
-
   "processingViewStartOverDialogTitle": "最初からやり直しますか？",
   "processingViewStartOverDialogMessage": "解析全体を最初からやり直します。すでに完了している進捗は破棄されます。",
   "processingViewStartOverConfirmButton": "やり直す",
@@ -291,17 +282,13 @@
   "processingViewStopFailedSnackbar": "停止に失敗しました: {error}",
   "processingViewStartingOverLabel": "やり直しています...",
   "processingViewStartOverFromScratchButton": "最初からやり直す",
-
   "statusViewProcessingLabel": "処理しています...",
   "statusViewFailedLabel": "失敗",
-
-  "statusScaffoldErrorPrefix": "エラー: {error}",
   "statusScaffoldSyncingTitle": "音声を同期しています...",
   "statusScaffoldSyncingMessage": "アップロードが完了するまでお待ちください。",
   "statusScaffoldErrorTitle": "状態を取得できませんでした",
   "statusScaffoldErrorMessage": "分析が開始済みかどうか確認できませんでした。通信状態を確認して、もう一度お試しください。",
   "statusScaffoldErrorRetryButton": "再試行",
-
   "creditDetailTitle": "クレジット",
   "creditDetailRefreshTooltip": "更新",
   "creditDetailLoadErrorMessage": "クレジット情報を読み込めませんでした。接続を確認してもう一度お試しください。",
@@ -351,7 +338,6 @@
   "creditDetailCreditsSuffix": "{delta} クレジット",
   "creditDetailHistoryRenewed": "更新されました",
   "creditDetailHistoryPlanChanged": "プランが変更されました",
-
   "activityRecordsTitleSaved": "保存済み",
   "activityRecordsTitleLikes": "いいね",
   "activityRecordsTitleDislikes": "低評価",
@@ -393,7 +379,6 @@
   "activityRecordsContentTypeKeyword": "キーワード",
   "activityRecordsContentTypeFunFact": "ファンファクト",
   "activityRecordsContentTypeDefault": "コンテンツ",
-
   "myAccountTitle": "マイアカウント",
   "myAccountSectionProfile": "プロフィール",
   "myAccountSectionActivity": "アクティビティ",
@@ -440,7 +425,6 @@
   "myAccountChangeAccountTitle": "アカウントを変更",
   "myAccountSignOutTitle": "サインアウト",
   "myAccountDeleteAccountTitle": "アカウントを削除",
-
   "deleteAccountDialogTitle": "アカウントを削除しますか？",
   "deleteAccountDialogWarningMessage": "本当にアカウントを削除してもよろしいですか？録音した講義、文字起こし、プロフィールデータはすべて完全に削除されます。この操作は取り消せません。",
   "deleteAccountDialogWakingBackendStatus": "バックエンドサービスを起動しています...",
@@ -454,7 +438,6 @@
   "deleteAccountDialogUsernameLabel": "ユーザーネーム",
   "deleteAccountDialogCancelButton": "キャンセル",
   "deleteAccountDialogConfirmButton": "アカウントを削除",
-
   "plansTitle": "プランと料金",
   "plansTagline": "leFtureでプレミアム機能を解放しよう",
   "plansCurrentPlanBadge": "現在のプラン",
@@ -488,9 +471,7 @@
   "plansWebSubscriptionCancelFailedTitle": "ウェブでのサブスクリプションがまだ有効です",
   "plansWebSubscriptionCancelFailedMessage": "新しいプランは有効になりましたが、ウェブ側のサブスクリプションを自動解約できませんでした。自動的に再試行されますので、特に操作は不要です。",
   "plansDisclosure": "leFtureのサブスクリプションは、現在の期間終了の24時間前までにキャンセルしない限り、毎月自動的に更新されます。購入確認時にApple IDアカウントに課金されます。サブスクリプションはいつでも端末のアカウント設定から管理・キャンセルできます。プランのダウングレードは即時ではなく、次回請求期間の開始時に反映されます。それまでは現在のプランとクレジットがそのまま有効です。",
-
   "plansDisclosureAndroid": "有料プランのご購入は、<gold>公式ウェブサイト（lefture.com）</gold>でのみ承っております。<b>Android版アプリ内では購入できません。</b>ブラウザで<gold>lefture.com</gold>にアクセスしてご購入ください。",
-
   "plansStartFreeButton": "Freeプランで始める",
   "plansDowngradeDialogTitle": "プラン変更を予約しました",
   "plansDowngradeDialogMessage": "プランの切り替えは今すぐではなく、次回の請求期間の開始時に反映されます。それまでは現在のプランとクレジットがそのまま有効で、いつでも変更し直すことができます。",
@@ -520,7 +501,6 @@
   "plansDeviceAlreadyClaimedTitle": "無料特典はご利用いただけません",
   "plansDeviceAlreadyClaimedMessage": "この端末では既に無料特典（Freeプラン）が適用されています。講義を記録するには有料プランにご加入いただくか、以前のアカウントでログインしてください。\n\nお困りの際はお問い合わせください。",
   "plansContactSupportButton": "お問い合わせ",
-
   "changePasswordResetSentTitle": "リセットリンクを送信しました",
   "changePasswordResetSentMessage": "登録されたメールアドレス（{email}）にパスワードリセット用のリンクを送信しました。受信トレイを確認し、リンクから新しいパスワードを設定してください。",
   "changePasswordCloseButton": "閉じる",
@@ -529,7 +509,6 @@
   "changePasswordSlowServerError": "メールサービスの起動に通常より時間がかかっています。しばらくしてからもう一度お試しください。",
   "changePasswordCurrentPasswordLabel": "現在のパスワード",
   "changePasswordCurrentPasswordRequiredError": "現在のパスワードを入力してください",
-
   "changeEmailDifferentRequiredError": "新しいメールアドレスは現在のものと異なる必要があります",
   "changeEmailSendingVerificationStatus": "確認メールを送信しています...",
   "changeEmailVerificationSentTitle": "確認メールを送信しました",
@@ -540,20 +519,15 @@
   "changeEmailRequiredError": "新しいメールアドレスを入力してください",
   "changeEmailInvalidError": "有効なメールアドレスを入力してください",
   "changeEmailConfirmButton": "変更を確定",
-
   "userProfileDetailTitle": "プロフィール",
   "userProfileDetailEditTooltip": "プロフィールを編集",
-
   "changeAuthProviderCurrentLabel": "現在: {provider}",
   "changeAuthProviderUnknownProvider": "不明",
   "changeAuthProviderFooterNote": "※ ログイン方法を変更すると認証設定が更新されます。いつでも元に戻せます。",
-
   "changeAccountCurrentLabel": "現在: {value}",
   "changeAccountButtonLabel": "別の{provider}アカウントを選択",
-
   "courseSheetSaveButton": "保存",
   "courseNoAnnouncementsLabel": "アナウンスはまだありません",
-
   "coursePageTitle": "コース",
   "coursePageBackToCoursesLabel": "コース一覧",
   "coursePageNewCourseButton": "新規コース",
@@ -577,7 +551,6 @@
   "coursePageRecreateErrorTitle": "トピックマップを再作成できませんでした",
   "coursePageOkButton": "OK",
   "coursePageOfflineSnackbar": "オフラインです。キャッシュされたデータを表示しています。",
-
   "courseCreateSheetEditTitle": "コースを編集",
   "courseCreateSheetNewTitle": "コースを作成",
   "courseCreateSheetDesignPreviewLabel": "デザインプレビュー",
@@ -609,7 +582,6 @@
   "courseCreateSheetHexLabel": "16進数カラーコード",
   "courseCreateSheetCancelButton": "キャンセル",
   "courseCreateSheetOkButton": "OK",
-
   "lectureEditSheetChangeCourseDialogTitle": "コースを変更しますか？",
   "lectureEditSheetChangeCourseDialogMessage": "この講義のコースを変更すると、トピックマップの構造が変わり、同期に影響する可能性があります。続行してもよろしいですか？",
   "lectureEditSheetProceedButton": "続行",
@@ -621,7 +593,6 @@
   "lectureEditSheetDateTimeLabel": "講義日時",
   "lectureEditSheetTitleFieldLabel": "タイトル",
   "lectureEditSheetTitleFieldDefaultSuffix": "{title}（デフォルト）",
-
   "announcementEditSheetTitleRequiredError": "タイトルを入力してください。",
   "announcementEditSheetTitle": "アナウンスを編集",
   "announcementEditSheetTypeLabel": "種類",
@@ -633,11 +604,7 @@
   "announcementEditSheetTypeEvent": "イベント",
   "announcementEditSheetTypeHint": "ヒント",
   "announcementEditSheetTypeInfo": "情報",
-
   "courseDetailsSheetCreatedLabel": "作成日",
-
-  "courseAnnouncementsSheetLoadError": "エラー: {error}",
-
   "audioPlayerBarTopicIndexTitle": "トピック目次",
   "audioPlayerBarTopicLabel": "トピック{index}",
   "audioPlayerBarDownloadingMessage": "音声をストレージからダウンロード中…",
@@ -648,7 +615,6 @@
   "audioPlayerBarForwardTooltip": "10秒進む",
   "audioPlayerBarNextTopicTooltip": "次のトピック",
   "audioPlayerBarTopicIndexMenuTooltip": "トピック目次メニュー",
-
   "announcementTranscriptModalErrorPrefix": "エラー: {error}",
   "announcementTranscriptModalLectureNotFound": "講義が見つかりません",
   "announcementTranscriptModalAutoScrollOnTooltip": "自動スクロールモード（5秒後に再開）",
@@ -659,7 +625,6 @@
   "announcementTranscriptModalTopicLabel": "トピック{index}",
   "announcementTranscriptModalLectureFallbackTitle": "講義",
   "announcementTranscriptModalOfflineErrorShort": "オフラインです",
-
   "transcriptPageLectureLoadError": "講義の読み込みに失敗しました: {error}",
   "transcriptPageLectureNotFound": "講義が見つかりません",
   "transcriptPageTitle": "文字起こし・音声",
@@ -670,7 +635,6 @@
   "transcriptPageGeneratingMessage": "文字起こしがありません。",
   "transcriptPageTopicLabel": "トピック{index}",
   "transcriptPageOfflineErrorShort": "オフラインです",
-
   "cardSelectionToolbarHighlightLabel": "ハイライト",
   "cardSelectionToolbarNoteLabel": "ノート",
   "cardSelectionToolbarCopyLabel": "コピー",
@@ -678,12 +642,9 @@
   "cardSelectionToolbarLikeLabel": "いいね",
   "cardSelectionToolbarDislikeLabel": "低評価",
   "cardSelectionToolbarSaveLabel": "保存",
-
   "noteToolbarHintText": "ノートを追加...",
-
   "cardSelectionToolbarSourceNotFoundMessage": "選択範囲に対応する出典が見つかりませんでした。",
   "cardSelectionToolbarCopiedToClipboardMessage": "クリップボードにコピーしました",
-
   "reviewCardsViewerNoCardsYet": "復習カードはまだありません",
   "reviewCardsViewerViewListTooltip": "一覧を表示",
   "reviewCardsViewerPageCounter": "{current} / {total}",
@@ -721,7 +682,6 @@
   "reviewCardsDashboardGeneratingMessage": "復習カードを生成中…",
   "reviewCardsDashboardTitle": "復習カード",
   "deepNotesListTitle": "詳細ノート",
-
   "deepNotesDetailNoNotesAvailable": "利用可能なノートがありません",
   "deepNotesDetailViewListTooltip": "一覧を表示",
   "deepNotesDetailPageCounter": "{current} / {total}",
@@ -738,7 +698,6 @@
   "deepNotesSkippedPlanLimitDescription": "Freeプランご利用時の講義のため、詳細ノートは第1トピックのみ生成されています。",
   "deepNotesSkippedPlanLimitCaption": "Freeプラン時に解析（詳細ノート未生成）",
   "deepNotesSkippedTopicNotice": "この講義はFreeプラン時に解析されたため、このトピックの詳細ノートは生成されていません。",
-
   "keywordsLockedDialogTitle": "キーワードは生成されていません",
   "keywordsLockedDialogMessage": "この講義のキーワードは抽出されていません。Coreプラン以上にアップグレードすると、今後の講義から自動で抽出されます。",
   "announcementsLockedDialogTitle": "アナウンスメントは生成されていません",
@@ -748,7 +707,6 @@
   "transcriptLockedDialogTitle": "文字起こし・音声の確認にはCoreプランが必要です",
   "transcriptLockedDialogMessage": "文字起こしと録音音声の閲覧・再生はCoreプラン限定の機能です。アップグレードすると、この講義も含めてすぐに利用できるようになります。",
   "announcementsSheetLockedBanner": "アナウンスメントの抽出はCoreプラン限定です。アップグレードすると今後の講義から自動で抽出されます。",
-
   "homeOfflineSnackBarMessage": "オフライン状態です。キャッシュされたデータを表示しています。",
   "initialSyncErrorTitle": "アカウントの初期設定を完了できませんでした",
   "initialSyncErrorMessage": "データを取得するためサーバーに接続できませんでした。インターネット接続をご確認のうえ、もう一度お試しください。",
@@ -783,7 +741,6 @@
   "makeProfileFutureDreamsLabel": "将来の夢・目標",
   "makeProfileFutureDreamsHint": "どんな目標に向かって勉強していますか？",
   "makeProfileSaveButton": "プロフィールを保存",
-
   "courseIconCategorySchool": "学校・学習",
   "courseIconCategoryHumanityLang": "人文・語学",
   "courseIconCategorySocietyLaw": "社会・法律",
@@ -793,7 +750,6 @@
   "courseIconCategoryMedical": "医学・医療",
   "courseIconCategorySportsHealth": "スポーツ・健康",
   "courseIconCategoryArtTravel": "芸術・観光",
-
   "contactFailedToPickFile": "ファイルの選択に失敗しました: {error}",
   "contactAuthError": "認証エラーが発生しました。再度サインインしてください。",
   "contactConnecting": "サポートサービスに接続中...",
@@ -823,13 +779,11 @@
   "contactSuccessDescription": "お問い合わせの送信が完了しました。ご登録メールアドレスに確認メールをお送りしました。内容を確認の上、メールにてご返信いたします。",
   "contactTicketCodeLabel": "チケットコード",
   "contactBackToSettingsButton": "設定に戻る",
-
   "appErrorDialogGuidance": "しばらく時間をおいてから再度お試しください。問題が解決しない場合は、この画面のスクリーンショットを撮影の上、お問い合わせ画面よりご連絡ください。",
   "appErrorDialogTechnicalDetails": "技術的な詳細:",
   "appErrorDialogContactSupport": "サポートにお問い合わせ",
   "appErrorDialogClose": "閉じる",
   "appErrorBoxGuidance": "しばらく時間をおいてから再度お試しください。問題が解決しない場合は、スクリーンショットを撮影の上サポートにご連絡ください。",
-
   "offlineBannerMessage": "オフラインです",
   "recordingMiniPlayerRecording": "録音中…",
   "recordingMiniPlayerPaused": "一時停止中",
@@ -852,17 +806,14 @@
   "legalDocumentEffectiveDate": "発効日: {date}",
   "broadSelectionSheetTitle": "文字起こしセクションの選択",
   "broadSelectionSheetDescription": "選択範囲に複数のセクションが含まれています。表示したいセクションを選択してください:",
-
   "introBackButton": "戻る",
   "introLanguageButton": "言語",
   "introNextButton": "次へ",
-
   "introHeroEyebrow": "ようこそ leFture へ",
   "introHeroTitleLine1": "Record your lectures,",
   "introHeroTitleLine2": "for your futures.",
   "introHeroSubtitle": "退屈だった授業は、今日からあなただけのエンタメに。",
   "introHeroStageLabel": "録音 → あなただけの宇宙へ",
-
   "introMagicEyebrow": "その未来が待つ、3つの魔法",
   "introMagicHeadline": "録音ボタンを押すだけ。\nここが、あなたの新しい遊び場になる。",
   "introMagicCard1Tag": "Review Cards",
@@ -874,20 +825,16 @@
   "introMagicCard3Tag": "Fun Facts",
   "introMagicCard3Title": "“おもしろ知識”が興味にダイレクトヒット",
   "introMagicCard3Desc": "あなたの「へぇ！」を狙い撃ちで届ける。",
-
   "introCtaLead": "体験したことのない、\nワクワクする学びを。",
   "introCtaSub": "さあ、今日から始めよう。\n毎日の授業を心から楽しむために。",
   "introCtaButton": "leFtureをはじめる",
-
   "dateToday": "今日",
   "dateYesterday": "昨日",
-
   "onboardingBackButton": "戻る",
   "onboardingSkipButton": "スキップ",
   "onboardingNextButton": "次へ",
   "onboardingContinueButton": "続ける",
   "onboardingGetStartedButton": "はじめる",
-
   "onboardingIntroEyebrow": "ようこそ",
   "onboardingIntroTitle": "さあ、あなただけの学びを始めましょう",
   "onboardingIntroSubtitle": "あと少しだけ準備をさせてください。この4つのステップで、あなた専用のleFtureが整います。",
@@ -900,7 +847,6 @@
   "onboardingIntroStep3Desc": "録音とお知らせの権限を確認します",
   "onboardingIntroStep4Title": "プラン",
   "onboardingIntroStep4Desc": "自分に合うプランを選びます",
-
   "onboardingLanguageEyebrow": "言語",
   "onboardingLanguageTitle": "言語を設定しましょう",
   "onboardingLanguageSubtitle": "アプリの表示言語と、録音する授業の言語を選んでください。",
@@ -909,7 +855,6 @@
   "onboardingLanguageRecordingLabel": "録音言語",
   "onboardingLanguageRecordingDesc": "録音する授業・講義の言語",
   "onboardingLanguageFooterNote": "※ 後からアカウントページの「設定」よりいつでも変更できます。",
-
   "onboardingPermissionsEyebrow": "権限",
   "onboardingPermissionsTitle": "いくつかの許可をお願いします",
   "onboardingPermissionsSubtitle": "バックグラウンドで録音を安全に維持するために必要です。",
@@ -934,11 +879,9 @@
   "onboardingPermissionsAllGranted": "すべての権限が許可されています",
   "onboardingPermissionsRequesting": "権限を要求中...",
   "onboardingPermissionsAllowAll": "すべての権限を許可",
-
   "onboardingProfileEyebrow": "プロフィール",
   "onboardingProfileTitle": "プロフィールを教えてください",
   "onboardingProfileSubtitle": "あなたに合わせた講義ノートや豆知識を作成するために使用します。",
-
   "onboardingProfileStepCounter": "プロフィール · {total}問中{current}問目",
   "onboardingProfileInterestsTitle": "何に興味がありますか？",
   "onboardingProfileInterestsSubtitle": "豆知識や例えを、あなた好みに調整するために使います。",
@@ -947,14 +890,11 @@
   "onboardingProfileBioTitle": "他にも、あなたらしさを教えてください",
   "onboardingProfileBioSubtitle": "性格や価値観、今頑張っていることなど。",
   "onboardingProfileBioRequiredNote": "必須項目です。あなた専用のコンテンツ作りに欠かせません。",
-
   "onboardingPlanEyebrow": "プラン",
   "onboardingPlanTitle": "プランを選択しましょう",
   "onboardingPlanSubtitle": "あなたの学習ペースに合ったプランを選んでください。後からいつでも変更できます。",
-
   "onboardingDoneTitle": "準備完了です",
   "onboardingDoneSubtitle": "さっそくコースを作成して、最初の講義を録音しましょう！",
-
   "pipelineTaskTranscribeMaster": "音声を文字起こし中",
   "pipelineTaskCheckAndAssemble": "文字起こしデータを準備中",
   "pipelineTaskCoreExtraction": "重要トピックを抽出中",
@@ -988,7 +928,6 @@
   "appGateUpdateLaterButton": "後で",
   "appGateOpenStoreFailedSnackbar": "App Storeを開けませんでした。App Storeアプリから直接アップデートしてください。",
   "maintenanceBannerMessage": "メンテナンス中：一部機能が利用できません",
-
   "signOutConfirmTitle": "サインアウトしますか？",
   "signOutConfirmMessage": "再度使うには、もう一度サインインする必要があります。",
   "signOutConfirmButton": "サインアウト",
@@ -1006,7 +945,6 @@
   "signOutDiscardConfirmButton": "削除してサインアウト",
   "signOutStayCancelButton": "サインアウトしない",
   "signInUserNotFoundMessage": "アカウントが存在しません。新規登録画面からユーザーネームを設定して登録してください。",
-
   "creditRateModalTitle": "クレジット消費の目安",
   "creditRateModalDescription": "クレジットの消費量は、録音した音声の長さによって変わります。",
   "creditRateTableDurationHeader": "録音時間",
@@ -1020,10 +958,35 @@
   "creditRateModalCloseButton": "閉じる",
   "creditRateModalBuyCreditsButton": "クレジット購入",
   "creditRateModalBuyCreditsButtonAndroid": "クレジットについて見る",
-
   "accountSuspendedTitle": "アカウント停止中",
   "accountSuspendedBody": "利用規約違反のため、このアカウントは停止されています。既存の講義やノートの閲覧は引き続き可能ですが、録音・分析・クレジット購入・プラン変更はご利用いただけません。心当たりがない場合はサポートまでご連絡ください。",
   "accountSuspendedContactButton": "サポートに連絡",
   "accountSuspendedPlansNotice": "アカウントが停止中です。サブスクリプションの解約は可能ですが、その他のプラン変更はご利用いただけません。",
-  "plansSuspendedButton": "停止中は利用できません"
+  "plansSuspendedButton": "停止中は利用できません",
+  "snagTitle": "こちらの不具合です",
+  "snagBody": "{action}の途中で、こちら側で問題が発生しました。開発者には自動で通知済みで、すでに確認を進めています。数分おいてから、もう一度お試しください。",
+  "snagBodyNoAction": "こちら側で問題が発生しました。開発者には自動で通知済みで、すでに確認を進めています。数分おいてから、もう一度お試しください。",
+  "snagNothingLost": "データは失われていません。",
+  "snagReported": "通知済み · {time}",
+  "snagReportQueued": "オンライン復帰時に通知します",
+  "snagEscape": "お急ぎの場合は、このコードを添えてお問い合わせください。",
+  "snagContactButton": "お問い合わせ",
+  "snagRetryButton": "もう一度試す",
+  "snagShort": "{action}に失敗しました。こちら側の問題で、通知済みです。",
+  "snagTechnicalDetails": "技術情報 · {code}",
+  "snagCopyReport": "レポートをコピー",
+  "errOffline": "インターネットに接続されていません。通信環境をご確認のうえ、もう一度お試しください。",
+  "errTimeout": "サーバーの応答に通常より時間がかかっています。少し時間をおいてもう一度お試しください。",
+  "errSessionExpired": "セッションの有効期限が切れました。もう一度サインインしてください。",
+  "errInvalidCredentials": "メールアドレスまたはパスワードが正しくありません。",
+  "errEmailNotConfirmed": "サインインの前に、メールアドレスの確認を完了してください。",
+  "errEmailAlreadyRegistered": "このメールアドレスのアカウントは既に存在します。",
+  "errWeakPassword": "パスワードは6文字以上で設定してください。",
+  "errInvalidEmail": "有効なメールアドレスを入力してください。",
+  "errMissingEmail": "メールアドレスを入力してください。",
+  "errMissingPassword": "パスワードを入力してください。",
+  "errRateLimited": "リクエストが多すぎます。数分おいてからもう一度お試しください。",
+  "errSamePassword": "新しいパスワードは、現在のパスワードと異なるものにしてください。",
+  "errSameEmail": "新しいメールアドレスは、現在のものと異なるものにしてください。",
+  "errAccountSuspended": "このアカウントは停止されています。"
 }

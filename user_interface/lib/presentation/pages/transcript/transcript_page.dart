@@ -22,6 +22,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/audio_player_bar.dart';
 import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 // レイアウトに使う定数
 const double kHorizontalPagePadding = 24; // ListView自体の左右padding
@@ -198,7 +199,9 @@ class TranscriptPage extends HookConsumerWidget {
         ),
         body: Center(
           child: Text(
-            l10n.transcriptPageLectureLoadError(err.toString()),
+            l10n.transcriptPageLectureLoadError(
+              safeErrorText(l10n, err, 'transcript_page.lecture'),
+            ),
             style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
@@ -645,7 +648,9 @@ class _TranscriptPageContent extends HookConsumerWidget {
               DevLog.add(
                 '[AudioPlayer] setSource failed for ${file.path}: $error\n$stackTrace',
               );
-              audioLoadErrorMessage.value = error.toString();
+              // AudioPlayerBar にそのまま流れて画面に出るので、安全な文言に変える。
+              audioLoadErrorMessage.value =
+                  safeErrorText(l10n, error, 'transcript_page.audioSetSource');
             });
       }
       return null;
@@ -923,7 +928,9 @@ class _TranscriptPageContent extends HookConsumerWidget {
                   child: Text(
                     err is ArtifactOfflineException
                         ? l10n.transcriptPageOfflineMessage
-                        : l10n.transcriptPageUnavailableError(err.toString()),
+                        : l10n.transcriptPageUnavailableError(
+                            safeErrorText(l10n, err, 'transcript_page.transcript'),
+                          ),
                     style: TextStyle(color: AppColors.paper.textPencil),
                   ),
                 ),
@@ -1239,7 +1246,8 @@ class _TranscriptPageContent extends HookConsumerWidget {
                 errorMessage: r2FileAsync.hasError
                     ? (r2FileAsync.error is ArtifactOfflineException
                         ? l10n.transcriptPageOfflineErrorShort
-                        : r2FileAsync.error.toString())
+                        : safeErrorText(
+                            l10n, r2FileAsync.error!, 'transcript_page.audio'))
                     : audioLoadErrorMessage.value,
                 topics: topics,
                 currentTopic: currentTopic,

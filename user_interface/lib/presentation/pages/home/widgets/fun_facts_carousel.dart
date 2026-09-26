@@ -12,6 +12,7 @@ import 'package:lefture/infrastructure/local_db/repositories/fun_fact_repository
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/glowing_rainbow_border.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class FunFactsCarousel extends ConsumerStatefulWidget {
   const FunFactsCarousel({super.key});
@@ -318,7 +319,13 @@ class _ReactionButton extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context).funFactsUpdateReactionFailed(e.toString()),
+                AppLocalizations.of(context).funFactsUpdateReactionFailed(
+                  snagMessageFor(
+                    AppLocalizations.of(context),
+                    e,
+                    origin: 'fun_facts.reaction',
+                  ),
+                ),
               ),
             ),
           );

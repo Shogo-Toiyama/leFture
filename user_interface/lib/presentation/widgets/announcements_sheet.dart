@@ -21,6 +21,8 @@ import 'package:lefture/presentation/widgets/announcement_tile.dart';
 import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
 import 'package:lefture/presentation/widgets/plan_lock_illustration.dart';
 import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
+import 'package:lefture/domain/errors/app_error.dart';
 
 /// アナウンスメント一覧ボトムシート。
 /// - [lectureId] 指定: 該当レクチャーのアナウンスを表示
@@ -366,7 +368,13 @@ class AnnouncementsSheet extends HookConsumerWidget {
                   ),
                   error: (e, _) => Center(
                     child: Text(
-                      l10n.homeAnnouncementsSheetLoadError(e.toString()),
+                      l10n.homeAnnouncementsSheetLoadError(
+                        friendlyMessageForCode(
+                          l10n,
+                          AppError.from(e, origin: 'announcements_sheet.load').code,
+                        ) ??
+                            l10n.snagTitle,
+                      ),
                       style: const TextStyle(color: AppColors.correctionRed),
                     ),
                   ),

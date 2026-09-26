@@ -9,6 +9,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/views/pipeline_steps_list.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 /// 分析中(RUNNING/PENDING)とAnalysis Failed(FAILED)の両方を1つのウィジェットで
 /// 描画する。両者はヘッダーの色/文言とStart Overボタンの見せ方が違うだけで、
@@ -81,7 +82,13 @@ class ProcessingView extends HookConsumerWidget {
         DevLog.add('⚠️ [ProcessingView] cancel-jobs call failed (analysis stop): $e');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.processingViewStopFailedSnackbar(e.toString()))),
+            SnackBar(
+              content: Text(
+                l10n.processingViewStopFailedSnackbar(
+                  snagMessageFor(l10n, e, origin: 'processing_view.stop'),
+                ),
+              ),
+            ),
           );
         }
       } finally {

@@ -1805,12 +1805,6 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get statusViewFailedLabel;
 
-  /// Fallback error text shown if the lecture's UI-state stream itself fails to load (rare/unexpected). {error} is the raw exception's toString().
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String statusScaffoldErrorPrefix(String error);
-
   /// Headline shown while the recorded lecture audio is still uploading/syncing to the server, before any processing can begin.
   ///
   /// In en, this message translates to:
@@ -3739,12 +3733,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Created'**
   String get courseDetailsSheetCreatedLabel;
-
-  /// Inline error text shown in the Course Announcements bottom sheet if the announcements list fails to load. {error} is the raw exception's toString(), not pre-localized.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String courseAnnouncementsSheetLoadError(String error);
 
   /// Header title inside the slide-up topic index menu of the shared AudioPlayerBar (used from the Transcript page and the Announcement Transcript modal). Sits next to a list icon and a close button. Must stay short.
   ///
@@ -5821,6 +5809,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unavailable While Suspended'**
   String get plansSuspendedButton;
+
+  /// Title of the panel shown when an error has no friendly mapping (an unexpected failure). Deliberately takes the blame off the user — the previous generic 'Something went wrong' implied the user had done something. Keep the reassurance; the em dash may be replaced by locale-appropriate punctuation.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s on us — not you.'**
+  String get snagTitle;
+
+  /// Body of the unexpected-error panel. {action} is the same actionName phrase AppErrorDialog already takes (e.g. 'starting the analysis'), so the message stays specific about what failed instead of collapsing to a generic sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Something broke on our side while {action}. Our developer has already been notified automatically and is on it. Try again in a few minutes.'**
+  String snagBody(String action);
+
+  /// Variant of snagBody used when the call site has no actionName to interpolate.
+  ///
+  /// In en, this message translates to:
+  /// **'Something broke on our side. Our developer has already been notified automatically and is on it. Try again in a few minutes.'**
+  String get snagBodyNoAction;
+
+  /// Extra reassurance line shown in the status-card variant when the failed operation did not destroy user data (e.g. a recording is still on the device). Only shown when that is actually true.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was lost.'**
+  String get snagNothingLost;
+
+  /// Status line in the status-card variant confirming the error report reached the developer. {time} is the local time the report was accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported · {time}'**
+  String snagReported(String time);
+
+  /// Shown in place of snagReported when the device is offline, so the app never claims the developer has been notified when the report is still sitting in the local queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Will report when you\'re back online'**
+  String get snagReportQueued;
+
+  /// Invitation shown next to the reference code, offering the contact form as an escape hatch for a user who is blocked right now.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t wait? Contact us with this code.'**
+  String get snagEscape;
+
+  /// Button/link that opens the in-app contact form from the unexpected-error panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get snagContactButton;
+
+  /// Button on the unexpected-error panel that retries the failed operation.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get snagRetryButton;
+
+  /// One-line variant used in snackbars and tight inline slots where the full panel does not fit. Keeps the 'our side, not yours' reassurance and drops the retry advice.
+  ///
+  /// In en, this message translates to:
+  /// **'{action} didn\'t work — our side, not yours. We\'ve been notified.'**
+  String snagShort(String action);
+
+  /// Label above the raw error block. This block is compiled out of App Store builds — it renders only when isTestMode or kDebugMode is set — so it is for the developer's own device, never for users. {code} is the AppError code, e.g. BACKEND_REJECTED.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical details · {code}'**
+  String snagTechnicalDetails(String code);
+
+  /// Dev-only action that copies the full AppError payload (code, origin, fingerprint, raw) to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get snagCopyReport;
+
+  /// Friendly message for AppErrorCode.OFFLINE. Replaces the hardcoded English string that used to live in AppErrorUtils.getFriendlyErrorMessage, which could not be localized.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please check your network and try again.'**
+  String get errOffline;
+
+  /// Friendly message for AppErrorCode.TIMEOUT.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is taking longer than usual to respond. Please try again in a moment.'**
+  String get errTimeout;
+
+  /// Friendly message for AppErrorCode.SESSION_EXPIRED.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please sign in again.'**
+  String get errSessionExpired;
+
+  /// Friendly message for AppErrorCode.INVALID_CREDENTIALS.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect email address or password.'**
+  String get errInvalidCredentials;
+
+  /// Friendly message for AppErrorCode.EMAIL_NOT_CONFIRMED.
+  ///
+  /// In en, this message translates to:
+  /// **'Please verify your email address before signing in.'**
+  String get errEmailNotConfirmed;
+
+  /// Friendly message for AppErrorCode.EMAIL_ALREADY_REGISTERED.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email address already exists.'**
+  String get errEmailAlreadyRegistered;
+
+  /// Friendly message for AppErrorCode.WEAK_PASSWORD.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters long.'**
+  String get errWeakPassword;
+
+  /// Friendly message for AppErrorCode.INVALID_EMAIL.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address.'**
+  String get errInvalidEmail;
+
+  /// Friendly message for AppErrorCode.MISSING_EMAIL.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email address.'**
+  String get errMissingEmail;
+
+  /// Friendly message for AppErrorCode.MISSING_PASSWORD.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a password.'**
+  String get errMissingPassword;
+
+  /// Friendly message for AppErrorCode.RATE_LIMITED.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Please wait a few minutes before trying again.'**
+  String get errRateLimited;
+
+  /// Friendly message for AppErrorCode.SAME_PASSWORD.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new password must be different from your old password.'**
+  String get errSamePassword;
+
+  /// Friendly message for AppErrorCode.SAME_EMAIL.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new email must be different from your current email.'**
+  String get errSameEmail;
+
+  /// Friendly message for AppErrorCode.ACCOUNT_SUSPENDED. The full explanation lives on the account-suspended notice; this is the one-line inline form.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been suspended.'**
+  String get errAccountSuspended;
 }
 
 class _AppLocalizationsDelegate

@@ -9,6 +9,7 @@ import 'package:lefture/infrastructure/supabase/repositories/course_repository_s
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 /// コース作成/編集ボトムシート。成功時に作成/更新した [Course] を返す。
 /// [existingCourse] を渡すと編集モードになる。
@@ -167,7 +168,7 @@ class CourseCreateSheet extends HookConsumerWidget {
           Navigator.of(context).pop(course);
         }
       } catch (e) {
-        errorMsg.value = e.toString();
+        errorMsg.value = snagMessageFor(l10n, e, origin: 'course_create_sheet.save');
       } finally {
         isSubmitting.value = false;
       }

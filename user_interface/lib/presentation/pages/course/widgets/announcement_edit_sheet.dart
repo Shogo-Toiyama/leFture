@@ -7,6 +7,7 @@ import 'package:lefture/infrastructure/local_db/repositories/announcement_reposi
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcement_type_icon.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class AnnouncementEditSheet extends HookConsumerWidget {
   const AnnouncementEditSheet({
@@ -51,7 +52,7 @@ class AnnouncementEditSheet extends HookConsumerWidget {
           Navigator.of(context).pop();
         }
       } catch (e) {
-        errorMsg.value = e.toString();
+        errorMsg.value = snagMessageFor(l10n, e, origin: 'announcement_edit_sheet.save');
       } finally {
         isSubmitting.value = false;
       }

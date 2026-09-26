@@ -33,6 +33,7 @@ import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 import '../../../application/recording/recording_controller.dart';
 import '../../../application/recording/recording_state.dart';
 import '../../../core/services/audio_record/audio_recorder_service.dart';
@@ -1658,7 +1659,11 @@ class RecordingPage extends HookConsumerWidget {
                                                     SnackBar(
                                                       content: Text(
                                                         l10n.recordingFileSelectError(
-                                                          e.toString(),
+                                                          snagMessageFor(
+                                                            l10n,
+                                                            e,
+                                                            origin: 'recording_page.pickFile',
+                                                          ),
                                                         ),
                                                       ),
                                                     ),

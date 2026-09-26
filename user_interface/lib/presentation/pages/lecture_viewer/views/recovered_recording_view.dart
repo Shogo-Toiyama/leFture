@@ -36,6 +36,7 @@ import 'package:lefture/presentation/widgets/orphan_delete_confirm.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/audio_player_bar.dart';
 import 'package:lefture/presentation/widgets/compact_audio_player.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class RecoveredRecordingView extends HookConsumerWidget {
   const RecoveredRecordingView({super.key, required this.orphan});
@@ -114,7 +115,9 @@ class RecoveredRecordingView extends HookConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(l10n.notStartedErrorPrefix(e.toString()))));
+          ).showSnackBar(SnackBar(content: Text(l10n.notStartedErrorPrefix(
+            snagMessageFor(l10n, e, origin: 'recovered_recording.encode'),
+          ))));
           isConfirming.value = false;
         }
       }
@@ -135,7 +138,9 @@ class RecoveredRecordingView extends HookConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(l10n.notStartedErrorPrefix(e.toString()))));
+          ).showSnackBar(SnackBar(content: Text(l10n.notStartedErrorPrefix(
+            snagMessageFor(l10n, e, origin: 'recovered_recording.discard'),
+          ))));
           isUploadingOnly.value = false;
         }
       }
@@ -170,7 +175,9 @@ class RecoveredRecordingView extends HookConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(l10n.notStartedErrorPrefix(e.toString()))));
+          ).showSnackBar(SnackBar(content: Text(l10n.notStartedErrorPrefix(
+            snagMessageFor(l10n, e, origin: 'recovered_recording.resume'),
+          ))));
           isDeleting.value = false;
         }
       }

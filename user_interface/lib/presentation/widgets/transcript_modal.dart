@@ -26,6 +26,7 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/audio_player_bar.dart';
 import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
 import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 // ── トップレベルの表示用ヘルパー関数 ───────────────────────────────
 Future<void> showTranscriptModal(
@@ -218,7 +219,9 @@ class TranscriptModal extends HookConsumerWidget {
         ),
         child: Center(
           child: Text(
-            l10n.announcementTranscriptModalErrorPrefix(err.toString()),
+            l10n.announcementTranscriptModalErrorPrefix(
+              safeErrorText(l10n, err, 'transcript_modal.lecture'),
+            ),
             style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
@@ -996,7 +999,11 @@ class TranscriptModal extends HookConsumerWidget {
                           err is ArtifactOfflineException
                               ? l10n.announcementTranscriptModalOfflineMessage
                               : l10n.announcementTranscriptModalUnavailableError(
-                                  err.toString(),
+                                  safeErrorText(
+                                    l10n,
+                                    err,
+                                    'transcript_modal.transcript',
+                                  ),
                                 ),
                           style: TextStyle(color: AppColors.paper.textPencil),
                         ),
@@ -1374,7 +1381,11 @@ class TranscriptModal extends HookConsumerWidget {
                       errorMessage: r2FileAsync.hasError
                           ? (r2FileAsync.error is ArtifactOfflineException
                                 ? l10n.announcementTranscriptModalOfflineErrorShort
-                                : r2FileAsync.error.toString())
+                                : safeErrorText(
+                                    l10n,
+                                    r2FileAsync.error!,
+                                    'transcript_modal.audio',
+                                  ))
                           : null,
                       topics: topics,
                       currentTopic: currentTopic,

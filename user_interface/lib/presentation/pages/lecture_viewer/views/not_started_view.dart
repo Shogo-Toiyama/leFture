@@ -14,6 +14,9 @@ import 'package:lefture/application/recording/upload_manager.dart';
 import 'package:lefture/domain/entities/lecture.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
+import 'package:lefture/domain/errors/app_error.dart';
+import 'package:lefture/application/errors/error_reporter.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
@@ -60,18 +63,27 @@ class NotStartedView extends HookConsumerWidget {
     );
   }
 
-  /// UploadManagerの自動発火経路は、失敗の詳細をDB(LocalUploadJobs.lastError)に
-  /// 文字列として保存するため、型情報が失われる。InsufficientCreditsException.
-  /// toString()の形式("InsufficientCreditsException(ERROR_CODE): message")を
-  /// 手掛かりに復元する。
-  InsufficientCreditsException? _parseInsufficientCreditsError(String? raw) {
-    if (raw == null) return null;
-    final match = RegExp(r'^InsufficientCreditsException\(([^)]+)\): (.*)$', dotAll: true)
-        .firstMatch(raw);
-    if (match == null) return null;
+  /// DBに保存された lastError を[AppError]に戻す。
+  ///
+  /// 以前はここで `InsufficientCreditsException(CODE): message` という
+  /// toString()の書式を正規表現でパースし直していた —— lastErrorが生文字列
+  /// だったため型情報が失われていたからである。今は UploadManager が
+  /// [AppError.encode]でJSONを書くので、codeを読むだけで済む。
+  /// (アプリ更新前に失敗して残っているジョブ行は生文字列のままなので、
+  ///  [AppError.tryDecode]がレガシー経路で受け止める)
+  AppError? _decodeJobError(String? raw) =>
+      AppError.tryDecode(raw, origin: 'upload_manager.start_analysis');
+
+  /// クレジット不足系なら専用ダイアログ用の例外に戻す。それ以外はnull。
+  InsufficientCreditsException? _asInsufficientCredits(AppError? error) {
+    if (error == null) return null;
+    if (error.code != AppErrorCode.insufficientCredits &&
+        error.code != AppErrorCode.noCreditAllocation) {
+      return null;
+    }
     return InsufficientCreditsException(
-      errorCode: match.group(1)!,
-      message: match.group(2) ?? '',
+      errorCode: error.backendCode ?? error.code,
+      message: error.raw,
     );
   }
 
@@ -115,12 +127,12 @@ class NotStartedView extends HookConsumerWidget {
       previous,
       next,
     ) {
-      final prevError = _parseInsufficientCreditsError(
+      final prevError = _asInsufficientCredits(_decodeJobError(
         previous?.value?.map((j) => j.lastError).firstWhere((e) => e != null, orElse: () => null),
-      );
-      final nextError = _parseInsufficientCreditsError(
+      ));
+      final nextError = _asInsufficientCredits(_decodeJobError(
         next.value?.map((j) => j.lastError).firstWhere((e) => e != null, orElse: () => null),
-      );
+      ));
       if (nextError != null && prevError == null) {
         _showInsufficientCreditsDialog(context, l10n, nextError);
       }
@@ -140,8 +152,10 @@ class NotStartedView extends HookConsumerWidget {
     final autoStartErrorRaw = startAnalysisJobs
         .map((j) => j.lastError)
         .firstWhere((e) => e != null, orElse: () => null);
+    final autoStartDecoded = _decodeJobError(autoStartErrorRaw);
+    // クレジット不足は専用ダイアログで誘導するので、汎用バナーには出さない。
     final autoStartError =
-        _parseInsufficientCreditsError(autoStartErrorRaw) == null ? autoStartErrorRaw : null;
+        _asInsufficientCredits(autoStartDecoded) == null ? autoStartDecoded : null;
 
     // ★ 「分析開始の号砲(start_analysisジョブ)は既にローカルで鳴らしてある」場合、
     // Start Analysisボタンを再び出してはいけない。lectureStateProvider(3秒
@@ -162,9 +176,9 @@ class NotStartedView extends HookConsumerWidget {
     final pendingUploadJobs =
         ref.watch(pendingAudioUploadJobsProvider(lecture.id)).value ?? const [];
     final isUploading = pendingUploadJobs.isNotEmpty;
-    final uploadRetryError = pendingUploadJobs
-        .map((j) => j.lastError)
-        .firstWhere((e) => e != null, orElse: () => null);
+    final uploadRetryError = _decodeJobError(
+      pendingUploadJobs.map((j) => j.lastError).firstWhere((e) => e != null, orElse: () => null),
+    );
 
     // ユーザーが「アップロードを止める」を押した講義。ファイルは端末に残った
     // ままなので、いつでも[resumeUpload]で再開できる。
@@ -459,9 +473,15 @@ class NotStartedView extends HookConsumerWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
+                              // 生の例外文字列は載せない。通信が不安定な間は
+                              // OFFLINE/TIMEOUTが大半で、ユーザーに見せても
+                              // 何の助けにもならないため、状況説明だけにする。
                               uploadRetryError == null
                                   ? l10n.notStartedUploadingWarning
-                                  : l10n.notStartedUploadRetryingWarning(uploadRetryError),
+                                  : l10n.notStartedUploadRetryingWarning(
+                                      friendlyMessageForCode(l10n, uploadRetryError.code) ??
+                                          l10n.snagTitle,
+                                    ),
                               style: TextStyle(
                                 color: AppColors.universe.textStarlight,
                                 fontSize: 12.5,
@@ -546,31 +566,23 @@ class NotStartedView extends HookConsumerWidget {
               ],
               if (autoStartError != null) ...[
                 const SizedBox(height: 24),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.correctionRed.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.4)),
+                // この画面はエラーが最も多く出る場所なので、3バリアントのうち
+                // 一番重いSnagCardを使う。「開発者に通知済み」を緑のチェックで
+                // 見せる状態表示がここで一番効く。
+                //
+                // nothingLost: true — 自動分析の開始に失敗しても録音そのものは
+                // 端末に残っており、手動の Start Analysis で再開できる。
+                // (嘘にならない場面でだけ立てる)
+                if (autoStartError.hasFriendlyMessage)
+                  SnagLine(error: autoStartError, actionName: l10n.notStartedStartAnalysisButton)
+                else
+                  SnagCard(
+                    error: autoStartError,
+                    actionName: l10n.notStartedStartAnalysisButton,
+                    reportStatus: SnagReportStatus.reported,
+                    reportedAt: autoStartError.at,
+                    nothingLost: true,
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          l10n.notStartedAutoStartFailedWarning(autoStartError),
-                          style: TextStyle(
-                            color: AppColors.universe.textStarlight,
-                            fontSize: 12.5,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
               const SizedBox(height: 32),
               FilledButton.icon(
@@ -607,10 +619,31 @@ class NotStartedView extends HookConsumerWidget {
               if (showInlineError)
                 Padding(
                   padding: const EdgeInsets.only(top: 16),
-                  child: Text(
-                    l10n.notStartedErrorPrefix(controllerState.error.toString()),
-                    style: const TextStyle(color: AppColors.correctionRed),
-                    textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) {
+                      final appError = AppError.from(
+                        controllerState.error!,
+                        origin: 'not_started_view.startAnalysis',
+                      );
+                      final friendly = friendlyMessageForCode(l10n, appError.code);
+                      // 既知のエラー(オフライン等)は1行で十分。未知のときだけ
+                      // 「こちらの不具合です」パネルを出し、同時に報告する。
+                      if (friendly != null) {
+                        return Text(
+                          friendly,
+                          style: const TextStyle(color: AppColors.correctionRed),
+                          textAlign: TextAlign.center,
+                        );
+                      }
+                      reportAppError(appError, route: 'not_started_view');
+                      return SnagPanel(
+                        error: appError,
+                        actionName: l10n.notStartedStartAnalysisButton,
+                        onRetry: () => ref
+                            .read(lectureControllerProvider.notifier)
+                            .startAnalysis(lecture.id),
+                      );
+                    },
                   ),
                 ),
             ],

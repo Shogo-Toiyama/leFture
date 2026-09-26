@@ -6,6 +6,7 @@ import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/domain/entities/processing_task.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 /// パイプラインの各ステップ(processingTaskOrder順)を1行ずつ表示するリスト。
 /// [ProcessingView]（分析中）と[LectureStatusScaffold]のfailed状態、両方から
@@ -266,7 +267,7 @@ class _StuckStepCard extends HookConsumerWidget {
         // 同じジョブ内でのリトライ後は明示的に再起動する必要がある。
         ref.invalidate(jobTasksStreamProvider(task.jobId));
       } catch (e) {
-        error.value = e.toString();
+        error.value = snagMessageFor(l10n, e, origin: 'pipeline_steps_list.retry');
       } finally {
         if (context.mounted) isRetrying.value = false;
       }

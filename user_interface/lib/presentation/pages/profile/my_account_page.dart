@@ -32,6 +32,7 @@ import 'package:lefture/presentation/widgets/app_error_dialog.dart';
 import 'package:lefture/presentation/widgets/user_avatar.dart';
 import 'package:lefture/presentation/widgets/spaceship_announcement_modal.dart';
 import 'package:lefture/application/transmission/transmission_provider.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class MyAccountPage extends ConsumerWidget {
   const MyAccountPage({super.key});
@@ -1527,9 +1528,10 @@ class _DeleteAccountDialog extends HookConsumerWidget {
         isSubmitting.value = false;
 
         if (result.hasError) {
-          errorMessage.value = result.error.toString().replaceAll(
-            'Exception: ',
-            '',
+          errorMessage.value = snagMessageFor(
+            l10n,
+            result.error!,
+            origin: 'my_account.deleteAccount',
           );
           return;
         }

@@ -1,96 +1,61 @@
-import 'dart:io' show Platform;
+// presentation/widgets/app_error_dialog.dart
+//
+// アプリ共通のエラー表示。**呼び出し側のAPIは一切変えていない** —— 28箇所の
+// 呼び出しをそのまま残したまま、中身だけを差し替えてある。
+//
+// 何を変えたか:
+//   1. 「Technical Details」に生の例外文字列を常時出していたのをやめた。
+//      配信ビルドでは[showTechnicalErrorDetails]がfalseに畳まれるので、
+//      技術詳細を描くコードごとバイナリから消える。
+//   2. 既知エラーの文言をハードコードの英語からl10nに移した。以前は
+//      日本語UIでも "Incorrect email address or password." と英語が出ていた。
+//      判定ロジック自体は[AppError]の分類器に移してある。
+//   3. 未知のエラーは[SnagCard]/[SnagPanel]で「こちらの不具合です・開発者に
+//      通知済み・参照コード」を見せ、同時に開発者へ自動報告する。
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:lefture/app/routes.dart';
-import 'package:lefture/infrastructure/supabase/supabase_client.dart';
-import 'package:lefture/presentation/themes/app_colors.dart';
+
+import 'package:lefture/application/errors/error_reporter.dart';
+import 'package:lefture/domain/errors/app_error.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class AppErrorUtils {
   AppErrorUtils._();
 
-  /// 分かりきっている典型的なエラーを人間味のある親切な英語メッセージにマッピングする。
-  /// 対象外（予期せぬエラー）の場合は null を返す。
-  static String? getFriendlyErrorMessage(dynamic error) {
+  /// 分かりきっている典型的なエラーを、ローカライズ済みの親切な文言にする。
+  /// 対象外(予期せぬエラー)の場合は null を返す。
+  ///
+  /// [context]が必要になったのは文言をl10nに移したため。旧シグネチャ
+  /// (contextなし)は英語決め打ちしか返せず、日本語UIが壊れていた。
+  static String? getFriendlyErrorMessage(BuildContext context, dynamic error) {
     if (error == null) return null;
-    // 自前のバリデーションメッセージ(l10nの文字列)はStringとしてそのまま渡ってくる。
-    // 例外オブジェクトと違ってすでに人に見せてよい文言なので、そのまま1行表示する。
+    // 自前のバリデーションメッセージ(l10nの文字列)はStringとしてそのまま
+    // 渡ってくる。例外オブジェクトと違ってすでに人に見せてよい文言なので、
+    // そのまま1行表示する。
     if (error is String) return error;
-    final str = error.toString().toLowerCase();
 
-    if (str.contains('invalid login credentials') ||
-        str.contains('invalid_credentials') ||
-        str.contains('invalid email or password')) {
-      return 'Incorrect email address or password.';
-    }
-    if (str.contains('email not confirmed') || str.contains('email_not_confirmed')) {
-      return 'Please verify your email address before signing in.';
-    }
-    if (str.contains('user already registered') ||
-        str.contains('user_already_exists') ||
-        str.contains('already exists')) {
-      return 'An account with this email address already exists.';
-    }
-    if (str.contains('password should be at least') || str.contains('weak_password')) {
-      return 'Password must be at least 6 characters long.';
-    }
-    if (str.contains('missing email') ||
-        str.contains('email or phone') ||
-        str.contains('email is required') ||
-        str.contains('email required')) {
-      return 'Please enter your email address.';
-    }
-    if (str.contains('missing password') ||
-        str.contains('password is required') ||
-        str.contains('password required') ||
-        str.contains('signup requires a valid password')) {
-      return 'Please enter a password.';
-    }
-    if (str.contains('unable to validate email address') || str.contains('invalid_email')) {
-      return 'Please enter a valid email address.';
-    }
-    if (str.contains('email rate limit exceeded') || str.contains('over_email_send_rate_limit')) {
-      return 'Too many requests. Please wait a few minutes before trying again.';
-    }
-    if (str.contains('new password should be different')) {
-      return 'New password must be different from your old password.';
-    }
-    if (str.contains('new email must be different')) {
-      return 'New email must be different from your current email.';
-    }
-    if (str.contains('socketexception') ||
-        str.contains('failed host lookup') ||
-        str.contains('networkexception')) {
-      return 'No internet connection. Please check your network and try again.';
-    }
-    if (str.contains('timeoutexception') || str.contains('taking longer than usual')) {
-      return 'Server is taking longer than usual to respond. Please try again in a moment.';
-    }
-
-    return null;
+    final l10n = AppLocalizations.of(context);
+    return friendlyMessageForCode(
+      l10n,
+      AppError.from(error, origin: 'app_error_dialog').code,
+    );
   }
 
-  /// エラーオブジェクトから不要な接頭辞（Exception: 等）を取り除き、読みやすくする
-  static String formatRawError(dynamic error) {
-    if (error == null) return '';
-    String str = error.toString().trim();
-    
-    // AuthException(message: ..., statusCode: ...) パターンの抽出
-    final authMatch = RegExp(r'AuthException\(message:\s*([^,]+)').firstMatch(str);
-    if (authMatch != null && authMatch.group(1) != null) {
-      return authMatch.group(1)!.trim();
+  /// 例外を[AppError]の封筒に入れる。表示側はこれ経由でcodeを見る。
+  static AppError envelope(dynamic error, {required String origin}) {
+    if (error is AppError) return error;
+    if (error is String) {
+      // 既に人に見せてよい文言。封筒には入れるが報告はしない
+      // (ユーザー向けバリデーションメッセージなので)。
+      return AppError(
+        code: AppErrorCode.offline == error ? AppErrorCode.offline : 'VALIDATION',
+        origin: origin,
+        raw: error,
+        at: DateTime.now(),
+      );
     }
-
-    // 不要な接頭辞を削除
-    str = str
-        .replaceAll(RegExp(r'^Exception:\s*'), '')
-        .replaceAll(RegExp(r'^AuthApiException:\s*'), '')
-        .replaceAll(RegExp(r'^AuthException:\s*'), '')
-        .trim();
-
-    return str.isEmpty ? 'Unknown error' : str;
+    return AppError.from(error ?? Exception('Unknown error'), origin: origin);
   }
 }
 
@@ -102,7 +67,7 @@ class AppErrorDialog extends StatelessWidget {
     required this.rawError,
   });
 
-  /// アクションの概要（例: "signing in", "creating your account", "updating your password" 等）
+  /// アクションの概要（例: "signing in", "creating your account" 等）
   final String actionName;
   final dynamic rawError;
 
@@ -122,8 +87,9 @@ class AppErrorDialog extends StatelessWidget {
   }
 
   /// スマートエラーハンドラ:
-  /// 分かりきっているエラーの場合は [onFriendlyError] (インラインエラー状態) にセット。
-  /// 未知のシステムエラーの場合、または [onFriendlyError] が未指定の場合は Modal Dialog を表示。
+  /// 分かりきっているエラーの場合は [onFriendlyError] (インラインエラー状態) に
+  /// セット。未知のシステムエラーの場合、または [onFriendlyError] が未指定の
+  /// 場合は Modal Dialog を表示。
   static Future<void> showSmart(
     BuildContext context,
     dynamic rawError, {
@@ -159,151 +125,64 @@ class AppErrorDialog extends StatelessWidget {
     String actionName = 'processing your request',
     void Function(dynamic error)? onFriendlyError,
   }) {
-    final targetError = rawError;
-    final friendlyMsg = AppErrorUtils.getFriendlyErrorMessage(targetError);
+    final friendlyMsg = AppErrorUtils.getFriendlyErrorMessage(context, rawError);
     if (friendlyMsg != null && onFriendlyError != null) {
-      onFriendlyError(targetError);
+      onFriendlyError(rawError);
       return Future.value();
     }
-    return show(context, actionName: actionName, rawError: targetError);
+    return show(context, actionName: actionName, rawError: rawError);
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final formattedError = AppErrorUtils.formatRawError(rawError);
+    final error = AppErrorUtils.envelope(rawError, origin: 'app_error_dialog.$actionName');
 
-    return AlertDialog(
-      backgroundColor: const Color(0xFF13131C),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: AppColors.universe.glassBorder),
-      ),
-      actionsOverflowButtonSpacing: 8,
-      actionsOverflowDirection: VerticalDirection.down,
-      actionsAlignment: MainAxisAlignment.end,
-      title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.correctionRed, size: 28),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'An error occurred while $actionName.',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User guidance message
-            Text(
-              l10n.appErrorDialogGuidance,
-              style: TextStyle(
-                color: AppColors.universe.textStarlight,
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 16),
+    // 未知のエラーはこの時点で開発者へ報告する。ErrorReporterが同一
+    // fingerprintの連投を潰すので、rebuildで何度呼ばれても増えない。
+    if (error.shouldReport) {
+      reportAppError(error, route: 'dialog:$actionName');
+    }
 
-            // Raw error technical details block
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.universe.voidBackground,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.universe.glassBorder),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF13131C),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.universe.glassBorder),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 3バリアントのうち一番重いSnagCard。ダイアログは操作が
+              // ブロックされている状態なので、安心感に一番重さが要る。
+              SnagCard(
+                error: error,
+                actionName: actionName,
+                reportStatus: error.shouldReport
+                    ? SnagReportStatus.reported
+                    : SnagReportStatus.hidden,
+                reportedAt: error.at,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.appErrorDialogTechnicalDetails,
-                    style: TextStyle(
-                      color: AppColors.universe.textComet,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    AppLocalizations.of(context).appErrorDialogClose,
+                    style: TextStyle(color: AppColors.universe.textComet),
                   ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    formattedError,
-                    style: const TextStyle(
-                      color: AppColors.correctionRed,
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            Navigator.of(context).pop();
-
-            final session = supabase.auth.currentSession;
-            if (session != null) {
-              context.push(AppRoutes.contact);
-            } else {
-              final packageInfo = await PackageInfo.fromPlatform();
-              final initialMessage =
-                '[Please describe your issue or inquiry here]\n\n'
-                '-----------------------------------------\n'
-                'Technical Details (for support team):\n'
-                '• Action: $actionName\n'
-                '• Error: $formattedError\n'
-                '• App Version: ${packageInfo.version} (${packageInfo.buildNumber})\n'
-                '• OS: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}\n'
-                '• Locale: ${Platform.localeName}\n'
-                '-----------------------------------------';
-
-              final contactUri = Uri.https('lefture.com', '/contact', {
-                'message': initialMessage,
-              });
-
-              try {
-                await launchUrl(contactUri, mode: LaunchMode.externalApplication);
-              } catch (_) {
-                // ブラウザ起動フォールバック
-              }
-            }
-          },
-          child: Text(
-            l10n.appErrorDialogContactSupport,
-            style: const TextStyle(
-              color: AppColors.starGold,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.universe.glassWhiteLow,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: BorderSide(color: AppColors.universe.glassBorder),
-            ),
-          ),
-          child: Text(l10n.appErrorDialogClose),
-        ),
-      ],
     );
   }
 }
@@ -321,14 +200,14 @@ class AppErrorBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     if (rawError == null || rawError.toString().trim().isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final friendlyMsg = AppErrorUtils.getFriendlyErrorMessage(rawError);
+    final friendlyMsg = AppErrorUtils.getFriendlyErrorMessage(context, rawError);
 
-    // 分かりきっているエラー（友好なメッセージ）は、すっきりした1行のインライン赤枠で表示
+    // 分かりきっているエラーは、すっきりした1行のインライン赤枠で表示。
+    // 赤を使うのはここだけ —— 「入力を直せば解決する」類のエラーだから。
     if (friendlyMsg != null) {
       return Container(
         width: double.infinity,
@@ -357,79 +236,12 @@ class AppErrorBox extends StatelessWidget {
       );
     }
 
-    // 予期せぬエラーは、タイトル・案内・技術詳細付きのボックスで表示
-    final formattedError = AppErrorUtils.formatRawError(rawError);
+    // 予期せぬエラーは「こちらの不具合です」パネル。生文字列は出さない。
+    final error = AppErrorUtils.envelope(rawError, origin: 'app_error_box.$actionName');
+    if (error.shouldReport) {
+      reportAppError(error, route: 'box:$actionName');
+    }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.correctionRed.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.correctionRed.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.error_outline_rounded, color: AppColors.correctionRed, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'An error occurred while $actionName.',
-                  style: const TextStyle(
-                    color: AppColors.correctionRed,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.appErrorBoxGuidance,
-            style: TextStyle(
-              color: AppColors.universe.textStarlight,
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.universe.voidBackground.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.universe.glassBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.appErrorDialogTechnicalDetails,
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                SelectableText(
-                  formattedError,
-                  style: const TextStyle(
-                    color: AppColors.correctionRed,
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return SnagPanel(error: error, actionName: actionName);
   }
 }

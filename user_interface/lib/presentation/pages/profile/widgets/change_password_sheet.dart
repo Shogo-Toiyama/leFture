@@ -7,6 +7,7 @@ import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/app_error_dialog.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class ChangePasswordSheet extends HookConsumerWidget {
   const ChangePasswordSheet({super.key});
@@ -73,7 +74,11 @@ class ChangePasswordSheet extends HookConsumerWidget {
           isSuccess.value = true;
         }
       } catch (e) {
-        errorMessage.value = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+        errorMessage.value = snagMessageFor(
+          l10n,
+          e,
+          origin: 'change_password.submit',
+        );
       } finally {
         isSubmitting.value = false;
         statusMessage.value = null;

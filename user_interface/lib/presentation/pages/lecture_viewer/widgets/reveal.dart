@@ -13,6 +13,7 @@ import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/domain/entities/processing_task.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 /// 1つのコンテンツブロックの表示状態。
 enum RevealState {
@@ -246,7 +247,13 @@ class _BlockedBlock extends HookConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.pipelineStepsRetryFailedSnackbar(e.toString()))),
+            SnackBar(
+              content: Text(
+                l10n.pipelineStepsRetryFailedSnackbar(
+                  snagMessageFor(l10n, e, origin: 'pipeline_steps.retry'),
+                ),
+              ),
+            ),
           );
         }
       } finally {

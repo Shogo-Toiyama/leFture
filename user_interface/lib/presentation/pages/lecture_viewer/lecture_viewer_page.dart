@@ -59,6 +59,7 @@ import 'package:lefture/application/sync/fun_fact_sync_service.dart';
 import 'package:lefture/application/sync/keyword_sync_service.dart';
 import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
 import 'package:lefture/application/sync/review_card_sync_service.dart';
+import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
   const LectureViewerPage({
@@ -140,7 +141,7 @@ class LectureViewerPage extends HookConsumerWidget {
         backgroundColor: AppColors.universe.voidBackground,
         body: Center(
           child: Text(
-            l10n.lectureViewerErrorPrefix(err.toString()),
+            l10n.lectureViewerErrorPrefix(safeErrorText(l10n, err, 'lecture_viewer.load')),
             style: const TextStyle(color: AppColors.correctionRed),
           ),
         ),
@@ -169,7 +170,7 @@ class LectureViewerPage extends HookConsumerWidget {
             backgroundColor: AppColors.universe.voidBackground,
             body: Center(
               child: Text(
-                l10n.lectureViewerErrorPrefix(err.toString()),
+                l10n.lectureViewerErrorPrefix(safeErrorText(l10n, err, 'lecture_viewer.list')),
                 style: const TextStyle(color: AppColors.correctionRed),
               ),
             ),
@@ -280,7 +281,7 @@ class _LecturePageContent extends ConsumerWidget {
       ),
       error: (err, stack) => Center(
         child: Text(
-          l10n.lectureViewerErrorPrefix(err.toString()),
+          l10n.lectureViewerErrorPrefix(safeErrorText(l10n, err, 'lecture_viewer.state')),
           style: const TextStyle(color: AppColors.correctionRed),
         ),
       ),
@@ -1415,7 +1416,9 @@ class _ViewerReactionButton extends ConsumerWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  l10n.lectureViewerReactionUpdateFailedSnackbar(e.toString()),
+                  l10n.lectureViewerReactionUpdateFailedSnackbar(
+                    snagMessageFor(l10n, e, origin: 'lecture_viewer.reaction'),
+                  ),
                 ),
               ),
             );
