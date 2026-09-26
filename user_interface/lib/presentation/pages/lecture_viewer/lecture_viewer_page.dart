@@ -25,6 +25,7 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/announcements_sheet.dart';
 import 'package:lefture/presentation/widgets/credit_rate_table_dialog.dart';
 import 'package:lefture/presentation/widgets/glowing_rainbow_border.dart';
+import 'package:lefture/presentation/widgets/selection_swipe_priority.dart';
 import 'package:lefture/app/navigation_utils.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
@@ -1104,71 +1105,82 @@ class _ViewerFunFactCard extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (fact.title?.trim().isNotEmpty == true)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(25, 22, 25, 0),
-                child: Text(
-                  fact.title!.trim(),
-                  style: const TextStyle(
-                    color: AppColors.starGold,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-            // 1. Hook (キャッチコピーとして際立たせる)
-            if (cleanHook.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-                child: Text(
-                  cleanHook,
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    height: 1.45,
-                  ),
-                ),
-              ),
-
-            // 2. Divider (HookとBodyの区切りグラデーションライン)
-            if (cleanHook.isNotEmpty && cleanBody.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.white.withValues(alpha: 0.18),
-                        Colors.transparent,
-                      ],
+            // 本文(タイトル/Hook/Body)は長押しで選択してコピーできる。講義を
+            // めくるPageViewの中にいるため、素のSelectionAreaでは内蔵の横ドラッグ
+            // 認識器がテキスト上のスワイプを奪ってしまう。ここではドラッグを
+            // PageViewへ転送する専用のSelectionAreaを使う。
+            SwipePrioritySelectionArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (fact.title?.trim().isNotEmpty == true)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(25, 22, 25, 0),
+                      child: Text(
+                        fact.title!.trim(),
+                        style: const TextStyle(
+                          color: AppColors.starGold,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
-                ),
-              ),
 
-            // 3. Body (詳細本文)
-            if (cleanBody.isNotEmpty)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  cleanHook.isNotEmpty ? 0 : 14,
-                  24,
-                  14,
-                ),
-                child: Text(
-                  cleanBody,
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight.withValues(alpha: 0.9),
-                    fontSize: 13.5,
-                    height: 1.6,
-                  ),
-                ),
+                  // 1. Hook (キャッチコピーとして際立たせる)
+                  if (cleanHook.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+                      child: Text(
+                        cleanHook,
+                        style: TextStyle(
+                          color: AppColors.universe.textStarlight,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+
+                  // 2. Divider (HookとBodyの区切りグラデーションライン)
+                  if (cleanHook.isNotEmpty && cleanBody.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      child: Container(
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              Colors.white.withValues(alpha: 0.18),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // 3. Body (詳細本文)
+                  if (cleanBody.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        cleanHook.isNotEmpty ? 0 : 14,
+                        24,
+                        14,
+                      ),
+                      child: Text(
+                        cleanBody,
+                        style: TextStyle(
+                          color: AppColors.universe.textStarlight.withValues(alpha: 0.9),
+                          fontSize: 13.5,
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                ],
               ),
+            ),
 
             // 4. Footer: Sources Accordion Button (left) & Like/Dislike (right)
             Padding(

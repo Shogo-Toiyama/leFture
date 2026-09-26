@@ -4286,12 +4286,6 @@ abstract class AppLocalizations {
   /// **'Announcement extraction is exclusive to the Core plan. Upgrade to automatically extract them in future lectures.'**
   String get announcementsSheetLockedBanner;
 
-  /// Small label line above the lecture title in the LectureNotePage app bar, showing the 1-based index of the topic/segment being viewed, e.g. 'Topic 3'. Same pattern as transcriptPageTopicLabel/announcementTranscriptModalTopicLabel elsewhere in the app.
-  ///
-  /// In en, this message translates to:
-  /// **'Topic {index}'**
-  String lectureNotePageTopicLabel(int index);
-
   /// SnackBar message shown when pulling to refresh on the home page while offline.
   ///
   /// In en, this message translates to:

@@ -2354,11 +2354,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'アナウンスメントの抽出はCoreプラン限定です。アップグレードすると今後の講義から自動で抽出されます。';
 
   @override
-  String lectureNotePageTopicLabel(int index) {
-    return 'トピック$index';
-  }
-
-  @override
   String get homeOfflineSnackBarMessage => 'オフライン状態です。キャッシュされたデータを表示しています。';
 
   @override

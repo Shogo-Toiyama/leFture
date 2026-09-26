@@ -29,7 +29,7 @@ import 'package:lefture/presentation/pages/course/widgets/course_style_helper.da
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
-import 'package:lefture/presentation/widgets/horizontal_scroll_drag_guard.dart';
+import 'package:lefture/presentation/widgets/selection_swipe_priority.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
@@ -241,6 +241,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     final overscroll = useState<double>(0.0);
     // ドラッグの生の累積量。overscrollとdragProgressに振り分ける元になる。
     final rawDrag = useRef<double>(0.0);
+    // 今めくりドラッグを主導している認識器インスタンス。外側(カード全体)と
+    // 内側(本文のSelectionArea配下)の2つが同じアリーナで競うため、負けた側の
+    // onCancelが勝った側のドラッグを巻き戻さないよう持ち主を覚えておく。
+    final dragOwner = useRef<Object?>(null);
     // 端でタップされたときの「行こうとして戻る」演出の往路かどうか。
     // ドラッグと違って指が押し続けてくれないので、往路だけ自前で時間を持つ。
     final isNudging = useState<bool>(false);
@@ -498,6 +502,122 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       temporaryHighlightBlockIdx.value = null;
     }
 
+    // めくりスワイプの認識器は2つ用意する。カード全体を覆う外側のものと、
+    // 本文のSelectionAreaの内側に置くもの。本文の上の横ドラッグはSelectionArea
+    // が内蔵の認識器で即座にアリーナを勝ち取ってしまうため、それより深い位置にも
+    // 認識器が必要になる(詳細は selection_swipe_priority.dart のコメント)。
+    // 勝つのは常に片方だけなので、負けた側のonCancelが勝った側のドラッグを
+    // 巻き戻さないよう、どのインスタンスが主導しているかをdragOwnerで持つ。
+    void configureSwipeRecognizer(
+      SelectionAwareHorizontalDragRecognizer recognizer,
+    ) {
+      recognizer
+        ..onStart = (_) {
+          if (dragOwner.value != null) return;
+          dragOwner.value = recognizer;
+          if (hasSelection.value) return;
+          animToken.value++;
+          animationController.stop();
+          isAnimating.value = false;
+          isScrubbing.value = false;
+          anchorIndex.value = committedIndex.value;
+          visualIndex.value = committedIndex.value;
+          dragProgress.value = 0.0;
+          // A tap's nudge may still be pending; letting its timer fire
+          // mid-drag would zero the rubber band out from under the
+          // finger.
+          nudgeTimer.value?.cancel();
+          isNudging.value = false;
+          overscroll.value = 0.0;
+          rawDrag.value = 0.0;
+          isDragging.value = true;
+        }
+        ..onUpdate = (details) {
+          if (dragOwner.value != recognizer) return;
+          if (!isDragging.value || hasSelection.value) return;
+          // Dragging left (negative dx) moves forward.
+          rawDrag.value = (rawDrag.value - details.delta.dx / cardWidth)
+              .clamp(-2.0, 2.0);
+          final atStart = committedIndex.value == 0;
+          final atEnd = committedIndex.value == totalCards - 1;
+          dragProgress.value = rawDrag.value.clamp(
+            atStart ? 0.0 : -1.0,
+            atEnd ? 0.0 : 1.0,
+          );
+          // At the very first / last card the leftover pull has nowhere
+          // to page to, so it feeds the rubber band instead.
+          final excess = rawDrag.value - dragProgress.value;
+          overscroll.value =
+              (atStart && excess < 0) || (atEnd && excess > 0)
+              ? excess
+              : 0.0;
+        }
+        ..onEnd = (details) {
+          if (dragOwner.value != recognizer) return;
+          dragOwner.value = null;
+          if (!isDragging.value) return;
+          final travelled = dragProgress.value;
+          final dir = travelled >= 0 ? 1 : -1;
+          final velocity = details.primaryVelocity ?? 0.0;
+          final flung =
+              velocity.abs() > 700 && (velocity < 0) == (dir > 0);
+          final commit =
+              travelled.abs() >= 0.35 ||
+              (travelled.abs() > 0.03 && flung);
+          dragProgress.value = 0.0;
+          // Letting go releases the rubber band: isDragging goes false
+          // in settle(), which switches the TweenAnimationBuilder below
+          // from "track the finger" to "ease back to zero".
+          overscroll.value = 0.0;
+          rawDrag.value = 0.0;
+          settle(
+            anchor: committedIndex.value,
+            dir: dir,
+            fromProgress: travelled.abs(),
+            toDest: commit,
+          );
+        }
+        ..onCancel = () {
+          if (dragOwner.value != recognizer) return;
+          dragOwner.value = null;
+          if (!isDragging.value) return;
+          final travelled = dragProgress.value;
+          dragProgress.value = 0.0;
+          overscroll.value = 0.0;
+          rawDrag.value = 0.0;
+          settle(
+            anchor: committedIndex.value,
+            dir: travelled >= 0 ? 1 : -1,
+            fromProgress: travelled.abs(),
+            toDest: false,
+          );
+        };
+    }
+
+    // 選択中の横ドラッグはSelectionAreaに譲る。指が少しずれただけで選択が
+    // 解除されてしまうのを防ぐため。
+    SelectionAwareHorizontalDragRecognizer newSwipeRecognizer() =>
+        SelectionAwareHorizontalDragRecognizer(
+          shouldDefer: () => hasSelection.value,
+        );
+
+    final swipeGestures = <Type, GestureRecognizerFactory>{
+      SelectionAwareHorizontalDragRecognizer:
+          GestureRecognizerFactoryWithHandlers<
+            SelectionAwareHorizontalDragRecognizer
+          >(newSwipeRecognizer, configureSwipeRecognizer),
+    };
+
+    // 本文用の認識器だけはページ側で持つ。ドラッグが始まると本文のSelectionArea
+    // は一旦外される(遷移アニメ中に同じカードが二重マウントされるのを避けるため。
+    // buildCardのselectionListenerNotifier参照)ので、Widgetの寿命に縛られる
+    // RawGestureDetectorに持たせると、掴んだ瞬間に認識器ごと破棄されてスワイプが
+    // 死ぬ。Listenerからこの認識器へaddPointerし、ポインタの追跡はWidgetの
+    // マウント状態と無関係に続けさせる。
+    final bodySwipeRecognizer = useMemoized(newSwipeRecognizer);
+    useEffect(() => bodySwipeRecognizer.dispose, [bodySwipeRecognizer]);
+    configureSwipeRecognizer(bodySwipeRecognizer);
+
     Widget buildCard(int cardIdx) {
       final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
       final imageFile = imageFiles[item.groupIndex];
@@ -515,6 +635,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         imageFile: imageFile,
         imagePath: imagePath,
         themeColor: textThemeColor,
+        bodySwipeRecognizer: bodySwipeRecognizer,
         // Only the settled (non-animating) current card gets the live
         // notifier. During a swipe transition this same card is *also*
         // rendered as one of the animated `layers` in a structurally
@@ -1325,113 +1446,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                         },
                         child: RawGestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          gestures: {
-                            SwipeAwareHorizontalDragRecognizer:
-                                GestureRecognizerFactoryWithHandlers<
-                                  SwipeAwareHorizontalDragRecognizer
-                                >(
-                                  () => SwipeAwareHorizontalDragRecognizer(),
-                                  (recognizer) {
-                                    recognizer
-                                      ..onStart = (_) {
-                                        if (hasSelection.value) return;
-                                        animToken.value++;
-                                        animationController.stop();
-                                        isAnimating.value = false;
-                                        isScrubbing.value = false;
-                                        anchorIndex.value =
-                                            committedIndex.value;
-                                        visualIndex.value =
-                                            committedIndex.value;
-                                        dragProgress.value = 0.0;
-                                        // A tap's nudge may still be pending;
-                                        // letting its timer fire mid-drag
-                                        // would zero the rubber band out from
-                                        // under the finger.
-                                        nudgeTimer.value?.cancel();
-                                        isNudging.value = false;
-                                        overscroll.value = 0.0;
-                                        rawDrag.value = 0.0;
-                                        isDragging.value = true;
-                                      }
-                                      ..onUpdate = (details) {
-                                        if (!isDragging.value ||
-                                            hasSelection.value) {
-                                          return;
-                                        }
-                                        // Dragging left (negative dx) moves
-                                        // forward.
-                                        rawDrag.value =
-                                            (rawDrag.value -
-                                                    details.delta.dx /
-                                                        cardWidth)
-                                                .clamp(-2.0, 2.0);
-                                        final atStart =
-                                            committedIndex.value == 0;
-                                        final atEnd =
-                                            committedIndex.value ==
-                                            totalCards - 1;
-                                        dragProgress.value = rawDrag.value
-                                            .clamp(
-                                              atStart ? 0.0 : -1.0,
-                                              atEnd ? 0.0 : 1.0,
-                                            );
-                                        // At the very first / last card the
-                                        // leftover pull has nowhere to page
-                                        // to, so it feeds the rubber band
-                                        // instead.
-                                        final excess =
-                                            rawDrag.value - dragProgress.value;
-                                        overscroll.value =
-                                            (atStart && excess < 0) ||
-                                                (atEnd && excess > 0)
-                                            ? excess
-                                            : 0.0;
-                                      }
-                                      ..onEnd = (details) {
-                                        if (!isDragging.value) return;
-                                        final travelled = dragProgress.value;
-                                        final dir = travelled >= 0 ? 1 : -1;
-                                        final velocity =
-                                            details.primaryVelocity ?? 0.0;
-                                        final flung =
-                                            velocity.abs() > 700 &&
-                                            (velocity < 0) == (dir > 0);
-                                        final commit =
-                                            travelled.abs() >= 0.35 ||
-                                            (travelled.abs() > 0.03 && flung);
-                                        dragProgress.value = 0.0;
-                                        // Letting go releases the rubber
-                                        // band: isDragging goes false in
-                                        // settle(), which switches the
-                                        // TweenAnimationBuilder below from
-                                        // "track the finger" to "ease back to
-                                        // zero".
-                                        overscroll.value = 0.0;
-                                        rawDrag.value = 0.0;
-                                        settle(
-                                          anchor: committedIndex.value,
-                                          dir: dir,
-                                          fromProgress: travelled.abs(),
-                                          toDest: commit,
-                                        );
-                                      }
-                                      ..onCancel = () {
-                                        if (!isDragging.value) return;
-                                        final travelled = dragProgress.value;
-                                        dragProgress.value = 0.0;
-                                        overscroll.value = 0.0;
-                                        rawDrag.value = 0.0;
-                                        settle(
-                                          anchor: committedIndex.value,
-                                          dir: travelled >= 0 ? 1 : -1,
-                                          fromProgress: travelled.abs(),
-                                          toDest: false,
-                                        );
-                                      };
-                                  },
-                                ),
-                          },
+                          gestures: swipeGestures,
                           child: TweenAnimationBuilder<double>(
                             // Diminishing returns: the card gives a little at
                             // first and then refuses to move further, so it
@@ -2164,6 +2179,7 @@ class _ContentCard extends StatelessWidget {
     required this.imageFile,
     this.imagePath,
     required this.themeColor,
+    this.bodySwipeRecognizer,
     this.selectionListenerNotifier,
     this.selectionAreaKey,
     this.onSelectionChanged,
@@ -2176,6 +2192,11 @@ class _ContentCard extends StatelessWidget {
   final File? imageFile;
   final String? imagePath;
   final Color themeColor;
+  // 本文のSelectionAreaの内側からポインタを流し込むめくりスワイプ認識器。
+  // SelectionAreaは内蔵の横ドラッグ認識器でテキスト上のドラッグを即座に
+  // 取ってしまうため、それより深い位置からも認識器にポインタを渡す必要がある
+  // (詳細は selection_swipe_priority.dart のコメント参照)。
+  final SelectionAwareHorizontalDragRecognizer? bodySwipeRecognizer;
   final SelectionListenerNotifier? selectionListenerNotifier;
   final GlobalKey<SelectionAreaState>? selectionAreaKey;
   final ValueChanged<SelectedContent?>? onSelectionChanged;
@@ -2266,7 +2287,16 @@ class _ContentCard extends StatelessWidget {
               onSelectionChanged: onSelectionChanged,
               child: SelectionListener(
                 selectionNotifier: selectionListenerNotifier!,
-                child: blocks,
+                // SelectionAreaの内蔵認識器より先にポインタを受け取るための
+                // Listener。アリーナには参加せず、ページ側が持つ認識器へ
+                // そのまま渡すだけ。
+                child: bodySwipeRecognizer == null
+                    ? blocks
+                    : Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: bodySwipeRecognizer!.addPointer,
+                        child: blocks,
+                      ),
               ),
             )
           else
@@ -2587,15 +2617,14 @@ class _ReviewCardBlockView extends HookWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HorizontalScrollDragGuard(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Text(
-                    block.codeString ?? '',
-                    style: (codeStyle ?? const TextStyle()).copyWith(
-                      height: 1.5,
-                    ),
-                  ),
+              // このScrollViewはめくりスワイプの認識器より深いので、コード
+              // ブロック上の横ドラッグは自然にこちらが勝つ(アリーナでは深い方が
+              // 先にポインタを受け取る)。専用のガードは不要。
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Text(
+                  block.codeString ?? '',
+                  style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
                 ),
               ),
               if ((block.explanation ?? '').isNotEmpty) ...[

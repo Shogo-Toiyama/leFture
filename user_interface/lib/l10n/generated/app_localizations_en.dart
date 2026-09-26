@@ -2455,11 +2455,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Announcement extraction is exclusive to the Core plan. Upgrade to automatically extract them in future lectures.';
 
   @override
-  String lectureNotePageTopicLabel(int index) {
-    return 'Topic $index';
-  }
-
-  @override
   String get homeOfflineSnackBarMessage =>
       'You\'re offline. Showing cached data.';
 

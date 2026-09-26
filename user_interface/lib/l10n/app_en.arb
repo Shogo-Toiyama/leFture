@@ -3914,17 +3914,6 @@
     "description": "Short banner shown above the announcement list in the cross-course/cross-lecture announcements sheets (home bar's 'all announcements' sheet, and a course's announcements sheet) when the account's plan doesn't include announcement generation. The sheet itself always stays open (not blocked), since tutorial lectures always get announcements regardless of plan — this just explains why real lectures may show none."
   },
 
-  "lectureNotePageTopicLabel": "Topic {index}",
-  "@lectureNotePageTopicLabel": {
-    "description": "Small label line above the lecture title in the LectureNotePage app bar, showing the 1-based index of the topic/segment being viewed, e.g. 'Topic 3'. Same pattern as transcriptPageTopicLabel/announcementTranscriptModalTopicLabel elsewhere in the app.",
-    "placeholders": {
-      "index": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-
   "homeOfflineSnackBarMessage": "You're offline. Showing cached data.",
   "@homeOfflineSnackBarMessage": {
     "description": "SnackBar message shown when pulling to refresh on the home page while offline."
