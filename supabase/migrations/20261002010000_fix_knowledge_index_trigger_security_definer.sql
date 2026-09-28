@@ -1,0 +1,32 @@
+-- ============================================================
+-- 緊急修正: fn_knowledge_index_trigger を SECURITY DEFINER にする
+--
+-- 20261001010000で作ったfn_knowledge_index_triggerにSECURITY DEFINERの
+-- 指定が無く、既定のSECURITY INVOKERのままだった。これにより、Flutterが
+-- 本人のJWT(authenticatedロール、RLS適用下)でreview_cards/deep_notes/
+-- keywords/announcements/fun_facts/lectures/lecture_moments/
+-- lecture_topicsへ直接書き込むと、トリガもauthenticatedロールとして
+-- 実行される。
+--
+-- knowledge_index_queueにはauthenticated向けのポリシーが一切無く、
+-- knowledge_chunksもSELECT以外のポリシーが無いため:
+-- - 新規作成/通常の編集(deleted_at不変のUPDATE)
+--     → トリガ内の INSERT INTO knowledge_index_queue がRLS違反で
+--       例外を出し、それが同一トランザクション内の元のINSERT/UPDATEを
+--       道連れにロールバックさせていた(=ユーザーの保存自体が失敗する)。
+-- - ゴミ箱行き/復元/物理削除
+--     → 例外にはならないがRLSに阻まれて0件しか処理できず、
+--       knowledge_chunks側の削除・復元が静かに反映されない。
+--
+-- SECURITY DEFINERにすると、関数は「作成した(=knowledge_chunks/
+-- knowledge_index_queueを所有する)ロール」の権限で実行されるようになる。
+-- RLSは既定でテーブル所有者には適用されないため、呼び出し元のロールに
+-- 関係なく正しく動作するようになる。
+--
+-- SET search_pathを空にするのはSECURITY DEFINER関数の定石(呼び出し側が
+-- 一時テーブル等でsearch_pathを汚染してなりすまし先のテーブルを
+-- 差し替える攻撃を防ぐ)。本文は元々public.で完全修飾済みのため、
+-- 動作そのものへの影響は無い。
+-- ============================================================
+
+ALTER FUNCTION public.fn_knowledge_index_trigger() SECURITY DEFINER SET search_path = '';
