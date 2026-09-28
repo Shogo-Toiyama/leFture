@@ -847,11 +847,11 @@ def _get_student_profile(uid: str) -> str:
     """
     supabase = get_supabase_client()
     try:
-        res = supabase.table("user_profiles").select("profile, interests, future_goals").eq("id", uid).single().execute()
+        res = supabase.table("user_profiles").select("bio, interests, future_goals").eq("id", uid).single().execute()
         if not res.data:
             return "A university student majoring in Computer Science interested in software engineering."
-            
-        p_text = res.data.get("profile") or ""
+
+        p_text = res.data.get("bio") or ""
         i_text = res.data.get("interests") or ""
         g_text = res.data.get("future_goals") or ""
         
@@ -867,6 +867,10 @@ def _get_student_profile(uid: str) -> str:
             return "A university student majoring in Computer Science interested in software engineering."
             
         return " ".join(parts)
-    except Exception:
-        # DBエラー時の安全なフォールバック
+    except Exception as e:
+        # DBエラー時の安全なフォールバック。
+        # 以前は存在しない列(profile)をselectして毎回ここに落ち、全ユーザーが
+        # 固定のフォールバック文でパーソナライズされていたのに誰も気付けなかった。
+        # フォールバック自体は残すが、失敗は必ずログに出す。
+        print(f"[_get_student_profile] failed for uid={uid}, using fallback: {e}")
         return "A university student majoring in Computer Science interested in software engineering."

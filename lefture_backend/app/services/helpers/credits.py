@@ -19,6 +19,89 @@ def usd_to_micro_credits(cost_usd: float) -> int:
     return round(cost_usd * MICRO_CREDITS_PER_USD)
 
 
+# ---------------------------------------------------------
+# 💬 横断チャットボットの課金
+# ---------------------------------------------------------
+# 講義は録音の長さに応じた固定額だが、チャットは「実際にかかった原価 ×
+# CHAT_CREDIT_MARKUP」を1メッセージごとに消費する(CREDITS_PER_USD=300なので
+# 実質600クレジット/$1)。原価はBillingEngine(PRICE_MATRIX)から計算するため、
+# PRICE_MATRIXの単価がそのまま請求額に効く点に注意。
+CHAT_CREDIT_MARKUP = 2
+# 送信を受け付ける最低残高。1メッセージの原価は通常1〜3クレジット程度なので、
+# これだけあれば少なくとも1回分は賄える。
+CHAT_MIN_BALANCE_CREDITS = 5
+
+
+def chat_cost_to_micro_credits(cost_usd: float) -> int:
+    return round(cost_usd * CHAT_CREDIT_MARKUP * MICRO_CREDITS_PER_USD)
+
+
+def consume_chat_credits(
+    user_id: str,
+    thread_id: str,
+    message_id: str,
+    cost_usd: float,
+    cost_breakdown: list[dict[str, Any]],
+) -> int:
+    """
+    チャット1メッセージ分のクレジットを消費し、実際に消費したμクレジットを返す。
+
+    講義(consume_lecture_credits)と同じくconsume_creditsのRPCを使う。
+    reasonは"CHAT_MESSAGE"で固定し、どのスレッド/メッセージの分かは
+    metadataに積む。同じmessage_idへの二重課金はここで弾く(呼び出しは
+    メッセージの締め処理で1回だけの想定だが、念のため)。
+    原価の記録(usage_records)もここで一緒に行う。講義と違い「参考値」
+    ではなく、micro_credits_chargedは実際の消費額そのもの。
+    """
+    micro_credits = chat_cost_to_micro_credits(cost_usd)
+    if micro_credits <= 0:
+        return 0
+
+    supabase = get_supabase_client()
+
+    existing = (
+        supabase.table("credit_transactions")
+        .select("id")
+        .eq("reason", "CHAT_MESSAGE")
+        .eq("metadata->>message_id", message_id)
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        logger.warning(f"consume_chat_credits: message_id={message_id} already charged. Skipping duplicate charge.")
+        return 0
+
+    supabase.rpc(
+        "consume_credits",
+        {
+            "p_user_id": user_id,
+            "p_amount": micro_credits,
+            "p_reason": "CHAT_MESSAGE",
+            "p_job_id": None,
+            "p_metadata": {
+                "thread_id": thread_id,
+                "message_id": message_id,
+                "cost_usd": cost_usd,
+                "markup": CHAT_CREDIT_MARKUP,
+            },
+        },
+    ).execute()
+
+    supabase.table("usage_records").insert(
+        {
+            "user_id": user_id,
+            "job_id": None,
+            "task_id": None,
+            "cost_usd": cost_usd,
+            "cost_breakdown": cost_breakdown,
+            "micro_credits_charged": micro_credits,
+            "metadata": {"kind": "CHAT_MESSAGE", "thread_id": thread_id, "message_id": message_id},
+        }
+    ).execute()
+
+    return micro_credits
+
+
 def record_task_cost(
     user_id: str,
     task_id: Optional[str],

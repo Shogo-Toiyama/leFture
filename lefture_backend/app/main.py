@@ -23,6 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, Request, File, Form, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 # AuthError系の例外処理はJWT検証と一緒に app/core/auth.py へ移した。
 from supabase import create_client, ClientOptions
 from nltk.tokenize import sent_tokenize
@@ -79,6 +80,13 @@ from app.services.helpers.credits import (
 from app.services.helpers.helpers import _get_audio_duration_seconds
 from app.services.helpers.plan_features import get_user_tier_level, has_feature, is_gating_disabled_for_user, FEATURE_REALTIME_TRANSCRIBE
 from app.services.tutorial_content import get_tutorial_content
+from app.services.knowledge_index import drain_knowledge_index_queue
+from app.services.chat_service import (
+    ChatRequestError,
+    STREAMING_STALE_MINUTES,
+    prepare_chat_turn,
+    run_chat_turn,
+)
 
 # チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
 # R2の自分専用領域へ複製する(共有フォルダにはできない事情はseed_tutorial参照)。
@@ -1188,16 +1196,22 @@ async def billing_history(request: Request):
         return date_label, time_label
 
     try:
+        # ★ 以前はorder(desc=False)のまま500件に切っており、取引が501件を
+        # 超えたユーザーでは「一番古い500件」しか見えず、直近の履歴が
+        # 丸ごと欠落していた(チャットの導入でユーザーごとの取引数が
+        # 講義単位の頃より大きく増えるため顕在化しやすくなった)。
+        # 新しい順に500件取ってから、以降の処理(hour_keyでの束ね等)が
+        # 前提にしている時系列順に戻すため反転する。
         tx_res = await asyncio.to_thread(
             lambda: admin_client.table("credit_transactions")
                 .select("id, created_at, delta, balance_after, reason")
                 .eq("user_id", user_id)
-                .order("created_at", desc=False)
+                .order("created_at", desc=True)
                 .limit(500)
                 .execute()
         )
 
-        transactions = tx_res.data or []
+        transactions = list(reversed(tx_res.data or []))
         if not transactions:
             return {"history": []}
 
@@ -3973,6 +3987,14 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
         lambda: admin_client.table("courses").delete().eq("user_id", uid).execute()
     )
 
+    # 4.5 横断チャットボットの会話(メッセージ→スレッドの順)と検索インデックス。
+    #     どれもuser_idのON DELETE CASCADEでauth.users削除時に消えるが、
+    #     他のテーブルと同じくカスケードに依存せず明示的に消す。
+    for chat_table in ("chat_messages", "chat_threads", "knowledge_chunks"):
+        await asyncio.to_thread(
+            lambda t=chat_table: admin_client.table(t).delete().eq("user_id", uid).execute()
+        )
+
     # 5. プロフィールを削除
     await asyncio.to_thread(
         lambda: admin_client.table("user_profiles").delete().eq("id", uid).execute()
@@ -4210,6 +4232,43 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
             print(f"⚠️ Patrol failed to hard-delete lecture {lecture_id}: {e}")
 
     return {"hard_deleted": deleted, "failed": failed, "retention_days": LECTURE_HARD_DELETE_RETENTION_DAYS}
+
+
+KNOWLEDGE_INDEX_QUEUE_PATROL_BATCH_SIZE = int(os.getenv("KNOWLEDGE_INDEX_QUEUE_PATROL_BATCH_SIZE", "200"))
+
+
+async def _patrol_drain_knowledge_index_queue() -> dict:
+    """
+    横断チャットボット用knowledge_chunksの取りこぼし回収。
+    FINALIZE_JOBは講義処理完了直後に同じ関数をその場で呼んでいるので、
+    ここで拾うのは主にFlutterからの直接編集(outbox経由でSupabaseに
+    直接書き込まれ、バックエンドを通らないもの)。
+    patrol()の中でPATROL_CHECKS(30分おき)とは別枠で毎回(10分おき)
+    呼ばれているので、最悪でも10分以内にチャットの検索対象へ反映される。
+    """
+    return await drain_knowledge_index_queue(limit=KNOWLEDGE_INDEX_QUEUE_PATROL_BATCH_SIZE)
+
+
+async def _patrol_fail_stale_chat_messages() -> dict:
+    """
+    生成中(streaming)のまま取り残されたチャットの返答をerrorにする。
+    run_chat_turnは失敗時にも自分でerrorにするが、インスタンスごと落ちた場合
+    (Cloud Runのスケールイン等)はそれすら走らない。streamingのままだと
+    画面が「生成中」のまま固まり続けるため、ここで確定させる。課金はしない
+    (課金は締め処理でしか行わないので、ここに来た返答は元々未課金)。
+    送信の二重ロック判定も同じSTREAMING_STALE_MINUTESを使っているので、
+    ロックはこのpatrolを待たずに外れる。
+    """
+    admin_client = get_supabase_client()
+    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=STREAMING_STALE_MINUTES)).isoformat()
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_messages")
+            .update({"status": "error"})
+            .eq("status", "streaming")
+            .lt("created_at", cutoff)
+            .execute()
+    )
+    return {"failed_stale": len(res.data or [])}
 
 
 # 将来ここに追加していく（例）:
@@ -4513,6 +4572,7 @@ PATROL_CHECKS = [
     ("materialize_dormant_expired_grants", _patrol_materialize_dormant_expired_grants),
     ("renew_subscriptions", _patrol_renew_subscriptions),
     ("reconcile_cross_platform_subscriptions", _patrol_reconcile_cross_platform_subscriptions),
+    ("fail_stale_chat_messages", _patrol_fail_stale_chat_messages),
 ]
 
 
@@ -4795,12 +4855,27 @@ async def patrol():
     Cloud Schedulerから10分おきに呼ばれる、汎用メンテナンスのディスパッチャー。
     DB周回を伴う本チェック(PATROL_CHECKS)は0分・30分付近でのみ実行し、
     それ以外はコールドスタート防止のウォームアップとして起こすだけで即座に返す。
+
+    knowledge_index_queueのdrainだけは例外で、この早期return判定より前、
+    毎回(10分おき)無条件で呼ぶ。他のPatrolチェックと違って「PENDING行が
+    あるかをFOR UPDATE SKIP LOCKEDで1回引くだけ」の軽いインデックス
+    スキャンなので、キューが空の間はコストがほぼ増えない。これにより
+    アプリでの直接編集がチャットの検索対象に反映されるまでの遅延を
+    最大30分→最大10分に縮められる(処理すべき件数自体は変わらず、
+    より細かい間隔で分割されるだけ)。
     """
     now = datetime.now(timezone.utc)
-    if now.minute % 30 >= PATROL_TIME_WINDOW_TOLERANCE_MINUTES:
-        return {"status": "warm"}
 
-    results = {}
+    try:
+        knowledge_index_result = await _patrol_drain_knowledge_index_queue()
+    except Exception as e:
+        knowledge_index_result = {"error": str(e)}
+        print(f"⚠️ Patrol check 'drain_knowledge_index_queue' failed: {e}")
+
+    if now.minute % 30 >= PATROL_TIME_WINDOW_TOLERANCE_MINUTES:
+        return {"status": "warm", "drain_knowledge_index_queue": knowledge_index_result}
+
+    results = {"drain_knowledge_index_queue": knowledge_index_result}
     for name, check_fn in PATROL_CHECKS:
         try:
             results[name] = await check_fn()
@@ -5502,4 +5577,141 @@ async def auth_delete_account(request: Request):
         raise HTTPException(status_code=500, detail="Failed to delete account from server")
 
     print(f"👤 Deleted user account: {uid}")
+    return {"success": True}
+
+# ---------------------------------------------------------
+# 💬 横断チャットボット (段階1 MVP)
+#
+# 処理の中身は app/services/chat_service.py。ここは入口(認証・事前チェックの
+# HTTPエラー化・SSEの配信)だけ。スレッド一覧や過去のメッセージは、
+# クライアントがsupabase-js / supabase_flutterでRLS越しに直接読む
+# (chat_threads / chat_messages は本人のみSELECT可、書き込みはここ経由のみ)。
+# ---------------------------------------------------------
+class ChatMessageContext(BaseModel):
+    lecture_id: Optional[str] = None
+    selected_text: Optional[str] = None
+
+
+class ChatMessageRequest(BaseModel):
+    thread_id: Optional[str] = None
+    client_message_id: str
+    content: str
+    context: Optional[ChatMessageContext] = None
+
+
+class ChatThreadUpdateRequest(BaseModel):
+    title: str
+
+
+# 返答の生成はリクエストとは別のasyncioタスクで走らせる(クライアントが
+# 途中で切断しても保存・課金まで走り切るため)。タスクへの参照をどこかに
+# 持っておかないとGCで途中で消されることがあるので、ここに保持する。
+_CHAT_BACKGROUND_TASKS: set = set()
+
+
+def _parse_uuid_or_422(value: Optional[str], field_name: str) -> Optional[str]:
+    if value is None:
+        return None
+    try:
+        return str(uuid.UUID(value))
+    except (ValueError, AttributeError, TypeError):
+        raise HTTPException(status_code=422, detail={"error_code": "INVALID_ID", "message": f"{field_name} must be a UUID."})
+
+
+@app.post("/chat/messages")
+async def post_chat_message(payload: ChatMessageRequest, request: Request):
+    """
+    チャットに1メッセージ送り、返答をSSE(text/event-stream)で返す。
+
+    事前チェックで弾くもの(文字数超過413 / 残高不足402 / 送信頻度429 /
+    断られ過ぎ429 / 再送の重複409 / 生成中の二重送信409 / スレッド無し404)は
+    ストリームを開く前に通常のHTTPエラーとして返す。
+
+    イベント: meta / status / sources / delta / replace / done / error
+    (EventSourceはPOSTとAuthorizationヘッダを扱えないため、クライアントは
+    fetchのReadableStreamで読む)。
+    """
+    user_client, uid = await _get_user_client_from_request(request)
+    admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, uid)
+
+    thread_id = _parse_uuid_or_422(payload.thread_id, "thread_id")
+    client_message_id = _parse_uuid_or_422(payload.client_message_id, "client_message_id")
+    context = payload.context or ChatMessageContext()
+    context_lecture_id = _parse_uuid_or_422(context.lecture_id, "context.lecture_id")
+
+    try:
+        turn = await prepare_chat_turn(
+            uid, thread_id, client_message_id, payload.content,
+            context_lecture_id, context.selected_text,
+        )
+    except ChatRequestError as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail={"error_code": e.error_code, "message": e.message, **e.extra},
+        )
+
+    queue: asyncio.Queue = asyncio.Queue()
+    task = asyncio.create_task(run_chat_turn(turn, user_client, queue))
+    _CHAT_BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_CHAT_BACKGROUND_TASKS.discard)
+
+    async def event_stream():
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield item
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+async def _require_own_chat_thread(admin_client, thread_id: str, uid: str) -> dict:
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads").select("id, user_id, deleted_at")
+            .eq("id", thread_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row or row.get("user_id") != uid or row.get("deleted_at"):
+        raise HTTPException(status_code=404, detail={"error_code": "THREAD_NOT_FOUND", "message": "Thread not found."})
+    return row
+
+
+@app.patch("/chat/threads/{thread_id}")
+async def update_chat_thread(thread_id: str, payload: ChatThreadUpdateRequest, request: Request):
+    """スレッド名の変更。"""
+    uid = await _get_authenticated_user_id(request)
+    thread_id = _parse_uuid_or_422(thread_id, "thread_id")
+    title = (payload.title or "").strip()
+    if not title or len(title) > 100:
+        raise HTTPException(status_code=422, detail={"error_code": "INVALID_TITLE", "message": "Title must be 1-100 characters."})
+
+    admin_client = get_supabase_client()
+    await _require_own_chat_thread(admin_client, thread_id, uid)
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads").update({"title": title}).eq("id", thread_id).execute()
+    )
+    return {"success": True}
+
+
+@app.delete("/chat/threads/{thread_id}")
+async def delete_chat_thread(thread_id: str, request: Request):
+    """スレッドの削除(論理削除。中のメッセージも同時に論理削除する)。"""
+    uid = await _get_authenticated_user_id(request)
+    thread_id = _parse_uuid_or_422(thread_id, "thread_id")
+
+    admin_client = get_supabase_client()
+    await _require_own_chat_thread(admin_client, thread_id, uid)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_messages").update({"deleted_at": now_iso})
+            .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
+    )
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads").update({"deleted_at": now_iso}).eq("id", thread_id).execute()
+    )
     return {"success": True}
