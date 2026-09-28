@@ -14633,3 +14633,1046 @@ a.lecture-tile-card:hover {
   }
 }
 
+
+/* ==========================================================================
+   💬 Chat — 横断チャットボット
+   右下のボタン(.chat-fab)はどの画面にも出る。広い画面ではパネルを右側に
+   固定し、--chat-dock-width の分だけページ側を縮める(左側の出典シート等と
+   ぶつからないよう、右側はこのパネルのために空けてある)。狭い画面
+   (STACKED_PANELS_QUERY = max-width: 900px)ではボトムシートとして重ねる。
+   ========================================================================== */
+
+/* パネルを右に固定している間、ページ側を縮める */
+.app-shell {
+  padding-right: var(--chat-dock-width, 0px);
+}
+
+.pv-root {
+  right: var(--chat-dock-width, 0px);
+}
+
+/* 右下の既存ボタン(コース一覧・コース詳細)は、チャットボタンの左に並べる。
+   --chat-fab-clearanceはチャットボタンが出ている間だけChatDockが設定する。 */
+.course-fab-wrap {
+  right: calc(20px + var(--chat-fab-clearance, 0px) + var(--chat-dock-width, 0px));
+}
+
+.courses-fab {
+  right: calc(2.5rem + var(--chat-fab-clearance, 0px) + var(--chat-dock-width, 0px));
+}
+
+/* ── 右下のボタン ─────────────────────────────────────────────────────── */
+
+.chat-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 65; /* 全画面の読み物(.pv-root: 60)より手前、モーダル(1000)より奥 */
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  display: grid;
+  place-items: center;
+  background: var(--gold);
+  color: #111422;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255, 179, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+}
+
+.chat-fab:hover {
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.06);
+}
+
+.chat-fab:focus-visible {
+  outline: 3px solid rgba(255, 179, 0, 0.55);
+  outline-offset: 3px;
+}
+
+/* ── パネル(右固定 / ボトムシート) ──────────────────────────────────── */
+
+.chat-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  width: var(--chat-dock-width, 460px);
+  display: flex;
+  flex-direction: column;
+  background: var(--void);
+  color: var(--starlight);
+  color-scheme: dark;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  border-left: 1px solid var(--glass-border);
+}
+
+.chat-panel.is-docked {
+  animation: chat-panel-in 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-panel.is-sheet {
+  top: auto;
+  left: 0;
+  width: auto;
+  height: min(88vh, 88dvh);
+  border-left: none;
+  border-top: 1px solid var(--glass-border);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: chat-sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 69;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: rgba(5, 7, 13, 0.55);
+  cursor: default;
+}
+
+@keyframes chat-panel-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+@keyframes chat-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+.chat-panel-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 56px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.chat-panel-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-icon-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--comet);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.chat-icon-btn:hover {
+  background: var(--glass-low);
+  border-color: var(--glass-border);
+  color: var(--starlight);
+  text-decoration: none;
+}
+
+.chat-panel-history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* ── 会話 ─────────────────────────────────────────────────────────────── */
+
+.chat-convo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 18px 16px 12px;
+}
+
+.chat-convo.is-page .chat-thread {
+  padding: 24px 20px 16px;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chat-msg.is-user {
+  align-items: flex-end;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 9px 13px;
+  border-radius: 16px 16px 4px 16px;
+  background: #262c47;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-bubble-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-bubble-quote {
+  margin: 0 0 6px;
+  padding: 4px 8px;
+  border-left: 2px solid var(--gold);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cfd4dc;
+  font-size: 0.86rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.chat-msg.is-failed .chat-bubble {
+  opacity: 0.65;
+  border-style: dashed;
+}
+
+.chat-msg-failed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #ff8a80;
+  font-size: 0.78rem;
+}
+
+.chat-markdown {
+  min-width: 0;
+  color: #e8eaee;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.chat-markdown > :first-child {
+  margin-top: 0;
+}
+
+.chat-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown p,
+.chat-markdown ul,
+.chat-markdown ol,
+.chat-markdown blockquote,
+.chat-markdown pre {
+  margin: 0 0 0.75em;
+}
+
+.chat-markdown ul,
+.chat-markdown ol {
+  padding-left: 1.3em;
+}
+
+.chat-markdown li + li {
+  margin-top: 0.2em;
+}
+
+.chat-markdown strong {
+  color: #fff;
+}
+
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4 {
+  font-size: 1rem;
+  margin: 1em 0 0.4em;
+}
+
+.chat-markdown a {
+  color: var(--gold);
+}
+
+.chat-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.86em;
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chat-markdown pre {
+  overflow-x: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--void-deep);
+  border: 1px solid var(--glass-border);
+}
+
+.chat-markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.chat-markdown blockquote {
+  padding-left: 0.8em;
+  border-left: 2px solid var(--glass-border);
+  color: var(--comet);
+}
+
+.chat-markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0 0 0.75em;
+  font-size: 0.88rem;
+}
+
+.chat-markdown th,
+.chat-markdown td {
+  padding: 4px 8px;
+  border: 1px solid var(--glass-border);
+}
+
+/* 本文中の [n] */
+.chat-cite-marker {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin: 0 1px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 5px;
+  background: rgba(255, 179, 0, 0.16);
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: 2px;
+  cursor: pointer;
+}
+
+.chat-cite-marker:hover:not(:disabled) {
+  background: rgba(255, 179, 0, 0.3);
+}
+
+.chat-cite-marker:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 回答の下の出典チップ */
+.chat-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chat-cite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 11px 4px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+  color: #dfe3ea;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-cite-chip:hover:not(:disabled) {
+  border-color: rgba(255, 179, 0, 0.5);
+  background: var(--glass-high);
+}
+
+.chat-cite-chip:disabled {
+  cursor: default;
+}
+
+.chat-cite-chip-n {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 179, 0, 0.16);
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.chat-cite-chip-kind {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.chat-cite-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-msg-meta {
+  font-size: 0.74rem;
+  color: var(--comet);
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--comet);
+  font-size: 0.86rem;
+}
+
+.chat-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.chat-dots i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat-dots i {
+    animation: chat-dot 1.2s infinite ease-in-out;
+  }
+
+  .chat-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .chat-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+
+@keyframes chat-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.chat-msg.is-blocked .chat-markdown {
+  color: var(--comet);
+}
+
+/* 危機対応の定型文 */
+.chat-care {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(66, 165, 245, 0.08);
+  border: 1px solid rgba(66, 165, 245, 0.35);
+}
+
+.chat-care-icon {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: var(--blue);
+}
+
+.chat-inline-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  color: #ffb4a8;
+  font-size: 0.86rem;
+}
+
+.chat-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 送る前に止められたときの理由と次の行動 */
+.chat-banner {
+  align-self: flex-end;
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 179, 0, 0.08);
+  border: 1px solid rgba(255, 179, 0, 0.35);
+  font-size: 0.86rem;
+}
+
+.chat-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.chat-banner-btn:hover {
+  text-decoration: none;
+  background: var(--glass-low);
+}
+
+.chat-banner-btn.is-primary {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #111422;
+}
+
+/* 会話が空のとき */
+.chat-empty {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 8px 8px;
+  text-align: center;
+}
+
+.chat-empty-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 179, 0, 0.14);
+  color: var(--gold);
+}
+
+.chat-empty-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.chat-empty-sub {
+  max-width: 36ch;
+  margin: 0;
+  color: var(--comet);
+  font-size: 0.88rem;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 8px;
+}
+
+.chat-suggestion {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-suggestion:hover {
+  border-color: rgba(255, 179, 0, 0.45);
+  background: var(--glass-high);
+}
+
+.chat-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chat-skeleton {
+  display: block;
+  width: 88%;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--glass-low);
+}
+
+.chat-skeleton.is-user {
+  align-self: flex-end;
+  width: 55%;
+  height: 38px;
+}
+
+.chat-skeleton.is-short {
+  width: 60%;
+}
+
+/* ── 入力欄 ───────────────────────────────────────────────────────────── */
+
+.chat-footer {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--glass-border);
+  background: var(--void);
+}
+
+.chat-footer > * {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.chat-convo.is-page .chat-footer {
+  border-top: none;
+  padding-inline: 20px;
+}
+
+.chat-footer-warning {
+  margin: 0;
+  color: #ffb4a8;
+  font-size: 0.8rem;
+}
+
+.chat-composer {
+  display: grid;
+  gap: 6px;
+}
+
+.chat-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chat-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 4px 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+  color: #cfd4dc;
+  font-size: 0.76rem;
+}
+
+.chat-attachment.is-quote {
+  border-color: rgba(255, 179, 0, 0.4);
+}
+
+.chat-attachment.is-quote > svg {
+  color: var(--gold);
+}
+
+.chat-attachment-text {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-attachment button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--comet);
+  cursor: pointer;
+}
+
+.chat-attachment button:hover {
+  background: var(--glass-high);
+  color: var(--starlight);
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 18px;
+  background: var(--void-raised);
+  border: 1px solid var(--glass-border);
+}
+
+.chat-input-row:focus-within {
+  border-color: rgba(255, 179, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 179, 0, 0.12);
+}
+
+.chat-input-row.is-over {
+  border-color: rgba(229, 57, 53, 0.6);
+}
+
+.chat-input-row textarea {
+  flex: 1;
+  min-width: 0;
+  max-height: 168px;
+  padding: 6px 0;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.chat-input-row textarea::placeholder {
+  color: var(--comet);
+}
+
+.chat-send-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #111422;
+  cursor: pointer;
+}
+
+.chat-send-btn:disabled {
+  background: var(--glass-high);
+  color: var(--comet);
+  cursor: default;
+}
+
+.chat-counter {
+  justify-self: end;
+  font-size: 0.74rem;
+  color: var(--comet);
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-counter.is-over {
+  color: #ff8a80;
+}
+
+.chat-disclaimer {
+  margin: 0;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--comet);
+}
+
+/* ── 会話の一覧 ───────────────────────────────────────────────────────── */
+
+.chat-threads {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-thread-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+}
+
+.chat-thread-row.is-active {
+  border-color: rgba(255, 179, 0, 0.5);
+}
+
+.chat-thread-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: var(--starlight);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-thread-icon {
+  flex-shrink: 0;
+  color: var(--comet);
+}
+
+.chat-thread-text {
+  display: grid;
+  min-width: 0;
+}
+
+.chat-thread-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.chat-thread-time {
+  font-size: 0.76rem;
+  color: var(--comet);
+}
+
+.chat-thread-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.chat-thread-row:hover .chat-thread-actions,
+.chat-thread-row:focus-within .chat-thread-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .chat-thread-actions {
+    opacity: 1;
+  }
+}
+
+.chat-thread-actions button,
+.chat-thread-edit button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--comet);
+  cursor: pointer;
+}
+
+.chat-thread-actions button:hover,
+.chat-thread-edit button:hover {
+  background: var(--glass-high);
+  color: var(--starlight);
+}
+
+.chat-thread-edit {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0 6px 10px;
+}
+
+.chat-thread-edit input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--void-raised);
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.chat-thread-skeleton {
+  display: block;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--glass-low);
+}
+
+.chat-threads-empty {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--comet);
+}
+
+/* ── 専用ページ(/chat) ───────────────────────────────────────────────── */
+
+.chat-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 6rem;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.chat-page.is-thread {
+  max-width: none;
+  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.chat-page-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-page.is-thread .chat-page-head {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.chat-page-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.chat-page-thread-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.chat-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #111422;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.chat-new-btn:hover {
+  text-decoration: none;
+  filter: brightness(1.06);
+}
+
+.chat-back-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--comet);
+  font-size: 0.86rem;
+  text-decoration: none;
+}
+
+.chat-back-link:hover {
+  color: var(--starlight);
+  text-decoration: none;
+}
+
+/* 文章選択ツールバーの「Ask」(.pv-root .annotation-toolbar-row button と同じ詳細度で、後に書いて勝たせる) */
+.annotation-toolbar-row button.annotation-ask-btn {
+  color: var(--deep-gold);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-panel.is-docked,
+  .chat-panel.is-sheet {
+    animation: none;
+  }
+
+  .chat-fab {
+    transition: none;
+  }
+}

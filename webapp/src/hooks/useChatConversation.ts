@@ -1,0 +1,285 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ChatSendError,
+  getChatMessage,
+  listChatMessages,
+  newClientMessageId,
+  sendChatMessage,
+} from '../lib/chat';
+import type {
+  ChatCitation,
+  ChatMessage,
+  ChatMessageContext,
+  ChatStage,
+  ChatStreamEvent,
+} from '../types/chat';
+
+/** 画面表示用のメッセージ。サーバーの行に、送信中・失敗などの画面専用の状態を足したもの。 */
+export interface LocalChatMessage extends ChatMessage {
+  /** 送信前チェックで弾かれたuserメッセージ(サーバーには保存されていない)。error_codeが入る。 */
+  failedCode?: string;
+  failedDetail?: Record<string, unknown>;
+  /** 生成中の段階(assistantのみ) */
+  stage?: ChatStage;
+  /** 生成中に届いた出典候補(assistantのみ。完了後は本文で使われたcitationsだけが残る) */
+  pendingSources?: ChatCitation[];
+  /** 受信中に通信が切れ、サーバー側で生成が終わるのを待っている */
+  reconnecting?: boolean;
+}
+
+interface Options {
+  /** 新しいスレッドがサーバー側で作られた瞬間に呼ばれる(URLを /chat/:id に切り替える等)。 */
+  onThreadCreated?: (threadId: string) => void;
+}
+
+/** 通信切断後に、サーバー側での生成完了をDBで待つ間隔と回数(約2分)。 */
+const RECONNECT_POLL_INTERVAL_MS = 3000;
+const RECONNECT_POLL_MAX_ATTEMPTS = 40;
+
+/**
+ * 1つの会話(スレッド)の表示と送信。threadIdがnullなら新しい会話として始め、
+ * 最初の送信でサーバーがスレッドを作る。
+ */
+export function useChatConversation(threadId: string | null, options: Options = {}) {
+  const [messages, setMessages] = useState<LocalChatMessage[]>([]);
+  const [loading, setLoading] = useState(Boolean(threadId));
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [sending, setSending] = useState(false);
+
+  // 送信中にサーバーが作ったスレッドid。onThreadCreatedでURLが変わっても
+  // (=threadId propが同じ値に変わっても)、会話を読み直して表示中の
+  // ストリームを消さないために使う。
+  const activeThreadIdRef = useRef<string | null>(threadId);
+  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
+  const onThreadCreatedRef = useRef(options.onThreadCreated);
+  onThreadCreatedRef.current = options.onThreadCreated;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // 画面を離れたら受信だけ止める(サーバー側の生成・保存・課金は最後まで走る)
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const patchMessage = useCallback((id: string, patch: Partial<LocalChatMessage>) => {
+    if (!mountedRef.current) return;
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }, []);
+
+  /** サーバー側の生成が終わるまでDBを見に行き、終わったら差し替える。 */
+  const waitForServerCompletion = useCallback(
+    async (messageId: string) => {
+      patchMessage(messageId, { reconnecting: true });
+      for (let attempt = 0; attempt < RECONNECT_POLL_MAX_ATTEMPTS; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, RECONNECT_POLL_INTERVAL_MS));
+        if (!mountedRef.current) return;
+        try {
+          const row = await getChatMessage(messageId);
+          if (row && row.status !== 'streaming') {
+            patchMessage(messageId, {
+              ...row,
+              reconnecting: false,
+              stage: undefined,
+              pendingSources: undefined,
+            });
+            return;
+          }
+        } catch {
+          // 一時的な読み取り失敗は次の試行に任せる
+        }
+      }
+      patchMessage(messageId, { reconnecting: false, status: 'error', stage: undefined });
+    },
+    [patchMessage]
+  );
+
+  const load = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const rows = await listChatMessages(id);
+        if (!mountedRef.current) return;
+        setMessages(rows);
+        // 生成中にページを再読み込みした等: まだstreamingの返答は完了を待つ
+        rows
+          .filter((m) => m.role === 'assistant' && m.status === 'streaming')
+          .forEach((m) => void waitForServerCompletion(m.id));
+      } catch (e) {
+        if (mountedRef.current) setLoadError(e);
+      } finally {
+        if (mountedRef.current) setLoading(false);
+      }
+    },
+    [waitForServerCompletion]
+  );
+
+  useEffect(() => {
+    if (threadId && threadId === activeThreadIdRef.current && messages.length > 0) {
+      // 自分が送信して作ったスレッドへURLが追従しただけ。読み直さない。
+      return;
+    }
+    // 別の会話へ切り替えた: 前の会話の受信だけ止める(サーバー側の生成は続き、
+    // その会話を開き直せばDBから読める)。止めないと送信中の状態が残り、
+    // 切り替え先で入力欄が使えないままになる。
+    abortRef.current?.abort();
+    activeThreadIdRef.current = threadId;
+    if (threadId) {
+      void load(threadId);
+    } else {
+      setMessages([]);
+      setLoading(false);
+      setLoadError(null);
+    }
+    // messagesは「読み直すべきか」の判定にだけ使うので依存に入れない
+  }, [threadId, load]);
+
+  const send = useCallback(
+    async (rawContent: string, context?: ChatMessageContext) => {
+      const content = rawContent.trim();
+      if (!content || sending) return;
+
+      const clientMessageId = newClientMessageId();
+      const now = new Date().toISOString();
+      let userId = `local-user-${clientMessageId}`;
+      let assistantId = `local-assistant-${clientMessageId}`;
+      let receivedMeta = false;
+      const baseThreadId = activeThreadIdRef.current ?? '';
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: userId,
+          thread_id: baseThreadId,
+          role: 'user',
+          content,
+          status: 'complete',
+          citations: [],
+          context: context ?? {},
+          credits_charged_micro: null,
+          created_at: now,
+        },
+        {
+          id: assistantId,
+          thread_id: baseThreadId,
+          role: 'assistant',
+          content: '',
+          status: 'streaming',
+          citations: [],
+          context: {},
+          credits_charged_micro: null,
+          created_at: now,
+          stage: 'thinking',
+        },
+      ]);
+      setSending(true);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const onEvent = (event: ChatStreamEvent) => {
+        if (!mountedRef.current) return;
+        switch (event.type) {
+          case 'meta': {
+            receivedMeta = true;
+            const isNewThread = activeThreadIdRef.current !== event.thread_id;
+            activeThreadIdRef.current = event.thread_id;
+            const oldUserId = userId;
+            const oldAssistantId = assistantId;
+            userId = event.user_message_id;
+            assistantId = event.assistant_message_id;
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id === oldUserId) return { ...m, id: userId, thread_id: event.thread_id };
+                if (m.id === oldAssistantId) return { ...m, id: assistantId, thread_id: event.thread_id };
+                return m;
+              })
+            );
+            if (isNewThread) onThreadCreatedRef.current?.(event.thread_id);
+            break;
+          }
+          case 'status':
+            patchMessage(assistantId, { stage: event.stage });
+            break;
+          case 'sources':
+            patchMessage(assistantId, { pendingSources: event.sources });
+            break;
+          case 'delta':
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + event.text } : m))
+            );
+            break;
+          case 'replace':
+            patchMessage(assistantId, { content: event.text });
+            break;
+          case 'done':
+            patchMessage(assistantId, {
+              status: event.status,
+              citations: event.citations ?? [],
+              credits_charged_micro: Math.round((event.credits_charged ?? 0) * 1_000_000),
+              stage: undefined,
+              pendingSources: undefined,
+            });
+            break;
+          case 'error':
+            patchMessage(assistantId, { status: 'error', stage: undefined, pendingSources: undefined });
+            break;
+        }
+      };
+
+      try {
+        await sendChatMessage(
+          { threadId: activeThreadIdRef.current, clientMessageId, content, context },
+          onEvent,
+          controller.signal
+        );
+      } catch (e) {
+        if ((e as Error)?.name === 'AbortError' || !mountedRef.current) return;
+        const code = e instanceof ChatSendError ? e.code : 'NETWORK';
+        if (code === 'NETWORK' && receivedMeta) {
+          // 受信中に切れた。サーバー側では生成が続いているので、DBで完了を待つ。
+          void waitForServerCompletion(assistantId);
+        } else {
+          // ストリームが始まる前に弾かれた(残高不足・送信頻度など)か、送信自体が
+          // 届かなかった。userメッセージはサーバーに保存されていないので、
+          // 返答の枠を消して「送れなかった」表示にする。
+          const detail = e instanceof ChatSendError ? e.detail : {};
+          setMessages((prev) =>
+            prev
+              .filter((m) => m.id !== assistantId)
+              .map((m) => (m.id === userId ? { ...m, failedCode: code, failedDetail: detail } : m))
+          );
+        }
+      } finally {
+        if (abortRef.current === controller) abortRef.current = null;
+        if (mountedRef.current) setSending(false);
+      }
+    },
+    [sending, patchMessage, waitForServerCompletion]
+  );
+
+  /** 送れなかったuserメッセージを取り除き、同じ内容でもう一度送る。 */
+  const retry = useCallback(
+    (failedMessageId: string) => {
+      const target = messages.find((m) => m.id === failedMessageId);
+      if (!target || !target.failedCode || sending) return;
+      setMessages((prev) => prev.filter((m) => m.id !== failedMessageId));
+      void send(target.content, target.context);
+    },
+    [messages, sending, send]
+  );
+
+  /** 送れなかったuserメッセージを画面から消す(入力欄に戻す等は呼び出し側で)。 */
+  const discard = useCallback((failedMessageId: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== failedMessageId));
+  }, []);
+
+  const reload = useCallback(() => {
+    if (activeThreadIdRef.current) void load(activeThreadIdRef.current);
+  }, [load]);
+
+  return { messages, loading, loadError, sending, send, retry, discard, reload };
+}

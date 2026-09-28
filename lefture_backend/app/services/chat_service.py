@@ -298,6 +298,8 @@ def extract_citations(answer_text: str, chunks: list[dict]) -> list[dict]:
             # "[CS 161 / Lecture 3 / Deep Note: Heaps]" の角括弧を外して見出しに使う
             "label": first_line.strip().strip("[]"),
             "similarity": chunk.get("similarity"),
+            # 画面から該当ページへ直接飛ぶため(deep_noteのtopic_number等)
+            "metadata": chunk.get("metadata") or {},
         })
     return citations
 
@@ -817,6 +819,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
                     "source_id": c.get("source_id"),
                     "lecture_id": c.get("lecture_id"),
                     "label": ((c.get("content") or "").splitlines() or [""])[0].strip().strip("[]"),
+                    "metadata": c.get("metadata") or {},
                 }
                 for n, c in enumerate(chunks, start=1)
             ]})
