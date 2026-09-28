@@ -27,6 +27,7 @@
 
 import asyncio
 import hashlib
+import random
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
@@ -504,15 +505,52 @@ def _content_hash(draft: ChunkDraft) -> str:
     return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
 
+_total_embedding_prompt_tokens = 0
+
+
+def reset_embedding_token_usage() -> None:
+    """バックフィルスクリプトが実行前に呼び、集計をゼロから始める。"""
+    global _total_embedding_prompt_tokens
+    _total_embedding_prompt_tokens = 0
+
+
+def get_embedding_token_usage() -> int:
+    """reset_embedding_token_usage()以降に_embed()へ渡された入力トークンの合計。"""
+    return _total_embedding_prompt_tokens
+
+
+_EMBED_RATE_LIMIT_MAX_RETRIES = 5
+_EMBED_RATE_LIMIT_BASE_DELAY_SECONDS = 2.0
+
+
 async def _embed(inputs: list[str]) -> tuple[list[list[float]], int]:
-    """(ベクトルのリスト, 入力トークン数) を返す。トークン数は原価計算用。"""
-    response = await litellm.aembedding(
-        model=KNOWLEDGE_EMBEDDING_MODEL,
-        input=inputs,
-        dimensions=KNOWLEDGE_EMBEDDING_DIMENSIONS,
-    )
+    """
+    (ベクトルのリスト, 入力トークン数) を返す。トークン数は原価計算用。
+
+    429(レート制限)だけは、その場で指数バックオフ(2s, 4s, 8s, 16s, 32s +
+    ジッター)しながら数回リトライする。バックフィル等でconcurrencyを
+    上げたときにAPI側の瞬間的な上限に当たっても、キューの再試行(最大5回)を
+    無駄打ちせずその場で吸収するため。
+    """
+    global _total_embedding_prompt_tokens
+    for attempt in range(_EMBED_RATE_LIMIT_MAX_RETRIES + 1):
+        try:
+            response = await litellm.aembedding(
+                model=KNOWLEDGE_EMBEDDING_MODEL,
+                input=inputs,
+                dimensions=KNOWLEDGE_EMBEDDING_DIMENSIONS,
+            )
+            break
+        except litellm.RateLimitError:
+            if attempt >= _EMBED_RATE_LIMIT_MAX_RETRIES:
+                raise
+            delay = _EMBED_RATE_LIMIT_BASE_DELAY_SECONDS * (2 ** attempt) + random.uniform(0, 1)
+            print(f"  ⏳ [knowledge_index] Embedding APIのレート制限、{delay:.1f}秒待って再試行します ({attempt + 1}/{_EMBED_RATE_LIMIT_MAX_RETRIES})")
+            await asyncio.sleep(delay)
+
     usage = getattr(response, "usage", None)
     prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+    _total_embedding_prompt_tokens += prompt_tokens
     return [d["embedding"] for d in response.data], prompt_tokens
 
 

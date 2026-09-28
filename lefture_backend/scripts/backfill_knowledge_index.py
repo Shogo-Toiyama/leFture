@@ -43,14 +43,25 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(_BACKEND_ROOT, ".env"))
 
 from app.core.supabase import get_supabase_client  # noqa: E402
+from app.services.helpers.llm_unified import PRICE_MATRIX  # noqa: E402
 from app.services.knowledge_index import (  # noqa: E402
     drain_knowledge_index_queue,
     embed_document,
     embed_queries,
+    get_embedding_token_usage,
+    reset_embedding_token_usage,
     ChunkDraft,
     KNOWLEDGE_EMBEDDING_MODEL,
     KNOWLEDGE_EMBEDDING_DIMENSIONS,
 )
+
+_EMBEDDING_PRICE_PER_1M = PRICE_MATRIX["tokens"][KNOWLEDGE_EMBEDDING_MODEL]["input"]
+
+
+def _print_cost_so_far() -> None:
+    tokens = get_embedding_token_usage()
+    cost = (tokens / 1_000_000) * _EMBEDDING_PRICE_PER_1M
+    print(f"   💰 ここまでの入力トークン合計: {tokens:,} 件 ≒ ${cost:.4f}（オンライン料金 ${_EMBEDDING_PRICE_PER_1M}/100万トークン換算、バッチなら半額目安）")
 
 # (テーブル名, source_type) の一覧。lecture_topicsだけ1テーブルから
 # topic_summary/transcript_topicの2種類のsource_typeを生む
@@ -132,6 +143,7 @@ def _enqueue_all(user_id: str | None) -> int:
 
 
 async def _drain_until_empty() -> None:
+    reset_embedding_token_usage()
     total_succeeded = 0
     total_failed = 0
     while True:
@@ -144,11 +156,13 @@ async def _drain_until_empty() -> None:
             f"  drain: claimed={result['claimed']} succeeded={result['succeeded']} "
             f"failed={result['failed']} (累計 succeeded={total_succeeded} failed={total_failed})"
         )
+        _print_cost_so_far()
         # Embedding APIへの配慮と、ログを読みやすくするための小休止。
         # レート上限(10000 rpm)には遠く及ばないので、これは律儀さのため。
         time.sleep(0.2)
 
     print(f"完了。合計 succeeded={total_succeeded} failed={total_failed}")
+    _print_cost_so_far()
     if total_failed:
         print(
             "⚠️ 失敗分はknowledge_index_queueにstatus='FAILED'で残っています。"
@@ -163,15 +177,24 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="knowledge_chunksの初回バックフィル")
     parser.add_argument("--user-id", help="このユーザーだけを対象にする(動作確認用)")
     parser.add_argument("--smoke-test", action="store_true", help="Embedding APIの疎通確認だけ行う")
+    parser.add_argument(
+        "--skip-enqueue",
+        action="store_true",
+        help="1.のenqueueを飛ばし、既にknowledge_index_queueにある分だけdrainする"
+        "(前回の実行を中断した後の再開用。既存PENDING行への重複挿入で遅くなるのを避ける)",
+    )
     args = parser.parse_args()
 
     if args.smoke_test:
         asyncio.run(_smoke_test())
         return
 
-    print("1. 既存コンテンツをknowledge_index_queueに積みます...")
-    total_queued = _enqueue_all(args.user_id)
-    print(f"   合計 {total_queued} 件をキューに追加しました。")
+    if args.skip_enqueue:
+        print("1. スキップ(--skip-enqueue)。既存のキューだけを処理します。")
+    else:
+        print("1. 既存コンテンツをknowledge_index_queueに積みます...")
+        total_queued = _enqueue_all(args.user_id)
+        print(f"   合計 {total_queued} 件をキューに追加しました。")
 
     print("2. キューを処理します(Embedding APIを呼び出します)...")
     asyncio.run(_drain_until_empty())
