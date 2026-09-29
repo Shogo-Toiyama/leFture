@@ -24,7 +24,10 @@ class CoreExtractionService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "gemini/gemini-3.1-flash-lite"
+        # gemini-3.1-flash-liteより安価かつ知識ワーク系ベンチマークで優位な
+        # gpt-6-lunaに切り替え(2026-09-29)。指示遵守の甘さ由来のバリデーション
+        # 失敗・JSONパース失敗の頻度低減を狙う。
+        self.model_alias = "gpt-6-luna"
 
     async def run_from_memory(
         self,

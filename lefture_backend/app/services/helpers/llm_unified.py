@@ -31,6 +31,9 @@ PRICE_MATRIX = {
         # チャットはここから計算した実コスト×2をクレジットとして請求するため、
         # この表は原価の可視化だけでなく請求額に直結する。
         "gemini/gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50},
+        # 2026-09-22公開のOpenAI公式価格。CORE_EXTRACTIONでgemini-3.1-flash-liteの
+        # 代替として採用（安価かつ知識ワーク系ベンチマークで上回るため）。
+        "gpt-6-luna": {"input": 0.10, "output": 0.50},
         # 横断チャットボット段階0(knowledge_chunks)の埋め込みモデル。
         # 埋め込みAPIには出力トークン課金が無いのでoutputは0。
         "gemini/gemini-embedding-2": {"input": 0.20, "output": 0.0},
