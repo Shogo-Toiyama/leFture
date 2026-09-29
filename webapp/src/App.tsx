@@ -56,6 +56,19 @@ const PurchaseCreditsPage = lazy(() =>
 );
 const PlansPage = lazy(() => import('./pages/account/PlansPage').then((m) => ({ default: m.PlansPage })));
 const ChatPage = lazy(() => import('./pages/chat/ChatPage').then((m) => ({ default: m.ChatPage })));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+const AdminOverviewPage = lazy(() =>
+  import('./pages/admin/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage }))
+);
+const AdminUsagePage = lazy(() => import('./pages/admin/AdminUsagePage').then((m) => ({ default: m.AdminUsagePage })));
+const AdminPipelinePage = lazy(() =>
+  import('./pages/admin/AdminPipelinePage').then((m) => ({ default: m.AdminPipelinePage }))
+);
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })));
+const AdminSupportPage = lazy(() =>
+  import('./pages/admin/AdminSupportPage').then((m) => ({ default: m.AdminSupportPage }))
+);
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
 const ActivityRecordsPlaceholderPage = lazy(() =>
   import('./pages/account/ActivityRecordsPlaceholderPage').then((m) => ({
     default: m.ActivityRecordsPlaceholderPage,
@@ -78,6 +91,15 @@ export const App: React.FC = () => {
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="onboarding" element={<OnboardingWizard />} />
+                  {/* 表示可否はAdminLayoutが GET /admin/me で決める(境界はバックエンド側) */}
+                  <Route path="admin" element={<AdminLayout />}>
+                    <Route index element={<AdminOverviewPage />} />
+                    <Route path="usage" element={<AdminUsagePage />} />
+                    <Route path="pipeline" element={<AdminPipelinePage />} />
+                    <Route path="users" element={<AdminUsersPage />} />
+                    <Route path="support" element={<AdminSupportPage />} />
+                    <Route path="audit" element={<AdminAuditPage />} />
+                  </Route>
                   <Route element={<RequireOnboarding />}>
                     {/* 右下のチャットボタンと右側パネル。全画面の読み物(Layoutの外)にも出すため、ここで包む */}
                     <Route element={<ChatHost />}>
