@@ -1981,9 +1981,9 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
                     stripe.InvoiceItem.list, customer=customer_id, pending=True, limit=100
                 )
                 already_pending = any(
-                    item.get("metadata", {}).get("purpose") == "apple_platform_switch_discount"
-                    and item.get("metadata", {}).get("user_id") == uid
-                    for item in existing_items["data"]
+                    item_metadata.get("purpose") == "apple_platform_switch_discount"
+                    and item_metadata.get("user_id") == uid
+                    for item_metadata in (item["metadata"].to_dict() for item in existing_items["data"])
                 )
                 if not already_pending:
                     await asyncio.to_thread(
@@ -2022,7 +2022,7 @@ async def billing_stripe_switch_plan(payload: SwitchPlanRequest, request: Reques
             customer_id, uid, target_plan["id"], target_plan["stripe_price_id"], trial_months=trial_months
         )
 
-        pending_setup_intent = subscription.get("pending_setup_intent")
+        pending_setup_intent = subscription.to_dict().get("pending_setup_intent")
         if pending_setup_intent:
             # トライアル適用時: 初回請求が$0のためPaymentIntentは作られず、代わりに
             # カード登録用のSetupIntentが返る。フロントはconfirmPaymentではなく
@@ -2259,7 +2259,7 @@ async def _resolve_invoice_charge_id(invoice_id: str) -> str | None:
         return None
 
     for payment in payments["data"]:
-        detail = payment.get("payment") or {}
+        detail = payment.to_dict().get("payment") or {}
         charge_id = detail.get("charge")
         if charge_id:
             return charge_id
@@ -2272,8 +2272,9 @@ async def _resolve_invoice_charge_id(invoice_id: str) -> str | None:
         except stripe.error.StripeError as e:
             logger.error(f"Failed to retrieve payment intent {payment_intent_id}: {e}", exc_info=True)
             continue
-        if payment_intent.get("latest_charge"):
-            return payment_intent["latest_charge"]
+        latest_charge = payment_intent.to_dict().get("latest_charge")
+        if latest_charge:
+            return latest_charge
 
     return None
 
@@ -2343,7 +2344,7 @@ async def _cancel_stripe_subscription_for_platform_switch(admin_client, uid: str
         invoice_list = []
 
     target_invoice = next(
-        (inv for inv in invoice_list if inv.get("billing_reason") in ("subscription_create", "subscription_cycle")),
+        (inv for inv in invoice_list if inv.to_dict().get("billing_reason") in ("subscription_create", "subscription_cycle")),
         None,
     )
     if target_invoice is not None:
@@ -2721,7 +2722,7 @@ async def billing_stripe_webhook(request: Request, stripe_signature: str = Heade
         # $0請求書(トライアル開始)だけを拾う。それ以外のinvoice.paidは無視する
         # (invoice.payment_succeededと二重にRevenueCat通知を送らないため)。
         invoice = event["data"]["object"]
-        if invoice.get("amount_due") == 0:
+        if invoice.to_dict().get("amount_due") == 0:
             return await _handle_stripe_subscription_invoice_paid(event)
         return {"status": "ignored", "reason": "non_zero_invoice_paid_handled_by_payment_succeeded"}
 
@@ -4690,7 +4691,7 @@ async def _patrol_send_trial_ending_reminders() -> dict:
     errors = 0
 
     for sub in trialing_subs:
-        trial_end = sub.get("trial_end")
+        trial_end = sub.to_dict().get("trial_end")
         if not trial_end:
             continue
         if datetime.fromtimestamp(trial_end, tz=timezone.utc).date() != target_date:
@@ -4750,7 +4751,7 @@ async def _patrol_send_trial_ending_reminders() -> dict:
             logger.error(f"Failed to look up plan name for {plan_id}: {e}", exc_info=True)
             plan_name = "Max"
 
-        price_item = sub["items"]["data"][0]["price"]
+        price_item = sub["items"]["data"][0]["price"].to_dict()
         unit_amount = price_item.get("unit_amount")
         renewal_price = f"${unit_amount / 100:,.2f}" if unit_amount is not None else "-"
         interval = (price_item.get("recurring") or {}).get("interval") or "month"
