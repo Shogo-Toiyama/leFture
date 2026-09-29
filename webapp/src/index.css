@@ -1580,119 +1580,118 @@ button.glass-row:hover,
 }
 
 /* --- 1200px未満: 中間幅の専用レイアウトは設けず、そのままFlutter版と同じ
-   縦1カラムに畳む(お知らせが上、銀河、Fun Facts、コースは横並び、その下に講義)。 --- */
+   縦1カラムに畳む(お知らせが上、銀河、Fun Facts、コースは横並び、その下に講義)。
+   ウィンドウ幅ではなく.home-page自身の実効幅(チャットパネルのドック分を
+   引いた幅)で判定するため、@mediaではなくHomePage.tsx側がResizeObserverで
+   付け外しする.is-compactクラスを見る(useElementWidth参照)。 --- */
 
-@media (max-width: 1199px) {
-  .home-page {
-    padding: 0.9rem 1.25rem 7rem;
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'announce'
-      'hero'
-      'facts'
-      'courses'
-      'main';
-  }
+.home-page.is-compact {
+  padding: 0.9rem 1.25rem 7rem;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'announce'
+    'hero'
+    'facts'
+    'courses'
+    'main';
+}
 
-  /* この幅だけ、お知らせ+コースの共有ラッパーを解除して個別に配置し直す */
-  .home-sidebar {
-    display: contents;
-  }
+/* この幅だけ、お知らせ+コースの共有ラッパーを解除して個別に配置し直す */
+.home-page.is-compact .home-sidebar {
+  display: contents;
+}
 
-  .home-announce {
-    grid-area: announce;
-  }
+.home-page.is-compact .home-announce {
+  grid-area: announce;
+}
 
-  .home-courses {
-    grid-area: courses;
-  }
+.home-page.is-compact .home-courses {
+  grid-area: courses;
+}
 
-  /* 録音ボタンはFlutter版と同じ下部中央のフローティングピルへ */
-  .home-upload-cta {
-    position: fixed;
-    left: 50%;
-    right: auto;
-    bottom: 20px;
-    transform: translateX(-50%);
-    z-index: 30;
-  }
+/* 録音ボタンはFlutter版と同じ下部中央のフローティングピルへ */
+.home-page.is-compact .home-upload-cta {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 30;
+}
 
-  .home-announce-bar {
-    display: flex;
-  }
+.home-page.is-compact .home-announce-bar {
+  display: flex;
+}
 
-  .home-announce-panel {
-    display: none;
-  }
+.home-page.is-compact .home-announce-panel {
+  display: none;
+}
 
-  .home-facts-scroller {
-    display: flex;
-    flex-direction: row;
-    gap: 0.75rem;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 0.3rem;
-  }
+.home-page.is-compact .home-facts-scroller {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.3rem;
+}
 
-  .home-facts-scroller::-webkit-scrollbar {
-    display: none;
-  }
+.home-page.is-compact .home-facts-scroller::-webkit-scrollbar {
+  display: none;
+}
 
-  .home-fact-rainbow-wrapper {
-    flex: 0 0 88%;
-    max-width: 360px;
-    scroll-snap-align: center;
-  }
+.home-page.is-compact .home-fact-rainbow-wrapper {
+  flex: 0 0 88%;
+  max-width: 360px;
+  scroll-snap-align: center;
+}
 
-  .home-fact-card {
-    min-height: 168px;
-  }
+.home-page.is-compact .home-fact-card {
+  min-height: 168px;
+}
 
-  .home-fact-dots {
-    display: flex;
-  }
+.home-page.is-compact .home-fact-dots {
+  display: flex;
+}
 
-  .home-course-list {
-    flex-direction: row;
-    gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 0.3rem;
-  }
+.home-page.is-compact .home-course-list {
+  flex-direction: row;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.3rem;
+}
 
-  .home-course-list::-webkit-scrollbar {
-    display: none;
-  }
+.home-page.is-compact .home-course-list::-webkit-scrollbar {
+  display: none;
+}
 
-  .home-course-list > li {
-    flex: 0 0 auto;
-  }
+.home-page.is-compact .home-course-list > li {
+  flex: 0 0 auto;
+}
 
-  .home-course-title {
-    max-width: 150px;
-  }
+.home-page.is-compact .home-course-title {
+  max-width: 150px;
 }
 
 /* --- 720px未満の狭いスマホだけ、銀河を画面端まで広がる低めのバーに縮める。
    720px以上(1199px以下も含む)は、大きい方の.home-hero(45vh基準)のまま。 --- */
 
-@media (max-width: 719px) {
-  .home-hero {
-    height: 26vh;
-    min-height: 190px;
-    max-height: 320px;
-    margin: 0 -1.25rem;
-    width: calc(100% + 2.5rem);
-    border-radius: 0;
-  }
+.home-page.is-phone .home-hero {
+  height: 26vh;
+  min-height: 190px;
+  max-height: 320px;
+  margin: 0 -1.25rem;
+  width: calc(100% + 2.5rem);
+  border-radius: 0;
+}
 
-  .home-hero-caption {
-    left: 1.25rem;
-    bottom: 1rem;
-  }
+.home-page.is-phone .home-hero-caption {
+  left: 1.25rem;
+  bottom: 1rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -1968,9 +1967,14 @@ button.glass-row:hover,
 /* 1. Full Viewport Hero (Edge-to-Edge) */
 .lecture-hero-viewport {
   position: relative;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
+  /* full-bleed(親のmax-width制約を無視して画面幅いっぱいに広げる)トリック。
+     チャットパネルのドック分(--chat-dock-width)は.app-shellのpadding-rightで
+     しか反映されず、vw単位自体はウィンドウ全体の幅のままなので、そのまま
+     100vwを使うと実際に見える幅(ウィンドウ幅 - ドック幅)とズレて左右に
+     はみ出す(タイトルが左端で見切れる)。ドック幅を差し引いて補正する。 */
+  width: calc(100vw - var(--chat-dock-width, 0px));
+  margin-left: calc(-50vw + 50% + (var(--chat-dock-width, 0px) / 2));
+  margin-right: calc(-50vw + 50% + (var(--chat-dock-width, 0px) / 2));
   height: calc(100vh - 56px);
   min-height: 680px;
   max-height: 1080px;
@@ -2249,6 +2253,7 @@ button.glass-row:hover,
   justify-content: center;
   width: 44px;
   height: 44px;
+  padding: 0;
   border-radius: 50%;
   background: rgba(17, 20, 34, 0.75);
   backdrop-filter: blur(20px);
@@ -2418,11 +2423,30 @@ button.glass-row:hover,
   align-items: start;
 }
 
-@media (max-width: 980px) {
-  .lecture-split-layout {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
+/* 旧@media(max-width: 980px)の代わりに、.lecture-split-layout自身の実効幅
+   (チャットパネルのドック分を引いた幅)をLectureViewerPage.tsx側で
+   ResizeObserver計測し、.is-stackedクラスとして付け外しする。 */
+.lecture-split-layout.is-stacked {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* 1カラムに畳んだ時、DOM順(Review Cards/Deep Notes/Transcript → Fun Facts)の
+   ままだとTranscriptがFun Factsより上に来てしまう。Flutter版
+   (lecture_viewer_page.dart)と同じ「Review Cards・Deep Notes → Fun Facts →
+   Transcript」の順に並べ直す。.action-nav-stackをdisplay:contentsで消して
+   中の3枚のカードをこのグリッドに直接参加させ、orderで並べ替える
+   (Home画面の.home-sidebarと同じ手法)。 */
+.lecture-split-layout.is-stacked .action-nav-stack {
+  display: contents;
+}
+
+.lecture-split-layout.is-stacked .lecture-funfacts-column {
+  order: 2;
+}
+
+.lecture-split-layout.is-stacked .action-nav-card-transcript {
+  order: 3;
 }
 
 .column-header {
@@ -2998,6 +3022,7 @@ button.glass-row:hover,
   color: var(--comet);
   width: 34px;
   height: 34px;
+  padding: 0;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
@@ -4413,6 +4438,9 @@ button.glass-row:hover,
   color: var(--starlight);
   font-size: 0.92rem;
   outline: none;
+  /* グローバルなinput:focusのbox-shadowリングを消す(外側の
+     .course-picker-search-box:focus-withinのリングと二重になるため)。 */
+  box-shadow: none;
   min-width: 0;
 }
 
@@ -4442,6 +4470,7 @@ button.glass-row:hover,
 .course-picker-add-btn {
   width: 44px;
   height: 44px;
+  padding: 0;
   box-sizing: border-box;
   border-radius: 12px;
   background: rgba(255, 179, 0, 0.12);
@@ -4774,6 +4803,9 @@ button.glass-row:hover,
   background: transparent;
   border: none;
   outline: none;
+  /* グローバルなinput:focusのbox-shadowリングを消す(外側の
+     .course-preview-input-wrapの下線と二重になるため)。 */
+  box-shadow: none;
   font-family: inherit;
   font-size: 1.15rem;
   font-weight: 700;
@@ -5039,6 +5071,9 @@ button.glass-row:hover,
   background: transparent;
   border: none;
   outline: none;
+  /* グローバルなinput:focusのbox-shadowリングを消す(外側の
+     .custom-color-hex-input-wrap:focus-withinのリングと二重になるため)。 */
+  box-shadow: none;
   font-family: monospace;
   font-size: 0.95rem;
   font-weight: 700;
@@ -10322,6 +10357,7 @@ button.glass-row:hover,
   justify-content: center;
   width: 44px;
   height: 44px;
+  padding: 0;
   flex: none;
   border-radius: 12px;
   border: 1px solid var(--glass-border);
@@ -11613,6 +11649,7 @@ button.glass-row:hover,
 .course-edit-circle-btn {
   width: 44px;
   height: 44px;
+  padding: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -13306,14 +13343,15 @@ a.lecture-tile-card:hover {
   -webkit-overflow-scrolling: touch;
 }
 
-@media (min-width: 960px) {
-  .plans-table-scroll {
-    overflow: visible;
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: 0;
-    margin-right: 0;
-  }
+/* 旧@media(min-width: 960px)の代わりに、.plans-content-area自身の実効幅
+   (チャットパネルのドック分を引いた幅)をPlansContent.tsx側でResizeObserver
+   計測し、.is-narrowクラスの有無で判定する(useElementWidth参照)。 */
+.plans-content-area:not(.is-narrow) .plans-table-scroll {
+  overflow: visible;
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .plans-table-scroll::-webkit-scrollbar {
@@ -13342,198 +13380,198 @@ a.lecture-tile-card:hover {
       - 各カード: 横幅100%、左右分割（左: 惑星背景・プラン名・価格、右: アクションボタン）。
    -------------------------------------------------------------------------- */
 
-@media (max-width: 960px) {
-  .plans-row-label-spacer {
-    display: none;
-  }
-
-  .plans-card-row {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: clamp(0.45rem, 1.2vw, 0.75rem);
-    margin-bottom: 2rem;
-  }
-
-  .plans-card {
-    min-height: 270px;
-    padding: 1.1rem 0.65rem 1.15rem;
-    border-radius: 18px;
-  }
-
-  .plans-card-bg-fixed {
-    width: 220px;
-    height: 220px;
-    top: -15px;
-    opacity: 0.46;
-  }
-
-  .plans-card:hover .plans-card-bg-fixed {
-    transform: translateX(-50%) scale(1.04);
-  }
-
-  .plans-card-name {
-    font-size: clamp(1.15rem, 2vw, 1.4rem);
-  }
-
-  .plans-card-price-amount {
-    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
-  }
-
-  .plans-card-price-unit {
-    font-size: 0.75rem;
-  }
-
-  .plans-action-btn {
-    padding: 0.58rem 0.4rem;
-    font-size: clamp(0.74rem, 1.1vw, 0.82rem);
-    white-space: nowrap;
-  }
-
-  .plans-badge {
-    font-size: 0.72rem;
-    padding: 0.35rem 0.5rem;
-    white-space: nowrap;
-  }
-
-  /* 比較表は画面が狭くなっても行や文字が潰れないよう最小幅を確保し、独立スクロール */
-  .plans-compare {
-    min-width: 760px;
-  }
-
-  /* 表が独立したため、各列の上にプラン名とアイコンを表示 */
-  .plans-compare-cell.is-plan-head,
-  .plans-plan-head-cell {
-    display: flex;
-  }
+/* 旧@media(max-width: 960px)の代わりに.plans-content-area.is-narrowを見る
+   (上のnot(.is-narrow)ルールと同じくJS計測、useElementWidth参照)。 */
+.plans-content-area.is-narrow .plans-row-label-spacer {
+  display: none;
 }
 
-@media (max-width: 640px) {
-  .plans-card-row {
-    display: flex !important;
-    flex-direction: column;
-    gap: 0.85rem;
-  }
+.plans-content-area.is-narrow .plans-card-row {
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: clamp(0.45rem, 1.2vw, 0.75rem);
+  margin-bottom: 2rem;
+}
 
-  .plans-card {
-    min-height: unset;
-    height: auto;
-    padding: 1rem 1.2rem;
-    border-radius: 18px;
-    justify-content: stretch;
-  }
+.plans-content-area.is-narrow .plans-card {
+  min-height: 270px;
+  padding: 1.1rem 0.65rem 1.15rem;
+  border-radius: 18px;
+}
 
-  .plans-card-body {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    text-align: left;
-    width: 100%;
-    gap: 0.85rem;
-  }
+.plans-content-area.is-narrow .plans-card-bg-fixed {
+  width: 220px;
+  height: 220px;
+  top: -15px;
+  opacity: 0.46;
+}
 
-  .plans-card-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    gap: 0.15rem;
-    min-width: 0;
-  }
+.plans-content-area.is-narrow .plans-card:hover .plans-card-bg-fixed {
+  transform: translateX(-50%) scale(1.04);
+}
 
-  .plans-card-name {
-    font-size: 1.25rem;
-    line-height: 1.2;
-    text-align: left;
-  }
+.plans-content-area.is-narrow .plans-card-name {
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+}
 
-  .plans-card-price {
-    margin: 0;
-    align-items: baseline;
-    gap: 0.25rem;
-  }
+.plans-content-area.is-narrow .plans-card-price-amount {
+  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+}
 
-  .plans-card-price-amount {
-    font-size: 1.35rem;
-  }
+.plans-content-area.is-narrow .plans-card-price-unit {
+  font-size: 0.75rem;
+}
 
-  .plans-card-price-unit {
-    font-size: 0.82rem;
-  }
+.plans-content-area.is-narrow .plans-action-btn {
+  padding: 0.58rem 0.4rem;
+  font-size: clamp(0.74rem, 1.1vw, 0.82rem);
+  white-space: nowrap;
+}
 
-  /* 横長タイル時の月間クレジット小型表示(タップでクレジット消費早見表を開く) */
-  .plans-card-credits-compact {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    margin-top: 0.15rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--starlight);
-    font-size: 0.74rem;
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.01em;
-    cursor: pointer;
-    white-space: nowrap;
-  }
+.plans-content-area.is-narrow .plans-badge {
+  font-size: 0.72rem;
+  padding: 0.35rem 0.5rem;
+  white-space: nowrap;
+}
 
-  .plans-card-credits-compact:hover {
-    background: rgba(255, 255, 255, 0.1);
-    filter: none;
-  }
+/* 比較表は画面が狭くなっても行や文字が潰れないよう最小幅を確保し、独立スクロール */
+.plans-content-area.is-narrow .plans-compare {
+  min-width: 760px;
+}
 
-  .plans-card-action {
-    width: auto;
-    min-width: 120px;
-    max-width: 155px;
-    flex-shrink: 0;
-    margin-left: auto;
-    justify-content: flex-end;
-  }
+/* 表が独立したため、各列の上にプラン名とアイコンを表示 */
+.plans-content-area.is-narrow .plans-compare-cell.is-plan-head,
+.plans-content-area.is-narrow .plans-plan-head-cell {
+  display: flex;
+}
 
-  .plans-action-btn {
-    padding: 0.64rem 0.85rem;
-    font-size: 0.82rem;
-    border-radius: 10px;
-    width: 100%;
-  }
+/* 旧@media(max-width: 640px)の代わりに.plans-content-area.is-phone-cardsを
+   見る(同上、useElementWidth参照)。 */
+.plans-content-area.is-phone-cards .plans-card-row {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0.85rem;
+}
 
-  .plans-badge {
-    padding: 0.44rem 0.75rem;
-    font-size: 0.76rem;
-    border-radius: 999px;
-  }
+.plans-content-area.is-phone-cards .plans-card {
+  min-height: unset;
+  height: auto;
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  justify-content: stretch;
+}
 
-  /* 横長タイル時の背景画像: 右中央に美しく漂うアンビエント演出 */
-  .plans-card-bg-fixed {
-    width: 130px;
-    height: 130px;
-    top: 50%;
-    left: auto;
-    right: 15%;
-    transform: translateY(-50%);
-    opacity: 0.22;
-    -webkit-mask-image: radial-gradient(circle at center, #000 30%, transparent 75%);
-    mask-image: radial-gradient(circle at center, #000 30%, transparent 75%);
-  }
+.plans-content-area.is-phone-cards .plans-card-body {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  width: 100%;
+  gap: 0.85rem;
+}
 
-  .plans-card:hover .plans-card-bg-fixed {
-    transform: translateY(-50%) scale(1.08);
-    opacity: 0.32;
-  }
+.plans-content-area.is-phone-cards .plans-card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 0.15rem;
+  min-width: 0;
+}
 
-  .solar-corona-glow {
-    top: -40%;
-    right: 5%;
-    width: 90%;
-    height: 180%;
-    filter: blur(24px);
-  }
+.plans-content-area.is-phone-cards .plans-card-name {
+  font-size: 1.25rem;
+  line-height: 1.2;
+  text-align: left;
+}
 
-  .plans-compare {
-    min-width: 680px;
-  }
+.plans-content-area.is-phone-cards .plans-card-price {
+  margin: 0;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.plans-content-area.is-phone-cards .plans-card-price-amount {
+  font-size: 1.35rem;
+}
+
+.plans-content-area.is-phone-cards .plans-card-price-unit {
+  font-size: 0.82rem;
+}
+
+/* 横長タイル時の月間クレジット小型表示(タップでクレジット消費早見表を開く) */
+.plans-content-area.is-phone-cards .plans-card-credits-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--starlight);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.plans-content-area.is-phone-cards .plans-card-credits-compact:hover {
+  background: rgba(255, 255, 255, 0.1);
+  filter: none;
+}
+
+.plans-content-area.is-phone-cards .plans-card-action {
+  width: auto;
+  min-width: 120px;
+  max-width: 155px;
+  flex-shrink: 0;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.plans-content-area.is-phone-cards .plans-action-btn {
+  padding: 0.64rem 0.85rem;
+  font-size: 0.82rem;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.plans-content-area.is-phone-cards .plans-badge {
+  padding: 0.44rem 0.75rem;
+  font-size: 0.76rem;
+  border-radius: 999px;
+}
+
+/* 横長タイル時の背景画像: 右中央に美しく漂うアンビエント演出 */
+.plans-content-area.is-phone-cards .plans-card-bg-fixed {
+  width: 130px;
+  height: 130px;
+  top: 50%;
+  left: auto;
+  right: 15%;
+  transform: translateY(-50%);
+  opacity: 0.22;
+  -webkit-mask-image: radial-gradient(circle at center, #000 30%, transparent 75%);
+  mask-image: radial-gradient(circle at center, #000 30%, transparent 75%);
+}
+
+.plans-content-area.is-phone-cards .plans-card:hover .plans-card-bg-fixed {
+  transform: translateY(-50%) scale(1.08);
+  opacity: 0.32;
+}
+
+.plans-content-area.is-phone-cards .solar-corona-glow {
+  top: -40%;
+  right: 5%;
+  width: 90%;
+  height: 180%;
+  filter: blur(24px);
+}
+
+.plans-content-area.is-phone-cards .plans-compare {
+  min-width: 680px;
 }
 
 /* 480px以下(スマホ幅): 比較表は依然として横スクロール可能だが、余白・文字・
@@ -14670,6 +14708,7 @@ a.lecture-tile-card:hover {
   z-index: 65; /* 全画面の読み物(.pv-root: 60)より手前、モーダル(1000)より奥 */
   width: 56px;
   height: 56px;
+  padding: 0;
   border-radius: 50%;
   border: none;
   display: grid;
@@ -14778,6 +14817,7 @@ a.lecture-tile-card:hover {
   flex-shrink: 0;
   width: 34px;
   height: 34px;
+  padding: 0;
   display: inline-grid;
   place-items: center;
   border-radius: 10px;
@@ -15396,6 +15436,10 @@ a.lecture-tile-card:hover {
   padding: 6px 0;
   border: none;
   outline: none;
+  /* グローバルなtextarea:focus(index.css内)がbox-shadowで光るリングを
+     付けるため、border/outlineだけでなくこれも明示的に消す(外側の
+     .chat-input-row:focus-withinのリングと二重に見えてしまうため)。 */
+  box-shadow: none;
   resize: none;
   background: transparent;
   color: var(--starlight);
@@ -15412,6 +15456,7 @@ a.lecture-tile-card:hover {
   flex-shrink: 0;
   width: 34px;
   height: 34px;
+  padding: 0;
   display: grid;
   place-items: center;
   border: none;
@@ -15529,6 +15574,7 @@ a.lecture-tile-card:hover {
 .chat-thread-edit button {
   width: 30px;
   height: 30px;
+  padding: 0;
   display: grid;
   place-items: center;
   border: none;

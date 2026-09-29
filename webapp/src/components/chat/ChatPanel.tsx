@@ -87,7 +87,7 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
               aria-label={t('chatHistory')}
               title={t('chatHistory')}
             >
-              <MessagesSquare size={17} />
+              <MessagesSquare size={18} />
             </button>
           )}
           <span className="chat-panel-title">
@@ -109,7 +109,7 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             aria-label={t('chatOpenFullScreen')}
             title={t('chatOpenFullScreen')}
           >
-            <Maximize2 size={15} />
+            <Maximize2 size={16} />
           </button>
           <button type="button" className="chat-icon-btn" onClick={panel.close} aria-label={t('close')} title={t('close')}>
             <X size={18} />

@@ -18,7 +18,12 @@ import { CreditStarIcon } from '../../components/icons/CreditStarIcon';
 import { PlansSkeleton } from '../../components/account/PlansSkeleton';
 import { CreditRateTableDialog } from '../../components/CreditRateTableDialog';
 import { CosmicPlanCanvas } from '../../components/account/CosmicPlanCanvas';
+import { useElementWidth } from '../../hooks/useElementWidth';
 import type { TranslationKey } from '../../i18n/translations';
+
+/* .plans-content-areaの折り畳み閾値。旧@media(max-width: …)と同じ値。 */
+const PLANS_NARROW_WIDTH = 960;
+const PLANS_PHONE_WIDTH = 640;
 
 /** plan_card.dartの5行と全く同じ、必要tierのしきい値。 */
 const FEATURE_ROWS: { minTier: number; key: TranslationKey }[] = [
@@ -113,6 +118,10 @@ export const PlansContent: React.FC<PlansContentProps> = ({ header, onPlanActiva
   const [pendingAppleDiscount, setPendingAppleDiscount] = useState<PendingAppleDiscount | null>(null);
   const [celebration, setCelebration] = useState<PlanOption | null>(null);
   const [creditRateOpen, setCreditRateOpen] = useState(false);
+
+  const [contentAreaRef, contentAreaWidth] = useElementWidth<HTMLDivElement>();
+  const isNarrow = contentAreaWidth > 0 && contentAreaWidth <= PLANS_NARROW_WIDTH;
+  const isPhoneCards = contentAreaWidth > 0 && contentAreaWidth <= PLANS_PHONE_WIDTH;
 
   const sortedPlans = useMemo(() => [...plans].sort((a, b) => a.tier_level - b.tier_level), [plans]);
   const currentTierLevel = summary?.has_active_plan ? summary.tier_level : 0;
@@ -260,7 +269,10 @@ export const PlansContent: React.FC<PlansContentProps> = ({ header, onPlanActiva
       {error && <p className="notice notice-error">{error}</p>}
 
       {!loading && !summaryError && !plansError && summary && sortedPlans.length > 0 && (
-        <div className="plans-content-area">
+        <div
+          ref={contentAreaRef}
+          className={`plans-content-area ${isNarrow ? 'is-narrow' : ''} ${isPhoneCards ? 'is-phone-cards' : ''}`}
+        >
           {/* ── 上段: 独立したプランカード(960px以下では横幅100%均等、横スクロールなし) ── */}
           <div className="plans-cards-section">
             <div className="plans-card-row" style={{ ['--plans-grid-columns' as string]: gridColumns }}>

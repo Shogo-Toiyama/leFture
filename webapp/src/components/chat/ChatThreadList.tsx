@@ -91,10 +91,10 @@ export const ChatThreadList: React.FC<ChatThreadListProps> = ({
                     aria-label={t('chatRename')}
                   />
                   <button type="submit" disabled={busy} aria-label={t('save')}>
-                    <Check size={15} />
+                    <Check size={16} />
                   </button>
                   <button type="button" onClick={() => setEditingId(null)} aria-label={t('cancel')}>
-                    <X size={15} />
+                    <X size={16} />
                   </button>
                 </form>
               ) : (
