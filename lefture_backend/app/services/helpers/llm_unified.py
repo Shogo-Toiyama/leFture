@@ -1,6 +1,6 @@
 # app/services/helpers/llm_unified.py
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, AsyncIterator, Dict, List, Optional, Literal
 import json
 import time
 import warnings
@@ -27,7 +27,13 @@ PRICE_MATRIX = {
         "deepinfra/deepseek-ai/DeepSeek-V3.2": {"input": 0.26, "output": 0.38},
         "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
         "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},
-        "gemini/gemini-3.1-flash-lite": {"input": 0.40, "output": 1.50},
+        # 2026-10-01にGoogle公式価格($0.25/$1.50)に修正(以前は入力$0.40で過大計上)。
+        # チャットはここから計算した実コスト×2をクレジットとして請求するため、
+        # この表は原価の可視化だけでなく請求額に直結する。
+        "gemini/gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50},
+        # 横断チャットボット段階0(knowledge_chunks)の埋め込みモデル。
+        # 埋め込みAPIには出力トークン課金が無いのでoutputは0。
+        "gemini/gemini-embedding-2": {"input": 0.20, "output": 0.0},
     },
     "time": {  # $ per unit per second
         "modal/cpu": 0.0000131,     # per core-second
@@ -323,6 +329,10 @@ class LLMOptions:
     max_tokens: Optional[int] = None
     max_completion_tokens: Optional[int] = None
     reasoning_effort: Optional[Literal["low", "medium", "high"]] = None
+    # output_type="json"のとき、JSON Schemaを渡すとプロバイダー側の構造化出力
+    # (Geminiならresponse_schema)で生成を縛る。enum等で出力の形を保証したい
+    # 場合(チャットの振り分け役など)に使う。Noneなら従来どおりjson_object。
+    json_schema: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -334,20 +344,33 @@ class LLMResult:
     output_tokens: int = 0
     elapsed_seconds: float = 0.0
     json_parse_error: Optional[str] = None
+    # "stop" / "length" / "content_filter"(安全フィルタで遮断) など。
+    # litellmがGeminiのSAFETY等を"content_filter"に正規化して返す。
+    finish_reason: Optional[str] = None
+
+
+@dataclass
+class StreamState:
+    """generate_stream()の結果置き場。async generatorは値を返せないため、
+    呼び出し側が用意したこのオブジェクトに最終結果を書き込む。"""
+    output_text: str = ""
+    finish_reason: Optional[str] = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    elapsed_seconds: float = 0.0
+    usage_estimated: bool = False
 
 
 class UnifiedLLM:
     def __init__(self, billing_engine: BillingEngine):
         self.billing = billing_engine
 
-    async def generate(
+    def _build_kwargs(
         self,
         model: str,
         messages: List[Message],
-        options: Optional[LLMOptions] = None,
-    ) -> LLMResult:
-        options = options or LLMOptions()
-
+        options: LLMOptions,
+    ) -> Dict[str, Any]:
         litellm_messages = [{"role": m.role, "content": m.content} for m in messages]
 
         kwargs: Dict[str, Any] = {
@@ -373,12 +396,29 @@ class UnifiedLLM:
         # NOTE: GPT-OSS models have a known token conflict between Harmony format and response_format,
         # leading to corrupt prefixes like {"final{":. We rely on raw text + extract_json_string for these models.
         if options.output_type == "json" and "gpt-oss" not in model:
-            kwargs["response_format"] = {"type": "json_object"}
+            if options.json_schema is not None:
+                kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {"name": "output", "schema": options.json_schema},
+                }
+            else:
+                kwargs["response_format"] = {"type": "json_object"}
 
         # Gemini 3+ の場合は警告を避けるため temperature などのパラメータを削除する
         # (LiteLLMはGoogle AI StudioのGemini 3+に対してこれらのパラメータを非推奨警告として出力するため)
         if ("gemini-3" in model or "gemini/gemini-3" in model) and "temperature" in kwargs:
             del kwargs["temperature"]
+
+        return kwargs
+
+    async def generate(
+        self,
+        model: str,
+        messages: List[Message],
+        options: Optional[LLMOptions] = None,
+    ) -> LLMResult:
+        options = options or LLMOptions()
+        kwargs = self._build_kwargs(model, messages, options)
 
         # 実行時間の概算計測
         start_time = time.perf_counter()
@@ -390,6 +430,7 @@ class UnifiedLLM:
 
         elapsed_time = time.perf_counter() - start_time
         output_text = response.choices[0].message.content or ""
+        finish_reason = getattr(response.choices[0], "finish_reason", None)
 
         usage = getattr(response, "usage", None)
         in_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
@@ -430,4 +471,71 @@ class UnifiedLLM:
             output_tokens=out_tokens,
             elapsed_seconds=elapsed_time,
             json_parse_error=json_parse_error,
+            finish_reason=finish_reason,
+        )
+
+    async def generate_stream(
+        self,
+        model: str,
+        messages: List[Message],
+        state: StreamState,
+        options: Optional[LLMOptions] = None,
+    ) -> AsyncIterator[str]:
+        """
+        テキストの差分(delta)を順次yieldするストリーミング版。終了後、
+        stateに全文・終了理由・トークン数が入り、コストはgenerate()と同じく
+        BillingEngineに記録される(思考トークンはlitellmがoutputに合算する)。
+
+        使い方:
+            state = StreamState()
+            async for delta in llm.generate_stream(model, messages, state):
+                ...
+            # ここでstate.output_text / state.finish_reason が確定している
+        """
+        options = options or LLMOptions()
+        kwargs = self._build_kwargs(model, messages, options)
+        kwargs["stream"] = True
+        kwargs["stream_options"] = {"include_usage": True}
+
+        start_time = time.perf_counter()
+        try:
+            response = await litellm.acompletion(**kwargs)
+        except Exception as e:
+            raise RuntimeError(f"LiteLLM Error with model {model}: {e}") from e
+
+        parts: List[str] = []
+        async for chunk in response:
+            usage = getattr(chunk, "usage", None)
+            if usage is not None:
+                state.input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0) or state.input_tokens
+                state.output_tokens = int(getattr(usage, "completion_tokens", 0) or 0) or state.output_tokens
+            if not chunk.choices:
+                continue
+            choice = chunk.choices[0]
+            if getattr(choice, "finish_reason", None):
+                state.finish_reason = choice.finish_reason
+            delta = getattr(getattr(choice, "delta", None), "content", None)
+            if delta:
+                parts.append(delta)
+                yield delta
+
+        state.output_text = "".join(parts)
+        state.elapsed_seconds = time.perf_counter() - start_time
+
+        # 通常は最後のチャンクにusageが載る。載らなかった場合だけ概算で埋める
+        # (思考トークン分は数えられないので過小になる。課金の取りこぼしを
+        # 目立たせるためusage_estimatedを立てて呼び出し側で記録する)。
+        if state.input_tokens == 0 and state.output_tokens == 0:
+            state.usage_estimated = True
+            try:
+                state.input_tokens = litellm.token_counter(model=model, messages=kwargs["messages"])
+                state.output_tokens = litellm.token_counter(model=model, text=state.output_text)
+            except Exception:
+                pass
+
+        self.billing.add_token_cost(model, state.input_tokens, state.output_tokens)
+        self.billing.add_time_cost(
+            "cloudrun/self",
+            state.elapsed_seconds,
+            note="rough Cloud Run self cost",
         )

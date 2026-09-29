@@ -13,6 +13,7 @@ import { findSourceForSelection } from '../../lib/sourceCitation';
 import { HIGHLIGHT_PRESET_COLORS, noteText, type Annotation } from '../../types/annotation';
 import type { ContentMetadata } from '../../types/content';
 import { AnnotationContext, type RegisteredBlock } from './AnnotationContext';
+import { useChatPanel } from '../../context/ChatPanelContext';
 
 type HighlightStyle = 'marker' | 'line' | 'wave';
 
@@ -403,6 +404,15 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
 
   const hasSource = (source?.sidStrings.length ?? 0) > 0;
 
+  // 選んだ文章について、右側のチャットパネルで質問する(講義は今いる画面から
+  // パネル側が拾う)。チャットパネルの外で使われた場合は出さない。
+  const chatPanel = useChatPanel();
+  const askAboutSelection = () => {
+    if (!selection || !chatPanel) return;
+    chatPanel.open({ selectedText: selection.text });
+    dismiss();
+  };
+
   const contextValue = useMemo(
     () => ({ registerBlock, unregisterBlock, openAnnotation }),
     [registerBlock, unregisterBlock, openAnnotation]
@@ -434,6 +444,11 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
             {hasSource && (
               <button type="button" onClick={jumpToSource}>
                 Source
+              </button>
+            )}
+            {chatPanel && (
+              <button type="button" className="annotation-ask-btn" onClick={askAboutSelection}>
+                Ask
               </button>
             )}
             <button type="button" onClick={copySelection}>

@@ -31,6 +31,10 @@ import { TopicsModal } from '../../components/modals/TopicsModal';
 import { LectureEditModal } from '../../components/modals/LectureEditModal';
 import { UpgradeRequiredDialog } from '../../components/UpgradeRequiredDialog';
 import { CreditRateTableDialog } from '../../components/CreditRateTableDialog';
+import { useElementWidth } from '../../hooks/useElementWidth';
+
+/* .lecture-split-layoutの折り畳み閾値。旧@media(max-width: 980px)と同じ値。 */
+const LECTURE_SPLIT_STACKED_WIDTH = 980;
 
 interface LockDialogInfo {
   titleKey: TranslationKey;
@@ -58,6 +62,9 @@ export const LectureViewerPage: React.FC = () => {
   const [startError, setStartError] = useState<string | null>(blockedReason ?? null);
   const [lockDialog, setLockDialog] = useState<LockDialogInfo | null>(null);
   const [creditRateOpen, setCreditRateOpen] = useState(false);
+
+  const [splitLayoutRef, splitLayoutWidth] = useElementWidth<HTMLDivElement>();
+  const isSplitStacked = splitLayoutWidth > 0 && splitLayoutWidth <= LECTURE_SPLIT_STACKED_WIDTH;
 
   // summaryが未取得の間は「ロックされていない」扱いにして、後からロック表示に
   // 切り替わるちらつきを避ける(Flutter版もhasFeatureProviderの解決待ち中は同様)。
@@ -247,7 +254,10 @@ export const LectureViewerPage: React.FC = () => {
             </div>
 
             {/* Clean 2-Column Split Layout */}
-            <div className="lecture-split-layout">
+            <div
+              ref={splitLayoutRef}
+              className={`lecture-split-layout ${isSplitStacked ? 'is-stacked' : ''}`}
+            >
               {/* Left Column: Action Navigation Cards */}
               <div className="action-nav-stack">
                 {/* 1. Review Cards */}
@@ -286,7 +296,7 @@ export const LectureViewerPage: React.FC = () => {
                 <div
                   role="button"
                   tabIndex={0}
-                  className="action-nav-card"
+                  className="action-nav-card action-nav-card-transcript"
                   onClick={() =>
                     isTranscriptLocked
                       ? setLockDialog({

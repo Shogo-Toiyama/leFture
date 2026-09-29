@@ -2763,6 +2763,22 @@ async def run_finalize_job_task(job_id: str, task_id: str):
         logger.log("🏁 Job finalized and cost report archived.")
         logger.save_to_r2(storage_service)
 
+        # 4.5 横断チャットボット用のknowledge_chunksインデックスをここで即座に
+        # 処理しておく。DBトリガは既にReview Card/Deep Notes/Fun Fact等の
+        # 生成時点でknowledge_index_queueに積み終えているので、ここでは
+        # patrol(30分おき)を待たずにその場でdrainするだけ(呼ぶ関数は
+        # patrolと全く同じ = ロジックの二重化はない)。他ユーザー分も
+        # 一緒に処理され得るが、冪等かつFOR UPDATE SKIP LOCKEDで安全なので
+        # 無害(patrolと衝突しても取り合いにならない)。
+        try:
+            from app.services.knowledge_index import drain_knowledge_index_queue
+            drain_result = await drain_knowledge_index_queue()
+            logger.log(f"🧠 Knowledge index drain: {drain_result}")
+        except Exception as index_error:
+            # 検索インデックスの更新が遅れても講義処理自体は完了扱いのまま
+            # 進める。取りこぼしはpatrolが30分以内に拾う。
+            logger.log(f"⚠️ Failed to drain knowledge index queue: {index_error}")
+
         # 5. Push通知 (失敗してもJob自体は完了扱いのまま進める)
         try:
             lecture_res = await asyncio.to_thread(

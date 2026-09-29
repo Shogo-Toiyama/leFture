@@ -18,8 +18,14 @@ import { LectureEditModal } from '../../components/modals/LectureEditModal';
 import { CourseIconGlyph, DEFAULT_COURSE_COLOR } from '../../lib/courseIcons';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useUploadModal } from '../../context/UploadModalContext';
+import { useElementWidth } from '../../hooks/useElementWidth';
 import type { Announcement } from '../../types/content';
 import type { Lecture } from '../../types/lecture';
+
+/* .home-pageの折り畳み閾値。旧@media(max-width: …)と同じ値を、
+   チャットパネル分の実効幅で判定するためJS側にも複製している。 */
+const HOME_COMPACT_WIDTH = 1199;
+const HOME_PHONE_WIDTH = 719;
 
 /**
  * ワイド版ホーム("Command Center"): 銀河のワイドヒーロー + 3カラム
@@ -101,8 +107,15 @@ export const HomePage: React.FC = () => {
     lectures: String(lectureCount),
   });
 
+  const [homeRef, homeWidth] = useElementWidth<HTMLDivElement>();
+  const isCompact = homeWidth > 0 && homeWidth <= HOME_COMPACT_WIDTH;
+  const isPhone = homeWidth > 0 && homeWidth <= HOME_PHONE_WIDTH;
+
   return (
-    <div className="home-page">
+    <div
+      ref={homeRef}
+      className={`home-page ${isCompact ? 'is-compact' : ''} ${isPhone ? 'is-phone' : ''}`}
+    >
       {/* お知らせ+コースは1つのflex縦積みラッパーにまとめ、gridの行トラック計算を
           main/facts側から独立させる(そうしないと main が2行分の高さを要求した時に
           announce/courses側の行トラックまで引き伸ばされ、コースが不自然に下がる)。

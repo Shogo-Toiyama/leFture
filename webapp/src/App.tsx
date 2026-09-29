@@ -6,6 +6,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 import { RequireOnboarding } from './auth/RequireOnboarding';
 import { Layout } from './components/Layout';
 import { PageState } from './components/PageState';
+import { ChatHost } from './components/chat/ChatHost';
 
 import { UploadModalProvider } from './context/UploadModalContext';
 
@@ -54,6 +55,7 @@ const PurchaseCreditsPage = lazy(() =>
   import('./pages/account/PurchaseCreditsPage').then((m) => ({ default: m.PurchaseCreditsPage }))
 );
 const PlansPage = lazy(() => import('./pages/account/PlansPage').then((m) => ({ default: m.PlansPage })));
+const ChatPage = lazy(() => import('./pages/chat/ChatPage').then((m) => ({ default: m.ChatPage })));
 const ActivityRecordsPlaceholderPage = lazy(() =>
   import('./pages/account/ActivityRecordsPlaceholderPage').then((m) => ({
     default: m.ActivityRecordsPlaceholderPage,
@@ -77,27 +79,32 @@ export const App: React.FC = () => {
                 <Route element={<ProtectedRoute />}>
                   <Route path="onboarding" element={<OnboardingWizard />} />
                   <Route element={<RequireOnboarding />}>
-                    <Route element={<Layout />}>
-                      <Route index element={<HomePage />} />
-                      <Route path="upload" element={<UploadPage />} />
-                      <Route path="courses" element={<CourseListPage />} />
-                      <Route path="courses/:courseId" element={<CourseDetailPage />} />
-                      <Route path="courses/:courseId/upload" element={<UploadPage />} />
-                      <Route path="courses/:courseId/topic-map" element={<TopicMapPage />} />
-                      <Route path="lectures/:lectureId" element={<LectureViewerPage />} />
-                      <Route path="account" element={<AccountPage />} />
-                      <Route path="account/profile" element={<ProfilePage />} />
-                      <Route path="account/credits" element={<CreditsPage />} />
-                      <Route path="account/credits/purchase" element={<PurchaseCreditsPage />} />
-                      <Route path="account/plans" element={<PlansPage />} />
-                      <Route path="account/activity/:type" element={<ActivityRecordsPlaceholderPage />} />
-                    </Route>
+                    {/* 右下のチャットボタンと右側パネル。全画面の読み物(Layoutの外)にも出すため、ここで包む */}
+                    <Route element={<ChatHost />}>
+                      <Route element={<Layout />}>
+                        <Route index element={<HomePage />} />
+                        <Route path="upload" element={<UploadPage />} />
+                        <Route path="courses" element={<CourseListPage />} />
+                        <Route path="courses/:courseId" element={<CourseDetailPage />} />
+                        <Route path="courses/:courseId/upload" element={<UploadPage />} />
+                        <Route path="courses/:courseId/topic-map" element={<TopicMapPage />} />
+                        <Route path="lectures/:lectureId" element={<LectureViewerPage />} />
+                        <Route path="account" element={<AccountPage />} />
+                        <Route path="account/profile" element={<ProfilePage />} />
+                        <Route path="account/credits" element={<CreditsPage />} />
+                        <Route path="account/credits/purchase" element={<PurchaseCreditsPage />} />
+                        <Route path="account/plans" element={<PlansPage />} />
+                        <Route path="account/activity/:type" element={<ActivityRecordsPlaceholderPage />} />
+                        <Route path="chat" element={<ChatPage />} />
+                        <Route path="chat/:threadId" element={<ChatPage />} />
+                      </Route>
 
-                    {/* 紙面のビューアはアプリシェル(ダーク)の外に出す全画面ページ */}
-                    <Route path="lectures/:lectureId/review-cards" element={<ReviewCardsPage />} />
-                    <Route path="lectures/:lectureId/deep-notes" element={<DeepNotesDetailPage />} />
-                    <Route path="lectures/:lectureId/deep-notes/:topicIndex" element={<DeepNotesDetailPage />} />
-                    <Route path="lectures/:lectureId/transcript" element={<TranscriptPage />} />
+                      {/* 紙面のビューアはアプリシェル(ダーク)の外に出す全画面ページ */}
+                      <Route path="lectures/:lectureId/review-cards" element={<ReviewCardsPage />} />
+                      <Route path="lectures/:lectureId/deep-notes" element={<DeepNotesDetailPage />} />
+                      <Route path="lectures/:lectureId/deep-notes/:topicIndex" element={<DeepNotesDetailPage />} />
+                      <Route path="lectures/:lectureId/transcript" element={<TranscriptPage />} />
+                    </Route>
                   </Route>
                 </Route>
 
