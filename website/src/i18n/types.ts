@@ -16,6 +16,8 @@ export interface HomeTranslations {
     eyebrow: string;
     titleTop: string;
     titleGlow: string;
+    /** Words within titleTop/titleGlow to render with the hero-keyword accent style. */
+    heroKeywords: string[];
     subtitle: string;
     primaryCta: string;
     secondaryCta: string;
@@ -47,7 +49,14 @@ export interface HomeTranslations {
       subtitle: string;
       body: string;
       deckHint: string;
-      deck: { kind: string; emoji: string; title: string; body: string }[];
+      deck: {
+        kind: string;
+        emoji: string;
+        title: string;
+        body: string;
+        highlight?: string;
+        imageUrl?: string;
+      }[];
     };
     notes: {
       tag: string;
@@ -72,6 +81,28 @@ export interface HomeTranslations {
       personas: { emoji: string; who: string; angle: string }[];
       ingredients: string[];
     };
+  };
+  chat: {
+    eyebrow: string;
+    heading: string;
+    lead: string;
+    partnerName: string;
+    onlineStatus: string;
+    inputPlaceholder: string;
+    sourcePrefix: string;
+    threads: {
+      id: string;
+      pill: string;
+      user: string;
+      thinking: string;
+      aiGreeting: string;
+      aiInsight: string;
+      aiProfessorSays: string;
+      source: {
+        title: string;
+        timestamp: string;
+      };
+    }[];
   };
   tools: {
     eyebrow: string;

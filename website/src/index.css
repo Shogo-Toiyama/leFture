@@ -1,3 +1,38 @@
+@font-face {
+  font-family: 'Corporate-Logo';
+  src: url('/fonts/Corporate-Logo-Bold-ver3.otf') format('opentype'),
+       url('/fonts/Corporate-Logo-Bold-ver3.otf');
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Corporate-Logo';
+  src: url('/fonts/Corporate-Logo-Bold-ver3.otf') format('opentype'),
+       url('/fonts/Corporate-Logo-Bold-ver3.otf');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Corporate-Logo';
+  src: url('/fonts/Corporate-Logo-Bold-ver3.otf') format('opentype'),
+       url('/fonts/Corporate-Logo-Bold-ver3.otf');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Corporate-Logo';
+  src: url('/fonts/Corporate-Logo-Bold-ver3.otf') format('opentype'),
+       url('/fonts/Corporate-Logo-Bold-ver3.otf');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Brand Colors (from leFture Flutter App) */
   --color-star-gold: #FFB300;
@@ -31,7 +66,7 @@
 
   /* Typography */
   --font-brand: 'Orbitron', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Outfit', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Layout */

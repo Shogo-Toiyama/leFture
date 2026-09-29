@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Quote, Sparkles, Smartphone } from 'lucide-react';
+import { ArrowRight, Quote, Sparkles, Smartphone, Bookmark, Search, Send } from 'lucide-react';
 import { useTranslation } from '../i18n/LanguageContext';
 import { useDownloadModal } from '../context/DownloadModalContext';
 import { clamp01, subscribeScroll } from '../lib/scrollBus';
@@ -11,14 +11,111 @@ import { Waveform } from '../components/home/Waveform';
 import { ReviewCardDeck } from '../components/home/ReviewCardDeck';
 import { PipelineSection } from '../components/home/PipelineSection';
 import { usePageMeta } from '../lib/usePageMeta';
+import { HomeTranslations } from '../i18n/types';
 import './home.css';
 
 /** Accent colours, straight from the app's Universe palette. */
 const ACCENT_CARDS = '#FFB300';
 const ACCENT_NOTES = '#42A5F5';
 const ACCENT_FACTS = '#B98BFF';
+const ACCENT_CHAT = '#42A5F5';
 const ROAD_ACCENTS = ['#FFB300', '#42A5F5', '#B98BFF'];
 const WHY_ACCENTS = ['#42A5F5', '#B98BFF'];
+
+/**
+ * Interactive Chatbot Showcase demonstrating the AI companion
+ * recalling specific lecture points and tying them to real-world aha moments.
+ */
+const ChatShowcase: React.FC<{
+  chat: HomeTranslations['chat'];
+}> = ({ chat }) => {
+  const [activeId, setActiveId] = useState(chat.threads[0]?.id || 'procrastination');
+  const activeThread = chat.threads.find((t) => t.id === activeId) || chat.threads[0];
+
+  return (
+    <div className="chat-showcase">
+      <div className="chat-showcase-aura" aria-hidden="true" />
+
+      <div className="chat-window">
+        {/* Chat Header */}
+        <div className="chat-window-header">
+          <div className="chat-header-status">
+            <span className="chat-status-dot" aria-hidden="true" />
+            <span className="chat-partner-name">{chat.partnerName}</span>
+            <span className="chat-status-label">{chat.onlineStatus}</span>
+          </div>
+          <div className="chat-header-actions">
+            <span className="chat-header-badge">Beta</span>
+          </div>
+        </div>
+
+        {/* Chat Body */}
+        <div className="chat-messages" key={activeThread.id}>
+          {/* User Bubble */}
+          <div className="chat-bubble-row is-user">
+            <div className="chat-bubble chat-bubble--user">
+              <p>{activeThread.user}</p>
+            </div>
+          </div>
+
+          {/* Searching Note Stage */}
+          <div className="chat-thinking-row">
+            <span className="chat-thinking-badge">
+              <Search size={13} className="spin-pulse" />
+              {activeThread.thinking}
+            </span>
+          </div>
+
+          {/* AI Bubble */}
+          <div className="chat-bubble-row is-ai">
+            <div className="chat-avatar" aria-hidden="true">
+              <Sparkles size={16} />
+            </div>
+            <div className="chat-bubble chat-bubble--ai">
+              <p className="chat-ai-greeting">{activeThread.aiGreeting}</p>
+              <p className="chat-ai-insight">{activeThread.aiInsight}</p>
+              <div className="chat-ai-quote">
+                <p>{activeThread.aiProfessorSays}</p>
+              </div>
+
+              {/* Source Chip with Timestamp */}
+              <div className="chat-source-chip">
+                <Bookmark size={13} />
+                <span className="chat-source-prefix">{chat.sourcePrefix}:</span>
+                <span className="chat-source-title">{activeThread.source.title}</span>
+                <span className="chat-source-timestamp">[{activeThread.source.timestamp}]</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pill Selector for Switching AHA Conversations */}
+        <div className="chat-pills-bar">
+          {chat.threads.map((thread) => (
+            <button
+              key={thread.id}
+              type="button"
+              className={`chat-pill ${thread.id === activeId ? 'is-active' : ''}`}
+              onClick={() => setActiveId(thread.id)}
+            >
+              {thread.pill}
+            </button>
+          ))}
+        </div>
+
+        {/* Input Bar Placeholder */}
+        <div className="chat-input-bar">
+          <div className="chat-input-field">
+            <span className="chat-input-placeholder">{chat.inputPlaceholder}</span>
+          </div>
+          <button type="button" className="chat-send-btn" aria-label="Send">
+            <Send size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /**
  * Reveals every `.reveal` descendant once as it enters the viewport. One
@@ -93,6 +190,32 @@ const FactRotator: React.FC<{
   );
 };
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Wraps each occurrence of a keyword (from the active locale's own
+ * translation data, not a hardcoded per-language word list) in a span so
+ * CSS can give it an accent font via `:lang()` — see .hero-keyword in
+ * home.css. Adding a locale only means adding its heroKeywords array.
+ */
+const renderHeroKeyword = (text: string, keywords: string[]) => {
+  if (keywords.length === 0) return text;
+
+  const regex = new RegExp(`(${keywords.map(escapeRegExp).join('|')})`, 'gi');
+  const keywordSet = new Set(keywords.map((k) => k.toLowerCase()));
+  const parts = text.split(regex);
+
+  return parts.map((part, i) =>
+    keywordSet.has(part.toLowerCase()) ? (
+      <span key={i} className="hero-keyword">
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+};
+
 export const HomePage: React.FC = () => {
   const { t, locale } = useTranslation();
   const { openModal } = useDownloadModal();
@@ -151,8 +274,8 @@ export const HomePage: React.FC = () => {
           </span>
 
           <h1 className="hero-title">
-            <span className="line-1">{home.hero.titleTop}</span>
-            <span className="line-2 gold-text">{home.hero.titleGlow}</span>
+            <span className="line-1">{renderHeroKeyword(home.hero.titleTop, home.hero.heroKeywords)}</span>
+            <span className="line-2 gold-text">{renderHeroKeyword(home.hero.titleGlow, home.hero.heroKeywords)}</span>
           </h1>
 
           <p className="hero-sub">{home.hero.subtitle}</p>
@@ -315,6 +438,24 @@ export const HomePage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------------- AI Partner Chat */}
+      <section className="section section--chat" id="chat" style={{ '--accent': ACCENT_CHAT } as React.CSSProperties}>
+        <div className="container">
+          <header className="section-head section-head--center reveal">
+            <span className="eyebrow">
+              <i className="eyebrow-bar" />
+              {home.chat.eyebrow}
+            </span>
+            <h2 className="section-title">{home.chat.heading}</h2>
+            <p className="section-lead">{home.chat.lead}</p>
+          </header>
+
+          <div className="reveal" style={{ '--d': '120ms' } as React.CSSProperties}>
+            <ChatShowcase chat={home.chat} />
           </div>
         </div>
       </section>
