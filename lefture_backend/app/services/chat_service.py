@@ -25,6 +25,7 @@ complexity(難しさ)はMVPでは記録するだけ。上位モデルへの切�
 import asyncio
 import json
 import re
+import time
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -359,6 +360,31 @@ def sse_event(event: str, data: dict) -> str:
 # 🚦 事前チェック + 保存 (ここで弾くものはHTTPのエラーとして返る)
 # =========================================================
 
+class TurnTimer:
+    """
+    1ターンの段階ごとの経過時間(リクエスト受信からのms)。どこで時間が
+    かかっているかを見るためのもの。chat_messages.usage.timings と
+    Cloud Runのログ(⏱️ [chat])の両方に残す。
+    """
+    def __init__(self) -> None:
+        self._t0 = time.perf_counter()
+        self.started_at = _now_iso()
+        self.marks: dict[str, int] = {}
+
+    def mark(self, name: str) -> None:
+        self.marks[name] = round((time.perf_counter() - self._t0) * 1000)
+
+    def to_json(self) -> dict:
+        return {"started_at": self.started_at, "ms": dict(self.marks)}
+
+    def log_line(self, message_id: str) -> str:
+        parts, prev = [], 0
+        for name, ms in self.marks.items():
+            parts.append(f"{name}={ms}ms(+{ms - prev})")
+            prev = ms
+        return f"⏱️ [chat] message={message_id} " + " ".join(parts)
+
+
 @dataclass
 class PreparedTurn:
     user_id: str
@@ -372,6 +398,7 @@ class PreparedTurn:
     lecture_label: Optional[str]
     context_lecture_id: Optional[str]
     history_rows: list[dict] = field(default_factory=list)
+    timer: TurnTimer = field(default_factory=lambda: TurnTimer())
 
 
 def _now_iso(delta: timedelta = timedelta(0)) -> str:
@@ -394,72 +421,66 @@ def _lecture_label(admin_client, lecture_id: str, user_id: str) -> Optional[str]
     return " / ".join(p for p in [course_title or "", lecture_title] if p) or None
 
 
-def _prepare_chat_turn_sync(
-    admin_client,
-    user_id: str,
-    thread_id: Optional[str],
-    client_message_id: str,
-    content: str,
-    context_lecture_id: Optional[str],
-    selected_text: Optional[str],
-) -> PreparedTurn:
-    content = (content or "").strip()
-    selected_text = (selected_text or "").strip() or None
-
-    # --- 入力の上限(LLMを呼ぶ前に弾く) ---
-    if not content:
-        raise ChatRequestError(400, "EMPTY_MESSAGE", "Message is empty.")
-    if len(content) > MAX_MESSAGE_CHARS:
-        raise ChatRequestError(413, "MESSAGE_TOO_LONG", f"Message exceeds {MAX_MESSAGE_CHARS} characters.",
-                               {"max_chars": MAX_MESSAGE_CHARS})
-    if selected_text and len(selected_text) > MAX_SELECTED_TEXT_CHARS:
-        raise ChatRequestError(413, "SELECTED_TEXT_TOO_LONG",
-                               f"Selected text exceeds {MAX_SELECTED_TEXT_CHARS} characters.",
-                               {"max_chars": MAX_SELECTED_TEXT_CHARS})
-
-    # --- 最低残高(get_credit_summaryはcredit_grantsから毎回導出される) ---
+def _fetch_balance_micro(admin_client, user_id: str) -> int:
     summary_res = admin_client.rpc("get_credit_summary", {"p_user_id": user_id}).execute()
     summary_row = (summary_res.data or [{}])[0] if summary_res.data else {}
-    balance_micro = summary_row.get("credit_balance") or 0
-    if balance_micro < CHAT_MIN_BALANCE_CREDITS * MICRO_CREDITS_PER_CREDIT:
-        raise ChatRequestError(402, "INSUFFICIENT_CREDITS", "Insufficient credits to send a chat message.",
-                               {"credit_balance": balance_micro, "min_credits": CHAT_MIN_BALANCE_CREDITS})
+    return summary_row.get("credit_balance") or 0
 
-    # --- 送信頻度 ---
+
+def _fetch_rate_limit_count(admin_client, user_id: str) -> int:
     recent = admin_client.table("chat_messages").select("id", count="exact") \
         .eq("user_id", user_id).eq("role", "user") \
         .gte("created_at", _now_iso(-timedelta(minutes=RATE_LIMIT_WINDOW_MINUTES))) \
         .limit(1).execute()
-    if (recent.count or 0) >= RATE_LIMIT_MAX_MESSAGES:
-        raise ChatRequestError(429, "CHAT_RATE_LIMITED", "Too many messages. Please wait a moment.",
-                               {"window_minutes": RATE_LIMIT_WINDOW_MINUTES, "max_messages": RATE_LIMIT_MAX_MESSAGES})
+    return recent.count or 0
 
-    # --- 断られた回数 ---
+
+def _fetch_blocked_count(admin_client, user_id: str) -> int:
     blocked = admin_client.table("chat_messages").select("id", count="exact") \
         .eq("user_id", user_id).eq("status", "blocked") \
         .gte("created_at", _now_iso(-timedelta(hours=BLOCKED_WINDOW_HOURS))) \
         .limit(1).execute()
-    if (blocked.count or 0) >= BLOCKED_MAX_MESSAGES:
-        raise ChatRequestError(429, "CHAT_BLOCKED_COOLDOWN",
-                               "Chat is temporarily unavailable for this account.",
-                               {"window_hours": BLOCKED_WINDOW_HOURS})
+    return blocked.count or 0
 
-    # --- 再送の重複(同じclient_message_idが既にある) ---
+
+def _fetch_dup_row(admin_client, user_id: str, client_message_id: str) -> Optional[dict]:
     dup = admin_client.table("chat_messages").select("id, thread_id") \
         .eq("user_id", user_id).eq("client_message_id", client_message_id).limit(1).execute()
-    if dup.data:
-        raise ChatRequestError(409, "DUPLICATE_MESSAGE", "This message was already received.",
-                               {"message_id": dup.data[0]["id"], "thread_id": dup.data[0]["thread_id"]})
+    return dup.data[0] if dup.data else None
 
-    # --- 見ている講義(本人のものだけ採用) ---
-    lecture_label = _lecture_label(admin_client, context_lecture_id, user_id) if context_lecture_id else None
-    if lecture_label is None:
-        context_lecture_id = None
 
-    # --- スレッド ---
-    is_new_thread = thread_id is None
-    history_rows: list[dict] = []
-    thread_has_title = False
+def _fetch_thread_row(admin_client, thread_id: str) -> Optional[dict]:
+    t = admin_client.table("chat_threads").select("id, user_id, title, deleted_at, context_lecture_id") \
+        .eq("id", thread_id).maybe_single().execute()
+    return t.data if t else None
+
+
+def _fetch_busy(admin_client, thread_id: str) -> bool:
+    busy = admin_client.table("chat_messages").select("id") \
+        .eq("thread_id", thread_id).eq("status", "streaming") \
+        .gte("created_at", _now_iso(-timedelta(minutes=STREAMING_STALE_MINUTES))) \
+        .limit(1).execute()
+    return bool(busy.data)
+
+
+def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
+    h = admin_client.table("chat_messages").select("role, content, status, created_at") \
+        .eq("thread_id", thread_id).is_("deleted_at", "null") \
+        .order("created_at", desc=True).limit(HISTORY_MAX_MESSAGES * 3).execute()
+    return list(reversed(h.data or []))
+
+
+def _write_turn_rows(
+    admin_client,
+    is_new_thread: bool,
+    thread_id: Optional[str],
+    user_id: str,
+    content: str,
+    client_message_id: str,
+    context_lecture_id: Optional[str],
+    selected_text: Optional[str],
+) -> tuple[str, str, str]:
+    """スレッド作成(新規のみ) → userメッセージ → 返答用の空行。3つとも書き込みなので逐次。"""
     if is_new_thread:
         t = admin_client.table("chat_threads").insert({
             "user_id": user_id,
@@ -467,34 +488,7 @@ def _prepare_chat_turn_sync(
             "context_lecture_id": context_lecture_id,
         }).execute()
         thread_id = t.data[0]["id"]
-    else:
-        t = admin_client.table("chat_threads").select("id, user_id, title, deleted_at, context_lecture_id") \
-            .eq("id", thread_id).maybe_single().execute()
-        row = t.data if t else None
-        if not row or row.get("user_id") != user_id or row.get("deleted_at"):
-            raise ChatRequestError(404, "THREAD_NOT_FOUND", "Thread not found.")
-        thread_has_title = bool(row.get("title"))
-        # 画面から講義が送られていなければ、スレッド開始時の講義を使う
-        if context_lecture_id is None and row.get("context_lecture_id"):
-            context_lecture_id = row["context_lecture_id"]
-            lecture_label = _lecture_label(admin_client, context_lecture_id, user_id)
-            if lecture_label is None:
-                context_lecture_id = None
 
-        # 生成中の返答があれば二重送信として弾く(取り残されたものは無視)
-        busy = admin_client.table("chat_messages").select("id") \
-            .eq("thread_id", thread_id).eq("status", "streaming") \
-            .gte("created_at", _now_iso(-timedelta(minutes=STREAMING_STALE_MINUTES))) \
-            .limit(1).execute()
-        if busy.data:
-            raise ChatRequestError(409, "THREAD_BUSY", "A reply is still being generated in this thread.")
-
-        h = admin_client.table("chat_messages").select("role, content, status, created_at") \
-            .eq("thread_id", thread_id).is_("deleted_at", "null") \
-            .order("created_at", desc=True).limit(HISTORY_MAX_MESSAGES * 3).execute()
-        history_rows = list(reversed(h.data or []))
-
-    # --- 保存: userメッセージ → 返答用の空行 ---
     message_context = {}
     if context_lecture_id:
         message_context["lecture_id"] = context_lecture_id
@@ -533,6 +527,105 @@ def _prepare_chat_turn_sync(
     }).execute()
     assistant_message_id = a.data[0]["id"]
 
+    return thread_id, user_message_id, assistant_message_id
+
+
+async def prepare_chat_turn(
+    user_id: str,
+    thread_id: Optional[str],
+    client_message_id: str,
+    content: str,
+    context_lecture_id: Optional[str],
+    selected_text: Optional[str],
+    timer: TurnTimer,
+) -> PreparedTurn:
+    """
+    事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
+    回数・重複・見ている講義・既存スレッドの行・生成中判定・履歴)は全部
+    asyncio.gatherで並列に投げる(計測したら合計2秒近く、Supabaseへの往復を
+    1本ずつ直列に待っていたのが原因だった)。エラーの優先順位は元の逐次
+    コードと同じ(残高→頻度→断られ過ぎ→重複→スレッド無し→二重送信)にする。
+    書き込み(スレッド作成・メッセージ保存)は依存関係があるので逐次のまま。
+    """
+    content = (content or "").strip()
+    selected_text = (selected_text or "").strip() or None
+
+    # --- 入力の上限(LLMはおろかDBも呼ぶ前に弾く) ---
+    if not content:
+        raise ChatRequestError(400, "EMPTY_MESSAGE", "Message is empty.")
+    if len(content) > MAX_MESSAGE_CHARS:
+        raise ChatRequestError(413, "MESSAGE_TOO_LONG", f"Message exceeds {MAX_MESSAGE_CHARS} characters.",
+                               {"max_chars": MAX_MESSAGE_CHARS})
+    if selected_text and len(selected_text) > MAX_SELECTED_TEXT_CHARS:
+        raise ChatRequestError(413, "SELECTED_TEXT_TOO_LONG",
+                               f"Selected text exceeds {MAX_SELECTED_TEXT_CHARS} characters.",
+                               {"max_chars": MAX_SELECTED_TEXT_CHARS})
+
+    admin_client = get_supabase_client()
+    is_new_thread = thread_id is None
+
+    def to_thread(fn, *args):
+        return asyncio.to_thread(fn, *args)
+
+    async def none() -> None:
+        return None
+
+    (
+        balance_micro, rate_count, blocked_count, dup_row, lecture_label,
+        thread_row, is_busy, history_rows,
+    ) = await asyncio.gather(
+        to_thread(_fetch_balance_micro, admin_client, user_id),
+        to_thread(_fetch_rate_limit_count, admin_client, user_id),
+        to_thread(_fetch_blocked_count, admin_client, user_id),
+        to_thread(_fetch_dup_row, admin_client, user_id, client_message_id),
+        to_thread(_lecture_label, admin_client, context_lecture_id, user_id) if context_lecture_id else none(),
+        to_thread(_fetch_thread_row, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(_fetch_busy, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(_fetch_history_rows, admin_client, thread_id) if not is_new_thread else none(),
+    )
+    timer.mark("prep_checks")
+
+    if context_lecture_id and lecture_label is None:
+        context_lecture_id = None
+
+    # --- エラーの優先順位は元の逐次コードと同じ ---
+    if balance_micro < CHAT_MIN_BALANCE_CREDITS * MICRO_CREDITS_PER_CREDIT:
+        raise ChatRequestError(402, "INSUFFICIENT_CREDITS", "Insufficient credits to send a chat message.",
+                               {"credit_balance": balance_micro, "min_credits": CHAT_MIN_BALANCE_CREDITS})
+    if rate_count >= RATE_LIMIT_MAX_MESSAGES:
+        raise ChatRequestError(429, "CHAT_RATE_LIMITED", "Too many messages. Please wait a moment.",
+                               {"window_minutes": RATE_LIMIT_WINDOW_MINUTES, "max_messages": RATE_LIMIT_MAX_MESSAGES})
+    if blocked_count >= BLOCKED_MAX_MESSAGES:
+        raise ChatRequestError(429, "CHAT_BLOCKED_COOLDOWN",
+                               "Chat is temporarily unavailable for this account.",
+                               {"window_hours": BLOCKED_WINDOW_HOURS})
+    if dup_row:
+        raise ChatRequestError(409, "DUPLICATE_MESSAGE", "This message was already received.",
+                               {"message_id": dup_row["id"], "thread_id": dup_row["thread_id"]})
+
+    thread_has_title = False
+    if not is_new_thread:
+        if not thread_row or thread_row.get("user_id") != user_id or thread_row.get("deleted_at"):
+            raise ChatRequestError(404, "THREAD_NOT_FOUND", "Thread not found.")
+        thread_has_title = bool(thread_row.get("title"))
+        # 画面から講義が送られていなければ、スレッド開始時の講義を使う
+        if context_lecture_id is None and thread_row.get("context_lecture_id"):
+            context_lecture_id = thread_row["context_lecture_id"]
+            lecture_label = await to_thread(_lecture_label, admin_client, context_lecture_id, user_id)
+            if lecture_label is None:
+                context_lecture_id = None
+        # 生成中の返答があれば二重送信として弾く(取り残されたものは無視)
+        if is_busy:
+            raise ChatRequestError(409, "THREAD_BUSY", "A reply is still being generated in this thread.")
+
+    timer.mark("prep_thread")
+
+    thread_id, user_message_id, assistant_message_id = await to_thread(
+        _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
+        client_message_id, context_lecture_id, selected_text,
+    )
+    timer.mark("prep_saved")
+
     return PreparedTurn(
         user_id=user_id,
         thread_id=thread_id,
@@ -544,22 +637,8 @@ def _prepare_chat_turn_sync(
         selected_text=selected_text,
         lecture_label=lecture_label,
         context_lecture_id=context_lecture_id,
-        history_rows=history_rows,
-    )
-
-
-async def prepare_chat_turn(
-    user_id: str,
-    thread_id: Optional[str],
-    client_message_id: str,
-    content: str,
-    context_lecture_id: Optional[str],
-    selected_text: Optional[str],
-) -> PreparedTurn:
-    admin_client = get_supabase_client()
-    return await asyncio.to_thread(
-        _prepare_chat_turn_sync, admin_client, user_id, thread_id,
-        client_message_id, content, context_lecture_id, selected_text,
+        history_rows=history_rows or [],
+        timer=timer,
     )
 
 
@@ -626,6 +705,7 @@ async def _run_router(
             result = await llm.generate(ROUTER_MODEL, messages, options)
         except Exception as e:
             print(f"⚠️ [chat] router call failed (attempt {_attempt + 1}): {e}")
+            turn.timer.mark(f"router_failed_{_attempt + 1}")
             continue
         if result.finish_reason == "content_filter":
             decision = RouterDecision(
@@ -768,6 +848,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
     billing = BillingEngine(task_type="CHAT_MESSAGE")
     llm = UnifiedLLM(billing)
     decision: Optional[RouterDecision] = None
+    timer = turn.timer
 
     async def emit(event: str, data: dict) -> None:
         await queue.put(sse_event(event, data))
@@ -785,9 +866,11 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             asyncio.to_thread(_load_student_profile, admin_client, turn.user_id),
             asyncio.to_thread(_lecture_languages, admin_client, turn.user_id),
         )
+        timer.mark("context_loaded")
 
         # --- 2. 振り分け ---
         decision = await _run_router(llm, turn, history, lecture_languages)
+        timer.mark("router_done")
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
         if decision.intent in ("blocked", "crisis"):
@@ -796,7 +879,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             await _finalize(
                 admin_client, turn, content=text, status=decision.intent,
                 decision=decision, citations=[], billing=billing,
-                usage_extra={"router_model": ROUTER_MODEL}, charge=False,
+                usage_extra={"router_model": ROUTER_MODEL, "timings": timer.to_json()}, charge=False,
             )
             await emit("done", {"status": decision.intent, "credits_charged": 0})
             return
@@ -811,6 +894,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
                 # 検索が落ちても、出典なしで答える方がユーザーにとって良い
                 print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
                 chunks = []
+            timer.mark("retrieval_done")
             await emit("sources", {"sources": [
                 {
                     "n": n,
@@ -828,9 +912,18 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
         await emit("status", {"stage": "writing"})
         messages = _build_answer_messages(turn, decision, history, profile, chunks)
         state = StreamState()
-        options = LLMOptions(max_tokens=ANSWER_MAX_OUTPUT_TOKENS, reasoning_effort="low")
+        # reasoning_effort="low"でもGeminiには thinkingLevel: low, includeThoughts: True
+        # が送られ、答え本文の前に思考の文章を生成する分、最初の1文字までが数秒遅くなる
+        # (2026-09-29に計測、TurnTimerのanswer_first_tokenで確認)。"none"だと
+        # thinkingLevel: minimal, includeThoughts: False になり、雑談程度の速さで
+        # 十分なこの役には合っている。
+        options = LLMOptions(max_tokens=ANSWER_MAX_OUTPUT_TOKENS, reasoning_effort="none")
+        timer.mark("answer_started")
         async for delta in llm.generate_stream(ANSWER_MODEL, messages, state, options):
+            if "answer_first_token" not in timer.marks:
+                timer.mark("answer_first_token")
             await emit("delta", {"text": delta})
+        timer.mark("answer_done")
 
         usage_extra = {
             "router_model": ROUTER_MODEL,
@@ -839,6 +932,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             "answer_output_tokens": state.output_tokens,
             "usage_estimated": state.usage_estimated,
             "retrieved_chunk_ids": [c.get("id") for c in chunks],
+            "timings": timer.to_json(),
         }
 
         # 回答役の段階で安全フィルタに止められた: 断る扱いにして課金しない
@@ -875,11 +969,13 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             await _finalize(
                 admin_client, turn, content="", status="error",
                 decision=decision, citations=[], billing=billing,
-                usage_extra={"error": str(e)[:1000]}, charge=False,
+                usage_extra={"error": str(e)[:1000], "timings": timer.to_json()}, charge=False,
             )
         except Exception as finalize_error:
             # ここでも失敗したら、行はstreamingのまま残り、patrolがerrorにする
             print(f"❌ [chat] failed to mark message {turn.assistant_message_id} as error: {finalize_error}")
         await emit("error", {"error_code": "CHAT_FAILED", "message": "Failed to generate a reply."})
     finally:
+        timer.mark("finalized")
+        print(timer.log_line(turn.assistant_message_id))
         await queue.put(None)

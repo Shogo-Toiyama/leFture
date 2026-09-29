@@ -84,6 +84,7 @@ from app.services.knowledge_index import drain_knowledge_index_queue
 from app.services.chat_service import (
     ChatRequestError,
     STREAMING_STALE_MINUTES,
+    TurnTimer,
     prepare_chat_turn,
     run_chat_turn,
 )
@@ -5631,9 +5632,11 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
     (EventSourceはPOSTとAuthorizationヘッダを扱えないため、クライアントは
     fetchのReadableStreamで読む)。
     """
+    timer = TurnTimer()
     user_client, uid = await _get_user_client_from_request(request)
     admin_client = get_supabase_client()
     await _reject_if_suspended(admin_client, uid)
+    timer.mark("auth")
 
     thread_id = _parse_uuid_or_422(payload.thread_id, "thread_id")
     client_message_id = _parse_uuid_or_422(payload.client_message_id, "client_message_id")
@@ -5643,7 +5646,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
     try:
         turn = await prepare_chat_turn(
             uid, thread_id, client_message_id, payload.content,
-            context_lecture_id, context.selected_text,
+            context_lecture_id, context.selected_text, timer,
         )
     except ChatRequestError as e:
         raise HTTPException(
