@@ -219,6 +219,35 @@
             "done": false,
             "must": [
               {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "LR",
+                  "RL",
+                  "rotation",
+                  "AVL"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "講義番号が分かっているのに検索から入る(遠回り)",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
                 "op": "open",
                 "handle": "C1",
                 "grounds": [
@@ -286,6 +315,37 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "LR",
+                  "RL",
+                  "rotation"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで確かめる(遠回り)",
+            "detour": true
           }
         ],
         "looking_for": "how LR and RL rotations work, step by step"
@@ -1185,6 +1245,23 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "コースを開いて確認する(遠回り)",
+            "detour": true
           }
         ],
         "looking_for": null
@@ -1379,6 +1456,36 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "overshoot",
+                  "オーバーシュート"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  "C5",
+                  "C5/L2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで確かめる(遠回り)",
+            "detour": true
           }
         ],
         "looking_for": "what the professor said about overshoot in the PID lecture"
@@ -5028,12 +5135,42 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Dijkstra",
+                  "shortest path"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L11"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで確かめる(遠回り)",
+            "detour": true
           }
         ],
         "looking_for": "the professor's explanation of Dijkstra's algorithm"
       }
     ],
-    "why": "講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる。",
+    "why": "講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる(文字起こしを確かめに行くのは遠回りとして許容)。",
     "recent_conversation": [],
     "set": "holdout"
   },

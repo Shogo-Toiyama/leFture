@@ -7,6 +7,13 @@
 
 ## ファイル
 
+**2026-09-30から、評価は本番の探索役のコードで回す**(`run_eval.py`)。プロンプト・JSON Schema・入力の
+組み立て・操作の検証は`lefture_backend/app/services/chat_navigator.py`のものをそのまま使い、データの
+出どころだけを台本の世界に差し替える。今の`CAPABILITIES`で使えない操作(チャット・Web)が要る周は
+飛ばす。`run_eval_legacy.py`と`navigator_prompt.txt`は、モデル比較(2.5/3.1 Flash-Lite・GPT-6 Luna)に
+使った旧版で、その結果の再現用に残している。
+
+
 ```
 build_cases.py     世界とケースの本体(正本)。直すときはここ。書き出す前に整合性を検査する
 cases/world.json   ↑から書き出した「学生の世界」
@@ -15,6 +22,8 @@ cases/CASES.md     ↑から書き出した、人が読むための一覧(先頭
 ```
 
 再生成: `python build_cases.py`
+
+評価: `python run_eval.py --set main` / `--set holdout`(結果は`results/prod_*.json`)
 
 ## 学生の世界(全ケースで共通)
 

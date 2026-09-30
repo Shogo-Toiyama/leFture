@@ -1,4 +1,8 @@
 """
+【旧版】2026-09-30のモデル比較(2.5/3.1 Flash-Lite・GPT-6 Luna)に使ったハーネス。
+評価用のプロンプト(navigator_prompt.txt)と入力の組み立てを自前で持っている。
+今はrun_eval.py(本番の探索役のコードをそのまま呼ぶ)を使う。results/の2026-09-30分の再現用に残す。
+
 探索役(docs/chatbot_context_and_retrieval_roadmap.md ステップ3〜4)の評価ハーネス。
 
 cases/world.json と cases/cases.json(build_cases.pyで生成)から、各周で探索役に見せる入力を

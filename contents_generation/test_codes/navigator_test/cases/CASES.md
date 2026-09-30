@@ -57,11 +57,13 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - **1周目**:
   - open C1/L6 (past_reference)
   - ［遠回り］open C1/L6 (past_reference) + (任意: find lecture.concept [LR | RL | rotation] 絞り込み: なし | C1 | C1/L6 (past_reference))  ※講義を開きつつ同じ周で検索もする
+  - ［遠回り］find lecture.concept [LR | RL | rotation | AVL] 絞り込み: C1 | C1/L6 (past_reference)  ※講義番号が分かっているのに検索から入る(遠回り)
   - ［遠回り］open C1 (past_reference)
 - **2周目**(開いた: C1/L6):
   - open C1/L6/T4 (past_reference) + (任意: open C1/L6/T3 (past_reference))
 - **3周目**(開いた: C1/L6, C1/L6/T4):
   - 終わり
+  - ［遠回り］find lecture.concept [LR | RL | rotation] layer: transcript | all / 絞り込み: C1 | C1/L6 (past_reference)  ※教授の言葉を文字起こしで確かめる(遠回り)
 
 ## 3. `outline_on_screen` (lecture.outline)
 > ここの内容もうちょっと詳しく知りたい
@@ -157,6 +159,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - ねらい: 前のターンで開いた講義(C1/L3)から「次の回」を解決できるか。
 - **1周目**:
   - open C1/L4 (past_reference)
+  - ［遠回り］open C1 (past_reference)  ※コースを開いて確認する(遠回り)
 
 ## 11. `outline_follow_up_third` (lecture.outline)
 > Tell me more about the third one.
@@ -185,6 +188,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - find lecture.concept [overshoot | オーバーシュート] 絞り込み: C5/L2 | C5 (past_reference)  ※その回の中に絞って検索
 - **2周目**(開いた: C5/L2/T3):
   - 終わり
+  - ［遠回り］find lecture.concept [overshoot | オーバーシュート] layer: transcript | all / 絞り込み: C5 | C5/L2 (past_reference)  ※教授の言葉を文字起こしで確かめる(遠回り)
 
 ## 13. `date_explicit` (lecture.by_date)
 > What did we cover in econ on April 10?
@@ -600,7 +604,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 ## 54. `ho_stop_nothing_more` (lecture.concept)
 > ダイクストラ法って授業でどう説明されてた？
 
-- ねらい: 講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる。
+- ねらい: 講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる(文字起こしを確かめに行くのは遠回りとして許容)。
 - **1周目**:
   - find lecture.concept [Dijkstra | shortest path] 絞り込み: なし | C1 (past_reference)
   - ［遠回り］open C1 (past_reference)
@@ -609,6 +613,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - 終わり
 - **3周目**(開いた: C1/L11):
   - 終わり
+  - ［遠回り］find lecture.concept [Dijkstra | shortest path] layer: transcript | all / 絞り込み: C1 | C1/L11 (past_reference)  ※教授の言葉を文字起こしで確かめる(遠回り)
 
 ## 55. `ho_web_release` (web.search)
 > Is Python 3.14 out yet?
