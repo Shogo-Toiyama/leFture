@@ -5664,6 +5664,9 @@ class ChatMessageRequest(BaseModel):
     client_message_id: str
     content: str
     context: Optional[ChatMessageContext] = None
+    # 端末のIANAタイムゾーン名(例: Asia/Tokyo)。「昨日の授業」「今学期」をユーザーの日付で
+    # 解決するため。古いクライアントは送らないので任意(無ければUTC、不正な名前もUTC)。
+    timezone: Optional[str] = None
 
 
 class ChatThreadUpdateRequest(BaseModel):
@@ -5712,7 +5715,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
     try:
         turn = await prepare_chat_turn(
             uid, thread_id, client_message_id, payload.content,
-            context_lecture_id, context.selected_text, timer,
+            context_lecture_id, context.selected_text, timer, payload.timezone,
         )
     except ChatRequestError as e:
         raise HTTPException(

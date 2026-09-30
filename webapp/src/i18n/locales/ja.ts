@@ -798,5 +798,6 @@ export const ja: Record<keyof typeof en, string> = {
   chatSourceTopic: 'トピック',
   chatSourceFunFact: 'Fun Fact',
   chatSourceLectureSummary: '講義の要約',
+  chatSourceCourse: 'コース',
   chatSourceMoment: '自分のメモ',
 };

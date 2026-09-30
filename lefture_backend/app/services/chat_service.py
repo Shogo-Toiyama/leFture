@@ -35,12 +35,23 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Optional
 
 from app.core.supabase import get_supabase_client
-from app.services.chat_map import StudentMap, load_student_map
+from app.services.chat_lecture_source import DbLectureSource
+from app.services.chat_map import StudentMap, load_student_map, resolve_timezone
+from app.services.chat_materials import (
+    Material,
+    extract_citations,
+    format_sources_block,
+    material_from_chunk,
+    select_materials,
+    sources_event,
+)
 from app.services.chat_navigator import (
     NavigationResult,
     NavigatorInput,
+    NavigatorTools,
     make_lecture_search,
     navigate,
+    refs_from_materials,
     summarize_for_log,
 )
 from app.services.chat_summary import (
@@ -261,50 +272,6 @@ def merge_search_results(result_lists: list[list[dict]], top_k: int = RETRIEVAL_
     return ranked[:top_k]
 
 
-def format_sources_block(chunks: list[dict]) -> str:
-    """回答役に渡す出典一覧。番号は1始まりで、本文中の[n]と対応する。"""
-    lines = []
-    for n, chunk in enumerate(chunks, start=1):
-        lines.append(f"[{n}] {chunk.get('content', '').strip()}")
-    return "\n\n".join(lines)
-
-
-_CITATION_RE = re.compile(r"\[(\d{1,2})\]")
-
-
-def extract_citations(answer_text: str, chunks: list[dict]) -> list[dict]:
-    """
-    本文中で実際に使われた[n]だけを出典として残す。範囲外の番号(回答役が
-    作ってしまった番号)は捨てる。画面で講義へ飛べるよう、元の行の
-    種類・id・講義idを持たせる。
-    """
-    used: list[int] = []
-    for m in _CITATION_RE.finditer(answer_text or ""):
-        n = int(m.group(1))
-        if 1 <= n <= len(chunks) and n not in used:
-            used.append(n)
-
-    citations = []
-    for n in sorted(used):
-        chunk = chunks[n - 1]
-        content = chunk.get("content") or ""
-        first_line = content.splitlines()[0] if content else ""
-        citations.append({
-            "n": n,
-            "chunk_id": chunk.get("id"),
-            "source_type": chunk.get("source_type"),
-            "source_id": chunk.get("source_id"),
-            "lecture_id": chunk.get("lecture_id"),
-            "course_id": chunk.get("course_id"),
-            # "[CS 161 / Lecture 3 / Deep Note: Heaps]" の角括弧を外して見出しに使う
-            "label": first_line.strip().strip("[]"),
-            "similarity": chunk.get("similarity"),
-            # 画面から該当ページへ直接飛ぶため(deep_noteのtopic_number等)
-            "metadata": chunk.get("metadata") or {},
-        })
-    return citations
-
-
 def build_history_messages(rows: list[dict], max_turns: int, max_chars: int) -> list[Message]:
     """
     まだ要約に畳んでいない会話を回答役に渡す形に変換する。完了した往復だけを使い、
@@ -391,6 +358,8 @@ class PreparedTurn:
     selected_text: Optional[str]
     lecture_label: Optional[str]
     context_lecture_id: Optional[str]
+    # クライアントが送ってきたIANAのタイムゾーン名(「昨日」「今学期」の解決に使う)。無ければUTC。
+    timezone_name: Optional[str] = None
     # まだ要約に畳んでいない部分だけ(古い順)
     history_rows: list[dict] = field(default_factory=list)
     summary_blocks: list[dict] = field(default_factory=list)
@@ -460,7 +429,7 @@ def _fetch_busy(admin_client, thread_id: str) -> bool:
 
 
 def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
-    h = admin_client.table("chat_messages").select("id, role, content, status, created_at") \
+    h = admin_client.table("chat_messages").select("id, role, content, status, created_at, context") \
         .eq("thread_id", thread_id).is_("deleted_at", "null") \
         .order("created_at", desc=True).limit(RAW_FETCH_MESSAGES).execute()
     return list(reversed(h.data or []))
@@ -534,6 +503,7 @@ async def prepare_chat_turn(
     context_lecture_id: Optional[str],
     selected_text: Optional[str],
     timer: TurnTimer,
+    timezone_name: Optional[str] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -638,6 +608,7 @@ async def prepare_chat_turn(
         selected_text=selected_text,
         lecture_label=lecture_label,
         context_lecture_id=context_lecture_id,
+        timezone_name=(timezone_name or "").strip()[:64] or None,
         history_rows=history_rows,
         summary_blocks=summary_blocks,
         timer=timer,
@@ -759,11 +730,12 @@ async def _gather_materials(
     turn: PreparedTurn,
     history: list[Message],
     map_task: "asyncio.Task[StudentMap]",
-) -> tuple[list[dict], Optional[NavigationResult]]:
+) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
     (地図が読めない・LLMの出力が読めない)ときだけ、従来どおり本文そのもので検索する。
     検索が落ちても、出典なしで答える方がユーザーにとって良いので例外は外に出さない。
+    返す材料はselect_materialsで量を絞った後のもの。
     """
     student_map: Optional[StudentMap] = None
     try:
@@ -780,19 +752,23 @@ async def _gather_materials(
             selected_text=turn.selected_text,
             screen_lecture_id=turn.context_lecture_id,
             recent_conversation=history,
-            today=datetime.now(timezone.utc).date(),
+            today=datetime.now(resolve_timezone(turn.timezone_name)).date(),
             student_map=student_map,
+            previous_turn_refs=_previous_turn_refs(turn.history_rows),
         )
-        search = make_lecture_search(user_client, student_map, lambda qs: embed_queries(qs, billing=billing))
+        tools = NavigatorTools(
+            search=make_lecture_search(user_client, student_map, lambda qs: embed_queries(qs, billing=billing)),
+            source=DbLectureSource(get_supabase_client(), turn.user_id),
+        )
 
         async def on_lap(lap: int) -> None:
             turn.timer.mark(f"navigator_lap{lap}")
 
         try:
-            navigation = await navigate(llm, nav_input, search, on_lap=on_lap)
+            navigation = await navigate(llm, nav_input, tools, on_lap=on_lap)
             print(f"🧭 [chat] message={turn.assistant_message_id} {summarize_for_log(navigation)}")
-            if not navigation.failed_before_any_search:
-                return navigation.chunks, navigation
+            if not navigation.failed_before_any_fetch:
+                return select_materials(navigation.materials), navigation
         except Exception as e:
             print(f"⚠️ [chat] navigator failed, falling back to plain search: {e}")
 
@@ -801,7 +777,16 @@ async def _gather_materials(
     except Exception as e:
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
         chunks = []
-    return chunks, navigation
+    return select_materials([material_from_chunk(c) for c in chunks]), navigation
+
+
+def _previous_turn_refs(history_rows: list[dict]) -> list[dict]:
+    """直前の返答(完了したもの)の行に保存した「開いたもの」(context.opened)。"""
+    for row in reversed(history_rows):
+        if row.get("role") == "assistant" and row.get("status") == "complete":
+            opened = (row.get("context") or {}).get("opened")
+            return [r for r in opened if isinstance(r, dict)] if isinstance(opened, list) else []
+    return []
 
 
 @dataclass
@@ -826,7 +811,8 @@ def _build_answer_messages(
     memory: ConversationMemory,
     history: list[Message],
     profile: str,
-    chunks: list[dict],
+    materials: list[Material],
+    goal: Optional[list[str]] = None,
 ) -> list[Message]:
     """
     並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
@@ -846,11 +832,13 @@ def _build_answer_messages(
     })
     screen_context = format_screen_context(turn.lecture_label, turn.selected_text)
     turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
-        "HAS_SOURCES": bool(chunks),
+        "HAS_SOURCES": bool(materials),
+        "HAS_GOAL": bool(goal),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
     })
     turn_message = fill_placeholders(turn_template, {
-        "SOURCES": format_sources_block(chunks),
+        "SOURCES": format_sources_block(materials),
+        "GOAL": "\n".join(f"- {g}" for g in goal or []),
         "SCREEN_CONTEXT": screen_context,
         "REPLY_LANGUAGE": decision.reply_language,
         "MESSAGE": turn.content,
@@ -869,6 +857,7 @@ async def _finalize(
     billing: BillingEngine,
     usage_extra: dict,
     charge: bool,
+    message_context: Optional[dict] = None,
 ) -> int:
     """
     返答行の確定・スレッド更新・課金。消費したμクレジットを返す。
@@ -901,6 +890,7 @@ async def _finalize(
             "usage": {"records": breakdown, "chargeable_usd": chargeable_usd, **usage_extra},
             "cost_usd": cost_usd,
             "credits_charged_micro": charged_micro,
+            **({"context": message_context} if message_context else {}),
         }).eq("id", turn.assistant_message_id).execute()
     )
 
@@ -969,7 +959,8 @@ async def run_chat_turn(
         memory = ConversationMemory.from_blocks(turn.summary_blocks)
         # 地図(コース・講義の呼び名)は探索役を呼ぶときだけ使うが、仕分け役を待つ間に
         # 並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
-        map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id))
+        map_task = asyncio.create_task(asyncio.to_thread(
+            load_student_map, admin_client, turn.user_id, resolve_timezone(turn.timezone_name)))
         map_task.add_done_callback(_ignore_task_exception)
         profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
         timer.mark("context_loaded")
@@ -991,29 +982,19 @@ async def run_chat_turn(
             return
 
         # --- 3. 分岐: 探索 ---
-        chunks: list[dict] = []
+        materials: list[Material] = []
         navigation: Optional[NavigationResult] = None
         if decision.needs_retrieval:
             await emit("status", {"stage": "searching"})
-            chunks, navigation = await _gather_materials(llm, billing, user_client, turn, history, map_task)
+            materials, navigation = await _gather_materials(llm, billing, user_client, turn, history, map_task)
             timer.mark("retrieval_done")
-            await emit("sources", {"sources": [
-                {
-                    "n": n,
-                    "chunk_id": c.get("id"),
-                    "source_type": c.get("source_type"),
-                    "source_id": c.get("source_id"),
-                    "lecture_id": c.get("lecture_id"),
-                    "label": ((c.get("content") or "").splitlines() or [""])[0].strip().strip("[]"),
-                    "metadata": c.get("metadata") or {},
-                    "relation": c.get("relation") or "direct",
-                }
-                for n, c in enumerate(chunks, start=1)
-            ]})
+            await emit("sources", {"sources": sources_event(materials)})
 
         # --- 4. 回答 ---
         await emit("status", {"stage": "writing"})
-        messages = _build_answer_messages(turn, decision, memory, history, profile, chunks)
+        messages = _build_answer_messages(
+            turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
+        )
         state = StreamState()
         # reasoning_effort="low"でもGeminiには thinkingLevel: low, includeThoughts: True
         # が送られ、答え本文の前に思考の文章を生成する分、最初の1文字までが数秒遅くなる
@@ -1037,7 +1018,7 @@ async def run_chat_turn(
             "answer_cache_read_tokens": state.cache_read_tokens,
             "answer_cache_write_tokens": state.cache_write_tokens,
             "usage_estimated": state.usage_estimated,
-            "retrieved_chunk_ids": [c.get("id") for c in chunks],
+            "materials": [{"key": m.key, "handle": m.handle, "relation": m.relation} for m in materials],
             "timings": timer.to_json(),
         }
 
@@ -1057,11 +1038,14 @@ async def run_chat_turn(
         if not answer_text.strip():
             raise RuntimeError(f"Empty answer (finish_reason={state.finish_reason})")
 
-        citations = extract_citations(answer_text, chunks)
+        citations = extract_citations(answer_text, materials)
+        # 次のターンの「その次の回」「3番目」のために、開いたもの(無ければ使った材料)をUUIDで残す
+        opened_refs = (navigation.opened_refs if navigation else []) or refs_from_materials(materials)
         charged_micro = await _finalize(
             admin_client, turn, content=answer_text, status="complete",
             decision=decision, citations=citations, billing=billing,
             usage_extra={**usage_extra, "finish_reason": state.finish_reason}, charge=True,
+            message_context={"opened": opened_refs} if opened_refs else None,
         )
         await emit("done", {
             "status": "complete",

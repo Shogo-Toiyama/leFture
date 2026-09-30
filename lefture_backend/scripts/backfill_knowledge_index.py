@@ -24,6 +24,11 @@ FINALIZE_JOBと全く同じdrain_knowledge_index_queue()をこの場で繰り返
         (Embedding 2は $0.20/100万トークン、概算コストは実行前に
         件数から見積もること)。
 
+    python scripts/backfill_knowledge_index.py --source-types transcript_topic
+        種類を絞って積み直す。2026-09-30: 文字起こしのチャンクに文の範囲
+        (metadata.sid_start / sid_end)を足したときに使う。本文は変えていないので
+        content_hashが一致し、埋め込みAPIは呼ばれずmetadataだけ書き換わる(費用ゼロ)。
+
     途中で止めても安全: 再実行すると、まだ処理されていない分だけが
     再度キューに積まれ直す(content_hashが変わっていない行は埋め込み
     APIを呼ばずスキップされる)。
@@ -101,11 +106,13 @@ async def _smoke_test() -> None:
     print(f"   日本語の質問 × 英語の文書 のコサイン類似度: {dot / norm:.3f}")
 
 
-def _enqueue_all(user_id: str | None) -> int:
+def _enqueue_all(user_id: str | None, source_types: set[str] | None = None) -> int:
     admin_client = get_supabase_client()
     total_queued = 0
 
     for table, source_type in SOURCE_TABLES:
+        if source_types and source_type not in source_types:
+            continue
         offset = 0
         table_total = 0
         while True:
@@ -183,7 +190,16 @@ def main() -> None:
         help="1.のenqueueを飛ばし、既にknowledge_index_queueにある分だけdrainする"
         "(前回の実行を中断した後の再開用。既存PENDING行への重複挿入で遅くなるのを避ける)",
     )
+    parser.add_argument(
+        "--source-types",
+        help="カンマ区切り。指定した種類だけをキューに積む(例: transcript_topic)",
+    )
     args = parser.parse_args()
+    source_types = {t.strip() for t in args.source_types.split(",")} if args.source_types else None
+    if source_types:
+        unknown = source_types - {st for _, st in SOURCE_TABLES}
+        if unknown:
+            parser.error(f"unknown source types: {', '.join(sorted(unknown))}")
 
     if args.smoke_test:
         asyncio.run(_smoke_test())
@@ -193,7 +209,7 @@ def main() -> None:
         print("1. スキップ(--skip-enqueue)。既存のキューだけを処理します。")
     else:
         print("1. 既存コンテンツをknowledge_index_queueに積みます...")
-        total_queued = _enqueue_all(args.user_id)
+        total_queued = _enqueue_all(args.user_id, source_types)
         print(f"   合計 {total_queued} 件をキューに追加しました。")
 
     print("2. キューを処理します(Embedding APIを呼び出します)...")

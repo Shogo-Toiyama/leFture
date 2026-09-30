@@ -3,6 +3,7 @@ import type { ChatCitation, ChatSourceType } from '../types/chat';
 
 /** 出典の種類ごとの短い名前(チップに出す)。 */
 export const CHAT_SOURCE_LABEL_KEYS: Record<ChatSourceType, TranslationKey> = {
+  course: 'chatSourceCourse',
   deep_note: 'chatSourceDeepNote',
   review_card: 'chatSourceReviewCard',
   keyword: 'chatSourceKeyword',
@@ -20,6 +21,9 @@ export const CHAT_SOURCE_LABEL_KEYS: Record<ChatSourceType, TranslationKey> = {
  * あるので、そのトピックまで直接開く。
  */
 export function citationRoute(citation: ChatCitation): string | null {
+  if (citation.source_type === 'course') {
+    return citation.course_id ? `/courses/${citation.course_id}` : null;
+  }
   const lectureId = citation.lecture_id;
   if (!lectureId) return null;
   switch (citation.source_type) {

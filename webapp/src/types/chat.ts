@@ -12,8 +12,12 @@ export type ChatMessageRole = 'user' | 'assistant';
  */
 export type ChatMessageStatus = 'streaming' | 'complete' | 'error' | 'blocked' | 'crisis';
 
-/** knowledge_chunks.source_type と同じ値。出典からどの画面へ飛ぶかを決める。 */
+/**
+ * knowledge_chunks.source_type と同じ値。出典からどの画面へ飛ぶかを決める。
+ * courseだけは例外で、探索役がコースの講義一覧を開いたときの出典(knowledge_chunksには無い)。
+ */
 export type ChatSourceType =
+  | 'course'
   | 'review_card'
   | 'deep_note'
   | 'keyword'
@@ -27,9 +31,10 @@ export type ChatSourceType =
 /** 回答本文の [n] に対応する出典。 */
 export interface ChatCitation {
   n: number;
-  chunk_id: string;
+  /** 検索で当たったチャンクのときだけ。探索役が開いた講義・トピック等はnull。 */
+  chunk_id: string | null;
   source_type: ChatSourceType;
-  source_id: string;
+  source_id: string | null;
   lecture_id: string | null;
   course_id?: string | null;
   /** 例: "CS 161 / Lecture 3 / Deep Note: Heaps" */

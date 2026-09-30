@@ -6,6 +6,12 @@ ${SOURCES}
 <!--END_IF-->
 </sources>
 
+<!--IF:HAS_GOAL-->
+<goal>
+${GOAL}
+</goal>
+
+<!--END_IF-->
 <!--IF:HAS_SCREEN_CONTEXT-->
 <screen_context>
 ${SCREEN_CONTEXT}

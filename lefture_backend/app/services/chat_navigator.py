@@ -1,7 +1,7 @@
 # app/services/chat_navigator.py
 """
-チャットの探索役: 地図を見て「探す / (開く) / 終わり」を1周ずつ選び、回答役に渡す材料を集める。
-docs/chatbot_context_and_retrieval_roadmap.md の ステップ3〜4(3-1〜3-13)。
+チャットの探索役: 地図を見て「探す / 開く / 日付で引く / 終わり」を1周ずつ選び、回答役に渡す
+材料を集める。docs/chatbot_context_and_retrieval_roadmap.md の ステップ3〜4(3-1〜3-14)。
 
     仕分け役(chat_service._run_router) ── 情報が要る ──▶ 探索役(ここ、最大4周)
                                                            ↕ 1周ごとに
@@ -12,15 +12,19 @@ docs/chatbot_context_and_retrieval_roadmap.md の ステップ3〜4(3-1〜3-13)�
 - 探索役はGPT-6 Luna(reasoning_effort="none")。評価セット(contents_generation/test_codes/
   navigator_test)で2.5/3.1 Flash-Liteより正解が多く、推論を切った方が速くて強かった(3-9)。
 - 選べる呼び名・操作・出どころはJSON Schemaのenumで縛る。存在しない場所は指定できず、
-  取ってくるのは常にコード。
+  取ってくるのは常にコード。すでに開いたものはenumから外す(もう一度開けない)。
 - 探索役は毎周まっさらな状態で呼ばれるので、これまでの経過(<progress>)と次にできること
-  (<next_options>)を毎周渡す。地図は1周目だけ(見送ったものが周を重ねても目の前にあると、
-  それを開く方向に押してしまうため、3-6)。
+  (<next_options>)を毎周渡す。地図と前のターンで開いたものは1周目だけ(見送ったものが周を
+  重ねても目の前にあると、それを開く方向に押してしまうため、3-6)。
 - 出力は「足りているか」(status)と「まだ足りない具体的な情報」(missing)を操作より前に
   書かせる。need_more以外なら、ここで操作を捨てて終わりにする。
 
-今できる操作(CAPABILITIES)は、講義の類似検索(find lecture.concept)だけ。目次を開く・日付で
-引く・チャット・Webは、プロンプトの該当部分(<!--IF:CAN_...-->)を出す形で後から足す(3-12)。
+1周は「判断(decide_lap) → 検証(validate_operations) → 実行(execute_lap)」に分けてある。
+評価ハーネスは台本の状態(NavState)を作ってdecide_lapだけを呼び、本番と同じプロンプト・
+入力の組み立てで評価する(評価用に別の組み立てを持たない、3-14)。
+
+今できる操作はCAPABILITIESで切り替える。チャット・Webは、プロンプトの該当部分
+(<!--IF:CAN_...-->)を出す形で後から足す(3-12)。
 """
 
 import asyncio
@@ -28,9 +32,11 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional, Union
 
-from app.services.chat_map import StudentMap
+from app.services.chat_lecture_source import LectureSource, first_sentence
+from app.services.chat_map import MapLecture, StudentMap
+from app.services.chat_materials import Material, material_from_chunk
 from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 
@@ -51,8 +57,18 @@ MAX_QUERY_CHARS = 200
 SEARCH_MATCH_COUNT = 8
 HITS_SHOWN_PER_SEARCH = 5
 SNIPPET_CHARS = 300
-# 回答役に渡す材料の上限(全周の検索結果から)
-ANSWER_SOURCES_MAX = 8
+
+# 開いたときに見せる量(3-14)
+COURSE_LINE_CHARS = 120
+LECTURE_SUMMARY_CHARS = 2000
+TOPIC_LINE_CHARS = 160
+TOPIC_TEXT_CHARS = 4000
+TRANSCRIPT_CONTEXT_SENTENCES = 1
+TRANSCRIPT_CHARS = 1500
+# 文字起こしの範囲として受け付ける最大の文の数(Deep Noteの引用・検索の当たりは十数文まで)
+TRANSCRIPT_MAX_SENTENCES = 60
+# 日付で引く範囲の上限(日数)
+BY_DATE_MAX_DAYS = 400
 
 # 探索役に見せる直近の会話
 RECENT_CONVERSATION_MAX_MESSAGES = 6
@@ -60,8 +76,8 @@ RECENT_CONVERSATION_MAX_CHARS = 500
 
 # 今の段階で使える操作(3-12の順に増やす)。プロンプトの<!--IF:CAN_...-->と対応する。
 CAPABILITIES = {
-    "CAN_OPEN": False,     # 目次を開く(lecture.outline)・文字起こしの範囲を開く
-    "CAN_BY_DATE": False,  # 講義を日付で引く
+    "CAN_OPEN": True,      # 目次を開く(lecture.outline)・文字起こしの範囲を開く
+    "CAN_BY_DATE": True,   # 講義を日付で引く
     "CAN_CHAT": False,     # この会話の畳んだ部分・過去のチャット
     "CAN_WEB": False,      # Web検索
 }
@@ -71,14 +87,31 @@ GROUNDS = ["explicit_request", "past_reference", "on_screen", "likely_in_course"
 RELATIONS = ["direct", "possible_link"]
 NONE = "none"
 
-# layer → knowledge_chunks.source_type の組(Noneは絞らない)。source_typeの一覧は
-# 20261001010000_add_knowledge_chunks.sql のCHECK制約と同じ。
-LAYER_SOURCE_TYPES: dict[str, Optional[list[str]]] = {
+# 講義の材料の種類(knowledge_chunks.source_type)。layer → 種類の組。
+# allも講義の種類だけに絞る(チャットのチャンクが入ったときに講義の検索へ混ざらないように、3-14)。
+LECTURE_SOURCE_TYPES = [
+    "lecture_summary", "topic_summary", "deep_note", "keyword", "review_card",
+    "fun_fact", "lecture_moment", "announcement", "transcript_topic",
+]
+LAYER_SOURCE_TYPES: dict[str, list[str]] = {
     "summaries": ["lecture_summary", "topic_summary"],
     "notes": ["deep_note", "keyword", "review_card", "fun_fact", "lecture_moment", "announcement"],
     "transcript": ["transcript_topic"],
-    "all": None,
+    "all": LECTURE_SOURCE_TYPES,
 }
+
+_CITATION_BRACKET_RE = re.compile(r"⟦([^⟧]*)⟧")
+_SID_PART_RE = re.compile(r"[sS]?0*(\d+)(?:\s*-\s*[sS]?0*(\d+))?")
+_HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$")
+
+
+def available_ops() -> list[str]:
+    ops = ["find"]
+    if CAPABILITIES["CAN_OPEN"]:
+        ops.append("open")
+    if CAPABILITIES["CAN_BY_DATE"]:
+        ops.append("by_date")
+    return ops
 
 
 def available_targets() -> list[str]:
@@ -88,6 +121,68 @@ def available_targets() -> list[str]:
     if CAPABILITIES["CAN_WEB"]:
         targets.append("web.search")
     return targets
+
+
+# =========================================================
+# 🧩 呼び名
+# =========================================================
+
+@dataclass
+class ParsedHandle:
+    kind: str  # course / lecture / topic / transcript
+    course: str
+    lecture: Optional[str] = None
+    topic_index: Optional[int] = None
+    sid_start: Optional[int] = None
+    sid_end: Optional[int] = None
+
+
+def parse_handle(handle: str) -> Optional[ParsedHandle]:
+    m = _HANDLE_RE.match(handle or "")
+    if not m:
+        return None
+    course, lec, topic, sid_a, sid_b = m.groups()
+    if lec is None:
+        return ParsedHandle("course", course)
+    lecture = f"{course}/{lec}"
+    if topic is not None:
+        return ParsedHandle("topic", course, lecture, topic_index=int(topic))
+    if sid_a is not None:
+        a = int(sid_a)
+        b = int(sid_b) if sid_b is not None else a
+        return ParsedHandle("transcript", course, lecture, sid_start=min(a, b), sid_end=max(a, b))
+    return ParsedHandle("lecture", course, lecture)
+
+
+def range_handle(lecture_handle: str, a: int, b: int) -> str:
+    return f"{lecture_handle}/s{a}" if a == b else f"{lecture_handle}/s{a}-{b}"
+
+
+def rewrite_citations(note: str, lecture_handle: str) -> tuple[str, str, list[str]]:
+    """
+    Deep Note内の引用記号⟦s000325-s000331, s000341⟧を、探索役向けには呼び名
+    [C2/L5/s325-331, C2/L5/s341]に書き換え、回答役向けには取り除く。
+    返り値: (探索役に見せる本文, 回答役に渡す本文, 出てきた範囲の呼び名)
+    """
+    handles: list[str] = []
+
+    def to_handles(m: "re.Match[str]") -> str:
+        parts = []
+        for part in m.group(1).split(","):
+            pm = _SID_PART_RE.fullmatch(part.strip())
+            if not pm:
+                continue
+            a = int(pm.group(1))
+            b = int(pm.group(2)) if pm.group(2) else a
+            h = range_handle(lecture_handle, min(a, b), max(a, b))
+            parts.append(h)
+            if h not in handles:
+                handles.append(h)
+        return f"[{', '.join(parts)}]" if parts else ""
+
+    for_navigator = _CITATION_BRACKET_RE.sub(to_handles, note)
+    for_answerer = re.sub(r"[ \t]+\n", "\n", _CITATION_BRACKET_RE.sub("", note)).strip()
+    return for_navigator, for_answerer, handles
 
 
 # =========================================================
@@ -103,6 +198,14 @@ class NavigatorInput:
     recent_conversation: list[Message]
     today: date
     student_map: StudentMap
+    # 前のターンで開いたもの(返答の行のcontext.openedに保存したUUIDの参照)
+    previous_turn_refs: list[dict] = field(default_factory=list)
+    # 画面で見ているトピックの番号(Deep Notesのページなど)。webappはまだ送っていない(講義だけ)。
+    screen_topic_index: Optional[int] = None
+
+    def screen_topic_handle(self) -> Optional[str]:
+        lec = self.student_map.lecture_handle(self.screen_lecture_id)
+        return f"{lec}/T{self.screen_topic_index}" if lec and self.screen_topic_index is not None else None
 
 
 @dataclass
@@ -118,7 +221,7 @@ class FindRequest:
     quote_ok: bool
 
     def key(self) -> tuple:
-        return (self.target, _norm(self.query), self.layer, self.within)
+        return ("find", self.target, _norm(self.query), self.layer, self.within)
 
     def label(self) -> str:
         scope = []
@@ -130,10 +233,109 @@ class FindRequest:
 
 
 @dataclass
+class OpenRequest:
+    handle: str
+    grounds: str
+    grounds_quote: str
+    relation: str
+    quote_ok: bool
+
+    def key(self) -> tuple:
+        return ("open", self.handle)
+
+    def label(self) -> str:
+        return f"open {self.handle}"
+
+
+@dataclass
+class DateRequest:
+    date_from: date
+    date_to: date
+    within: Optional[str]
+    grounds: str
+    grounds_quote: str
+    relation: str
+    quote_ok: bool
+
+    def key(self) -> tuple:
+        return ("by_date", self.date_from, self.date_to, self.within)
+
+    def label(self) -> str:
+        span = self.date_from.isoformat() if self.date_from == self.date_to else f"{self.date_from.isoformat()} to {self.date_to.isoformat()}"
+        return f"by_date {span}" + (f" (within {self.within})" if self.within else "")
+
+
+Request = Union[FindRequest, OpenRequest, DateRequest]
+
+
+@dataclass
+class Hit:
+    handle: Optional[str]
+    chunk: dict
+
+
+@dataclass
 class SearchOutcome:
     request: FindRequest
-    chunks: list[dict]
+    hits: list[Hit]
     error: Optional[str] = None
+
+    def render(self) -> str:
+        head = self.request.label()
+        if self.error:
+            return f"{head}:\n(the search failed)"
+        if not self.hits:
+            return f"{head}:\n(no results)"
+        lines = []
+        for hit in self.hits[:HITS_SHOWN_PER_SEARCH]:
+            header, body = _chunk_header_and_body(hit.chunk)
+            snippet = re.sub(r"\s+", " ", body)[:SNIPPET_CHARS]
+            lines.append(f"- {hit.handle or '(lecture outside the map)'} [{header}]: {snippet}")
+        return f"{head}:\n" + "\n".join(lines)
+
+    def summary(self) -> str:
+        return f"{self.request.label()} → {len(self.hits)} result(s)"
+
+    def surfaced(self) -> list[str]:
+        return [h.handle for h in self.hits[:HITS_SHOWN_PER_SEARCH] if h.handle]
+
+
+@dataclass
+class DateOutcome:
+    request: DateRequest
+    lectures: list[MapLecture]
+    course_titles: dict[str, str]
+
+    def render(self) -> str:
+        if not self.lectures:
+            return f"{self.request.label()}:\n(no lectures in this range)"
+        lines = [
+            f"- {lec.handle} ({lec.date.isoformat() if lec.date else 'no date'}) {self.course_titles.get(lec.course_handle, '')} / {lec.title}"
+            for lec in self.lectures
+        ]
+        return f"{self.request.label()}:\n" + "\n".join(lines)
+
+    def summary(self) -> str:
+        return f"{self.request.label()} → {len(self.lectures)} lecture(s)"
+
+    def surfaced(self) -> list[str]:
+        return []
+
+
+Outcome = Union[SearchOutcome, DateOutcome]
+
+
+@dataclass
+class Opened:
+    handle: str
+    # 探索役に見せる本文
+    text: str
+    # 回答役に渡す材料(開けなかったときはNone)
+    material: Optional[Material]
+    # 中身に出てきた、次に開ける呼び名(トピック・引用範囲)
+    surfaced: list[str] = field(default_factory=list)
+    # 次のターンに持ち越す参照(UUID)
+    ref: Optional[dict] = None
 
 
 @dataclass
@@ -143,23 +345,26 @@ class LapRecord:
     missing: str
     reasoning: str
     goal: list[str]
-    finds: list[FindRequest] = field(default_factory=list)
-    outcomes: list[SearchOutcome] = field(default_factory=list)
+    requests: list[Request] = field(default_factory=list)
     dropped: list[dict] = field(default_factory=list)
     elapsed_ms: int = 0
     llm_error: Optional[str] = None
+    # この周で実行したことの要約(<progress>用)
+    done: list[str] = field(default_factory=list)
 
     def to_json(self) -> dict:
+        def req_json(r: Request) -> dict:
+            d = {k: (v.isoformat() if isinstance(v, date) else v) for k, v in vars(r).items()}
+            d["op"] = {FindRequest: "find", OpenRequest: "open", DateRequest: "by_date"}[type(r)]
+            return d
         return {
             "lap": self.lap,
             "status": self.status,
             "missing": self.missing,
             "reasoning": self.reasoning,
             "goal": self.goal,
-            "finds": [
-                {**vars(o.request), "hits": [c.get("id") for c in o.chunks], "error": o.error}
-                for o in self.outcomes
-            ],
+            "requests": [req_json(r) for r in self.requests],
+            "done": self.done,
             "dropped": self.dropped,
             "elapsed_ms": self.elapsed_ms,
             "llm_error": self.llm_error,
@@ -167,18 +372,46 @@ class LapRecord:
 
 
 @dataclass
+class NavState:
+    """探索の途中の状態。本番はnavigate()が周ごとに更新し、評価ハーネスは台本から作る。"""
+    laps: list[LapRecord] = field(default_factory=list)
+    opened: dict[str, Opened] = field(default_factory=dict)
+    outcomes: list[Outcome] = field(default_factory=list)
+    # 前のターンで開いたもの(1周目に見せる)と、そこから選べる呼び名
+    previous_turn_text: str = ""
+    previous_turn_handles: list[str] = field(default_factory=list)
+    # 探索役の見えている材料(opened以外): 検索の当たり → 材料
+    search_materials: list[Material] = field(default_factory=list)
+
+    def already_run(self) -> set[tuple]:
+        keys: set[tuple] = {("open", h) for h in self.opened}
+        for o in self.outcomes:
+            keys.add(o.request.key())
+        return keys
+
+    def surfaced_not_opened(self) -> list[str]:
+        handles: list[str] = []
+        for op in self.opened.values():
+            handles += op.surfaced
+        for o in self.outcomes:
+            handles += o.surfaced()
+        return [h for h in _dedupe(handles) if h not in self.opened]
+
+
+@dataclass
 class NavigationResult:
-    # 回答役に渡す材料(各チャンクに"relation"と"handle"を足してある)
-    chunks: list[dict]
+    materials: list[Material]
     goal: list[str]
     laps: list[LapRecord]
     # nothing_needed / enough_now / max_laps / llm_error
     stop_reason: str
+    # 次のターンに持ち越す参照(返答の行のcontext.openedに保存する)
+    opened_refs: list[dict]
 
     @property
-    def failed_before_any_search(self) -> bool:
+    def failed_before_any_fetch(self) -> bool:
         """1周目で探索役自体が動かなかった(このときは呼び出し側が従来の検索に倒す)。"""
-        return self.stop_reason == "llm_error" and not any(lap.outcomes for lap in self.laps)
+        return self.stop_reason == "llm_error" and not any(lap.done for lap in self.laps)
 
     def to_json(self) -> dict:
         return {
@@ -190,7 +423,14 @@ class NavigationResult:
 
 
 # 検索の実行(ネットワーク・DBに触れる部分)。呼び出し側がユーザー本人のJWTで作る。
-SearchFn = Callable[[list[FindRequest]], Awaitable[list[SearchOutcome]]]
+# 返り値は検索ごとのチャンクの一覧(失敗した検索はException)。
+SearchFn = Callable[[list[FindRequest]], Awaitable[list[Union[list[dict], Exception]]]]
+
+
+@dataclass
+class NavigatorTools:
+    search: SearchFn
+    source: LectureSource
 
 
 # =========================================================
@@ -201,100 +441,18 @@ def _norm(s: Optional[str]) -> str:
     return re.sub(r"\s+", "", s or "").lower()
 
 
+def _dedupe(items: list[str]) -> list[str]:
+    seen, out = set(), []
+    for x in items:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+
+
 def quote_in_message(quote: str, message: str, selected_text: Optional[str]) -> bool:
     q = _norm(quote)
     return bool(q) and any(q in _norm(s) for s in [message, selected_text or ""])
-
-
-def build_system_prompt() -> str:
-    template = _render_conditional_sections(_load_prompt("chat_navigator_prompt.txt"), {
-        **CAPABILITIES,
-        "CAN_OPEN_CHAT": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_CHAT"],
-    })
-    return template.replace("${MAX_LAPS}", str(MAX_LAPS)).replace("${MAX_OPS_PER_LAP}", str(MAX_OPS_PER_LAP))
-
-
-def build_schema(student_map: StudentMap) -> dict[str, Any]:
-    """項目の順番がそのまま出力の順番になる(GeminiとLunaで確認済み)。操作を選ぶ前に、
-    「足りているか」と「何が足りないか」を先に書かせる。"""
-    op = {
-        "type": "object",
-        "properties": {
-            "op": {"type": "string", "enum": ["find"]},
-            "target": {"type": "string", "enum": available_targets()},
-            "query": {"type": "string"},
-            "layer": {"type": "string", "enum": list(LAYER_SOURCE_TYPES) + [NONE]},
-            "within": {"type": "string", "enum": student_map.scope_handles() + [NONE]},
-            "grounds": {"type": "string", "enum": GROUNDS},
-            "grounds_quote": {"type": "string"},
-            "relation": {"type": "string", "enum": RELATIONS},
-        },
-        "required": ["op", "target", "query", "layer", "within", "grounds", "grounds_quote", "relation"],
-    }
-    return {
-        "type": "object",
-        "properties": {
-            "reasoning": {"type": "string"},
-            "status": {"type": "string", "enum": STATUSES},
-            "missing": {"type": "string"},
-            "operations": {"type": "array", "items": op},
-            "goal": {"type": "array", "items": {"type": "string"}},
-        },
-        "required": ["reasoning", "status", "missing", "operations", "goal"],
-    }
-
-
-def validate_operations(
-    raw_ops: Any,
-    student_map: StudentMap,
-    already_run: set[tuple],
-    nav_input: NavigatorInput,
-) -> tuple[list[FindRequest], list[dict]]:
-    """
-    探索役の操作を検証して、実行してよい検索に変換する。捨てたものは理由つきで返す(記録用)。
-    構造化出力で縛っているので通常は正しい形で来るが、ここを信頼の境界にする。
-    根拠の引用が発言に無い操作は捨てずに記録だけする(言い換え程度のずれで検索を
-    落とすより、評価のときに見られる方が良い)。
-    """
-    finds: list[FindRequest] = []
-    dropped: list[dict] = []
-    seen = set(already_run)
-    targets = set(available_targets())
-    scope = set(student_map.scope_handles())
-
-    for raw in raw_ops if isinstance(raw_ops, list) else []:
-        if not isinstance(raw, dict):
-            continue
-        if raw.get("op") != "find" or raw.get("target") not in targets:
-            dropped.append({"op": raw, "reason": "unsupported_operation"})
-            continue
-        query = (raw.get("query") or "").strip()[:MAX_QUERY_CHARS]
-        if not query:
-            dropped.append({"op": raw, "reason": "empty_query"})
-            continue
-        layer = raw.get("layer") if raw.get("layer") in LAYER_SOURCE_TYPES else "all"
-        within = raw.get("within") if raw.get("within") in scope else None
-        req = FindRequest(
-            target=raw["target"], query=query, layer=layer, within=within,
-            grounds=raw.get("grounds") if raw.get("grounds") in GROUNDS else "past_reference",
-            grounds_quote=(raw.get("grounds_quote") or "")[:300],
-            relation=raw.get("relation") if raw.get("relation") in RELATIONS else "direct",
-            quote_ok=quote_in_message(raw.get("grounds_quote") or "", nav_input.message, nav_input.selected_text),
-        )
-        # 同じ検索の繰り返しは捨てる(前の周と同じ・同じ周の中で重複)
-        if req.key() in seen:
-            dropped.append({"op": raw, "reason": "repeated_search"})
-            continue
-        if len(finds) >= MAX_OPS_PER_LAP:
-            dropped.append({"op": raw, "reason": "too_many_operations"})
-            continue
-        seen.add(req.key())
-        finds.append(req)
-    return finds, dropped
-
-
-def hit_handle(chunk: dict, student_map: StudentMap) -> Optional[str]:
-    return student_map.lecture_handle(chunk.get("lecture_id"))
 
 
 def _chunk_header_and_body(chunk: dict) -> tuple[str, str]:
@@ -305,27 +463,148 @@ def _chunk_header_and_body(chunk: dict) -> tuple[str, str]:
     return "", content
 
 
-def render_search_block(outcome: SearchOutcome, student_map: StudentMap) -> str:
-    head = outcome.request.label()
-    if outcome.error:
-        return f"{head}:\n(the search failed)"
-    if not outcome.chunks:
-        return f"{head}:\n(no results)"
-    lines = []
-    for chunk in outcome.chunks[:HITS_SHOWN_PER_SEARCH]:
-        header, body = _chunk_header_and_body(chunk)
-        where = hit_handle(chunk, student_map) or "(lecture outside the map)"
-        snippet = re.sub(r"\s+", " ", body)[:SNIPPET_CHARS]
-        lines.append(f"- {where} [{header}]: {snippet}")
-    return f"{head}:\n" + "\n".join(lines)
+def build_system_prompt() -> str:
+    template = _render_conditional_sections(_load_prompt("chat_navigator_prompt.txt"), {
+        **CAPABILITIES,
+        "CAN_OPEN_CHAT": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_CHAT"],
+    })
+    return template.replace("${MAX_LAPS}", str(MAX_LAPS)).replace("${MAX_OPS_PER_LAP}", str(MAX_OPS_PER_LAP))
 
 
-def build_user_message(nav_input: NavigatorInput, laps: list[LapRecord], lap: int) -> str:
+def openable_handles(nav_input: NavigatorInput, state: NavState) -> list[str]:
+    """開ける呼び名: 全コース・全講義・中身や検索結果に出てきたもの・前のターンのもの。開いたものは除く。"""
+    m = nav_input.student_map
+    screen_topic = [nav_input.screen_topic_handle()] if nav_input.screen_topic_handle() else []
+    handles = m.scope_handles() + screen_topic + state.previous_turn_handles + state.surfaced_not_opened()
+    return [h for h in _dedupe(handles) if h not in state.opened]
+
+
+def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
+    """項目の順番がそのまま出力の順番になる(GeminiとLunaで確認済み)。操作を選ぶ前に、
+    「足りているか」と「何が足りないか」を先に書かせる。"""
+    props: dict[str, Any] = {
+        "op": {"type": "string", "enum": available_ops()},
+        "target": {"type": "string", "enum": available_targets() + [NONE]},
+        "query": {"type": "string"},
+        "layer": {"type": "string", "enum": list(LAYER_SOURCE_TYPES) + [NONE]},
+        "within": {"type": "string", "enum": nav_input.student_map.scope_handles() + [NONE]},
+    }
+    if CAPABILITIES["CAN_OPEN"]:
+        props["handle"] = {"type": "string", "enum": openable_handles(nav_input, state) + [NONE]}
+    if CAPABILITIES["CAN_BY_DATE"]:
+        props["date_from"] = {"type": "string"}
+        props["date_to"] = {"type": "string"}
+    props.update({
+        "grounds": {"type": "string", "enum": GROUNDS},
+        "grounds_quote": {"type": "string"},
+        "relation": {"type": "string", "enum": RELATIONS},
+    })
+    return {
+        "type": "object",
+        "properties": {
+            "reasoning": {"type": "string"},
+            "status": {"type": "string", "enum": STATUSES},
+            "missing": {"type": "string"},
+            "operations": {"type": "array", "items": {"type": "object", "properties": props, "required": list(props)}},
+            "goal": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["reasoning", "status", "missing", "operations", "goal"],
+    }
+
+
+def _parse_date(value: Any) -> Optional[date]:
+    try:
+        return date.fromisoformat(str(value).strip()[:10])
+    except ValueError:
+        return None
+
+
+def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState) -> tuple[list[Request], list[dict]]:
+    """
+    探索役の操作を検証して、実行してよい操作に変換する。捨てたものは理由つきで返す(記録用)。
+    構造化出力で縛っているので通常は正しい形で来るが、ここを信頼の境界にする。
+    根拠の引用が発言に無い操作は捨てずに記録だけする(言い換え程度のずれで取りこぼす
+    より、評価のときに見られる方が良い)。
+    """
+    m = nav_input.student_map
+    requests: list[Request] = []
+    dropped: list[dict] = []
+    seen = state.already_run()
+    ops = set(available_ops())
+    targets = set(available_targets())
+    scope = set(m.scope_handles())
+    openable = set(openable_handles(nav_input, state))
+
+    for raw in raw_ops if isinstance(raw_ops, list) else []:
+        if not isinstance(raw, dict):
+            continue
+        op = raw.get("op")
+        common = dict(
+            grounds=raw.get("grounds") if raw.get("grounds") in GROUNDS else "past_reference",
+            grounds_quote=(raw.get("grounds_quote") or "")[:300],
+            relation=raw.get("relation") if raw.get("relation") in RELATIONS else "direct",
+            quote_ok=quote_in_message(raw.get("grounds_quote") or "", nav_input.message, nav_input.selected_text),
+        )
+        req: Optional[Request] = None
+        reason = None
+        if op not in ops:
+            reason = "unsupported_operation"
+        elif op == "find":
+            query = (raw.get("query") or "").strip()[:MAX_QUERY_CHARS]
+            if raw.get("target") not in targets:
+                reason = "unsupported_target"
+            elif not query:
+                reason = "empty_query"
+            else:
+                req = FindRequest(
+                    target=raw["target"], query=query,
+                    layer=raw.get("layer") if raw.get("layer") in LAYER_SOURCE_TYPES else "all",
+                    within=raw.get("within") if raw.get("within") in scope else None,
+                    **common,
+                )
+        elif op == "open":
+            handle = raw.get("handle")
+            parsed = parse_handle(handle or "")
+            if handle not in openable or parsed is None:
+                reason = "handle_not_openable"
+            elif parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
+                reason = "transcript_range_too_long"
+            else:
+                req = OpenRequest(handle=handle, **common)
+        elif op == "by_date":
+            d_from, d_to = _parse_date(raw.get("date_from")), _parse_date(raw.get("date_to") or raw.get("date_from"))
+            if d_from is None or d_to is None:
+                reason = "bad_date"
+            else:
+                d_from, d_to = min(d_from, d_to), max(d_from, d_to)
+                if (d_to - d_from).days > BY_DATE_MAX_DAYS:
+                    reason = "date_range_too_long"
+                else:
+                    req = DateRequest(date_from=d_from, date_to=d_to,
+                                      within=raw.get("within") if raw.get("within") in scope else None, **common)
+        if req is None:
+            dropped.append({"op": raw, "reason": reason})
+            continue
+        # 同じ操作の繰り返しは捨てる(前の周と同じ・同じ周の中で重複)
+        if req.key() in seen:
+            dropped.append({"op": raw, "reason": "repeated"})
+            continue
+        if len(requests) >= MAX_OPS_PER_LAP:
+            dropped.append({"op": raw, "reason": "too_many_operations"})
+            continue
+        seen.add(req.key())
+        requests.append(req)
+    return requests, dropped
+
+
+def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> str:
     m = nav_input.student_map
     parts = [f"<today>{nav_input.today.isoformat()}</today>"]
 
     if lap == 1:
         parts.append("<map>\nCourses:\n" + m.render_courses() + "\n</map>")
+        if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
+            parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
 
     if nav_input.recent_conversation:
         conv = "\n".join(
@@ -339,7 +618,9 @@ def build_user_message(nav_input: NavigatorInput, laps: list[LapRecord], lap: in
     screen = []
     screen_handle = m.lecture_handle(nav_input.screen_lecture_id)
     if screen_handle:
-        screen.append(f"The student is viewing {m.describe(screen_handle)}")
+        topic = nav_input.screen_topic_handle()
+        screen.append(f"The student is viewing {m.describe(screen_handle)}"
+                      + (f", on topic {topic} (its Deep Note page)" if topic else ""))
     if nav_input.selected_text:
         screen.append(f"Selected text: {nav_input.selected_text}")
     if screen:
@@ -347,16 +628,17 @@ def build_user_message(nav_input: NavigatorInput, laps: list[LapRecord], lap: in
 
     parts.append(f"<student_message>\n{nav_input.message}\n</student_message>")
 
-    done_laps = [lp for lp in laps if lp.outcomes]
+    done_laps = [lp for lp in state.laps if lp.done]
     if done_laps:
         progress = []
         for lp in done_laps:
-            acts = [f"{o.request.label()} → {len(o.chunks)} result(s)" for o in lp.outcomes]
             looking = f" (you were looking for: {lp.missing})" if lp.missing else ""
-            progress.append(f"Lap {lp.lap}{looking}: " + "; ".join(acts))
+            progress.append(f"Lap {lp.lap}{looking}: " + "; ".join(lp.done))
         parts.append("<progress>\n" + "\n".join(progress) + "\n</progress>")
-        blocks = [render_search_block(o, m) for lp in done_laps for o in lp.outcomes]
-        parts.append("<search_results>\n" + "\n\n".join(blocks) + "\n</search_results>")
+    if state.opened:
+        parts.append("<opened>\n" + "\n\n".join(op.text for op in state.opened.values()) + "\n</opened>")
+    if state.outcomes:
+        parts.append("<search_results>\n" + "\n\n".join(o.render() for o in state.outcomes) + "\n</search_results>")
 
     nxt = [f"This is lap {lap} of {MAX_LAPS}."]
     if lap == MAX_LAPS:
@@ -364,39 +646,177 @@ def build_user_message(nav_input: NavigatorInput, laps: list[LapRecord], lap: in
     else:
         nxt.append(f"{MAX_LAPS - lap} more lap(s) after this one. After lap {MAX_LAPS}, "
                    "the answerer writes the reply with whatever you have fetched.")
-    runs = [o.request.label() for lp in done_laps for o in lp.outcomes]
-    nxt.append("Searches already run (do not repeat them): " + ("; ".join(runs) or "none yet"))
+    if CAPABILITIES["CAN_OPEN"]:
+        nxt.append("Already opened (content is in <opened>; cannot be opened again): "
+                   + (", ".join(state.opened) or "nothing yet"))
+    nxt.append("Searches already run (do not repeat them): "
+               + ("; ".join(o.request.label() for o in state.outcomes) or "none yet"))
+    if CAPABILITIES["CAN_OPEN"]:
+        nxt.append("Seen but not opened yet (open one only if it likely holds what is still missing): "
+                   + (", ".join(state.surfaced_not_opened()) or "nothing"))
     parts.append("<next_options>\n" + "\n".join(nxt) + "\n</next_options>")
     return "\n\n".join(parts)
 
 
-def collect_answer_chunks(laps: list[LapRecord], student_map: StudentMap) -> list[dict]:
+# =========================================================
+# 📂 開く(講義の目次・文字起こし)
+# =========================================================
+
+async def open_handle(handle: str, relation: str, nav_input: NavigatorInput, source: LectureSource) -> Opened:
+    m = nav_input.student_map
+    parsed = parse_handle(handle)
+    course = m.course(parsed.course) if parsed else None
+    lec = m.lecture(parsed.lecture) if parsed and parsed.lecture else None
+    if parsed is None or course is None or (parsed.lecture and lec is None):
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+
+    if parsed.kind == "course":
+        summaries = await source.lecture_summaries([x.id for x in course.lectures])
+        lines = [
+            f"{x.handle} ({x.date.isoformat() if x.date else 'no date'}) {x.title}"
+            + (f" — {first_sentence(summaries.get(x.id), COURSE_LINE_CHARS)}" if summaries.get(x.id) else "")
+            for x in course.lectures
+        ]
+        body = "\n".join(lines) or "(No lectures recorded yet.)"
+        return Opened(
+            handle=handle,
+            text=f"Course {handle}: {course.title}\n{body}",
+            material=Material(key=f"course:{course.id}", kind="course", label=f"{course.title} / Lectures",
+                              content=body, relation=relation, source_type="course", course_id=course.id, handle=handle),
+            ref={"type": "course", "id": course.id},
+        )
+
+    when = lec.date.isoformat() if lec.date else "no date"
+    if parsed.kind == "lecture":
+        summary = (await source.lecture_summaries([lec.id])).get(lec.id, "")[:LECTURE_SUMMARY_CHARS]
+        topics = await source.lecture_topics(lec.id)
+        topic_lines = [f"{handle}/T{t['index']} {t['title']}"
+                       + (f" — {first_sentence(t['summary'], TOPIC_LINE_CHARS)}" if t["summary"] else "")
+                       for t in topics]
+        body = f"Summary: {summary or '(no summary)'}\n" + (
+            "Topics:\n" + "\n".join(topic_lines) if topic_lines else "(No topics recorded for this lecture.)")
+        return Opened(
+            handle=handle,
+            text=f"Lecture {handle}: {lec.title} ({when})\n{body}",
+            material=Material(key=f"lecture:{lec.id}", kind="lecture",
+                              label=f"{course.title} / {lec.title} / Lecture Summary",
+                              content=f"Lecture date: {when}\n{body}", relation=relation,
+                              source_type="lecture_summary", source_id=lec.id, lecture_id=lec.id,
+                              course_id=course.id, handle=handle),
+            surfaced=[f"{handle}/T{t['index']}" for t in topics],
+            ref={"type": "lecture", "id": lec.id},
+        )
+
+    if parsed.kind == "topic":
+        detail = await source.topic_detail(lec.id, parsed.topic_index)
+        if detail is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        note_nav, note_ans, ranges = rewrite_citations(detail.get("deep_note") or "", parsed.lecture)
+        keywords = "; ".join(f"{k}: {d}" if d else k for k, d in detail.get("keywords") or [])
+        head = f"Summary: {detail['summary'] or '(no summary)'}" + (f"\nKeywords: {keywords}" if keywords else "")
+        text = f"Topic {handle}: {detail['title']}\n{head}\nDeep Note:\n{note_nav[:TOPIC_TEXT_CHARS] or '(none)'}"
+        content = f"{head}" + (f"\nDeep Note:\n{note_ans}" if note_ans else "")
+        return Opened(
+            handle=handle,
+            text=text,
+            material=Material(key=f"topic:{lec.id}:{parsed.topic_index}", kind="topic",
+                              label=f"{course.title} / {lec.title} / Topic: {detail['title']}",
+                              content=content[:TOPIC_TEXT_CHARS], relation=relation,
+                              source_type="deep_note" if note_ans else "topic_summary",
+                              source_id=detail.get("id"), lecture_id=lec.id, course_id=course.id,
+                              metadata={"topic_number": parsed.topic_index}, handle=handle),
+            surfaced=ranges,
+            ref={"type": "topic", "lecture_id": lec.id, "index": parsed.topic_index},
+        )
+
+    # 文字起こしの範囲: 前後1文を足して、講義の話の流れが分かるようにする
+    sentences = await source.transcript(lec.id)
+    a = parsed.sid_start - TRANSCRIPT_CONTEXT_SENTENCES
+    b = parsed.sid_end + TRANSCRIPT_CONTEXT_SENTENCES
+    picked = [s["text"] for s in sentences if a <= s["sid"] <= b and s["text"]]
+    if not picked:
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+    body = " ".join(picked)[:TRANSCRIPT_CHARS]
+    return Opened(
+        handle=handle,
+        text=f"Transcript {handle} ({course.title} / {lec.title}, {when}):\n{body}",
+        material=Material(key=f"transcript:{lec.id}:{parsed.sid_start}-{parsed.sid_end}", kind="transcript",
+                          label=f"{course.title} / {lec.title} / Transcript", content=body, relation=relation,
+                          source_type="transcript_topic", lecture_id=lec.id, course_id=course.id,
+                          metadata={"sid_start": parsed.sid_start, "sid_end": parsed.sid_end}, handle=handle),
+        ref={"type": "transcript", "lecture_id": lec.id, "sid_start": parsed.sid_start, "sid_end": parsed.sid_end},
+    )
+
+
+async def resolve_hit_handles(chunks: list[dict], nav_input: NavigatorInput, source: LectureSource) -> list[Hit]:
     """
-    全周の検索結果から回答役に渡す材料を選ぶ。同じチャンクは1つにまとめ(類似度は最大、
-    どれか1つでもdirectで取っていればdirect)、direct → possible_linkの順に類似度で並べる。
+    検索の当たりを、分かるところまで細かい呼び名に直す。文字起こしは文の範囲(metadata.sid_start/
+    sid_end、2026-09-30に追加)、Deep Note・キーワード・復習カードはmetadata.topic_number、
+    トピックの要約・文字起こし(範囲なし)はsource_id = lecture_topics.id。それ以外は講義。
     """
-    best: dict[str, dict] = {}
-    for lp in laps:
-        for o in lp.outcomes:
-            for chunk in o.chunks:
-                cid = chunk.get("id")
-                if not cid:
-                    continue
-                cur = best.get(cid)
-                relation = o.request.relation
-                if cur is None:
-                    best[cid] = {**chunk, "relation": relation, "handle": hit_handle(chunk, student_map)}
-                    continue
-                if (chunk.get("similarity") or 0) > (cur.get("similarity") or 0):
-                    cur["similarity"] = chunk.get("similarity")
-                if relation == "direct":
-                    cur["relation"] = "direct"
-    ranked = sorted(best.values(), key=lambda c: (c["relation"] != "direct", -(c.get("similarity") or 0)))
-    return ranked[:ANSWER_SOURCES_MAX]
+    m = nav_input.student_map
+    topic_ids = [c.get("source_id") for c in chunks
+                 if c.get("source_type") in ("topic_summary", "transcript_topic") and c.get("source_id")]
+    topic_index = await source.topic_indexes(topic_ids) if topic_ids else {}
+    hits = []
+    for c in chunks:
+        lec_handle = m.lecture_handle(c.get("lecture_id"))
+        handle = lec_handle
+        meta = c.get("metadata") or {}
+        if lec_handle:
+            if c.get("source_type") == "transcript_topic" and isinstance(meta.get("sid_start"), int) and isinstance(meta.get("sid_end"), int):
+                handle = range_handle(lec_handle, meta["sid_start"], meta["sid_end"])
+            elif isinstance(meta.get("topic_number"), int):
+                handle = f"{lec_handle}/T{meta['topic_number']}"
+            elif c.get("source_id") in topic_index:
+                handle = f"{lec_handle}/T{topic_index[c['source_id']][1]}"
+        hits.append(Hit(handle=handle, chunk=c))
+    return hits
+
+
+async def prepare_previous_turn(nav_input: NavigatorInput, source: LectureSource, state: NavState) -> None:
+    """
+    前のターンで開いたもの(UUIDの参照)を今の呼び名に直し、一段下の一覧を付けて見せる
+    (コースなら講義の一覧、講義ならトピックの一覧)。「その次の回」「3番目」を正確な呼び名に
+    結びつけるため(評価で効いた形、3-6)。
+    """
+    m = nav_input.student_map
+    blocks, handles = [], []
+    for ref in nav_input.previous_turn_refs[:5]:
+        kind = ref.get("type")
+        if kind == "course":
+            h = m.course_handle(ref.get("id"))
+            course = m.course(h) if h else None
+            if not course:
+                continue
+            rows = [f"  {x.handle} ({x.date.isoformat() if x.date else 'no date'}) {x.title}" for x in course.lectures]
+            blocks.append(f"{h} — {course.title}\n" + "\n".join(rows))
+            handles += [h] + [x.handle for x in course.lectures]
+            continue
+        lec_h = m.lecture_handle(ref.get("id") if kind == "lecture" else ref.get("lecture_id"))
+        lec = m.lecture(lec_h) if lec_h else None
+        if not lec:
+            continue
+        title = f"{lec.title} ({lec.date.isoformat() if lec.date else 'no date'})"
+        if kind == "lecture":
+            topics = await source.lecture_topics(lec.id)
+            rows = [f"  {lec_h}/T{t['index']} {t['title']}" for t in topics]
+            blocks.append(f"{lec_h} — {title}" + ("\n" + "\n".join(rows) if rows else ""))
+            handles += [lec_h] + [f"{lec_h}/T{t['index']}" for t in topics]
+        elif kind == "topic" and isinstance(ref.get("index"), int):
+            h = f"{lec_h}/T{ref['index']}"
+            blocks.append(f"{h} — a topic of {lec_h} {title}")
+            handles.append(h)
+        elif kind == "transcript" and isinstance(ref.get("sid_start"), int) and isinstance(ref.get("sid_end"), int):
+            h = range_handle(lec_h, ref["sid_start"], ref["sid_end"])
+            blocks.append(f"{h} — part of the transcript of {lec_h} {title}")
+            handles.append(h)
+    state.previous_turn_text = "\n".join(blocks)
+    state.previous_turn_handles = _dedupe(handles)
 
 
 # =========================================================
-# 🔎 検索の実行
+# 🔎 検索の実行(本番)
 # =========================================================
 
 def make_lecture_search(
@@ -410,10 +830,11 @@ def make_lecture_search(
     embedは課金を記録する埋め込み関数(knowledge_index.embed_queriesにbillingを渡したもの)。
     """
     def _rpc(embedding: list[float], req: FindRequest) -> list[dict]:
-        params: dict[str, Any] = {"query_embedding": embedding, "match_count": SEARCH_MATCH_COUNT}
-        source_types = LAYER_SOURCE_TYPES.get(req.layer)
-        if source_types:
-            params["filter_source_types"] = source_types
+        params: dict[str, Any] = {
+            "query_embedding": embedding,
+            "match_count": SEARCH_MATCH_COUNT,
+            "filter_source_types": LAYER_SOURCE_TYPES.get(req.layer) or LECTURE_SOURCE_TYPES,
+        }
         if req.within:
             lec = student_map.lecture(req.within)
             if lec:
@@ -425,22 +846,14 @@ def make_lecture_search(
         res = user_client.rpc("search_knowledge_chunks", params).execute()
         return res.data or []
 
-    async def search(requests: list[FindRequest]) -> list[SearchOutcome]:
+    async def search(requests: list[FindRequest]) -> list[Union[list[dict], Exception]]:
         if not requests:
             return []
         embeddings = await embed([r.query for r in requests])
-        results = await asyncio.gather(
+        return await asyncio.gather(
             *[asyncio.to_thread(_rpc, emb, req) for emb, req in zip(embeddings, requests)],
             return_exceptions=True,
         )
-        outcomes = []
-        for req, res in zip(requests, results):
-            if isinstance(res, Exception):
-                print(f"⚠️ [chat] navigator search failed ({req.label()}): {res}")
-                outcomes.append(SearchOutcome(request=req, chunks=[], error=str(res)[:300]))
-            else:
-                outcomes.append(SearchOutcome(request=req, chunks=res))
-        return outcomes
 
     return search
 
@@ -449,17 +862,20 @@ def make_lecture_search(
 # 🧭 本体: 最大4周
 # =========================================================
 
-async def _decide(llm: UnifiedLLM, system: str, schema: dict, user: str) -> tuple[Optional[dict], Optional[str]]:
-    """1周分の判断。読めない出力は1回だけやり直す。"""
+async def decide_lap(llm: UnifiedLLM, nav_input: NavigatorInput, state: NavState, lap: int) -> tuple[Optional[dict], Optional[str]]:
+    """1周分の判断(LLM)。読めない出力は1回だけやり直す。評価ハーネスもこれを呼ぶ。"""
     options = LLMOptions(
         # gpt-6-lunaはtemperatureの既定値(1)以外を受け付けない
         temperature=1.0,
         output_type="json",
-        json_schema=schema,
+        json_schema=build_schema(nav_input, state),
         max_completion_tokens=NAVIGATOR_MAX_COMPLETION_TOKENS,
         reasoning_effort=NAVIGATOR_REASONING_EFFORT,
     )
-    messages = [Message(role="system", content=system), Message(role="user", content=user)]
+    messages = [
+        Message(role="system", content=build_system_prompt()),
+        Message(role="user", content=build_user_message(nav_input, state, lap)),
+    ]
     last_error = None
     for _attempt in range(2):
         try:
@@ -474,20 +890,68 @@ async def _decide(llm: UnifiedLLM, system: str, schema: dict, user: str) -> tupl
     return None, last_error
 
 
+async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavState, tools: NavigatorTools) -> None:
+    """検証済みの操作を並列に実行し、stateに足す。"""
+    finds = [r for r in record.requests if isinstance(r, FindRequest)]
+    opens = [r for r in record.requests if isinstance(r, OpenRequest)]
+    dates = [r for r in record.requests if isinstance(r, DateRequest)]
+
+    async def run_finds() -> list[SearchOutcome]:
+        if not finds:
+            return []
+        try:
+            results = await tools.search(finds)
+        except Exception as e:
+            results = [e] * len(finds)
+        outcomes = []
+        for req, res in zip(finds, results):
+            if isinstance(res, Exception):
+                print(f"⚠️ [chat] navigator search failed ({req.label()}): {res}")
+                outcomes.append(SearchOutcome(request=req, hits=[], error=str(res)[:300]))
+            else:
+                outcomes.append(SearchOutcome(request=req, hits=await resolve_hit_handles(res, nav_input, tools.source)))
+        return outcomes
+
+    async def run_open(req: OpenRequest) -> Opened:
+        try:
+            return await open_handle(req.handle, req.relation, nav_input, tools.source)
+        except Exception as e:
+            print(f"⚠️ [chat] navigator open failed ({req.handle}): {e}")
+            return Opened(handle=req.handle, text=f"{req.handle}: (could not be opened)", material=None)
+
+    find_outcomes, *opened = await asyncio.gather(run_finds(), *[run_open(r) for r in opens])
+
+    m = nav_input.student_map
+    titles = {c.handle: c.title for c in m.courses}
+    date_outcomes = [DateOutcome(request=r, lectures=m.lectures_between(r.date_from, r.date_to, r.within), course_titles=titles)
+                     for r in dates]
+
+    for op in opened:
+        state.opened[op.handle] = op
+    for o in find_outcomes:
+        state.outcomes.append(o)
+        for hit in o.hits:
+            state.search_materials.append(material_from_chunk(hit.chunk, relation=o.request.relation, handle=hit.handle))
+    state.outcomes += date_outcomes
+    record.done = [f"open {op.handle}" for op in opened] + [o.summary() for o in find_outcomes] + [o.summary() for o in date_outcomes]
+
+
 async def navigate(
     llm: UnifiedLLM,
     nav_input: NavigatorInput,
-    search: SearchFn,
+    tools: NavigatorTools,
     on_lap: Optional[Callable[[int], Awaitable[None]]] = None,
 ) -> NavigationResult:
     """
     探索役を最大MAX_LAPS周まわす。1周ごとに「判断(LLM) → 検証(コード) → 実行(コード)」。
     途中の周で探索役が動かなくなったら、そこまでに集めたもので終わる。
     """
-    system = build_system_prompt()
-    schema = build_schema(nav_input.student_map)
-    laps: list[LapRecord] = []
-    already_run: set[tuple] = set()
+    state = NavState()
+    if nav_input.previous_turn_refs and CAPABILITIES["CAN_OPEN"]:
+        try:
+            await prepare_previous_turn(nav_input, tools.source, state)
+        except Exception as e:
+            print(f"⚠️ [chat] failed to prepare the previous turn's materials: {e}")
     goal: list[str] = []
     stop_reason = "max_laps"
 
@@ -495,11 +959,11 @@ async def navigate(
         if on_lap is not None:
             await on_lap(lap)
         t0 = time.perf_counter()
-        out, err = await _decide(llm, system, schema, build_user_message(nav_input, laps, lap))
+        out, err = await decide_lap(llm, nav_input, state, lap)
         if out is None:
             print(f"⚠️ [chat] navigator lap {lap} failed: {err}")
-            laps.append(LapRecord(lap=lap, status="", missing="", reasoning="", goal=[],
-                                  elapsed_ms=round((time.perf_counter() - t0) * 1000), llm_error=err))
+            state.laps.append(LapRecord(lap=lap, status="", missing="", reasoning="", goal=[],
+                                        elapsed_ms=round((time.perf_counter() - t0) * 1000), llm_error=err))
             stop_reason = "llm_error"
             break
 
@@ -510,7 +974,7 @@ async def navigate(
             reasoning=(out.get("reasoning") or "").strip()[:500],
             goal=[g.strip()[:200] for g in out.get("goal") or [] if isinstance(g, str) and g.strip()][:8],
         )
-        laps.append(record)
+        state.laps.append(record)
         if record.goal:
             goal = record.goal
 
@@ -519,27 +983,39 @@ async def navigate(
             record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
             break
 
-        record.finds, record.dropped = validate_operations(out.get("operations"), nav_input.student_map, already_run, nav_input)
-        if not record.finds:
+        record.requests, record.dropped = validate_operations(out.get("operations"), nav_input, state)
+        if not record.requests:
             # need_moreと言いつつ実行できる操作が無い(全部繰り返し等): ここまでで答える
             stop_reason = "enough_now"
             record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
             break
-        already_run.update(f.key() for f in record.finds)
-        record.outcomes = await search(record.finds)
+        await execute_lap(record, nav_input, state, tools)
         record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
 
-    return NavigationResult(
-        chunks=collect_answer_chunks(laps, nav_input.student_map),
-        goal=goal,
-        laps=laps,
-        stop_reason=stop_reason,
-    )
+    materials = [op.material for op in state.opened.values() if op.material] + state.search_materials
+    refs = [op.ref for op in state.opened.values() if op.ref]
+    return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason, opened_refs=refs)
 
 
 def summarize_for_log(result: NavigationResult) -> str:
     parts = [f"stop={result.stop_reason}"]
     for lp in result.laps:
-        parts.append(f"lap{lp.lap}:{lp.status or 'error'}:{len(lp.outcomes)}finds:{lp.elapsed_ms}ms")
+        parts.append(f"lap{lp.lap}:{lp.status or 'error'}:{len(lp.done)}ops:{lp.elapsed_ms}ms")
     return " ".join(parts)
+
+
+def refs_from_materials(materials: list[Material], limit: int = 5) -> list[dict]:
+    """何も開かなかったターンの「前のターンで開いたもの」: 回答に使った材料の講義・トピック。"""
+    refs: list[dict] = []
+    for mat in materials:
+        if not mat.lecture_id:
+            continue
+        topic = (mat.metadata or {}).get("topic_number")
+        ref = ({"type": "topic", "lecture_id": mat.lecture_id, "index": topic} if isinstance(topic, int)
+               else {"type": "lecture", "id": mat.lecture_id})
+        if ref not in refs:
+            refs.append(ref)
+        if len(refs) >= limit:
+            break
+    return refs
 

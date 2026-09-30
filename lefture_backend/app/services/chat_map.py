@@ -16,8 +16,9 @@ docs/chatbot_context_and_retrieval_roadmap.md の 3-5。
 
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone, tzinfo
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 LANGUAGE_NAMES = {
     "en": "English", "ja": "Japanese", "zh": "Chinese", "ko": "Korean", "es": "Spanish",
@@ -37,12 +38,22 @@ def _majority(values: list[Optional[str]]) -> Optional[str]:
     return counts.most_common(1)[0][0] if counts else None
 
 
-def _to_date(value: Optional[str]) -> Optional[date]:
-    """lecture_datetime(timestamptz)を日付に。ユーザーのタイムゾーンはまだ持っていないのでUTCの日付。"""
+def resolve_timezone(name: Optional[str]) -> tzinfo:
+    """クライアントが送ってきたIANAのタイムゾーン名(例: Asia/Tokyo)。無い・不正ならUTC。"""
+    if name:
+        try:
+            return ZoneInfo(name)
+        except (ZoneInfoNotFoundError, ValueError):
+            pass
+    return timezone.utc
+
+
+def _to_date(value: Optional[str], tz: tzinfo) -> Optional[date]:
+    """lecture_datetime(timestamptz)を、ユーザーのタイムゾーンでの日付に。"""
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(tz).date()
     except ValueError:
         return None
 
@@ -81,12 +92,14 @@ class StudentMap:
     _course_by_handle: dict[str, MapCourse] = field(default_factory=dict)
     _lecture_by_handle: dict[str, MapLecture] = field(default_factory=dict)
     _lecture_handle_by_id: dict[str, str] = field(default_factory=dict)
+    _course_handle_by_id: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def build(cls, courses: list[MapCourse]) -> "StudentMap":
         m = cls(courses=courses)
         for c in courses:
             m._course_by_handle[c.handle] = c
+            m._course_handle_by_id[c.id] = c.handle
             for lec in c.lectures:
                 m._lecture_by_handle[lec.handle] = lec
                 m._lecture_handle_by_id[lec.id] = lec.handle
@@ -109,6 +122,21 @@ class StudentMap:
     def lecture_handle(self, lecture_id: Optional[str]) -> Optional[str]:
         return self._lecture_handle_by_id.get(lecture_id) if lecture_id else None
 
+    def course_handle(self, course_id: Optional[str]) -> Optional[str]:
+        return self._course_handle_by_id.get(course_id) if course_id else None
+
+    def lectures_between(self, start: date, end: date, within: Optional[str] = None) -> list[MapLecture]:
+        """日付で引く(by_date)。withinはコースか講義の呼び名。"""
+        out = []
+        for c in self.courses:
+            for lec in c.lectures:
+                if lec.date is None or not (start <= lec.date <= end):
+                    continue
+                if within and within not in (c.handle, lec.handle):
+                    continue
+                out.append(lec)
+        return sorted(out, key=lambda lec: (lec.date, lec.handle))
+
     def describe(self, handle: str) -> str:
         """画面の文脈などで「C2/L4 (Price Elasticity of Demand, 2026-04-10)」のように添える説明。"""
         lec = self.lecture(handle)
@@ -124,8 +152,8 @@ class StudentMap:
         return "\n".join(c.map_line() for c in self.courses)
 
 
-def load_student_map(admin_client, user_id: str) -> StudentMap:
-    """本人のコース・講義から地図を作る(同期関数。asyncio.to_threadで呼ぶ)。"""
+def load_student_map(admin_client, user_id: str, tz: tzinfo = timezone.utc) -> StudentMap:
+    """本人のコース・講義から地図を作る(同期関数。asyncio.to_threadで呼ぶ)。日付はtzで数える。"""
     courses_res = admin_client.table("courses").select(
         "id, course_title, course_code, term_id, year_id, created_at"
     ).eq("user_id", user_id).is_("deleted_at", "null").order("created_at").execute()
@@ -169,7 +197,7 @@ def load_student_map(admin_client, user_id: str) -> StudentMap:
             course.lectures.append(MapLecture(
                 handle=f"{handle}/L{j}", id=lec["id"], course_handle=handle,
                 title=(lec.get("title") or lec.get("title_generated") or "(untitled lecture)").strip(),
-                date=_to_date(lec.get("lecture_datetime")),
+                date=_to_date(lec.get("lecture_datetime"), tz),
             ))
         courses.append(course)
 

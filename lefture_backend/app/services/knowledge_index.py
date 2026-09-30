@@ -96,6 +96,22 @@ class _NullLogger:
         pass
 
 
+def assemble_lecture_transcript(admin_client, lecture_id: str) -> list[dict]:
+    """
+    講義の文字起こしを文の並び([{"sid": "s000001", "text": ...}, ...])に組み立てる。
+    AssembleTranscriptServiceと全く同じロジックでsid採番をやり直し、
+    lecture_topics.start_sid/end_sidやDeep Notesの引用(⟦s000012⟧)と必ず一致させる。
+    R2のtranscript.json(job/task経由でしか辿れない)には依存せず、常に存在するDBの
+    lecture_transcriptsから毎回組み立て直す。チャットの探索役が文字起こしの範囲を
+    開くときにも使う。
+    """
+    res = admin_client.table("lecture_transcripts").select("*") \
+        .eq("lecture_id", lecture_id).order("chunk_index").execute()
+    adjusted = reconstruct_chunk_start_times(res.data or [])
+    completed = [c for c in adjusted if c.get("status") == "REVIEWED"]
+    return AssembleTranscriptService(_NullLogger()).run(completed)
+
+
 class _ContextCache:
     """
     1回のdrain呼び出し内で使い回す軽量キャッシュ。
@@ -140,18 +156,8 @@ class _ContextCache:
         return (res.data or {}).get("topic_title") if res else None
 
     def assembled_transcript(self, lecture_id: str) -> list[dict]:
-        """
-        AssembleTranscriptServiceと全く同じロジックでsid採番をやり直し、
-        lecture_topics.start_sid/end_sidと必ず一致させる。R2のtranscript.json
-        (job/task経由でしか辿れない)には依存せず、常に存在するDBの
-        lecture_transcriptsから毎回組み立て直す。
-        """
         if lecture_id not in self._transcripts:
-            res = self._client.table("lecture_transcripts").select("*") \
-                .eq("lecture_id", lecture_id).order("chunk_index").execute()
-            adjusted = reconstruct_chunk_start_times(res.data or [])
-            completed = [c for c in adjusted if c.get("status") == "REVIEWED"]
-            self._transcripts[lecture_id] = AssembleTranscriptService(_NullLogger()).run(completed)
+            self._transcripts[lecture_id] = assemble_lecture_transcript(self._client, lecture_id)
         return self._transcripts[lecture_id]
 
 
@@ -181,22 +187,27 @@ def _split_markdown_sections(md: str) -> list[str]:
     return [s for s in out if s.strip()]
 
 
+def _text_window_spans(length: int, max_chars: int, overlap: int) -> list[tuple[int, int]]:
+    """長さlengthの文字列を、重なりを持たせて等間隔に割ったときの各窓の(開始, 終了)。"""
+    if length <= 0:
+        return []
+    if length <= max_chars:
+        return [(0, length)]
+    spans = []
+    start = 0
+    while start < length:
+        end = min(start + max_chars, length)
+        spans.append((start, end))
+        if end == length:
+            break
+        start = end - overlap
+    return spans
+
+
 def _split_text_windows(text: str, max_chars: int, overlap: int) -> list[str]:
     """トランスクリプト用: 見出しを持たない長文を、重なりを持たせて等間隔に割る。"""
     text = (text or "").strip()
-    if not text:
-        return []
-    if len(text) <= max_chars:
-        return [text]
-    out = []
-    start = 0
-    while start < len(text):
-        end = min(start + max_chars, len(text))
-        out.append(text[start:end])
-        if end == len(text):
-            break
-        start = end - overlap
-    return out
+    return [text[a:b] for a, b in _text_window_spans(len(text), max_chars, overlap)]
 
 
 def _render_card_content(blocks: Any) -> str:
@@ -430,29 +441,45 @@ def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) 
 
     lecture_id = row.get("lecture_id")
     sentences = cache.assembled_transcript(lecture_id) if lecture_id else []
-    segment_text = " ".join(
-        s.get("text", "") for s in sentences
+    in_range = [
+        s for s in sentences
         if s.get("text") and start_n <= (_sid_to_int(s.get("sid")) or -1) <= end_n
-    ).strip()
+    ]
+    joined = " ".join(s.get("text", "") for s in in_range)
+    segment_text = joined.strip()
     if not segment_text:
         return []
 
+    # 各文がsegment_textの何字目から何字目か(" "でつないでからstripしているので、
+    # 先頭で削れた分だけずらす)。窓と重なる文の最初と最後を、そのチャンクの文の範囲にする。
+    lead = len(joined) - len(joined.lstrip())
+    sentence_spans = []
+    pos = 0
+    for s in in_range:
+        text = s.get("text", "")
+        sentence_spans.append((pos - lead, pos - lead + len(text), _sid_to_int(s.get("sid"))))
+        pos += len(text) + 1
+
     title = _header(cache, lecture_id, f"Transcript: {row.get('topic_title') or ''}")
-    windows = _split_text_windows(segment_text, MAX_CHUNK_CHARS, CHUNK_OVERLAP_CHARS)
     lec = cache.lecture(lecture_id)
 
-    return [
-        ChunkDraft(
+    drafts = []
+    for idx, (a, b) in enumerate(_text_window_spans(len(segment_text), MAX_CHUNK_CHARS, CHUNK_OVERLAP_CHARS)):
+        sids = [sid for s_start, s_end, sid in sentence_spans if sid is not None and s_start < b and s_end > a]
+        metadata: dict[str, Any] = {"topic_title": row.get("topic_title")}
+        if sids:
+            metadata["sid_start"] = min(sids)
+            metadata["sid_end"] = max(sids)
+        drafts.append(ChunkDraft(
             chunk_index=idx,
             title=title,
-            body=window,
+            body=segment_text[a:b],
             user_id=row["user_id"],
             course_id=lec.get("course_id"),
             lecture_id=lecture_id,
-            metadata={"topic_title": row.get("topic_title")},
-        )
-        for idx, window in enumerate(windows)
-    ]
+            metadata=metadata,
+        ))
+    return drafts
 
 
 def _build_lecture_moment(admin_client, source_id: str, cache: _ContextCache) -> list[ChunkDraft]:

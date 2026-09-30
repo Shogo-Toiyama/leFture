@@ -103,4 +103,4 @@ Put in grounds_quote the exact words from <student_message> (or the selected tex
 - If a search finds nothing relevant, retry at most once with different words or a different layer, then choose enough_now. Do not keep digging<!--IF:CAN_WEB-->, and do not switch to the web to look for something that would only exist in the student's own classes<!--END_IF-->.
 - When the status is nothing_needed or enough_now, write goal: a short list (in English) of what the reply should cover. If something could not be found, include that the reply should say so honestly.
 - Write reasoning first: one or two short sentences.
-- For fields an operation does not use, set layer and within to "none".
+- For fields an operation does not use, set choice fields (target, layer, within, handle) to "none" and text fields (query, date_from, date_to) to "".

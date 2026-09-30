@@ -800,5 +800,6 @@ export const en = {
   chatSourceTopic: 'Topic',
   chatSourceFunFact: 'Fun Fact',
   chatSourceLectureSummary: 'Lecture summary',
+  chatSourceCourse: 'Course',
   chatSourceMoment: 'My note',
 };
