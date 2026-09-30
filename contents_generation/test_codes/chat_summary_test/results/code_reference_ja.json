@@ -1,0 +1,114 @@
+{
+  "id": "code_reference_ja",
+  "language": "ja",
+  "scenario": "code_reference",
+  "qualitative_checks": [],
+  "final_blocks": [
+    {
+      "block_index": 1,
+      "turn_start": 1,
+      "turn_end": 10,
+      "sections": [
+        {
+          "handle": 1,
+          "title": "再帰関数とループの比較",
+          "bullets": [
+            "Pythonの再帰的なfactorialは、`n == 0`で1を返す基本ケースと、`n * factorial(n - 1)`で計算する再帰ケースで書ける。基本ケースを`n <= 1`にすれば0と1の両方に対応する。",
+            "再帰呼び出しはスタックに積まれ、基本ケースの後に戻りながら計算する。Pythonでは深くなりすぎると、既定の上限（約1000回）で`RecursionError`になることがある。",
+            "大きなnには、スタックを使わないループ版が実用上より安全。一般にループは関数呼び出しのオーバーヘッドがない分速い傾向がある一方、木構造や分割統治では再帰が自然な場合がある。"
+          ],
+          "turns": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "handle": 2,
+          "title": "分割統治とソートアルゴリズム",
+          "bullets": [
+            "分割統治の例としてマージソートとクイックソートが挙げられた。マージソートは配列を再帰的に分割し、ソート済みの部分をmergeで統合する実装を確認した。",
+            "マージソートの計算量はO(n log n)：分割はlog n段階で、各段階のmergeはO(n)。",
+            "マージソートは分割を均等にし統合時に処理する一方、クイックソートはpivotによる分割時に処理する。平均計算量はどちらもO(n log n)だが、クイックソートはpivot次第で最悪O(n²)になる。"
+          ],
+          "turns": [
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ],
+      "header": {
+        "style_preferences": [],
+        "context": [],
+        "purpose": [
+          {
+            "text": "Pythonの再帰・ループ、分割統治、ソートアルゴリズムを学んでいる。",
+            "source_turn": 1
+          }
+        ],
+        "unresolved": []
+      }
+    }
+  ],
+  "final_header": {
+    "style_preferences": [],
+    "context": [],
+    "purpose": [
+      {
+        "text": "Pythonの再帰・ループ、分割統治、ソートアルゴリズムを学んでいる。",
+        "source_turn": 1
+      }
+    ],
+    "unresolved": []
+  },
+  "probe_results": [
+    {
+      "probe_id": "factorial_base_case_variant",
+      "history_through_round": 15,
+      "probe_question": "そういえば、一番最初に見せてくれたfactorialの再帰コード、base caseの条件をn<=1にしたバージョンだと、n=0を渡した時ちゃんと1が返ってくるんだっけ?",
+      "gold_reference_answer": "うん、`if n <= 1: return 1`ならn=0でもn=1でも条件に合致するから、どちらの場合もそのまま1を返す。最初に見せた`n == 0`だけの版とは違って、n=1の時も再帰を1段減らして即座に1を返せる、っていう違いがあるよ。",
+      "expected_tier": "block1",
+      "why_it_matters": "「コードがあった」という事実だけでなく、「n<=1版はn=0でも動くか」という中身レベルの細部が、要約の箇条書きに残っているかを見る。設計の『後で参照されそうな具体物は中身も短く残す』の直接的なテスト。",
+      "context_stats": {
+        "raw_condition_rounds": 15,
+        "summarized_condition_raw_rounds": 5,
+        "summarized_condition_blocks": 1
+      },
+      "raw_condition": {
+        "answer": "ちゃんと返ってくるよ！確認してみよう。\n\n```python\ndef factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)\n```\n\nこのコードに `n = 0` を渡すと、`if 0 <= 1:` という条件式が評価されるよね。0は1以下だから条件は「真(True)」になって、そのまま `1` が返されるんだ。\n\nもしこれが `if n == 1:` だと、0を渡した時に下の `n * factorial(n - 1)` に進んでしまって、`0 * factorial(-1)` となり、無限にマイナスへ向かってスタックオーバーフローになっちゃう。だから `n <= 1` と書くのは、**「0以下という予期せぬ入力が来ても壊れないようにする（防御的な書き方）」**として実はすごく優秀なんだ。\n\nこういう「境界値（0とか1とか）」の扱いをしっかり考える癖をつけておくと、バグの少ないコードが書けるようになるよ。もしこれが他の授業で扱っているアルゴリズムにも応用できるとしたら、どんな場面でこの「境界値チェック」が重要になりそうだと思う？",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "n <= 1 の版でも n=0 を渡せば1が返る(条件を満たすため)",
+              "present": true,
+              "note": "The answer states that if n=0 is passed to the code, the condition 'if 0 <= 1:' is evaluated as True, and 1 is returned."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      },
+      "summarized_condition": {
+        "answer": "その通り！ちゃんと `1` が返ってくるよ。\n\n仕組みを整理するとこんな感じだね：\n\n1. `n = 0` を関数に渡す。\n2. `if n <= 1:` という条件式（base case）をチェックする。\n3. `0` は `1` 以下なので、この条件式は `True` になる。\n4. そのまま `return 1` が実行される。\n\nもしここを `if n == 1:` と書いてしまうと、`0` が渡された時に `1` より小さいため `if` をすり抜けてしまい、次の再帰呼び出し（`factorial(0-1)` つまり `factorial(-1)`）に進んでしまって、最終的にスタックオーバーフローでエラーになるんだ。\n\n`n <= 1` としておくことで、「0や1といった計算の終わり」を安全にキャッチできるのはすごくいい設計だよね。\n\nちなみに、こういう「境界値」のテストって、プログラムを作る時にどんな入力を想定するかを考える良い練習になるんだけど、もし何か自作のツールやプロジェクトで「ここが上手く動くか不安だな」って感じたコードってあったりする？",
+        "summary_text": "## 再帰関数とループの比較\n- Pythonの再帰的なfactorialは、`n == 0`で1を返す基本ケースと、`n * factorial(n - 1)`で計算する再帰ケースで書ける。基本ケースを`n <= 1`にすれば0と1の両方に対応する。\n- 再帰呼び出しはスタックに積まれ、基本ケースの後に戻りながら計算する。Pythonでは深くなりすぎると、既定の上限（約1000回）で`RecursionError`になることがある。\n- 大きなnには、スタックを使わないループ版が実用上より安全。一般にループは関数呼び出しのオーバーヘッドがない分速い傾向がある一方、木構造や分割統治では再帰が自然な場合がある。\n\n## 分割統治とソートアルゴリズム\n- 分割統治の例としてマージソートとクイックソートが挙げられた。マージソートは配列を再帰的に分割し、ソート済みの部分をmergeで統合する実装を確認した。\n- マージソートの計算量はO(n log n)：分割はlog n段階で、各段階のmergeはO(n)。\n- マージソートは分割を均等にし統合時に処理する一方、クイックソートはpivotによる分割時に処理する。平均計算量はどちらもO(n log n)だが、クイックソートはpivot次第で最悪O(n²)になる。",
+        "header_text": "Purpose of this conversation: Pythonの再帰・ループ、分割統治、ソートアルゴリズムを学んでいる。",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "n <= 1 の版でも n=0 を渡せば1が返る(条件を満たすため)",
+              "present": true,
+              "note": "The answer states that when n=0 is passed to the function, the condition 'if n <= 1' evaluates to True, and 'return 1' is executed."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      }
+    }
+  ]
+}

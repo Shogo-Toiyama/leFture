@@ -1,0 +1,130 @@
+{
+  "id": "emotional_arc_en",
+  "language": "en",
+  "scenario": "emotional_arc_consultation",
+  "description": "A student anxious about their major direction gains clarity and confidence through robotics club experience. Tests factual recall (job-market point from round 7, in block1) plus a qualitative check on whether the emotional arc (anxious -> energized -> confident) is still reflected in tone after folding.",
+  "fold_schedule": {
+    "first_fold_at_round": 15,
+    "second_fold_at_round": null
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "user": "hey, can I talk about something that's not really about a specific class? I'm kind of stressed about my major direction",
+      "assistant": "Of course, I'm here for that too. What's on your mind?"
+    },
+    {
+      "round": 2,
+      "user": "I'm in CS but I genuinely don't know if I want to go more hardware/embedded systems or software/web dev. everyone around me seems so sure of their path and I feel behind",
+      "assistant": "That's a really common feeling, and honestly, being unsure at this stage is way more normal than it looks from the outside — a lot of people who seem \"sure\" are just better at hiding the uncertainty. Can I ask what's pulling you toward each side? Sometimes naming the appeal of both helps clarify things."
+    },
+    {
+      "round": 3,
+      "user": "hardware feels more \"real\" to me, like I built something physical. software feels more flexible and there are just way more jobs",
+      "assistant": "Those are both legitimate pulls — one is about tangibility and craftsmanship, the other is about pragmatism and flexibility. Neither is the \"wrong\" reason to lean somewhere. Do you have any hands-on experience with the hardware side yet, or is it more of a feeling from the outside?"
+    },
+    {
+      "round": 4,
+      "user": "I just joined the robotics club actually, it's called Ironclad Robotics, we're building a bot for a regional competition",
+      "assistant": "That's great, actual hands-on experience will tell you more than any amount of thinking-in-the-abstract. What's your role on the team so far?"
+    },
+    {
+      "round": 5,
+      "user": "I'm helping with the drivetrain and motor control, it's basic stuff but I like it",
+      "assistant": "Motor control and drivetrain work is a solid entry point into embedded/hardware thinking — you're touching real physical constraints (torque, power, timing) that software-only work doesn't really expose you to. How are you feeling doing that work, energized or more just \"okay, this is fine\"?"
+    },
+    {
+      "round": 6,
+      "user": "honestly pretty energized, more than I expected",
+      "assistant": "That's worth paying attention to — that kind of unprompted energy is a much better signal than anything on paper. Doesn't mean you have to decide today, but it's real data about what you're drawn to."
+    },
+    {
+      "round": 7,
+      "user": "yeah maybe. I still worry about the job market difference though, my older brother works in software and makes a really comfortable living",
+      "assistant": "That's a fair practical concern, and it's okay to weigh it. For what it's worth, embedded/hardware-adjacent software (firmware, robotics, controls) is also a real and often well-compensated field — it's not purely \"software vs. hardware\" as separate job markets, there's a lot of overlap especially in robotics, automotive, and IoT. You don't necessarily have to choose \"no physical stuff at all\" to have solid job prospects."
+    },
+    {
+      "round": 8,
+      "user": "oh I didn't really think about it that way",
+      "assistant": "Yeah, a lot of people frame it as a strict binary when the reality is more of a spectrum. Firmware engineers, robotics software engineers, controls engineers — these are software-heavy roles that still involve real physical systems. Might be worth looking into what those roles actually look like day to day."
+    },
+    {
+      "round": 9,
+      "user": "that actually makes me feel a bit better. I've just been so anxious about \"picking wrong\"",
+      "assistant": "That anxiety makes total sense, choosing a direction feels high-stakes when you're in it. But it might help to reframe it a little: this isn't really a one-time irreversible choice, it's more like the first step on a path that you can adjust as you learn more about yourself, which you're already doing through the robotics club."
+    },
+    {
+      "round": 10,
+      "user": "that's a good way to put it",
+      "assistant": "I'm glad that lands. For now, is there something concrete you could do — like exploring one of those robotics-software-adjacent roles a bit more, maybe through the club or a summer thing — that would give you more real data without requiring you to fully commit yet?"
+    },
+    {
+      "round": 11,
+      "user": "yeah, actually one of the older members on Ironclad does embedded firmware and said he'd show me some of it",
+      "assistant": "That's a great low-stakes way to get more information. I'd take him up on that."
+    },
+    {
+      "round": 12,
+      "user": "I will. thanks, I feel less panicked about it now",
+      "assistant": "Glad to hear that. For what it's worth, the fact that you're thinking this carefully about it says good things about how deliberately you'll approach whatever you end up choosing."
+    },
+    {
+      "round": 13,
+      "user": "switching topics a bit — random question, does the firmware role you mentioned before usually require a specific degree focus, or is CS broadly fine?",
+      "assistant": "General CS is usually fine as a base — what tends to matter more for firmware/embedded roles specifically is picking up relevant coursework or projects along the way: things like computer architecture, embedded systems, digital logic, and some C/C++ experience. A CS degree with a few electives or club projects in that direction (like what you're doing with Ironclad) is a very normal path into firmware roles, you don't need a separate \"hardware degree.\""
+    },
+    {
+      "round": 14,
+      "user": "ok that's reassuring, I was worried I'd already be behind since I'm in general CS",
+      "assistant": "Not at all — most people in this space come from general CS or even EE and pick up the specialization through projects and internships rather than a dedicated major track."
+    },
+    {
+      "round": 15,
+      "user": "good to know. so I talked to that older member from Ironclad yesterday and watched him debug a motor controller board, it was honestly really cool",
+      "assistant": "That's awesome, how did it feel actually watching that process up close compared to just imagining it?"
+    },
+    {
+      "round": 16,
+      "user": "it felt way more approachable than I expected, like it wasn't magic, just careful debugging",
+      "assistant": "That's a really valuable realization — a lot of the intimidation around hardware/firmware comes from it feeling like a black box from the outside, and once you see the actual process it usually turns out to be very learnable, just with a different toolkit than pure software debugging."
+    },
+    {
+      "round": 17,
+      "user": "yeah exactly. I think I'm leaning more toward exploring that firmware/robotics-software direction now",
+      "assistant": "That sounds like real clarity born from direct experience, not just guessing — which is about the best way to arrive at a decision like this. You don't have to lock it in forever, but it sounds like a genuinely good next step to lean into."
+    },
+    {
+      "round": 18,
+      "user": "yeah. thanks for talking through this with me, I felt so stuck a week ago and now I actually have a direction to explore",
+      "assistant": "I'm really glad — and for what it's worth, the shift I'm noticing is that you went from feeling behind and anxious to actually excited about a concrete next step, which is a great place to be. Ironclad Robotics sounds like it's been a genuinely good move for you."
+    },
+    {
+      "round": 19,
+      "user": "it has been. oh also, remind me what you said about the job market thing again? I want to bring it up with my brother",
+      "assistant": "I'd mentioned that it's not really a strict binary between hardware and software job markets — fields like firmware, robotics software, and controls engineering sit right in the overlap, and they're real, often well-compensated career paths. So exploring the Ironclad/firmware direction doesn't mean giving up on solid job prospects, it's more like finding a niche that combines both things you're drawn to."
+    },
+    {
+      "round": 20,
+      "user": "perfect, that's exactly what I wanted to tell him. thanks for everything",
+      "assistant": "Anytime — good luck with the conversation, and with wherever Ironclad takes you."
+    }
+  ],
+  "probes": [
+    {
+      "id": "job_market_nuance_recall",
+      "history_through_round": 18,
+      "probe_round": 19,
+      "requires_info_from_round": 7,
+      "expected_tier_at_probe_time": "block1",
+      "key_facts_must_include": [
+        "hardware vs. software job markets are not a strict binary",
+        "firmware / robotics software / controls engineering sit in the overlap and are well-compensated"
+      ],
+      "why_it_matters": "Round 7's point is the practical anchor the whole consultation builds toward. It's in block1 after the round-15 fold, and the student explicitly asks for it again to repeat to their brother — a wrong or vague answer would be a real, visible failure to the user."
+    }
+  ],
+  "qualitative_checks": [
+    "全体を通して口調が「不安 → やる気 → 自信」の流れに合っているか(要約された文脈で答えるときに、急に無関係な励まし方をしていないか)。",
+    "round4のクラブ名(Ironclad Robotics)のような、感情の根拠になった具体的な出来事が、要約の中で名前ごと残っているか。"
+  ]
+}

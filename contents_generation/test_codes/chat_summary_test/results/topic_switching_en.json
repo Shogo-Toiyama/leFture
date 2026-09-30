@@ -1,0 +1,131 @@
+{
+  "id": "topic_switching_en",
+  "language": "en",
+  "scenario": "topic_switching",
+  "qualitative_checks": [],
+  "final_blocks": [
+    {
+      "block_index": 1,
+      "turn_start": 1,
+      "turn_end": 10,
+      "sections": [
+        {
+          "handle": 1,
+          "title": "Cellular Respiration",
+          "bullets": [
+            "Reviewed glycolysis, the Krebs cycle, and oxidative phosphorylation/ETC, including their locations and roles in ATP production.",
+            "Explained that glycolysis likely predates mitochondria and occurs in the cytoplasm, while later stages use mitochondrial structures. Student found this evolutionary context interesting."
+          ],
+          "turns": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "handle": 2,
+          "title": "Robotics Drive-Train Choice",
+          "bullets": [
+            "Compared differential drive (simpler, cheaper, robust, but cannot strafe) with mecanum wheels (omnidirectional, but costlier, more fragile, and less effective on rough or dirty surfaces).",
+            "The competition field is smooth indoor flooring, and the bot needs precise docking at scoring zones. Mecanum may help with direct lateral alignment, though its four-wheel control math needs extra calibration time; student will raise it at the next meeting."
+          ],
+          "turns": [
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "handle": 3,
+          "title": "Price Elasticity of Demand",
+          "bullets": [
+            "Explained PED as percentage change in quantity demanded divided by percentage change in price; absolute values above 1 are elastic, below 1 inelastic, and 1 unit elastic.",
+            "Clarified insulin as inelastic because patients have little choice to reduce use and often lack substitutes, unlike a specific soda brand. Student said the explanation cleared it up."
+          ],
+          "turns": [
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "handle": 4,
+          "title": "Switching Between Study Subjects",
+          "bullets": [
+            "Student asked whether studying unrelated subjects back to back hurts retention. The response described interleaving and said switching among distinct topics may support long-term retention through retrieval and re-contextualization."
+          ],
+          "turns": [
+            10
+          ]
+        }
+      ],
+      "header": {
+        "style_preferences": [],
+        "context": [],
+        "purpose": [],
+        "unresolved": []
+      }
+    }
+  ],
+  "final_header": {
+    "style_preferences": [],
+    "context": [],
+    "purpose": [],
+    "unresolved": []
+  },
+  "probe_results": [
+    {
+      "probe_id": "etc_produces_most_atp",
+      "history_through_round": 17,
+      "probe_question": "ok going back to bio — remind me, which of the three respiration stages actually produces the most ATP?",
+      "gold_reference_answer": "That's oxidative phosphorylation (the electron transport chain), the third stage we talked about — it produces the bulk of the total, around 26-28 of the ~30-32 ATP molecules per glucose. Glycolysis and the Krebs cycle each only net a small amount directly (2 ATP each), so the ETC is by far the biggest contributor.",
+      "expected_tier": "block1",
+      "why_it_matters": "The fact is from round 1, then 16 rounds of unrelated robotics/econ/chitchat happen before it's asked about again. Round 1 is folded into block1 after round 15.",
+      "context_stats": {
+        "raw_condition_rounds": 17,
+        "summarized_condition_raw_rounds": 7,
+        "summarized_condition_blocks": 1
+      },
+      "raw_condition": {
+        "answer": "That would be the **oxidative phosphorylation** stage (the electron transport chain).\n\nWhile glycolysis and the Krebs cycle only produce a small amount of ATP directly, they do the heavy lifting of gathering high-energy electrons from the food you eat. Those electrons are carried by NADH and FADH2 to the electron transport chain, where they drive a process that produces the vast majority of the ATP—usually around 26 to 28 molecules per glucose.\n\nThink of it like a power plant: glycolysis and the Krebs cycle are the miners gathering the raw coal, but the electron transport chain is the actual furnace that turns that \"fuel\" into a massive amount of electrical energy (ATP).\n\nDoes it make sense why those \"middle\" stages are so important even though they don't produce much ATP themselves?",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "oxidative phosphorylation / electron transport chain produces the most ATP",
+              "present": true,
+              "note": "The answer states that oxidative phosphorylation (the electron transport chain) produces the vast majority of ATP."
+            },
+            {
+              "fact": "roughly 26-28 out of ~30-32 total ATP",
+              "present": true,
+              "note": "The answer specifies that the electron transport chain produces usually around 26 to 28 molecules per glucose."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      },
+      "summarized_condition": {
+        "answer": "The real powerhouse is **oxidative phosphorylation** (the final stage). \n\nWhile glycolysis produces a net of 2 ATP and the Krebs cycle produces 2 ATP per glucose molecule, oxidative phosphorylation generates about 26 to 28 ATP. \n\nIt’s the final stage where all the \"energy currency\" collected earlier (in the form of NADH and FADH2) gets dumped into the electron transport chain to power the synthesis of the vast majority of that ATP. \n\nSince you’re doing that lab on yeast respiration and temperature, it’s worth thinking about: if oxidative phosphorylation is where the \"big payout\" happens, how do you think a drop in temperature might affect the yeast's total energy output compared to just the rate of the earlier stages?",
+        "summary_text": "## Cellular Respiration\n- Reviewed glycolysis, the Krebs cycle, and oxidative phosphorylation/ETC, including their locations and roles in ATP production.\n- Explained that glycolysis likely predates mitochondria and occurs in the cytoplasm, while later stages use mitochondrial structures. Student found this evolutionary context interesting.\n\n## Robotics Drive-Train Choice\n- Compared differential drive (simpler, cheaper, robust, but cannot strafe) with mecanum wheels (omnidirectional, but costlier, more fragile, and less effective on rough or dirty surfaces).\n- The competition field is smooth indoor flooring, and the bot needs precise docking at scoring zones. Mecanum may help with direct lateral alignment, though its four-wheel control math needs extra calibration time; student will raise it at the next meeting.\n\n## Price Elasticity of Demand\n- Explained PED as percentage change in quantity demanded divided by percentage change in price; absolute values above 1 are elastic, below 1 inelastic, and 1 unit elastic.\n- Clarified insulin as inelastic because patients have little choice to reduce use and often lack substitutes, unlike a specific soda brand. Student said the explanation cleared it up.\n\n## Switching Between Study Subjects\n- Student asked whether studying unrelated subjects back to back hurts retention. The response described interleaving and said switching among distinct topics may support long-term retention through retrieval and re-contextualization.",
+        "header_text": "",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "oxidative phosphorylation / electron transport chain produces the most ATP",
+              "present": true,
+              "note": "The answer states that oxidative phosphorylation is the 'real powerhouse' and generates the 'vast majority of that ATP'."
+            },
+            {
+              "fact": "roughly 26-28 out of ~30-32 total ATP",
+              "present": true,
+              "note": "The answer specifies that oxidative phosphorylation generates 'about 26 to 28 ATP', while glycolysis and the Krebs cycle produce 2 ATP each, for a total of approximately 30-32 ATP."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      }
+    }
+  ]
+}

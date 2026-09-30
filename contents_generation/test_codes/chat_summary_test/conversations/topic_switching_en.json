@@ -1,0 +1,126 @@
+{
+  "id": "topic_switching_en",
+  "language": "en",
+  "scenario": "topic_switching",
+  "description": "Bio, robotics club, econ, and casual chat interleaved with many topic switches. Tests whether a fact from the very first round (which ends up in block1) survives many unrelated turns before being asked about again.",
+  "fold_schedule": {
+    "first_fold_at_round": 15,
+    "second_fold_at_round": null
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "user": "Hey, quick one — in bio we covered cellular respiration today, can you remind me the three main stages?",
+      "assistant": "Sure! The three stages are: (1) Glycolysis — happens in the cytoplasm, breaks glucose into pyruvate, nets 2 ATP. (2) The Krebs cycle (citric acid cycle) — happens in the mitochondrial matrix, produces electron carriers (NADH, FADH2) and a little ATP. (3) Oxidative phosphorylation / electron transport chain (ETC) — happens on the inner mitochondrial membrane, uses those electron carriers to make the bulk of ATP (around 26-28 molecules). Total is usually cited as ~30-32 ATP per glucose."
+    },
+    {
+      "round": 2,
+      "user": "Wait why does glycolysis happen in the cytoplasm and not the mitochondria?",
+      "assistant": "Good question — glycolysis evolved before mitochondria existed (it's basically universal across almost all life, even organisms without mitochondria), so it makes sense it stayed in the cytoplasm. The later stages evolved once mitochondria were incorporated (endosymbiotic theory), and they take advantage of the mitochondrial membrane structure to build a proton gradient, which glycolysis doesn't need."
+    },
+    {
+      "round": 3,
+      "user": "oh that's actually really interesting, didn't know that context",
+      "assistant": "Yeah, it's one of those details that makes way more sense once you see the evolutionary timeline. Anyway, anything else from that lecture you want to go over, or are we good on bio for now?"
+    },
+    {
+      "round": 4,
+      "user": "we're good for now. switching gears — robotics club, we're trying to decide between a differential drive or mecanum wheels for the competition bot. thoughts?",
+      "assistant": "Depends on your competition's terrain and what maneuvers you need. Differential drive (two independently driven wheels + casters) is simpler, cheaper, and more robust mechanically, but you can't strafe sideways — you have to turn to reposition. Mecanum wheels let you move in any direction without turning (omnidirectional), which is huge for precision tasks, but they're more expensive, more fragile, and lose some traction/efficiency on rough or dirty surfaces because of the rollers."
+    },
+    {
+      "round": 5,
+      "user": "our field is pretty smooth indoor flooring, and we need to dock precisely at scoring zones",
+      "assistant": "Given smooth flooring and a need for precise docking, mecanum could genuinely help — you could strafe directly into a scoring zone without a turning maneuver, which saves time and reduces alignment error. Just budget extra time for calibration since mecanum drive math (combining 4 wheel speeds into x/y/rotation) is trickier to tune than a simple differential drive."
+    },
+    {
+      "round": 6,
+      "user": "makes sense, I'll bring that up at the next meeting",
+      "assistant": "Nice, good luck with the decision! Let me know if you want help thinking through the control math later."
+    },
+    {
+      "round": 7,
+      "user": "will do. ok now totally different topic — I have an econ midterm on supply/demand elasticity, can you explain price elasticity of demand simply?",
+      "assistant": "Sure — price elasticity of demand (PED) measures how much quantity demanded changes when price changes, in percentage terms: PED = (% change in quantity demanded) / (% change in price). If |PED| > 1, demand is \"elastic\" (quantity is very sensitive to price — think luxury goods). If |PED| < 1, demand is \"inelastic\" (quantity barely changes — think insulin or gasoline in the short term). |PED| = 1 is \"unit elastic.\""
+    },
+    {
+      "round": 8,
+      "user": "why would insulin be inelastic, isn't that a weird example",
+      "assistant": "It's actually a classic example — insulin is inelastic because people who need it don't have a real choice to buy less when the price rises; it's medically necessary and often has no substitute. So even a big price increase barely reduces the quantity purchased. Compare that to something like a specific brand of soda, which is elastic because people can easily switch to a different brand or skip it entirely if the price goes up."
+    },
+    {
+      "round": 9,
+      "user": "got it that clears it up",
+      "assistant": "Glad that helped! Anything else on elasticity, or good for now?"
+    },
+    {
+      "round": 10,
+      "user": "good for now thanks. random thought though — do you think studying multiple unrelated subjects back to back like this actually hurts retention?",
+      "assistant": "There's actually research on this — it's related to \"interleaving\" in learning science. Contrary to intuition, switching between different topics (as long as they're not too similar/confusable) can actually improve long-term retention compared to studying one subject in a long uninterrupted block, because your brain has to actively retrieve and re-contextualize each time you switch back, which strengthens memory more than passive repetition. So what we're doing right now might actually be helping more than it feels like!"
+    },
+    {
+      "round": 11,
+      "user": "that's reassuring haha. ok, back to robotics for a sec — what's a reasonable gear ratio to start with for a mecanum setup with a NEO motor?",
+      "assistant": "For a NEO motor (which free-speeds around 5676 RPM) driving a mecanum wheel roughly 4-6 inches in diameter, a common starting gear ratio is somewhere around 8:1 to 12:1 depending on whether you're prioritizing top speed or torque/pushing power. Competition bots doing precision docking usually lean toward the higher ratio end (more torque, more controllable low-speed movement) since raw top speed matters less than fine control."
+    },
+    {
+      "round": 12,
+      "user": "we'll probably go with something like 10:1 then",
+      "assistant": "That's a solid middle-ground choice — good balance of control and speed for docking-focused tasks."
+    },
+    {
+      "round": 13,
+      "user": "switching topics again, sorry — for the bio class, is there a lab report due this week?",
+      "assistant": "I don't actually have visibility into your assignment deadlines or course calendar — that's something you'd need to check in your course portal or with your professor. I can definitely help you work through the content or structure of a lab report if you tell me what it's about, though!"
+    },
+    {
+      "round": 14,
+      "user": "ah right, my bad. it's about the respiration lab we did, measuring CO2 output from yeast at different temperatures",
+      "assistant": "Got it — for that kind of lab report, a solid structure is: Introduction (why yeast respiration + temperature matters, tie to the stages we discussed), Hypothesis, Methods (setup, temperatures tested, how CO2 was measured), Results (a graph of CO2 output vs. temperature usually works well), and Discussion (why the trend happened — likely enzyme activity increasing with temperature up to an optimum, then dropping off as enzymes denature). Want help outlining the discussion section once you have your actual data?"
+    },
+    {
+      "round": 15,
+      "user": "yeah maybe later once I have the numbers. thanks for now",
+      "assistant": "Sounds good, just ping me whenever you've got the data and we'll dig into the discussion section together."
+    },
+    {
+      "round": 16,
+      "user": "quick econ follow up — is PED the same thing as PES?",
+      "assistant": "No, different things. PED (price elasticity of demand) measures how quantity demanded reacts to price changes. PES (price elasticity of supply) measures how quantity supplied reacts to price changes — same percentage-change formula, just applied to the supply curve instead of demand. A classic factor affecting PES is how easily producers can ramp production up or down (e.g., farmland for crops is fixed short-term, making agricultural supply pretty inelastic)."
+    },
+    {
+      "round": 17,
+      "user": "ok that's clear now",
+      "assistant": "Glad it clicked! Elasticity concepts tend to click once you see a couple of concrete examples like that."
+    },
+    {
+      "round": 18,
+      "user": "ok going back to bio — remind me, which of the three respiration stages actually produces the most ATP?",
+      "assistant": "That's oxidative phosphorylation (the electron transport chain), the third stage we talked about — it produces the bulk of the total, around 26-28 of the ~30-32 ATP molecules per glucose. Glycolysis and the Krebs cycle each only net a small amount directly (2 ATP each), so the ETC is by far the biggest contributor."
+    },
+    {
+      "round": 19,
+      "user": "right, that matches what you said before. thanks for keeping track through all these topic jumps lol",
+      "assistant": "Ha, no problem — happy to keep threads straight even when we're bouncing around. Let me know whenever you want to jump back into any of these (bio lab, robotics gearing, or econ) or start something new."
+    },
+    {
+      "round": 20,
+      "user": "will do, thanks!",
+      "assistant": "Anytime!"
+    }
+  ],
+  "probes": [
+    {
+      "id": "etc_produces_most_atp",
+      "history_through_round": 17,
+      "probe_round": 18,
+      "requires_info_from_round": 1,
+      "expected_tier_at_probe_time": "block1",
+      "key_facts_must_include": [
+        "oxidative phosphorylation / electron transport chain produces the most ATP",
+        "roughly 26-28 out of ~30-32 total ATP"
+      ],
+      "why_it_matters": "The fact is from round 1, then 16 rounds of unrelated robotics/econ/chitchat happen before it's asked about again. Round 1 is folded into block1 after round 15."
+    }
+  ]
+}

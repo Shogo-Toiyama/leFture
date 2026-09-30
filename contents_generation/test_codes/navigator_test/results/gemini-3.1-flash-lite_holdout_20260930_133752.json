@@ -1,0 +1,505 @@
+{
+  "model": "gemini/gemini-3.1-flash-lite",
+  "reasoning": "none",
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.7,
+        "usage": {
+          "input": 3669,
+          "output": 116
+        },
+        "output": {
+          "reasoning": "The student is expressing distress about their workload. I should check their recent activity to see if I can offer empathy and contextually relevant support, but no specific study material is requested yet.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Acknowledge the student's stress about their workload.",
+            "Offer support or suggest strategies for managing academic pressure, potentially referencing their current schedule or past study habits."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.35,
+        "usage": {
+          "input": 3673,
+          "output": 139
+        },
+        "output": {
+          "reasoning": "The student is asking a general computer science question about the difference between a process and a thread. This is fundamental knowledge and does not necessarily require looking into the student's specific course materials unless those courses cover operating systems. None of the listed courses (C1 to C5) explicitly mention Operating Systems in their titles. I will treat this as a general knowledge query.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain the fundamental differences between a process and a thread, including memory usage, communication, and context switching."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.25,
+        "usage": {
+          "input": 3676,
+          "output": 102
+        },
+        "output": {
+          "reasoning": "The student is asking about the biological mechanism of caffeine, which is general knowledge and does not require checking their specific course materials.",
+          "status": "nothing_needed",
+          "missing": "none",
+          "operations": [],
+          "goal": [
+            "Explain the biological mechanism of how caffeine affects the body (adenosine receptors, etc.).",
+            "Briefly acknowledge the student's situation."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.6,
+        "usage": {
+          "input": 3899,
+          "output": 259
+        },
+        "output": {
+          "reasoning": "The student is asking about the 'last one' (lecture) in the linear algebra course (C4). From the previous turn, the last lecture is C4/L7 'Orthogonality', held on 2026-09-29. I will open it to provide a summary.",
+          "status": "need_more",
+          "missing": "The content/summary of the last lecture in the Linear Algebra course (C4/L7).",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C4/L7",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "What was the last one about again?",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Summarize the content of the last linear algebra lecture (C4/L7: Orthogonality)."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.4,
+        "usage": {
+          "input": 3766,
+          "output": 353
+        },
+        "output": {
+          "reasoning": "The student is asking about the lecture immediately preceding the one previously discussed (B-Trees, C1/L8). Based on the course list in the map, the lecture before C1/L8 is C1/L7.",
+          "status": "need_more",
+          "missing": "The content and topic of lecture C1/L7 in the CS 161 Data Structures course.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その前の回",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "handle": "C1/L7",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その前の回",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Identify C1/L7 as the lecture before C1/L8.",
+            "Summarize the key topics covered in C1/L7 for the student."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 2.16,
+        "usage": {
+          "input": 3672,
+          "output": 290
+        },
+        "output": {
+          "reasoning": "The student wants a summary of last week's Robotics Seminar lectures. Based on <today> (2026-09-30), 'last week' covers the period from 2026-09-20 to 2026-09-26. I will open the Robotics Seminar course (C5) to identify the lectures in that range.",
+          "status": "need_more",
+          "missing": "the lecture summaries for the robotics lectures that occurred last week",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C5",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "先週のロボティクスの授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Identify the lectures in C5 that occurred between 2026-09-20 and 2026-09-26",
+            "Summarize the content of those specific lectures"
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 5,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 1.94,
+        "usage": {
+          "input": 3679,
+          "output": 270
+        },
+        "output": {
+          "reasoning": "The student is asking about an anecdote mentioned by the professor in a Linear Algebra class. I need to search the transcripts of the Linear Algebra course (C4) to find any mention of a 'bridge' or 'collapse' to identify the story.",
+          "status": "need_more",
+          "missing": "The specific context or explanation of the bridge collapse story from the Linear Algebra lectures.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "bridge collapse",
+              "layer": "transcript",
+              "within": "C4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the professor told a story about a bridge collapsing",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Identify the lecture where the bridge collapse story was told.",
+            "Explain the context of the story and how it relates to linear algebra (likely eigenvalue/eigenvector or resonance).",
+            "Summarize what the professor said."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_chat_pointers",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 1.63,
+        "usage": {
+          "input": 3678,
+          "output": 223
+        },
+        "output": {
+          "reasoning": "The student is asking to review a past conversation about C pointers. I need to find the chat where this was discussed to retrieve the example.",
+          "status": "need_more",
+          "missing": "the specific example of pointers in C discussed in a previous chat",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "P18",
+              "target": "chat.all",
+              "query": "C言語のポインタ",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "Remember when we went over pointers in C?",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Retrieve the C pointer example from chat P18.",
+            "Present the example clearly to the student."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 1.65,
+        "usage": {
+          "input": 3674,
+          "output": 257
+        },
+        "output": {
+          "reasoning": "The student is asking about a specific biological concept ('temperature' and 'enzymes') from their 'Biology 101' course (C3). I need to search the lecture materials for this course to find the relevant information.",
+          "status": "need_more",
+          "missing": "The specific lecture or topic in C3 that covers the relationship between temperature and enzymes.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "酵素 温度",
+              "layer": "all",
+              "within": "C3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "In bio, what did we learn about how temperature affects enzymes?",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Identify which lecture in C3 discusses the effect of temperature on enzymes.",
+            "Summarize how enzymes are affected by temperature based on the lecture materials."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 1.48,
+        "usage": {
+          "input": 3673,
+          "output": 285
+        },
+        "output": {
+          "reasoning": "The student is asking about how a specific concept, Dijkstra's algorithm, was explained in class. Dijkstra's algorithm is a core topic in data structures, which is covered in CS 161 (C1). I need to search the lecture transcripts for this term to find the professor's explanation.",
+          "status": "need_more",
+          "missing": "The specific lecture where Dijkstra's algorithm was explained and the professor's explanation content.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm",
+              "layer": "transcript",
+              "within": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "ダイクストラ法って授業でどう説明されてた？",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Identify the lecture covering Dijkstra's algorithm in CS 161.",
+            "Retrieve the professor's explanation from the transcript.",
+            "Summarize how the professor explained the algorithm."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 1.46,
+        "usage": {
+          "input": 3016,
+          "output": 245
+        },
+        "output": {
+          "reasoning": "The student is asking for the specific explanation of Dijkstra's algorithm given in class. I have identified the relevant lecture (C1/L11) and need to open it to access the summary and topics.",
+          "status": "need_more",
+          "missing": "the professor's specific explanation and steps for Dijkstra's algorithm",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L11",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "ダイクストラ法って授業でどう説明されてた？",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Explain Dijkstra's algorithm based on the contents of C1/L11",
+            "Identify key points or steps the professor emphasized"
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 1.86,
+        "usage": {
+          "input": 3096,
+          "output": 253
+        },
+        "output": {
+          "reasoning": "I have identified the correct lecture (C1/L11) but have not yet seen the actual explanation or transcript of how the professor described Dijkstra's algorithm. I need to access the transcript to provide the explanation the student requested.",
+          "status": "need_more",
+          "missing": "The professor's specific explanation of Dijkstra's algorithm from the lecture transcript.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L1",
+              "target": "none",
+              "query": "",
+              "layer": "transcript",
+              "within": "C1/L11",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "ダイクストラ法って授業でどう説明されてた？",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Summarize the professor's explanation of Dijkstra's algorithm as found in the lecture transcript for C1/L11."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.04,
+        "usage": {
+          "input": 3671,
+          "output": 88
+        },
+        "output": {
+          "reasoning": "The student is asking a question about a current software version (Python 3.14). This is a general knowledge question about outside facts.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Inform the student about the current state of Python 3.14."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": false,
+          "error": "stopped_too_early"
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.016673358033799567
+}

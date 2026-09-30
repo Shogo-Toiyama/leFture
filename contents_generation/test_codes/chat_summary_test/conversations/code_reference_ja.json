@@ -1,0 +1,115 @@
+{
+  "id": "code_reference_ja",
+  "language": "ja",
+  "scenario": "code_reference",
+  "description": "再帰・ソートのコード例を交えた会話。round1-2で見せたfactorialコードの「base caseの条件による挙動の違い」という、コードの中身レベルの細部が、畳んだ後(block1)も残るかを見る。",
+  "fold_schedule": {
+    "first_fold_at_round": 15,
+    "second_fold_at_round": null
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "user": "再帰関数のfactorialってどう書くの?Pythonで",
+      "assistant": "こんな感じになるよ。\n\n```python\ndef factorial(n):\n    if n == 0:\n        return 1  # base case\n    return n * factorial(n - 1)  # recursive case\n```\n\nn==0の時に1を返す部分(base case)で再帰が止まって、それ以外は自分自身をn-1で呼び出しながら掛け算を積み重ねていく、っていう構造。"
+    },
+    {
+      "round": 2,
+      "user": "n=0じゃなくてn=1をbase caseにしても動く?",
+      "assistant": "動くよ。`if n <= 1: return 1` にすればn=0でもn=1でも1を返すから安全。ただしn=0の場合だけを想定するなら元のコードのままでも問題ない、ここは書き方の好みの範囲。"
+    },
+    {
+      "round": 3,
+      "user": "なるほど。再帰って毎回スタックに積まれていくんだよね?",
+      "assistant": "そうそう、`factorial(5)`を呼ぶと、`factorial(4)`, `factorial(3)`... って呼び出しがどんどんスタックに積まれていって、base caseに到達して初めて、積んだ分を掛け算しながら戻ってくる(巻き戻る)、っていうイメージ。"
+    },
+    {
+      "round": 4,
+      "user": "スタックが深くなりすぎるとどうなる?",
+      "assistant": "PythonだとデフォルトでRecursionErrorが出る(再帰の上限がだいたい1000回くらい)。すごく大きいnでfactorialを再帰で計算しようとすると、その上限に引っかかることがあるよ。"
+    },
+    {
+      "round": 5,
+      "user": "じゃあ大きい数の場合はループの方がいいってこと?",
+      "assistant": "そうだね、実用上はループの方が安全なことが多い。\n\n```python\ndef factorial_loop(n):\n    result = 1\n    for i in range(2, n + 1):\n        result *= i\n    return result\n```\n\nこっちならスタックを積まないから、上限を気にしなくていい。"
+    },
+    {
+      "round": 6,
+      "user": "再帰とループ、パフォーマンスの違いってある?",
+      "assistant": "一般的にはループの方が速い。関数呼び出し自体にオーバーヘッド(スタックの積み下ろしなど)があるから、再帰は同じ処理でもループより遅くなりがち。ただしコードの見やすさや、木構造・分割統治のような問題では再帰の方が自然に書けることが多いから、パフォーマンスと可読性のトレードオフで選ぶことになるよ。"
+    },
+    {
+      "round": 7,
+      "user": "分割統治って例えばどんなのがある?",
+      "assistant": "マージソートやクイックソートが代表例。大きい問題(配列全体のソート)を小さい問題(半分に分けた配列のソート)に分解して、それぞれ再帰的に解いてから組み合わせる、っていう考え方。"
+    },
+    {
+      "round": 8,
+      "user": "マージソートの実装も見てみたい",
+      "assistant": "いいよ。\n\n```python\ndef merge_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    mid = len(arr) // 2\n    left = merge_sort(arr[:mid])\n    right = merge_sort(arr[mid:])\n    return merge(left, right)\n\ndef merge(left, right):\n    result = []\n    i = j = 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            result.append(left[i]); i += 1\n        else:\n            result.append(right[j]); j += 1\n    result.extend(left[i:])\n    result.extend(right[j:])\n    return result\n```\n\n`merge_sort`が分割(小さい配列に分けて再帰)、`merge`が統治(2つのソート済み配列を1つにまとめる)の役割。"
+    },
+    {
+      "round": 9,
+      "user": "これも計算量はO(n log n)なんだっけ",
+      "assistant": "そう、分割がlog n段階、各段階でのmergeがO(n)だから、合計でO(n log n)になる。"
+    },
+    {
+      "round": 10,
+      "user": "クイックソートとの違いは?",
+      "assistant": "マージソートは「分割は均等、統治(merge)が仕事をする」タイプ。クイックソートは逆で「分割(pivotで振り分け)が仕事をして、統治はほぼ何もしない(すでに順番に並んでる部分を繋げるだけ)」タイプ。平均計算量はどっちもO(n log n)だけど、クイックソートはpivotの選び方が悪いと最悪O(n²)まで悪化する点が違う。"
+    },
+    {
+      "round": 11,
+      "user": "pivotの選び方って重要なんだね",
+      "assistant": "すごく重要だよ。ランダムに選ぶか、中央値に近い値を選ぶ工夫をすると、最悪ケースに当たる確率をかなり下げられる。"
+    },
+    {
+      "round": 12,
+      "user": "ちょっと話それるけど、こういうソートのアルゴリズムって面接でよく聞かれるって聞いた",
+      "assistant": "そうだね、特にマージソート・クイックソートの実装や計算量の説明は定番の質問。今日話した内容そのまま聞かれることも多いから、書けるようにしておいて損はないよ。"
+    },
+    {
+      "round": 13,
+      "user": "練習しておこうかな。ところで、さっきのfactorialのループ版、rangeの開始を2にしてたのはなんで?",
+      "assistant": "1を掛けても結果は変わらないから、計算を1回減らすために2から始めてるだけだよ。`range(1, n+1)`でも結果は同じ、単なる最適化(ごく些細なものだけど)。"
+    },
+    {
+      "round": 14,
+      "user": "細かい配慮だね",
+      "assistant": "うん、実用上はほぼ誤差レベルの違いだけどね。"
+    },
+    {
+      "round": 15,
+      "user": "今日はソートと再帰、結構頭に入った気がする",
+      "assistant": "いいね、再帰の考え方(base case + 自分自身を呼ぶ)と分割統治(分けて、それぞれ解いて、組み合わせる)は、この後の授業でも土台になる考え方だから、ここでしっかり掴めたのは大きいと思うよ。"
+    },
+    {
+      "round": 16,
+      "user": "そういえば、一番最初に見せてくれたfactorialの再帰コード、base caseの条件をn<=1にしたバージョンだと、n=0を渡した時ちゃんと1が返ってくるんだっけ?",
+      "assistant": "うん、`if n <= 1: return 1`ならn=0でもn=1でも条件に合致するから、どちらの場合もそのまま1を返す。最初に見せた`n == 0`だけの版とは違って、n=1の時も再帰を1段減らして即座に1を返せる、っていう違いがあるよ。"
+    },
+    {
+      "round": 17,
+      "user": "ちゃんと覚えてた、ありがとう",
+      "assistant": "どういたしまして、コードの細かい違いも聞かれたらいつでも確認するよ。"
+    },
+    {
+      "round": 18,
+      "user": "今日はここまでにする、ありがとう!",
+      "assistant": "お疲れさま、また続き聞きたくなったらいつでもどうぞ。"
+    }
+  ],
+  "probes": [
+    {
+      "id": "factorial_base_case_variant",
+      "history_through_round": 15,
+      "probe_round": 16,
+      "requires_info_from_round": 2,
+      "expected_tier_at_probe_time": "block1",
+      "key_facts_must_include": [
+        "n <= 1 の版でも n=0 を渡せば1が返る(条件を満たすため)"
+      ],
+      "why_it_matters": "「コードがあった」という事実だけでなく、「n<=1版はn=0でも動くか」という中身レベルの細部が、要約の箇条書きに残っているかを見る。設計の『後で参照されそうな具体物は中身も短く残す』の直接的なテスト。"
+    }
+  ]
+}

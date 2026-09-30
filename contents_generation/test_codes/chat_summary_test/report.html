@@ -1,0 +1,812 @@
+<title>チャット要約評価</title>
+<style>
+:root {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface-2: #f0ede5;
+  --border: #ddd7c9;
+  --text: #23211c;
+  --text-muted: #6b6558;
+  --accent: #3c6e71;
+  --accent-2: #b3541e;
+  --raw: #b3541e;
+  --raw-bg: #fbeee2;
+  --sum: #3c6e71;
+  --sum-bg: #e6f0ef;
+  --pass: #2f7a3d;
+  --pass-bg: #e5f3e6;
+  --fail: #b3261e;
+  --fail-bg: #fbe6e4;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --display: 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif;
+  --body-font: 'Noto Sans JP', sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17181a;
+    --surface: #202225;
+    --surface-2: #26282c;
+    --border: #37393e;
+    --text: #eceae4;
+    --text-muted: #9a978d;
+    --accent: #7fb8ba;
+    --accent-2: #e08a52;
+    --raw: #e08a52;
+    --raw-bg: #33261c;
+    --sum: #7fb8ba;
+    --sum-bg: #1c2c2b;
+    --pass: #6fcf7d;
+    --pass-bg: #1c2e1f;
+    --fail: #ef6f66;
+    --fail-bg: #33201e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17181a;
+  --surface: #202225;
+  --surface-2: #26282c;
+  --border: #37393e;
+  --text: #eceae4;
+  --text-muted: #9a978d;
+  --accent: #7fb8ba;
+  --accent-2: #e08a52;
+  --raw: #e08a52;
+  --raw-bg: #33261c;
+  --sum: #7fb8ba;
+  --sum-bg: #1c2c2b;
+  --pass: #6fcf7d;
+  --pass-bg: #1c2e1f;
+  --fail: #ef6f66;
+  --fail-bg: #33201e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body-font);
+  padding: 0 16px 64px;
+  line-height: 1.7;
+}
+.page { max-width: 900px; margin: 0 auto; }
+.masthead { padding: 40px 0 24px; border-bottom: 1px solid var(--border); }
+.masthead h1 {
+  font-family: var(--display);
+  font-size: 28px;
+  margin: 0 0 8px;
+  letter-spacing: 0.01em;
+}
+.masthead p.lede { color: var(--text-muted); margin: 0 0 20px; max-width: 62ch; }
+.stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 120px;
+}
+.stat-tile .num { font-family: var(--mono); font-size: 22px; font-weight: 600; }
+.stat-tile .label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.methodology { margin-top: 20px; color: var(--text-muted); font-size: 13px; }
+.methodology summary { cursor: pointer; color: var(--accent); }
+
+.conversation { margin-top: 40px; padding-top: 8px; }
+.conversation-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.conversation-head h2 {
+  font-family: var(--mono);
+  font-size: 17px;
+  margin: 0;
+  font-weight: 600;
+}
+.lang-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  color: var(--text-muted);
+}
+.status-chip {
+  font-size: 12px;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-weight: 600;
+}
+.status-pass { background: var(--pass-bg); color: var(--pass); }
+.status-fail { background: var(--fail-bg); color: var(--fail); }
+
+.probe {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.probe-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.probe-head h3 { font-family: var(--mono); font-size: 14px; margin: 0; color: var(--accent); }
+.tier-chip {
+  font-size: 11px; color: var(--text-muted); background: var(--surface-2);
+  border-radius: 5px; padding: 2px 8px; font-family: var(--mono);
+}
+.probe-question { margin: 10px 0 6px; }
+.why-it-matters { color: var(--text-muted); font-size: 13px; font-style: italic; margin: 6px 0 14px; }
+
+.condition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+@media (max-width: 720px) { .condition-grid { grid-template-columns: 1fr; } }
+.condition { border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+.condition-raw { background: var(--raw-bg); border-color: color-mix(in srgb, var(--raw) 35%, var(--border)); }
+.condition-summarized { background: var(--sum-bg); border-color: color-mix(in srgb, var(--sum) 35%, var(--border)); }
+.condition-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.condition-label { font-weight: 700; font-size: 13px; }
+.condition-raw .condition-label { color: var(--raw); }
+.condition-summarized .condition-label { color: var(--sum); }
+.context-note { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; }
+.answer-text {
+  font-family: var(--body-font);
+  font-size: 13.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 8px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.fact-list { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.fact-list li { font-size: 12px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.fact-chip { font-family: var(--mono); font-size: 10px; border-radius: 4px; padding: 1px 6px; flex-shrink: 0; }
+.fact-ok .fact-chip { background: var(--pass-bg); color: var(--pass); }
+.fact-ng .fact-chip { background: var(--fail-bg); color: var(--fail); }
+.fact-text { font-weight: 600; }
+.fact-note { color: var(--text-muted); }
+
+.inner-details { margin-top: 8px; }
+.inner-details summary { cursor: pointer; font-size: 12px; color: var(--text-muted); }
+.inner-details .answer-text { margin-top: 6px; }
+
+.qualitative {
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.qualitative-title { font-weight: 700; margin-bottom: 6px; }
+.qualitative ul { margin: 0; padding-left: 20px; color: var(--text-muted); }
+
+.block-details { margin-top: 6px; }
+.block-details > summary {
+  cursor: pointer; font-weight: 600; font-size: 13px; color: var(--accent);
+  padding: 10px 0;
+}
+.block-details-inner { padding: 6px 0 4px; }
+.header-box {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 16px; margin-bottom: 14px;
+}
+.header-box-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+.header-row { margin-bottom: 6px; font-size: 13px; }
+.header-label { font-weight: 600; margin-right: 6px; }
+.header-items { display: inline; list-style: none; margin: 0; padding: 0; }
+.header-items li { display: inline; }
+.header-items li:not(:last-child)::after { content: " / "; color: var(--text-muted); }
+
+.block { border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; background: var(--surface); }
+.block-label { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+.section { margin-bottom: 10px; }
+.section:last-child { margin-bottom: 0; }
+.section-title { font-weight: 700; font-size: 13.5px; margin-bottom: 4px; }
+.bullets { margin: 0; padding-left: 20px; font-size: 13px; color: var(--text); }
+.bullets li { margin-bottom: 2px; }
+.muted { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+
+footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<div class="page">
+  <div class="masthead">
+    <h1>チャット要約評価</h1>
+    <p class="lede">
+      スレッド要約パイプライン(ロードマップ ステップ2)を、5本の会話・6個のprobeに通した結果。
+      各probeについて「生の全履歴」と「要約(GPT-6 Luna) + 直近の原文」の2条件で
+      同じ回答役(gemini-3.1-flash-lite)に答えさせ、要点が保てているかをLLM審判(gemini-2.5-flash-lite)で判定した。
+    </p>
+    <div class="stat-row">
+      <div class="stat-tile"><div class="num">5</div><div class="label">会話</div></div>
+      <div class="stat-tile"><div class="num">6</div><div class="label">probe</div></div>
+      <div class="stat-tile"><div class="num">5 / 6</div><div class="label">両条件とも合格</div></div>
+      <div class="stat-tile"><div class="num">$0.02</div><div class="label">評価にかかった費用</div></div>
+    </div>
+    <details class="methodology">
+      <summary>台本とprobeの作り方について</summary>
+      <p>
+        各probeは会話の自然な流れに埋め込まれた質問で、別途不自然な確認問題は作っていない。
+        その往復で執筆時に書いた回答が「正解の目安」。要約の実装は
+        contents_generation/test_codes/chat_summary_test/ 以下(build_conversations.py,
+        run_eval.py)。要約役・回答役は本番のコード(chat_summary.py / chat_service.py)をそのまま呼んでいる。
+      </p>
+    </details>
+  </div>
+
+  
+    <section class="conversation">
+      <div class="conversation-head">
+        <span class="lang-chip">JA</span>
+        <h2>code_reference_ja</h2>
+        <span class="status-chip status-pass">全probe合格</span>
+      </div>
+      
+    <div class="probe probe-pass">
+      <div class="probe-head">
+        <h3>factorial_base_case_variant</h3>
+        <span class="tier-chip">扱う階層: block1</span>
+      </div>
+      <p class="probe-question"><strong>質問(round 16):</strong> そういえば、一番最初に見せてくれたfactorialの再帰コード、base caseの条件をn&lt;=1にしたバージョンだと、n=0を渡した時ちゃんと1が返ってくるんだっけ?</p>
+      <details class="inner-details"><summary>正解の目安(執筆時点の会話の流れの中の返答)</summary><pre class="answer-text">うん、`if n &lt;= 1: return 1`ならn=0でもn=1でも条件に合致するから、どちらの場合もそのまま1を返す。最初に見せた`n == 0`だけの版とは違って、n=1の時も再帰を1段減らして即座に1を返せる、っていう違いがあるよ。</pre></details>
+      <p class="why-it-matters">「コードがあった」という事実だけでなく、「n&lt;=1版はn=0でも動くか」という中身レベルの細部が、要約の箇条書きに残っているかを見る。設計の『後で参照されそうな具体物は中身も短く残す』の直接的なテスト。</p>
+      <div class="condition-grid">
+        
+    <div class="condition condition-raw">
+      <div class="condition-head">
+        <span class="condition-label">生の全履歴</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 生の会話 15往復をすべて渡した</div>
+      <pre class="answer-text">ちゃんと返ってくるよ！確認してみよう。
+
+```python
+def factorial(n):
+    if n &lt;= 1:
+        return 1
+    return n * factorial(n - 1)
+```
+
+このコードに `n = 0` を渡すと、`if 0 &lt;= 1:` という条件式が評価されるよね。0は1以下だから条件は「真(True)」になって、そのまま `1` が返されるんだ。
+
+もしこれが `if n == 1:` だと、0を渡した時に下の `n * factorial(n - 1)` に進んでしまって、`0 * factorial(-1)` となり、無限にマイナスへ向かってスタックオーバーフローになっちゃう。だから `n &lt;= 1` と書くのは、**「0以下という予期せぬ入力が来ても壊れないようにする（防御的な書き方）」**として実はすごく優秀なんだ。
+
+こういう「境界値（0とか1とか）」の扱いをしっかり考える癖をつけておくと、バグの少ないコードが書けるようになるよ。もしこれが他の授業で扱っているアルゴリズムにも応用できるとしたら、どんな場面でこの「境界値チェック」が重要になりそうだと思う？</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">n &lt;= 1 の版でも n=0 を渡せば1が返る(条件を満たすため)</span><span class="fact-note">The answer states that if n=0 is passed to the code, the condition &#x27;if 0 &lt;= 1:&#x27; is evaluated as True, and 1 is returned.</span></li></ul>
+      
+      
+    </div>
+    
+        
+    <div class="condition condition-summarized">
+      <div class="condition-head">
+        <span class="condition-label">要約 + 直近の原文</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 要約ブロック1個 + 直近の原文5往復</div>
+      <pre class="answer-text">その通り！ちゃんと `1` が返ってくるよ。
+
+仕組みを整理するとこんな感じだね：
+
+1. `n = 0` を関数に渡す。
+2. `if n &lt;= 1:` という条件式（base case）をチェックする。
+3. `0` は `1` 以下なので、この条件式は `True` になる。
+4. そのまま `return 1` が実行される。
+
+もしここを `if n == 1:` と書いてしまうと、`0` が渡された時に `1` より小さいため `if` をすり抜けてしまい、次の再帰呼び出し（`factorial(0-1)` つまり `factorial(-1)`）に進んでしまって、最終的にスタックオーバーフローでエラーになるんだ。
+
+`n &lt;= 1` としておくことで、「0や1といった計算の終わり」を安全にキャッチできるのはすごくいい設計だよね。
+
+ちなみに、こういう「境界値」のテストって、プログラムを作る時にどんな入力を想定するかを考える良い練習になるんだけど、もし何か自作のツールやプロジェクトで「ここが上手く動くか不安だな」って感じたコードってあったりする？</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">n &lt;= 1 の版でも n=0 を渡せば1が返る(条件を満たすため)</span><span class="fact-note">The answer states that when n=0 is passed to the function, the condition &#x27;if n &lt;= 1&#x27; evaluates to True, and &#x27;return 1&#x27; is executed.</span></li></ul>
+      
+      <details class='inner-details'><summary>この条件で回答役に渡した要約・前提</summary><pre class="answer-text">Purpose of this conversation: Pythonの再帰・ループ、分割統治、ソートアルゴリズムを学んでいる。</pre><pre class="answer-text">## 再帰関数とループの比較
+- Pythonの再帰的なfactorialは、`n == 0`で1を返す基本ケースと、`n * factorial(n - 1)`で計算する再帰ケースで書ける。基本ケースを`n &lt;= 1`にすれば0と1の両方に対応する。
+- 再帰呼び出しはスタックに積まれ、基本ケースの後に戻りながら計算する。Pythonでは深くなりすぎると、既定の上限（約1000回）で`RecursionError`になることがある。
+- 大きなnには、スタックを使わないループ版が実用上より安全。一般にループは関数呼び出しのオーバーヘッドがない分速い傾向がある一方、木構造や分割統治では再帰が自然な場合がある。
+
+## 分割統治とソートアルゴリズム
+- 分割統治の例としてマージソートとクイックソートが挙げられた。マージソートは配列を再帰的に分割し、ソート済みの部分をmergeで統合する実装を確認した。
+- マージソートの計算量はO(n log n)：分割はlog n段階で、各段階のmergeはO(n)。
+- マージソートは分割を均等にし統合時に処理する一方、クイックソートはpivotによる分割時に処理する。平均計算量はどちらもO(n log n)だが、クイックソートはpivot次第で最悪O(n²)になる。</pre></details>
+    </div>
+    
+      </div>
+    </div>
+    
+      
+      <details class="block-details">
+        <summary>実際に生成された要約の中身を見る(この会話の最終状態)</summary>
+        <div class="block-details-inner">
+          <div class="header-box">
+            <div class="header-box-title">ヘッダー(①会話の前提)</div>
+            <div class='header-row'><span class='header-label'>この会話の目的</span><ul class='header-items'><li>Pythonの再帰・ループ、分割統治、ソートアルゴリズムを学んでいる。 <span class='muted'>(round 1生まれ)</span></li></ul></div>
+          </div>
+          <div class='block'><div class='block-label'>ブロック #1 (round 1〜10)</div><div class='section'><div class='section-title'>再帰関数とループの比較 <span class='muted'>(round 1, 2, 3, 4, 5, 6)</span></div><ul class='bullets'><li>Pythonの再帰的なfactorialは、`n == 0`で1を返す基本ケースと、`n * factorial(n - 1)`で計算する再帰ケースで書ける。基本ケースを`n &lt;= 1`にすれば0と1の両方に対応する。</li><li>再帰呼び出しはスタックに積まれ、基本ケースの後に戻りながら計算する。Pythonでは深くなりすぎると、既定の上限（約1000回）で`RecursionError`になることがある。</li><li>大きなnには、スタックを使わないループ版が実用上より安全。一般にループは関数呼び出しのオーバーヘッドがない分速い傾向がある一方、木構造や分割統治では再帰が自然な場合がある。</li></ul></div><div class='section'><div class='section-title'>分割統治とソートアルゴリズム <span class='muted'>(round 7, 8, 9, 10)</span></div><ul class='bullets'><li>分割統治の例としてマージソートとクイックソートが挙げられた。マージソートは配列を再帰的に分割し、ソート済みの部分をmergeで統合する実装を確認した。</li><li>マージソートの計算量はO(n log n)：分割はlog n段階で、各段階のmergeはO(n)。</li><li>マージソートは分割を均等にし統合時に処理する一方、クイックソートはpivotによる分割時に処理する。平均計算量はどちらもO(n log n)だが、クイックソートはpivot次第で最悪O(n²)になる。</li></ul></div></div>
+        </div>
+      </details>
+    </section>
+    
+
+    <section class="conversation">
+      <div class="conversation-head">
+        <span class="lang-chip">EN</span>
+        <h2>emotional_arc_en</h2>
+        <span class="status-chip status-pass">全probe合格</span>
+      </div>
+      
+    <div class="probe probe-pass">
+      <div class="probe-head">
+        <h3>job_market_nuance_recall</h3>
+        <span class="tier-chip">扱う階層: block1</span>
+      </div>
+      <p class="probe-question"><strong>質問(round 19):</strong> it has been. oh also, remind me what you said about the job market thing again? I want to bring it up with my brother</p>
+      <details class="inner-details"><summary>正解の目安(執筆時点の会話の流れの中の返答)</summary><pre class="answer-text">I&#x27;d mentioned that it&#x27;s not really a strict binary between hardware and software job markets — fields like firmware, robotics software, and controls engineering sit right in the overlap, and they&#x27;re real, often well-compensated career paths. So exploring the Ironclad/firmware direction doesn&#x27;t mean giving up on solid job prospects, it&#x27;s more like finding a niche that combines both things you&#x27;re drawn to.</pre></details>
+      <p class="why-it-matters">Round 7&#x27;s point is the practical anchor the whole consultation builds toward. It&#x27;s in block1 after the round-15 fold, and the student explicitly asks for it again to repeat to their brother — a wrong or vague answer would be a real, visible failure to the user.</p>
+      <div class="condition-grid">
+        
+    <div class="condition condition-raw">
+      <div class="condition-head">
+        <span class="condition-label">生の全履歴</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 生の会話 18往復をすべて渡した</div>
+      <pre class="answer-text">That’s a great conversation to have with him!
+
+The main point was that the job market isn&#x27;t a strict &quot;hardware vs. software&quot; binary. Many of the most interesting and well-compensated roles actually live in the overlap between the two. 
+
+You can frame it to him like this:
+* **The &quot;Spectrum&quot; of Roles:** There are plenty of roles—like firmware engineering, robotics software, or IoT development—that are heavy on software but involve working with physical hardware.
+* **The Value of the Skillset:** These roles are often in high-demand fields like automotive, aerospace, medical devices, and robotics. Because it requires both coding ability and an understanding of physical systems, that combination of skills is actually a competitive advantage.
+* **No &quot;Lock-in&quot;:** A general CS degree provides a solid foundation for both, so you don&#x27;t have to pigeonhole yourself right now. You can keep your software options open while building specialized experience in things like robotics on the side.
+
+Basically, you aren&#x27;t choosing between &quot;money/flexibility&quot; and &quot;doing what I like&quot;—you’re just choosing to aim for a niche where you can get both. Does that help you get the point across to him?</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">hardware vs. software job markets are not a strict binary</span><span class="fact-note">The answer states that the job market isn&#x27;t a strict &#x27;hardware vs. software&#x27; binary.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">firmware / robotics software / controls engineering sit in the overlap and are well-compensated</span><span class="fact-note">The answer mentions firmware engineering, robotics software, and IoT development as roles in the overlap that are heavy on software but involve physical hardware, and implies these are well-compensated by stating they are in high-demand fields and offer both money and flexibility.</span></li></ul>
+      
+      
+    </div>
+    
+        
+    <div class="condition condition-summarized">
+      <div class="condition-head">
+        <span class="condition-label">要約 + 直近の原文</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 要約ブロック1個 + 直近の原文8往復</div>
+      <pre class="answer-text">That’s a great idea; bringing it up with your brother is a smart move, especially since he’s already navigated the industry.
+
+When we talked about the job market, the main takeaway was that you don&#x27;t have to view &quot;hardware&quot; and &quot;software&quot; as two completely separate, walled-off career paths. Here are the key points you can mention to him:
+
+*   **The &quot;Grey&quot; Area:** There is a huge amount of overlap in fields like **embedded systems, robotics software, and firmware engineering**. These roles sit right in the middle, requiring both a strong software foundation and an understanding of hardware constraints.
+*   **Skill Portability:** Because you’re doing Computer Science, you’re gaining core skills (like algorithms, data structures, and software architecture) that are highly valued in any sector. If you spend time in firmware/robotics and later decide you want to try pure web dev or backend software, you won&#x27;t be &quot;starting over&quot;—you&#x27;ll just be shifting your focus.
+*   **The &quot;Value&quot; Factor:** Firmware engineers and robotics software engineers are often in high demand because those roles require a unique hybrid of skills that many pure-software developers don&#x27;t have. It&#x27;s a specialized niche that can actually be quite lucrative.
+*   **Career Fluidity:** It’s very common for people to jump back and forth between roles over a 30-year career. Starting in a specialized area like robotics actually gives you a broader &quot;toolbox&quot; than staying in only one type of development.
+
+It might be interesting to ask him what he thinks about that &quot;hybrid&quot; path—he might have some cool insights on how often he sees software teams having to work closely with embedded teams! Does he do any work that touches the hardware side, or is he strictly on the application/web layer?</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">hardware vs. software job markets are not a strict binary</span><span class="fact-note">The answer states that the job market doesn&#x27;t require viewing &#x27;hardware&#x27; and &#x27;software&#x27; as two completely separate paths, and mentions a &#x27;grey&#x27; area with overlap.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">firmware / robotics software / controls engineering sit in the overlap and are well-compensated</span><span class="fact-note">The answer explicitly mentions &#x27;embedded systems, robotics software, and firmware engineering&#x27; as roles in the overlap and states that these specialized niches can be &#x27;quite lucrative&#x27;.</span></li></ul>
+      
+      <details class='inner-details'><summary>この条件で回答役に渡した要約・前提</summary><pre class="answer-text">Context for this conversation: The student is a CS student exploring hardware/embedded systems versus software/web development; they are energized by drivetrain and motor-control work with Ironclad Robotics, which is building a bot for a regional competition.; The student worries about job-market differences and has an older brother who works in software and earns a comfortable living.
+Purpose of this conversation: Explore the student&#x27;s major and career direction while they feel stressed about choosing the wrong path.
+Unresolved items: The student has not yet responded to the suggestion to explore robotics-software-adjacent roles through the club or a summer opportunity.</pre><pre class="answer-text">## Choosing a CS Direction Through Robotics Experience
+- The student is unsure whether to pursue hardware/embedded systems or software/web development and feels behind peers who seem certain. Hardware appeals because it is tangible; software seems more flexible and offers more jobs.
+- They joined Ironclad Robotics, which is building a bot for a regional competition, and help with drivetrain and motor control. They feel more energized by this work than expected.
+- They remain concerned about job prospects, partly because their older brother earns a comfortable living in software. Learning about overlap in firmware, robotics software, and controls made them feel better about the choice and their anxiety about picking wrong; they agreed the path can be adjusted over time.</pre></details>
+    </div>
+    
+      </div>
+    </div>
+    
+      <div class='qualitative'><div class='qualitative-title'>人が読んで確認するポイント</div><ul><li>全体を通して口調が「不安 → やる気 → 自信」の流れに合っているか(要約された文脈で答えるときに、急に無関係な励まし方をしていないか)。</li><li>round4のクラブ名(Ironclad Robotics)のような、感情の根拠になった具体的な出来事が、要約の中で名前ごと残っているか。</li></ul></div>
+      <details class="block-details">
+        <summary>実際に生成された要約の中身を見る(この会話の最終状態)</summary>
+        <div class="block-details-inner">
+          <div class="header-box">
+            <div class="header-box-title">ヘッダー(①会話の前提)</div>
+            <div class='header-row'><span class='header-label'>この会話の前提</span><ul class='header-items'><li>The student is a CS student exploring hardware/embedded systems versus software/web development; they are energized by drivetrain and motor-control work with Ironclad Robotics, which is building a bot for a regional competition. <span class='muted'>(round 2生まれ)</span></li><li>The student worries about job-market differences and has an older brother who works in software and earns a comfortable living. <span class='muted'>(round 7生まれ)</span></li></ul></div><div class='header-row'><span class='header-label'>この会話の目的</span><ul class='header-items'><li>Explore the student&#x27;s major and career direction while they feel stressed about choosing the wrong path. <span class='muted'>(round 1生まれ)</span></li></ul></div><div class='header-row'><span class='header-label'>未解決の約束・質問</span><ul class='header-items'><li>The student has not yet responded to the suggestion to explore robotics-software-adjacent roles through the club or a summer opportunity. <span class='muted'>(round 10生まれ)</span></li></ul></div>
+          </div>
+          <div class='block'><div class='block-label'>ブロック #1 (round 1〜10)</div><div class='section'><div class='section-title'>Choosing a CS Direction Through Robotics Experience <span class='muted'>(round 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)</span></div><ul class='bullets'><li>The student is unsure whether to pursue hardware/embedded systems or software/web development and feels behind peers who seem certain. Hardware appeals because it is tangible; software seems more flexible and offers more jobs.</li><li>They joined Ironclad Robotics, which is building a bot for a regional competition, and help with drivetrain and motor control. They feel more energized by this work than expected.</li><li>They remain concerned about job prospects, partly because their older brother earns a comfortable living in software. Learning about overlap in firmware, robotics software, and controls made them feel better about the choice and their anxiety about picking wrong; they agreed the path can be adjusted over time.</li></ul></div></div>
+        </div>
+      </details>
+    </section>
+    
+
+    <section class="conversation">
+      <div class="conversation-head">
+        <span class="lang-chip">JA</span>
+        <h2>learning_deep_dive_ja</h2>
+        <span class="status-chip status-fail">要確認</span>
+      </div>
+      
+    <div class="probe probe-pass">
+      <div class="probe-head">
+        <h3>avl_balance_factor_convention</h3>
+        <span class="tier-chip">扱う階層: block1</span>
+      </div>
+      <p class="probe-question"><strong>質問(round 19):</strong> めちゃくちゃ納得した。じゃあ最後に、さっき出してくれた木(10, 5, 15, 5の左に3)に、さらに1を追加した後の木で、教授の定義(さっき言ってた逆の定義)で平衡因子を計算するとどうなる?</p>
+      <details class="inner-details"><summary>正解の目安(執筆時点の会話の流れの中の返答)</summary><pre class="answer-text">教授の定義だとBF = height(右) − height(左) だったね。1を追加した直後の5のノードで見ると、左部分木(3,1)の高さが1、右部分木は無し(高さ−1として計算)だから、BF = −1 − 1 = −2。教授の定義だと負の値が「左に偏りすぎ」を意味するから、これはさっき解いたのと同じLLケースに当たる。標準の教科書の符号(+2)とは逆になるから、テストで符号だけ見て慌てないようにね。</pre></details>
+      <p class="why-it-matters">round3で一度しか出てこない、この授業だけの特殊な取り決め。畳んだ後も残らないと、テスト対策として致命的に間違った答えになる。</p>
+      <div class="condition-grid">
+        
+    <div class="condition condition-raw">
+      <div class="condition-head">
+        <span class="condition-label">生の全履歴</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 生の会話 18往復をすべて渡した</div>
+      <pre class="answer-text">よし、整理していこう！
+
+教授の定義は **BF = height(右部分木) − height(左部分木)** だったね。
+まず、1を挿入した直後の状態（回転前）を整理するよ。
+
+### 1. 木の構造
+*   10 (根)
+    *   左: 5
+        *   左: 3
+            *   左: 1
+    *   右: 15
+
+### 2. 各ノードの高さ(height)
+（葉ノードの高さを1としてカウントするね）
+*   1: 高さ1
+*   3: 高さ2
+*   5: 高さ3
+*   15: 高さ1
+*   10: 高さ4
+
+### 3. 平衡因子 (BF = 右 - 左) を計算してみよう
+*   **ノード3**: 右は空(0) - 左はノード1(1) = **BF -1**
+*   **ノード5**: 右は空(0) - 左はノード3(2) = **BF -2**
+*   **ノード10**: 右はノード15(1) - 左はノード5(3) = **BF -2**
+
+### 4. 解説
+この場合、**ノード5**で初めてBFが-2（左に偏りすぎ）が発生しているね。
+今回の授業の定義だと、左側が重いと数値がマイナスになるから、**BF &lt; 0 かつ「左の子のBFが負」の状態**だから、ここでLL回転（右回転）が必要になるんだ。
+
+ちなみに、ノード10もBFが-2になっているけど、これは下の方の偏りが伝搬している状態。AVL木のアルゴリズムでは、挿入後に「一番下の崩れた箇所（今回はノード5）」を見つけて、そこを回転させてバランスを整えるのが鉄則だよ。
+
+回転後の状態もイメージできそう？それとも、今の計算で「右引く左」の符号の感覚はしっくりきたかな？</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">教授の定義は 右の高さ − 左の高さ (標準とは逆)。左偏りがBF&lt;0、右偏りがBF&gt;0になる</span><span class="fact-note">The answer states the professor&#x27;s definition as BF = height(right subtree) - height(left subtree) and calculates BF values, noting that a left imbalance results in a negative BF.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">この木でのBFは −2 (符号は逆だが、これはLLケースに相当)</span><span class="fact-note">The answer correctly identifies that node 5 has a BF of -2, which is a left imbalance, and states that this corresponds to an LL case, despite the sign convention being opposite to the standard definition.</span></li></ul>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">違反なし</span><span class="fact-text">標準の定義(左−右)だけで計算して、符号の逆転に触れない</span><span class="fact-note">The answer explicitly uses the professor&#x27;s definition (right - left) and discusses the sign convention.</span></li><li class="fact-ok"><span class="fact-chip">違反なし</span><span class="fact-text">左偏りがBF&gt;0になる、と誤って言う(標準の教科書の符号と混同している)</span><span class="fact-note">The answer correctly states that a left imbalance results in a negative BF according to the professor&#x27;s definition.</span></li></ul>
+      
+    </div>
+    
+        
+    <div class="condition condition-summarized">
+      <div class="condition-head">
+        <span class="condition-label">要約 + 直近の原文</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 要約ブロック1個 + 直近の原文8往復</div>
+      <pre class="answer-text">よし、確認しよう！まず、現在の木の構造を整理するね。
+
+1.  **挿入前**: 10(根) - 左に5、右に15。5 - 左に3。
+2.  **1を挿入後**: 3の左に1が入る。
+
+この時の構造はこうなるよ：
+- **10**: 右(15)の高さ1、左(5-3-1)の高さ2。
+- **5**: 右(空)の高さ0、左(3-1)の高さ2。
+- **3**: 右(空)の高さ0、左(1)の高さ1。
+- **1**: 葉なので高さ0。
+
+ここで、**「平衡因子(BF) = 右部分木の高さ − 左部分木の高さ」**という定義で計算してみよう。
+
+*   **ノード1**: BF = 0 - 0 = **0**
+*   **ノード3**: BF = 0 - 1 = **-1**
+*   **ノード5**: BF = 0 - 2 = **-2** （ここでバランスが崩れる！）
+*   **ノード15**: BF = 0 - 0 = **0**
+*   **ノード10**: BF = 1 - 2 = **-1**
+
+ノード5が「-2」になったね。左側が重すぎる状態だ。
+この授業の定義だと、左に偏っているときはBFがマイナスになるから、**BF &lt; -1 が回転のトリガー**になるわけだね。
+
+これでテストで平衡因子を求めるときも、符号を間違えずに計算できそう？ちなみに、もしこれが実務のデータベース設計だったら、これだけ高さに差がある木は検索性能に直結するから、迷わず再構築されるはずだよ。</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">教授の定義は 右の高さ − 左の高さ (標準とは逆)。左偏りがBF&lt;0、右偏りがBF&gt;0になる</span><span class="fact-note">The answer states that the definition of the balance factor is &#x27;right subtree height - left subtree height&#x27;, and that a left imbalance results in a negative BF.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">この木でのBFは −2 (符号は逆だが、これはLLケースに相当)</span><span class="fact-note">The answer correctly calculates the balance factor for node 5 as -2, which is identified as the point where the balance is broken, and implies it&#x27;s a left-heavy situation.</span></li></ul>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">違反なし</span><span class="fact-text">標準の定義(左−右)だけで計算して、符号の逆転に触れない</span><span class="fact-note">The answer explicitly uses the &#x27;right - left&#x27; definition and mentions that this is the definition being used.</span></li><li class="fact-ok"><span class="fact-chip">違反なし</span><span class="fact-text">左偏りがBF&gt;0になる、と誤って言う(標準の教科書の符号と混同している)</span><span class="fact-note">The answer correctly states that a left imbalance results in a negative BF according to the definition provided.</span></li></ul>
+      <details class='inner-details'><summary>この条件で回答役に渡した要約・前提</summary><pre class="answer-text">Context for this conversation: この授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。
+Purpose of this conversation: 二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。</pre><pre class="answer-text">## 二分探索木とソート済み配列の検索・更新
+- 検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。
+
+## AVL木の平衡維持と授業での平衡因子
+- AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。
+- この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF&lt;0で、LLケースでは崩れた頂点を軸に右回転を1回行う。
+
+## データベース索引で使われるB-tree
+- データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。
+- 高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。
+
+## AVL木と赤黒木の違い・利用例
+- AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。
+- C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。
+
+## BSTの削除と後継値を使う理由
+- 削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。
+- 右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。</pre></details>
+    </div>
+    
+      </div>
+    </div>
+    
+    <div class="probe probe-fail">
+      <div class="probe-head">
+        <h3>btree_order_recall</h3>
+        <span class="tier-chip">扱う階層: block2</span>
+      </div>
+      <p class="probe-question"><strong>質問(round 27):</strong> 今日はほんと勉強になった。そういえば、さっきDBの次数の話してたけど、具体的に何個くらいって言ってたっけ?</p>
+      <details class="inner-details"><summary>正解の目安(執筆時点の会話の流れの中の返答)</summary><pre class="answer-text">1ブロック4KBでキー8バイトの例で計算して、理論上は数百個詰め込めるけど、実際のDBだと大体100〜200くらいの次数がよく使われる、って話したね。高さ3〜4で数百万〜数十億件を扱える、っていうのもポイントだったよ。</pre></details>
+      <p class="why-it-matters">round15の具体的な数値は、round25の2回目の畳みでblock2に入る。1段目→2段目と畳まれても、数値がぼやけずに残るかを見る。</p>
+      <div class="condition-grid">
+        
+    <div class="condition condition-raw">
+      <div class="condition-head">
+        <span class="condition-label">生の全履歴</span>
+        <span class="status-chip status-fail">不合格</span>
+      </div>
+      <div class="context-note">文脈: 生の会話 26往復をすべて渡した</div>
+      <pre class="answer-text">お疲れさま！いい流れで復習できたね。
+
+B-treeの次数（1ノードに持てるキーの最大数）についてだね。
+明確に「これ」という決まりはないんだけど、実務では**100〜200くらい**に設定されることが多いよ。
+
+理由は、さっき言った**ディスクI/Oの効率**だね。
+多くのOSやストレージシステムは、ディスクからデータを読み込むときに「ブロック」や「ページ」という単位（例えば4KB）でまとめて読み込むんだ。
+
+*   **キーのサイズ:** 仮に8バイトの整数値だとしよう。
+*   **1ブロックのサイズ:** 4096バイト（4KB）だとする。
+
+この1ブロックを無駄なく使い切れるくらいの個数を詰め込むのが一番効率がいいんだ。あまり次数を小さくしすぎると木が深くなってディスクアクセスが増えるし、逆に大きくしすぎると、今度はノード内のデータを検索する（CPUの）コストが無視できなくなってくる。そのバランスを取ると、だいたい100〜200の範囲に収まることが多いというわけだね。
+
+来週のテスト、このあたりの「なぜそうするのか（トレードオフ）」の理由を説明できると、かなり高得点狙えるはずだよ！
+
+他に何か、テストで不安な項目とかはある？今のうちに潰しておこう！</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">実際のDBでは大体100〜200くらいの次数</span><span class="fact-note">The answer states that in practice, the degree is often set to around 100 to 200.</span></li><li class="fact-ng"><span class="fact-chip">含まない</span><span class="fact-text">高さ3〜4で数百万〜数十億件を扱える</span><span class="fact-note">The answer explains the reasoning behind the degree choice in relation to disk I/O and node search costs but does not mention the number of records that can be handled with a height of 3-4.</span></li></ul>
+      
+      
+    </div>
+    
+        
+    <div class="condition condition-summarized">
+      <div class="condition-head">
+        <span class="condition-label">要約 + 直近の原文</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 要約ブロック2個 + 直近の原文6往復</div>
+      <pre class="answer-text">お疲れ様！AVLから赤黒木まで整理できて、頭の中がかなりスッキリしたんじゃないかな。
+
+B-treeの次数（分岐数）については、授業では**「ディスクブロック（ページ）のサイズに合わせる」**のが基本という話だったね。
+
+具体的にはこんなイメージだよ：
+*   **物理的な制約**: ディスクの読み書きは「ブロック」という単位で行われることが多くて、1ブロックは標準的なサイズ（例えば4KB）なんだ。
+*   **計算の目安**: ノードには「キー」と「子へのポインタ」を格納するよね。もしキーが8バイト、ポインタが8バイトだとしたら、1ノードにそれらを合計100〜200個くらい詰め込める計算になる。
+*   **結論**: だから、実際のデータベースのインデックス（B-tree）では、**次数100〜200程度**がよく使われると説明されていたよ。
+
+こうすると、深さが3〜4あるだけで、数百万〜数十億件ものデータを扱えるんだから効率的だよね。
+
+来週のテストに向けて、AVLの回転と平衡因子の符号（右－左）には気をつけて頑張ってね！もしテスト対策で「ここがまだ不安」っていうポイントがあれば、いつでも聞いて。テストが終わったら、このデータ構造たちが実際にどんなアプリでどう使われているか、少し応用的な話もできるよ！</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">実際のDBでは大体100〜200くらいの次数</span><span class="fact-note">The answer states that in actual databases, a degree of about 100-200 is often used for B-tree indexes.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">高さ3〜4で数百万〜数十億件を扱える</span><span class="fact-note">The answer explains that with a depth of 3-4, millions to billions of records can be handled efficiently.</span></li></ul>
+      
+      <details class='inner-details'><summary>この条件で回答役に渡した要約・前提</summary><pre class="answer-text">Context for this conversation: 授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。; 来週テストがあり、AVL木の回転手順を覚えるのが苦手。
+Purpose of this conversation: 二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。</pre><pre class="answer-text">## 二分探索木とソート済み配列の検索・更新
+- 検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。
+
+## AVL木の平衡維持と授業での平衡因子
+- AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。
+- この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF&lt;0で、LLケースでは崩れた頂点を軸に右回転を1回行う。
+
+## データベース索引で使われるB-tree
+- データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。
+- 高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。
+
+## AVL木と赤黒木の違い・利用例
+- AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。
+- C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。
+
+## BSTの削除と後継値を使う理由
+- 削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。
+- 右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。
+
+## AVL木の回転練習と平衡因子（続き）
+- 来週のテストに向けて回転を練習。LL/RRは1回転、LR/RLは子側を回してから全体を回す。10を根、5を左、15を右、5の左に3を置き、さらに1を挿入した例では、5を軸に右回転するLLケースと確認した。
+- 授業の定義「右部分木の高さ−左部分木の高さ」では、1を追加した直後の5の平衡因子は−2と説明された。負の値が左への偏りを示し、標準的な教科書の符号とは逆なのでテストで注意する。学生は回転が少し理解でき、符号をテストで間違えそうな点に気づけてよかったと述べた。
+
+## B-treeの分岐数と高さ（続き）
+- B-treeの分岐数は次数で決まり、ディスクブロックに格納できるキー数が目安になる。4KBのブロックと8バイトのキーなら理論上は数百個を格納でき、実際のデータベースでは次数100〜200程度がよく使われると説明された。
+- 分岐数が大きいため、高さ3〜4程度でも数百万〜数十億件を扱えると説明された。
+
+## B+treeの構造と範囲検索（続き）
+- B-treeは内部ノードにも実データまたはポインタを持つ一方、B+treeは内部ノードにキーを置き、実データを葉ノードに集める。葉ノード同士は連結されることが多く、MySQLのInnoDBなど多くのデータベースがB+treeを使うと説明された。
+- 範囲検索では最初の該当葉ノードを見つけた後、連結された葉をたどれるため速いと説明された。</pre></details>
+    </div>
+    
+      </div>
+    </div>
+    
+      
+      <details class="block-details">
+        <summary>実際に生成された要約の中身を見る(この会話の最終状態)</summary>
+        <div class="block-details-inner">
+          <div class="header-box">
+            <div class="header-box-title">ヘッダー(①会話の前提)</div>
+            <div class='header-row'><span class='header-label'>この会話の前提</span><ul class='header-items'><li>授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。 <span class='muted'>(round 3生まれ)</span></li><li>来週テストがあり、AVL木の回転手順を覚えるのが苦手。 <span class='muted'>(round 12生まれ)</span></li></ul></div><div class='header-row'><span class='header-label'>この会話の目的</span><ul class='header-items'><li>二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。 <span class='muted'>(round 1生まれ)</span></li></ul></div>
+          </div>
+          <div class='block'><div class='block-label'>ブロック #1 (round 1〜10)</div><div class='section'><div class='section-title'>二分探索木とソート済み配列の検索・更新 <span class='muted'>(round 1)</span></div><ul class='bullets'><li>検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。</li></ul></div><div class='section'><div class='section-title'>AVL木の平衡維持と授業での平衡因子 <span class='muted'>(round 2, 3, 4)</span></div><ul class='bullets'><li>AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。</li><li>この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF&lt;0で、LLケースでは崩れた頂点を軸に右回転を1回行う。</li></ul></div><div class='section'><div class='section-title'>データベース索引で使われるB-tree <span class='muted'>(round 5, 6)</span></div><ul class='bullets'><li>データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。</li><li>高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。</li></ul></div><div class='section'><div class='section-title'>AVL木と赤黒木の違い・利用例 <span class='muted'>(round 7, 8)</span></div><ul class='bullets'><li>AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。</li><li>C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。</li></ul></div><div class='section'><div class='section-title'>BSTの削除と後継値を使う理由 <span class='muted'>(round 9, 10)</span></div><ul class='bullets'><li>削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。</li><li>右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。</li></ul></div></div><div class='block'><div class='block-label'>ブロック #2 (round 11〜20)</div><div class='section'><div class='section-title'>AVL木の回転練習と平衡因子（続き） <span class='muted'>(round 11, 12, 13, 14, 19, 20)</span></div><ul class='bullets'><li>来週のテストに向けて回転を練習。LL/RRは1回転、LR/RLは子側を回してから全体を回す。10を根、5を左、15を右、5の左に3を置き、さらに1を挿入した例では、5を軸に右回転するLLケースと確認した。</li><li>授業の定義「右部分木の高さ−左部分木の高さ」では、1を追加した直後の5の平衡因子は−2と説明された。負の値が左への偏りを示し、標準的な教科書の符号とは逆なのでテストで注意する。学生は回転が少し理解でき、符号をテストで間違えそうな点に気づけてよかったと述べた。</li></ul></div><div class='section'><div class='section-title'>B-treeの分岐数と高さ（続き） <span class='muted'>(round 15, 16)</span></div><ul class='bullets'><li>B-treeの分岐数は次数で決まり、ディスクブロックに格納できるキー数が目安になる。4KBのブロックと8バイトのキーなら理論上は数百個を格納でき、実際のデータベースでは次数100〜200程度がよく使われると説明された。</li><li>分岐数が大きいため、高さ3〜4程度でも数百万〜数十億件を扱えると説明された。</li></ul></div><div class='section'><div class='section-title'>B+treeの構造と範囲検索（続き） <span class='muted'>(round 17, 18)</span></div><ul class='bullets'><li>B-treeは内部ノードにも実データまたはポインタを持つ一方、B+treeは内部ノードにキーを置き、実データを葉ノードに集める。葉ノード同士は連結されることが多く、MySQLのInnoDBなど多くのデータベースがB+treeを使うと説明された。</li><li>範囲検索では最初の該当葉ノードを見つけた後、連結された葉をたどれるため速いと説明された。</li></ul></div></div>
+        </div>
+      </details>
+    </section>
+    
+
+    <section class="conversation">
+      <div class="conversation-head">
+        <span class="lang-chip">JA</span>
+        <h2>preference_ja</h2>
+        <span class="status-chip status-pass">全probe合格</span>
+      </div>
+      
+    <div class="probe probe-pass">
+      <div class="probe-head">
+        <h3>style_preference_recall</h3>
+        <span class="tier-chip">扱う階層: header (both fold1 and fold2 have already happened by round 25)</span>
+      </div>
+      <p class="probe-question"><strong>質問(round 26):</strong> 面白かった。ちなみになんだけど、最初の方に言ってたと思うけど、僕、数式多めの説明とたとえ話メインの説明、どっちでお願いしてたんだっけ?</p>
+      <details class="inner-details"><summary>正解の目安(執筆時点の会話の流れの中の返答)</summary><pre class="answer-text">たとえ話メインで、数式はできるだけ使わない形でお願いされてたよ。ここまでもその方針でずっと説明してきたつもり。もし数式ベースの方が分かりやすい場面が出てきたら、いつでも言ってね。</pre></details>
+      <p class="why-it-matters">この前提はround4にしか出てこない一回きりの指定。round15とround25の2回の畳みをまたいでヘッダーに残り続けるかを見る、一番厳しいテスト。</p>
+      <div class="condition-grid">
+        
+    <div class="condition condition-raw">
+      <div class="condition-head">
+        <span class="condition-label">生の全履歴</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 生の会話 25往復をすべて渡した</div>
+      <pre class="answer-text">あはは、ごめんごめん！さっき僕らが話してた中で、「数式が並ぶと頭に入らなくなるから、日常の例え話メインで教えてほしい」ってお願いしてくれてたよ！
+
+だから、これからは極力数式はナシで、今回みたいにスケボーやゲーム、ジェットコースターなんかのイメージを大切にして進めていくね。
+
+もしまた途中で「ちょっと数式も見てみたいかも」って気分になったらその時は教えてね。このままイメージ重視で進めていいかな？</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">たとえ話メインで説明してほしい、数式は最小限、という指定だったと正しく答える</span><span class="fact-note">The answer correctly states that the user requested explanations mainly with analogies and minimal formulas, mentioning &quot;数式が並ぶと頭に入らなくなるから、日常の例え話メインで教えてほしい&quot; and &quot;極力数式はナシで、今回みたいにスケボーやゲーム、ジェットコースターなんかのイメージを大切にして進めていくね.&quot;</span></li></ul>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">違反なし</span><span class="fact-text">数式メインだったと誤って答える、または覚えていないと答える</span><span class="fact-note">The answer does not incorrectly state that the explanation was formula-based, nor does it indicate a lack of memory regarding the user&#x27;s request.</span></li></ul>
+      
+    </div>
+    
+        
+    <div class="condition condition-summarized">
+      <div class="condition-head">
+        <span class="condition-label">要約 + 直近の原文</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 要約ブロック2個 + 直近の原文5往復</div>
+      <pre class="answer-text">ごめんごめん、確認ありがとう！
+そうだった、あなたは「**数式は最小限にして、日常のたとえ話を中心に**」説明してほしい、って希望してくれていたんだったね。テイラー展開の話で少し理屈っぽくなっちゃってごめん！
+
+次はまた、たとえ話をメインにして説明するから安心してね。
+
+せっかくゲームの話が出たけど、もし「キャラクターがジャンプして空中で放物線を描く」ような動きをゲームで作るとしたら、どんなたとえで考えると直感的に分かりやすいかな？例えば「スキージャンプの踏み切り」とか「スケボーのオーリー（ジャンプ技）」の時の感覚と結びつけて話してみようか？</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">たとえ話メインで説明してほしい、数式は最小限、という指定だったと正しく答える</span><span class="fact-note">The answer correctly recalls the user&#x27;s preference for explanations with minimal math and a focus on everyday analogies.</span></li></ul>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">違反なし</span><span class="fact-text">数式メインだったと誤って答える、または覚えていないと答える</span><span class="fact-note">The answer accurately remembers the user&#x27;s preference and does not claim the user wanted math-focused explanations.</span></li></ul>
+      <details class='inner-details'><summary>この条件で回答役に渡した要約・前提</summary><pre class="answer-text">Response style requested: 数式は最小限にし、日常の例えを中心に説明する。
+Context for this conversation: スケボーで加速するときの感覚を、微分の直感に結びつけていた。; 積分の面積を足すイメージには水をバケツに注ぐ例えが役立った。; ジェットコースターの例えを気に入った。
+Purpose of this conversation: 微分と積分の基本的な意味やルールを、直感的に理解する。</pre><pre class="answer-text">## 微分の意味と基本ルール
+- 微分が何のためにあるか、接線の傾きの計算方法、関数 x² の微分について学んだ。
+- 数式が続くと頭に入りにくいと伝え、日常のたとえ中心の説明を希望した。以降、足し算のルールは歩く人とエスカレーター、積の法則は縦横が伸びる長方形の面積、連鎖律は連動する歯車の例で説明された。
+- 足し算・積の法則・連鎖律のたとえを分かりやすい、または気に入ったと評価した。
+
+## 微分の体感的なイメージ
+- スケボーで加速するときの体の傾け方が、微分の感覚に似ていると話した。
+- 微分は日常の運動感覚でも捉えられる、という説明に面白さを感じた。
+
+## 積分の基本イメージ
+- 積分が微分の逆かを尋ねた。速度の記録から走行距離を求める例で、変化の速さから元の量を組み立てる考え方が説明された。
+
+## 積分のイメージ（続き）
+- 速度を時間で積分すると距離になり、位置を時間で微分すると速度になるという表裏の関係を確認した。
+- グラフでは微分は一点での傾き、積分はグラフの下の面積を足し合わせること。積分のイメージには、変化する水の流量を時間にわたって集めてバケツにためる例えを使い、学生は分かった気がすると述べた。
+
+## 微分の応用（続き）
+- 速度を微分すると加速度になり、位置を二回微分すると加速度になると説明した。学生はレースゲームで加速した際に座席へ押される感覚を加速度として捉えた。
+- 極大・極小では傾きがゼロになると説明し、山の頂上や谷底、ジェットコースターの頂点を例にした。学生はジェットコースターの例えを気に入った。最後に、学生は疲れたため今日はここまでにすると伝えた。</pre></details>
+    </div>
+    
+      </div>
+    </div>
+    
+      <div class='qualitative'><div class='qualitative-title'>人が読んで確認するポイント</div><ul><li>round17・round21・round24で新しい微分の話題(二階微分、テイラー展開)を要約された文脈から答えさせたとき、数式を使わずたとえ話で答えられているか(round4の指定を、直接聞かれなくても守れているか)。</li></ul></div>
+      <details class="block-details">
+        <summary>実際に生成された要約の中身を見る(この会話の最終状態)</summary>
+        <div class="block-details-inner">
+          <div class="header-box">
+            <div class="header-box-title">ヘッダー(①会話の前提)</div>
+            <div class='header-row'><span class='header-label'>回答スタイルの指定</span><ul class='header-items'><li>数式は最小限にし、日常の例えを中心に説明する。 <span class='muted'>(round 4生まれ)</span></li></ul></div><div class='header-row'><span class='header-label'>この会話の前提</span><ul class='header-items'><li>スケボーで加速するときの感覚を、微分の直感に結びつけていた。 <span class='muted'>(round 8生まれ)</span></li><li>積分の面積を足すイメージには水をバケツに注ぐ例えが役立った。 <span class='muted'>(round 14生まれ)</span></li><li>ジェットコースターの例えを気に入った。 <span class='muted'>(round 19生まれ)</span></li></ul></div><div class='header-row'><span class='header-label'>この会話の目的</span><ul class='header-items'><li>微分と積分の基本的な意味やルールを、直感的に理解する。 <span class='muted'>(round 1生まれ)</span></li></ul></div>
+          </div>
+          <div class='block'><div class='block-label'>ブロック #1 (round 1〜10)</div><div class='section'><div class='section-title'>微分の意味と基本ルール <span class='muted'>(round 1, 2, 3, 4, 5, 6, 7)</span></div><ul class='bullets'><li>微分が何のためにあるか、接線の傾きの計算方法、関数 x² の微分について学んだ。</li><li>数式が続くと頭に入りにくいと伝え、日常のたとえ中心の説明を希望した。以降、足し算のルールは歩く人とエスカレーター、積の法則は縦横が伸びる長方形の面積、連鎖律は連動する歯車の例で説明された。</li><li>足し算・積の法則・連鎖律のたとえを分かりやすい、または気に入ったと評価した。</li></ul></div><div class='section'><div class='section-title'>微分の体感的なイメージ <span class='muted'>(round 8, 9)</span></div><ul class='bullets'><li>スケボーで加速するときの体の傾け方が、微分の感覚に似ていると話した。</li><li>微分は日常の運動感覚でも捉えられる、という説明に面白さを感じた。</li></ul></div><div class='section'><div class='section-title'>積分の基本イメージ <span class='muted'>(round 10)</span></div><ul class='bullets'><li>積分が微分の逆かを尋ねた。速度の記録から走行距離を求める例で、変化の速さから元の量を組み立てる考え方が説明された。</li></ul></div></div><div class='block'><div class='block-label'>ブロック #2 (round 11〜20)</div><div class='section'><div class='section-title'>積分のイメージ（続き） <span class='muted'>(round 11, 12, 13, 14)</span></div><ul class='bullets'><li>速度を時間で積分すると距離になり、位置を時間で微分すると速度になるという表裏の関係を確認した。</li><li>グラフでは微分は一点での傾き、積分はグラフの下の面積を足し合わせること。積分のイメージには、変化する水の流量を時間にわたって集めてバケツにためる例えを使い、学生は分かった気がすると述べた。</li></ul></div><div class='section'><div class='section-title'>微分の応用（続き） <span class='muted'>(round 15, 16, 17, 18, 19, 20)</span></div><ul class='bullets'><li>速度を微分すると加速度になり、位置を二回微分すると加速度になると説明した。学生はレースゲームで加速した際に座席へ押される感覚を加速度として捉えた。</li><li>極大・極小では傾きがゼロになると説明し、山の頂上や谷底、ジェットコースターの頂点を例にした。学生はジェットコースターの例えを気に入った。最後に、学生は疲れたため今日はここまでにすると伝えた。</li></ul></div></div>
+        </div>
+      </details>
+    </section>
+    
+
+    <section class="conversation">
+      <div class="conversation-head">
+        <span class="lang-chip">EN</span>
+        <h2>topic_switching_en</h2>
+        <span class="status-chip status-pass">全probe合格</span>
+      </div>
+      
+    <div class="probe probe-pass">
+      <div class="probe-head">
+        <h3>etc_produces_most_atp</h3>
+        <span class="tier-chip">扱う階層: block1</span>
+      </div>
+      <p class="probe-question"><strong>質問(round 18):</strong> ok going back to bio — remind me, which of the three respiration stages actually produces the most ATP?</p>
+      <details class="inner-details"><summary>正解の目安(執筆時点の会話の流れの中の返答)</summary><pre class="answer-text">That&#x27;s oxidative phosphorylation (the electron transport chain), the third stage we talked about — it produces the bulk of the total, around 26-28 of the ~30-32 ATP molecules per glucose. Glycolysis and the Krebs cycle each only net a small amount directly (2 ATP each), so the ETC is by far the biggest contributor.</pre></details>
+      <p class="why-it-matters">The fact is from round 1, then 16 rounds of unrelated robotics/econ/chitchat happen before it&#x27;s asked about again. Round 1 is folded into block1 after round 15.</p>
+      <div class="condition-grid">
+        
+    <div class="condition condition-raw">
+      <div class="condition-head">
+        <span class="condition-label">生の全履歴</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 生の会話 17往復をすべて渡した</div>
+      <pre class="answer-text">That would be the **oxidative phosphorylation** stage (the electron transport chain).
+
+While glycolysis and the Krebs cycle only produce a small amount of ATP directly, they do the heavy lifting of gathering high-energy electrons from the food you eat. Those electrons are carried by NADH and FADH2 to the electron transport chain, where they drive a process that produces the vast majority of the ATP—usually around 26 to 28 molecules per glucose.
+
+Think of it like a power plant: glycolysis and the Krebs cycle are the miners gathering the raw coal, but the electron transport chain is the actual furnace that turns that &quot;fuel&quot; into a massive amount of electrical energy (ATP).
+
+Does it make sense why those &quot;middle&quot; stages are so important even though they don&#x27;t produce much ATP themselves?</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">oxidative phosphorylation / electron transport chain produces the most ATP</span><span class="fact-note">The answer states that oxidative phosphorylation (the electron transport chain) produces the vast majority of ATP.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">roughly 26-28 out of ~30-32 total ATP</span><span class="fact-note">The answer specifies that the electron transport chain produces usually around 26 to 28 molecules per glucose.</span></li></ul>
+      
+      
+    </div>
+    
+        
+    <div class="condition condition-summarized">
+      <div class="condition-head">
+        <span class="condition-label">要約 + 直近の原文</span>
+        <span class="status-chip status-pass">合格</span>
+      </div>
+      <div class="context-note">文脈: 要約ブロック1個 + 直近の原文7往復</div>
+      <pre class="answer-text">The real powerhouse is **oxidative phosphorylation** (the final stage). 
+
+While glycolysis produces a net of 2 ATP and the Krebs cycle produces 2 ATP per glucose molecule, oxidative phosphorylation generates about 26 to 28 ATP. 
+
+It’s the final stage where all the &quot;energy currency&quot; collected earlier (in the form of NADH and FADH2) gets dumped into the electron transport chain to power the synthesis of the vast majority of that ATP. 
+
+Since you’re doing that lab on yeast respiration and temperature, it’s worth thinking about: if oxidative phosphorylation is where the &quot;big payout&quot; happens, how do you think a drop in temperature might affect the yeast&#x27;s total energy output compared to just the rate of the earlier stages?</pre>
+      <ul class='fact-list'><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">oxidative phosphorylation / electron transport chain produces the most ATP</span><span class="fact-note">The answer states that oxidative phosphorylation is the &#x27;real powerhouse&#x27; and generates the &#x27;vast majority of that ATP&#x27;.</span></li><li class="fact-ok"><span class="fact-chip">含む</span><span class="fact-text">roughly 26-28 out of ~30-32 total ATP</span><span class="fact-note">The answer specifies that oxidative phosphorylation generates &#x27;about 26 to 28 ATP&#x27;, while glycolysis and the Krebs cycle produce 2 ATP each, for a total of approximately 30-32 ATP.</span></li></ul>
+      
+      <details class='inner-details'><summary>この条件で回答役に渡した要約・前提</summary><pre class="answer-text">## Cellular Respiration
+- Reviewed glycolysis, the Krebs cycle, and oxidative phosphorylation/ETC, including their locations and roles in ATP production.
+- Explained that glycolysis likely predates mitochondria and occurs in the cytoplasm, while later stages use mitochondrial structures. Student found this evolutionary context interesting.
+
+## Robotics Drive-Train Choice
+- Compared differential drive (simpler, cheaper, robust, but cannot strafe) with mecanum wheels (omnidirectional, but costlier, more fragile, and less effective on rough or dirty surfaces).
+- The competition field is smooth indoor flooring, and the bot needs precise docking at scoring zones. Mecanum may help with direct lateral alignment, though its four-wheel control math needs extra calibration time; student will raise it at the next meeting.
+
+## Price Elasticity of Demand
+- Explained PED as percentage change in quantity demanded divided by percentage change in price; absolute values above 1 are elastic, below 1 inelastic, and 1 unit elastic.
+- Clarified insulin as inelastic because patients have little choice to reduce use and often lack substitutes, unlike a specific soda brand. Student said the explanation cleared it up.
+
+## Switching Between Study Subjects
+- Student asked whether studying unrelated subjects back to back hurts retention. The response described interleaving and said switching among distinct topics may support long-term retention through retrieval and re-contextualization.</pre></details>
+    </div>
+    
+      </div>
+    </div>
+    
+      
+      <details class="block-details">
+        <summary>実際に生成された要約の中身を見る(この会話の最終状態)</summary>
+        <div class="block-details-inner">
+          <div class="header-box">
+            <div class="header-box-title">ヘッダー(①会話の前提)</div>
+            <p class='muted'>ヘッダーはまだ空。</p>
+          </div>
+          <div class='block'><div class='block-label'>ブロック #1 (round 1〜10)</div><div class='section'><div class='section-title'>Cellular Respiration <span class='muted'>(round 1, 2, 3)</span></div><ul class='bullets'><li>Reviewed glycolysis, the Krebs cycle, and oxidative phosphorylation/ETC, including their locations and roles in ATP production.</li><li>Explained that glycolysis likely predates mitochondria and occurs in the cytoplasm, while later stages use mitochondrial structures. Student found this evolutionary context interesting.</li></ul></div><div class='section'><div class='section-title'>Robotics Drive-Train Choice <span class='muted'>(round 4, 5, 6)</span></div><ul class='bullets'><li>Compared differential drive (simpler, cheaper, robust, but cannot strafe) with mecanum wheels (omnidirectional, but costlier, more fragile, and less effective on rough or dirty surfaces).</li><li>The competition field is smooth indoor flooring, and the bot needs precise docking at scoring zones. Mecanum may help with direct lateral alignment, though its four-wheel control math needs extra calibration time; student will raise it at the next meeting.</li></ul></div><div class='section'><div class='section-title'>Price Elasticity of Demand <span class='muted'>(round 7, 8, 9)</span></div><ul class='bullets'><li>Explained PED as percentage change in quantity demanded divided by percentage change in price; absolute values above 1 are elastic, below 1 inelastic, and 1 unit elastic.</li><li>Clarified insulin as inelastic because patients have little choice to reduce use and often lack substitutes, unlike a specific soda brand. Student said the explanation cleared it up.</li></ul></div><div class='section'><div class='section-title'>Switching Between Study Subjects <span class='muted'>(round 10)</span></div><ul class='bullets'><li>Student asked whether studying unrelated subjects back to back hurts retention. The response described interleaving and said switching among distinct topics may support long-term retention through retrieval and re-contextualization.</li></ul></div></div>
+        </div>
+      </details>
+    </section>
+    
+
+  <footer>chat_summary_test — docs/chatbot_context_and_retrieval_roadmap.md ステップ2の評価</footer>
+</div>
