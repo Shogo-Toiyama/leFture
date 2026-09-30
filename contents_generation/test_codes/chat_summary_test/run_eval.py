@@ -142,7 +142,7 @@ def _answer_messages(conv: dict, question: str, memory: ConversationMemory, hist
         selected_text=None, lecture_label=None, context_lecture_id=None,
     )
     decision = RouterDecision(
-        intent="learning", needs_retrieval=False, search_queries=[], complexity="simple",
+        intent="learning", needs_retrieval=False,
         reply_language=conv["language"], thread_title=None,
     )
     history = build_history_messages(_rows_from_rounds(history_rounds), len(history_rounds), 2000)

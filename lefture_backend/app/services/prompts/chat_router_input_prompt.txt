@@ -1,7 +1,3 @@
-<lecture_languages>
-${LECTURE_LANGUAGES}
-</lecture_languages>
-
 <earlier_conversation>
 ${EARLIER_CONVERSATION}
 </earlier_conversation>

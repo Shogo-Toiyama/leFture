@@ -363,7 +363,8 @@ class LLMOptions:
     output_type: Literal["text", "json"] = "text"
     max_tokens: Optional[int] = None
     max_completion_tokens: Optional[int] = None
-    reasoning_effort: Optional[Literal["low", "medium", "high"]] = None
+    # "none"はGemini 3系(thinkingLevel: minimal)とgpt-6-luna(推論なし)で使う
+    reasoning_effort: Optional[Literal["none", "low", "medium", "high"]] = None
     # output_type="json"のとき、JSON Schemaを渡すとプロバイダー側の構造化出力
     # (Geminiならresponse_schema)で生成を縛る。enum等で出力の形を保証したい
     # 場合(チャットの振り分け役など)に使う。Noneなら従来どおりjson_object。
@@ -414,6 +415,9 @@ def _cache_token_counts(usage: Any) -> tuple[int, int]:
     return read, write
 
 
+_REASONING_EFFORT_PASSTHROUGH_MODELS = frozenset({"gpt-6-luna"})
+
+
 class UnifiedLLM:
     def __init__(self, billing_engine: BillingEngine):
         self.billing = billing_engine
@@ -444,6 +448,10 @@ class UnifiedLLM:
 
         if options.reasoning_effort is not None:
             kwargs["reasoning_effort"] = options.reasoning_effort
+            # litellmのモデル表がreasoning_effortを知らないモデルは、明示的に通すよう
+            # 頼まないとUnsupportedParamsErrorになる(gpt-6-lunaで2026-09-30に確認)
+            if model in _REASONING_EFFORT_PASSTHROUGH_MODELS:
+                kwargs["allowed_openai_params"] = ["reasoning_effort"]
 
         # JSONモードの指定
         # NOTE: GPT-OSS models have a known token conflict between Harmony format and response_format,

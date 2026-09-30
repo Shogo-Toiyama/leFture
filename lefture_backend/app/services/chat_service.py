@@ -1,16 +1,17 @@
 # app/services/chat_service.py
 """
-横断チャットボット 段階1(MVP): 1メッセージを受けてから返答を返し終えるまで。
+横断チャットボット: 1メッセージを受けてから返答を返し終えるまで。
 
-処理の順番(2026-09-28のセッションで合意):
+処理の順番(2026-09-28に合意、2026-09-30に仕分け役と探索役を分けた):
   0. 事前チェック(prepare_chat_turn): 文字数上限 / 最低残高 / 送信頻度 /
      断られた回数 / スレッドの所有権 / 生成中の二重送信 / 再送の重複
   1. 保存: スレッド作成 or 読み込み → userメッセージ → 返答用の空行(streaming)
-  2. 振り分け役(Gemini 2.5 Flash-Lite, 構造化出力):
-     {intent, needs_retrieval, search_queries, complexity, reply_language, thread_title}
+  2. 仕分け役(Gemini 2.5 Flash-Lite, 構造化出力):
+     {intent, needs_retrieval, reply_language, thread_title}
   3. 分岐(ここはLLMではなく普通のコード):
      blocked → 定型文(課金なし) / crisis → 共感の定型文+相談窓口(課金なし)
-     それ以外 → needs_retrievalがtrueなら検索(本人のJWTでRPC)
+     それ以外 → needs_retrievalがtrueなら探索役(chat_navigator.py、GPT-6 Luna、最大4周)が
+     地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC)
   4. 回答役(Gemini 3.1 Flash-Lite, ストリーミング)
   5. 締め: 本文・出典・原価を保存 → 原価×2のクレジットを消費 → done
      → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
@@ -18,24 +19,30 @@
 会話履歴: 古い往復は要約ブロック(chat_summary_blocks)として回答役のsystemの末尾に、
 まだ畳んでいない往復(通常5〜14往復)は原文のまま渡す。
 
-「エージェントが自由に検索を繰り返す」形にしていない理由:
-- 危険/危機の判定は回答を作る前に確実に行いたい
-- Flash-Liteにツールの呼び分けを任せるより、LLM呼び出しを毎回2回に固定した
-  方が、費用・待ち時間が予測でき、原因調査も楽
-complexity(難しさ)はMVPでは記録するだけ。上位モデルへの切り替えは、
-実データで「deep」の割合を見てから決める。
+回答役が自由に何度も検索する形(エージェント型)にしていない理由:
+- 危険/危機の判定は回答を作る前に確実に行いたい(仕分け役に残す)
+- 探索役ができるのは決まった操作だけで、周の数と1周の操作数に上限がある。
+  選べる場所はenumで縛り、実行は常にコードなので、存在しない場所を指定できず、
+  費用・待ち時間の上限も決まっている
 """
 
 import asyncio
 import json
 import re
 import time
-from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Optional
 
 from app.core.supabase import get_supabase_client
+from app.services.chat_map import StudentMap, load_student_map
+from app.services.chat_navigator import (
+    NavigationResult,
+    NavigatorInput,
+    make_lecture_search,
+    navigate,
+    summarize_for_log,
+)
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
     fetch_active_blocks,
@@ -89,7 +96,7 @@ HISTORY_MAX_CHARS_PER_MESSAGE = 2000
 ROUTER_HISTORY_MAX_MESSAGES = 6
 ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 500
 
-# 検索
+# 探索役が動かなかったときの予備の検索(本文そのもので1回だけ)
 RETRIEVAL_MATCH_COUNT_PER_QUERY = 8
 RETRIEVAL_TOP_K = 6
 
@@ -104,15 +111,10 @@ ROUTER_SCHEMA: dict[str, Any] = {
     "properties": {
         "intent": {"type": "string", "enum": list(INTENTS)},
         "needs_retrieval": {"type": "boolean"},
-        "search_queries": {"type": "array", "items": {"type": "string"}},
-        "complexity": {"type": "string", "enum": ["simple", "deep"]},
         "reply_language": {"type": "string"},
         "thread_title": {"type": ["string", "null"]},
     },
-    "required": [
-        "intent", "needs_retrieval", "search_queries",
-        "complexity", "reply_language", "thread_title",
-    ],
+    "required": ["intent", "needs_retrieval", "reply_language", "thread_title"],
 }
 
 
@@ -176,10 +178,10 @@ class ChatRequestError(Exception):
 
 @dataclass
 class RouterDecision:
+    """仕分け役の判断。何をどう探すかは探索役(chat_navigator.py)が決める。"""
     intent: str
+    # 探索役を呼ぶかどうか(雑談・会話の続きで足りるもの・断る・危機対応ならFalse)
     needs_retrieval: bool
-    search_queries: list[str]
-    complexity: str
     reply_language: str
     thread_title: Optional[str]
     # 振り分け役が正常に判断できず、既定値で先へ進めた場合にTrue
@@ -191,8 +193,6 @@ class RouterDecision:
         return {
             "intent": self.intent,
             "needs_retrieval": self.needs_retrieval,
-            "search_queries": self.search_queries,
-            "complexity": self.complexity,
             "reply_language": self.reply_language,
             "thread_title": self.thread_title,
             "fallback": self.fallback,
@@ -207,15 +207,14 @@ def guess_language(text: str) -> str:
 
 def fallback_router_decision(message: str) -> RouterDecision:
     """
-    振り分け役の出力が読めなかったときの既定値。断る側ではなく「検索ありの
+    振り分け役の出力が読めなかったときの既定値。断る側ではなく「探索ありの
     通常の質問」に倒す: 普通のユーザーを巻き込んで断らないため。本当に
     危険な内容でも、次の回答役のsystem promptと安全フィルタでもう一度止まる。
+    探索が不要なら探索役がnothing_neededで止める。
     """
     return RouterDecision(
         intent="learning",
         needs_retrieval=True,
-        search_queries=[message.strip()[:200]] if message.strip() else [],
-        complexity="simple",
         reply_language=guess_language(message),
         thread_title=None,
         fallback=True,
@@ -232,18 +231,6 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
 
     intent = raw["intent"]
     needs_retrieval = bool(raw.get("needs_retrieval")) and intent not in ("chitchat", "blocked", "crisis")
-
-    queries = []
-    if needs_retrieval:
-        for q in raw.get("search_queries") or []:
-            if isinstance(q, str) and q.strip():
-                queries.append(q.strip()[:200])
-        queries = queries[:3]
-        if not queries:
-            # 検索が必要と言いつつクエリが空なら、本文そのものを使う
-            queries = [message.strip()[:200]]
-
-    complexity = raw.get("complexity") if raw.get("complexity") in ("simple", "deep") else "simple"
     reply_language = raw.get("reply_language") if isinstance(raw.get("reply_language"), str) and raw.get("reply_language") else guess_language(message)
 
     title = raw.get("thread_title")
@@ -255,8 +242,6 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
     return RouterDecision(
         intent=intent,
         needs_retrieval=needs_retrieval,
-        search_queries=queries,
-        complexity=complexity,
         reply_language=reply_language[:10],
         thread_title=title,
     )
@@ -682,29 +667,16 @@ def _load_student_profile(admin_client, user_id: str) -> str:
     return "\n".join(parts) if parts else "(The student has not shared any profile information yet.)"
 
 
-def _lecture_languages(admin_client, user_id: str) -> str:
-    res = admin_client.table("lectures").select("recording_language") \
-        .eq("user_id", user_id).is_("deleted_at", "null") \
-        .order("created_at", desc=True).limit(100).execute()
-    counts = Counter((r.get("recording_language") or "").strip() for r in (res.data or []))
-    counts.pop("", None)
-    if not counts:
-        return "unknown"
-    return ", ".join(lang for lang, _ in counts.most_common(3))
-
-
 async def _run_router(
     llm: UnifiedLLM,
     turn: PreparedTurn,
     memory: "ConversationMemory",
     history: list[Message],
-    lecture_languages: str,
 ) -> RouterDecision:
     is_first_message = turn.is_new_thread or not turn.thread_has_title
     # 指示文は毎ターン同じsystemに置き、変わる入力はすべて後ろのuserに入れる
     # (先頭が一致する部分にだけプロンプトキャッシュが効くため)。
     user_input = fill_placeholders(_load_prompt("chat_router_input_prompt.txt"), {
-        "LECTURE_LANGUAGES": lecture_languages,
         "EARLIER_CONVERSATION": memory.for_router(),
         "RECENT_CONVERSATION": format_router_conversation(history),
         "SCREEN_CONTEXT": format_screen_context(turn.lecture_label, turn.selected_text) or "(none)",
@@ -726,8 +698,8 @@ async def _run_router(
             continue
         if result.finish_reason == "content_filter":
             decision = RouterDecision(
-                intent="blocked", needs_retrieval=False, search_queries=[],
-                complexity="simple", reply_language=guess_language(turn.content),
+                intent="blocked", needs_retrieval=False,
+                reply_language=guess_language(turn.content),
                 thread_title=None, provider_blocked=True,
             )
             return decision
@@ -772,6 +744,64 @@ async def _retrieve(
             continue
         ok_results.append(r)
     return merge_search_results(ok_results)
+
+
+def _ignore_task_exception(task: "asyncio.Task") -> None:
+    """待たれずに終わったタスクの例外で「Task exception was never retrieved」を出さない。"""
+    if not task.cancelled():
+        task.exception()
+
+
+async def _gather_materials(
+    llm: UnifiedLLM,
+    billing: BillingEngine,
+    user_client,
+    turn: PreparedTurn,
+    history: list[Message],
+    map_task: "asyncio.Task[StudentMap]",
+) -> tuple[list[dict], Optional[NavigationResult]]:
+    """
+    探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
+    (地図が読めない・LLMの出力が読めない)ときだけ、従来どおり本文そのもので検索する。
+    検索が落ちても、出典なしで答える方がユーザーにとって良いので例外は外に出さない。
+    """
+    student_map: Optional[StudentMap] = None
+    try:
+        student_map = await map_task
+    except Exception as e:
+        print(f"⚠️ [chat] failed to load the student map: {e}")
+
+    navigation: Optional[NavigationResult] = None
+    if student_map is not None:
+        if not student_map.has_lectures:
+            return [], None  # 探す材料がまだ無い
+        nav_input = NavigatorInput(
+            message=turn.content,
+            selected_text=turn.selected_text,
+            screen_lecture_id=turn.context_lecture_id,
+            recent_conversation=history,
+            today=datetime.now(timezone.utc).date(),
+            student_map=student_map,
+        )
+        search = make_lecture_search(user_client, student_map, lambda qs: embed_queries(qs, billing=billing))
+
+        async def on_lap(lap: int) -> None:
+            turn.timer.mark(f"navigator_lap{lap}")
+
+        try:
+            navigation = await navigate(llm, nav_input, search, on_lap=on_lap)
+            print(f"🧭 [chat] message={turn.assistant_message_id} {summarize_for_log(navigation)}")
+            if not navigation.failed_before_any_search:
+                return navigation.chunks, navigation
+        except Exception as e:
+            print(f"⚠️ [chat] navigator failed, falling back to plain search: {e}")
+
+    try:
+        chunks = await _retrieve(user_client, billing, [turn.content[:200]], turn.context_lecture_id)
+    except Exception as e:
+        print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
+        chunks = []
+    return chunks, navigation
 
 
 @dataclass
@@ -937,14 +967,15 @@ async def run_chat_turn(
 
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
         memory = ConversationMemory.from_blocks(turn.summary_blocks)
-        profile, lecture_languages = await asyncio.gather(
-            asyncio.to_thread(_load_student_profile, admin_client, turn.user_id),
-            asyncio.to_thread(_lecture_languages, admin_client, turn.user_id),
-        )
+        # 地図(コース・講義の呼び名)は探索役を呼ぶときだけ使うが、仕分け役を待つ間に
+        # 並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
+        map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id))
+        map_task.add_done_callback(_ignore_task_exception)
+        profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
         timer.mark("context_loaded")
 
-        # --- 2. 振り分け ---
-        decision = await _run_router(llm, turn, memory, history, lecture_languages)
+        # --- 2. 仕分け ---
+        decision = await _run_router(llm, turn, memory, history)
         timer.mark("router_done")
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
@@ -959,16 +990,12 @@ async def run_chat_turn(
             await emit("done", {"status": decision.intent, "credits_charged": 0})
             return
 
-        # --- 3. 分岐: 検索 ---
+        # --- 3. 分岐: 探索 ---
         chunks: list[dict] = []
+        navigation: Optional[NavigationResult] = None
         if decision.needs_retrieval:
             await emit("status", {"stage": "searching"})
-            try:
-                chunks = await _retrieve(user_client, billing, decision.search_queries, turn.context_lecture_id)
-            except Exception as e:
-                # 検索が落ちても、出典なしで答える方がユーザーにとって良い
-                print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
-                chunks = []
+            chunks, navigation = await _gather_materials(llm, billing, user_client, turn, history, map_task)
             timer.mark("retrieval_done")
             await emit("sources", {"sources": [
                 {
@@ -979,6 +1006,7 @@ async def run_chat_turn(
                     "lecture_id": c.get("lecture_id"),
                     "label": ((c.get("content") or "").splitlines() or [""])[0].strip().strip("[]"),
                     "metadata": c.get("metadata") or {},
+                    "relation": c.get("relation") or "direct",
                 }
                 for n, c in enumerate(chunks, start=1)
             ]})
@@ -1002,6 +1030,7 @@ async def run_chat_turn(
 
         usage_extra = {
             "router_model": ROUTER_MODEL,
+            "navigator": navigation.to_json() if navigation else None,
             "answer_model": ANSWER_MODEL,
             "answer_input_tokens": state.input_tokens,
             "answer_output_tokens": state.output_tokens,
