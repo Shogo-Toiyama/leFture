@@ -1,0 +1,19 @@
+<sources>
+<!--IF:HAS_SOURCES-->
+${SOURCES}
+<!--ELSE-->
+(No course materials were retrieved for this message.)
+<!--END_IF-->
+</sources>
+
+<!--IF:HAS_SCREEN_CONTEXT-->
+<screen_context>
+${SCREEN_CONTEXT}
+</screen_context>
+
+<!--END_IF-->
+<reply_language>${REPLY_LANGUAGE}</reply_language>
+
+<student_message>
+${MESSAGE}
+</student_message>

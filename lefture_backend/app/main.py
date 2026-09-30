@@ -88,6 +88,7 @@ from app.services.chat_service import (
     prepare_chat_turn,
     run_chat_turn,
 )
+from app.services.chat_summary import run_fold as run_chat_summary_fold
 
 # チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
 # R2の自分専用領域へ複製する(共有フォルダにはできない事情はseed_tutorial参照)。
@@ -180,6 +181,10 @@ QUEUE_NAME = os.getenv("QUEUE_NAME", "lefture-processing-queue")
 CHUNK_QUEUE_NAME = os.getenv("CHUNK_QUEUE_NAME", "lefture-chunk-queue")
 SUBSCRIPTION_QUEUE_NAME = os.getenv("SUBSCRIPTION_QUEUE_NAME", "lefture-subscription-queue")
 CLEANUP_QUEUE_NAME = os.getenv("CLEANUP_QUEUE_NAME", "lefture-maintenance-queue")
+CHAT_QUEUE_NAME = os.getenv("CHAT_QUEUE_NAME", "lefture-chat-queue")
+# /worker/chat-summaryが諦めるまでの試行回数。キュー側のMax Attemptsより小さくても、
+# ここで打ち切れば無駄なLLM呼び出しは止まる(次のチャットのターンでまた積まれる)。
+CHAT_SUMMARY_MAX_ATTEMPTS = int(os.getenv("CHAT_SUMMARY_MAX_ATTEMPTS", "5"))
 AUDIO_CHUNKS_RETENTION_DAYS = int(os.getenv("AUDIO_CHUNKS_RETENTION_DAYS", "7"))
 CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL")
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
@@ -227,6 +232,10 @@ class CleanupAudioChunksPayload(BaseModel):
     """Cloud Tasks から /worker/cleanup-audio-chunks に渡されるデータ"""
     user_id: str
     lecture_id: str
+
+class ChatSummaryPayload(BaseModel):
+    """Cloud Tasks から /worker/chat-summary に渡されるデータ"""
+    thread_id: str
 
 class ClaimPlanRequest(BaseModel):
     """Flutterから /billing/claim-plan に渡されるデータ。claim_mode='self_serve'の
@@ -3416,6 +3425,43 @@ async def enqueue_cleanup_audio_chunks_task(user_id: str, lecture_id: str) -> No
         print(f"⏭️ Cleanup for lecture {lecture_id} already enqueued today (duplicate request ignored).")
 
 
+async def enqueue_chat_summary_task(thread_id: str, next_block_index: int) -> None:
+    """
+    /worker/chat-summary を叩くCloud Tasksタスクをenqueueする(スレッド要約、
+    app/services/chat_summary.py)。チャットの返答が終わった後に呼ばれる。
+
+    畳むのが追いつくまでは毎ターン呼ばれるので、name を thread_id + 次に作る
+    ブロック番号 + 時間バケットで決め、同じ畳みの二重enqueueはCloud Tasks側で弾く。
+    すり抜けて2つ走っても、chat_summary_blocksの一意制約で二重には畳まれない。
+    """
+    if not (PROJECT_ID and CLOUD_RUN_URL and SERVICE_ACCOUNT_EMAIL):
+        raise RuntimeError("❌ Missing Environment Variables for Cloud Tasks enqueue!")
+
+    parent = client.queue_path(PROJECT_ID, REGION, CHAT_QUEUE_NAME)
+    task = {
+        "name": client.task_path(
+            PROJECT_ID, REGION, CHAT_QUEUE_NAME,
+            f"chat-summary-{thread_id}-{next_block_index}-{_dedup_bucket()}",
+        ),
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": f"{CLOUD_RUN_URL}/worker/chat-summary",
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
+            "body": json.dumps({"thread_id": thread_id}).encode(),
+            "oidc_token": {
+                "service_account_email": SERVICE_ACCOUNT_EMAIL,
+                "audience": CLOUD_RUN_URL,
+            }
+        }
+    }
+
+    try:
+        response = await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
+        print(f"✅ Enqueued chat_summary for thread {thread_id} (block {next_block_index}): {response.name}")
+    except AlreadyExists:
+        print(f"⏭️ Chat summary for thread {thread_id} (block {next_block_index}) already enqueued.")
+
+
 # ---------------------------------------------------------
 # 2. 【裏の顔: 職人たちの部屋】Cloud Tasks から呼ばれる専用エンドポイント
 # ---------------------------------------------------------
@@ -3514,6 +3560,25 @@ async def worker_renew_subscription(payload: RenewSubscriptionPayload):
         lambda: admin_client.rpc("renew_subscription", {"p_mapping_id": payload.mapping_id}).execute()
     )
     return {"status": "success"}
+
+
+@app.post("/worker/chat-summary", dependencies=[Depends(require_internal_caller)])
+async def worker_chat_summary(payload: ChatSummaryPayload, request: Request):
+    """
+    enqueue_chat_summary_task がenqueueしたタスクを処理する(スレッドの古い往復を要約に畳む)。
+    失敗したらCloud Tasksの自動リトライに任せるが、CHAT_SUMMARY_MAX_ATTEMPTS回目で
+    打ち切る(要約役の出力が壊れ続ける場合に、LLM呼び出しを繰り返さないため)。
+    打ち切っても、次のチャットのターンで条件を満たしていればまた積まれる。
+    """
+    try:
+        created = await run_chat_summary_fold(payload.thread_id)
+    except Exception as e:
+        retry_count = int(request.headers.get("X-CloudTasks-TaskRetryCount", "0"))
+        if retry_count >= CHAT_SUMMARY_MAX_ATTEMPTS - 1:
+            print(f"❌ [chat-summary] giving up on thread {payload.thread_id} after {retry_count + 1} attempts: {e}")
+            return {"status": "gave_up"}
+        raise
+    return {"status": "success", "blocks_created": created}
 
 
 @app.post("/worker/cleanup-audio-chunks", dependencies=[Depends(require_internal_caller)])
@@ -3989,10 +4054,10 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
         lambda: admin_client.table("courses").delete().eq("user_id", uid).execute()
     )
 
-    # 4.5 横断チャットボットの会話(メッセージ→スレッドの順)と検索インデックス。
+    # 4.5 横断チャットボットの会話(要約→メッセージ→スレッドの順)と検索インデックス。
     #     どれもuser_idのON DELETE CASCADEでauth.users削除時に消えるが、
     #     他のテーブルと同じくカスケードに依存せず明示的に消す。
-    for chat_table in ("chat_messages", "chat_threads", "knowledge_chunks"):
+    for chat_table in ("chat_summary_blocks", "chat_messages", "chat_threads", "knowledge_chunks"):
         await asyncio.to_thread(
             lambda t=chat_table: admin_client.table(t).delete().eq("user_id", uid).execute()
         )
@@ -5656,7 +5721,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
         )
 
     queue: asyncio.Queue = asyncio.Queue()
-    task = asyncio.create_task(run_chat_turn(turn, user_client, queue))
+    task = asyncio.create_task(run_chat_turn(turn, user_client, queue, enqueue_summary=enqueue_chat_summary_task))
     _CHAT_BACKGROUND_TASKS.add(task)
     task.add_done_callback(_CHAT_BACKGROUND_TASKS.discard)
 

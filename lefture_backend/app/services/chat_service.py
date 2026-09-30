@@ -13,6 +13,10 @@
      それ以外 → needs_retrievalがtrueなら検索(本人のJWTでRPC)
   4. 回答役(Gemini 3.1 Flash-Lite, ストリーミング)
   5. 締め: 本文・出典・原価を保存 → 原価×2のクレジットを消費 → done
+     → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
+
+会話履歴: 古い往復は要約ブロック(chat_summary_blocks)として回答役のsystemの末尾に、
+まだ畳んでいない往復(通常5〜14往復)は原文のまま渡す。
 
 「エージェントが自由に検索を繰り返す」形にしていない理由:
 - 危険/危機の判定は回答を作る前に確実に行いたい
@@ -29,9 +33,17 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 from app.core.supabase import get_supabase_client
+from app.services.chat_summary import (
+    FOLD_TRIGGER_TURNS,
+    fetch_active_blocks,
+    pair_turns,
+    render_notes_for_answer,
+    render_summary_for_answer,
+    rows_after_fold_point,
+)
 from app.services.helpers.credits import (
     CHAT_MIN_BALANCE_CREDITS,
     MICRO_CREDITS_PER_CREDIT,
@@ -68,8 +80,11 @@ RATE_LIMIT_MAX_MESSAGES = 20
 BLOCKED_WINDOW_HOURS = 24
 BLOCKED_MAX_MESSAGES = 10
 
-# 会話履歴として回答役・振り分け役に渡す量
-HISTORY_MAX_MESSAGES = 10
+# 会話履歴として回答役・振り分け役に渡す量。古い往復は要約(chat_summary.py)に
+# 畳まれるので、回答役に原文で渡すのは「まだ畳んでいない往復」だけ(通常5〜14往復)。
+# RAW_MAX_TURNSは要約が遅れたとき・失敗し続けたときの上限。
+RAW_MAX_TURNS = 20
+RAW_FETCH_MESSAGES = RAW_MAX_TURNS * 4
 HISTORY_MAX_CHARS_PER_MESSAGE = 2000
 ROUTER_HISTORY_MAX_MESSAGES = 6
 ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 500
@@ -305,32 +320,18 @@ def extract_citations(answer_text: str, chunks: list[dict]) -> list[dict]:
     return citations
 
 
-def build_history_messages(rows: list[dict], max_messages: int, max_chars: int) -> list[Message]:
+def build_history_messages(rows: list[dict], max_turns: int, max_chars: int) -> list[Message]:
     """
-    直近の会話を回答役に渡す形に変換する。完了した発言だけを使い、
+    まだ要約に畳んでいない会話を回答役に渡す形に変換する。完了した往復だけを使い、
     断った(blocked)・危機対応(crisis)・失敗(error)・生成中(streaming)の
     返答と、それに対応するuserメッセージは含めない(悪意ある長文で以降の
     入力トークンが膨らまないようにするため、および危機対応の文脈を
-    通常の会話に持ち込まないため)。
+    通常の会話に持ち込まないため)。往復の数え方は要約側(pair_turns)と共通。
     """
-    # rowsは古い順。assistantがcomplete以外なら、その直前のuserも捨てる。
-    kept: list[dict] = []
-    pending_user: Optional[dict] = None
-    for row in rows:
-        if row.get("role") == "user":
-            pending_user = row
-            continue
-        if row.get("role") == "assistant":
-            if row.get("status") == "complete" and pending_user is not None:
-                kept.append(pending_user)
-                kept.append(row)
-            pending_user = None
-
-    kept = kept[-max_messages:]
     messages = []
-    for row in kept:
-        content = (row.get("content") or "")[:max_chars]
-        messages.append(Message(role=row["role"], content=content))
+    for t in pair_turns(rows)[-max_turns:]:
+        messages.append(Message(role="user", content=t.user_content[:max_chars]))
+        messages.append(Message(role="assistant", content=t.assistant_content[:max_chars]))
     return messages
 
 
@@ -350,6 +351,14 @@ def format_screen_context(lecture_label: Optional[str], selected_text: Optional[
     if selected_text:
         parts.append(f"The student selected this text on screen:\n\"\"\"\n{selected_text}\n\"\"\"")
     return "\n\n".join(parts)
+
+
+_PLACEHOLDER_RE = re.compile(r"\$\{(\w+)\}")
+
+
+def fill_placeholders(template: str, values: dict[str, str]) -> str:
+    """${NAME}を一度に置換する。差し込んだ本文(ユーザーの入力や出典)の中の${...}は置換しない。"""
+    return _PLACEHOLDER_RE.sub(lambda m: values.get(m.group(1), m.group(0)), template)
 
 
 def sse_event(event: str, data: dict) -> str:
@@ -397,7 +406,9 @@ class PreparedTurn:
     selected_text: Optional[str]
     lecture_label: Optional[str]
     context_lecture_id: Optional[str]
+    # まだ要約に畳んでいない部分だけ(古い順)
     history_rows: list[dict] = field(default_factory=list)
+    summary_blocks: list[dict] = field(default_factory=list)
     timer: TurnTimer = field(default_factory=lambda: TurnTimer())
 
 
@@ -464,9 +475,9 @@ def _fetch_busy(admin_client, thread_id: str) -> bool:
 
 
 def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
-    h = admin_client.table("chat_messages").select("role, content, status, created_at") \
+    h = admin_client.table("chat_messages").select("id, role, content, status, created_at") \
         .eq("thread_id", thread_id).is_("deleted_at", "null") \
-        .order("created_at", desc=True).limit(HISTORY_MAX_MESSAGES * 3).execute()
+        .order("created_at", desc=True).limit(RAW_FETCH_MESSAGES).execute()
     return list(reversed(h.data or []))
 
 
@@ -572,7 +583,7 @@ async def prepare_chat_turn(
 
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
-        thread_row, is_busy, history_rows,
+        thread_row, is_busy, history_rows, summary_blocks,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -582,8 +593,13 @@ async def prepare_chat_turn(
         to_thread(_fetch_thread_row, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_busy, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_history_rows, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(fetch_active_blocks, admin_client, thread_id) if not is_new_thread else none(),
     )
     timer.mark("prep_checks")
+    summary_blocks = summary_blocks or []
+    history_rows = rows_after_fold_point(
+        history_rows or [], summary_blocks[-1]["end_message_id"] if summary_blocks else None
+    )
 
     if context_lecture_id and lecture_label is None:
         context_lecture_id = None
@@ -637,7 +653,8 @@ async def prepare_chat_turn(
         selected_text=selected_text,
         lecture_label=lecture_label,
         context_lecture_id=context_lecture_id,
-        history_rows=history_rows or [],
+        history_rows=history_rows,
+        summary_blocks=summary_blocks,
         timer=timer,
     )
 
@@ -679,26 +696,26 @@ def _lecture_languages(admin_client, user_id: str) -> str:
 async def _run_router(
     llm: UnifiedLLM,
     turn: PreparedTurn,
+    memory: "ConversationMemory",
     history: list[Message],
     lecture_languages: str,
 ) -> RouterDecision:
     is_first_message = turn.is_new_thread or not turn.thread_has_title
-    prompt = _load_prompt("chat_router_prompt.txt")
-    prompt = (
-        prompt
-        .replace("${RECENT_CONVERSATION}", format_router_conversation(history))
-        .replace("${SCREEN_CONTEXT}", format_screen_context(turn.lecture_label, turn.selected_text) or "(none)")
-        .replace("${LECTURE_LANGUAGES}", lecture_languages)
-        .replace("${NEW_MESSAGE}", turn.content)
-        .replace(
-            "${THREAD_TITLE_INSTRUCTION}",
-            "This is the first message of a new conversation: a short title for the conversation "
-            "(at most 30 characters) in `reply_language`. null if `intent` is `blocked` or `crisis`."
-            if is_first_message else "always null.",
-        )
-    )
+    # 指示文は毎ターン同じsystemに置き、変わる入力はすべて後ろのuserに入れる
+    # (先頭が一致する部分にだけプロンプトキャッシュが効くため)。
+    user_input = fill_placeholders(_load_prompt("chat_router_input_prompt.txt"), {
+        "LECTURE_LANGUAGES": lecture_languages,
+        "EARLIER_CONVERSATION": memory.for_router(),
+        "RECENT_CONVERSATION": format_router_conversation(history),
+        "SCREEN_CONTEXT": format_screen_context(turn.lecture_label, turn.selected_text) or "(none)",
+        "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
+        "NEW_MESSAGE": turn.content,
+    })
     options = LLMOptions(output_type="json", json_schema=ROUTER_SCHEMA, temperature=0.0)
-    messages = [Message(role="user", content=prompt)]
+    messages = [
+        Message(role="system", content=_load_prompt("chat_router_prompt.txt")),
+        Message(role="user", content=user_input),
+    ]
 
     for _attempt in range(2):
         try:
@@ -757,27 +774,58 @@ async def _retrieve(
     return merge_search_results(ok_results)
 
 
+@dataclass
+class ConversationMemory:
+    """要約に畳んだ部分。回答役・振り分け役に渡す形(IDや節の呼び名は含まない)。"""
+    summary: str = ""
+    notes: str = ""
+
+    @classmethod
+    def from_blocks(cls, blocks: list[dict]) -> "ConversationMemory":
+        if not blocks:
+            return cls()
+        return cls(summary=render_summary_for_answer(blocks), notes=render_notes_for_answer(blocks[-1].get("header")))
+
+    def for_router(self) -> str:
+        return "\n\n".join(x for x in [self.summary, self.notes] if x) or "(none)"
+
+
 def _build_answer_messages(
     turn: PreparedTurn,
     decision: RouterDecision,
+    memory: ConversationMemory,
     history: list[Message],
     profile: str,
     chunks: list[dict],
 ) -> list[Message]:
+    """
+    並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
+    プロンプトキャッシュは先頭が完全一致する部分にだけ効くので、毎ターン変わる
+    出典・画面の文脈・返答言語はすべて最後のuserメッセージに入れる。要約はsystemの
+    末尾にあり、変わるのは畳んだときだけ。履歴に残るuserメッセージは本人が打った
+    本文だけなので、次のターンでも先頭がずれない。
+    """
+    system_template = _render_conditional_sections(_load_prompt("chat_answer_prompt.txt"), {
+        "HAS_MEMORY": bool(memory.summary),
+        "HAS_NOTES": bool(memory.notes),
+    })
+    system = fill_placeholders(system_template, {
+        "STUDENT_PROFILE": profile,
+        "CONVERSATION_SUMMARY": memory.summary,
+        "CONVERSATION_NOTES": memory.notes,
+    })
     screen_context = format_screen_context(turn.lecture_label, turn.selected_text)
-    template = _load_prompt("chat_answer_prompt.txt")
-    system = _render_conditional_sections(template, {
+    turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
         "HAS_SOURCES": bool(chunks),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
     })
-    system = (
-        system
-        .replace("${STUDENT_PROFILE}", profile)
-        .replace("${SOURCES}", format_sources_block(chunks))
-        .replace("${SCREEN_CONTEXT}", screen_context)
-        .replace("${REPLY_LANGUAGE}", decision.reply_language)
-    )
-    return [Message(role="system", content=system), *history, Message(role="user", content=turn.content)]
+    turn_message = fill_placeholders(turn_template, {
+        "SOURCES": format_sources_block(chunks),
+        "SCREEN_CONTEXT": screen_context,
+        "REPLY_LANGUAGE": decision.reply_language,
+        "MESSAGE": turn.content,
+    })
+    return [Message(role="system", content=system), *history, Message(role="user", content=turn_message)]
 
 
 async def _finalize(
@@ -835,7 +883,33 @@ async def _finalize(
     return charged_micro
 
 
-async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[Optional[str]]") -> None:
+EnqueueSummary = Callable[[str, int], Awaitable[None]]
+
+
+async def _maybe_enqueue_summary(turn: PreparedTurn, enqueue_summary: Optional[EnqueueSummary]) -> None:
+    """
+    今回の往復を含めて未要約が15往復以上なら、畳む処理をCloud Tasksに積む。
+    畳むのが遅れても次のターンは原文を少し多めに送るだけなので、ここで失敗しても
+    返答自体には影響させない(次のターンでまた積まれる)。
+    """
+    if enqueue_summary is None:
+        return
+    unsummarized = len(pair_turns(turn.history_rows)) + 1
+    if unsummarized < FOLD_TRIGGER_TURNS:
+        return
+    next_block_index = (turn.summary_blocks[-1]["block_index"] + 1) if turn.summary_blocks else 1
+    try:
+        await enqueue_summary(turn.thread_id, next_block_index)
+    except Exception as e:
+        print(f"⚠️ [chat] failed to enqueue summary for thread {turn.thread_id}: {e}")
+
+
+async def run_chat_turn(
+    turn: PreparedTurn,
+    user_client,
+    queue: "asyncio.Queue[Optional[str]]",
+    enqueue_summary: Optional[EnqueueSummary] = None,
+) -> None:
     """
     SSEで送るイベントをqueueに積みながら1ターンを最後まで実行する。
     エンドポイントとは別のasyncioタスクで動かすので、途中でクライアントが
@@ -861,7 +935,8 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
         })
         await emit("status", {"stage": "thinking"})
 
-        history = build_history_messages(turn.history_rows, HISTORY_MAX_MESSAGES, HISTORY_MAX_CHARS_PER_MESSAGE)
+        history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
+        memory = ConversationMemory.from_blocks(turn.summary_blocks)
         profile, lecture_languages = await asyncio.gather(
             asyncio.to_thread(_load_student_profile, admin_client, turn.user_id),
             asyncio.to_thread(_lecture_languages, admin_client, turn.user_id),
@@ -869,7 +944,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
         timer.mark("context_loaded")
 
         # --- 2. 振り分け ---
-        decision = await _run_router(llm, turn, history, lecture_languages)
+        decision = await _run_router(llm, turn, memory, history, lecture_languages)
         timer.mark("router_done")
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
@@ -910,7 +985,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
 
         # --- 4. 回答 ---
         await emit("status", {"stage": "writing"})
-        messages = _build_answer_messages(turn, decision, history, profile, chunks)
+        messages = _build_answer_messages(turn, decision, memory, history, profile, chunks)
         state = StreamState()
         # reasoning_effort="low"でもGeminiには thinkingLevel: low, includeThoughts: True
         # が送られ、答え本文の前に思考の文章を生成する分、最初の1文字までが数秒遅くなる
@@ -930,6 +1005,8 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             "answer_model": ANSWER_MODEL,
             "answer_input_tokens": state.input_tokens,
             "answer_output_tokens": state.output_tokens,
+            "answer_cache_read_tokens": state.cache_read_tokens,
+            "answer_cache_write_tokens": state.cache_write_tokens,
             "usage_estimated": state.usage_estimated,
             "retrieved_chunk_ids": [c.get("id") for c in chunks],
             "timings": timer.to_json(),
@@ -962,6 +1039,7 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             "citations": citations,
             "credits_charged": charged_micro / MICRO_CREDITS_PER_CREDIT,
         })
+        await _maybe_enqueue_summary(turn, enqueue_summary)
 
     except Exception as e:
         print(f"❌ [chat] turn failed for message {turn.assistant_message_id}: {e}")
