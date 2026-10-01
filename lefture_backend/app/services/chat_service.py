@@ -378,6 +378,9 @@ class PreparedTurn:
     # まだ要約に畳んでいない部分だけ(古い順)
     history_rows: list[dict] = field(default_factory=list)
     summary_blocks: list[dict] = field(default_factory=list)
+    # 2段目の要約(1段目のブロック10個をさらに畳んだもの)。1段目は消さないので、
+    # summary_blocksには2段目に入った1段目も含まれる
+    summary_level2: list[dict] = field(default_factory=list)
     timer: TurnTimer = field(default_factory=lambda: TurnTimer())
 
 
@@ -553,7 +556,7 @@ async def prepare_chat_turn(
 
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
-        thread_row, is_busy, history_rows, summary_blocks,
+        thread_row, is_busy, history_rows, summary_blocks, summary_level2,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -564,6 +567,7 @@ async def prepare_chat_turn(
         to_thread(_fetch_busy, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_history_rows, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(fetch_active_blocks, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(fetch_active_blocks, admin_client, thread_id, 2) if not is_new_thread else none(),
     )
     timer.mark("prep_checks")
     summary_blocks = summary_blocks or []
@@ -626,6 +630,7 @@ async def prepare_chat_turn(
         timezone_name=(timezone_name or "").strip()[:64] or None,
         history_rows=history_rows,
         summary_blocks=summary_blocks,
+        summary_level2=summary_level2 or [],
         timer=timer,
     )
 
@@ -830,10 +835,11 @@ class ConversationMemory:
     notes: str = ""
 
     @classmethod
-    def from_blocks(cls, blocks: list[dict]) -> "ConversationMemory":
+    def from_blocks(cls, blocks: list[dict], level2: Optional[list[dict]] = None) -> "ConversationMemory":
         if not blocks:
             return cls()
-        return cls(summary=render_summary_for_answer(blocks), notes=render_notes_for_answer(blocks[-1].get("header")))
+        return cls(summary=render_summary_for_answer(blocks, level2),
+                   notes=render_notes_for_answer(blocks[-1].get("header")))
 
     def for_router(self) -> str:
         return "\n\n".join(x for x in [self.summary, self.notes] if x) or "(none)"
@@ -991,7 +997,7 @@ async def run_chat_turn(
         await emit("status", {"stage": "thinking"})
 
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
-        memory = ConversationMemory.from_blocks(turn.summary_blocks)
+        memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
         # 地図(コース・講義の呼び名、この会話の節・最近のチャット)は探索役を呼ぶときだけ使うが、
         # 仕分け役を待つ間に並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
         tz = resolve_timezone(turn.timezone_name)
@@ -1000,7 +1006,7 @@ async def run_chat_turn(
 
         async def _build_chat_map() -> ChatMap:
             recent = await DbChatThreadSource(admin_client, turn.user_id).recent_threads_with_trail(turn.thread_id, 20)
-            return load_chat_map(turn.summary_blocks, recent)
+            return load_chat_map(turn.summary_blocks, recent, turn.summary_level2)
         chat_map_task = asyncio.create_task(_build_chat_map())
         chat_map_task.add_done_callback(_ignore_task_exception)
 

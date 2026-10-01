@@ -7,7 +7,9 @@
 - 未要約の往復が15になったら、古い10往復を1つのブロックに畳む(原文は常に5〜14往復残る)
 - 畳むのはCloud Tasks(/worker/chat-summary)から呼ばれるrun_fold()。要約役はGPT-6 Luna
 - 回答役・振り分け役へは、節の呼び名やメッセージIDを含まない形でだけ渡す
-- 2段目(1段目のブロック10個=100往復をさらに畳む)はまだ作っていない。テーブルはlevel列で対応済み
+- 2段目: 2段目に入っていない1段目のブロックが15個になったら、古い10個(約100往復)を2段目の
+  ブロック1つに畳む(1段目は常に5個以上残る)。入力は1段目の節だけで、原文は読まない。1段目は
+  消さずに残すので、探索役は「2段目の節H* → 1段目の節S* → 往復 → 全文」とたどれる
 """
 
 import asyncio
@@ -23,6 +25,9 @@ SUMMARY_MODEL = "gpt-6-luna"
 
 FOLD_TRIGGER_TURNS = 15
 FOLD_SIZE_TURNS = 10
+# 2段目: 2段目に入っていない1段目のブロックがこの数になったら、古い方からこの数を畳む
+LEVEL2_TRIGGER_BLOCKS = 15
+LEVEL2_FOLD_BLOCKS = 10
 
 # 履歴・要約に使う返答の状態。途中停止(stopped)を足すときはここに加える。
 KEPT_ASSISTANT_STATUSES = ("complete",)
@@ -77,6 +82,26 @@ SUMMARY_SCHEMA: dict[str, Any] = {
         },
     },
     "required": ["sections", "header"],
+}
+
+
+LEVEL2_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "groups": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "bullets": {"type": "array", "items": {"type": "string"}},
+                    "sections": {"type": "array", "items": {"type": "integer"}},
+                },
+                "required": ["title", "bullets", "sections"],
+            },
+        },
+    },
+    "required": ["groups"],
 }
 
 
@@ -220,10 +245,60 @@ def validate_summary_output(raw: Any, turns: list[Turn], next_handle: int) -> tu
     return sections, header
 
 
-def render_summary_for_answer(blocks: list[dict]) -> str:
-    """回答役・振り分け役向け。節のタイトルと箇条書きだけで、呼び名やIDは入れない。"""
+def uncovered_level1(level1: list[dict], level2: list[dict]) -> list[dict]:
+    """2段目にまだ入っていない1段目のブロック(古い順)。"""
+    covered = {cid for b in level2 for cid in b.get("child_block_ids") or []}
+    return [b for b in level1 if b["id"] not in covered]
+
+
+def build_level2_messages(prior_group_titles: list[str], sections: list[dict], language: str) -> list[Message]:
+    system = _load_prompt("chat_summary_level2_prompt.txt").replace(
+        "${SUMMARY_LANGUAGE}", _LANGUAGE_NAMES.get(language, language)
+    )
+    titles_text = "\n".join(f"- {t}" for t in prior_group_titles) if prior_group_titles else "(none yet)"
+    sections_text = "\n\n".join(
+        f"S{sec['handle']} {sec['title']}\n" + "\n".join(f"- {b}" for b in sec["bullets"]) for sec in sections
+    )
+    user_content = (
+        f"<previous_group_titles>\n{titles_text}\n</previous_group_titles>\n\n"
+        f"<sections_to_condense>\n{sections_text}\n</sections_to_condense>"
+    )
+    return [Message(role="system", content=system), Message(role="user", content=user_content)]
+
+
+def validate_level2_output(raw: Any, sections: list[dict], next_handle: int) -> list[dict]:
+    """
+    2段目の出力を検証し、保存する形に。1段目の節はちょうど1回ずつ、元の順番のまま
+    どこかのグループに入っていること(抜け・重複・順番の入れ替わりがあればやり直させる)。
+    """
+    if not isinstance(raw, dict) or not isinstance(raw.get("groups"), list):
+        raise SummaryValidationError("output is not the expected object")
+    order = [sec["handle"] for sec in sections]
+    turns_of = {sec["handle"]: sec["turns"] for sec in sections}
+    groups, used = [], []
+    for g in raw["groups"]:
+        title = (g.get("title") or "").strip()
+        bullets = [b.strip() for b in g.get("bullets") or [] if isinstance(b, str) and b.strip()]
+        children = [c for c in g.get("sections") or [] if isinstance(c, int)]
+        if not title or not bullets or not children:
+            raise SummaryValidationError(f"group without title, bullets, or sections: {g!r}")
+        used += children
+        groups.append({
+            "handle": next_handle + len(groups), "title": title, "bullets": bullets, "children": children,
+            "turns": sorted({t for c in children for t in turns_of.get(c, [])}),
+        })
+    if used != order:
+        raise SummaryValidationError(f"groups must cover sections {order} exactly once in order, got {used}")
+    return groups
+
+
+def render_summary_for_answer(blocks: list[dict], level2: Optional[list[dict]] = None) -> str:
+    """
+    回答役・振り分け役向け。古い部分は2段目、残りは1段目(blocksのうち2段目に入っていないもの)。
+    節のタイトルと箇条書きだけで、呼び名やIDは入れない。
+    """
     parts = []
-    for block in blocks:
+    for block in [*(level2 or []), *uncovered_level1(blocks, level2 or [])]:
         for sec in block.get("sections") or []:
             parts.append(f"## {sec['title']}")
             parts.extend(f"- {b}" for b in sec["bullets"])
@@ -246,12 +321,13 @@ def render_notes_for_answer(header: Optional[dict]) -> str:
 # 🗄️ DB
 # =========================================================
 
-_BLOCK_COLUMNS = "id, block_index, turn_start, turn_end, end_message_id, end_message_created_at, sections, header"
+_BLOCK_COLUMNS = ("id, block_index, turn_start, turn_end, start_message_id, end_message_id, end_message_created_at, "
+                  "sections, header, child_block_ids, summary_language")
 
 
-def fetch_active_blocks(admin_client, thread_id: str) -> list[dict]:
+def fetch_active_blocks(admin_client, thread_id: str, level: int = 1) -> list[dict]:
     res = admin_client.table("chat_summary_blocks").select(_BLOCK_COLUMNS) \
-        .eq("thread_id", thread_id).eq("level", 1).is_("invalidated_at", "null") \
+        .eq("thread_id", thread_id).eq("level", level).is_("invalidated_at", "null") \
         .order("block_index").execute()
     return res.data or []
 
@@ -300,7 +376,8 @@ async def summarize_turns(
 
 async def run_fold(thread_id: str) -> int:
     """
-    未要約の往復が15以上ある間、古い10往復ずつブロックに畳む。作ったブロック数を返す。
+    未要約の往復が15以上ある間、古い10往復ずつ1段目のブロックに畳み、続けて2段目も
+    条件を満たす間だけ畳む。作ったブロック数(両方の段の合計)を返す。
     同じスレッドで2つ同時に走っても、(thread_id, level, block_index)の一意制約で
     後から来た方の保存が失敗するだけで、二重に畳まれることはない。
     """
@@ -308,7 +385,12 @@ async def run_fold(thread_id: str) -> int:
     user_id = await asyncio.to_thread(_thread_owner, admin_client, thread_id)
     if not user_id:
         return 0
+    created = await _fold_level1(admin_client, thread_id, user_id)
+    created += await _fold_level2(admin_client, thread_id, user_id)
+    return created
 
+
+async def _fold_level1(admin_client, thread_id: str, user_id: str) -> int:
     created = 0
     while True:
         blocks = await asyncio.to_thread(fetch_active_blocks, admin_client, thread_id)
@@ -330,54 +412,116 @@ async def run_fold(thread_id: str) -> int:
         llm = UnifiedLLM(billing)
         sections, new_header = await summarize_turns(llm, prior_titles, header, batch, language, next_handle)
 
-        cost_usd = billing.total_usd()
-        chargeable_usd = sum(r.cost_usd for r in billing.records if r.dimension == "tokens")
-        breakdown = [vars(r) for r in billing.records]
-        block_index = (last["block_index"] + 1) if last else 1
-
-        try:
-            inserted = await asyncio.to_thread(
-                lambda: admin_client.table("chat_summary_blocks").insert({
-                    "thread_id": thread_id,
-                    "user_id": user_id,
-                    "level": 1,
-                    "block_index": block_index,
-                    "turn_start": batch[0].number,
-                    "turn_end": batch[-1].number,
-                    "start_message_id": batch[0].user_message_id,
-                    "end_message_id": batch[-1].assistant_message_id,
-                    "end_message_created_at": batch[-1].assistant_created_at,
-                    "turn_map": [
-                        {"turn": t.number, "user_message_id": t.user_message_id, "assistant_message_id": t.assistant_message_id}
-                        for t in batch
-                    ],
-                    "sections": sections,
-                    "header": new_header,
-                    "summary_language": language,
-                    "model": SUMMARY_MODEL,
-                    "usage": {"records": breakdown, "chargeable_usd": chargeable_usd},
-                    "cost_usd": cost_usd,
-                }).execute()
-            )
-        except Exception as e:
-            if "uq_chat_summary_blocks_active_index" in str(e) or "duplicate key" in str(e):
-                print(f"⏭️ [chat-summary] block {block_index} of thread {thread_id} was already created by another run.")
-                return created
-            raise
-
-        block_id = inserted.data[0]["id"]
+        saved = await _save_block(admin_client, billing, {
+            "thread_id": thread_id,
+            "user_id": user_id,
+            "level": 1,
+            "block_index": (last["block_index"] + 1) if last else 1,
+            "turn_start": batch[0].number,
+            "turn_end": batch[-1].number,
+            "start_message_id": batch[0].user_message_id,
+            "end_message_id": batch[-1].assistant_message_id,
+            "end_message_created_at": batch[-1].assistant_created_at,
+            "turn_map": [
+                {"turn": t.number, "user_message_id": t.user_message_id, "assistant_message_id": t.assistant_message_id}
+                for t in batch
+            ],
+            "sections": sections,
+            "header": new_header,
+            "summary_language": language,
+        })
+        if not saved:
+            return created
         created += 1
-        print(f"🗂️ [chat-summary] thread={thread_id} block={block_index} turns={batch[0].number}-{batch[-1].number} "
-              f"sections={len(sections)} cost=${chargeable_usd:.6f}")
 
-        try:
-            charged = await asyncio.to_thread(
-                consume_chat_summary_credits, user_id, thread_id, block_id, chargeable_usd, breakdown,
-            )
-            await asyncio.to_thread(
-                lambda: admin_client.table("chat_summary_blocks")
-                    .update({"credits_charged_micro": charged}).eq("id", block_id).execute()
-            )
-        except Exception as e:
-            # 課金の失敗で要約自体を失敗扱いにはしない(メッセージの課金と同じ方針)
-            print(f"⚠️ [chat-summary] failed to charge credits for block {block_id}: {e}")
+
+async def _fold_level2(admin_client, thread_id: str, user_id: str) -> int:
+    created = 0
+    while True:
+        level1 = await asyncio.to_thread(fetch_active_blocks, admin_client, thread_id, 1)
+        level2 = await asyncio.to_thread(fetch_active_blocks, admin_client, thread_id, 2)
+        uncovered = uncovered_level1(level1, level2)
+        if len(uncovered) < LEVEL2_TRIGGER_BLOCKS:
+            return created
+
+        batch = uncovered[:LEVEL2_FOLD_BLOCKS]
+        sections = [sec for b in batch for sec in b.get("sections") or []]
+        prior_titles = [sec["title"] for b in level2 for sec in b.get("sections") or []]
+        next_handle = 1 + max((sec["handle"] for b in level2 for sec in b.get("sections") or []), default=0)
+        langs = [b.get("summary_language") for b in batch if b.get("summary_language")]
+        language = max(set(langs), key=langs.count) if langs else "en"
+
+        billing = BillingEngine(task_type="CHAT_SUMMARY")
+        llm = UnifiedLLM(billing)
+        messages = build_level2_messages(prior_titles, sections, language)
+        options = LLMOptions(output_type="json", json_schema=LEVEL2_SCHEMA, temperature=1.0, max_completion_tokens=4000)
+        groups = None
+        last_error: Optional[Exception] = None
+        for _attempt in range(2):
+            result = await llm.generate(SUMMARY_MODEL, messages, options)
+            try:
+                groups = validate_level2_output(result.output_json, sections, next_handle)
+                break
+            except SummaryValidationError as e:
+                print(f"⚠️ [chat-summary] invalid level-2 output (attempt {_attempt + 1}): {e}")
+                last_error = e
+        if groups is None:
+            raise last_error
+
+        saved = await _save_block(admin_client, billing, {
+            "thread_id": thread_id,
+            "user_id": user_id,
+            "level": 2,
+            "block_index": (level2[-1]["block_index"] + 1) if level2 else 1,
+            "turn_start": batch[0]["turn_start"],
+            "turn_end": batch[-1]["turn_end"],
+            "start_message_id": batch[0]["start_message_id"],
+            "end_message_id": batch[-1]["end_message_id"],
+            "end_message_created_at": batch[-1]["end_message_created_at"],
+            "sections": groups,
+            # 2段目は会話の前提を作り直さない(常に最新の1段目のものを使う)。列が必須なので写しを入れる
+            "header": batch[-1]["header"],
+            "child_block_ids": [b["id"] for b in batch],
+            "summary_language": language,
+        })
+        if not saved:
+            return created
+        created += 1
+
+
+async def _save_block(admin_client, billing: BillingEngine, row: dict) -> bool:
+    """ブロックを保存して課金する。別の実行が先に同じ番号を作っていたらFalse。"""
+    cost_usd = billing.total_usd()
+    chargeable_usd = sum(r.cost_usd for r in billing.records if r.dimension == "tokens")
+    breakdown = [vars(r) for r in billing.records]
+    thread_id, level, block_index = row["thread_id"], row["level"], row["block_index"]
+    try:
+        inserted = await asyncio.to_thread(
+            lambda: admin_client.table("chat_summary_blocks").insert({
+                **row,
+                "model": SUMMARY_MODEL,
+                "usage": {"records": breakdown, "chargeable_usd": chargeable_usd},
+                "cost_usd": cost_usd,
+            }).execute()
+        )
+    except Exception as e:
+        if "uq_chat_summary_blocks_active_index" in str(e) or "duplicate key" in str(e):
+            print(f"⏭️ [chat-summary] level-{level} block {block_index} of thread {thread_id} was already created by another run.")
+            return False
+        raise
+
+    block_id = inserted.data[0]["id"]
+    print(f"🗂️ [chat-summary] thread={thread_id} level={level} block={block_index} "
+          f"turns={row['turn_start']}-{row['turn_end']} sections={len(row['sections'])} cost=${chargeable_usd:.6f}")
+    try:
+        charged = await asyncio.to_thread(
+            consume_chat_summary_credits, row["user_id"], thread_id, block_id, chargeable_usd, breakdown,
+        )
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_summary_blocks")
+                .update({"credits_charged_micro": charged}).eq("id", block_id).execute()
+        )
+    except Exception as e:
+        # 課金の失敗で要約自体を失敗扱いにはしない(メッセージの課金と同じ方針)
+        print(f"⚠️ [chat-summary] failed to charge credits for block {block_id}: {e}")
+    return True

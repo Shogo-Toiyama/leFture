@@ -159,6 +159,17 @@ class ChatSection:
     handle: str  # "S{n}"
     title: str
     turns: list[int]
+    bullets: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ChatGroup:
+    """この会話の2段目の要約の節(1段目の節をいくつかまとめたもの)。"""
+    handle: str  # "H{n}"
+    title: str
+    bullets: list[str]
+    children: list[str]  # ["S12", "S13", ...]
+    turns: list[int]
 
 
 @dataclass
@@ -176,9 +187,15 @@ class ChatThreadRef:
 
 @dataclass
 class ChatMap:
-    """この会話の畳んだ節(S*)と、最近のチャット(P*)。3-14 ④の地図。"""
+    """
+    この会話の畳んだ節(2段目H*・1段目S*)と、最近のチャット(P*)。3-14 ④の地図。
+    sectionsは1段目の節すべて(2段目に入ったものも含む)。地図に出すのは2段目と、
+    2段目に入っていない1段目だけで、入ったものはHを開くと出てくる。
+    """
     sections: list[ChatSection] = field(default_factory=list)
     recent_threads: list[ChatThreadRef] = field(default_factory=list)
+    groups: list[ChatGroup] = field(default_factory=list)
+    _group_by_handle: dict[str, ChatGroup] = field(default_factory=dict)
     _section_by_handle: dict[str, ChatSection] = field(default_factory=dict)
     _thread_by_handle: dict[str, ChatThreadRef] = field(default_factory=dict)
     _thread_handle_by_id: dict[str, str] = field(default_factory=dict)
@@ -186,8 +203,11 @@ class ChatMap:
     _next_extra: int = 0
 
     @classmethod
-    def build(cls, sections: list[ChatSection], recent_threads: list[ChatThreadRef]) -> "ChatMap":
-        m = cls(sections=sections, recent_threads=recent_threads, _next_extra=len(recent_threads) + 1)
+    def build(cls, sections: list[ChatSection], recent_threads: list[ChatThreadRef],
+              groups: Optional[list[ChatGroup]] = None) -> "ChatMap":
+        m = cls(sections=sections, recent_threads=recent_threads, groups=groups or [], _next_extra=len(recent_threads) + 1)
+        for g in m.groups:
+            m._group_by_handle[g.handle] = g
         for s in sections:
             m._section_by_handle[s.handle] = s
         for t in recent_threads:
@@ -199,11 +219,20 @@ class ChatMap:
     def has_anything(self) -> bool:
         return bool(self.sections or self.recent_threads)
 
+    def top_sections(self) -> list[ChatSection]:
+        """2段目に入っていない1段目の節(地図に直接出すもの)。"""
+        covered = {c for g in self.groups for c in g.children}
+        return [s for s in self.sections if s.handle not in covered]
+
     def scope_handles(self) -> list[str]:
-        return [s.handle for s in self.sections] + [t.handle for t in self.recent_threads]
+        return ([g.handle for g in self.groups] + [s.handle for s in self.top_sections()]
+                + [t.handle for t in self.recent_threads])
 
     def section(self, handle: str) -> Optional[ChatSection]:
         return self._section_by_handle.get(handle)
+
+    def group(self, handle: str) -> Optional[ChatGroup]:
+        return self._group_by_handle.get(handle)
 
     def thread(self, handle: str) -> Optional[ChatThreadRef]:
         return self._thread_by_handle.get(handle)
@@ -228,9 +257,15 @@ class ChatMap:
 
     def render(self) -> str:
         parts = []
-        if self.sections:
+        if self.groups:
+            parts.append("Older parts of this conversation (condensed; open one to see its sections):")
+            parts += [f"{g.handle} {g.title}" for g in self.groups]
+        top = self.top_sections()
+        if top:
+            if parts:
+                parts.append("")
             parts.append("Folded sections of this conversation:")
-            parts += [f"{s.handle} {s.title}" for s in self.sections]
+            parts += [f"{s.handle} {s.title}" for s in top]
         if self.recent_threads:
             if parts:
                 parts.append("")
@@ -239,17 +274,20 @@ class ChatMap:
         return "\n".join(parts) if parts else "(No other chats yet.)"
 
 
-def load_chat_map(current_sections: list[dict], recent: list[dict]) -> ChatMap:
+def load_chat_map(current_sections: list[dict], recent: list[dict], level2: Optional[list[dict]] = None) -> ChatMap:
     """
-    current_sections: turn.summary_blocks(chat_service経由で既に読み込み済み)の
-    sections(handle/title)をそのまま渡す(この会話用の追加クエリは不要)。
+    current_sections: turn.summary_blocks(chat_service経由で既に読み込み済み)の1段目のブロック。
+    level2: turn.summary_level2(2段目のブロック)。どちらも追加のクエリは不要。
     recent: ChatThreadSource.recent_threads_with_trailの結果。
     """
-    sections = [ChatSection(handle=f"S{sec['handle']}", title=sec["title"], turns=sec["turns"])
+    sections = [ChatSection(handle=f"S{sec['handle']}", title=sec["title"], turns=sec["turns"], bullets=sec.get("bullets") or [])
                 for block in current_sections for sec in block.get("sections") or []]
+    groups = [ChatGroup(handle=f"H{g['handle']}", title=g["title"], bullets=g.get("bullets") or [],
+                        children=[f"S{c}" for c in g.get("children") or []], turns=g.get("turns") or [])
+              for block in level2 or [] for g in block.get("sections") or []]
     threads = [ChatThreadRef(handle=f"P{i}", id=t["id"], title=t["title"], date=t["date"], trail=t["trail"])
                for i, t in enumerate(recent, start=1)]
-    return ChatMap.build(sections, threads)
+    return ChatMap.build(sections, threads, groups)
 
 
 def load_student_map(admin_client, user_id: str, tz: tzinfo = timezone.utc) -> StudentMap:

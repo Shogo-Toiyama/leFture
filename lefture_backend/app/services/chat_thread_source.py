@@ -27,11 +27,16 @@ class ChatThreadSource(Protocol):
         ...
 
     async def thread_sections(self, thread_id: str) -> list[dict]:
-        """そのスレッド自身が畳んだ節: [{handle(int), title, bullets, turns: [番号]}]。"""
+        """そのスレッド自身が畳んだ1段目の節: [{handle(int), title, bullets, turns: [番号]}]。"""
+        ...
+
+    async def thread_groups(self, thread_id: str) -> list[dict]:
+        """2段目の節: [{handle(int), title, bullets, children: [1段目の節の番号], turns}]。"""
         ...
 
     async def recent_threads_with_trail(self, exclude_thread_id: Optional[str], limit: int) -> list[dict]:
-        """[{id, title, date, trail: [節のタイトル]}] last_message_at降順、exclude_thread_idを除く。"""
+        """[{id, title, date, trail: [節のタイトル]}] last_message_at降順、exclude_thread_idを除く。
+        trailは2段目の節 → 2段目に入っていない1段目の節の順(長いスレッドは2段目のタイトルが先に並ぶ)。"""
         ...
 
 
@@ -76,6 +81,16 @@ class DbChatThreadSource:
         return [{"handle": sec["handle"], "title": sec["title"], "bullets": sec.get("bullets") or [], "turns": sec["turns"]}
                 for b in (res.data or []) for sec in b.get("sections") or []]
 
+    async def thread_groups(self, thread_id: str) -> list[dict]:
+        def _q():
+            return self._client.table("chat_summary_blocks").select("sections") \
+                .eq("thread_id", thread_id).eq("level", 2).is_("invalidated_at", "null") \
+                .order("block_index").execute()
+        res = await asyncio.to_thread(_q)
+        return [{"handle": g["handle"], "title": g["title"], "bullets": g.get("bullets") or [],
+                 "children": g.get("children") or [], "turns": g.get("turns") or []}
+                for b in (res.data or []) for g in b.get("sections") or []]
+
     async def recent_threads_with_trail(self, exclude_thread_id: Optional[str], limit: int) -> list[dict]:
         def _threads_q():
             return self._client.table("chat_threads").select("id, title, last_message_at") \
@@ -89,12 +104,15 @@ class DbChatThreadSource:
         thread_ids = [r["id"] for r in rows]
 
         def _blocks_q():
-            return self._client.table("chat_summary_blocks").select("thread_id, block_index, sections") \
-                .in_("thread_id", thread_ids).eq("level", 1).is_("invalidated_at", "null") \
-                .order("block_index").execute()
+            return self._client.table("chat_summary_blocks").select("id, thread_id, level, block_index, sections, child_block_ids") \
+                .in_("thread_id", thread_ids).is_("invalidated_at", "null") \
+                .order("level", desc=True).order("block_index").execute()
         blocks_res = await asyncio.to_thread(_blocks_q)
+        covered = {cid for b in blocks_res.data or [] if b["level"] == 2 for cid in b.get("child_block_ids") or []}
         trails: dict[str, list[str]] = {}
-        for b in blocks_res.data or []:
+        for b in blocks_res.data or []:  # 2段目が先、1段目が後(並び順で)
+            if b["id"] in covered:
+                continue
             trails.setdefault(b["thread_id"], [])
             trails[b["thread_id"]] += [sec["title"] for sec in b.get("sections") or []]
 

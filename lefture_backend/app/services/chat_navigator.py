@@ -121,8 +121,9 @@ _CITATION_BRACKET_RE = re.compile(r"⟦([^⟧]*)⟧")
 _SID_PART_RE = re.compile(r"[sS]?0*(\d+)(?:\s*-\s*[sS]?0*(\d+))?")
 _HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$")
 # S{n}(この会話の節) / S{n}/T{k}(その節の往復) / P{n}(過去のチャット) /
-# P{n}/S{m}(その過去のチャットの節) / P{n}/T{k}(その過去のチャットの往復)
-_CHAT_HANDLE_RE = re.compile(r"^(S|P)(\d+)(?:/(?:S(\d+)|T(\d+)))?$")
+# P{n}/S{m}(その過去のチャットの節) / P{n}/T{k}(その過去のチャットの往復) /
+# H{n}(この会話の2段目の節) / P{n}/H{m}(その過去のチャットの2段目の節)
+_CHAT_HANDLE_RE = re.compile(r"^(S|P|H)(\d+)(?:/(?:S(\d+)|T(\d+)|H(\d+)))?$")
 # W{n}(このターンのWeb検索で当たったページ。周をまたいで通し番号)
 _WEB_HANDLE_RE = re.compile(r"^W\d+$")
 
@@ -183,19 +184,25 @@ def range_handle(lecture_handle: str, a: int, b: int) -> str:
 
 @dataclass
 class ParsedChatHandle:
-    kind: str  # section / thread / thread_section / turn(S*/T*) / thread_turn(P*/T*)
-    prefix: str  # "S{n}" または "P{n}"
+    kind: str  # section / thread / thread_section / turn(S*/T*) / thread_turn(P*/T*) / group(H*) / thread_group(P*/H*)
+    prefix: str  # "S{n}" / "P{n}" / "H{n}"
     number: int
     sub_section: Optional[int] = None  # P{n}/S{m}のm
     turn: Optional[int] = None  # .../T{k}のk
+    sub_group: Optional[int] = None  # P{n}/H{m}のm
 
 
 def parse_chat_handle(handle: str) -> Optional[ParsedChatHandle]:
     m = _CHAT_HANDLE_RE.match(handle or "")
     if not m:
         return None
-    letter, num, sub_s, sub_t = m.groups()
+    letter, num, sub_s, sub_t, sub_h = m.groups()
     prefix = f"{letter}{num}"
+    if letter == "H":
+        # H{n}は単独でだけ使う(中の節はS{m}のまま開く)
+        return ParsedChatHandle("group", prefix, int(num)) if sub_s is None and sub_t is None and sub_h is None else None
+    if sub_h is not None:
+        return ParsedChatHandle("thread_group", prefix, int(num), sub_group=int(sub_h)) if letter == "P" else None
     if sub_s is not None:
         if letter != "P":
             return None  # S{n}/S{m}は無い
@@ -789,7 +796,7 @@ async def open_handle(
     handle: str, relation: str, nav_input: NavigatorInput, source: LectureSource,
     chat_source: Optional[ChatThreadSource] = None,
 ) -> Opened:
-    if handle[:1] in ("S", "P") and chat_source is not None:
+    if handle[:1] in ("S", "P", "H") and chat_source is not None:
         return await chat_open_handle(handle, relation, nav_input, chat_source)
     m = nav_input.student_map
     parsed = parse_handle(handle)
@@ -898,6 +905,11 @@ async def chat_section_owner_handle(
     return f"{p_handle}/S{section_number}" if p_handle else None
 
 
+def _section_list_lines(sections: list[tuple[str, str, list[str]]]) -> str:
+    """(呼び名, タイトル, 箇条書き)の一覧。節は要約なので箇条書きまで見せる(3-14 ④)。"""
+    return "\n".join(f"{h} {title}" + "".join(f"\n  - {b}" for b in bullets) for h, title, bullets in sections) or "(No sections.)"
+
+
 def _turn_list_lines(turns: list[dict], prefix: str) -> str:
     lines = []
     for t in turns:
@@ -930,25 +942,65 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
             ref={"type": "chat_section", "thread_id": nav_input.current_thread_id, "section_handle": parsed.number},
         )
 
+    if parsed.kind == "group":
+        group = cm.group(handle)
+        if group is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        children = [c for c in (cm.section(h) for h in group.children) if c]
+        body = _section_list_lines([(c.handle, c.title, c.bullets) for c in children])
+        return Opened(
+            handle=handle, text=f"Condensed part {handle}: {group.title}\nSections:\n{body}",
+            material=Material(key=f"chat_group:{nav_input.current_thread_id}:{parsed.number}", kind="chat_thread",
+                              label=f"This conversation / {group.title}", content=body, relation=relation,
+                              source_type="chat_turn", thread_id=nav_input.current_thread_id,
+                              metadata={"thread_id": nav_input.current_thread_id}, handle=handle),
+            surfaced=[c.handle for c in children],
+        )
+
+    if parsed.kind == "thread_group":
+        p_ref = cm.thread(parsed.prefix)
+        if p_ref is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        group = next((g for g in await chat_source.thread_groups(p_ref.id) if g["handle"] == parsed.sub_group), None)
+        if group is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        by_number = {sec["handle"]: sec for sec in await chat_source.thread_sections(p_ref.id)}
+        children = [by_number[c] for c in group["children"] if c in by_number]
+        body = _section_list_lines([(f"{parsed.prefix}/S{c['handle']}", c["title"], c["bullets"]) for c in children])
+        return Opened(
+            handle=handle, text=f"Condensed part {handle}: {group['title']} (in {p_ref.title})\nSections:\n{body}",
+            material=Material(key=f"chat_group:{p_ref.id}:{parsed.sub_group}", kind="chat_thread",
+                              label=f"{p_ref.title} / {group['title']}", content=body, relation=relation,
+                              source_type="chat_turn", thread_id=p_ref.id, metadata={"thread_id": p_ref.id}, handle=handle),
+            surfaced=[f"{parsed.prefix}/S{c['handle']}" for c in children],
+        )
+
     if parsed.kind == "thread":
         ref = cm.thread(handle)
         if ref is None:
             return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
-        turns = await chat_source.thread_turns(ref.id)
+        turns, own_sections, own_groups = await asyncio.gather(
+            chat_source.thread_turns(ref.id), chat_source.thread_sections(ref.id), chat_source.thread_groups(ref.id))
         # 過去のスレッド自身の畳んだ節(そのスレッド固有の番号体系。都度取得)
-        own_sections = await chat_source.thread_sections(ref.id)
         folded_numbers = {n for s in own_sections for n in s["turns"]}
         trailing = [t for t in turns if t["number"] not in folded_numbers]
         parts = [f"Thread {handle}: {ref.title} ({ref.date or 'no date'})"]
         surfaced = []
+        if own_groups:
+            # 長いスレッド: 古い部分は2段目の節で見せ、2段目に入った1段目の節は出さない
+            parts.append("Older parts (condensed; open one to see its sections):\n" + _section_list_lines(
+                [(f"{handle}/H{g['handle']}", g["title"], g["bullets"]) for g in own_groups]))
+            surfaced += [f"{handle}/H{g['handle']}" for g in own_groups]
+            covered = {c for g in own_groups for c in g["children"]}
+            own_sections = [sec for sec in own_sections if sec["handle"] not in covered]
         if own_sections:
             # 節はタイトルと箇条書き(要約)まで見せる。原文が要るときだけ節・往復を開けばよい(3-14 ④)
             parts.append("Folded sections:\n" + "\n".join(
                 f"{handle}/S{s['handle']} {s['title']}" + "".join(f"\n  - {b}" for b in s["bullets"])
                 for s in own_sections))
             surfaced += [f"{handle}/S{s['handle']}" for s in own_sections]
-        if trailing or not own_sections:
-            parts.append(("Recent turns:\n" if own_sections else "") + _turn_list_lines(trailing, handle))
+        if trailing or not (own_sections or own_groups):
+            parts.append(("Recent turns:\n" if (own_sections or own_groups) else "") + _turn_list_lines(trailing, handle))
         surfaced += [f"{handle}/T{t['number']}" for t in trailing]
         body = "\n\n".join(parts[1:])
         return Opened(
@@ -1423,7 +1475,7 @@ def fetch_kinds(requests: list[Request]) -> list[str]:
         if isinstance(r, FindRequest):
             kind = "web" if r.target == "web.search" else "chats" if r.target.startswith("chat.") else "lectures"
         elif isinstance(r, OpenRequest):
-            kind = "web" if _WEB_HANDLE_RE.match(r.handle) else "chats" if r.handle[:1] in ("S", "P") else "lectures"
+            kind = "web" if _WEB_HANDLE_RE.match(r.handle) else "chats" if r.handle[:1] in ("S", "P", "H") else "lectures"
         else:
             kind = "lectures"
         if kind not in kinds:
