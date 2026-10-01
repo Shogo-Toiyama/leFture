@@ -35,8 +35,9 @@ from datetime import date
 from typing import Any, Awaitable, Callable, Optional, Union
 
 from app.services.chat_lecture_source import LectureSource, first_sentence
-from app.services.chat_map import MapLecture, StudentMap
+from app.services.chat_map import ChatMap, MapLecture, StudentMap
 from app.services.chat_materials import Material, material_from_chunk
+from app.services.chat_thread_source import ChatThreadSource
 from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 
@@ -74,11 +75,18 @@ BY_DATE_MAX_DAYS = 400
 RECENT_CONVERSATION_MAX_MESSAGES = 6
 RECENT_CONVERSATION_MAX_CHARS = 500
 
+# チャットを開いたときの一覧1行(学生の発言・返答それぞれ)と、1往復を開いたときの全文
+CHAT_TURN_LIST_USER_CHARS = 150
+CHAT_TURN_LIST_ASSISTANT_CHARS = 300
+CHAT_TURN_FULL_CHARS = 3000
+# 前のターンで開いたスレッドの一覧プレビューは、直近の往復だけに絞る(長くなりすぎないように)
+PREVIOUS_THREAD_PREVIEW_TURNS = 5
+
 # 今の段階で使える操作(3-12の順に増やす)。プロンプトの<!--IF:CAN_...-->と対応する。
 CAPABILITIES = {
     "CAN_OPEN": True,      # 目次を開く(lecture.outline)・文字起こしの範囲を開く
     "CAN_BY_DATE": True,   # 講義を日付で引く
-    "CAN_CHAT": False,     # この会話の畳んだ部分・過去のチャット
+    "CAN_CHAT": True,      # この会話の畳んだ部分・過去のチャット
     "CAN_WEB": False,      # Web検索
 }
 
@@ -103,6 +111,9 @@ LAYER_SOURCE_TYPES: dict[str, list[str]] = {
 _CITATION_BRACKET_RE = re.compile(r"⟦([^⟧]*)⟧")
 _SID_PART_RE = re.compile(r"[sS]?0*(\d+)(?:\s*-\s*[sS]?0*(\d+))?")
 _HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$")
+# S{n}(この会話の節) / S{n}/T{k}(その節の往復) / P{n}(過去のチャット) /
+# P{n}/S{m}(その過去のチャットの節) / P{n}/T{k}(その過去のチャットの往復)
+_CHAT_HANDLE_RE = re.compile(r"^(S|P)(\d+)(?:/(?:S(\d+)|T(\d+)))?$")
 
 
 def available_ops() -> list[str]:
@@ -158,6 +169,30 @@ def range_handle(lecture_handle: str, a: int, b: int) -> str:
     return f"{lecture_handle}/s{a}" if a == b else f"{lecture_handle}/s{a}-{b}"
 
 
+@dataclass
+class ParsedChatHandle:
+    kind: str  # section / thread / thread_section / turn(S*/T*) / thread_turn(P*/T*)
+    prefix: str  # "S{n}" または "P{n}"
+    number: int
+    sub_section: Optional[int] = None  # P{n}/S{m}のm
+    turn: Optional[int] = None  # .../T{k}のk
+
+
+def parse_chat_handle(handle: str) -> Optional[ParsedChatHandle]:
+    m = _CHAT_HANDLE_RE.match(handle or "")
+    if not m:
+        return None
+    letter, num, sub_s, sub_t = m.groups()
+    prefix = f"{letter}{num}"
+    if sub_s is not None:
+        if letter != "P":
+            return None  # S{n}/S{m}は無い
+        return ParsedChatHandle("thread_section", prefix, int(num), sub_section=int(sub_s))
+    if sub_t is not None:
+        return ParsedChatHandle("turn" if letter == "S" else "thread_turn", prefix, int(num), turn=int(sub_t))
+    return ParsedChatHandle("section" if letter == "S" else "thread", prefix, int(num))
+
+
 def rewrite_citations(note: str, lecture_handle: str) -> tuple[str, str, list[str]]:
     """
     Deep Note内の引用記号⟦s000325-s000331, s000341⟧を、探索役向けには呼び名
@@ -198,6 +233,9 @@ class NavigatorInput:
     recent_conversation: list[Message]
     today: date
     student_map: StudentMap
+    chat_map: Optional[ChatMap] = None
+    # 今のスレッドのID(chat.thread/chat.allの絞り込み・当たった往復がどのスレッドのものかの判定に使う)
+    current_thread_id: Optional[str] = None
     # 前のターンで開いたもの(返答の行のcontext.openedに保存したUUIDの参照)
     previous_turn_refs: list[dict] = field(default_factory=list)
     # 画面で見ているトピックの番号(Deep Notesのページなど)。webappはまだ送っていない(講義だけ)。
@@ -431,6 +469,7 @@ SearchFn = Callable[[list[FindRequest]], Awaitable[list[Union[list[dict], Except
 class NavigatorTools:
     search: SearchFn
     source: LectureSource
+    chat_source: Optional[ChatThreadSource] = None
 
 
 # =========================================================
@@ -472,10 +511,12 @@ def build_system_prompt() -> str:
 
 
 def openable_handles(nav_input: NavigatorInput, state: NavState) -> list[str]:
-    """開ける呼び名: 全コース・全講義・中身や検索結果に出てきたもの・前のターンのもの。開いたものは除く。"""
+    """開ける呼び名: 全コース・全講義・この会話の節・最近のチャット・中身や検索結果に
+    出てきたもの・前のターンのもの。開いたものは除く。"""
     m = nav_input.student_map
     screen_topic = [nav_input.screen_topic_handle()] if nav_input.screen_topic_handle() else []
-    handles = m.scope_handles() + screen_topic + state.previous_turn_handles + state.surfaced_not_opened()
+    chat_scope = nav_input.chat_map.scope_handles() if nav_input.chat_map and CAPABILITIES["CAN_CHAT"] else []
+    handles = m.scope_handles() + chat_scope + screen_topic + state.previous_turn_handles + state.surfaced_not_opened()
     return [h for h in _dedupe(handles) if h not in state.opened]
 
 
@@ -565,9 +606,10 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
         elif op == "open":
             handle = raw.get("handle")
             parsed = parse_handle(handle or "")
-            if handle not in openable or parsed is None:
+            parsed_chat = parse_chat_handle(handle or "") if CAPABILITIES["CAN_CHAT"] else None
+            if handle not in openable or (parsed is None and parsed_chat is None):
                 reason = "handle_not_openable"
-            elif parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
+            elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
                 reason = "transcript_range_too_long"
             else:
                 req = OpenRequest(handle=handle, **common)
@@ -602,7 +644,10 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
     parts = [f"<today>{nav_input.today.isoformat()}</today>"]
 
     if lap == 1:
-        parts.append("<map>\nCourses:\n" + m.render_courses() + "\n</map>")
+        map_text = "Courses:\n" + m.render_courses()
+        if CAPABILITIES["CAN_CHAT"] and nav_input.chat_map is not None and nav_input.chat_map.has_anything:
+            map_text += "\n\n" + nav_input.chat_map.render()
+        parts.append(f"<map>\n{map_text}\n</map>")
         if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
             parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
 
@@ -662,7 +707,12 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
 # 📂 開く(講義の目次・文字起こし)
 # =========================================================
 
-async def open_handle(handle: str, relation: str, nav_input: NavigatorInput, source: LectureSource) -> Opened:
+async def open_handle(
+    handle: str, relation: str, nav_input: NavigatorInput, source: LectureSource,
+    chat_source: Optional[ChatThreadSource] = None,
+) -> Opened:
+    if handle[:1] in ("S", "P") and chat_source is not None:
+        return await chat_open_handle(handle, relation, nav_input, chat_source)
     m = nav_input.student_map
     parsed = parse_handle(handle)
     course = m.course(parsed.course) if parsed else None
@@ -748,18 +798,147 @@ async def open_handle(handle: str, relation: str, nav_input: NavigatorInput, sou
     )
 
 
-async def resolve_hit_handles(chunks: list[dict], nav_input: NavigatorInput, source: LectureSource) -> list[Hit]:
+async def chat_thread_handle_for(nav_input: NavigatorInput, chat_source: Optional[ChatThreadSource], thread_id: str) -> Optional[str]:
+    """あるスレッドIDのP{k}を、地図に無ければその場で(P21…を)割り当てて返す。"""
+    cm = nav_input.chat_map
+    if cm is None:
+        return None
+    handle = cm.thread_handle(thread_id)
+    if handle or chat_source is None:
+        return handle
+    meta = await chat_source.thread_meta(thread_id)
+    return cm.handle_for_new_thread(thread_id, meta["title"], meta["date"]) if meta else None
+
+
+async def chat_section_owner_handle(
+    nav_input: NavigatorInput, chat_source: Optional[ChatThreadSource], thread_id: str, section_number: int,
+) -> Optional[str]:
+    """あるスレッドの、ある節番号を「S{n}」(今の会話)か「P{k}/S{m}」(過去のチャット)に直す。"""
+    if thread_id == nav_input.current_thread_id:
+        return f"S{section_number}"
+    p_handle = await chat_thread_handle_for(nav_input, chat_source, thread_id)
+    return f"{p_handle}/S{section_number}" if p_handle else None
+
+
+def _turn_list_lines(turns: list[dict], prefix: str) -> str:
+    lines = []
+    for t in turns:
+        user = re.sub(r"\s+", " ", t["user_content"])[:CHAT_TURN_LIST_USER_CHARS]
+        assistant = re.sub(r"\s+", " ", t["assistant_content"])[:CHAT_TURN_LIST_ASSISTANT_CHARS]
+        lines.append(f"{prefix}/T{t['number']} Student: {user} | Assistant: {assistant}")
+    return "\n".join(lines) if lines else "(No turns.)"
+
+
+async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput, chat_source: ChatThreadSource) -> Opened:
+    """この会話の畳んだ節・過去のチャットを開く。「一覧 → 中身」の2段(3-14 ④)。"""
+    cm = nav_input.chat_map
+    parsed = parse_chat_handle(handle)
+    if parsed is None or cm is None:
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+
+    if parsed.kind == "section":
+        section = cm.section(handle)
+        if section is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        turns = [t for t in await chat_source.thread_turns(nav_input.current_thread_id) if t["number"] in section.turns]
+        body = _turn_list_lines(turns, handle)
+        return Opened(
+            handle=handle, text=f"Section {handle}: {section.title}\n{body}",
+            material=Material(key=f"chat_section:{nav_input.current_thread_id}:{parsed.number}", kind="chat_section",
+                              label=f"This conversation / {section.title}", content=body, relation=relation,
+                              source_type="chat_turn", thread_id=nav_input.current_thread_id,
+                              metadata={"thread_id": nav_input.current_thread_id, "section_handle": parsed.number}, handle=handle),
+            surfaced=[f"{handle}/T{t['number']}" for t in turns],
+            ref={"type": "chat_section", "thread_id": nav_input.current_thread_id, "section_handle": parsed.number},
+        )
+
+    if parsed.kind == "thread":
+        ref = cm.thread(handle)
+        if ref is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        turns = await chat_source.thread_turns(ref.id)
+        # 過去のスレッド自身の畳んだ節(そのスレッド固有の番号体系。都度取得)
+        own_sections = await chat_source.thread_sections(ref.id)
+        folded_numbers = {n for s in own_sections for n in s["turns"]}
+        trailing = [t for t in turns if t["number"] not in folded_numbers]
+        parts = [f"Thread {handle}: {ref.title} ({ref.date or 'no date'})"]
+        surfaced = []
+        if own_sections:
+            # 節はタイトルと箇条書き(要約)まで見せる。原文が要るときだけ節・往復を開けばよい(3-14 ④)
+            parts.append("Folded sections:\n" + "\n".join(
+                f"{handle}/S{s['handle']} {s['title']}" + "".join(f"\n  - {b}" for b in s["bullets"])
+                for s in own_sections))
+            surfaced += [f"{handle}/S{s['handle']}" for s in own_sections]
+        if trailing or not own_sections:
+            parts.append(("Recent turns:\n" if own_sections else "") + _turn_list_lines(trailing, handle))
+        surfaced += [f"{handle}/T{t['number']}" for t in trailing]
+        body = "\n\n".join(parts[1:])
+        return Opened(
+            handle=handle, text="\n".join(parts),
+            material=Material(key=f"chat_thread:{ref.id}", kind="chat_thread", label=f"{ref.title} / Chat",
+                              content=body, relation=relation, source_type="chat_turn", thread_id=ref.id,
+                              metadata={"thread_id": ref.id}, handle=handle),
+            surfaced=surfaced, ref={"type": "thread", "id": ref.id},
+        )
+
+    if parsed.kind == "thread_section":
+        p_ref = cm.thread(parsed.prefix)
+        if p_ref is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        own_sections = await chat_source.thread_sections(p_ref.id)
+        section = next((s for s in own_sections if s["handle"] == parsed.sub_section), None)
+        if section is None:
+            return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+        turns = [t for t in await chat_source.thread_turns(p_ref.id) if t["number"] in section["turns"]]
+        body = _turn_list_lines(turns, handle)
+        return Opened(
+            handle=handle, text=f"Section {handle}: {section['title']} (in {p_ref.title})\n{body}",
+            material=Material(key=f"chat_section:{p_ref.id}:{parsed.sub_section}", kind="chat_section",
+                              label=f"{p_ref.title} / {section['title']}", content=body, relation=relation,
+                              source_type="chat_turn", thread_id=p_ref.id,
+                              metadata={"thread_id": p_ref.id, "section_handle": parsed.sub_section}, handle=handle),
+            surfaced=[f"{handle}/T{t['number']}" for t in turns],
+            ref={"type": "chat_section", "thread_id": p_ref.id, "section_handle": parsed.sub_section},
+        )
+
+    # turn / thread_turn: 1往復の全文
+    thread_id = nav_input.current_thread_id if parsed.kind == "turn" else (cm.thread(parsed.prefix).id if cm.thread(parsed.prefix) else None)
+    thread_title = "This conversation" if parsed.kind == "turn" else (cm.thread(parsed.prefix).title if cm.thread(parsed.prefix) else "")
+    if thread_id is None:
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+    turn = next((t for t in await chat_source.thread_turns(thread_id) if t["number"] == parsed.turn), None)
+    if turn is None:
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+    body = f"Student: {turn['user_content'][:CHAT_TURN_FULL_CHARS]}\nAssistant: {turn['assistant_content'][:CHAT_TURN_FULL_CHARS]}"
+    return Opened(
+        handle=handle, text=f"Turn {handle} ({(turn['created_at'] or '')[:10]}):\n{body}",
+        material=Material(key=f"chat_turn:{thread_id}:{parsed.turn}", kind="chat_turn",
+                          label=f"{thread_title} / Turn {parsed.turn}", content=body, relation=relation,
+                          source_type="chat_turn", thread_id=thread_id,
+                          metadata={"thread_id": thread_id, "turn_number": parsed.turn}, handle=handle),
+        ref={"type": "chat_turn", "thread_id": thread_id, "turn_number": parsed.turn},
+    )
+
+
+async def resolve_hit_handles(
+    chunks: list[dict], nav_input: NavigatorInput, source: LectureSource, chat_source: Optional[ChatThreadSource] = None,
+) -> list[Hit]:
     """
-    検索の当たりを、分かるところまで細かい呼び名に直す。文字起こしは文の範囲(metadata.sid_start/
-    sid_end、2026-09-30に追加)、Deep Note・キーワード・復習カードはmetadata.topic_number、
-    トピックの要約・文字起こし(範囲なし)はsource_id = lecture_topics.id。それ以外は講義。
+    検索の当たりを、分かるところまで細かい呼び名に直す。
+    - 講義: 文字起こしは文の範囲(metadata.sid_start/sid_end)、Deep Note・キーワード・復習カードは
+      metadata.topic_number、トピックの要約・文字起こし(範囲なし)はsource_id = lecture_topics.id。
+    - チャット: metadata.thread_id/turn_number。今のスレッドの、まだ畳んでいない部分(どの節にも
+      属さない)に当たったものは、原文で既に見えているので捨てる(3-14 ④)。
     """
     m = nav_input.student_map
-    topic_ids = [c.get("source_id") for c in chunks
+    lecture_chunks = [c for c in chunks if c.get("source_type") != "chat_turn"]
+    chat_chunks = [c for c in chunks if c.get("source_type") == "chat_turn"]
+
+    topic_ids = [c.get("source_id") for c in lecture_chunks
                  if c.get("source_type") in ("topic_summary", "transcript_topic") and c.get("source_id")]
     topic_index = await source.topic_indexes(topic_ids) if topic_ids else {}
     hits = []
-    for c in chunks:
+    for c in lecture_chunks:
         lec_handle = m.lecture_handle(c.get("lecture_id"))
         handle = lec_handle
         meta = c.get("metadata") or {}
@@ -771,14 +950,31 @@ async def resolve_hit_handles(chunks: list[dict], nav_input: NavigatorInput, sou
             elif c.get("source_id") in topic_index:
                 handle = f"{lec_handle}/T{topic_index[c['source_id']][1]}"
         hits.append(Hit(handle=handle, chunk=c))
+
+    for c in chat_chunks:
+        meta = c.get("metadata") or {}
+        thread_id, turn_number = meta.get("thread_id"), meta.get("turn_number")
+        if not thread_id or not isinstance(turn_number, int) or nav_input.chat_map is None:
+            continue
+        if thread_id == nav_input.current_thread_id:
+            section = next((s for s in nav_input.chat_map.sections if turn_number in s.turns), None)
+            if section is None:
+                continue  # まだ畳んでいない部分。<recent_conversation>に既に見えている
+            hits.append(Hit(handle=f"{section.handle}/T{turn_number}", chunk=c))
+        else:
+            p_handle = await chat_thread_handle_for(nav_input, chat_source, thread_id)
+            if p_handle:
+                hits.append(Hit(handle=f"{p_handle}/T{turn_number}", chunk=c))
     return hits
 
 
-async def prepare_previous_turn(nav_input: NavigatorInput, source: LectureSource, state: NavState) -> None:
+async def prepare_previous_turn(
+    nav_input: NavigatorInput, source: LectureSource, chat_source: Optional[ChatThreadSource], state: NavState,
+) -> None:
     """
     前のターンで開いたもの(UUIDの参照)を今の呼び名に直し、一段下の一覧を付けて見せる
-    (コースなら講義の一覧、講義ならトピックの一覧)。「その次の回」「3番目」を正確な呼び名に
-    結びつけるため(評価で効いた形、3-6)。
+    (コースなら講義の一覧、講義ならトピックの一覧、スレッドなら直近の往復)。「その次の回」
+    「3番目」を正確な呼び名に結びつけるため(評価で効いた形、3-6)。
     """
     m = nav_input.student_map
     blocks, handles = [], []
@@ -792,6 +988,39 @@ async def prepare_previous_turn(nav_input: NavigatorInput, source: LectureSource
             rows = [f"  {x.handle} ({x.date.isoformat() if x.date else 'no date'}) {x.title}" for x in course.lectures]
             blocks.append(f"{h} — {course.title}\n" + "\n".join(rows))
             handles += [h] + [x.handle for x in course.lectures]
+            continue
+        if kind == "thread" and CAPABILITIES["CAN_CHAT"] and chat_source is not None:
+            p_handle = await chat_thread_handle_for(nav_input, chat_source, ref.get("id"))
+            t_ref = nav_input.chat_map.thread(p_handle) if p_handle and nav_input.chat_map else None
+            if not t_ref:
+                continue
+            turns = (await chat_source.thread_turns(t_ref.id))[-PREVIOUS_THREAD_PREVIEW_TURNS:]
+            rows = [f"  {p_handle}/T{t['number']} Student: {t['user_content'][:80]}" for t in turns]
+            blocks.append(f"{p_handle} — {t_ref.title} ({t_ref.date or 'no date'})" + ("\n" + "\n".join(rows) if rows else ""))
+            handles += [p_handle] + [f"{p_handle}/T{t['number']}" for t in turns]
+            continue
+        if kind == "chat_section" and CAPABILITIES["CAN_CHAT"] and chat_source is not None:
+            h = await chat_section_owner_handle(nav_input, chat_source, ref.get("thread_id"), ref.get("section_handle"))
+            if not h:
+                continue
+            blocks.append(f"{h} — a folded section of a conversation")
+            handles.append(h)
+            continue
+        if kind == "chat_turn" and CAPABILITIES["CAN_CHAT"] and chat_source is not None:
+            thread_id = ref.get("thread_id")
+            n = ref.get("turn_number")
+            if thread_id == nav_input.current_thread_id:
+                h = f"S?/T{n}"  # 属する節が分からなければ、探索役はSの節を開いてから辿れる
+                if nav_input.chat_map:
+                    section = next((s for s in nav_input.chat_map.sections if n in s.turns), None)
+                    h = f"{section.handle}/T{n}" if section else None
+            else:
+                p_handle = await chat_thread_handle_for(nav_input, chat_source, thread_id)
+                h = f"{p_handle}/T{n}" if p_handle else None
+            if not h or not isinstance(n, int):
+                continue
+            blocks.append(f"{h} — a turn of a past conversation")
+            handles.append(h)
             continue
         lec_h = m.lecture_handle(ref.get("id") if kind == "lecture" else ref.get("lecture_id"))
         lec = m.lecture(lec_h) if lec_h else None
@@ -858,6 +1087,46 @@ def make_lecture_search(
     return search
 
 
+def make_chat_search(
+    user_client,
+    current_thread_id: Optional[str],
+    embed: Callable[[list[str]], Awaitable[list[list[float]]]],
+) -> SearchFn:
+    """chat.all/chat.threadの検索。chat.threadだけ今のスレッドに絞る(RPCのfilter_thread_id)。"""
+    def _rpc(embedding: list[float], req: FindRequest) -> list[dict]:
+        params: dict[str, Any] = {
+            "query_embedding": embedding, "match_count": SEARCH_MATCH_COUNT, "filter_source_types": ["chat_turn"],
+        }
+        if req.target == "chat.thread" and current_thread_id:
+            params["filter_thread_id"] = current_thread_id
+        res = user_client.rpc("search_knowledge_chunks", params).execute()
+        return res.data or []
+
+    async def search(requests: list[FindRequest]) -> list[Union[list[dict], Exception]]:
+        if not requests:
+            return []
+        embeddings = await embed([r.query for r in requests])
+        return await asyncio.gather(
+            *[asyncio.to_thread(_rpc, emb, req) for emb, req in zip(embeddings, requests)],
+            return_exceptions=True,
+        )
+
+    return search
+
+
+def make_search(lecture_search: SearchFn, chat_search: SearchFn) -> SearchFn:
+    """探索役に渡す1つの検索関数。target(lecture.* / chat.*)ごとに実際の検索へ振り分け、
+    結果は元の順番のまま返す。"""
+    async def search(requests: list[FindRequest]) -> list[Union[list[dict], Exception]]:
+        lecture_reqs = [r for r in requests if r.target.startswith("lecture.")]
+        chat_reqs = [r for r in requests if r.target.startswith("chat.")]
+        lecture_results, chat_results = await asyncio.gather(lecture_search(lecture_reqs), chat_search(chat_reqs))
+        li, ci = iter(lecture_results), iter(chat_results)
+        return [next(li) if r.target.startswith("lecture.") else next(ci) for r in requests]
+
+    return search
+
+
 # =========================================================
 # 🧭 本体: 最大4周
 # =========================================================
@@ -909,12 +1178,12 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
                 print(f"⚠️ [chat] navigator search failed ({req.label()}): {res}")
                 outcomes.append(SearchOutcome(request=req, hits=[], error=str(res)[:300]))
             else:
-                outcomes.append(SearchOutcome(request=req, hits=await resolve_hit_handles(res, nav_input, tools.source)))
+                outcomes.append(SearchOutcome(request=req, hits=await resolve_hit_handles(res, nav_input, tools.source, tools.chat_source)))
         return outcomes
 
     async def run_open(req: OpenRequest) -> Opened:
         try:
-            return await open_handle(req.handle, req.relation, nav_input, tools.source)
+            return await open_handle(req.handle, req.relation, nav_input, tools.source, tools.chat_source)
         except Exception as e:
             print(f"⚠️ [chat] navigator open failed ({req.handle}): {e}")
             return Opened(handle=req.handle, text=f"{req.handle}: (could not be opened)", material=None)
@@ -949,7 +1218,7 @@ async def navigate(
     state = NavState()
     if nav_input.previous_turn_refs and CAPABILITIES["CAN_OPEN"]:
         try:
-            await prepare_previous_turn(nav_input, tools.source, state)
+            await prepare_previous_turn(nav_input, tools.source, tools.chat_source, state)
         except Exception as e:
             print(f"⚠️ [chat] failed to prepare the previous turn's materials: {e}")
     goal: list[str] = []
@@ -1005,14 +1274,25 @@ def summarize_for_log(result: NavigationResult) -> str:
 
 
 def refs_from_materials(materials: list[Material], limit: int = 5) -> list[dict]:
-    """何も開かなかったターンの「前のターンで開いたもの」: 回答に使った材料の講義・トピック。"""
+    """何も開かなかったターンの「前のターンで開いたもの」: 回答に使った材料の講義・トピック・チャット。"""
     refs: list[dict] = []
     for mat in materials:
-        if not mat.lecture_id:
+        meta = mat.metadata or {}
+        if mat.thread_id:
+            turn = meta.get("turn_number")
+            section = meta.get("section_handle")
+            if isinstance(turn, int):
+                ref = {"type": "chat_turn", "thread_id": mat.thread_id, "turn_number": turn}
+            elif isinstance(section, int):
+                ref = {"type": "chat_section", "thread_id": mat.thread_id, "section_handle": section}
+            else:
+                ref = {"type": "thread", "id": mat.thread_id}
+        elif mat.lecture_id:
+            topic = meta.get("topic_number")
+            ref = ({"type": "topic", "lecture_id": mat.lecture_id, "index": topic} if isinstance(topic, int)
+                   else {"type": "lecture", "id": mat.lecture_id})
+        else:
             continue
-        topic = (mat.metadata or {}).get("topic_number")
-        ref = ({"type": "topic", "lecture_id": mat.lecture_id, "index": topic} if isinstance(topic, int)
-               else {"type": "lecture", "id": mat.lecture_id})
         if ref not in refs:
             refs.append(ref)
         if len(refs) >= limit:

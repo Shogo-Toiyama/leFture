@@ -801,5 +801,6 @@ export const en = {
   chatSourceFunFact: 'Fun Fact',
   chatSourceLectureSummary: 'Lecture summary',
   chatSourceCourse: 'Course',
+  chatSourceChat: 'Past chat',
   chatSourceMoment: 'My note',
 };

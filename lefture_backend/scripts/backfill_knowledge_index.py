@@ -81,7 +81,14 @@ SOURCE_TABLES = [
     ("lecture_topics", "topic_summary"),
     ("lecture_topics", "transcript_topic"),
     ("lecture_moments", "lecture_moment"),
+    ("chat_messages", "chat_turn"),
 ]
+
+# chat_messagesは他のテーブルと違い、対象行がrole='assistant' AND status='complete'
+# だけ(userの発言・生成中・断った/危機対応/失敗は積まない)。
+EXTRA_FILTERS: dict[str, dict[str, str]] = {
+    "chat_messages": {"role": "assistant", "status": "complete"},
+}
 
 PAGE_SIZE = 500
 
@@ -119,6 +126,8 @@ def _enqueue_all(user_id: str | None, source_types: set[str] | None = None) -> i
             query = admin_client.table(table).select("id").is_("deleted_at", "null")
             if user_id:
                 query = query.eq("user_id", user_id)
+            for col, val in EXTRA_FILTERS.get(table, {}).items():
+                query = query.eq(col, val)
             page = query.range(offset, offset + PAGE_SIZE - 1).execute()
             rows = page.data or []
             if not rows:

@@ -26,10 +26,13 @@ MATERIAL_MAX_CHARS = 4000
 # 深いもの・具体的なものほど先に入れる(同じ関係の中での順番)
 PRIORITY = {
     "transcript": 0,
+    "chat_turn": 0,
     "topic": 1,
+    "chat_section": 1,
     "chunk": 2,
     "lecture": 3,
     "course": 4,
+    "chat_thread": 4,
 }
 
 
@@ -44,6 +47,7 @@ class Material:
     source_id: Optional[str] = None
     lecture_id: Optional[str] = None
     course_id: Optional[str] = None
+    thread_id: Optional[str] = None
     chunk_id: Optional[str] = None
     similarity: Optional[float] = None
     metadata: dict = field(default_factory=dict)
@@ -58,6 +62,7 @@ class Material:
             "source_id": self.source_id,
             "lecture_id": self.lecture_id,
             "course_id": self.course_id,
+            "thread_id": self.thread_id,
             "label": self.label,
             "similarity": self.similarity,
             "metadata": self.metadata,

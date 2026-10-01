@@ -15,9 +15,11 @@ export type ChatMessageStatus = 'streaming' | 'complete' | 'error' | 'blocked' |
 /**
  * knowledge_chunks.source_type と同じ値。出典からどの画面へ飛ぶかを決める。
  * courseだけは例外で、探索役がコースの講義一覧を開いたときの出典(knowledge_chunksには無い)。
+ * chat_turnは過去のチャット(スレッド・節・往復のどれを開いても同じ種類で、押すとそのスレッドへ)。
  */
 export type ChatSourceType =
   | 'course'
+  | 'chat_turn'
   | 'review_card'
   | 'deep_note'
   | 'keyword'
@@ -37,6 +39,8 @@ export interface ChatCitation {
   source_id: string | null;
   lecture_id: string | null;
   course_id?: string | null;
+  /** chat_turnのときだけ。押すとこのスレッドを開く。 */
+  thread_id?: string | null;
   /** 例: "CS 161 / Lecture 3 / Deep Note: Heaps" */
   label: string;
   similarity?: number | null;

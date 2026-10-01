@@ -36,7 +36,7 @@ from typing import Any, Awaitable, Callable, Optional
 
 from app.core.supabase import get_supabase_client
 from app.services.chat_lecture_source import DbLectureSource
-from app.services.chat_map import StudentMap, load_student_map, resolve_timezone
+from app.services.chat_map import ChatMap, StudentMap, load_chat_map, load_student_map, resolve_timezone
 from app.services.chat_materials import (
     Material,
     extract_citations,
@@ -49,11 +49,14 @@ from app.services.chat_navigator import (
     NavigationResult,
     NavigatorInput,
     NavigatorTools,
+    make_chat_search,
     make_lecture_search,
+    make_search,
     navigate,
     refs_from_materials,
     summarize_for_log,
 )
+from app.services.chat_thread_source import DbChatThreadSource
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
     fetch_active_blocks,
@@ -730,6 +733,7 @@ async def _gather_materials(
     turn: PreparedTurn,
     history: list[Message],
     map_task: "asyncio.Task[StudentMap]",
+    chat_map_task: "asyncio.Task[ChatMap]",
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -738,27 +742,36 @@ async def _gather_materials(
     返す材料はselect_materialsで量を絞った後のもの。
     """
     student_map: Optional[StudentMap] = None
+    chat_map: Optional[ChatMap] = None
     try:
-        student_map = await map_task
+        student_map, chat_map = await asyncio.gather(map_task, chat_map_task)
     except Exception as e:
-        print(f"⚠️ [chat] failed to load the student map: {e}")
+        print(f"⚠️ [chat] failed to load the student/chat map: {e}")
 
     navigation: Optional[NavigationResult] = None
-    if student_map is not None:
-        if not student_map.has_lectures:
-            return [], None  # 探す材料がまだ無い
+    has_lectures = bool(student_map and student_map.has_lectures)
+    has_chats = bool(chat_map and chat_map.has_anything)
+    if has_lectures or has_chats:
+        admin_client = get_supabase_client()
+        chat_source = DbChatThreadSource(admin_client, turn.user_id)
         nav_input = NavigatorInput(
             message=turn.content,
             selected_text=turn.selected_text,
             screen_lecture_id=turn.context_lecture_id,
             recent_conversation=history,
             today=datetime.now(resolve_timezone(turn.timezone_name)).date(),
-            student_map=student_map,
+            student_map=student_map or StudentMap(),
+            chat_map=chat_map or ChatMap(),
+            current_thread_id=turn.thread_id,
             previous_turn_refs=_previous_turn_refs(turn.history_rows),
         )
         tools = NavigatorTools(
-            search=make_lecture_search(user_client, student_map, lambda qs: embed_queries(qs, billing=billing)),
-            source=DbLectureSource(get_supabase_client(), turn.user_id),
+            search=make_search(
+                make_lecture_search(user_client, nav_input.student_map, lambda qs: embed_queries(qs, billing=billing)),
+                make_chat_search(user_client, turn.thread_id, lambda qs: embed_queries(qs, billing=billing)),
+            ),
+            source=DbLectureSource(admin_client, turn.user_id),
+            chat_source=chat_source,
         )
 
         async def on_lap(lap: int) -> None:
@@ -957,11 +970,18 @@ async def run_chat_turn(
 
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
         memory = ConversationMemory.from_blocks(turn.summary_blocks)
-        # 地図(コース・講義の呼び名)は探索役を呼ぶときだけ使うが、仕分け役を待つ間に
-        # 並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
-        map_task = asyncio.create_task(asyncio.to_thread(
-            load_student_map, admin_client, turn.user_id, resolve_timezone(turn.timezone_name)))
+        # 地図(コース・講義の呼び名、この会話の節・最近のチャット)は探索役を呼ぶときだけ使うが、
+        # 仕分け役を待つ間に並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
+        tz = resolve_timezone(turn.timezone_name)
+        map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id, tz))
         map_task.add_done_callback(_ignore_task_exception)
+
+        async def _build_chat_map() -> ChatMap:
+            recent = await DbChatThreadSource(admin_client, turn.user_id).recent_threads_with_trail(turn.thread_id, 20)
+            return load_chat_map(turn.summary_blocks, recent)
+        chat_map_task = asyncio.create_task(_build_chat_map())
+        chat_map_task.add_done_callback(_ignore_task_exception)
+
         profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
         timer.mark("context_loaded")
 
@@ -986,7 +1006,8 @@ async def run_chat_turn(
         navigation: Optional[NavigationResult] = None
         if decision.needs_retrieval:
             await emit("status", {"stage": "searching"})
-            materials, navigation = await _gather_materials(llm, billing, user_client, turn, history, map_task)
+            materials, navigation = await _gather_materials(
+                llm, billing, user_client, turn, history, map_task, chat_map_task)
             timer.mark("retrieval_done")
             await emit("sources", {"sources": sources_event(materials)})
 

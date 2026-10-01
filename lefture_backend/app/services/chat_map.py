@@ -152,6 +152,106 @@ class StudentMap:
         return "\n".join(c.map_line() for c in self.courses)
 
 
+@dataclass
+class ChatSection:
+    """この会話の要約に畳んだ節(chat_summary_blocks.sections)。handleは要約側が振った
+    通し番号をそのまま使う(ブロックをまたいでも重複しない)。"""
+    handle: str  # "S{n}"
+    title: str
+    turns: list[int]
+
+
+@dataclass
+class ChatThreadRef:
+    handle: str  # "P{n}"
+    id: str
+    title: str
+    date: Optional[str]
+    trail: list[str]
+
+    def map_line(self, max_trail: int = 4) -> str:
+        trail = " → ".join([self.title, *self.trail[:max_trail]])
+        return f"{self.handle} ({self.date or 'no date'}) {trail}"
+
+
+@dataclass
+class ChatMap:
+    """この会話の畳んだ節(S*)と、最近のチャット(P*)。3-14 ④の地図。"""
+    sections: list[ChatSection] = field(default_factory=list)
+    recent_threads: list[ChatThreadRef] = field(default_factory=list)
+    _section_by_handle: dict[str, ChatSection] = field(default_factory=dict)
+    _thread_by_handle: dict[str, ChatThreadRef] = field(default_factory=dict)
+    _thread_handle_by_id: dict[str, str] = field(default_factory=dict)
+    # 検索で当たった、最近のチャットに無いスレッドに動的に振る番号(P21〜)
+    _next_extra: int = 0
+
+    @classmethod
+    def build(cls, sections: list[ChatSection], recent_threads: list[ChatThreadRef]) -> "ChatMap":
+        m = cls(sections=sections, recent_threads=recent_threads, _next_extra=len(recent_threads) + 1)
+        for s in sections:
+            m._section_by_handle[s.handle] = s
+        for t in recent_threads:
+            m._thread_by_handle[t.handle] = t
+            m._thread_handle_by_id[t.id] = t.handle
+        return m
+
+    @property
+    def has_anything(self) -> bool:
+        return bool(self.sections or self.recent_threads)
+
+    def scope_handles(self) -> list[str]:
+        return [s.handle for s in self.sections] + [t.handle for t in self.recent_threads]
+
+    def section(self, handle: str) -> Optional[ChatSection]:
+        return self._section_by_handle.get(handle)
+
+    def thread(self, handle: str) -> Optional[ChatThreadRef]:
+        return self._thread_by_handle.get(handle)
+
+    def thread_handle(self, thread_id: Optional[str]) -> Optional[str]:
+        return self._thread_handle_by_id.get(thread_id) if thread_id else None
+
+    def handle_for_new_thread(self, thread_id: str, title: str, date_str: Optional[str]) -> str:
+        """検索で最近20件に無いスレッドが当たったとき、その場でP21…を振って覚えておく。"""
+        existing = self.thread_handle(thread_id)
+        if existing:
+            return existing
+        handle = f"P{self._next_extra}"
+        self._next_extra += 1
+        self.add_thread(ChatThreadRef(handle=handle, id=thread_id, title=title, date=date_str, trail=[]))
+        return handle
+
+    def add_thread(self, ref: ChatThreadRef) -> None:
+        """最近20件に入っていないスレッドを、呼び名で開けるように覚える(地図の一覧には出さない)。"""
+        self._thread_by_handle[ref.handle] = ref
+        self._thread_handle_by_id[ref.id] = ref.handle
+
+    def render(self) -> str:
+        parts = []
+        if self.sections:
+            parts.append("Folded sections of this conversation:")
+            parts += [f"{s.handle} {s.title}" for s in self.sections]
+        if self.recent_threads:
+            if parts:
+                parts.append("")
+            parts.append("Recent chats:")
+            parts += [t.map_line() for t in self.recent_threads]
+        return "\n".join(parts) if parts else "(No other chats yet.)"
+
+
+def load_chat_map(current_sections: list[dict], recent: list[dict]) -> ChatMap:
+    """
+    current_sections: turn.summary_blocks(chat_service経由で既に読み込み済み)の
+    sections(handle/title)をそのまま渡す(この会話用の追加クエリは不要)。
+    recent: ChatThreadSource.recent_threads_with_trailの結果。
+    """
+    sections = [ChatSection(handle=f"S{sec['handle']}", title=sec["title"], turns=sec["turns"])
+                for block in current_sections for sec in block.get("sections") or []]
+    threads = [ChatThreadRef(handle=f"P{i}", id=t["id"], title=t["title"], date=t["date"], trail=t["trail"])
+               for i, t in enumerate(recent, start=1)]
+    return ChatMap.build(sections, threads)
+
+
 def load_student_map(admin_client, user_id: str, tz: tzinfo = timezone.utc) -> StudentMap:
     """本人のコース・講義から地図を作る(同期関数。asyncio.to_threadで呼ぶ)。日付はtzで数える。"""
     courses_res = admin_client.table("courses").select(

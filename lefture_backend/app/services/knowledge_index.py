@@ -57,6 +57,9 @@ KNOWLEDGE_EMBEDDING_DIMENSIONS = 768
 MAX_CHUNK_CHARS = 3200
 CHUNK_OVERLAP_CHARS = 300
 
+# 1往復のチャンクで、学生の発言・返答それぞれに使う最大文字数(3-14 ④)
+CHAT_TURN_MAX_CHARS = 1500
+
 # キューの1件が何度失敗したら諦めて'FAILED'に落とすか
 MAX_QUEUE_ATTEMPTS = 5
 
@@ -504,6 +507,64 @@ def _build_lecture_moment(admin_client, source_id: str, cache: _ContextCache) ->
     )]
 
 
+def _build_chat_turn(admin_client, source_id: str, cache: _ContextCache) -> list[ChunkDraft]:
+    """
+    1往復(student + assistant)を1チャンクに。source_id = 返答(assistant)のメッセージID。
+    トリガはrole='assistant' AND status='complete'の行だけを積むが、ここでも念のため
+    確認する。往復の番号(turn_number)は、要約(chat_summary.pair_turns)と全く同じ数え方で
+    振る(検索で当たった往復を、要約に畳まれた節(S*)や過去のスレッド(P*)の呼び名に
+    結びつけるため、探索役chat_navigator.pyが使う)。
+    """
+    # 循環import回避(chat_summary.pyはこのモジュールに依存していない、一方向)。
+    from app.services.chat_summary import fetch_active_blocks, pair_turns
+
+    res = admin_client.table("chat_messages").select(
+        "id, user_id, thread_id, role, content, status, deleted_at"
+    ).eq("id", source_id).maybe_single().execute()
+    row = res.data if res else None
+    if not row or row.get("deleted_at") or row.get("role") != "assistant" or row.get("status") != "complete":
+        return []
+
+    thread_id = row["thread_id"]
+    thread_res = admin_client.table("chat_threads").select("title, deleted_at")         .eq("id", thread_id).maybe_single().execute()
+    thread = thread_res.data if thread_res else None
+    if not thread or thread.get("deleted_at"):
+        return []
+
+    blocks = fetch_active_blocks(admin_client, thread_id)
+    last = blocks[-1] if blocks else None
+    rows_query = admin_client.table("chat_messages").select(
+        "id, role, content, status, router, created_at"
+    ).eq("thread_id", thread_id).is_("deleted_at", "null")
+    if last:
+        rows_query = rows_query.gt("created_at", last["end_message_created_at"])
+    rows = rows_query.order("created_at").execute().data or []
+    turns = pair_turns(rows, first_number=(last["turn_end"] + 1) if last else 1)
+
+    turn = next((t for t in turns if t.assistant_message_id == source_id), None)
+    if turn is None:
+        # 既にもっと後ろまで畳まれた(このメッセージが属するブロックが新しく出来た)後の
+        # 再実行や、断った/危機対応等でそもそも往復として数えられない場合。
+        return []
+
+    title = (thread.get("title") or "Untitled conversation").strip()
+    date_str = (turn.assistant_created_at or "")[:10]
+    body = f"Student: {turn.user_content[:CHAT_TURN_MAX_CHARS]}\nAssistant: {turn.assistant_content[:CHAT_TURN_MAX_CHARS]}"
+
+    return [ChunkDraft(
+        chunk_index=0,
+        title=f"Chat: {title} / {date_str}",
+        body=body,
+        user_id=row["user_id"],
+        metadata={
+            "thread_id": thread_id,
+            "turn_number": turn.number,
+            "user_message_id": turn.user_message_id,
+            "assistant_message_id": turn.assistant_message_id,
+        },
+    )]
+
+
 SOURCE_TYPE_BUILDERS: dict[str, Callable[[Any, str, _ContextCache], list[ChunkDraft]]] = {
     "review_card": _build_review_card,
     "deep_note": _build_deep_note,
@@ -514,6 +575,7 @@ SOURCE_TYPE_BUILDERS: dict[str, Callable[[Any, str, _ContextCache], list[ChunkDr
     "topic_summary": _build_topic_summary,
     "transcript_topic": _build_transcript_topic,
     "lecture_moment": _build_lecture_moment,
+    "chat_turn": _build_chat_turn,
 }
 
 
