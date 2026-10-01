@@ -58,12 +58,17 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
   };
 
   const isHistory = panel.view === 'history';
+  const isPaper = Boolean(
+    location.pathname.includes('/review-cards') ||
+    location.pathname.includes('/deep-notes') ||
+    location.pathname.includes('/transcript')
+  );
 
   return (
     <>
       {stacked && <button type="button" className="chat-sheet-scrim" onClick={panel.close} aria-label={t('close')} />}
       <aside
-        className={`chat-panel ${stacked ? 'is-sheet' : 'is-docked'}`}
+        className={`chat-panel ${stacked ? 'is-sheet' : 'is-docked'} ${isPaper ? 'is-paper' : ''}`}
         role="complementary"
         aria-label={t('chatTitle')}
         onKeyDown={onKeyDown}

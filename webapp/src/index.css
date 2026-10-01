@@ -15713,7 +15713,7 @@ a.lecture-tile-card:hover {
 }
 
 /* ==========================================================================
-   Chat Page Paper Theme (/chat 専用ペーパーテーマ)
+   Chat Page & Panel Paper Theme (/chat および 読書画面でのパネル用ペーパーテーマ)
    ========================================================================== */
 
 .chat-fullscreen.is-paper,
@@ -15735,6 +15735,46 @@ a.lecture-tile-card:hover {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+}
+
+/* ── パネル(右固定 / ボトムシート) Paper テーマ ──────────────────────── */
+.chat-panel.is-paper {
+  background: var(--paper-bg, #faf5e9);
+  color: var(--ink, #3e3228);
+  color-scheme: light;
+  border-left: 1px solid var(--paper-line, #e6ded0);
+  box-shadow: -8px 0 28px rgba(62, 50, 40, 0.08);
+}
+
+.chat-panel.is-paper.is-sheet {
+  border-left: none;
+  border-top: 1px solid var(--paper-line, #e6ded0);
+  box-shadow: 0 -18px 40px rgba(62, 50, 40, 0.2);
+}
+
+.chat-panel.is-paper .chat-panel-head {
+  border-bottom: 1px solid var(--paper-line, #e6ded0);
+  background: var(--paper-bg, #faf5e9);
+}
+
+.chat-panel.is-paper .chat-panel-title {
+  color: var(--ink, #3e3228);
+}
+
+.chat-panel.is-paper .chat-panel-history {
+  background: var(--paper-bg, #faf5e9);
+}
+
+.chat-panel.is-paper .chat-icon-btn {
+  color: #7a6b5f;
+  background: transparent;
+  border-color: rgba(62, 50, 40, 0.12);
+}
+
+.chat-panel.is-paper .chat-icon-btn:hover {
+  background: rgba(62, 50, 40, 0.06);
+  border-color: rgba(62, 50, 40, 0.2);
+  color: var(--ink, #3e3228);
 }
 
 /* ── 全画面 Paper ヘッダー ─────────────────────────────────────────── */
@@ -15880,13 +15920,15 @@ a.lecture-tile-card:hover {
 
 /* ── スレッド一覧の Paper スタイル ─────────────────────────────────── */
 .chat-fullscreen.is-paper .chat-threads,
-.chat-page.is-paper .chat-threads {
+.chat-page.is-paper .chat-threads,
+.chat-panel.is-paper .chat-threads {
   display: grid;
   gap: 8px;
 }
 
 .chat-fullscreen.is-paper .chat-thread-row,
-.chat-page.is-paper .chat-thread-row {
+.chat-page.is-paper .chat-thread-row,
+.chat-panel.is-paper .chat-thread-row {
   background: var(--paper-surface, #ffffff);
   border: 1px solid var(--paper-line, #e6ded0);
   border-radius: 12px;
@@ -15895,43 +15937,50 @@ a.lecture-tile-card:hover {
 }
 
 .chat-fullscreen.is-paper .chat-thread-row:hover,
-.chat-page.is-paper .chat-thread-row:hover {
+.chat-page.is-paper .chat-thread-row:hover,
+.chat-panel.is-paper .chat-thread-row:hover {
   border-color: #d97706;
   background: #ffffff;
   box-shadow: 0 4px 14px rgba(62, 50, 40, 0.08);
 }
 
 .chat-fullscreen.is-paper .chat-thread-row.is-active,
-.chat-page.is-paper .chat-thread-row.is-active {
+.chat-page.is-paper .chat-thread-row.is-active,
+.chat-panel.is-paper .chat-thread-row.is-active {
   border-color: #d97706;
   background: rgba(217, 119, 6, 0.04);
 }
 
 .chat-fullscreen.is-paper .chat-thread-main,
-.chat-page.is-paper .chat-thread-main {
+.chat-page.is-paper .chat-thread-main,
+.chat-panel.is-paper .chat-thread-main {
   color: var(--ink, #3e3228);
 }
 
 .chat-fullscreen.is-paper .chat-thread-title,
-.chat-page.is-paper .chat-thread-title {
+.chat-page.is-paper .chat-thread-title,
+.chat-panel.is-paper .chat-thread-title {
   color: var(--ink, #3e3228);
   font-weight: 600;
   font-size: 0.95rem;
 }
 
 .chat-fullscreen.is-paper .chat-thread-icon,
-.chat-page.is-paper .chat-thread-icon {
+.chat-page.is-paper .chat-thread-icon,
+.chat-panel.is-paper .chat-thread-icon {
   color: #8c7a6b;
 }
 
 .chat-fullscreen.is-paper .chat-thread-time,
-.chat-page.is-paper .chat-thread-time {
+.chat-page.is-paper .chat-thread-time,
+.chat-panel.is-paper .chat-thread-time {
   color: #8c7a6b;
   font-size: 0.78rem;
 }
 
 .chat-fullscreen.is-paper .chat-thread-actions button,
-.chat-page.is-paper .chat-thread-actions button {
+.chat-page.is-paper .chat-thread-actions button,
+.chat-panel.is-paper .chat-thread-actions button {
   color: #8c7a6b;
   background: transparent;
   border-radius: 6px;
@@ -15939,13 +15988,15 @@ a.lecture-tile-card:hover {
 }
 
 .chat-fullscreen.is-paper .chat-thread-actions button:hover,
-.chat-page.is-paper .chat-thread-actions button:hover {
+.chat-page.is-paper .chat-thread-actions button:hover,
+.chat-panel.is-paper .chat-thread-actions button:hover {
   color: var(--ink, #3e3228);
   background: rgba(62, 50, 40, 0.08);
 }
 
 .chat-fullscreen.is-paper .chat-thread-edit input,
-.chat-page.is-paper .chat-thread-edit input {
+.chat-page.is-paper .chat-thread-edit input,
+.chat-panel.is-paper .chat-thread-edit input {
   background: #ffffff;
   color: var(--ink, #3e3228);
   border: 1px solid #d97706;
@@ -15955,22 +16006,26 @@ a.lecture-tile-card:hover {
 }
 
 .chat-fullscreen.is-paper .chat-thread-edit button,
-.chat-page.is-paper .chat-thread-edit button {
+.chat-page.is-paper .chat-thread-edit button,
+.chat-panel.is-paper .chat-thread-edit button {
   color: var(--ink, #3e3228);
 }
 
 .chat-fullscreen.is-paper .chat-empty,
-.chat-page.is-paper .chat-empty {
+.chat-page.is-paper .chat-empty,
+.chat-panel.is-paper .chat-empty {
   color: #7a6b5f;
 }
 
 .chat-fullscreen.is-paper .chat-threads-empty,
-.chat-page.is-paper .chat-threads-empty {
+.chat-page.is-paper .chat-threads-empty,
+.chat-panel.is-paper .chat-threads-empty {
   color: #7a6b5f;
 }
 
 .chat-fullscreen.is-paper .chat-thread-skeleton,
-.chat-page.is-paper .chat-thread-skeleton {
+.chat-page.is-paper .chat-thread-skeleton,
+.chat-panel.is-paper .chat-thread-skeleton {
   background: linear-gradient(
     90deg,
     rgba(62, 50, 40, 0.05) 25%,
@@ -15983,99 +16038,117 @@ a.lecture-tile-card:hover {
 
 /* メッセージ・吹き出し */
 .chat-fullscreen.is-paper .chat-bubble,
-.chat-page.is-paper .chat-bubble {
+.chat-page.is-paper .chat-bubble,
+.chat-panel.is-paper .chat-bubble {
   background: #ece3d2;
   border: 1px solid #dfd4c0;
   color: #2b2118;
 }
 
 .chat-fullscreen.is-paper .chat-bubble-text,
-.chat-page.is-paper .chat-bubble-text {
+.chat-page.is-paper .chat-bubble-text,
+.chat-panel.is-paper .chat-bubble-text {
   color: #2b2118;
 }
 
 .chat-fullscreen.is-paper .chat-bubble-quote,
-.chat-page.is-paper .chat-bubble-quote {
+.chat-page.is-paper .chat-bubble-quote,
+.chat-panel.is-paper .chat-bubble-quote {
   background: rgba(255, 255, 255, 0.65);
   border-left-color: #d97706;
   color: #5c4b3e;
 }
 
 .chat-fullscreen.is-paper .chat-markdown,
-.chat-page.is-paper .chat-markdown {
+.chat-page.is-paper .chat-markdown,
+.chat-panel.is-paper .chat-markdown {
   color: #2e231a;
 }
 
 .chat-fullscreen.is-paper .chat-markdown strong,
-.chat-page.is-paper .chat-markdown strong {
+.chat-page.is-paper .chat-markdown strong,
+.chat-panel.is-paper .chat-markdown strong {
   color: #1a140f;
 }
 
 .chat-fullscreen.is-paper .chat-markdown a,
-.chat-page.is-paper .chat-markdown a {
+.chat-page.is-paper .chat-markdown a,
+.chat-panel.is-paper .chat-markdown a {
   color: #b45309;
 }
 
 .chat-fullscreen.is-paper .chat-markdown code,
-.chat-page.is-paper .chat-markdown code {
+.chat-page.is-paper .chat-markdown code,
+.chat-panel.is-paper .chat-markdown code {
   background: rgba(62, 50, 40, 0.08);
   color: #3b2c22;
 }
 
 .chat-fullscreen.is-paper .chat-markdown pre,
-.chat-page.is-paper .chat-markdown pre {
+.chat-page.is-paper .chat-markdown pre,
+.chat-panel.is-paper .chat-markdown pre {
   background: #f4ede0;
   border: 1px solid #e4dcce;
   color: #2e231a;
 }
 
 .chat-fullscreen.is-paper .chat-markdown blockquote,
-.chat-page.is-paper .chat-markdown blockquote {
+.chat-page.is-paper .chat-markdown blockquote,
+.chat-panel.is-paper .chat-markdown blockquote {
   border-left-color: #d6ccbd;
   color: #6b5c50;
 }
 
 .chat-fullscreen.is-paper .chat-markdown table,
-.chat-page.is-paper .chat-markdown table {
+.chat-page.is-paper .chat-markdown table,
+.chat-panel.is-paper .chat-markdown table {
   border-color: #e4dcce;
 }
 
 .chat-fullscreen.is-paper .chat-markdown th,
 .chat-fullscreen.is-paper .chat-markdown td,
 .chat-page.is-paper .chat-markdown th,
-.chat-page.is-paper .chat-markdown td {
+.chat-page.is-paper .chat-markdown td,
+.chat-panel.is-paper .chat-markdown th,
+.chat-panel.is-paper .chat-markdown td {
   border-color: #e4dcce;
 }
 
 .chat-fullscreen.is-paper .chat-stage,
-.chat-page.is-paper .chat-stage {
+.chat-page.is-paper .chat-stage,
+.chat-panel.is-paper .chat-stage {
   color: #8c7a6b;
 }
 
 .chat-fullscreen.is-paper .chat-dots i,
-.chat-page.is-paper .chat-dots i {
+.chat-page.is-paper .chat-dots i,
+.chat-panel.is-paper .chat-dots i {
   background: #8c7a6b;
 }
 
 .chat-fullscreen.is-paper .chat-msg-meta,
-.chat-page.is-paper .chat-msg-meta {
+.chat-page.is-paper .chat-msg-meta,
+.chat-panel.is-paper .chat-msg-meta {
   color: #8c7a6b;
 }
 
 /* 出典マーカーとチップ */
 .chat-fullscreen.is-paper .chat-cite-marker,
-.chat-page.is-paper .chat-cite-marker {
+.chat-page.is-paper .chat-cite-marker,
+.chat-panel.is-paper .chat-cite-marker {
   background: rgba(217, 119, 6, 0.15);
   color: #b45309;
 }
 
 .chat-fullscreen.is-paper .chat-cite-marker:hover:not(:disabled),
-.chat-page.is-paper .chat-cite-marker:hover:not(:disabled) {
+.chat-page.is-paper .chat-cite-marker:hover:not(:disabled),
+.chat-panel.is-paper .chat-cite-marker:hover:not(:disabled) {
   background: rgba(217, 119, 6, 0.28);
 }
 
 .chat-fullscreen.is-paper .chat-cite-chip,
-.chat-page.is-paper .chat-cite-chip {
+.chat-page.is-paper .chat-cite-chip,
+.chat-panel.is-paper .chat-cite-chip {
   background: var(--paper-surface, #ffffff);
   border: 1px solid var(--paper-line, #e6ded0);
   color: var(--ink, #3e3228);
@@ -16083,112 +16156,131 @@ a.lecture-tile-card:hover {
 }
 
 .chat-fullscreen.is-paper .chat-cite-chip:hover:not(:disabled),
-.chat-page.is-paper .chat-cite-chip:hover:not(:disabled) {
+.chat-page.is-paper .chat-cite-chip:hover:not(:disabled),
+.chat-panel.is-paper .chat-cite-chip:hover:not(:disabled) {
   border-color: #d97706;
   background: #faf6ee;
 }
 
 .chat-fullscreen.is-paper .chat-cite-chip-n,
-.chat-page.is-paper .chat-cite-chip-n {
+.chat-page.is-paper .chat-cite-chip-n,
+.chat-panel.is-paper .chat-cite-chip-n {
   background: rgba(217, 119, 6, 0.15);
   color: #b45309;
 }
 
 .chat-fullscreen.is-paper .chat-cite-chip-kind,
-.chat-page.is-paper .chat-cite-chip-kind {
+.chat-page.is-paper .chat-cite-chip-kind,
+.chat-panel.is-paper .chat-cite-chip-kind {
   color: #b45309;
 }
 
 .chat-fullscreen.is-paper .chat-cite-chip-label,
-.chat-page.is-paper .chat-cite-chip-label {
+.chat-page.is-paper .chat-cite-chip-label,
+.chat-panel.is-paper .chat-cite-chip-label {
   color: var(--ink, #3e3228);
 }
 
 /* フッター・入力エリア */
 .chat-fullscreen.is-paper .chat-footer,
-.chat-page.is-paper .chat-footer {
+.chat-page.is-paper .chat-footer,
+.chat-panel.is-paper .chat-footer {
   background: var(--paper-bg, #faf5e9);
   border-top-color: var(--paper-line, #e6ded0);
 }
 
 .chat-fullscreen.is-paper .chat-input-row,
-.chat-page.is-paper .chat-input-row {
+.chat-page.is-paper .chat-input-row,
+.chat-panel.is-paper .chat-input-row {
   background: var(--paper-surface, #ffffff);
   border: 1.5px solid var(--paper-line, #e6ded0);
   box-shadow: 0 2px 8px rgba(62, 50, 40, 0.05);
 }
 
 .chat-fullscreen.is-paper .chat-input-row:focus-within,
-.chat-page.is-paper .chat-input-row:focus-within {
+.chat-page.is-paper .chat-input-row:focus-within,
+.chat-panel.is-paper .chat-input-row:focus-within {
   border-color: #d97706;
   box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
 .chat-fullscreen.is-paper .chat-input-row textarea,
-.chat-page.is-paper .chat-input-row textarea {
+.chat-page.is-paper .chat-input-row textarea,
+.chat-panel.is-paper .chat-input-row textarea {
   color: var(--ink, #3e3228);
 }
 
 .chat-fullscreen.is-paper .chat-input-row textarea::placeholder,
-.chat-page.is-paper .chat-input-row textarea::placeholder {
+.chat-page.is-paper .chat-input-row textarea::placeholder,
+.chat-panel.is-paper .chat-input-row textarea::placeholder {
   color: #9e8e80;
 }
 
 .chat-fullscreen.is-paper .chat-send-btn,
-.chat-page.is-paper .chat-send-btn {
+.chat-page.is-paper .chat-send-btn,
+.chat-panel.is-paper .chat-send-btn {
   background: #d97706;
   color: #ffffff;
 }
 
 .chat-fullscreen.is-paper .chat-send-btn:hover:not(:disabled),
-.chat-page.is-paper .chat-send-btn:hover:not(:disabled) {
+.chat-page.is-paper .chat-send-btn:hover:not(:disabled),
+.chat-panel.is-paper .chat-send-btn:hover:not(:disabled) {
   filter: brightness(1.08);
 }
 
 .chat-fullscreen.is-paper .chat-send-btn:disabled,
-.chat-page.is-paper .chat-send-btn:disabled {
+.chat-page.is-paper .chat-send-btn:disabled,
+.chat-panel.is-paper .chat-send-btn:disabled {
   background: #e6ded0;
   color: #a49485;
 }
 
 .chat-fullscreen.is-paper .chat-attachment,
-.chat-page.is-paper .chat-attachment {
+.chat-page.is-paper .chat-attachment,
+.chat-panel.is-paper .chat-attachment {
   background: #f5eedf;
   border-color: #dfd4c0;
   color: #4a3b30;
 }
 
 .chat-fullscreen.is-paper .chat-empty-title,
-.chat-page.is-paper .chat-empty-title {
+.chat-page.is-paper .chat-empty-title,
+.chat-panel.is-paper .chat-empty-title {
   color: var(--ink, #3e3228);
 }
 
 .chat-fullscreen.is-paper .chat-empty-sub,
-.chat-page.is-paper .chat-empty-sub {
+.chat-page.is-paper .chat-empty-sub,
+.chat-panel.is-paper .chat-empty-sub {
   color: #8c7a6b;
 }
 
 .chat-fullscreen.is-paper .chat-suggestion,
-.chat-page.is-paper .chat-suggestion {
+.chat-page.is-paper .chat-suggestion,
+.chat-panel.is-paper .chat-suggestion {
   background: #ffffff;
   border-color: var(--paper-line, #e6ded0);
   color: var(--ink, #3e3228);
 }
 
 .chat-fullscreen.is-paper .chat-suggestion:hover,
-.chat-page.is-paper .chat-suggestion:hover {
+.chat-page.is-paper .chat-suggestion:hover,
+.chat-panel.is-paper .chat-suggestion:hover {
   border-color: #d97706;
   background: #faf6ee;
 }
 
 /* Paperテーマ下での出典プレビューモーダル */
 .chat-fullscreen.is-paper .citation-modal-backdrop,
-.chat-page.is-paper .citation-modal-backdrop {
+.chat-page.is-paper .citation-modal-backdrop,
+.chat-panel.is-paper .citation-modal-backdrop {
   background: rgba(62, 50, 40, 0.45);
 }
 
 .chat-fullscreen.is-paper .citation-modal-card,
-.chat-page.is-paper .citation-modal-card {
+.chat-page.is-paper .citation-modal-card,
+.chat-panel.is-paper .citation-modal-card {
   background: #ffffff;
   border-color: #dfd5c2;
   box-shadow: 0 20px 54px rgba(62, 50, 40, 0.25);
@@ -16196,78 +16288,91 @@ a.lecture-tile-card:hover {
 }
 
 .chat-fullscreen.is-paper .citation-modal-header,
-.chat-page.is-paper .citation-modal-header {
+.chat-page.is-paper .citation-modal-header,
+.chat-panel.is-paper .citation-modal-header {
   border-bottom-color: #ece4d4;
 }
 
 .chat-fullscreen.is-paper .citation-modal-badge-kind,
-.chat-page.is-paper .citation-modal-badge-kind {
+.chat-page.is-paper .citation-modal-badge-kind,
+.chat-panel.is-paper .citation-modal-badge-kind {
   background: #f4ede0;
   color: #3e3228;
 }
 
 .chat-fullscreen.is-paper .citation-modal-badge-meta,
-.chat-page.is-paper .citation-modal-badge-meta {
+.chat-page.is-paper .citation-modal-badge-meta,
+.chat-panel.is-paper .citation-modal-badge-meta {
   background: #f4ede0;
   color: #7a6b5f;
 }
 
 .chat-fullscreen.is-paper .citation-modal-title,
-.chat-page.is-paper .citation-modal-title {
+.chat-page.is-paper .citation-modal-title,
+.chat-panel.is-paper .citation-modal-title {
   color: #2e231a;
 }
 
 .chat-fullscreen.is-paper .citation-modal-subtitle,
-.chat-page.is-paper .citation-modal-subtitle {
+.chat-page.is-paper .citation-modal-subtitle,
+.chat-panel.is-paper .citation-modal-subtitle {
   color: #7a6b5f;
 }
 
 .chat-fullscreen.is-paper .citation-modal-close-btn,
-.chat-page.is-paper .citation-modal-close-btn {
+.chat-page.is-paper .citation-modal-close-btn,
+.chat-panel.is-paper .citation-modal-close-btn {
   background: #f4ede0;
   border-color: #e4dcce;
   color: #635345;
 }
 
 .chat-fullscreen.is-paper .citation-modal-close-btn:hover,
-.chat-page.is-paper .citation-modal-close-btn:hover {
+.chat-page.is-paper .citation-modal-close-btn:hover,
+.chat-panel.is-paper .citation-modal-close-btn:hover {
   background: #eae1d0;
   color: #1a140f;
 }
 
 .chat-fullscreen.is-paper .citation-modal-snippet,
-.chat-page.is-paper .citation-modal-snippet {
+.chat-page.is-paper .citation-modal-snippet,
+.chat-panel.is-paper .citation-modal-snippet {
   background: #faf6ee;
   border-color: #ece4d4;
   color: #3b2d22;
 }
 
 .chat-fullscreen.is-paper .citation-modal-footer,
-.chat-page.is-paper .citation-modal-footer {
+.chat-page.is-paper .citation-modal-footer,
+.chat-panel.is-paper .citation-modal-footer {
   background: #f7f1e4;
   border-top-color: #ece4d4;
 }
 
 .chat-fullscreen.is-paper .citation-modal-btn-secondary,
-.chat-page.is-paper .citation-modal-btn-secondary {
+.chat-page.is-paper .citation-modal-btn-secondary,
+.chat-panel.is-paper .citation-modal-btn-secondary {
   border-color: #dcd2bf;
   color: #635345;
 }
 
 .chat-fullscreen.is-paper .citation-modal-btn-secondary:hover,
-.chat-page.is-paper .citation-modal-btn-secondary:hover {
+.chat-page.is-paper .citation-modal-btn-secondary:hover,
+.chat-panel.is-paper .citation-modal-btn-secondary:hover {
   background: #ede3d0;
   color: #2b2118;
 }
 
 .chat-fullscreen.is-paper .citation-modal-btn-primary,
-.chat-page.is-paper .citation-modal-btn-primary {
+.chat-page.is-paper .citation-modal-btn-primary,
+.chat-panel.is-paper .citation-modal-btn-primary {
   background: linear-gradient(135deg, #d97706, #b45309);
   color: #ffffff;
 }
 
 .chat-fullscreen.is-paper .citation-modal-grab-handle,
-.chat-page.is-paper .citation-modal-grab-handle {
+.chat-page.is-paper .citation-modal-grab-handle,
+.chat-panel.is-paper .citation-modal-grab-handle {
   background: rgba(62, 50, 40, 0.25);
 }
 
