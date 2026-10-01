@@ -53,8 +53,16 @@ export function citationRoute(citation: ChatCitation): string | null {
     }
     case 'review_card':
       return `/lectures/${lectureId}/review-cards`;
-    case 'transcript_topic':
+    case 'transcript_topic': {
+      const sentenceRange = typeof citation.metadata?.sentence_range === 'string'
+        ? citation.metadata.sentence_range
+        : null;
+      if (sentenceRange) {
+        const startSid = sentenceRange.split('-')[0].trim();
+        return `/lectures/${lectureId}/transcript?sid=${startSid}#${startSid}`;
+      }
       return `/lectures/${lectureId}/transcript`;
+    }
     default:
       return `/lectures/${lectureId}`;
   }
@@ -70,7 +78,17 @@ export function citationShortLabel(citation: ChatCitation): string {
     return typeof domain === 'string' && domain ? domain : citation.label;
   }
   const parts = (citation.label || '').split(' / ').filter(Boolean);
-  if (parts.length >= 3) return parts.slice(1).join(' · ');
+  // parts: [Course, Lecture, Detail(Topic/Section)]
+  if (parts.length >= 3) {
+    const detail = parts[2].trim();
+    // チップの種別バッジですでに表示される "Transcript: " などのプレフィックスを取り除く
+    const cleaned = detail.replace(/^(Transcript|Deep Note|Topic Summary|Review Cards?|Announcement):\s*/i, '');
+    const range = typeof citation.metadata?.sentence_range === 'string' ? ` (${citation.metadata.sentence_range})` : '';
+    return `${cleaned || detail}${range}`;
+  }
+  if (parts.length === 2) {
+    return parts[1].trim();
+  }
   return parts.join(' · ');
 }
 

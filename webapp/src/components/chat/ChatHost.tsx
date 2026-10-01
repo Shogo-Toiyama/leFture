@@ -57,9 +57,34 @@ const ChatDock: React.FC = () => {
     };
   }, [docked]);
 
+  // チャット画面以外の直前のURLを常に記録（全画面チャットから元の画面へ脱出するため）
+  useEffect(() => {
+    if (!onChatPage) {
+      sessionStorage.setItem('chat_origin_url', location.pathname + location.search + location.hash);
+    }
+  }, [location, onChatPage]);
+
   // 専用ページでは会話がページそのものなので、パネルは閉じてボタンも出さない
   useEffect(() => {
     if (onChatPage && panel.isOpen) panel.close();
+  }, [onChatPage, panel]);
+
+  // 全画面チャットの「縮小」ボタンから戻ってきた場合、パネルを開く
+  useEffect(() => {
+    if (!onChatPage) {
+      const pendingOpen = sessionStorage.getItem('open_chat_panel');
+      if (pendingOpen !== null) {
+        sessionStorage.removeItem('open_chat_panel');
+        if (pendingOpen === 'history') {
+          panel.open();
+          panel.showHistory();
+        } else {
+          panel.open({
+            threadId: pendingOpen === 'null' || pendingOpen === 'true' ? null : pendingOpen,
+          });
+        }
+      }
+    }
   }, [onChatPage, panel]);
 
   if (onChatPage) return null;

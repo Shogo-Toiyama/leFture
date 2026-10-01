@@ -102,9 +102,14 @@ export const HomePage: React.FC = () => {
   const noAnnouncementsText = t('noAnnouncements');
   const seeAllLabel = t('seeAllAnnouncements');
 
+  const coursesUnit = courses.length === 1 ? t('courseUnitSingle') : t('courseUnitPlural');
+  const lecturesUnit = lectureCount === 1 ? t('lectureUnitSingle') : t('lectureUnitPlural');
+
   const heroStat = t('homeHeroStat', {
     courses: String(courses.length),
+    coursesUnit,
     lectures: String(lectureCount),
+    lecturesUnit,
   });
 
   const [homeRef, homeWidth] = useElementWidth<HTMLDivElement>();

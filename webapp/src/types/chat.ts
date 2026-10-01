@@ -47,6 +47,8 @@ export interface ChatCitation {
   url?: string | null;
   /** 例: "CS 161 / Lecture 3 / Deep Note: Heaps" */
   label: string;
+  /** 出典のテキスト抜粋(プレビュー表示用) */
+  snippet?: string;
   similarity?: number | null;
   /** deep_noteならtopic_number等。画面へのディープリンクに使う。 */
   metadata?: Record<string, unknown>;

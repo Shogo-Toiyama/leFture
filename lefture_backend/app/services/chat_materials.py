@@ -67,6 +67,9 @@ class Material:
         return self.kind in WEB_KINDS
 
     def citation(self, n: "int | str") -> dict:
+        snippet = (self.content or "").strip()
+        if len(snippet) > 1500:
+            snippet = snippet[:1500] + "…"
         return {
             "n": n,
             "chunk_id": self.chunk_id,
@@ -76,6 +79,7 @@ class Material:
             "course_id": self.course_id,
             "thread_id": self.thread_id,
             "label": self.label,
+            "snippet": snippet,
             "similarity": self.similarity,
             "metadata": self.metadata,
             "relation": self.relation,

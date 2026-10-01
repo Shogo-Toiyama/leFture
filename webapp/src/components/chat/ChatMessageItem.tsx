@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AlertCircle, HeartHandshake, RotateCw } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
 } from '../../lib/chatCitations';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
 import type { ChatCitation } from '../../types/chat';
+import { CitationPreviewModal } from './CitationPreviewModal';
 
 interface ChatMessageItemProps {
   message: LocalChatMessage;
@@ -47,19 +48,8 @@ const UserMessage: React.FC<{ message: LocalChatMessage }> = ({ message }) => {
   );
 };
 
-/** 出典を開く: Webのページは新しいタブで元のページ、それ以外はアプリ内の画面。 */
-function openCitation(citation: ChatCitation, onOpenCitation: (route: string) => void): void {
-  const url = citationUrl(citation);
-  if (url) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return;
-  }
-  const route = citationRoute(citation);
-  if (route) onOpenCitation(route);
-}
-
 function canOpenCitation(citation: ChatCitation | undefined): boolean {
-  return !!citation && (citationUrl(citation) !== null || citationRoute(citation) !== null);
+  return !!citation && (citationUrl(citation) !== null || citationRoute(citation) !== null || !!citation.snippet);
 }
 
 const AssistantMessage: React.FC<{
@@ -68,6 +58,7 @@ const AssistantMessage: React.FC<{
   onResend?: () => void;
 }> = ({ message, onOpenCitation, onResend }) => {
   const { t, formatNumber } = useLanguage();
+  const [previewCitation, setPreviewCitation] = useState<ChatCitation | null>(null);
 
   // 生成中は出典の候補(pendingSources)、完了後は本文で実際に使われた出典(citations)
   // で番号を引く。番号は講義・チャットが "1", "2"…、Webのページが "W1", "W2"…。
@@ -157,7 +148,7 @@ const AssistantMessage: React.FC<{
                       className="chat-cite-marker"
                       title={citation?.label}
                       disabled={!canOpenCitation(citation)}
-                      onClick={() => citation && openCitation(citation, onOpenCitation)}
+                      onClick={() => citation && setPreviewCitation(citation)}
                     >
                       {ref}
                     </button>
@@ -209,7 +200,7 @@ const AssistantMessage: React.FC<{
                 className="chat-cite-chip"
                 disabled={!canOpenCitation(citation)}
                 title={citation.url ? `${citation.label}\n${citation.url}` : citation.label}
-                onClick={() => openCitation(citation, onOpenCitation)}
+                onClick={() => setPreviewCitation(citation)}
               >
                 <span className="chat-cite-chip-n">{citation.n}</span>
                 <span className="chat-cite-chip-kind">{t(CHAT_SOURCE_LABEL_KEYS[citation.source_type])}</span>
@@ -225,6 +216,12 @@ const AssistantMessage: React.FC<{
           {t('chatCreditsUsed', { credits: formatNumber(credits, { maximumFractionDigits: 1 }) })}
         </span>
       )}
+
+      <CitationPreviewModal
+        citation={previewCitation}
+        onClose={() => setPreviewCitation(null)}
+        onOpenFull={onOpenCitation}
+      />
     </div>
   );
 };

@@ -117,11 +117,11 @@ export const App: React.FC = () => {
                         <Route path="account/credits/purchase" element={<PurchaseCreditsPage />} />
                         <Route path="account/plans" element={<PlansPage />} />
                         <Route path="account/activity/:type" element={<ActivityRecordsPlaceholderPage />} />
-                        <Route path="chat" element={<ChatPage />} />
-                        <Route path="chat/:threadId" element={<ChatPage />} />
                       </Route>
 
-                      {/* 紙面のビューアはアプリシェル(ダーク)の外に出す全画面ページ */}
+                      {/* 紙面のビューア・チャットはアプリシェル(ダーク)の外に出す全画面ページ */}
+                      <Route path="chat" element={<ChatPage />} />
+                      <Route path="chat/:threadId" element={<ChatPage />} />
                       <Route path="lectures/:lectureId/review-cards" element={<ReviewCardsPage />} />
                       <Route path="lectures/:lectureId/deep-notes" element={<DeepNotesDetailPage />} />
                       <Route path="lectures/:lectureId/deep-notes/:topicIndex" element={<DeepNotesDetailPage />} />
