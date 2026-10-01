@@ -11,7 +11,7 @@
   3. 分岐(ここはLLMではなく普通のコード):
      blocked → 定型文(課金なし) / crisis → 共感の定型文+相談窓口(課金なし)
      それ以外 → needs_retrievalがtrueなら探索役(chat_navigator.py、GPT-6 Luna、最大4周)が
-     地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC)
+     地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC、Webは1ターン2回までBrave)
   4. 回答役(Gemini 3.1 Flash-Lite, ストリーミング)
   5. 締め: 本文・出典・原価を保存 → 原価×2のクレジットを消費 → done
      → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
@@ -46,6 +46,7 @@ from app.services.chat_materials import (
     sources_event,
 )
 from app.services.chat_navigator import (
+    CAPABILITIES as NAVIGATOR_CAPABILITIES,
     NavigationResult,
     NavigatorInput,
     NavigatorTools,
@@ -78,6 +79,7 @@ from app.services.helpers.llm_unified import (
     StreamState,
     UnifiedLLM,
 )
+from app.services.logic.web_search import brave_search
 from app.services.knowledge_index import embed_queries
 
 
@@ -113,6 +115,13 @@ ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 500
 # 探索役が動かなかったときの予備の検索(本文そのもので1回だけ)
 RETRIEVAL_MATCH_COUNT_PER_QUERY = 8
 RETRIEVAL_TOP_K = 6
+
+# 探索役のWeb検索(Brave)。返答の待ち時間に直に乗るので、Fun Factより短く切る。
+WEB_SEARCH_TIMEOUT_SECONDS = 8
+
+# 請求に含める、回数で数える原価(BillingEngine.add_count_cost)。Web検索は1回$0.005で、
+# 1ターンのトークン原価と同じくらいになるので、トークンと同じく請求に含める。
+CHARGEABLE_COUNT_RESOURCES = frozenset({"brave/llm_context"})
 
 # この時間を過ぎてもstreamingのままの返答は、取り残されたものとみなす
 # (二重送信ロックの判定と、patrolでのerror化の両方で使う)。
@@ -751,7 +760,8 @@ async def _gather_materials(
     navigation: Optional[NavigationResult] = None
     has_lectures = bool(student_map and student_map.has_lectures)
     has_chats = bool(chat_map and chat_map.has_anything)
-    if has_lectures or has_chats:
+    # Webは講義・チャットがまだ無い人にも使えるので、探索役は常に呼ぶ
+    if has_lectures or has_chats or NAVIGATOR_CAPABILITIES["CAN_WEB"]:
         admin_client = get_supabase_client()
         chat_source = DbChatThreadSource(admin_client, turn.user_id)
         nav_input = NavigatorInput(
@@ -772,6 +782,7 @@ async def _gather_materials(
             ),
             source=DbLectureSource(admin_client, turn.user_id),
             chat_source=chat_source,
+            web_search=lambda q: brave_search(q, billing, timeout=WEB_SEARCH_TIMEOUT_SECONDS),
         )
 
         async def on_lap(lap: int) -> None:
@@ -875,12 +886,13 @@ async def _finalize(
     """
     返答行の確定・スレッド更新・課金。消費したμクレジットを返す。
 
-    請求の元にするのはLLM/Embedding APIのトークン原価だけ。UnifiedLLMが
+    請求の元にするのはLLM/Embedding APIのトークン原価と、Web検索(Brave)の回数の原価だけ。UnifiedLLMが
     一緒に記録するCloud Runの実行時間コストは「実際より少し高めの概算」
     なので、ユーザーへの請求には含めず、記録(cost_usd列・usage)にだけ残す。
     """
     cost_usd = billing.total_usd()
-    chargeable_usd = sum(r.cost_usd for r in billing.records if r.dimension == "tokens")
+    chargeable_usd = sum(r.cost_usd for r in billing.records
+                         if r.dimension == "tokens" or (r.dimension == "count" and r.resource in CHARGEABLE_COUNT_RESOURCES))
     breakdown = [vars(r) for r in billing.records]
 
     charged_micro = 0

@@ -23,8 +23,8 @@
 評価ハーネスは台本の状態(NavState)を作ってdecide_lapだけを呼び、本番と同じプロンプト・
 入力の組み立てで評価する(評価用に別の組み立てを持たない、3-14)。
 
-今できる操作はCAPABILITIESで切り替える。チャット・Webは、プロンプトの該当部分
-(<!--IF:CAN_...-->)を出す形で後から足す(3-12)。
+今できる操作はCAPABILITIESで切り替える。プロンプトの該当部分(<!--IF:CAN_...-->)も
+これに合わせて出し入れされる(3-12)。
 """
 
 import asyncio
@@ -33,6 +33,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Awaitable, Callable, Optional, Union
+from urllib.parse import urlparse
 
 from app.services.chat_lecture_source import LectureSource, first_sentence
 from app.services.chat_map import ChatMap, MapLecture, StudentMap
@@ -82,12 +83,20 @@ CHAT_TURN_FULL_CHARS = 3000
 # 前のターンで開いたスレッドの一覧プレビューは、直近の往復だけに絞る(長くなりすぎないように)
 PREVIOUS_THREAD_PREVIEW_TURNS = 5
 
+# Web(3-14 ⑤)。検索は1回$0.005なので1ターン2回まで(コードで止める)。1回の検索で見せるのは
+# 上位5ページ。開くとそのページの断片すべて(Braveが抜き出し済みなので追加の通信は無い)。
+MAX_WEB_SEARCHES_PER_TURN = 2
+WEB_PAGES_PER_SEARCH = 5
+WEB_PAGE_CHARS = 3000
+# 検索で当たっただけ(開いていない)のページを回答役に渡すときの長さ
+WEB_HIT_MATERIAL_CHARS = 1000
+
 # 今の段階で使える操作(3-12の順に増やす)。プロンプトの<!--IF:CAN_...-->と対応する。
 CAPABILITIES = {
     "CAN_OPEN": True,      # 目次を開く(lecture.outline)・文字起こしの範囲を開く
     "CAN_BY_DATE": True,   # 講義を日付で引く
     "CAN_CHAT": True,      # この会話の畳んだ部分・過去のチャット
-    "CAN_WEB": False,      # Web検索
+    "CAN_WEB": True,       # Web検索
 }
 
 STATUSES = ["nothing_needed", "enough_now", "need_more"]
@@ -114,6 +123,8 @@ _HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$
 # S{n}(この会話の節) / S{n}/T{k}(その節の往復) / P{n}(過去のチャット) /
 # P{n}/S{m}(その過去のチャットの節) / P{n}/T{k}(その過去のチャットの往復)
 _CHAT_HANDLE_RE = re.compile(r"^(S|P)(\d+)(?:/(?:S(\d+)|T(\d+)))?$")
+# W{n}(このターンのWeb検索で当たったページ。周をまたいで通し番号)
+_WEB_HANDLE_RE = re.compile(r"^W\d+$")
 
 
 def available_ops() -> list[str]:
@@ -125,11 +136,12 @@ def available_ops() -> list[str]:
     return ops
 
 
-def available_targets() -> list[str]:
+def available_targets(web_left: bool = True) -> list[str]:
+    """web_left=False: このターンのWeb検索を使い切った(enumから外して選べなくする)。"""
     targets = ["lecture.concept"]
     if CAPABILITIES["CAN_CHAT"]:
         targets += ["chat.all", "chat.thread"]
-    if CAPABILITIES["CAN_WEB"]:
+    if CAPABILITIES["CAN_WEB"] and web_left:
         targets.append("web.search")
     return targets
 
@@ -360,7 +372,49 @@ class DateOutcome:
         return []
 
 
-Outcome = Union[SearchOutcome, DateOutcome]
+@dataclass
+class WebPage:
+    handle: str
+    title: str
+    url: str
+    snippets: list[str]
+
+    @property
+    def domain(self) -> str:
+        host = urlparse(self.url).netloc
+        return host[4:] if host.startswith("www.") else host
+
+    def text(self, limit: int) -> str:
+        return "\n".join(s.strip() for s in self.snippets if s and s.strip())[:limit].strip()
+
+    def label(self) -> str:
+        return f"{self.title or self.domain} ({self.domain})" if self.domain else (self.title or self.url)
+
+
+@dataclass
+class WebSearchOutcome:
+    request: FindRequest
+    pages: list[WebPage]
+    error: Optional[str] = None
+
+    def render(self) -> str:
+        head = self.request.label()
+        if self.error:
+            return f"{head}:\n(the search failed)"
+        if not self.pages:
+            return f"{head}:\n(no results)"
+        # Python 3.11(本番)はf-stringの式の中にバックスラッシュを書けない
+        lines = [f"- {p.handle} [{p.label()}]: " + re.sub(r"\s+", " ", p.text(SNIPPET_CHARS)) for p in self.pages]
+        return f"{head}:\n" + "\n".join(lines)
+
+    def summary(self) -> str:
+        return f"{self.request.label()} → {len(self.pages)} page(s)"
+
+    def surfaced(self) -> list[str]:
+        return [p.handle for p in self.pages]
+
+
+Outcome = Union[SearchOutcome, DateOutcome, WebSearchOutcome]
 
 
 @dataclass
@@ -420,6 +474,12 @@ class NavState:
     previous_turn_handles: list[str] = field(default_factory=list)
     # 探索役の見えている材料(opened以外): 検索の当たり → 材料
     search_materials: list[Material] = field(default_factory=list)
+    # このターンのWeb検索で当たったページ(呼び名 → ページ)
+    web_pages: dict[str, WebPage] = field(default_factory=dict)
+
+    def web_searches_left(self) -> int:
+        used = sum(1 for o in self.outcomes if isinstance(o, WebSearchOutcome))
+        return max(0, MAX_WEB_SEARCHES_PER_TURN - used)
 
     def already_run(self) -> set[tuple]:
         keys: set[tuple] = {("open", h) for h in self.opened}
@@ -463,6 +523,8 @@ class NavigationResult:
 # 検索の実行(ネットワーク・DBに触れる部分)。呼び出し側がユーザー本人のJWTで作る。
 # 返り値は検索ごとのチャンクの一覧(失敗した検索はException)。
 SearchFn = Callable[[list[FindRequest]], Awaitable[list[Union[list[dict], Exception]]]]
+# Web検索1回(クエリ → [{title, url, snippets}])。失敗は例外。
+WebSearchFn = Callable[[str], Awaitable[list[dict]]]
 
 
 @dataclass
@@ -470,6 +532,7 @@ class NavigatorTools:
     search: SearchFn
     source: LectureSource
     chat_source: Optional[ChatThreadSource] = None
+    web_search: Optional[WebSearchFn] = None
 
 
 # =========================================================
@@ -506,6 +569,7 @@ def build_system_prompt() -> str:
     template = _render_conditional_sections(_load_prompt("chat_navigator_prompt.txt"), {
         **CAPABILITIES,
         "CAN_OPEN_CHAT": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_CHAT"],
+        "CAN_OPEN_WEB": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_WEB"],
     })
     return template.replace("${MAX_LAPS}", str(MAX_LAPS)).replace("${MAX_OPS_PER_LAP}", str(MAX_OPS_PER_LAP))
 
@@ -525,7 +589,7 @@ def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
     「足りているか」と「何が足りないか」を先に書かせる。"""
     props: dict[str, Any] = {
         "op": {"type": "string", "enum": available_ops()},
-        "target": {"type": "string", "enum": available_targets() + [NONE]},
+        "target": {"type": "string", "enum": available_targets(state.web_searches_left() > 0) + [NONE]},
         "query": {"type": "string"},
         "layer": {"type": "string", "enum": list(LAYER_SOURCE_TYPES) + [NONE]},
         "within": {"type": "string", "enum": nav_input.student_map.scope_handles() + [NONE]},
@@ -575,6 +639,7 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
     targets = set(available_targets())
     scope = set(m.scope_handles())
     openable = set(openable_handles(nav_input, state))
+    web_left = state.web_searches_left()
 
     for raw in raw_ops if isinstance(raw_ops, list) else []:
         if not isinstance(raw, dict):
@@ -596,6 +661,9 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
                 reason = "unsupported_target"
             elif not query:
                 reason = "empty_query"
+            elif raw["target"] == "web.search":
+                # Webには絞り込みが無い。1ターンの回数の上限はここで数える(繰り返しの判定の後)
+                req = FindRequest(target="web.search", query=query, layer="all", within=None, **common)
             else:
                 req = FindRequest(
                     target=raw["target"], query=query,
@@ -607,7 +675,8 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
             handle = raw.get("handle")
             parsed = parse_handle(handle or "")
             parsed_chat = parse_chat_handle(handle or "") if CAPABILITIES["CAN_CHAT"] else None
-            if handle not in openable or (parsed is None and parsed_chat is None):
+            is_web = bool(_WEB_HANDLE_RE.match(handle or "")) and handle in state.web_pages
+            if handle not in openable or (parsed is None and parsed_chat is None and not is_web):
                 reason = "handle_not_openable"
             elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
                 reason = "transcript_range_too_long"
@@ -634,6 +703,11 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
         if len(requests) >= MAX_OPS_PER_LAP:
             dropped.append({"op": raw, "reason": "too_many_operations"})
             continue
+        if isinstance(req, FindRequest) and req.target == "web.search":
+            if web_left <= 0:
+                dropped.append({"op": raw, "reason": "web_search_limit"})
+                continue
+            web_left -= 1
         seen.add(req.key())
         requests.append(req)
     return requests, dropped
@@ -696,6 +770,10 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
                    + (", ".join(state.opened) or "nothing yet"))
     nxt.append("Searches already run (do not repeat them): "
                + ("; ".join(o.request.label() for o in state.outcomes) or "none yet"))
+    if CAPABILITIES["CAN_WEB"]:
+        left = state.web_searches_left()
+        nxt.append(f"Web searches left for this reply: {left} of {MAX_WEB_SEARCHES_PER_TURN}"
+                   + (" (web.search is no longer available)" if left == 0 else ""))
     if CAPABILITIES["CAN_OPEN"]:
         nxt.append("Seen but not opened yet (open one only if it likely holds what is still missing): "
                    + (", ".join(state.surfaced_not_opened()) or "nothing"))
@@ -1159,9 +1237,53 @@ async def decide_lap(llm: UnifiedLLM, nav_input: NavigatorInput, state: NavState
     return None, last_error
 
 
+def web_material(page: WebPage, relation: str, opened: bool) -> Material:
+    """Webのページを回答役の材料に。開いたページは断片すべて、当たっただけのページは最初の方だけ。"""
+    return Material(
+        key=f"web:{page.url}",
+        kind="web_page" if opened else "web",
+        label=page.label(),
+        content=page.text(WEB_PAGE_CHARS if opened else WEB_HIT_MATERIAL_CHARS),
+        relation=relation,
+        source_type="web",
+        url=page.url,
+        metadata={"title": page.title, "domain": page.domain},
+        handle=page.handle,
+    )
+
+
+def add_web_pages(state: NavState, raw_pages: list[dict]) -> list[WebPage]:
+    """
+    Web検索の結果に呼び名W{n}を振ってstateに足す(周をまたいで通し番号)。同じURLが
+    前の検索にも出ていたら、同じ呼び名を使う。上位WEB_PAGES_PER_SEARCH件だけ。
+    """
+    by_url = {p.url: p for p in state.web_pages.values()}
+    pages: list[WebPage] = []
+    for raw in raw_pages:
+        url = (raw.get("url") or "").strip()
+        if not url or url in {p.url for p in pages}:
+            continue
+        page = by_url.get(url)
+        if page is None:
+            snippets = [x for x in raw.get("snippets") or [] if isinstance(x, str)]
+            page = WebPage(handle=f"W{len(state.web_pages) + 1}", title=(raw.get("title") or "").strip(), url=url, snippets=snippets)
+            state.web_pages[page.handle] = page
+            by_url[url] = page
+        pages.append(page)
+        if len(pages) >= WEB_PAGES_PER_SEARCH:
+            break
+    return pages
+
+
+def open_web_page(page: WebPage, relation: str) -> Opened:
+    text = f"{page.handle} — {page.label()}\n{page.url}\n{page.text(WEB_PAGE_CHARS) or '(no text extracted)'}"
+    return Opened(handle=page.handle, text=text, material=web_material(page, relation, opened=True))
+
+
 async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavState, tools: NavigatorTools) -> None:
     """検証済みの操作を並列に実行し、stateに足す。"""
-    finds = [r for r in record.requests if isinstance(r, FindRequest)]
+    finds = [r for r in record.requests if isinstance(r, FindRequest) and r.target != "web.search"]
+    web_finds = [r for r in record.requests if isinstance(r, FindRequest) and r.target == "web.search"]
     opens = [r for r in record.requests if isinstance(r, OpenRequest)]
     dates = [r for r in record.requests if isinstance(r, DateRequest)]
 
@@ -1181,14 +1303,34 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
                 outcomes.append(SearchOutcome(request=req, hits=await resolve_hit_handles(res, nav_input, tools.source, tools.chat_source)))
         return outcomes
 
+    async def run_web(req: FindRequest) -> Union[list[dict], Exception]:
+        if tools.web_search is None:
+            return RuntimeError("web search is not available")
+        try:
+            return await tools.web_search(req.query)
+        except Exception as e:
+            return e
+
     async def run_open(req: OpenRequest) -> Opened:
+        if req.handle in state.web_pages:
+            return open_web_page(state.web_pages[req.handle], req.relation)
         try:
             return await open_handle(req.handle, req.relation, nav_input, tools.source, tools.chat_source)
         except Exception as e:
             print(f"⚠️ [chat] navigator open failed ({req.handle}): {e}")
             return Opened(handle=req.handle, text=f"{req.handle}: (could not be opened)", material=None)
 
-    find_outcomes, *opened = await asyncio.gather(run_finds(), *[run_open(r) for r in opens])
+    find_outcomes, web_results, *opened = await asyncio.gather(
+        run_finds(), asyncio.gather(*[run_web(r) for r in web_finds]), *[run_open(r) for r in opens])
+
+    # 呼び名は依頼の順に振る(並列に返ってきた順ではなく)
+    web_outcomes: list[WebSearchOutcome] = []
+    for req, res in zip(web_finds, web_results):
+        if isinstance(res, Exception):
+            print(f"⚠️ [chat] navigator web search failed ({req.label()}): {res}")
+            web_outcomes.append(WebSearchOutcome(request=req, pages=[], error=str(res)[:300]))
+        else:
+            web_outcomes.append(WebSearchOutcome(request=req, pages=add_web_pages(state, res)))
 
     m = nav_input.student_map
     titles = {c.handle: c.title for c in m.courses}
@@ -1201,8 +1343,13 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
         state.outcomes.append(o)
         for hit in o.hits:
             state.search_materials.append(material_from_chunk(hit.chunk, relation=o.request.relation, handle=hit.handle))
+    for o in web_outcomes:
+        state.outcomes.append(o)
+        for page in o.pages:
+            state.search_materials.append(web_material(page, o.request.relation, opened=False))
     state.outcomes += date_outcomes
-    record.done = [f"open {op.handle}" for op in opened] + [o.summary() for o in find_outcomes] + [o.summary() for o in date_outcomes]
+    record.done = ([f"open {op.handle}" for op in opened] + [o.summary() for o in find_outcomes]
+                   + [o.summary() for o in web_outcomes] + [o.summary() for o in date_outcomes])
 
 
 async def navigate(

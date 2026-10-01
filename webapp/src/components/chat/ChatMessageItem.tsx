@@ -5,8 +5,10 @@ import { AlertCircle, HeartHandshake, RotateCw } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CHAT_SOURCE_LABEL_KEYS,
+  citationRef,
   citationRoute,
   citationShortLabel,
+  citationUrl,
   linkifyCitations,
   parseCitationHref,
 } from '../../lib/chatCitations';
@@ -45,6 +47,21 @@ const UserMessage: React.FC<{ message: LocalChatMessage }> = ({ message }) => {
   );
 };
 
+/** 出典を開く: Webのページは新しいタブで元のページ、それ以外はアプリ内の画面。 */
+function openCitation(citation: ChatCitation, onOpenCitation: (route: string) => void): void {
+  const url = citationUrl(citation);
+  if (url) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  const route = citationRoute(citation);
+  if (route) onOpenCitation(route);
+}
+
+function canOpenCitation(citation: ChatCitation | undefined): boolean {
+  return !!citation && (citationUrl(citation) !== null || citationRoute(citation) !== null);
+}
+
 const AssistantMessage: React.FC<{
   message: LocalChatMessage;
   onOpenCitation: (route: string) => void;
@@ -53,16 +70,16 @@ const AssistantMessage: React.FC<{
   const { t, formatNumber } = useLanguage();
 
   // 生成中は出典の候補(pendingSources)、完了後は本文で実際に使われた出典(citations)
-  // で番号を引く。どちらも番号nは送られてきた出典一覧の1始まりの位置と一致する。
-  const byNumber = useMemo(() => {
-    const map = new Map<number, ChatCitation>();
-    for (const c of message.pendingSources ?? []) map.set(c.n, c);
-    for (const c of message.citations ?? []) map.set(c.n, c);
+  // で番号を引く。番号は講義・チャットが "1", "2"…、Webのページが "W1", "W2"…。
+  const byRef = useMemo(() => {
+    const map = new Map<string, ChatCitation>();
+    for (const c of message.pendingSources ?? []) map.set(citationRef(c), c);
+    for (const c of message.citations ?? []) map.set(citationRef(c), c);
     return map;
   }, [message.pendingSources, message.citations]);
-  const maxN = byNumber.size > 0 ? Math.max(...byNumber.keys()) : 0;
+  const refs = useMemo(() => new Set(byRef.keys()), [byRef]);
 
-  const markdown = useMemo(() => linkifyCitations(message.content, maxN), [message.content, maxN]);
+  const markdown = useMemo(() => linkifyCitations(message.content, refs), [message.content, refs]);
 
   if (message.status === 'crisis') {
     return (
@@ -106,19 +123,18 @@ const AssistantMessage: React.FC<{
             remarkPlugins={[remarkGfm]}
             components={{
               a: ({ href, children }) => {
-                const n = parseCitationHref(href);
-                if (n !== null) {
-                  const citation = byNumber.get(n);
-                  const route = citation ? citationRoute(citation) : null;
+                const ref = parseCitationHref(href);
+                if (ref !== null) {
+                  const citation = byRef.get(ref);
                   return (
                     <button
                       type="button"
                       className="chat-cite-marker"
                       title={citation?.label}
-                      disabled={!route}
-                      onClick={() => route && onOpenCitation(route)}
+                      disabled={!canOpenCitation(citation)}
+                      onClick={() => citation && openCitation(citation, onOpenCitation)}
                     >
-                      {n}
+                      {ref}
                     </button>
                   );
                 }
@@ -161,15 +177,14 @@ const AssistantMessage: React.FC<{
       {message.status === 'complete' && message.citations.length > 0 && (
         <div className="chat-citations" aria-label={t('chatSourcesLabel')}>
           {message.citations.map((citation) => {
-            const route = citationRoute(citation);
             return (
               <button
-                key={citation.n}
+                key={citationRef(citation)}
                 type="button"
                 className="chat-cite-chip"
-                disabled={!route}
-                title={citation.label}
-                onClick={() => route && onOpenCitation(route)}
+                disabled={!canOpenCitation(citation)}
+                title={citation.url ? `${citation.label}\n${citation.url}` : citation.label}
+                onClick={() => openCitation(citation, onOpenCitation)}
               >
                 <span className="chat-cite-chip-n">{citation.n}</span>
                 <span className="chat-cite-chip-kind">{t(CHAT_SOURCE_LABEL_KEYS[citation.source_type])}</span>

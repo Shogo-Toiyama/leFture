@@ -16,10 +16,12 @@ export type ChatMessageStatus = 'streaming' | 'complete' | 'error' | 'blocked' |
  * knowledge_chunks.source_type と同じ値。出典からどの画面へ飛ぶかを決める。
  * courseだけは例外で、探索役がコースの講義一覧を開いたときの出典(knowledge_chunksには無い)。
  * chat_turnは過去のチャット(スレッド・節・往復のどれを開いても同じ種類で、押すとそのスレッドへ)。
+ * webはWebのページ(押すと元のページを新しいタブで開く)。
  */
 export type ChatSourceType =
   | 'course'
   | 'chat_turn'
+  | 'web'
   | 'review_card'
   | 'deep_note'
   | 'keyword'
@@ -30,9 +32,9 @@ export type ChatSourceType =
   | 'lecture_summary'
   | 'lecture_moment';
 
-/** 回答本文の [n] に対応する出典。 */
+/** 回答本文の [n] / [Wn] に対応する出典。講義・チャットは数字、Webのページは "W1" のような文字列。 */
 export interface ChatCitation {
-  n: number;
+  n: number | string;
   /** 検索で当たったチャンクのときだけ。探索役が開いた講義・トピック等はnull。 */
   chunk_id: string | null;
   source_type: ChatSourceType;
@@ -41,6 +43,8 @@ export interface ChatCitation {
   course_id?: string | null;
   /** chat_turnのときだけ。押すとこのスレッドを開く。 */
   thread_id?: string | null;
+  /** webのときだけ。元のページ。 */
+  url?: string | null;
   /** 例: "CS 161 / Lecture 3 / Deep Note: Heaps" */
   label: string;
   similarity?: number | null;

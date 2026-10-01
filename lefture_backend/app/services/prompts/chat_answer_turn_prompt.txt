@@ -2,7 +2,7 @@
 <!--IF:HAS_SOURCES-->
 ${SOURCES}
 <!--ELSE-->
-(No course materials were retrieved for this message.)
+(No materials were retrieved for this message.)
 <!--END_IF-->
 </sources>
 

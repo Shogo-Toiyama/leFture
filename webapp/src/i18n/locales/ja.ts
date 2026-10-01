@@ -800,5 +800,6 @@ export const ja: Record<keyof typeof en, string> = {
   chatSourceLectureSummary: '講義の要約',
   chatSourceCourse: 'コース',
   chatSourceChat: '過去のチャット',
+  chatSourceWeb: 'Web',
   chatSourceMoment: '自分のメモ',
 };
