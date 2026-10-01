@@ -3691,6 +3691,250 @@
     "set": "main"
   },
   {
+    "id": "long_thread_condensed_enough",
+    "category": "chat.thread",
+    "message": "だいぶ前にこの会話でAVLの回転を練習したよね、あのとき使った例の木ってどんなだったっけ",
+    "thread": "thread_long",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "H1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "thread",
+                "query_any": [
+                  "AVL"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "H1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "節の箇条書きに木があるので遠回り",
+            "detour": true
+          }
+        ],
+        "looking_for": "the example tree used in the AVL rotation practice"
+      }
+    ],
+    "why": "長い会話の古い部分(2段目H1)を開くと、中の節(S1〜S5)の箇条書きが見える。例の木はS3の箇条書きにあるので、そこで止まれるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "long_thread_drill_to_turn",
+    "category": "chat.thread",
+    "message": "この会話のずっと前の方で見せてくれたfactorialの再帰のコード、もう一回そのまま見せて",
+    "thread": "thread_long",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "H1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "thread",
+                "query_any": [
+                  "factorial"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "H1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the exact factorial code shown earlier"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "H1",
+          "S2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "S2/T5",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T6",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T9",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the exact factorial code shown earlier"
+      }
+    ],
+    "why": "コードそのものは要約に無いので、2段目H1 → 1段目S2 → 往復の全文、とたどれるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
     "id": "web_explicit",
     "category": "web.search",
     "message": "Can you look up when applications close for Google's summer 2027 SWE internship?",

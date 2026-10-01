@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 load_dotenv(REPO_ROOT / "lefture_backend" / ".env")
 
 from app.services import chat_navigator as nav  # noqa: E402
-from app.services.chat_map import ChatMap, ChatSection, ChatThreadRef, MapCourse, MapLecture, StudentMap  # noqa: E402
+from app.services.chat_map import ChatGroup, ChatMap, ChatSection, ChatThreadRef, MapCourse, MapLecture, StudentMap  # noqa: E402
 from app.services.helpers.llm_unified import BillingEngine, Message, UnifiedLLM  # noqa: E402
 
 TEST_DIR = Path(__file__).resolve().parent
@@ -191,19 +191,26 @@ class WorldChatSource:
         ch = CHATS.get(thread_id.removeprefix("thread-"))
         return _past_chat_turns_and_sections(ch)[1] if ch else []
 
+    async def thread_groups(self, thread_id: str) -> list[dict]:
+        return []  # 台本の過去のチャットは短い(2段目が無い)
+
     async def recent_threads_with_trail(self, exclude_thread_id: Optional[str], limit: int) -> list[dict]:
         return []  # 地図はbuild_chat_mapで直接作る
 
 
 def build_chat_map(case: dict) -> ChatMap:
-    sections = []
+    sections, groups = [], []
     if case["thread"]:
-        sections = [ChatSection(handle=sec["handle"], title=sec["title"], turns=sec["turns"])
+        sections = [ChatSection(handle=sec["handle"], title=sec["title"], turns=sec["turns"], bullets=sec["bullets"])
                     for sec in WORLD["threads"][case["thread"]]["sections"]]
+        children_turns = {sec["handle"]: sec["turns"] for sec in WORLD["threads"][case["thread"]]["sections"]}
+        groups = [ChatGroup(handle=g["handle"], title=g["title"], bullets=g["bullets"], children=g["children"],
+                            turns=sorted(t for c in g["children"] for t in children_turns[c]))
+                  for g in WORLD["threads"][case["thread"]].get("groups", [])]
     recent = [ChatThreadRef(handle=ch["handle"], id=_chat_thread_id(ch["handle"]), title=ch["title"], date=ch["date"],
                             trail=[sec["title"] for sec in ch["sections"] if sec["title"] != ch["title"]])
               for ch in WORLD["recent_chats"]]
-    cm = ChatMap.build(sections, recent)
+    cm = ChatMap.build(sections, recent, groups)
     for ch in WORLD["older_chats"]:  # 検索でだけ見つかる古いチャット(地図の一覧には出さない)
         cm.add_thread(ChatThreadRef(handle=ch["handle"], id=_chat_thread_id(ch["handle"]), title=ch["title"],
                                     date=ch["date"], trail=[]))

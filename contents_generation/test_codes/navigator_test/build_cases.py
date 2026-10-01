@@ -247,6 +247,36 @@ THREADS = {
             ["assistant", "実際の作業を間近で見ると、思っていたより手が届く作業だと感じられることが多いよね。"],
         ],
     },
+    # 120往復を超えた長い会話。古い10ブロック分(S1〜S10)は2段目(H1, H2)に畳まれていて、
+    # 地図にはH1・H2と、2段目に入っていないS11・S12だけが出る。
+    "thread_long": {
+        "sections": [
+            section("S1", "今学期の授業の取り方", ["CS 161とBiology 101を両方取るか迷っていて、両方取ると決めた。"], [1, 2, 3, 4]),
+            section("S2", "factorialの再帰", ["factorialの再帰版のコードを見せた(base caseは`n <= 1`で1を返す)。", "ループ版との違いと、Pythonの再帰の上限(約1000回)を説明した。"], [5, 6, 7, 8, 9]),
+            section("S3", "AVL木の回転の練習", ["AVL木の回転を例の木で練習した。例の木: 10を根、左に5、右に15、5の左に3、3の左に1。", "LLケースなので5を軸に右回転と答えて正解した。"], [10, 11, 12]),
+            section("S4", "テスト前の不安", ["中間テストが近くて不安だと話した。1日30分ずつ復習カードを解く計画を立てた。"], [13, 14, 15, 16]),
+            section("S5", "ヒープの挿入", ["二分ヒープへの挿入(末尾に足して上へ入れ替える)を確認した。"], [17, 18, 19, 20]),
+            section("S6", "細胞呼吸の流れ", ["解糖系・クエン酸回路・電子伝達系の場所と役割を確認した。"], [21, 22, 23, 24, 25]),
+            section("S7", "ロボ部のモーター", ["ロボ部でPゲインを上げるとモーターが発振する話をした。Pを下げてDを足す方向を勧めた。"], [26, 27, 28]),
+            section("S8", "弾力性の計算", ["需要の価格弾力性の計算問題を3問一緒に解いた。"], [29, 30, 31, 32]),
+            section("S9", "インターン探し", ["組み込み系のインターンを探している。キャリアセンターとOBへの連絡を勧めた。"], [33, 34, 35]),
+            section("S10", "B-treeとデータベース", ["B-treeが1ノードに複数のキーを持ち、木を低く保つことを説明した。"], [36, 37, 38, 39, 40]),
+            section("S11", "期末に向けた計画", ["期末までの3週間の復習計画を、週ごとに科目を割り振って立てた。"], [111, 112, 113, 114]),
+            section("S12", "グラフ探索", ["BFSとDFSの違いと、最短経路にはBFSを使うことを確認した。"], [115, 116, 117, 118]),
+        ],
+        "groups": [
+            {"handle": "H1", "title": "学期の始まり: 授業選び・再帰・AVL・テストの不安・ヒープ",
+             "bullets": ["CS 161とBiology 101を両方取ると決めた。", "再帰(factorial)、AVL木の回転、ヒープの挿入を練習した。", "中間テストへの不安から、毎日30分の復習計画を立てた。"],
+             "children": ["S1", "S2", "S3", "S4", "S5"]},
+            {"handle": "H2", "title": "学期の中盤: 細胞呼吸・ロボ部・弾力性・インターン・B-tree",
+             "bullets": ["細胞呼吸、弾力性の計算、B-treeを復習した。", "ロボ部のモーターの発振とインターン探しの相談をした。"],
+             "children": ["S6", "S7", "S8", "S9", "S10"]},
+        ],
+        "recent_conversation": [
+            ["user", "BFSって結局キューを使うんだよね"],
+            ["assistant", "そう、BFSはキューで近い順に広げていく。DFSはスタック(または再帰)を使う。"],
+        ],
+    },
 }
 
 WORLD = {
@@ -673,6 +703,23 @@ CASES = [
          "直近の原文で話している内容なら、何も取りに行かない。",
          thread="thread_code"),
 
+    case("long_thread_condensed_enough", "chat.thread",
+         "だいぶ前にこの会話でAVLの回転を練習したよね、あのとき使った例の木ってどんなだったっけ",
+         [step(1, alternatives=[alt(must=[op_open("H1", [PAST])]),
+                                alt(must=[op_find("chat", "thread", ["AVL"], [PAST])], detour=True)]),
+          step(2, opened=["H1"], alternatives=[DONE, alt(must=[op_open("S3", [PAST])], note="節の箇条書きに木があるので遠回り", detour=True)])],
+         "長い会話の古い部分(2段目H1)を開くと、中の節(S1〜S5)の箇条書きが見える。例の木はS3の箇条書きにあるので、そこで止まれるか。",
+         thread="thread_long"),
+
+    case("long_thread_drill_to_turn", "chat.thread",
+         "この会話のずっと前の方で見せてくれたfactorialの再帰のコード、もう一回そのまま見せて",
+         [step(1, alternatives=[alt(must=[op_open("H1", [PAST])]),
+                                alt(must=[op_find("chat", "thread", ["factorial"], [PAST])], detour=True)]),
+          step(2, opened=["H1"], alternatives=[alt(must=[op_open("S2", [PAST])])]),
+          step(3, opened=["H1", "S2"], alternatives=[alt(one_of=[op_open(f"S2/T{n}", [PAST]) for n in (5, 6, 7, 8, 9)])])],
+         "コードそのものは要約に無いので、2段目H1 → 1段目S2 → 往復の全文、とたどれるか。",
+         thread="thread_long"),
+
     # ---------------- Web ----------------
     case("web_explicit", "web.search",
          "Can you look up when applications close for Google's summer 2027 SWE internship?",
@@ -930,6 +977,9 @@ LOOKING_FOR = {
     ("web_explicit", 2): "the application deadline for Google's summer 2027 SWE internship",
     ("web_and_lecture", 2): "how PostgreSQL uses B-trees, and the B-tree lecture",
     ("web_and_lecture", 3): "the content of the B-tree lecture",
+    ("long_thread_condensed_enough", 2): "the example tree used in the AVL rotation practice",
+    ("long_thread_drill_to_turn", 2): "the exact factorial code shown earlier",
+    ("long_thread_drill_to_turn", 3): "the exact factorial code shown earlier",
     ("web_limit_reached", 2): "whether the 2027 ICPC Asia regional dates have been announced",
     ("web_limit_reached", 3): "the 2027 ICPC Asia regional dates, if announced",
     ("stop_when_not_found", 2): "the name of the book the econ professor recommended",
@@ -992,7 +1042,8 @@ def _validate() -> list[str]:
         ids.add(cid)
         if c["thread"] and c["recent_conversation"]:
             errors.append(f"{cid}: use either thread or recent_conversation, not both")
-        thread_sections = {s["handle"] for s in THREADS[c["thread"]]["sections"]} if c["thread"] else set()
+        thread_sections = ({s["handle"] for s in THREADS[c["thread"]]["sections"]}
+                           | {g["handle"] for g in THREADS[c["thread"]].get("groups", [])}) if c["thread"] else set()
         known = world | thread_sections
         for h in c["previous_turn_opened"]:
             if h not in known:
