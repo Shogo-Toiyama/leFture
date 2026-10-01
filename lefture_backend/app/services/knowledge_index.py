@@ -27,6 +27,7 @@
 
 import asyncio
 import hashlib
+import json
 import random
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
@@ -35,8 +36,6 @@ import litellm
 
 from app.core.supabase import get_supabase_client
 from app.services.helpers.plan_features import DEEP_NOTES_SKIPPED_PLAN_LIMIT
-from app.services.task_runners import reconstruct_chunk_start_times
-from app.services.logic.assemble_transcript import AssembleTranscriptService
 
 
 # =========================================================
@@ -56,6 +55,11 @@ KNOWLEDGE_EMBEDDING_DIMENSIONS = 768
 # ここは検索の粒度を決めるためのパラメータであってモデル制約ではない。
 MAX_CHUNK_CHARS = 3200
 CHUNK_OVERLAP_CHARS = 300
+
+# トランスクリプト専用のチャンク目標サイズ (約600〜700トークン、3〜4分間の講義発言)。
+# 前後のロジックや説明の文脈を保てるよう3000文字とし、オーバーラップを1/10の300文字にする。
+TRANSCRIPT_CHUNK_CHARS = 3000
+TRANSCRIPT_CHUNK_OVERLAP_CHARS = 300
 
 # 1往復のチャンクで、学生の発言・返答それぞれに使う最大文字数(3-14 ④)
 CHAT_TURN_MAX_CHARS = 1500
@@ -93,26 +97,49 @@ class ChunkDraft:
         return f"title: {self.title or 'none'} | text: {self.body}"
 
 
-class _NullLogger:
-    """AssembleTranscriptServiceが要求するTaskLogger互換の器(ログ捨て)。"""
-    def log(self, *args, **kwargs) -> None:
-        pass
-
-
-def assemble_lecture_transcript(admin_client, lecture_id: str) -> list[dict]:
+def assemble_lecture_transcript(admin_client, lecture_id: str, user_id: Optional[str] = None) -> list[dict]:
     """
-    講義の文字起こしを文の並び([{"sid": "s000001", "text": ...}, ...])に組み立てる。
-    AssembleTranscriptServiceと全く同じロジックでsid採番をやり直し、
-    lecture_topics.start_sid/end_sidやDeep Notesの引用(⟦s000012⟧)と必ず一致させる。
-    R2のtranscript.json(job/task経由でしか辿れない)には依存せず、常に存在するDBの
-    lecture_transcriptsから毎回組み立て直す。チャットの探索役が文字起こしの範囲を
-    開くときにも使う。
+    講義の文字起こしを文の並び([{"sid": "s000001", "text": ...}, ...])に取得する。
+    パイプライン完了済みの成果物として R2 の pipeline_logs/role_classification.json
+    (無ければ transcript_assembled.json) から取得する。
+    R2 に成果物が存在しない場合は、講義処理中か異常とみなして安全にスキップ(空配列)する。
+    チャットの探索役が文字起こしの範囲を開くときにも使う。
     """
-    res = admin_client.table("lecture_transcripts").select("*") \
-        .eq("lecture_id", lecture_id).order("chunk_index").execute()
-    adjusted = reconstruct_chunk_start_times(res.data or [])
-    completed = [c for c in adjusted if c.get("status") == "REVIEWED"]
-    return AssembleTranscriptService(_NullLogger()).run(completed)
+    if not lecture_id:
+        return []
+
+    # 1. user_id を特定
+    if not user_id:
+        try:
+            lec_res = admin_client.table("lectures").select("user_id").eq("id", lecture_id).maybe_single().execute()
+            if lec_res and lec_res.data:
+                user_id = lec_res.data.get("user_id")
+        except Exception:
+            pass
+
+    if not user_id:
+        print(f"⚠️ [knowledge_index] Could not resolve user_id for lecture {lecture_id}, skipping transcript.")
+        return []
+
+    # 2. R2 からの取得 (role_classification -> transcript_assembled)
+    try:
+        from app.core.r2_storage import R2StorageService
+        r2 = R2StorageService()
+        for candidate in ("role_classification", "transcript_assembled"):
+            storage_path = f"{user_id}/{lecture_id}/pipeline_logs/{candidate}.json"
+            try:
+                binary = r2.download_binary(storage_path)
+                data = json.loads(binary)
+                if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and "sid" in data[0]:
+                    return data
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"⚠️ [knowledge_index] R2 storage access failed for lecture {lecture_id}: {e}")
+        return []
+
+    print(f"ℹ️ [knowledge_index] Transcript for lecture {lecture_id} not found in R2. Skipping transcript indexing.")
+    return []
 
 
 class _ContextCache:
@@ -129,16 +156,17 @@ class _ContextCache:
 
     def lecture(self, lecture_id: Optional[str]) -> dict:
         if not lecture_id:
-            return {"course_id": None, "course_title": None, "lecture_title": None}
+            return {"course_id": None, "course_title": None, "lecture_title": None, "user_id": None}
         if lecture_id not in self._lectures:
             res = self._client.table("lectures").select(
-                "id, course_id, title, title_generated"
+                "id, course_id, title, title_generated, user_id"
             ).eq("id", lecture_id).maybe_single().execute()
             row = (res.data if res else None) or {}
             self._lectures[lecture_id] = {
                 "course_id": row.get("course_id"),
                 "course_title": self.course_title(row.get("course_id")),
                 "lecture_title": (row.get("title") or row.get("title_generated") or "").strip(),
+                "user_id": row.get("user_id"),
             }
         return self._lectures[lecture_id]
 
@@ -160,7 +188,10 @@ class _ContextCache:
 
     def assembled_transcript(self, lecture_id: str) -> list[dict]:
         if lecture_id not in self._transcripts:
-            self._transcripts[lecture_id] = assemble_lecture_transcript(self._client, lecture_id)
+            lec = self.lecture(lecture_id)
+            self._transcripts[lecture_id] = assemble_lecture_transcript(
+                self._client, lecture_id, user_id=lec.get("user_id")
+            )
         return self._transcripts[lecture_id]
 
 
@@ -467,7 +498,7 @@ def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) 
     lec = cache.lecture(lecture_id)
 
     drafts = []
-    for idx, (a, b) in enumerate(_text_window_spans(len(segment_text), MAX_CHUNK_CHARS, CHUNK_OVERLAP_CHARS)):
+    for idx, (a, b) in enumerate(_text_window_spans(len(segment_text), TRANSCRIPT_CHUNK_CHARS, TRANSCRIPT_CHUNK_OVERLAP_CHARS)):
         sids = [sid for s_start, s_end, sid in sentence_spans if sid is not None and s_start < b and s_end > a]
         metadata: dict[str, Any] = {"topic_title": row.get("topic_title")}
         if sids:

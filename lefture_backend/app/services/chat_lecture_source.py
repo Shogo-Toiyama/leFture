@@ -114,7 +114,7 @@ class DbLectureSource:
 
     async def transcript(self, lecture_id: str) -> list[dict]:
         if lecture_id not in self._transcripts:
-            sentences = await asyncio.to_thread(assemble_lecture_transcript, self._client, lecture_id)
+            sentences = await asyncio.to_thread(assemble_lecture_transcript, self._client, lecture_id, self._user_id)
             self._transcripts[lecture_id] = [
                 {"sid": _sid_to_int(s.get("sid")), "text": (s.get("text") or "").strip()}
                 for s in sentences if _sid_to_int(s.get("sid")) is not None
