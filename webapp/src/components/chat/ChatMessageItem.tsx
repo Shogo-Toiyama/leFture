@@ -98,16 +98,35 @@ const AssistantMessage: React.FC<{
   const showStage = isGenerating && !message.content;
   // 探しているものが複数なら、Web → 過去のチャット → 講義の順に1つだけ出す
   const detail = message.searchDetail ?? [];
-  const stageLabel =
-    message.stage === 'searching'
-      ? detail.includes('web')
-        ? t('chatStageSearchingWeb')
-        : detail.includes('chats')
-          ? t('chatStageSearchingChats')
-          : t('chatStageSearching')
-      : message.stage === 'writing'
-        ? t('chatStageWriting')
-        : t('chatStageThinking');
+  const query = message.searchQuery?.trim();
+  const truncatedQuery = query ? (query.length > 25 ? `${query.slice(0, 24)}…` : query) : undefined;
+
+  let stageLabel = t('chatStageThinking');
+  if (message.stage === 'searching') {
+    if (message.searchTarget === 'web' || detail.includes('web')) {
+      stageLabel = truncatedQuery
+        ? t('chatStageSearchingWebWithQuery', { query: truncatedQuery })
+        : t('chatStageSearchingWeb');
+    } else if (message.searchTarget === 'chats' || detail.includes('chats')) {
+      stageLabel = truncatedQuery
+        ? t('chatStageSearchingChatsWithQuery', { query: truncatedQuery })
+        : t('chatStageSearchingChats');
+    } else if (message.searchLayer === 'transcript') {
+      stageLabel = truncatedQuery
+        ? t('chatStageSearchingTranscriptWithQuery', { query: truncatedQuery })
+        : t('chatStageReadingTranscript');
+    } else if (truncatedQuery) {
+      stageLabel = t('chatStageSearchingNotesWithQuery', { query: truncatedQuery });
+    } else if (message.searchHandle) {
+      stageLabel = message.searchHandle.includes('/s')
+        ? t('chatStageReadingTranscript')
+        : t('chatStageReadingNotes');
+    } else {
+      stageLabel = t('chatStageSearching');
+    }
+  } else if (message.stage === 'writing') {
+    stageLabel = t('chatStageWriting');
+  }
   const credits = (message.credits_charged_micro ?? 0) / 1_000_000;
 
   return (

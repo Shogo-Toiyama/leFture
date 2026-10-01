@@ -751,7 +751,7 @@ async def _gather_materials(
     history: list[Message],
     map_task: "asyncio.Task[StudentMap]",
     chat_map_task: "asyncio.Task[ChatMap]",
-    on_fetch: Optional[Callable[[list[str]], Awaitable[None]]] = None,
+    on_fetch: Optional[Callable[[dict], Awaitable[None]]] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -1035,9 +1035,18 @@ async def run_chat_turn(
         if decision.needs_retrieval:
             await emit("status", {"stage": "searching"})
 
-            async def on_fetch(kinds: list[str]) -> None:
-                # 何を探しているか(講義 / 過去のチャット / Web)を画面に出す
-                await emit("status", {"stage": "searching", "detail": kinds})
+            async def on_fetch(info: dict) -> None:
+                # 何を探しているか(講義 / 過去のチャット / Web)とクエリなどを画面に出す
+                payload = {"stage": "searching", "detail": info.get("kinds", [])}
+                if info.get("query"):
+                    payload["query"] = info["query"]
+                if info.get("target"):
+                    payload["target"] = info["target"]
+                if info.get("layer"):
+                    payload["layer"] = info["layer"]
+                if info.get("handle"):
+                    payload["handle"] = info["handle"]
+                await emit("status", payload)
 
             materials, navigation = await _gather_materials(
                 llm, billing, user_client, turn, history, map_task, chat_map_task, on_fetch)

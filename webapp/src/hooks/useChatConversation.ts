@@ -24,6 +24,10 @@ export interface LocalChatMessage extends ChatMessage {
   stage?: ChatStage;
   /** stageがsearchingのとき、今の周で探しているもの。 */
   searchDetail?: ChatSearchDetail[];
+  searchQuery?: string;
+  searchTarget?: string;
+  searchLayer?: string;
+  searchHandle?: string;
   /** 生成中に届いた出典候補(assistantのみ。完了後は本文で使われたcitationsだけが残る) */
   pendingSources?: ChatCitation[];
   /** 受信中に通信が切れ、サーバー側で生成が終わるのを待っている */
@@ -205,7 +209,14 @@ export function useChatConversation(threadId: string | null, options: Options = 
             break;
           }
           case 'status':
-            patchMessage(assistantId, { stage: event.stage, searchDetail: event.detail });
+            patchMessage(assistantId, {
+              stage: event.stage,
+              searchDetail: event.detail,
+              searchQuery: event.query,
+              searchTarget: event.target,
+              searchLayer: event.layer,
+              searchHandle: event.handle,
+            });
             break;
           case 'sources':
             patchMessage(assistantId, { pendingSources: event.sources });

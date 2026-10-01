@@ -87,7 +87,15 @@ export type ChatSearchDetail = 'lectures' | 'chats' | 'web';
 /** POST /chat/messages のSSEイベント(バックエンドのrun_chat_turnと1対1)。 */
 export type ChatStreamEvent =
   | { type: 'meta'; thread_id: string; user_message_id: string; assistant_message_id: string }
-  | { type: 'status'; stage: ChatStage; detail?: ChatSearchDetail[] }
+  | {
+      type: 'status';
+      stage: ChatStage;
+      detail?: ChatSearchDetail[];
+      query?: string;
+      target?: string;
+      layer?: string;
+      handle?: string;
+    }
   | { type: 'sources'; sources: ChatCitation[] }
   | { type: 'delta'; text: string }
   | { type: 'replace'; text: string }

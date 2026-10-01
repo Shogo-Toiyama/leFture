@@ -1409,7 +1409,7 @@ async def navigate(
     nav_input: NavigatorInput,
     tools: NavigatorTools,
     on_lap: Optional[Callable[[int], Awaitable[None]]] = None,
-    on_fetch: Optional[Callable[[list[str]], Awaitable[None]]] = None,
+    on_fetch: Optional[Callable[[dict], Awaitable[None]]] = None,
 ) -> NavigationResult:
     """
     探索役を最大MAX_LAPS周まわす。1周ごとに「判断(LLM) → 検証(コード) → 実行(コード)」。
@@ -1459,7 +1459,7 @@ async def navigate(
             record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
             break
         if on_fetch is not None:
-            await on_fetch(fetch_kinds(record.requests))
+            await on_fetch(fetch_info(record.requests))
         await execute_lap(record, nav_input, state, tools)
         record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
 
@@ -1481,6 +1481,40 @@ def fetch_kinds(requests: list[Request]) -> list[str]:
         if kind not in kinds:
             kinds.append(kind)
     return kinds
+
+
+def fetch_info(requests: list[Request]) -> dict:
+    """この周で実行する操作の詳細(画面の『〜を検索中』用)"""
+    kinds = fetch_kinds(requests)
+    info: dict = {
+        "kinds": kinds,
+        "query": None,
+        "target": None,
+        "layer": None,
+        "handle": None,
+    }
+    selected_r = None
+    for r in requests:
+        if isinstance(r, FindRequest):
+            if r.target == "web.search":
+                selected_r = r
+                break
+            elif r.layer == "transcript" and (selected_r is None or getattr(selected_r, "layer", None) != "transcript"):
+                selected_r = r
+            elif selected_r is None:
+                selected_r = r
+        elif isinstance(r, OpenRequest) and selected_r is None:
+            selected_r = r
+
+    if isinstance(selected_r, FindRequest):
+        info["query"] = selected_r.query
+        info["target"] = "web" if selected_r.target == "web.search" else "chats" if selected_r.target.startswith("chat.") else "lectures"
+        info["layer"] = selected_r.layer
+    elif isinstance(selected_r, OpenRequest):
+        info["target"] = "web" if _WEB_HANDLE_RE.match(selected_r.handle) else "chats" if selected_r.handle[:1] in ("S", "P", "H") else "lectures"
+        info["handle"] = selected_r.handle
+
+    return info
 
 
 def summarize_for_log(result: NavigationResult) -> str:
