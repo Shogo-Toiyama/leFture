@@ -3268,7 +3268,16 @@
               }
             ],
             "one_of": [],
-            "may": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
             "note": "",
             "detour": false
           }
@@ -3305,7 +3314,42 @@
               }
             ],
             "one_of": [],
-            "may": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C5/L2/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
             "note": "",
             "detour": false
           }
@@ -3313,7 +3357,7 @@
         "looking_for": "the part of the PID lecture about tuning and oscillation"
       }
     ],
-    "why": "違う出どころ(チャットと講義)を同じ周で開けるか。",
+    "why": "違う出どころ(チャットと講義)を同じ周で開けるか。スレッドは節の一覧しか見えないので、節(P2/S1)まで開いて往復をたどってもよい。",
     "recent_conversation": [],
     "set": "main"
   },
@@ -3364,12 +3408,37 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "S1/T1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S1/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "節の往復の一覧から、コードの往復の全文を開く",
+            "detour": false
           }
         ],
         "looking_for": "the factorial code with the n <= 1 base case from early in this conversation"
       }
     ],
-    "why": "この会話の畳まれた部分を、節の呼び名で開けるか。",
+    "why": "この会話の畳まれた部分を、節の呼び名で開けるか。節を開くと往復の一覧が出るので、正確なコードが要るならその往復を開いてよい。",
     "recent_conversation": [],
     "set": "main"
   },
@@ -3493,12 +3562,53 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "S3/T7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S3/T8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S3/T9",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S3/T10",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "節を開くと往復の一覧が出るので、その往復の全文を開いてよい",
+            "detour": false
           }
         ],
         "looking_for": "which courses were said to help for firmware jobs"
       }
     ],
-    "why": "要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。",
+    "why": "要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。節から往復の全文まで開くのも正解。",
     "recent_conversation": [],
     "set": "main"
   },

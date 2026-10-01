@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 load_dotenv(REPO_ROOT / "lefture_backend" / ".env")
 
 from app.services import chat_navigator as nav  # noqa: E402
-from app.services.chat_map import MapCourse, MapLecture, StudentMap  # noqa: E402
+from app.services.chat_map import ChatMap, ChatSection, ChatThreadRef, MapCourse, MapLecture, StudentMap  # noqa: E402
 from app.services.helpers.llm_unified import BillingEngine, Message, UnifiedLLM  # noqa: E402
 
 TEST_DIR = Path(__file__).resolve().parent
@@ -126,8 +126,99 @@ class WorldLectureSource:
 SOURCE = WorldLectureSource()
 
 
+# ---------------------------------------------------------------------
+# チャット: 台本の世界には往復の原文が無く、節の箇条書きだけがあるので、箇条書きを往復に見立てる
+# (1箇条 = 1往復)。今の会話(thread_code / thread_career)は台本の節の往復番号をそのまま使い、
+# 直前の会話を後ろの(まだ畳んでいない)往復として足す。
+# ---------------------------------------------------------------------
+CURRENT_THREAD_ID = "thread-current"
+CHATS = {ch["handle"]: ch for ch in WORLD["recent_chats"] + WORLD["older_chats"]}
+
+
+def _chat_thread_id(p_handle: str) -> str:
+    return f"thread-{p_handle}"
+
+
+def _past_chat_turns_and_sections(chat: dict) -> tuple[list[dict], list[dict]]:
+    turns, sections = [], []
+    for i, sec in enumerate(chat["sections"], start=1):
+        numbers = []
+        for b in sec["bullets"]:
+            n = len(turns) + 1
+            turns.append({"number": n, "user_content": f"({sec['title']})", "assistant_content": b, "created_at": chat["date"]})
+            numbers.append(n)
+        sections.append({"handle": i, "title": sec["title"], "bullets": sec["bullets"], "turns": numbers})
+    if not turns:
+        turns.append({"number": 1, "user_content": chat["title"], "assistant_content": f"(A chat about: {chat['title']})",
+                      "created_at": chat["date"]})
+    return turns, sections
+
+
+def _current_thread_turns(case: dict) -> list[dict]:
+    turns = []
+    if case["thread"]:
+        for sec in WORLD["threads"][case["thread"]]["sections"]:
+            for i, n in enumerate(sec["turns"]):
+                turns.append({"number": n, "user_content": f"({sec['title']})",
+                              "assistant_content": sec["bullets"][min(i, len(sec["bullets"]) - 1)], "created_at": WORLD["today"]})
+        conv = WORLD["threads"][case["thread"]]["recent_conversation"]
+    else:
+        conv = case["recent_conversation"]
+    n = max((t["number"] for t in turns), default=0)
+    for i in range(0, len(conv) - 1, 2):
+        n += 1
+        turns.append({"number": n, "user_content": conv[i][1], "assistant_content": conv[i + 1][1], "created_at": WORLD["today"]})
+    return sorted(turns, key=lambda t: t["number"])
+
+
+class WorldChatSource:
+    """本番のDbChatThreadSourceと同じ形のデータを、台本の世界から返す(1ケース分)。"""
+
+    def __init__(self, case: dict):
+        self._case = case
+
+    async def thread_meta(self, thread_id: str) -> Optional[dict]:
+        ch = CHATS.get(thread_id.removeprefix("thread-"))
+        return {"title": ch["title"], "date": ch["date"]} if ch else None
+
+    async def thread_turns(self, thread_id: str) -> list[dict]:
+        if thread_id == CURRENT_THREAD_ID:
+            return _current_thread_turns(self._case)
+        ch = CHATS.get(thread_id.removeprefix("thread-"))
+        return _past_chat_turns_and_sections(ch)[0] if ch else []
+
+    async def thread_sections(self, thread_id: str) -> list[dict]:
+        ch = CHATS.get(thread_id.removeprefix("thread-"))
+        return _past_chat_turns_and_sections(ch)[1] if ch else []
+
+    async def recent_threads_with_trail(self, exclude_thread_id: Optional[str], limit: int) -> list[dict]:
+        return []  # 地図はbuild_chat_mapで直接作る
+
+
+def build_chat_map(case: dict) -> ChatMap:
+    sections = []
+    if case["thread"]:
+        sections = [ChatSection(handle=sec["handle"], title=sec["title"], turns=sec["turns"])
+                    for sec in WORLD["threads"][case["thread"]]["sections"]]
+    recent = [ChatThreadRef(handle=ch["handle"], id=_chat_thread_id(ch["handle"]), title=ch["title"], date=ch["date"],
+                            trail=[sec["title"] for sec in ch["sections"] if sec["title"] != ch["title"]])
+              for ch in WORLD["recent_chats"]]
+    cm = ChatMap.build(sections, recent)
+    for ch in WORLD["older_chats"]:  # 検索でだけ見つかる古いチャット(地図の一覧には出さない)
+        cm.add_thread(ChatThreadRef(handle=ch["handle"], id=_chat_thread_id(ch["handle"]), title=ch["title"],
+                                    date=ch["date"], trail=[]))
+    return cm
+
+
 def chunk_for_hit(handle: str, snippet: str) -> Optional[dict]:
     """台本の検索結果(呼び名 + 断片)を、本番の検索が返すチャンクの形に。"""
+    if handle[:1] == "P":
+        ch = CHATS.get(handle.split("/")[0])
+        if not ch:
+            return None
+        return {"id": f"chunk-{handle}", "source_type": "chat_turn", "source_id": None, "lecture_id": None, "course_id": None,
+                "content": f"[Chat: {ch['title']} / {ch['date']}]\nStudent: ({ch['title']})\nAssistant: {snippet}",
+                "metadata": {"thread_id": _chat_thread_id(ch["handle"]), "turn_number": 1}}
     parsed = nav.parse_handle(handle)
     if parsed is None or parsed.lecture not in LECTURE and parsed.kind != "course":
         return None
@@ -156,7 +247,9 @@ UNAVAILABLE_TARGETS = {t for t, cap in [("chat.all", "CAN_CHAT"), ("chat.thread"
 def _op_available(op: dict) -> bool:
     if op["op"] == "open":
         h = op["handle"]
-        if h[0] in "PSW" and not (nav.CAPABILITIES["CAN_CHAT"] if h[0] in "PS" else nav.CAPABILITIES["CAN_WEB"]):
+        if h[0] in "PS" and not nav.CAPABILITIES["CAN_CHAT"]:
+            return False
+        if h[0] == "W" and not nav.CAPABILITIES["CAN_WEB"]:
             return False
         return nav.CAPABILITIES["CAN_OPEN"]
     if op["op"] == "by_date":
@@ -196,6 +289,8 @@ def build_nav_input(case: dict) -> nav.NavigatorInput:
         recent_conversation=[Message(role="user" if r == "user" else "assistant", content=t) for r, t in conv],
         today=date.fromisoformat(WORLD["today"]),
         student_map=STUDENT_MAP,
+        chat_map=build_chat_map(case),
+        current_thread_id=CURRENT_THREAD_ID,
         previous_turn_refs=[r for r in (_ref_for_handle(h) for h in case["previous_turn_opened"]) if r],
         screen_topic_index=int(topic.rsplit("/T", 1)[1]) if topic else None,
     )
@@ -221,12 +316,13 @@ def _outcome_for_found(f: dict) -> Optional[nav.Outcome]:
 async def build_state(case: dict, step: dict, nav_input: nav.NavigatorInput) -> Optional[nav.NavState]:
     """台本の周の状態を、本番のNavStateとして組み立てる。使えない出どころが混ざる周はNone。"""
     state = nav.NavState()
+    chat_source = WorldChatSource(case)
     if nav_input.previous_turn_refs:
-        await nav.prepare_previous_turn(nav_input, SOURCE, state)
+        await nav.prepare_previous_turn(nav_input, SOURCE, chat_source, state)
     for h in step["opened"]:
-        if h[0] in "PSW":
+        if h[0] == "W" or (h[0] in "PS" and not nav.CAPABILITIES["CAN_CHAT"]):
             return None
-        state.opened[h] = await nav.open_handle(h, "direct", nav_input, SOURCE)
+        state.opened[h] = await nav.open_handle(h, "direct", nav_input, SOURCE, chat_source)
     for f in step["found"]:
         o = _outcome_for_found(f)
         if o is None:

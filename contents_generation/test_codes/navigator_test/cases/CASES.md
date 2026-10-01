@@ -366,31 +366,33 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 ## 29. `chat_and_lecture_same_lap` (chat.all)
 > We talked in chat about my robotics club motor oscillating. How does that relate to the PID lecture?
 
-- ねらい: 違う出どころ(チャットと講義)を同じ周で開けるか。
+- ねらい: 違う出どころ(チャットと講義)を同じ周で開けるか。スレッドは節の一覧しか見えないので、節(P2/S1)まで開いて往復をたどってもよい。
 - **1周目**:
   - open P2 (past_reference) + open C5 (past_reference)
   - open P2 (past_reference) + find lecture.concept [PID] 絞り込み: なし | C5 (past_reference)
 - **2周目**(開いた: P2, C5):
-  - open C5/L2 (past_reference)
+  - open C5/L2 (past_reference) + (任意: open P2/S1 (past_reference))
 - **3周目**(開いた: P2, C5, C5/L2):
   - 終わり
-  - open C5/L2/T3 (past_reference)
+  - open C5/L2/T3 (past_reference) + (任意: open P2/S1 (past_reference))
+  - open P2/S1 (past_reference) + (任意: open C5/L2/T3 (past_reference))
 
 ## 30. `thread_section_ref` (chat.thread)
 > 最初の方で見せてくれたfactorialのコード、n<=1にした版ってどう書くんだっけ
 
 - 状況: 会話: thread_code
-- ねらい: この会話の畳まれた部分を、節の呼び名で開けるか。
+- ねらい: この会話の畳まれた部分を、節の呼び名で開けるか。節を開くと往復の一覧が出るので、正確なコードが要るならその往復を開いてよい。
 - **1周目**:
   - open S1 (past_reference)
 - **2周目**(開いた: S1):
   - 終わり
+  - いずれか1つ以上: open S1/T1 (past_reference), open S1/T2 (past_reference)  ※節の往復の一覧から、コードの往復の全文を開く
 
 ## 31. `thread_vague_ref` (chat.thread)
 > 結構前に言ってた、ファームウェアに必要な授業って何だっけ
 
 - 状況: 会話: thread_career
-- ねらい: 要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。
+- ねらい: 要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。節から往復の全文まで開くのも正解。
 - **1周目**:
   - 終わり
   - open S3 (past_reference)
@@ -399,6 +401,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - ［遠回り］open P8 (past_reference)  ※専攻の迷いのチャットで話したかもしれない
 - **2周目**(開いた: S3):
   - 終わり
+  - いずれか1つ以上: open S3/T7 (past_reference), open S3/T8 (past_reference), open S3/T9 (past_reference), open S3/T10 (past_reference)  ※節を開くと往復の一覧が出るので、その往復の全文を開いてよい
 
 ## 32. `thread_terse_in_context` (chat.thread)
 > ファームウェアに必要な授業は何？

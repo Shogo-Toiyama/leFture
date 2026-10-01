@@ -627,16 +627,20 @@ CASES = [
          "We talked in chat about my robotics club motor oscillating. How does that relate to the PID lecture?",
          [step(1, alternatives=[alt(must=[op_open("P2", [PAST]), op_open("C5", [PAST])]),
                                 alt(must=[op_open("P2", [PAST]), op_find("lecture", "concept", ["PID"], [PAST], within_any=[None, "C5"])])]),
-          step(2, opened=["P2", "C5"], alternatives=[alt(must=[op_open("C5/L2", [PAST])])]),
-          step(3, opened=["P2", "C5", "C5/L2"], alternatives=[DONE, alt(must=[op_open("C5/L2/T3", [PAST])])])],
-         "違う出どころ(チャットと講義)を同じ周で開けるか。"),
+          step(2, opened=["P2", "C5"], alternatives=[alt(must=[op_open("C5/L2", [PAST])], may=[op_open("P2/S1", [PAST])])]),
+          step(3, opened=["P2", "C5", "C5/L2"], alternatives=[DONE,
+                                                              alt(must=[op_open("C5/L2/T3", [PAST])], may=[op_open("P2/S1", [PAST])]),
+                                                              alt(must=[op_open("P2/S1", [PAST])], may=[op_open("C5/L2/T3", [PAST])])])],
+         "違う出どころ(チャットと講義)を同じ周で開けるか。スレッドは節の一覧しか見えないので、節(P2/S1)まで開いて往復をたどってもよい。"),
 
     # ---------------- この会話 ----------------
     case("thread_section_ref", "chat.thread",
          "最初の方で見せてくれたfactorialのコード、n<=1にした版ってどう書くんだっけ",
          [step(1, alternatives=[alt(must=[op_open("S1", [PAST])])]),
-          step(2, opened=["S1"], alternatives=[DONE])],
-         "この会話の畳まれた部分を、節の呼び名で開けるか。",
+          step(2, opened=["S1"], alternatives=[DONE,
+                                               alt(one_of=[op_open("S1/T1", [PAST]), op_open("S1/T2", [PAST])],
+                                                   note="節の往復の一覧から、コードの往復の全文を開く")])],
+         "この会話の畳まれた部分を、節の呼び名で開けるか。節を開くと往復の一覧が出るので、正確なコードが要るならその往復を開いてよい。",
          thread="thread_code"),
 
     case("thread_vague_ref", "chat.thread",
@@ -646,8 +650,10 @@ CASES = [
                                 alt(must=[op_find("chat", "thread", ["ファームウェア", "firmware"], [PAST])], detour=True),
                                 alt(must=[op_find("chat", "all", ["ファームウェア", "firmware"], [PAST])], note="「結構前」が別の会話かもしれない", detour=True),
                                 alt(must=[op_open("P8", [PAST])], note="専攻の迷いのチャットで話したかもしれない", detour=True)]),
-          step(2, opened=["S3"], alternatives=[DONE])],
-         "要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。",
+          step(2, opened=["S3"], alternatives=[DONE,
+                                               alt(one_of=[op_open(f"S3/T{n}", [PAST]) for n in (7, 8, 9, 10)],
+                                                   note="節を開くと往復の一覧が出るので、その往復の全文を開いてよい")])],
+         "要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。節から往復の全文まで開くのも正解。",
          thread="thread_career"),
 
     case("thread_terse_in_context", "chat.thread",
@@ -990,6 +996,10 @@ def _validate() -> list[str]:
                         errors.append(f"{where}: unknown grounds {bad}")
                     if op["op"] == "open":
                         h = op["handle"]
+                        # チャットの節・往復(S1/T2, P4/S2, P4/T7)は、親(S1, P4)が分かっていればよい
+                        chat_child = re.match(r"^((?:S|P)\d+)/(?:S|T)\d+$", h)
+                        if chat_child and chat_child.group(1) in known:
+                            continue
                         if h not in known and h not in found_handles:
                             errors.append(f"{where}: open {h} unknown")
                         m = SENTENCE_RANGE.match(h)
