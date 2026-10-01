@@ -25,15 +25,20 @@ PRICE_MATRIX = {
         "together_ai/openai/gpt-oss-20b": {"input": 0.05, "output": 0.20},
         "deepinfra/openai/gpt-oss-120b": {"input": 0.039, "output": 0.19},
         "deepinfra/deepseek-ai/DeepSeek-V3.2": {"input": 0.26, "output": 0.38},
-        "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
+        # cache_read/cache_write: プロンプトキャッシュの読み込み/書き込み単価。
+        # 公式価格ページで確認したモデルにだけ書く。無いモデルはキャッシュ分も
+        # 通常の入力単価で計算する(安全側)。Geminiの暗黙キャッシュは書き込みが無料。
+        # 2026-09-29確認: ai.google.dev/gemini-api/docs/pricing, developers.openai.com/api/docs/pricing
+        "gemini/gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40, "cache_read": 0.01},
         "gemini/gemini-2.5-flash": {"input": 0.30, "output": 2.50},
         # 2026-10-01にGoogle公式価格($0.25/$1.50)に修正(以前は入力$0.40で過大計上)。
         # チャットはここから計算した実コスト×2をクレジットとして請求するため、
         # この表は原価の可視化だけでなく請求額に直結する。
-        "gemini/gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50},
+        "gemini/gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50, "cache_read": 0.025},
         # 2026-09-22公開のOpenAI公式価格。CORE_EXTRACTIONでgemini-3.1-flash-liteの
         # 代替として採用（安価かつ知識ワーク系ベンチマークで上回るため）。
-        "gpt-6-luna": {"input": 0.10, "output": 0.50},
+        # 自動でキャッシュに書き込まれ、書き込みは通常入力の1.25倍(272K以下の短文脈の価格)。
+        "gpt-6-luna": {"input": 0.10, "output": 0.50, "cache_read": 0.01, "cache_write": 0.125},
         # 横断チャットボット段階0(knowledge_chunks)の埋め込みモデル。
         # 埋め込みAPIには出力トークン課金が無いのでoutputは0。
         "gemini/gemini-embedding-2": {"input": 0.20, "output": 0.0},
@@ -91,6 +96,13 @@ class CostRecord:
     note: Optional[str] = None
 
 
+def _cache_note(r: CostRecord) -> str:
+    read, write = int(r.usage.get("cache_read", 0)), int(r.usage.get("cache_write", 0))
+    if not read and not write:
+        return ""
+    return f" (cache read {read}, write {write})"
+
+
 # =========================================================
 # 📈 コスト計算エンジン
 # =========================================================
@@ -99,22 +111,42 @@ class BillingEngine:
         self.task_type = task_type
         self.records: List[CostRecord] = []
 
-    def add_token_cost(self, model: str, input_tokens: int, output_tokens: int) -> None:
+    def add_token_cost(
+        self,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        cache_read_tokens: int = 0,
+        cache_write_tokens: int = 0,
+    ) -> None:
+        """input_tokensはキャッシュ分を含む総数。cache_read/writeはその内訳(APIの報告値)。"""
         rates = PRICE_MATRIX["tokens"].get(model)
         if rates is None:
             warn_unknown_price("tokens", model)
             rates = {"input": 0.0, "output": 0.0}
 
+        cache_read_tokens = max(0, min(cache_read_tokens, input_tokens))
+        cache_write_tokens = max(0, min(cache_write_tokens, input_tokens - cache_read_tokens))
+        uncached_tokens = input_tokens - cache_read_tokens - cache_write_tokens
+
         cost = (
-            (input_tokens / 1_000_000) * rates["input"]
+            (uncached_tokens / 1_000_000) * rates["input"]
+            + (cache_read_tokens / 1_000_000) * rates.get("cache_read", rates["input"])
+            + (cache_write_tokens / 1_000_000) * rates.get("cache_write", rates["input"])
             + (output_tokens / 1_000_000) * rates["output"]
         )
+
+        usage = {"input": float(input_tokens), "output": float(output_tokens)}
+        if cache_read_tokens:
+            usage["cache_read"] = float(cache_read_tokens)
+        if cache_write_tokens:
+            usage["cache_write"] = float(cache_write_tokens)
 
         self.records.append(
             CostRecord(
                 dimension="tokens",
                 resource=model,
-                usage={"input": float(input_tokens), "output": float(output_tokens)},
+                usage=usage,
                 cost_usd=cost,
                 task_type=self.task_type,
             )
@@ -210,7 +242,7 @@ class BillingEngine:
             if r.dimension == "tokens":
                 lines.append(
                     f"  [Tokens] {r.resource}: "
-                    f"{int(r.usage['input'])} in, {int(r.usage['output'])} out "
+                    f"{int(r.usage['input'])} in{_cache_note(r)}, {int(r.usage['output'])} out "
                     f"-> ${r.cost_usd:.6f}"
                 )
 
@@ -284,7 +316,7 @@ class BillingEngine:
                 if r.dimension == "tokens":
                     lines.append(
                         f"  - [Tokens] {r.resource}: "
-                        f"{int(r.usage['input'])} in, {int(r.usage['output'])} out "
+                        f"{int(r.usage['input'])} in{_cache_note(r)}, {int(r.usage['output'])} out "
                         f"-> ${r.cost_usd:.6f}"
                     )
                 elif r.dimension == "time":
@@ -331,7 +363,8 @@ class LLMOptions:
     output_type: Literal["text", "json"] = "text"
     max_tokens: Optional[int] = None
     max_completion_tokens: Optional[int] = None
-    reasoning_effort: Optional[Literal["low", "medium", "high"]] = None
+    # "none"はGemini 3系(thinkingLevel: minimal)とgpt-6-luna(推論なし)で使う
+    reasoning_effort: Optional[Literal["none", "low", "medium", "high"]] = None
     # output_type="json"のとき、JSON Schemaを渡すとプロバイダー側の構造化出力
     # (Geminiならresponse_schema)で生成を縛る。enum等で出力の形を保証したい
     # 場合(チャットの振り分け役など)に使う。Noneなら従来どおりjson_object。
@@ -347,6 +380,8 @@ class LLMResult:
     output_tokens: int = 0
     elapsed_seconds: float = 0.0
     json_parse_error: Optional[str] = None
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     # "stop" / "length" / "content_filter"(安全フィルタで遮断) など。
     # litellmがGeminiのSAFETY等を"content_filter"に正規化して返す。
     finish_reason: Optional[str] = None
@@ -360,8 +395,27 @@ class StreamState:
     finish_reason: Optional[str] = None
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     elapsed_seconds: float = 0.0
     usage_estimated: bool = False
+
+
+def _cache_token_counts(usage: Any) -> tuple[int, int]:
+    """
+    litellmのusageからキャッシュの(読み込み, 書き込み)トークン数を取る。
+    どちらもprompt_tokensの内訳。Geminiの暗黙キャッシュ(cachedContentTokenCount)と
+    OpenAIの自動キャッシュ(cached_tokens / cache_write_tokens)は、litellmが
+    prompt_tokens_detailsに揃えて入れる(2026-09-29にストリーミング/非ストリーミング
+    の両方で実測確認)。
+    """
+    details = getattr(usage, "prompt_tokens_details", None)
+    read = int(getattr(details, "cached_tokens", 0) or 0)
+    write = int(getattr(details, "cache_write_tokens", 0) or 0)
+    return read, write
+
+
+_REASONING_EFFORT_PASSTHROUGH_MODELS = frozenset({"gpt-6-luna"})
 
 
 class UnifiedLLM:
@@ -394,6 +448,10 @@ class UnifiedLLM:
 
         if options.reasoning_effort is not None:
             kwargs["reasoning_effort"] = options.reasoning_effort
+            # litellmのモデル表がreasoning_effortを知らないモデルは、明示的に通すよう
+            # 頼まないとUnsupportedParamsErrorになる(gpt-6-lunaで2026-09-30に確認)
+            if model in _REASONING_EFFORT_PASSTHROUGH_MODELS:
+                kwargs["allowed_openai_params"] = ["reasoning_effort"]
 
         # JSONモードの指定
         # NOTE: GPT-OSS models have a known token conflict between Harmony format and response_format,
@@ -438,9 +496,10 @@ class UnifiedLLM:
         usage = getattr(response, "usage", None)
         in_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
         out_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+        cache_read, cache_write = _cache_token_counts(usage)
 
         # BillingEngine にコスト記録
-        self.billing.add_token_cost(model, in_tokens, out_tokens)
+        self.billing.add_token_cost(model, in_tokens, out_tokens, cache_read, cache_write)
 
         # Cloud Run は概算。少し高めの単価で丸める
         self.billing.add_time_cost(
@@ -474,6 +533,8 @@ class UnifiedLLM:
             output_tokens=out_tokens,
             elapsed_seconds=elapsed_time,
             json_parse_error=json_parse_error,
+            cache_read_tokens=cache_read,
+            cache_write_tokens=cache_write,
             finish_reason=finish_reason,
         )
 
@@ -512,6 +573,9 @@ class UnifiedLLM:
             if usage is not None:
                 state.input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0) or state.input_tokens
                 state.output_tokens = int(getattr(usage, "completion_tokens", 0) or 0) or state.output_tokens
+                read, write = _cache_token_counts(usage)
+                state.cache_read_tokens = read or state.cache_read_tokens
+                state.cache_write_tokens = write or state.cache_write_tokens
             if not chunk.choices:
                 continue
             choice = chunk.choices[0]
@@ -536,7 +600,10 @@ class UnifiedLLM:
             except Exception:
                 pass
 
-        self.billing.add_token_cost(model, state.input_tokens, state.output_tokens)
+        self.billing.add_token_cost(
+            model, state.input_tokens, state.output_tokens,
+            state.cache_read_tokens, state.cache_write_tokens,
+        )
         self.billing.add_time_cost(
             "cloudrun/self",
             state.elapsed_seconds,

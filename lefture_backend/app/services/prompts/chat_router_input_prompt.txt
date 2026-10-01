@@ -1,0 +1,17 @@
+<earlier_conversation>
+${EARLIER_CONVERSATION}
+</earlier_conversation>
+
+<recent_conversation>
+${RECENT_CONVERSATION}
+</recent_conversation>
+
+<screen_context>
+${SCREEN_CONTEXT}
+</screen_context>
+
+<is_first_message>${IS_FIRST_MESSAGE}</is_first_message>
+
+<new_message>
+${NEW_MESSAGE}
+</new_message>

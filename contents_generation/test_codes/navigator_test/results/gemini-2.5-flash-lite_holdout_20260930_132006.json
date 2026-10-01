@@ -1,0 +1,51 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "reasoning": null,
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.08,
+        "usage": {
+          "input": 3766,
+          "output": 235
+        },
+        "output": {
+          "reasoning": "The user is asking about the lecture that came before the previously opened lecture on B-Trees. The previous turn shows that C1/L8 was opened. To find the lecture before C1/L8, I need to open the course C1 to see the list of lectures and identify C1/L7.",
+          "status": "need_more",
+          "missing": "The content of the lecture before B-Trees.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その前の回",
+              "relation": "direct"
+            }
+          ],
+          "goal": [
+            "Identify the lecture that preceded the B-Trees lecture (C1/L8)."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.00021611674874057993
+}

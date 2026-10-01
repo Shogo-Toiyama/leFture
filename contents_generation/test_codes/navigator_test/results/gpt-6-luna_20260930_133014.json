@@ -1,0 +1,155 @@
+{
+  "model": "gpt-6-luna",
+  "reasoning": null,
+  "set": "main",
+  "runs": [
+    [
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 4.45,
+        "usage": {
+          "input": 4180,
+          "output": 186
+        },
+        "output": {
+          "reasoning": "「前に授業でやった」とあるので、CS 161の講義資料からヒープへの挿入方法を確認します。",
+          "status": "need_more",
+          "missing": "講義で説明されたヒープ挿入の手順。",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "inserting an element into a heap; sift up or bubble up",
+              "layer": "summaries",
+              "within": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前に授業でやった",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 4.45,
+        "usage": {
+          "input": 3749,
+          "output": 187
+        },
+        "output": {
+          "reasoning": "The student is asking to revisit a method taught in class. The course outline points to the Binary Heaps lecture, but its explanation of insertion is still missing.",
+          "status": "need_more",
+          "missing": "How heap insertion was presented in the Binary Heaps lecture, including its steps and any class-specific details.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L3",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前に授業でやった",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 4.94,
+        "usage": {
+          "input": 4001,
+          "output": 188
+        },
+        "output": {
+          "reasoning": "The student asks to revisit a method from a previous class. The lecture outline identifies a specific insertion topic, but its detailed note may add useful steps or examples.",
+          "status": "need_more",
+          "missing": "The detailed class note for heap insertion, including its exact steps and any example.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L3/T2",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前に授業でやったヒープへの挿入のやり方",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 4.45,
+        "usage": {
+          "input": 4084,
+          "output": 214
+        },
+        "output": {
+          "reasoning": "The opened lecture topic gives the insertion procedure and a worked example, which is enough to explain it again.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain min-heap insertion: add the new value at the end, then repeatedly swap it with its parent while it is smaller.",
+            "Use the lecture’s example of inserting 1 into [2, 5, 3], and mention the O(log n) time."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.002935419721244648
+}

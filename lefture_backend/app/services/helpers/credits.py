@@ -36,20 +36,20 @@ def chat_cost_to_micro_credits(cost_usd: float) -> int:
     return round(cost_usd * CHAT_CREDIT_MARKUP * MICRO_CREDITS_PER_USD)
 
 
-def consume_chat_credits(
+def _consume_chat_cost(
     user_id: str,
     thread_id: str,
-    message_id: str,
+    reason: str,
+    dedup_key: str,
+    dedup_value: str,
     cost_usd: float,
     cost_breakdown: list[dict[str, Any]],
 ) -> int:
     """
-    チャット1メッセージ分のクレジットを消費し、実際に消費したμクレジットを返す。
+    チャット関連の原価×CHAT_CREDIT_MARKUPを消費し、実際に消費したμクレジットを返す。
 
     講義(consume_lecture_credits)と同じくconsume_creditsのRPCを使う。
-    reasonは"CHAT_MESSAGE"で固定し、どのスレッド/メッセージの分かは
-    metadataに積む。同じmessage_idへの二重課金はここで弾く(呼び出しは
-    メッセージの締め処理で1回だけの想定だが、念のため)。
+    同じ(reason, dedup_key=dedup_value)への二重課金はここで弾く。
     原価の記録(usage_records)もここで一緒に行う。講義と違い「参考値」
     ではなく、micro_credits_chargedは実際の消費額そのもの。
     """
@@ -62,13 +62,13 @@ def consume_chat_credits(
     existing = (
         supabase.table("credit_transactions")
         .select("id")
-        .eq("reason", "CHAT_MESSAGE")
-        .eq("metadata->>message_id", message_id)
+        .eq("reason", reason)
+        .eq(f"metadata->>{dedup_key}", dedup_value)
         .limit(1)
         .execute()
     )
     if existing.data:
-        logger.warning(f"consume_chat_credits: message_id={message_id} already charged. Skipping duplicate charge.")
+        logger.warning(f"{reason}: {dedup_key}={dedup_value} already charged. Skipping duplicate charge.")
         return 0
 
     supabase.rpc(
@@ -76,11 +76,11 @@ def consume_chat_credits(
         {
             "p_user_id": user_id,
             "p_amount": micro_credits,
-            "p_reason": "CHAT_MESSAGE",
+            "p_reason": reason,
             "p_job_id": None,
             "p_metadata": {
                 "thread_id": thread_id,
-                "message_id": message_id,
+                dedup_key: dedup_value,
                 "cost_usd": cost_usd,
                 "markup": CHAT_CREDIT_MARKUP,
             },
@@ -95,11 +95,41 @@ def consume_chat_credits(
             "cost_usd": cost_usd,
             "cost_breakdown": cost_breakdown,
             "micro_credits_charged": micro_credits,
-            "metadata": {"kind": "CHAT_MESSAGE", "thread_id": thread_id, "message_id": message_id},
+            "metadata": {"kind": reason, "thread_id": thread_id, dedup_key: dedup_value},
         }
     ).execute()
 
     return micro_credits
+
+
+def consume_chat_credits(
+    user_id: str,
+    thread_id: str,
+    message_id: str,
+    cost_usd: float,
+    cost_breakdown: list[dict[str, Any]],
+) -> int:
+    """チャット1メッセージ分。二重課金の判定はmessage_idごと。"""
+    return _consume_chat_cost(
+        user_id, thread_id, "CHAT_MESSAGE", "message_id", message_id, cost_usd, cost_breakdown,
+    )
+
+
+def consume_chat_summary_credits(
+    user_id: str,
+    thread_id: str,
+    summary_block_id: str,
+    cost_usd: float,
+    cost_breakdown: list[dict[str, Any]],
+) -> int:
+    """
+    スレッド要約1ブロック分。メッセージの課金とは別の行にする
+    (CHAT_MESSAGEはmessage_idで二重課金を弾くため、同じメッセージに
+    要約分を上乗せできない)。二重課金の判定はsummary_block_idごと。
+    """
+    return _consume_chat_cost(
+        user_id, thread_id, "CHAT_SUMMARY", "summary_block_id", summary_block_id, cost_usd, cost_breakdown,
+    )
 
 
 def record_task_cost(

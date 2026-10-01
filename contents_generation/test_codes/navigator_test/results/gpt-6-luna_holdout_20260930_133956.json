@@ -1,0 +1,484 @@
+{
+  "model": "gpt-6-luna",
+  "reasoning": "none",
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.03,
+        "usage": {
+          "input": 4167,
+          "output": 96
+        },
+        "output": {
+          "reasoning": "これは課題の多さへのつらさを伝える言葉で、資料を調べなくてもまず共感して返せます。",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Acknowledge that the workload feels overwhelming and offer a supportive, nonjudgmental response.",
+            "Invite the student to share what is due or help break the work into manageable steps, without assuming details."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.03,
+        "usage": {
+          "input": 4166,
+          "output": 82
+        },
+        "output": {
+          "reasoning": "This is a general computer-science question, and the student does not refer to a specific class, lecture, or past discussion. General knowledge is enough to explain it; no materials or web search are needed.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain how processes and threads differ, including memory/resource isolation and what they share."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.94,
+        "usage": {
+          "input": 4179,
+          "output": 112
+        },
+        "output": {
+          "reasoning": "これは一般的な健康・生理の質問で、特定の授業や過去の会話を参照していません。一般知識で説明でき、学生の資料やウェブ検索は不要です。",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain briefly how caffeine promotes alertness and can interfere with sleep.",
+            "Offer practical, general steps such as reducing intake and avoiding caffeine later in the day; suggest seeking medical advice if sleep problems persist."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 3.57,
+        "usage": {
+          "input": 4360,
+          "output": 117
+        },
+        "output": {
+          "reasoning": "“The last one” refers to the seventh lecture in the list just shown, Orthogonality. Its lecture details will clarify what it covered.",
+          "status": "need_more",
+          "missing": "The topics and summary of the Orthogonality lecture (C4/L7).",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C4/L7",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the last one",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.24,
+        "usage": {
+          "input": 4261,
+          "output": 138
+        },
+        "output": {
+          "reasoning": "「その前の回」は直前に話したC1/L8「B-Trees」の前の講義を指しています。コースの講義一覧を開いて、直前の回を特定します。",
+          "status": "need_more",
+          "missing": "C1/L8の直前にあたる講義と、その内容の概要。",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その前の回",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 1.95,
+        "usage": {
+          "input": 4173,
+          "output": 126
+        },
+        "output": {
+          "reasoning": "The student asks for a summary of last week’s robotics class. The course’s recent lecture dates identify the likely class, but its lecture list is needed to locate the exact content.",
+          "status": "need_more",
+          "missing": "Which Robotics Seminar lecture was recorded last week and what it covered.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C5",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "先週のロボティクスの授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 5,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 8.02,
+        "usage": {
+          "input": 4174,
+          "output": 140
+        },
+        "output": {
+          "reasoning": "The student asks about a specific anecdote the professor told, which is likely only preserved in the lecture transcript. Linear Algebra is clearly identified, so search its transcripts for the bridge-collapse story.",
+          "status": "need_more",
+          "missing": "Which Linear Algebra lecture contains the bridge-collapse anecdote and what the professor said about it.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "story about a bridge collapsing",
+              "layer": "transcript",
+              "within": "C4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the professor told a story about a bridge collapsing",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_chat_pointers",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 2.31,
+        "usage": {
+          "input": 4173,
+          "output": 127
+        },
+        "output": {
+          "reasoning": "The student explicitly refers to an earlier conversation about C pointers and asks to see the example again. P18 is the matching past chat, so open it for the example.",
+          "status": "need_more",
+          "missing": "The C pointer example used in the earlier conversation.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "P18",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "Remember when we went over pointers in C? Can you show me that example again?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.33,
+        "usage": {
+          "input": 4169,
+          "output": 147
+        },
+        "output": {
+          "reasoning": "The student asks what they learned in Biology, so the course materials are a clear source for the class-specific explanation. Biology notes are in Japanese, so search them using Japanese terms.",
+          "status": "need_more",
+          "missing": "The Biology course’s explanation of how temperature affects enzyme activity.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "温度が酵素の活性に与える影響、最適温度、高温による変性",
+              "layer": "summaries",
+              "within": "C3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "what did we learn",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.13,
+        "usage": {
+          "input": 4171,
+          "output": 147
+        },
+        "output": {
+          "reasoning": "The student asks how Dijkstra’s algorithm was explained in class, so the course transcript is the relevant source. Data Structures is the clear match; search its transcript for the explanation, then inspect any relevant result.",
+          "status": "need_more",
+          "missing": "The instructor’s explanation of Dijkstra’s algorithm in the Data Structures course, including any transcript passage describing the method.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm",
+              "layer": "transcript",
+              "within": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 3.74,
+        "usage": {
+          "input": 3562,
+          "output": 136
+        },
+        "output": {
+          "reasoning": "The search identified the relevant lecture, but its result only gives the topic title. To describe how it was explained in class, I need the lecture’s topic notes and transcript references.",
+          "status": "need_more",
+          "missing": "The professor’s explanation of Dijkstra’s algorithm in lecture C1/L11, including the transcript passages it refers to.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L11",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 3.56,
+        "usage": {
+          "input": 3622,
+          "output": 151
+        },
+        "output": {
+          "reasoning": "授業での具体的な説明を尋ねています。講義の概要は分かりましたが、教授の実際の説明はまだ確認できていません。",
+          "status": "need_more",
+          "missing": "C1/L11の講義で教授がダイクストラ法をどう説明したか、実際の発言内容。",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "Dijkstra shortest path",
+              "layer": "transcript",
+              "within": "C1/L11",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true,
+          "guard_dropped": 1
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 7.92,
+        "usage": {
+          "input": 4165,
+          "output": 116
+        },
+        "output": {
+          "reasoning": "This asks for current release status, which requires an up-to-date outside source. No course materials are relevant.",
+          "status": "need_more",
+          "missing": "Whether Python 3.14 has been released as of today.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "web.search",
+              "query": "Python 3.14 release status official Python release schedule",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "needs_external_info",
+              "grounds_quote": "out yet",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.002905435
+}

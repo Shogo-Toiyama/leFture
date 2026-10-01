@@ -1,0 +1,3194 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "main",
+  "runs": [
+    [
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.14,
+        "output": {
+          "reasoning": "The student asks to revisit a method covered in class, and heap insertion is clearly part of Data Structures. Search the course materials for the class explanation.",
+          "status": "need_more",
+          "missing": "How the Data Structures course taught heap insertion, including the insertion steps and any class-specific explanation.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "heap insertion",
+              "layer": "summaries",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前に授業でやった",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.29,
+        "output": {
+          "reasoning": "The student asks to revisit a method covered in class. The course outline identifies the Binary Heaps lecture, but the insertion steps themselves are still missing.",
+          "status": "need_more",
+          "missing": "How the instructor's materials explain inserting an item into a binary heap.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Insert a value into a binary heap: add it at the next open position, then restore heap order by bubbling or percolating it up.",
+              "layer": "summaries",
+              "within": "C1/L3",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前に授業でやった",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.36,
+        "output": {
+          "reasoning": "The lecture outline identifies heap insertion as bubble-up, but the topic note may give the class-specific steps or example needed to explain it again.",
+          "status": "need_more",
+          "missing": "The detailed explanation or example of insertion from the Binary Heaps lecture notes.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L3/T2",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前に授業でやった",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 1.94,
+        "output": {
+          "reasoning": "The fetched topic directly provides the insertion procedure and a worked example, which is enough to explain it again. No further material is needed.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain min-heap insertion: add the new value at the end, then repeatedly swap it with its parent while it is smaller.",
+            "Use the class example of inserting 1 into [2,5,3], which moves 1 to the root in two swaps.",
+            "Mention the O(log n) time complexity."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_known_lecture",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.29,
+        "output": {
+          "reasoning": "The student explicitly locates the confusion in CS161 lecture 6. Search that lecture’s notes for how LR and RL rotations were taught so the answer can align with class.",
+          "status": "need_more",
+          "missing": "The lecture’s explanation or diagrams distinguishing LR from RL rotations.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "AVL LR rotation versus RL rotation; identify the imbalance path and the double-rotation steps",
+              "layer": "notes",
+              "within": "C1/L6",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "In CS161 lecture 6 we did AVL rotations",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 2,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_known_lecture",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.18,
+        "output": {
+          "reasoning": "The lecture outline identifies the double-rotation topic, but its summary only spells out LR; the topic notes can clarify both LR and RL using the course’s balance-factor convention.",
+          "status": "need_more",
+          "missing": "How the lecture explains the LR and RL double rotations, including their rotation order and which imbalance each corrects.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L6/T4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "In CS161 lecture 6 we did AVL rotations",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_known_lecture",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.11,
+        "output": {
+          "reasoning": "The lecture and its double-rotation topic are already open, but they give only a brief rule. The specific step-by-step explanation the student is fuzzy on is likely in the lecture transcript, so search there next.",
+          "status": "need_more",
+          "missing": "The professor’s lecture-6 explanation or example showing the LR and RL double rotations step by step.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "LR- und RL-Doppelrotationen: Ablauf und Beispiel, erst Kindknoten drehen, dann Knoten drehen; Zickzack-Fall",
+              "layer": "transcript",
+              "within": "C1/L6",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "In CS161 lecture 6 we did AVL rotations",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.77,
+        "output": {
+          "reasoning": "「ここの内容」は画面に表示されているC2/L4を指しています。講義の概要とトピックを確認して、どの部分を詳しく説明すべきか把握します。",
+          "status": "need_more",
+          "missing": "C2/L4で扱った価格弾力性の具体的な内容とトピック。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここの内容",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.31,
+        "output": {
+          "reasoning": "The student is asking for more detail about the lecture shown on screen. The lecture outline gives the main points; opening its topics can provide the fuller notes needed to explain them.",
+          "status": "need_more",
+          "missing": "The detailed notes for the price-elasticity definition, examples, and determinants in the lecture the student is viewing.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L4/T1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここの内容",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L4/T2",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここの内容",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L4/T3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここの内容",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.38,
+        "output": {
+          "reasoning": "The student asks for more detail about the lecture currently on screen. The lecture and all three topic summaries are already open, but they contain only brief notes; the professor’s fuller explanation may be in the transcript.",
+          "status": "need_more",
+          "missing": "The professor’s detailed explanation and examples of price elasticity of demand in C2/L4.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "price elasticity of demand, definition and calculation, elastic versus inelastic demand, insulin and soda examples, determinants including substitutes, budget share, and time horizon",
+              "layer": "transcript",
+              "within": "C2/L4",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここの内容",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "outline_selected_text_enough",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.21,
+        "output": {
+          "reasoning": "The student points to a selected definition in the AVL Trees lecture and asks whether its sign convention is reversed from the usual textbook convention. Checking the lecture’s own wording will let the answerer confirm precisely what convention it uses.",
+          "status": "need_more",
+          "missing": "Whether this lecture defines balance factor as right-subtree height minus left-subtree height, and any lecture context clarifying that convention.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "balance factor definition, right subtree height minus left subtree height, convention",
+              "layer": "notes",
+              "within": "C1/L6",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "これって普通の教科書と逆だよね？",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 3,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.57,
+        "output": {
+          "reasoning": "The student asks how a concept from their Linear Algebra course relates to robotics control, so the relevant course materials can show which eigenvalue ideas they have covered and what the robotics seminar discussed. Fetch both courses’ notes in parallel.",
+          "status": "need_more",
+          "missing": "What eigenvalue material the Linear Algebra lectures covered and whether the Robotics Seminar discussed control topics that connect to it.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "eigenvalues and eigenvectors, stability, linear transformations",
+              "layer": "notes",
+              "within": "C4",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "線形代数でやった固有値",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "robot control, system stability, dynamics, state-space models",
+              "layer": "notes",
+              "within": "C5",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "ロボットの制御の授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.59,
+        "output": {
+          "reasoning": "The course outlines already show a direct connection: the linear algebra lecture introduces eigenvalues in a stability example, and the robotics state-space lecture uses eigenvalues of A for stability and pole placement. No more materials are needed.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that eigenvalues connect directly to robot control through state-space models.",
+            "Point out that eigenvalues of the system matrix A describe stability and are used in pole placement.",
+            "Relate this to the linear algebra eigenvalue lecture's stability example."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": false,
+          "error": "stopped_too_early"
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.04,
+        "output": {
+          "reasoning": "The opened lecture outlines already establish a direct connection: the robotics control lecture explicitly identifies the system matrix’s eigenvalues as its poles and uses them to assess stability and place poles. More detail would only repeat that.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that eigenvalues are directly used in the robotics state-space control material: they are the poles of A and determine stability.",
+            "Connect this to the linear algebra lecture’s example of stability for x′ = Ax; briefly mention that control can choose feedback gains to move the poles."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 2.11,
+        "output": {
+          "reasoning": "The opened lecture materials already establish the connection: the robotics control lecture identifies the system matrix’s eigenvalues as poles and uses their real parts to assess stability. More material would repeat this.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that eigenvalues are directly relevant to robot control: in the state-space model, they are the system’s poles.",
+            "Connect the real parts of the eigenvalues to stability and note that pole placement uses feedback to move them.",
+            "Mention that both courses explicitly link these ideas."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_semester_overview",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.12,
+        "output": {
+          "reasoning": "「今学期」は現在の2026年秋学期を指すと考えられます。秋学期の授業全体を振り返るため、該当コースの講義一覧を開きます。",
+          "status": "need_more",
+          "missing": "2026年秋学期の各授業と講義で扱った内容の一覧。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "今学期の授業",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C5",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "今学期の授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_semester_overview",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.79,
+        "output": {
+          "reasoning": "The two courses recorded this term have been opened, and their lecture lists cover the semester overview the student asked for. No further materials are needed.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Give a concise, course-by-course overview of the semester’s topics, based on the opened lecture lists."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_all_courses",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.95,
+        "output": {
+          "reasoning": "The student explicitly asks for a broad summary of learning across all classes, so I need the course outlines and lecture topics from every listed course. Opening each course will provide those outlines.",
+          "status": "need_more",
+          "missing": "The recorded lecture titles, summaries, and topics across all five courses.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "summarize what I've learned across all my classes so far",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "summarize what I've learned across all my classes so far",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "summarize what I've learned across all my classes so far",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "summarize what I've learned across all my classes so far",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C5",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "summarize what I've learned across all my classes so far",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 5,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_all_courses",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.83,
+        "output": {
+          "reasoning": "The lecture lists across all five classes are already available and together provide a rough overview of what the student has learned. Further fetching would only repeat that material.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Give a concise, high-level summary organized by class, covering the main themes from the available lectures.",
+            "Note that the recorded material spans different periods: CS, economics, and biology lectures from April–May, and linear algebra and robotics seminar lectures from September."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.84,
+        "output": {
+          "reasoning": "The student asks how the professor explained a comparison from class, so the relevant wording should be in the Data Structures transcript. Search that course's transcript for heapsort and quicksort.",
+          "status": "need_more",
+          "missing": "The professor’s in-class comparison of heapsort and quicksort, including the explanation or distinctions they emphasized.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "heapsort versus quicksort; comparison of their operation, performance, and tradeoffs",
+              "layer": "transcript",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "How did the professor explain",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.14,
+        "output": {
+          "reasoning": "The search found the exact comparison topic, but only a brief summary. Open it to see the professor’s explanation and any transcript citations.",
+          "status": "need_more",
+          "missing": "The professor’s fuller explanation of how heapsort and quicksort differ, including the cited class material.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L4/T3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "How did the professor explain",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.4,
+        "output": {
+          "reasoning": "The topic note gives the comparison, but the student asks how the professor explained it. The cited transcript ranges can provide the professor’s actual wording.",
+          "status": "need_more",
+          "missing": "The professor’s exact explanation of the heapsort–quicksort comparison in the cited transcript.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L4/s412-425",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "How did the professor explain",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L4/s426-431",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "How did the professor explain",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 2.12,
+        "output": {
+          "reasoning": "The transcript already contains the professor’s comparison and metaphor. The cited extra range only adds why quicksort is fast, so nothing else is needed.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that quicksort is usually faster on average, while heapsort guarantees O(n log n), even for adversarial input.",
+            "Include the professor’s metaphor: quicksort is the sprinter; heapsort is the one that always finishes the marathon."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_professor_convention",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.78,
+        "output": {
+          "reasoning": "The student asks which AVL balance-factor convention their professor used, so the course transcript is the best source for the professor’s definition.",
+          "status": "need_more",
+          "missing": "The professor’s stated balance-factor convention in CS 161 (left height minus right height, or right minus left).",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "AVL balance factor definition: whether it is height of left subtree minus height of right subtree or the reverse",
+              "layer": "transcript",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "教授の定義",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_professor_convention",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.64,
+        "output": {
+          "reasoning": "検索結果に教授の定義が直接見つかっており、必要な情報は揃っています。",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "教授の定義は balance factor = height(right) − height(left) と伝える。",
+            "左重い場合は負になると補足する。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_professor_convention",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 1.97,
+        "output": {
+          "reasoning": "開いた授業ノートに教授の定義と符号の向きがあり、質問にそのまま答えられます。",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "教授の定義は BF = height(right) − height(left) と伝える。",
+            "左重みなら負、右重みなら正で、テストでもこの約束を使うと補足する。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_follow_up_next",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.54,
+        "output": {
+          "reasoning": "「その次」は直前に示したBinary Heapsの回の次の講義を指す。CS 161の講義一覧を開き、次回の内容を確認する。",
+          "status": "need_more",
+          "missing": "CS 161でBinary Heapsの次に記録された講義のタイトルと扱った内容。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その次の回",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_follow_up_third",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.03,
+        "output": {
+          "reasoning": "“The third one” refers to the third lecture in the list just shown: Taxes (C2/L6). Open its outline to get the lecture’s summary and topics.",
+          "status": "need_more",
+          "missing": "What the Taxes lecture covered, especially how it connected tax incidence to elasticity.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L6",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the third one",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_follow_up_third",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.22,
+        "output": {
+          "reasoning": "The lecture outline identifies the three main ideas, but its topic notes may provide useful detail about the tax wedge, incidence, and deadweight loss.",
+          "status": "need_more",
+          "missing": "The lecture’s detailed notes and examples explaining the tax wedge, tax incidence, and deadweight loss.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L6/T1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the third one",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L6/T2",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the third one",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L6/T3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the third one",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_pronoun_that_lecture",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.72,
+        "output": {
+          "reasoning": "The student asks what the professor said in a specific lecture, so the transcript is the best source for an exact class remark. The previous turn identifies the lecture as PID Control, C5/L2.",
+          "status": "need_more",
+          "missing": "What the professor said about overshoot in the PID Control lecture transcript.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "overshoot",
+              "layer": "transcript",
+              "within": "C5/L2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "教授はオーバーシュートについて何か言ってた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_pronoun_that_lecture",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.51,
+        "output": {
+          "reasoning": "The topic note summarizes overshoot, but the student asks what the professor said; the professor’s exact remarks should be checked in the lecture transcript cited by the topic.",
+          "status": "need_more",
+          "missing": "The professor’s actual wording and any specific explanation or example about overshoot in the PID lecture.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "overshoot in PID control, causes and tuning",
+              "layer": "transcript",
+              "within": "C5/L2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "教授はオーバーシュートについて何か言ってた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 11.14,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 196107, Requested 4029. Please try again in 40ms. Visit https://platform.openai.co"
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 2.59,
+        "output": {
+          "reasoning": "The date search identified the econ lecture, but its summary and topics are needed to say what was covered.",
+          "status": "need_more",
+          "missing": "The contents and topics of the April 10 economics lecture, C2/L4.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "What did we cover in econ on April 10?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 2.8,
+        "output": {
+          "reasoning": "The April 10 economics lecture is identified, and its summary and topics already say what it covered. No further material is needed.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Say the lecture covered price elasticity of demand: how quantity demanded responds to price, elastic versus inelastic demand, examples, and determinants such as substitutes, budget share, and time horizon."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_yesterday",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 3.15,
+        "output": {
+          "reasoning": "“Yesterday's class” refers to a specific recent lecture, so I should find lectures recorded yesterday and open the matching course outline. The course is not specified, so check all courses.",
+          "status": "need_more",
+          "missing": "Which class was held on 2026-09-29 and what it covered.",
+          "operations": [
+            {
+              "op": "by_date",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "2026-09-29",
+              "date_to": "2026-09-29",
+              "grounds": "past_reference",
+              "grounds_quote": "yesterday's class",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_yesterday",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 2.92,
+        "output": {
+          "reasoning": "Yesterday’s class is identified as C4/L7, but its lecture content has not been opened yet. Open its outline and topics to gather the material needed for a catch-up.",
+          "status": "need_more",
+          "missing": "The lecture summary and topic details for C4/L7 (Linear Algebra / Orthogonality).",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C4/L7",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "yesterday's class",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_yesterday",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 2.13,
+        "output": {
+          "reasoning": "The lecture summary and topic list already identify what yesterday’s class covered. Opening the topics would add detail but is not necessary for a useful catch-up.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Catch the student up on orthogonality, projections onto a line or subspace, and least squares as a projection.",
+            "Explain the key formulas briefly and offer to go deeper or work through an example."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "concept_vague_in_course",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.3,
+        "output": {
+          "reasoning": "The student is checking whether entropy appeared in their Biology 101 materials. Search the course notes for the concept.",
+          "status": "need_more",
+          "missing": "Whether and where entropy is covered in the student's Biology 101 materials.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "entropy",
+              "layer": "summaries",
+              "within": "C3",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "生物の授業で出てきた気がする",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "concept_vague_in_course",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 2.97,
+        "output": {
+          "reasoning": "検索結果から生物の講義でエントロピーが扱われた回は特定できています。講義の概要と関連トピックを開いて確認します。",
+          "status": "need_more",
+          "missing": "C3/L10でエントロピーがどう説明され、どの話題と結びついていたか。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C3/L10",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "生物の授業で出てきた気がする",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "concept_ja_question_en_lectures",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.94,
+        "output": {
+          "reasoning": "This is a data-structures concept clearly covered by CS 161, and the student asks how the procedure was taught. Search the course notes for the two-child BST deletion steps.",
+          "status": "need_more",
+          "missing": "The course’s explanation of deleting a BST node that has two children.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "binary search tree deletion when the node has two children; inorder successor or predecessor",
+              "layer": "notes",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "二分探索木の削除",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "concept_term_then_done",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 8.32,
+        "output": {
+          "reasoning": "The student asks what a term meant in class, so their course materials can provide the course-specific explanation. Intro Microeconomics is the likely course; search its notes for the term.",
+          "status": "need_more",
+          "missing": "How the Intro Microeconomics materials define or explain tax incidence.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "tax incidence",
+              "layer": "summaries",
+              "within": "C2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "came up in class",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "concept_term_then_done",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 3.33,
+        "output": {
+          "reasoning": "The search result already gives the class meaning and its example, so more material would only repeat it.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that the side of the market that is less responsive to price changes (more inelastic) bears more of a tax.",
+            "Mention the class example: cigarette taxes fall mostly on smokers."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "concept_scoped_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.84,
+        "output": {
+          "reasoning": "The student asks where the professor discussed insulin in econ, so the relevant location should be in the course materials, especially transcript content that may mention it in passing.",
+          "status": "need_more",
+          "missing": "Which Intro Microeconomics lecture or transcript passage mentions insulin.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "insulin",
+              "layer": "transcript",
+              "within": "C2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the professor talk about insulin",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "concept_scoped_search",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 2.27,
+        "output": {
+          "reasoning": "The search found insulin in the econ course’s price-elasticity topic. Opening that topic should provide the lecture details needed to point the student to where it was discussed.",
+          "status": "need_more",
+          "missing": "The lecture title/date and the surrounding context for the insulin example.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C2/L4/T2",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "In econ, where did the professor talk about insulin?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "concept_in_course_no_reference",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 3.97,
+        "output": {
+          "reasoning": "Worst-case quicksort complexity is standard general knowledge; the student did not ask how their course or instructor covered it. No materials or web lookup are needed.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "State that quicksort’s worst-case time complexity is O(n²), briefly explaining when it occurs."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "transcript_side_remark",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 2.63,
+        "output": {
+          "reasoning": "学生は教授が以前授業で話した具体的なコツを尋ねている。線形代数の講義での発言なので、講義の文字起こしを検索する。",
+          "status": "need_more",
+          "missing": "教授がガウスの消去法について紹介した「裏技」の内容。",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Gaussian elimination trick shortcut clever method",
+              "layer": "transcript",
+              "within": "C4",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "教授が前に言ってた『ガウスの消去法の裏技』",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "transcript_side_remark",
+        "category": "lecture.transcript",
+        "lap": 2,
+        "elapsed": 7.98,
+        "output": {
+          "reasoning": "The transcript search found the professor's explanation, which directly answers the question; no further material is needed.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that the trick is partial pivoting: before eliminating, swap rows so the largest-absolute-value entry in the pivot column becomes the pivot."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "transcript_nobel_in_class",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 3.45,
+        "output": {
+          "reasoning": "The student asks about a Nobel Physics Prize research topic mentioned in class, but doesn't identify the course or the prize. Search lecture materials for the professor's mention, then use outside sources to explain the research in detail once identified.",
+          "status": "need_more",
+          "missing": "Which Nobel Prize in Physics research the professor mentioned in class, so the answer can explain that specific work accurately.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "professor's mention of the Nobel Prize in Physics and the research recognized",
+              "layer": "transcript",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業で教授がノーベル物理学賞の話をしてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "transcript_nobel_in_class",
+        "category": "lecture.transcript",
+        "lap": 2,
+        "elapsed": 2.77,
+        "output": {
+          "reasoning": "The search result identifies the Nobel-related aside, but it does not name the laureates or give enough detail to explain the research. Open the cited transcript passage for the professor’s exact reference.",
+          "status": "need_more",
+          "missing": "Which Nobel Prize year and research the professor mentioned, plus any context in the surrounding class remarks.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C5/L4/s801-806",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業で教授がノーベル物理学賞の話をしてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "transcript_nobel_in_class",
+        "category": "lecture.transcript",
+        "lap": 3,
+        "elapsed": 3.18,
+        "output": {
+          "reasoning": "The class transcript identifies the Nobel topic, and the search result points to the official Nobel source. Open both to get the professor’s context and reliable details of the research.",
+          "status": "need_more",
+          "missing": "What the professor said about the 2025 Nobel topic and the official explanation of the research and its significance.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C5/L4/s801-806",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業で教授がノーベル物理学賞の話をしてた",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "W1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "needs_external_info",
+              "grounds_quote": "どんな研究だったの？詳しく知りたい",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "transcript_professor_wording",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 2.32,
+        "output": {
+          "reasoning": "The student asks what the professor actually said about selected text on a Deep Note page. I should search the relevant lecture transcript, then follow the cited transcript passage if needed.",
+          "status": "need_more",
+          "missing": "The professor’s exact wording in the transcript corresponding to the selected note about the left-minus-right sign convention.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "left minus right sign convention, balance factor signs flipped compared with standard textbooks",
+              "layer": "transcript",
+              "within": "C1/L6",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここ、教授は実際にはなんて言ってたの？",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "transcript_professor_wording",
+        "category": "lecture.transcript",
+        "lap": 2,
+        "elapsed": 3.45,
+        "output": {
+          "reasoning": "学生は画面上のDeep Noteの記述について教授の実際の発言を尋ねている。引用されたトピックノートが示す書き起こし範囲を確認する。",
+          "status": "need_more",
+          "missing": "Deep Noteが参照している、教授のbalance factorの定義とテストで使う符号規約についての実際の発言。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L6/s233-240",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここ",
+              "relation": "direct"
+            },
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L6/s241-243",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "on_screen",
+              "grounds_quote": "ここ",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "transcript_professor_wording",
+        "category": "lecture.transcript",
+        "lap": 3,
+        "elapsed": 4.4,
+        "output": {
+          "reasoning": "The transcript excerpts already give the professor’s exact wording. Nothing more needs to be fetched.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Quote the professor: “I’m going to define the balance factor as the height of the right subtree minus the height of the left. I know your textbook does it the other way around. I just find right minus left easier to draw. And yes, on the exam I will use my convention, so please don’t flip the signs.”"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_title_match",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 3.07,
+        "output": {
+          "reasoning": "The student refers to a past chat, and P3’s topic trail clearly matches their question. Open that chat to see what was recommended.",
+          "status": "need_more",
+          "missing": "The specific internship-finding recommendations given in the earlier chat P3.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "I think I asked you about finding internships a while back. What did you recommend?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_title_match",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 6.05,
+        "output": {
+          "reasoning": "The thread overview already identifies the recommendations, but the folded section may include the exact details needed to recall them accurately.",
+          "status": "need_more",
+          "missing": "The full prior-chat exchange, including any additional internship-search advice or qualifications.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P3/S1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "What did you recommend?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "chat_vague_older",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 3.6,
+        "output": {
+          "reasoning": "The student is referring to an earlier conversation, but none of the visible chat titles clearly concerns a scholarship essay or writing about personal strengths. Search past chats for that specific discussion.",
+          "status": "need_more",
+          "missing": "Whether an earlier chat covered how to present the student's strengths in a scholarship essay, and what advice was given.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "chat.all",
+              "query": "奨学金のエッセイで自分の強みをどう書くか、強みの選び方や具体例の伝え方について話した内容",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前にこんなこと話した気がするんだけど",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_vague_older",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 2.68,
+        "output": {
+          "reasoning": "The search found a past chat directly matching the student's memory. Open it to see the full context and what was decided about describing their strengths.",
+          "status": "need_more",
+          "missing": "The details of the earlier discussion about how to present the student's strengths in the scholarship essay.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P31",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "前にこんなこと話した気がする",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_recent_exercise",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 12.01,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 196632, Requested 4048. Please try again in 204ms. Visit https://platform.openai.c"
+        }
+      },
+      {
+        "case": "chat_recent_exercise",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 4.04,
+        "output": {
+          "reasoning": "The folded chat summary already identifies the exact example tree and rotation case; opening it would only repeat that information.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Recall the example tree: root 10, children 5 and 15, with 3 as 5’s left child and 1 as 3’s left child.",
+            "Mention it was an LL case, fixed by a right rotation around 5."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_talked_before",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 3.68,
+        "output": {
+          "reasoning": "「この前話した」とあり、過去のラボレポート相談を指しています。P7のチャット内容を確認します。",
+          "status": "need_more",
+          "missing": "以前の会話で、ラボレポートの考察に何を書くよう説明したか。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P7",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "この前話した",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_talked_before",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 2.73,
+        "output": {
+          "reasoning": "前の会話の折りたたみ要約に、考察で書く内容が具体的に残っています。これで質問に答えられます。",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "考察には、結果が仮説と合ったかを述べる。",
+            "結果とのずれがあれば、温度や測定誤差など原因を考える。",
+            "次に試すことも書く。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_practiced_together",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 2.46,
+        "output": {
+          "reasoning": "The student refers to elasticity problems practiced in an earlier chat; P4’s topic trail clearly matches. Opening it can reveal the format to imitate.",
+          "status": "need_more",
+          "missing": "The format and examples of the elasticity problems practiced together in P4.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "一緒に練習した弾力性の問題",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_practiced_together",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 3.36,
+        "output": {
+          "reasoning": "前回の会話の要約から、弾力性の計算問題の形式は分かっています。具体的な過去問を開かなくても、同じ形式で新しい問題を作れます。",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "変化率を2つ示す需要の価格弾力性の問題を、同じ形式でいくつか出す。",
+            "各問でPEDと、需要が弾力的か非弾力的かを答えるよう促す。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_topic_drift",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 2.67,
+        "output": {
+          "reasoning": "The student is asking about feedback from an earlier interview-practice chat, and P5 explicitly includes interview practice. Open that chat to find what they were told to fix.",
+          "status": "need_more",
+          "missing": "The specific areas for improvement mentioned during the interview practice in P5.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P5",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "You helped me practice for interviews at some point. What did you say I should fix?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_topic_drift",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 2.0,
+        "output": {
+          "reasoning": "The opened chat summary already gives the interview feedback, so further material would only repeat it.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Tell the student the main fix: lead with the conclusion, then structure the answer using STAR and keep it within one minute."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_and_lecture_same_lap",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 2.93,
+        "output": {
+          "reasoning": "The student refers to a specific earlier chat about the club motor oscillating and asks to connect it to a PID lecture. The chat trail points clearly to P2, and the lecture is likely in the Robotics Seminar course, so fetch both sources.",
+          "status": "need_more",
+          "missing": "What was established in the motor-oscillation chat, and what the Robotics Seminar PID lecture covered.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P2",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "We talked in chat about my robotics club motor oscillating",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "PID control and motor oscillation",
+              "layer": "summaries",
+              "within": "C5",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the PID lecture",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "chat_and_lecture_same_lap",
+        "category": "chat.all",
+        "lap": 2,
+        "elapsed": 4.32,
+        "output": {
+          "reasoning": "The chat summary identifies the motor oscillation and the initial tuning advice, while the course outline confirms a PID lecture. To explain the connection accurately, I need the detailed chat and the lecture material.",
+          "status": "need_more",
+          "missing": "The specific circumstances and advice in the folded chat, plus the PID lecture’s explanation of oscillation, overshoot, and tuning.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "P2/S1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "We talked in chat",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "PID-Regelung DC-Motor Drehzahl Schwingung Überschwingen Abstimmung P- und D-Verstärkung",
+              "layer": "summaries",
+              "within": "C5/L2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the PID lecture",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "chat_and_lecture_same_lap",
+        "category": "chat.all",
+        "lap": 3,
+        "elapsed": 2.53,
+        "output": {
+          "reasoning": "The chat summary and PID lecture outline already give the key link: excessive P gain can cause oscillation, while D adds damping. No further material is needed to explain how they relate.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Connect the club motor’s oscillation when P gain was raised to the lecture’s point that too much P (or I) can cause overshoot and oscillation.",
+            "Relate the earlier suggestion to lower P and add D to D’s damping role from the lecture."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "thread_section_ref",
+        "category": "chat.thread",
+        "lap": 1,
+        "elapsed": 3.99,
+        "output": {
+          "reasoning": "They’re referring to the earlier factorial code in this conversation, and the folded section is specifically about recursion and the base case. I’ll retrieve that exchange to confirm the exact version.",
+          "status": "need_more",
+          "missing": "The exact factorial code with the base case changed to n <= 1, as shown earlier in the conversation.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "S1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "最初の方で見せてくれたfactorialのコード",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "thread_section_ref",
+        "category": "chat.thread",
+        "lap": 2,
+        "elapsed": 2.11,
+        "output": {
+          "reasoning": "S1 already confirms the n <= 1 base case and the original factorial context; the exact code is not in the summary, but the answerer can write it directly.",
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Show the recursive factorial code with `if n <= 1: return 1`."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "thread_vague_ref",
+        "category": "chat.thread",
+        "lap": 1,
+        "elapsed": 9.49,
+        "output": {
+          "reasoning": "They’re asking what was said in an earlier conversation about coursework for firmware, so the relevant past chat is the folded section about firmware careers and the job market.",
+          "status": "need_more",
+          "missing": "The specific courses or subjects previously recommended for preparing for firmware work.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "chat.thread",
+              "query": "ファームウェア職に必要な授業・履修科目について話した内容",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "結構前に言ってた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 2,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "thread_vague_ref",
+        "category": "chat.thread",
+        "lap": 2,
+        "elapsed": 3.56,
+        "output": {
+          "reasoning": "The folded conversation identifies the topic and likely answer, but its section summary doesn’t show which course names were mentioned. Open the relevant turn for the exact details.",
+          "status": "need_more",
+          "missing": "The exact coursework recommendations from the earlier firmware-career conversation.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "S3/T8",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "結構前に言ってた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "thread_terse_in_context",
+        "category": "chat.thread",
+        "lap": 1,
+        "elapsed": 4.4,
+        "output": {
+          "reasoning": "The student asks which courses support firmware work, and the course list includes a Robotics Seminar; checking its topics may identify course-relevant preparation. The question can also be answered generally, so I’ll only fetch the directly relevant course material.",
+          "status": "need_more",
+          "missing": "Which firmware-related topics, if any, are covered in the Robotics Seminar lectures.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware, embedded systems, microcontrollers, motor controllers, sensors, and hardware-software integration",
+              "layer": "summaries",
+              "within": "C5",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "ファームウェアに必要な授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "thread_recent_no_fetch",
+        "category": "chat.thread",
+        "lap": 1,
+        "elapsed": 3.43,
+        "output": {
+          "reasoning": "The student is following up on quicksort, which was just discussed in the context of their data structures material. Their course notes may clarify how random pivots improve quicksort’s behavior.",
+          "status": "need_more",
+          "missing": "How the CS 161 course explains the benefit of choosing a random pivot in quicksort.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "random pivot quicksort expected running time and worst case",
+              "layer": "summaries",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "pivotをランダムに選ぶ",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 3.17,
+        "output": {
+          "reasoning": "The student explicitly asks to look up a current application deadline, which requires external information. Search the web for Google's Summer 2027 SWE internship closing date.",
+          "status": "need_more",
+          "missing": "The current application closing date for Google's Summer 2027 SWE internship, ideally from an official Google careers listing.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Google Summer 2027 Software Engineering internship application deadline",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "look up when applications close",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 3.85,
+        "output": {
+          "reasoning": "The search result for Google's official careers listing appears most likely to contain the application timeline; the other result is general guidance and may not give Google's specific closing date.",
+          "status": "need_more",
+          "missing": "The official Google Careers listing's exact application deadline or current status for the Summer 2027 SWE internship.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "W1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "needs_external_info",
+              "grounds_quote": "when applications close",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_current_info",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 3.97,
+        "output": {
+          "reasoning": "The student asks who won this year's Nobel Prize in Physics, a current fact that requires an up-to-date external source. Today's date is 2026-09-30, before the 2026 Nobel announcements, so verify the announcement status rather than assume a winner.",
+          "status": "need_more",
+          "missing": "Whether the 2026 Nobel Prize in Physics has been announced yet, and the laureate(s) if so.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "2026 Nobel Prize in Physics announced laureates announcement date",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "needs_external_info",
+              "grounds_quote": "今年のノーベル物理学賞って誰がとったの？",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_not_needed_course_topic",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 3.51,
+        "output": {
+          "reasoning": "光合成は Biology 101 の明反応・暗反応に関する内容と明確に結びついているため、講義資料を確認します。ノートは日本語なので、その言語で検索します。",
+          "status": "need_more",
+          "missing": "Biology 101 の講義資料で、明反応と暗反応がどう説明・比較されているか。",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "光合成の明反応と暗反応の違い、光の必要性、反応場所、生成物とカルビン回路",
+              "layer": "summaries",
+              "within": "C3",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "光合成の明反応と暗反応",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_and_lecture",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 4.09,
+        "output": {
+          "reasoning": "The student asks to look up how a course concept is used in a current real-world database. Fetch the class material for their B-tree treatment and an external source on PostgreSQL's implementation.",
+          "status": "need_more",
+          "missing": "How the course explains B-trees, and how PostgreSQL uses and implements B-tree indexes in practice.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "B-tree",
+              "layer": "summaries",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "授業でやったB-tree",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "PostgreSQL official documentation B-tree indexes implementation use",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "実際のPostgreSQLではどう使われてるか調べて",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_and_lecture",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 4.28,
+        "output": {
+          "reasoning": "The course outline identifies the B-tree lecture, and the search snippet confirms PostgreSQL uses B-tree indexes for equality and range queries. The official documentation page can add the concrete details needed to connect the lecture to PostgreSQL.",
+          "status": "need_more",
+          "missing": "Specific details from PostgreSQL’s documentation about how its B-tree indexes are used and what operations they support.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "W1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "調べてみて",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "B-treeとB+treeの仕組み、データベースでの利用、範囲検索",
+              "layer": "summaries",
+              "within": "C1/L8",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でやったB-tree",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "web_and_lecture",
+        "category": "web.search",
+        "lap": 3,
+        "elapsed": 6.74,
+        "output": {
+          "reasoning": "The lecture outline establishes the class connection, and the search snippet confirms PostgreSQL’s B-tree indexes support equality and range queries. Opening the official documentation can provide concrete details about their use.",
+          "status": "need_more",
+          "missing": "More specific details from PostgreSQL’s official documentation on how B-tree indexes work and which queries they support.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "W1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "needs_external_info",
+              "grounds_quote": "実際のPostgreSQLではどう使われてるか調べてみて",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_limit_reached",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 2.48,
+        "output": {
+          "reasoning": "日程は最新の外部情報で、学生も調べるよう明示しています。公式発表や開催情報をウェブ検索します。",
+          "status": "need_more",
+          "missing": "2027年のICPCアジア地区予選の日程が発表済みかどうかと、発表されている場合の公式日程。",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "2027 ICPC Asia regional contest schedule dates official",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "調べて",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_limit_reached",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 2.83,
+        "output": {
+          "reasoning": "The first web search did not find an announcement of the 2027 Asia regional dates; its results concern 2026 events. I’ll try one differently phrased search for an official schedule.",
+          "status": "need_more",
+          "missing": "Whether ICPC has announced dates for the 2027 Asia regional contests.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "ICPC Asia regional contests 2027 dates schedule announcement",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "調べて",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_limit_reached",
+        "category": "web.search",
+        "lap": 3,
+        "elapsed": 4.35,
+        "output": {
+          "reasoning": "The prior searches did not identify a 2027 schedule. The regional schedule page may clarify whether dates are published or set separately by regional site, so open that result.",
+          "status": "need_more",
+          "missing": "Whether the official ICPC regional schedule page lists 2027 Asia regional dates or explains when regional sites publish them.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "W3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "explicit_request",
+              "grounds_quote": "調べて",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "none_personal",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 3.88,
+        "output": {
+          "reasoning": "This is a personal wellbeing concern, and the answerer can respond supportively with general sleep guidance. The student did not ask to revisit a prior chat or look up medical information.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Respond empathetically and offer a few practical, low-risk suggestions for sleep and fatigue.",
+            "Encourage seeking professional help if the problem persists, worsens, or affects daily functioning."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "none_hobby",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 3.45,
+        "output": {
+          "reasoning": "This is casual conversation about an anime; no course material or outside lookup is needed.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Respond warmly and invite them to chat about Frieren, perhaps asking what they think of it or who their favorite character is."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "none_general_knowledge",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 3.77,
+        "output": {
+          "reasoning": "This is a general programming question and can be answered without the student's materials or outside sources.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that iteration is often faster due to lower function-call and stack overhead, but the difference depends on the language and implementation.",
+            "Note that recursion may be clearer and can be optimized in some languages; choose based on performance needs and readability."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "none_terse_no_pointer",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 10.25,
+        "output": {
+          "reasoning": "「必要な授業」はファームウェア開発に役立つ科目を尋ねているようです。手元の科目一覧にある授業がどれだけ関連するか確認します。",
+          "status": "need_more",
+          "missing": "履修中の授業のうち、ファームウェア開発に直接役立つ内容を扱うものがあるか。",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "embedded systems, microcontrollers, firmware, low-level programming, computer architecture, C programming, hardware interfaces",
+              "layer": "summaries",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "ファームウェアに必要な授業",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "microcontrollers, embedded systems, firmware, sensors, actuators, hardware interfaces",
+              "layer": "summaries",
+              "within": "C5",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "ファームウェアに必要な授業",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "microcontrollers, embedded systems, firmware, digital logic, computer architecture, C programming",
+              "layer": "summaries",
+              "within": "C4",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "ファームウェアに必要な授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "none_tangent_aha_candidate",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.98,
+        "output": {
+          "reasoning": "This is a general question about a common experience, with no reference to course material or a request for current information. The answerer can explain likely reasons and offer sensible pacing advice without fetching anything.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain common reasons a new runner may get out of breath quickly, such as starting too fast and needing time to build aerobic fitness.",
+            "Offer practical pacing advice and mention warning signs that warrant medical attention."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "none_thanks",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.62,
+        "output": {
+          "reasoning": "This is a simple thank-you with no request for course materials or outside information.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Respond warmly and briefly."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 1,
+        "elapsed": 3.46,
+        "output": {
+          "reasoning": "The student asks about a specific recommendation made by their economics professor, which is likely recorded in the course materials or a past chat. The course transcript is the best source for the professor’s exact recommendation.",
+          "status": "need_more",
+          "missing": "The title of the book recommended by the Intro Microeconomics professor.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "book recommendation recommended book",
+              "layer": "transcript",
+              "within": "C2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the econ professor recommended",
+              "relation": "direct"
+            },
+            {
+              "op": "find",
+              "target": "chat.all",
+              "query": "economics professor recommended book title",
+              "layer": "none",
+              "within": "none",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the econ professor recommended",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 2,
+        "elapsed": 3.28,
+        "output": {
+          "reasoning": "The search surfaced two likely economics lectures, but their summaries do not identify the recommended book. The professor’s passing recommendation is most likely preserved in a transcript, so I’ll search the economics course transcripts for it.",
+          "status": "need_more",
+          "missing": "The title of the book the economics professor recommended, as mentioned in class.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "本の推薦、教授が授業中に勧めた本",
+              "layer": "transcript",
+              "within": "C2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the econ professor recommended",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 3,
+        "elapsed": 6.89,
+        "output": {
+          "reasoning": "The searches surfaced three economics lectures but no recommendation details. Since the student asks what the professor recommended, the transcript is the best place to look for a passing mention.",
+          "status": "need_more",
+          "missing": "The title of the book the economics professor recommended, if mentioned in the lecture transcript.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "libro recomendado por el profesor, recomendación de lectura o libro",
+              "layer": "transcript",
+              "within": "C2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the econ professor recommended",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 4,
+        "elapsed": 2.78,
+        "output": {
+          "reasoning": "The earlier searches only surfaced likely lectures; the professor’s actual recommendation is still missing. Check the lecture transcripts for the passing recommendation.",
+          "status": "need_more",
+          "missing": "The title of the book the economics professor recommended in class.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Buch empfohlen, Lektüre oder Buchtitel des Professors",
+              "layer": "transcript",
+              "within": "C2",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the econ professor recommended",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.018571616663669698
+}

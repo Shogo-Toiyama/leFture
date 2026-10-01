@@ -1,0 +1,307 @@
+{
+  "id": "learning_deep_dive_ja",
+  "language": "ja",
+  "scenario": "learning_deep_dive",
+  "qualitative_checks": [],
+  "final_blocks": [
+    {
+      "block_index": 1,
+      "turn_start": 1,
+      "turn_end": 10,
+      "sections": [
+        {
+          "handle": 1,
+          "title": "二分探索木とソート済み配列の検索・更新",
+          "bullets": [
+            "検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。"
+          ],
+          "turns": [
+            1
+          ]
+        },
+        {
+          "handle": 2,
+          "title": "AVL木の平衡維持と授業での平衡因子",
+          "bullets": [
+            "AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。",
+            "この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF<0で、LLケースでは崩れた頂点を軸に右回転を1回行う。"
+          ],
+          "turns": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "handle": 3,
+          "title": "データベース索引で使われるB-tree",
+          "bullets": [
+            "データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。",
+            "高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。"
+          ],
+          "turns": [
+            5,
+            6
+          ]
+        },
+        {
+          "handle": 4,
+          "title": "AVL木と赤黒木の違い・利用例",
+          "bullets": [
+            "AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。",
+            "C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。"
+          ],
+          "turns": [
+            7,
+            8
+          ]
+        },
+        {
+          "handle": 5,
+          "title": "BSTの削除と後継値を使う理由",
+          "bullets": [
+            "削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。",
+            "右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。"
+          ],
+          "turns": [
+            9,
+            10
+          ]
+        }
+      ],
+      "header": {
+        "style_preferences": [],
+        "context": [
+          {
+            "text": "この授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。",
+            "source_turn": 3
+          }
+        ],
+        "purpose": [
+          {
+            "text": "二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。",
+            "source_turn": 1
+          }
+        ],
+        "unresolved": []
+      }
+    },
+    {
+      "block_index": 2,
+      "turn_start": 11,
+      "turn_end": 20,
+      "sections": [
+        {
+          "handle": 6,
+          "title": "AVL木の回転練習と平衡因子（続き）",
+          "bullets": [
+            "来週のテストに向けて回転を練習。LL/RRは1回転、LR/RLは子側を回してから全体を回す。10を根、5を左、15を右、5の左に3を置き、さらに1を挿入した例では、5を軸に右回転するLLケースと確認した。",
+            "授業の定義「右部分木の高さ−左部分木の高さ」では、1を追加した直後の5の平衡因子は−2と説明された。負の値が左への偏りを示し、標準的な教科書の符号とは逆なのでテストで注意する。学生は回転が少し理解でき、符号をテストで間違えそうな点に気づけてよかったと述べた。"
+          ],
+          "turns": [
+            11,
+            12,
+            13,
+            14,
+            19,
+            20
+          ]
+        },
+        {
+          "handle": 7,
+          "title": "B-treeの分岐数と高さ（続き）",
+          "bullets": [
+            "B-treeの分岐数は次数で決まり、ディスクブロックに格納できるキー数が目安になる。4KBのブロックと8バイトのキーなら理論上は数百個を格納でき、実際のデータベースでは次数100〜200程度がよく使われると説明された。",
+            "分岐数が大きいため、高さ3〜4程度でも数百万〜数十億件を扱えると説明された。"
+          ],
+          "turns": [
+            15,
+            16
+          ]
+        },
+        {
+          "handle": 8,
+          "title": "B+treeの構造と範囲検索（続き）",
+          "bullets": [
+            "B-treeは内部ノードにも実データまたはポインタを持つ一方、B+treeは内部ノードにキーを置き、実データを葉ノードに集める。葉ノード同士は連結されることが多く、MySQLのInnoDBなど多くのデータベースがB+treeを使うと説明された。",
+            "範囲検索では最初の該当葉ノードを見つけた後、連結された葉をたどれるため速いと説明された。"
+          ],
+          "turns": [
+            17,
+            18
+          ]
+        }
+      ],
+      "header": {
+        "style_preferences": [],
+        "context": [
+          {
+            "text": "授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。",
+            "source_turn": 3
+          },
+          {
+            "text": "来週テストがあり、AVL木の回転手順を覚えるのが苦手。",
+            "source_turn": 12
+          }
+        ],
+        "purpose": [
+          {
+            "text": "二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。",
+            "source_turn": 1
+          }
+        ],
+        "unresolved": []
+      }
+    }
+  ],
+  "final_header": {
+    "style_preferences": [],
+    "context": [
+      {
+        "text": "授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。",
+        "source_turn": 3
+      },
+      {
+        "text": "来週テストがあり、AVL木の回転手順を覚えるのが苦手。",
+        "source_turn": 12
+      }
+    ],
+    "purpose": [
+      {
+        "text": "二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。",
+        "source_turn": 1
+      }
+    ],
+    "unresolved": []
+  },
+  "probe_results": [
+    {
+      "probe_id": "avl_balance_factor_convention",
+      "history_through_round": 18,
+      "probe_question": "めちゃくちゃ納得した。じゃあ最後に、さっき出してくれた木(10, 5, 15, 5の左に3)に、さらに1を追加した後の木で、教授の定義(さっき言ってた逆の定義)で平衡因子を計算するとどうなる?",
+      "gold_reference_answer": "教授の定義だとBF = height(右) − height(左) だったね。1を追加した直後の5のノードで見ると、左部分木(3,1)の高さが1、右部分木は無し(高さ−1として計算)だから、BF = −1 − 1 = −2。教授の定義だと負の値が「左に偏りすぎ」を意味するから、これはさっき解いたのと同じLLケースに当たる。標準の教科書の符号(+2)とは逆になるから、テストで符号だけ見て慌てないようにね。",
+      "expected_tier": "block1",
+      "why_it_matters": "round3で一度しか出てこない、この授業だけの特殊な取り決め。畳んだ後も残らないと、テスト対策として致命的に間違った答えになる。",
+      "context_stats": {
+        "raw_condition_rounds": 18,
+        "summarized_condition_raw_rounds": 8,
+        "summarized_condition_blocks": 1
+      },
+      "raw_condition": {
+        "answer": "よし、整理していこう！\n\n教授の定義は **BF = height(右部分木) − height(左部分木)** だったね。\nまず、1を挿入した直後の状態（回転前）を整理するよ。\n\n### 1. 木の構造\n*   10 (根)\n    *   左: 5\n        *   左: 3\n            *   左: 1\n    *   右: 15\n\n### 2. 各ノードの高さ(height)\n（葉ノードの高さを1としてカウントするね）\n*   1: 高さ1\n*   3: 高さ2\n*   5: 高さ3\n*   15: 高さ1\n*   10: 高さ4\n\n### 3. 平衡因子 (BF = 右 - 左) を計算してみよう\n*   **ノード3**: 右は空(0) - 左はノード1(1) = **BF -1**\n*   **ノード5**: 右は空(0) - 左はノード3(2) = **BF -2**\n*   **ノード10**: 右はノード15(1) - 左はノード5(3) = **BF -2**\n\n### 4. 解説\nこの場合、**ノード5**で初めてBFが-2（左に偏りすぎ）が発生しているね。\n今回の授業の定義だと、左側が重いと数値がマイナスになるから、**BF < 0 かつ「左の子のBFが負」の状態**だから、ここでLL回転（右回転）が必要になるんだ。\n\nちなみに、ノード10もBFが-2になっているけど、これは下の方の偏りが伝搬している状態。AVL木のアルゴリズムでは、挿入後に「一番下の崩れた箇所（今回はノード5）」を見つけて、そこを回転させてバランスを整えるのが鉄則だよ。\n\n回転後の状態もイメージできそう？それとも、今の計算で「右引く左」の符号の感覚はしっくりきたかな？",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "教授の定義は 右の高さ − 左の高さ (標準とは逆)。左偏りがBF<0、右偏りがBF>0になる",
+              "present": true,
+              "note": "The answer states the professor's definition as BF = height(right subtree) - height(left subtree) and calculates BF values, noting that a left imbalance results in a negative BF."
+            },
+            {
+              "fact": "この木でのBFは −2 (符号は逆だが、これはLLケースに相当)",
+              "present": true,
+              "note": "The answer correctly identifies that node 5 has a BF of -2, which is a left imbalance, and states that this corresponds to an LL case, despite the sign convention being opposite to the standard definition."
+            }
+          ],
+          "violation_results": [
+            {
+              "fact": "標準の定義(左−右)だけで計算して、符号の逆転に触れない",
+              "violated": false,
+              "note": "The answer explicitly uses the professor's definition (right - left) and discusses the sign convention."
+            },
+            {
+              "fact": "左偏りがBF>0になる、と誤って言う(標準の教科書の符号と混同している)",
+              "violated": false,
+              "note": "The answer correctly states that a left imbalance results in a negative BF according to the professor's definition."
+            }
+          ],
+          "overall_pass": true
+        }
+      },
+      "summarized_condition": {
+        "answer": "よし、確認しよう！まず、現在の木の構造を整理するね。\n\n1.  **挿入前**: 10(根) - 左に5、右に15。5 - 左に3。\n2.  **1を挿入後**: 3の左に1が入る。\n\nこの時の構造はこうなるよ：\n- **10**: 右(15)の高さ1、左(5-3-1)の高さ2。\n- **5**: 右(空)の高さ0、左(3-1)の高さ2。\n- **3**: 右(空)の高さ0、左(1)の高さ1。\n- **1**: 葉なので高さ0。\n\nここで、**「平衡因子(BF) = 右部分木の高さ − 左部分木の高さ」**という定義で計算してみよう。\n\n*   **ノード1**: BF = 0 - 0 = **0**\n*   **ノード3**: BF = 0 - 1 = **-1**\n*   **ノード5**: BF = 0 - 2 = **-2** （ここでバランスが崩れる！）\n*   **ノード15**: BF = 0 - 0 = **0**\n*   **ノード10**: BF = 1 - 2 = **-1**\n\nノード5が「-2」になったね。左側が重すぎる状態だ。\nこの授業の定義だと、左に偏っているときはBFがマイナスになるから、**BF < -1 が回転のトリガー**になるわけだね。\n\nこれでテストで平衡因子を求めるときも、符号を間違えずに計算できそう？ちなみに、もしこれが実務のデータベース設計だったら、これだけ高さに差がある木は検索性能に直結するから、迷わず再構築されるはずだよ。",
+        "summary_text": "## 二分探索木とソート済み配列の検索・更新\n- 検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。\n\n## AVL木の平衡維持と授業での平衡因子\n- AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。\n- この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF<0で、LLケースでは崩れた頂点を軸に右回転を1回行う。\n\n## データベース索引で使われるB-tree\n- データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。\n- 高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。\n\n## AVL木と赤黒木の違い・利用例\n- AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。\n- C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。\n\n## BSTの削除と後継値を使う理由\n- 削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。\n- 右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。",
+        "header_text": "Context for this conversation: この授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。\nPurpose of this conversation: 二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "教授の定義は 右の高さ − 左の高さ (標準とは逆)。左偏りがBF<0、右偏りがBF>0になる",
+              "present": true,
+              "note": "The answer states that the definition of the balance factor is 'right subtree height - left subtree height', and that a left imbalance results in a negative BF."
+            },
+            {
+              "fact": "この木でのBFは −2 (符号は逆だが、これはLLケースに相当)",
+              "present": true,
+              "note": "The answer correctly calculates the balance factor for node 5 as -2, which is identified as the point where the balance is broken, and implies it's a left-heavy situation."
+            }
+          ],
+          "violation_results": [
+            {
+              "fact": "標準の定義(左−右)だけで計算して、符号の逆転に触れない",
+              "violated": false,
+              "note": "The answer explicitly uses the 'right - left' definition and mentions that this is the definition being used."
+            },
+            {
+              "fact": "左偏りがBF>0になる、と誤って言う(標準の教科書の符号と混同している)",
+              "violated": false,
+              "note": "The answer correctly states that a left imbalance results in a negative BF according to the definition provided."
+            }
+          ],
+          "overall_pass": true
+        }
+      }
+    },
+    {
+      "probe_id": "btree_order_recall",
+      "history_through_round": 26,
+      "probe_question": "今日はほんと勉強になった。そういえば、さっきDBの次数の話してたけど、具体的に何個くらいって言ってたっけ?",
+      "gold_reference_answer": "1ブロック4KBでキー8バイトの例で計算して、理論上は数百個詰め込めるけど、実際のDBだと大体100〜200くらいの次数がよく使われる、って話したね。高さ3〜4で数百万〜数十億件を扱える、っていうのもポイントだったよ。",
+      "expected_tier": "block2",
+      "why_it_matters": "round15の具体的な数値は、round25の2回目の畳みでblock2に入る。1段目→2段目と畳まれても、数値がぼやけずに残るかを見る。",
+      "context_stats": {
+        "raw_condition_rounds": 26,
+        "summarized_condition_raw_rounds": 6,
+        "summarized_condition_blocks": 2
+      },
+      "raw_condition": {
+        "answer": "お疲れさま！いい流れで復習できたね。\n\nB-treeの次数（1ノードに持てるキーの最大数）についてだね。\n明確に「これ」という決まりはないんだけど、実務では**100〜200くらい**に設定されることが多いよ。\n\n理由は、さっき言った**ディスクI/Oの効率**だね。\n多くのOSやストレージシステムは、ディスクからデータを読み込むときに「ブロック」や「ページ」という単位（例えば4KB）でまとめて読み込むんだ。\n\n*   **キーのサイズ:** 仮に8バイトの整数値だとしよう。\n*   **1ブロックのサイズ:** 4096バイト（4KB）だとする。\n\nこの1ブロックを無駄なく使い切れるくらいの個数を詰め込むのが一番効率がいいんだ。あまり次数を小さくしすぎると木が深くなってディスクアクセスが増えるし、逆に大きくしすぎると、今度はノード内のデータを検索する（CPUの）コストが無視できなくなってくる。そのバランスを取ると、だいたい100〜200の範囲に収まることが多いというわけだね。\n\n来週のテスト、このあたりの「なぜそうするのか（トレードオフ）」の理由を説明できると、かなり高得点狙えるはずだよ！\n\n他に何か、テストで不安な項目とかはある？今のうちに潰しておこう！",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "実際のDBでは大体100〜200くらいの次数",
+              "present": true,
+              "note": "The answer states that in practice, the degree is often set to around 100 to 200."
+            },
+            {
+              "fact": "高さ3〜4で数百万〜数十億件を扱える",
+              "present": false,
+              "note": "The answer explains the reasoning behind the degree choice in relation to disk I/O and node search costs but does not mention the number of records that can be handled with a height of 3-4."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": false
+        }
+      },
+      "summarized_condition": {
+        "answer": "お疲れ様！AVLから赤黒木まで整理できて、頭の中がかなりスッキリしたんじゃないかな。\n\nB-treeの次数（分岐数）については、授業では**「ディスクブロック（ページ）のサイズに合わせる」**のが基本という話だったね。\n\n具体的にはこんなイメージだよ：\n*   **物理的な制約**: ディスクの読み書きは「ブロック」という単位で行われることが多くて、1ブロックは標準的なサイズ（例えば4KB）なんだ。\n*   **計算の目安**: ノードには「キー」と「子へのポインタ」を格納するよね。もしキーが8バイト、ポインタが8バイトだとしたら、1ノードにそれらを合計100〜200個くらい詰め込める計算になる。\n*   **結論**: だから、実際のデータベースのインデックス（B-tree）では、**次数100〜200程度**がよく使われると説明されていたよ。\n\nこうすると、深さが3〜4あるだけで、数百万〜数十億件ものデータを扱えるんだから効率的だよね。\n\n来週のテストに向けて、AVLの回転と平衡因子の符号（右－左）には気をつけて頑張ってね！もしテスト対策で「ここがまだ不安」っていうポイントがあれば、いつでも聞いて。テストが終わったら、このデータ構造たちが実際にどんなアプリでどう使われているか、少し応用的な話もできるよ！",
+        "summary_text": "## 二分探索木とソート済み配列の検索・更新\n- 検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。\n\n## AVL木の平衡維持と授業での平衡因子\n- AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。\n- この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF<0で、LLケースでは崩れた頂点を軸に右回転を1回行う。\n\n## データベース索引で使われるB-tree\n- データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。\n- 高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。\n\n## AVL木と赤黒木の違い・利用例\n- AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。\n- C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。\n\n## BSTの削除と後継値を使う理由\n- 削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。\n- 右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。\n\n## AVL木の回転練習と平衡因子（続き）\n- 来週のテストに向けて回転を練習。LL/RRは1回転、LR/RLは子側を回してから全体を回す。10を根、5を左、15を右、5の左に3を置き、さらに1を挿入した例では、5を軸に右回転するLLケースと確認した。\n- 授業の定義「右部分木の高さ−左部分木の高さ」では、1を追加した直後の5の平衡因子は−2と説明された。負の値が左への偏りを示し、標準的な教科書の符号とは逆なのでテストで注意する。学生は回転が少し理解でき、符号をテストで間違えそうな点に気づけてよかったと述べた。\n\n## B-treeの分岐数と高さ（続き）\n- B-treeの分岐数は次数で決まり、ディスクブロックに格納できるキー数が目安になる。4KBのブロックと8バイトのキーなら理論上は数百個を格納でき、実際のデータベースでは次数100〜200程度がよく使われると説明された。\n- 分岐数が大きいため、高さ3〜4程度でも数百万〜数十億件を扱えると説明された。\n\n## B+treeの構造と範囲検索（続き）\n- B-treeは内部ノードにも実データまたはポインタを持つ一方、B+treeは内部ノードにキーを置き、実データを葉ノードに集める。葉ノード同士は連結されることが多く、MySQLのInnoDBなど多くのデータベースがB+treeを使うと説明された。\n- 範囲検索では最初の該当葉ノードを見つけた後、連結された葉をたどれるため速いと説明された。",
+        "header_text": "Context for this conversation: 授業では平衡因子を「右部分木の高さ−左部分木の高さ」と定義し、テストもこの符号で採点する。; 来週テストがあり、AVL木の回転手順を覚えるのが苦手。\nPurpose of this conversation: 二分探索木、AVL木、B-tree、赤黒木の性質や操作を学ぶ。",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "実際のDBでは大体100〜200くらいの次数",
+              "present": true,
+              "note": "The answer states that in actual databases, a degree of about 100-200 is often used for B-tree indexes."
+            },
+            {
+              "fact": "高さ3〜4で数百万〜数十億件を扱える",
+              "present": true,
+              "note": "The answer explains that with a depth of 3-4, millions to billions of records can be handled efficiently."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      }
+    }
+  ]
+}

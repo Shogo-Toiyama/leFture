@@ -1,0 +1,144 @@
+{
+  "id": "emotional_arc_en",
+  "language": "en",
+  "scenario": "emotional_arc_consultation",
+  "qualitative_checks": [
+    "全体を通して口調が「不安 → やる気 → 自信」の流れに合っているか(要約された文脈で答えるときに、急に無関係な励まし方をしていないか)。",
+    "round4のクラブ名(Ironclad Robotics)のような、感情の根拠になった具体的な出来事が、要約の中で名前ごと残っているか。"
+  ],
+  "final_blocks": [
+    {
+      "block_index": 1,
+      "turn_start": 1,
+      "turn_end": 10,
+      "sections": [
+        {
+          "handle": 1,
+          "title": "Choosing a CS Direction Through Robotics Experience",
+          "bullets": [
+            "The student is unsure whether to pursue hardware/embedded systems or software/web development and feels behind peers who seem certain. Hardware appeals because it is tangible; software seems more flexible and offers more jobs.",
+            "They joined Ironclad Robotics, which is building a bot for a regional competition, and help with drivetrain and motor control. They feel more energized by this work than expected.",
+            "They remain concerned about job prospects, partly because their older brother earns a comfortable living in software. Learning about overlap in firmware, robotics software, and controls made them feel better about the choice and their anxiety about picking wrong; they agreed the path can be adjusted over time."
+          ],
+          "turns": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ],
+      "header": {
+        "style_preferences": [],
+        "context": [
+          {
+            "text": "The student is a CS student exploring hardware/embedded systems versus software/web development; they are energized by drivetrain and motor-control work with Ironclad Robotics, which is building a bot for a regional competition.",
+            "source_turn": 2
+          },
+          {
+            "text": "The student worries about job-market differences and has an older brother who works in software and earns a comfortable living.",
+            "source_turn": 7
+          }
+        ],
+        "purpose": [
+          {
+            "text": "Explore the student's major and career direction while they feel stressed about choosing the wrong path.",
+            "source_turn": 1
+          }
+        ],
+        "unresolved": [
+          {
+            "text": "The student has not yet responded to the suggestion to explore robotics-software-adjacent roles through the club or a summer opportunity.",
+            "source_turn": 10
+          }
+        ]
+      }
+    }
+  ],
+  "final_header": {
+    "style_preferences": [],
+    "context": [
+      {
+        "text": "The student is a CS student exploring hardware/embedded systems versus software/web development; they are energized by drivetrain and motor-control work with Ironclad Robotics, which is building a bot for a regional competition.",
+        "source_turn": 2
+      },
+      {
+        "text": "The student worries about job-market differences and has an older brother who works in software and earns a comfortable living.",
+        "source_turn": 7
+      }
+    ],
+    "purpose": [
+      {
+        "text": "Explore the student's major and career direction while they feel stressed about choosing the wrong path.",
+        "source_turn": 1
+      }
+    ],
+    "unresolved": [
+      {
+        "text": "The student has not yet responded to the suggestion to explore robotics-software-adjacent roles through the club or a summer opportunity.",
+        "source_turn": 10
+      }
+    ]
+  },
+  "probe_results": [
+    {
+      "probe_id": "job_market_nuance_recall",
+      "history_through_round": 18,
+      "probe_question": "it has been. oh also, remind me what you said about the job market thing again? I want to bring it up with my brother",
+      "gold_reference_answer": "I'd mentioned that it's not really a strict binary between hardware and software job markets — fields like firmware, robotics software, and controls engineering sit right in the overlap, and they're real, often well-compensated career paths. So exploring the Ironclad/firmware direction doesn't mean giving up on solid job prospects, it's more like finding a niche that combines both things you're drawn to.",
+      "expected_tier": "block1",
+      "why_it_matters": "Round 7's point is the practical anchor the whole consultation builds toward. It's in block1 after the round-15 fold, and the student explicitly asks for it again to repeat to their brother — a wrong or vague answer would be a real, visible failure to the user.",
+      "context_stats": {
+        "raw_condition_rounds": 18,
+        "summarized_condition_raw_rounds": 8,
+        "summarized_condition_blocks": 1
+      },
+      "raw_condition": {
+        "answer": "That’s a great conversation to have with him!\n\nThe main point was that the job market isn't a strict \"hardware vs. software\" binary. Many of the most interesting and well-compensated roles actually live in the overlap between the two. \n\nYou can frame it to him like this:\n* **The \"Spectrum\" of Roles:** There are plenty of roles—like firmware engineering, robotics software, or IoT development—that are heavy on software but involve working with physical hardware.\n* **The Value of the Skillset:** These roles are often in high-demand fields like automotive, aerospace, medical devices, and robotics. Because it requires both coding ability and an understanding of physical systems, that combination of skills is actually a competitive advantage.\n* **No \"Lock-in\":** A general CS degree provides a solid foundation for both, so you don't have to pigeonhole yourself right now. You can keep your software options open while building specialized experience in things like robotics on the side.\n\nBasically, you aren't choosing between \"money/flexibility\" and \"doing what I like\"—you’re just choosing to aim for a niche where you can get both. Does that help you get the point across to him?",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "hardware vs. software job markets are not a strict binary",
+              "present": true,
+              "note": "The answer states that the job market isn't a strict 'hardware vs. software' binary."
+            },
+            {
+              "fact": "firmware / robotics software / controls engineering sit in the overlap and are well-compensated",
+              "present": true,
+              "note": "The answer mentions firmware engineering, robotics software, and IoT development as roles in the overlap that are heavy on software but involve physical hardware, and implies these are well-compensated by stating they are in high-demand fields and offer both money and flexibility."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      },
+      "summarized_condition": {
+        "answer": "That’s a great idea; bringing it up with your brother is a smart move, especially since he’s already navigated the industry.\n\nWhen we talked about the job market, the main takeaway was that you don't have to view \"hardware\" and \"software\" as two completely separate, walled-off career paths. Here are the key points you can mention to him:\n\n*   **The \"Grey\" Area:** There is a huge amount of overlap in fields like **embedded systems, robotics software, and firmware engineering**. These roles sit right in the middle, requiring both a strong software foundation and an understanding of hardware constraints.\n*   **Skill Portability:** Because you’re doing Computer Science, you’re gaining core skills (like algorithms, data structures, and software architecture) that are highly valued in any sector. If you spend time in firmware/robotics and later decide you want to try pure web dev or backend software, you won't be \"starting over\"—you'll just be shifting your focus.\n*   **The \"Value\" Factor:** Firmware engineers and robotics software engineers are often in high demand because those roles require a unique hybrid of skills that many pure-software developers don't have. It's a specialized niche that can actually be quite lucrative.\n*   **Career Fluidity:** It’s very common for people to jump back and forth between roles over a 30-year career. Starting in a specialized area like robotics actually gives you a broader \"toolbox\" than staying in only one type of development.\n\nIt might be interesting to ask him what he thinks about that \"hybrid\" path—he might have some cool insights on how often he sees software teams having to work closely with embedded teams! Does he do any work that touches the hardware side, or is he strictly on the application/web layer?",
+        "summary_text": "## Choosing a CS Direction Through Robotics Experience\n- The student is unsure whether to pursue hardware/embedded systems or software/web development and feels behind peers who seem certain. Hardware appeals because it is tangible; software seems more flexible and offers more jobs.\n- They joined Ironclad Robotics, which is building a bot for a regional competition, and help with drivetrain and motor control. They feel more energized by this work than expected.\n- They remain concerned about job prospects, partly because their older brother earns a comfortable living in software. Learning about overlap in firmware, robotics software, and controls made them feel better about the choice and their anxiety about picking wrong; they agreed the path can be adjusted over time.",
+        "header_text": "Context for this conversation: The student is a CS student exploring hardware/embedded systems versus software/web development; they are energized by drivetrain and motor-control work with Ironclad Robotics, which is building a bot for a regional competition.; The student worries about job-market differences and has an older brother who works in software and earns a comfortable living.\nPurpose of this conversation: Explore the student's major and career direction while they feel stressed about choosing the wrong path.\nUnresolved items: The student has not yet responded to the suggestion to explore robotics-software-adjacent roles through the club or a summer opportunity.",
+        "judge": {
+          "include_results": [
+            {
+              "fact": "hardware vs. software job markets are not a strict binary",
+              "present": true,
+              "note": "The answer states that the job market doesn't require viewing 'hardware' and 'software' as two completely separate paths, and mentions a 'grey' area with overlap."
+            },
+            {
+              "fact": "firmware / robotics software / controls engineering sit in the overlap and are well-compensated",
+              "present": true,
+              "note": "The answer explicitly mentions 'embedded systems, robotics software, and firmware engineering' as roles in the overlap and states that these specialized niches can be 'quite lucrative'."
+            }
+          ],
+          "violation_results": [],
+          "overall_pass": true
+        }
+      }
+    }
+  ]
+}

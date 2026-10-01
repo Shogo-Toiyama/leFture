@@ -1,0 +1,519 @@
+[
+  {
+    "language": "ja",
+    "sections_in": 15,
+    "groups_out": 6,
+    "valid": true,
+    "error": null,
+    "chars_in": 2432,
+    "chars_out": 1150,
+    "ratio": 0.47,
+    "input": [
+      {
+        "handle": 1,
+        "title": "再帰関数とループの比較",
+        "bullets": [
+          "Pythonの再帰的なfactorialは、`n == 0`で1を返す基本ケースと、`n * factorial(n - 1)`で計算する再帰ケースで書ける。基本ケースを`n <= 1`にすれば0と1の両方に対応する。",
+          "再帰呼び出しはスタックに積まれ、基本ケースの後に戻りながら計算する。Pythonでは深くなりすぎると、既定の上限（約1000回）で`RecursionError`になることがある。",
+          "大きなnには、スタックを使わないループ版が実用上より安全。一般にループは関数呼び出しのオーバーヘッドがない分速い傾向がある一方、木構造や分割統治では再帰が自然な場合がある。"
+        ],
+        "turns": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "handle": 2,
+        "title": "分割統治とソートアルゴリズム",
+        "bullets": [
+          "分割統治の例としてマージソートとクイックソートが挙げられた。マージソートは配列を再帰的に分割し、ソート済みの部分をmergeで統合する実装を確認した。",
+          "マージソートの計算量はO(n log n)：分割はlog n段階で、各段階のmergeはO(n)。",
+          "マージソートは分割を均等にし統合時に処理する一方、クイックソートはpivotによる分割時に処理する。平均計算量はどちらもO(n log n)だが、クイックソートはpivot次第で最悪O(n²)になる。"
+        ],
+        "turns": [
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "handle": 3,
+        "title": "二分探索木とソート済み配列の検索・更新",
+        "bullets": [
+          "検索はどちらも概ねO(log n)。挿入・削除は配列がO(n)なのに対し、平衡したBSTはO(log n)だが、偏るとBSTも最悪O(n)になる。"
+        ],
+        "turns": [
+          11
+        ]
+      },
+      {
+        "handle": 4,
+        "title": "AVL木の平衡維持と授業での平衡因子",
+        "bullets": [
+          "AVL木は挿入・削除後に平衡因子を確認し、崩れたらLL・RR・LR・RLの回転で直す。",
+          "この授業の平衡因子は「右部分木の高さ−左部分木の高さ」。左偏りはBF<0で、LLケースでは崩れた頂点を軸に右回転を1回行う。"
+        ],
+        "turns": [
+          12,
+          13,
+          14
+        ]
+      },
+      {
+        "handle": 5,
+        "title": "データベース索引で使われるB-tree",
+        "bullets": [
+          "データベースやファイルシステムではB-tree／B+treeがよく使われる。1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。",
+          "高さhの木では根から葉まで最大h回のディスクアクセスが必要で、数百万件でも高さ3〜4ほどになる場合がある。"
+        ],
+        "turns": [
+          15,
+          16
+        ]
+      },
+      {
+        "handle": 6,
+        "title": "AVL木と赤黒木の違い・利用例",
+        "bullets": [
+          "AVL木は高さの差を1以内に保つため検索に有利だが、更新時に回転が多くなりやすい。赤黒木は色分けなどのルールでより緩く平衡を保ち、更新時の回転が少ない。",
+          "C++のstd::mapやJavaのTreeMapは赤黒木を採用している。AVL木は授業で扱われる一方、実用では赤黒木が選ばれがち。"
+        ],
+        "turns": [
+          17,
+          18
+        ]
+      },
+      {
+        "handle": 7,
+        "title": "BSTの削除と後継値を使う理由",
+        "bullets": [
+          "削除は、葉ならそのまま削除、子が1つなら子を繰り上げ、子が2つなら右部分木の最小値（または左部分木の最大値）で置き換える。",
+          "右部分木の最小値は削除対象より大きい値のうち最小なので、置き換えてもBSTの大小関係が保たれる。"
+        ],
+        "turns": [
+          19,
+          20
+        ]
+      },
+      {
+        "handle": 8,
+        "title": "AVL木の回転練習と平衡因子（続き）",
+        "bullets": [
+          "来週のテストに向けて回転を練習。LL/RRは1回転、LR/RLは子側を回してから全体を回す。10を根、5を左、15を右、5の左に3を置き、さらに1を挿入した例では、5を軸に右回転するLLケースと確認した。",
+          "授業の定義「右部分木の高さ−左部分木の高さ」では、1を追加した直後の5の平衡因子は−2と説明された。負の値が左への偏りを示し、標準的な教科書の符号とは逆なのでテストで注意する。学生は回転が少し理解でき、符号をテストで間違えそうな点に気づけてよかったと述べた。"
+        ],
+        "turns": [
+          21,
+          22,
+          23,
+          24,
+          29,
+          30
+        ]
+      },
+      {
+        "handle": 9,
+        "title": "B-treeの分岐数と高さ（続き）",
+        "bullets": [
+          "B-treeの分岐数は次数で決まり、ディスクブロックに格納できるキー数が目安になる。4KBのブロックと8バイトのキーなら理論上は数百個を格納でき、実際のデータベースでは次数100〜200程度がよく使われると説明された。",
+          "分岐数が大きいため、高さ3〜4程度でも数百万〜数十億件を扱えると説明された。"
+        ],
+        "turns": [
+          25,
+          26
+        ]
+      },
+      {
+        "handle": 10,
+        "title": "B+treeの構造と範囲検索（続き）",
+        "bullets": [
+          "B-treeは内部ノードにも実データまたはポインタを持つ一方、B+treeは内部ノードにキーを置き、実データを葉ノードに集める。葉ノード同士は連結されることが多く、MySQLのInnoDBなど多くのデータベースがB+treeを使うと説明された。",
+          "範囲検索では最初の該当葉ノードを見つけた後、連結された葉をたどれるため速いと説明された。"
+        ],
+        "turns": [
+          27,
+          28
+        ]
+      },
+      {
+        "handle": 11,
+        "title": "微分の意味と基本ルール",
+        "bullets": [
+          "微分が何のためにあるか、接線の傾きの計算方法、関数 x² の微分について学んだ。",
+          "数式が続くと頭に入りにくいと伝え、日常のたとえ中心の説明を希望した。以降、足し算のルールは歩く人とエスカレーター、積の法則は縦横が伸びる長方形の面積、連鎖律は連動する歯車の例で説明された。",
+          "足し算・積の法則・連鎖律のたとえを分かりやすい、または気に入ったと評価した。"
+        ],
+        "turns": [
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37
+        ]
+      },
+      {
+        "handle": 12,
+        "title": "微分の体感的なイメージ",
+        "bullets": [
+          "スケボーで加速するときの体の傾け方が、微分の感覚に似ていると話した。",
+          "微分は日常の運動感覚でも捉えられる、という説明に面白さを感じた。"
+        ],
+        "turns": [
+          38,
+          39
+        ]
+      },
+      {
+        "handle": 13,
+        "title": "積分の基本イメージ",
+        "bullets": [
+          "積分が微分の逆かを尋ねた。速度の記録から走行距離を求める例で、変化の速さから元の量を組み立てる考え方が説明された。"
+        ],
+        "turns": [
+          40
+        ]
+      },
+      {
+        "handle": 14,
+        "title": "積分のイメージ（続き）",
+        "bullets": [
+          "速度を時間で積分すると距離になり、位置を時間で微分すると速度になるという表裏の関係を確認した。",
+          "グラフでは微分は一点での傾き、積分はグラフの下の面積を足し合わせること。積分のイメージには、変化する水の流量を時間にわたって集めてバケツにためる例えを使い、学生は分かった気がすると述べた。"
+        ],
+        "turns": [
+          41,
+          42,
+          43,
+          44
+        ]
+      },
+      {
+        "handle": 15,
+        "title": "微分の応用（続き）",
+        "bullets": [
+          "速度を微分すると加速度になり、位置を二回微分すると加速度になると説明した。学生はレースゲームで加速した際に座席へ押される感覚を加速度として捉えた。",
+          "極大・極小では傾きがゼロになると説明し、山の頂上や谷底、ジェットコースターの頂点を例にした。学生はジェットコースターの例えを気に入った。最後に、学生は疲れたため今日はここまでにすると伝えた。"
+        ],
+        "turns": [
+          45,
+          46,
+          47,
+          48,
+          49,
+          50
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "handle": 1,
+        "title": "再帰・分割統治とソート",
+        "bullets": [
+          "再帰的なfactorialは基本ケースで停止し、呼び出しはスタックに積まれる。Pythonでは深い再帰がRecursionErrorになることがあり、大きなnではループの方が実用上安全な傾向がある。",
+          "マージソートは分割後に統合し、計算量はO(n log n)。クイックソートも平均O(n log n)だが、pivotの選び方によって最悪O(n²)になる。"
+        ],
+        "children": [
+          1,
+          2
+        ],
+        "turns": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "handle": 2,
+        "title": "BSTの検索・更新とAVL木",
+        "bullets": [
+          "検索はソート済み配列も平衡BSTも概ねO(log n)。挿入・削除は配列がO(n)、平衡BSTがO(log n)だが、BSTが偏ると最悪O(n)。",
+          "AVL木は挿入・削除後の不均衡をLL・RR・LR・RL回転で修正する。授業の平衡因子は「右部分木の高さ−左部分木の高さ」で、左偏りは負、LLでは右回転。"
+        ],
+        "children": [
+          3,
+          4
+        ],
+        "turns": [
+          11,
+          12,
+          13,
+          14
+        ]
+      },
+      {
+        "handle": 3,
+        "title": "データベース索引のB-tree",
+        "bullets": [
+          "B-tree／B+treeは1ノードに複数の値を持たせて分岐数を増やし、木の高さとディスクアクセスを抑える。高さ3〜4ほどで数百万件を扱える場合がある。"
+        ],
+        "children": [
+          5
+        ],
+        "turns": [
+          15,
+          16
+        ]
+      },
+      {
+        "handle": 4,
+        "title": "AVL木の回転練習とBST削除",
+        "bullets": [
+          "AVL木は高さの差を1以内に保って検索に有利だが、更新時の回転が多くなりやすい。赤黒木は平衡条件がより緩く、C++のstd::mapやJavaのTreeMapで使われる。",
+          "BST削除では、葉を削除する・唯一の子を繰り上げる・二つの子がある場合は右部分木の最小値などで置き換える。",
+          "学生はテストに向けてAVL回転を練習し、LL/RRは1回転、LR/RLは二段階と確認した。授業の平衡因子では例のノード5が−2となるため、符号をテストで間違えないよう注意している。"
+        ],
+        "children": [
+          6,
+          7,
+          8
+        ],
+        "turns": [
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          29,
+          30
+        ]
+      },
+      {
+        "handle": 5,
+        "title": "B-treeとB+treeの構造・検索",
+        "bullets": [
+          "B-treeの分岐数は次数やディスクブロックに格納できるキー数に関係し、説明では次数100〜200程度、高さ3〜4で数百万〜数十億件を扱えるとされた。",
+          "B+treeは内部ノードにキー、葉ノードに実データを集め、葉同士を連結する構造。範囲検索では最初の該当葉から連結された葉をたどれる。InnoDBなどで使われると説明された。"
+        ],
+        "children": [
+          9,
+          10
+        ],
+        "turns": [
+          25,
+          26,
+          27,
+          28
+        ]
+      },
+      {
+        "handle": 6,
+        "title": "微分・積分の直感的な理解",
+        "bullets": [
+          "学生は数式が続くと頭に入りにくいと伝え、日常のたとえを希望した。足し算・積の法則・連鎖律を、歩く人とエスカレーター、長方形の面積、連動する歯車で説明し、分かりやすいと評価した。",
+          "微分はグラフ上の一点での傾き、積分はグラフの下の面積を足し合わせるもの。位置の微分は速度、速度の積分は距離という関係を、水の流量をバケツにためる例などで確認し、学生は分かった気がすると述べた。",
+          "速度を微分すると加速度になり、位置を二回微分しても加速度になる。学生はレースゲームで座席に押される感覚を加速度と結びつけ、極大・極小の説明ではジェットコースターの例えを気に入った。"
+        ],
+        "children": [
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "turns": [
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50
+        ]
+      }
+    ]
+  },
+  {
+    "language": "en",
+    "sections_in": 5,
+    "groups_out": 5,
+    "valid": true,
+    "error": null,
+    "chars_in": 2211,
+    "chars_out": 1272,
+    "ratio": 0.58,
+    "input": [
+      {
+        "handle": 1,
+        "title": "Choosing a CS Direction Through Robotics Experience",
+        "bullets": [
+          "The student is unsure whether to pursue hardware/embedded systems or software/web development and feels behind peers who seem certain. Hardware appeals because it is tangible; software seems more flexible and offers more jobs.",
+          "They joined Ironclad Robotics, which is building a bot for a regional competition, and help with drivetrain and motor control. They feel more energized by this work than expected.",
+          "They remain concerned about job prospects, partly because their older brother earns a comfortable living in software. Learning about overlap in firmware, robotics software, and controls made them feel better about the choice and their anxiety about picking wrong; they agreed the path can be adjusted over time."
+        ],
+        "turns": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "handle": 2,
+        "title": "Cellular Respiration",
+        "bullets": [
+          "Reviewed glycolysis, the Krebs cycle, and oxidative phosphorylation/ETC, including their locations and roles in ATP production.",
+          "Explained that glycolysis likely predates mitochondria and occurs in the cytoplasm, while later stages use mitochondrial structures. Student found this evolutionary context interesting."
+        ],
+        "turns": [
+          11,
+          12,
+          13
+        ]
+      },
+      {
+        "handle": 3,
+        "title": "Robotics Drive-Train Choice",
+        "bullets": [
+          "Compared differential drive (simpler, cheaper, robust, but cannot strafe) with mecanum wheels (omnidirectional, but costlier, more fragile, and less effective on rough or dirty surfaces).",
+          "The competition field is smooth indoor flooring, and the bot needs precise docking at scoring zones. Mecanum may help with direct lateral alignment, though its four-wheel control math needs extra calibration time; student will raise it at the next meeting."
+        ],
+        "turns": [
+          14,
+          15,
+          16
+        ]
+      },
+      {
+        "handle": 4,
+        "title": "Price Elasticity of Demand",
+        "bullets": [
+          "Explained PED as percentage change in quantity demanded divided by percentage change in price; absolute values above 1 are elastic, below 1 inelastic, and 1 unit elastic.",
+          "Clarified insulin as inelastic because patients have little choice to reduce use and often lack substitutes, unlike a specific soda brand. Student said the explanation cleared it up."
+        ],
+        "turns": [
+          17,
+          18,
+          19
+        ]
+      },
+      {
+        "handle": 5,
+        "title": "Switching Between Study Subjects",
+        "bullets": [
+          "Student asked whether studying unrelated subjects back to back hurts retention. The response described interleaving and said switching among distinct topics may support long-term retention through retrieval and re-contextualization."
+        ],
+        "turns": [
+          20
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "handle": 1,
+        "title": "Exploring CS Career Directions Through Robotics",
+        "bullets": [
+          "The student is weighing hardware/embedded systems against software/web development. Work on drivetrain and motor control with Ironclad Robotics has been more energizing than expected; learning that firmware, robotics software, and controls overlap eased concerns about choosing the wrong path and job prospects."
+        ],
+        "children": [
+          1
+        ],
+        "turns": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "handle": 2,
+        "title": "Cellular Respiration",
+        "bullets": [
+          "Reviewed glycolysis, the Krebs cycle, and oxidative phosphorylation, their locations, and their roles in ATP production. The student was interested that glycolysis likely predates mitochondria and takes place in the cytoplasm."
+        ],
+        "children": [
+          2
+        ],
+        "turns": [
+          11,
+          12,
+          13
+        ]
+      },
+      {
+        "handle": 3,
+        "title": "Robotics Drivetrain Options",
+        "bullets": [
+          "Compared differential drive with mecanum wheels for a bot competing on smooth indoor flooring that needs precise docking. Mecanum could ease lateral alignment but needs additional control calibration; the student plans to raise it at the next meeting."
+        ],
+        "children": [
+          3
+        ],
+        "turns": [
+          14,
+          15,
+          16
+        ]
+      },
+      {
+        "handle": 4,
+        "title": "Price Elasticity of Demand",
+        "bullets": [
+          "Reviewed PED and its elastic, inelastic, and unit-elastic thresholds. The student understood why insulin demand is inelastic: patients have little ability to reduce use and may lack substitutes."
+        ],
+        "children": [
+          4
+        ],
+        "turns": [
+          17,
+          18,
+          19
+        ]
+      },
+      {
+        "handle": 5,
+        "title": "Switching Between Study Subjects",
+        "bullets": [
+          "Discussed how switching among distinct subjects may support long-term retention through interleaving, retrieval, and re-contextualization."
+        ],
+        "children": [
+          5
+        ],
+        "turns": [
+          20
+        ]
+      }
+    ]
+  }
+]

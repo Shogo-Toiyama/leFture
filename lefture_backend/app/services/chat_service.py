@@ -1,37 +1,71 @@
 # app/services/chat_service.py
 """
-横断チャットボット 段階1(MVP): 1メッセージを受けてから返答を返し終えるまで。
+横断チャットボット: 1メッセージを受けてから返答を返し終えるまで。
 
-処理の順番(2026-09-28のセッションで合意):
+処理の順番(2026-09-28に合意、2026-09-30に仕分け役と探索役を分けた):
   0. 事前チェック(prepare_chat_turn): 文字数上限 / 最低残高 / 送信頻度 /
      断られた回数 / スレッドの所有権 / 生成中の二重送信 / 再送の重複
   1. 保存: スレッド作成 or 読み込み → userメッセージ → 返答用の空行(streaming)
-  2. 振り分け役(Gemini 2.5 Flash-Lite, 構造化出力):
-     {intent, needs_retrieval, search_queries, complexity, reply_language, thread_title}
+  2. 仕分け役(Gemini 2.5 Flash-Lite, 構造化出力):
+     {intent, needs_retrieval, reply_language, thread_title}
   3. 分岐(ここはLLMではなく普通のコード):
      blocked → 定型文(課金なし) / crisis → 共感の定型文+相談窓口(課金なし)
-     それ以外 → needs_retrievalがtrueなら検索(本人のJWTでRPC)
+     それ以外 → needs_retrievalがtrueなら探索役(chat_navigator.py、GPT-6 Luna、最大4周)が
+     地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC、Webは1ターン2回までBrave)
   4. 回答役(Gemini 3.1 Flash-Lite, ストリーミング)
   5. 締め: 本文・出典・原価を保存 → 原価×2のクレジットを消費 → done
+     → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
 
-「エージェントが自由に検索を繰り返す」形にしていない理由:
-- 危険/危機の判定は回答を作る前に確実に行いたい
-- Flash-Liteにツールの呼び分けを任せるより、LLM呼び出しを毎回2回に固定した
-  方が、費用・待ち時間が予測でき、原因調査も楽
-complexity(難しさ)はMVPでは記録するだけ。上位モデルへの切り替えは、
-実データで「deep」の割合を見てから決める。
+会話履歴: 古い往復は要約ブロック(chat_summary_blocks)として回答役のsystemの末尾に、
+まだ畳んでいない往復(通常5〜14往復)は原文のまま渡す。
+
+回答役が自由に何度も検索する形(エージェント型)にしていない理由:
+- 危険/危機の判定は回答を作る前に確実に行いたい(仕分け役に残す)
+- 探索役ができるのは決まった操作だけで、周の数と1周の操作数に上限がある。
+  選べる場所はenumで縛り、実行は常にコードなので、存在しない場所を指定できず、
+  費用・待ち時間の上限も決まっている
 """
 
 import asyncio
 import json
 import re
 import time
-from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 from app.core.supabase import get_supabase_client
+from app.services.chat_lecture_source import DbLectureSource
+from app.services.chat_map import ChatMap, StudentMap, load_chat_map, load_student_map, resolve_timezone
+from app.services.chat_materials import (
+    Material,
+    extract_citations,
+    format_sources_block,
+    material_from_chunk,
+    select_materials,
+    sources_event,
+)
+from app.services.chat_navigator import (
+    CAPABILITIES as NAVIGATOR_CAPABILITIES,
+    NavigationResult,
+    NavigatorInput,
+    NavigatorTools,
+    make_chat_search,
+    make_lecture_search,
+    make_search,
+    navigate,
+    refs_from_materials,
+    summarize_for_log,
+)
+from app.services.chat_thread_source import DbChatThreadSource
+from app.services.chat_summary import (
+    FOLD_TRIGGER_TURNS,
+    fetch_active_blocks,
+    pair_turns,
+    render_notes_for_answer,
+    render_summary_for_answer,
+    rows_after_fold_point,
+)
 from app.services.helpers.credits import (
     CHAT_MIN_BALANCE_CREDITS,
     MICRO_CREDITS_PER_CREDIT,
@@ -45,6 +79,7 @@ from app.services.helpers.llm_unified import (
     StreamState,
     UnifiedLLM,
 )
+from app.services.logic.web_search import brave_search
 from app.services.knowledge_index import embed_queries
 
 
@@ -55,6 +90,9 @@ from app.services.knowledge_index import embed_queries
 ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
 ANSWER_MODEL = "gemini/gemini-3.1-flash-lite"
 ANSWER_MAX_OUTPUT_TOKENS = 2048
+# 広い質問(探索役のゴールが多い・コースの講義一覧を開いた)だけ、回答の上限を引き上げる(3-8)
+ANSWER_MAX_OUTPUT_TOKENS_WIDE = 4096
+WIDE_GOAL_ITEMS = 4
 
 # 悪意ある長文対策の本命。超えたらLLMを一切呼ばずに弾く。
 MAX_MESSAGE_CHARS = 4000
@@ -68,15 +106,25 @@ RATE_LIMIT_MAX_MESSAGES = 20
 BLOCKED_WINDOW_HOURS = 24
 BLOCKED_MAX_MESSAGES = 10
 
-# 会話履歴として回答役・振り分け役に渡す量
-HISTORY_MAX_MESSAGES = 10
+# 会話履歴として回答役・振り分け役に渡す量。古い往復は要約(chat_summary.py)に
+# 畳まれるので、回答役に原文で渡すのは「まだ畳んでいない往復」だけ(通常5〜14往復)。
+# RAW_MAX_TURNSは要約が遅れたとき・失敗し続けたときの上限。
+RAW_MAX_TURNS = 20
+RAW_FETCH_MESSAGES = RAW_MAX_TURNS * 4
 HISTORY_MAX_CHARS_PER_MESSAGE = 2000
 ROUTER_HISTORY_MAX_MESSAGES = 6
 ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 500
 
-# 検索
+# 探索役が動かなかったときの予備の検索(本文そのもので1回だけ)
 RETRIEVAL_MATCH_COUNT_PER_QUERY = 8
 RETRIEVAL_TOP_K = 6
+
+# 探索役のWeb検索(Brave)。返答の待ち時間に直に乗るので、Fun Factより短く切る。
+WEB_SEARCH_TIMEOUT_SECONDS = 8
+
+# 請求に含める、回数で数える原価(BillingEngine.add_count_cost)。Web検索は1回$0.005で、
+# 1ターンのトークン原価と同じくらいになるので、トークンと同じく請求に含める。
+CHARGEABLE_COUNT_RESOURCES = frozenset({"brave/llm_context"})
 
 # この時間を過ぎてもstreamingのままの返答は、取り残されたものとみなす
 # (二重送信ロックの判定と、patrolでのerror化の両方で使う)。
@@ -89,15 +137,10 @@ ROUTER_SCHEMA: dict[str, Any] = {
     "properties": {
         "intent": {"type": "string", "enum": list(INTENTS)},
         "needs_retrieval": {"type": "boolean"},
-        "search_queries": {"type": "array", "items": {"type": "string"}},
-        "complexity": {"type": "string", "enum": ["simple", "deep"]},
         "reply_language": {"type": "string"},
         "thread_title": {"type": ["string", "null"]},
     },
-    "required": [
-        "intent", "needs_retrieval", "search_queries",
-        "complexity", "reply_language", "thread_title",
-    ],
+    "required": ["intent", "needs_retrieval", "reply_language", "thread_title"],
 }
 
 
@@ -161,10 +204,10 @@ class ChatRequestError(Exception):
 
 @dataclass
 class RouterDecision:
+    """仕分け役の判断。何をどう探すかは探索役(chat_navigator.py)が決める。"""
     intent: str
+    # 探索役を呼ぶかどうか(雑談・会話の続きで足りるもの・断る・危機対応ならFalse)
     needs_retrieval: bool
-    search_queries: list[str]
-    complexity: str
     reply_language: str
     thread_title: Optional[str]
     # 振り分け役が正常に判断できず、既定値で先へ進めた場合にTrue
@@ -176,8 +219,6 @@ class RouterDecision:
         return {
             "intent": self.intent,
             "needs_retrieval": self.needs_retrieval,
-            "search_queries": self.search_queries,
-            "complexity": self.complexity,
             "reply_language": self.reply_language,
             "thread_title": self.thread_title,
             "fallback": self.fallback,
@@ -192,15 +233,14 @@ def guess_language(text: str) -> str:
 
 def fallback_router_decision(message: str) -> RouterDecision:
     """
-    振り分け役の出力が読めなかったときの既定値。断る側ではなく「検索ありの
+    振り分け役の出力が読めなかったときの既定値。断る側ではなく「探索ありの
     通常の質問」に倒す: 普通のユーザーを巻き込んで断らないため。本当に
     危険な内容でも、次の回答役のsystem promptと安全フィルタでもう一度止まる。
+    探索が不要なら探索役がnothing_neededで止める。
     """
     return RouterDecision(
         intent="learning",
         needs_retrieval=True,
-        search_queries=[message.strip()[:200]] if message.strip() else [],
-        complexity="simple",
         reply_language=guess_language(message),
         thread_title=None,
         fallback=True,
@@ -217,18 +257,6 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
 
     intent = raw["intent"]
     needs_retrieval = bool(raw.get("needs_retrieval")) and intent not in ("chitchat", "blocked", "crisis")
-
-    queries = []
-    if needs_retrieval:
-        for q in raw.get("search_queries") or []:
-            if isinstance(q, str) and q.strip():
-                queries.append(q.strip()[:200])
-        queries = queries[:3]
-        if not queries:
-            # 検索が必要と言いつつクエリが空なら、本文そのものを使う
-            queries = [message.strip()[:200]]
-
-    complexity = raw.get("complexity") if raw.get("complexity") in ("simple", "deep") else "simple"
     reply_language = raw.get("reply_language") if isinstance(raw.get("reply_language"), str) and raw.get("reply_language") else guess_language(message)
 
     title = raw.get("thread_title")
@@ -240,8 +268,6 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
     return RouterDecision(
         intent=intent,
         needs_retrieval=needs_retrieval,
-        search_queries=queries,
-        complexity=complexity,
         reply_language=reply_language[:10],
         thread_title=title,
     )
@@ -261,76 +287,18 @@ def merge_search_results(result_lists: list[list[dict]], top_k: int = RETRIEVAL_
     return ranked[:top_k]
 
 
-def format_sources_block(chunks: list[dict]) -> str:
-    """回答役に渡す出典一覧。番号は1始まりで、本文中の[n]と対応する。"""
-    lines = []
-    for n, chunk in enumerate(chunks, start=1):
-        lines.append(f"[{n}] {chunk.get('content', '').strip()}")
-    return "\n\n".join(lines)
-
-
-_CITATION_RE = re.compile(r"\[(\d{1,2})\]")
-
-
-def extract_citations(answer_text: str, chunks: list[dict]) -> list[dict]:
+def build_history_messages(rows: list[dict], max_turns: int, max_chars: int) -> list[Message]:
     """
-    本文中で実際に使われた[n]だけを出典として残す。範囲外の番号(回答役が
-    作ってしまった番号)は捨てる。画面で講義へ飛べるよう、元の行の
-    種類・id・講義idを持たせる。
-    """
-    used: list[int] = []
-    for m in _CITATION_RE.finditer(answer_text or ""):
-        n = int(m.group(1))
-        if 1 <= n <= len(chunks) and n not in used:
-            used.append(n)
-
-    citations = []
-    for n in sorted(used):
-        chunk = chunks[n - 1]
-        content = chunk.get("content") or ""
-        first_line = content.splitlines()[0] if content else ""
-        citations.append({
-            "n": n,
-            "chunk_id": chunk.get("id"),
-            "source_type": chunk.get("source_type"),
-            "source_id": chunk.get("source_id"),
-            "lecture_id": chunk.get("lecture_id"),
-            "course_id": chunk.get("course_id"),
-            # "[CS 161 / Lecture 3 / Deep Note: Heaps]" の角括弧を外して見出しに使う
-            "label": first_line.strip().strip("[]"),
-            "similarity": chunk.get("similarity"),
-            # 画面から該当ページへ直接飛ぶため(deep_noteのtopic_number等)
-            "metadata": chunk.get("metadata") or {},
-        })
-    return citations
-
-
-def build_history_messages(rows: list[dict], max_messages: int, max_chars: int) -> list[Message]:
-    """
-    直近の会話を回答役に渡す形に変換する。完了した発言だけを使い、
+    まだ要約に畳んでいない会話を回答役に渡す形に変換する。完了した往復だけを使い、
     断った(blocked)・危機対応(crisis)・失敗(error)・生成中(streaming)の
     返答と、それに対応するuserメッセージは含めない(悪意ある長文で以降の
     入力トークンが膨らまないようにするため、および危機対応の文脈を
-    通常の会話に持ち込まないため)。
+    通常の会話に持ち込まないため)。往復の数え方は要約側(pair_turns)と共通。
     """
-    # rowsは古い順。assistantがcomplete以外なら、その直前のuserも捨てる。
-    kept: list[dict] = []
-    pending_user: Optional[dict] = None
-    for row in rows:
-        if row.get("role") == "user":
-            pending_user = row
-            continue
-        if row.get("role") == "assistant":
-            if row.get("status") == "complete" and pending_user is not None:
-                kept.append(pending_user)
-                kept.append(row)
-            pending_user = None
-
-    kept = kept[-max_messages:]
     messages = []
-    for row in kept:
-        content = (row.get("content") or "")[:max_chars]
-        messages.append(Message(role=row["role"], content=content))
+    for t in pair_turns(rows)[-max_turns:]:
+        messages.append(Message(role="user", content=t.user_content[:max_chars]))
+        messages.append(Message(role="assistant", content=t.assistant_content[:max_chars]))
     return messages
 
 
@@ -350,6 +318,14 @@ def format_screen_context(lecture_label: Optional[str], selected_text: Optional[
     if selected_text:
         parts.append(f"The student selected this text on screen:\n\"\"\"\n{selected_text}\n\"\"\"")
     return "\n\n".join(parts)
+
+
+_PLACEHOLDER_RE = re.compile(r"\$\{(\w+)\}")
+
+
+def fill_placeholders(template: str, values: dict[str, str]) -> str:
+    """${NAME}を一度に置換する。差し込んだ本文(ユーザーの入力や出典)の中の${...}は置換しない。"""
+    return _PLACEHOLDER_RE.sub(lambda m: values.get(m.group(1), m.group(0)), template)
 
 
 def sse_event(event: str, data: dict) -> str:
@@ -397,7 +373,14 @@ class PreparedTurn:
     selected_text: Optional[str]
     lecture_label: Optional[str]
     context_lecture_id: Optional[str]
+    # クライアントが送ってきたIANAのタイムゾーン名(「昨日」「今学期」の解決に使う)。無ければUTC。
+    timezone_name: Optional[str] = None
+    # まだ要約に畳んでいない部分だけ(古い順)
     history_rows: list[dict] = field(default_factory=list)
+    summary_blocks: list[dict] = field(default_factory=list)
+    # 2段目の要約(1段目のブロック10個をさらに畳んだもの)。1段目は消さないので、
+    # summary_blocksには2段目に入った1段目も含まれる
+    summary_level2: list[dict] = field(default_factory=list)
     timer: TurnTimer = field(default_factory=lambda: TurnTimer())
 
 
@@ -464,9 +447,9 @@ def _fetch_busy(admin_client, thread_id: str) -> bool:
 
 
 def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
-    h = admin_client.table("chat_messages").select("role, content, status, created_at") \
+    h = admin_client.table("chat_messages").select("id, role, content, status, created_at, context") \
         .eq("thread_id", thread_id).is_("deleted_at", "null") \
-        .order("created_at", desc=True).limit(HISTORY_MAX_MESSAGES * 3).execute()
+        .order("created_at", desc=True).limit(RAW_FETCH_MESSAGES).execute()
     return list(reversed(h.data or []))
 
 
@@ -538,6 +521,7 @@ async def prepare_chat_turn(
     context_lecture_id: Optional[str],
     selected_text: Optional[str],
     timer: TurnTimer,
+    timezone_name: Optional[str] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -572,7 +556,7 @@ async def prepare_chat_turn(
 
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
-        thread_row, is_busy, history_rows,
+        thread_row, is_busy, history_rows, summary_blocks, summary_level2,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -582,8 +566,14 @@ async def prepare_chat_turn(
         to_thread(_fetch_thread_row, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_busy, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_history_rows, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(fetch_active_blocks, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(fetch_active_blocks, admin_client, thread_id, 2) if not is_new_thread else none(),
     )
     timer.mark("prep_checks")
+    summary_blocks = summary_blocks or []
+    history_rows = rows_after_fold_point(
+        history_rows or [], summary_blocks[-1]["end_message_id"] if summary_blocks else None
+    )
 
     if context_lecture_id and lecture_label is None:
         context_lecture_id = None
@@ -637,7 +627,10 @@ async def prepare_chat_turn(
         selected_text=selected_text,
         lecture_label=lecture_label,
         context_lecture_id=context_lecture_id,
-        history_rows=history_rows or [],
+        timezone_name=(timezone_name or "").strip()[:64] or None,
+        history_rows=history_rows,
+        summary_blocks=summary_blocks,
+        summary_level2=summary_level2 or [],
         timer=timer,
     )
 
@@ -665,40 +658,27 @@ def _load_student_profile(admin_client, user_id: str) -> str:
     return "\n".join(parts) if parts else "(The student has not shared any profile information yet.)"
 
 
-def _lecture_languages(admin_client, user_id: str) -> str:
-    res = admin_client.table("lectures").select("recording_language") \
-        .eq("user_id", user_id).is_("deleted_at", "null") \
-        .order("created_at", desc=True).limit(100).execute()
-    counts = Counter((r.get("recording_language") or "").strip() for r in (res.data or []))
-    counts.pop("", None)
-    if not counts:
-        return "unknown"
-    return ", ".join(lang for lang, _ in counts.most_common(3))
-
-
 async def _run_router(
     llm: UnifiedLLM,
     turn: PreparedTurn,
+    memory: "ConversationMemory",
     history: list[Message],
-    lecture_languages: str,
 ) -> RouterDecision:
     is_first_message = turn.is_new_thread or not turn.thread_has_title
-    prompt = _load_prompt("chat_router_prompt.txt")
-    prompt = (
-        prompt
-        .replace("${RECENT_CONVERSATION}", format_router_conversation(history))
-        .replace("${SCREEN_CONTEXT}", format_screen_context(turn.lecture_label, turn.selected_text) or "(none)")
-        .replace("${LECTURE_LANGUAGES}", lecture_languages)
-        .replace("${NEW_MESSAGE}", turn.content)
-        .replace(
-            "${THREAD_TITLE_INSTRUCTION}",
-            "This is the first message of a new conversation: a short title for the conversation "
-            "(at most 30 characters) in `reply_language`. null if `intent` is `blocked` or `crisis`."
-            if is_first_message else "always null.",
-        )
-    )
+    # 指示文は毎ターン同じsystemに置き、変わる入力はすべて後ろのuserに入れる
+    # (先頭が一致する部分にだけプロンプトキャッシュが効くため)。
+    user_input = fill_placeholders(_load_prompt("chat_router_input_prompt.txt"), {
+        "EARLIER_CONVERSATION": memory.for_router(),
+        "RECENT_CONVERSATION": format_router_conversation(history),
+        "SCREEN_CONTEXT": format_screen_context(turn.lecture_label, turn.selected_text) or "(none)",
+        "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
+        "NEW_MESSAGE": turn.content,
+    })
     options = LLMOptions(output_type="json", json_schema=ROUTER_SCHEMA, temperature=0.0)
-    messages = [Message(role="user", content=prompt)]
+    messages = [
+        Message(role="system", content=_load_prompt("chat_router_prompt.txt")),
+        Message(role="user", content=user_input),
+    ]
 
     for _attempt in range(2):
         try:
@@ -709,8 +689,8 @@ async def _run_router(
             continue
         if result.finish_reason == "content_filter":
             decision = RouterDecision(
-                intent="blocked", needs_retrieval=False, search_queries=[],
-                complexity="simple", reply_language=guess_language(turn.content),
+                intent="blocked", needs_retrieval=False,
+                reply_language=guess_language(turn.content),
                 thread_title=None, provider_blocked=True,
             )
             return decision
@@ -757,27 +737,153 @@ async def _retrieve(
     return merge_search_results(ok_results)
 
 
+def _ignore_task_exception(task: "asyncio.Task") -> None:
+    """待たれずに終わったタスクの例外で「Task exception was never retrieved」を出さない。"""
+    if not task.cancelled():
+        task.exception()
+
+
+async def _gather_materials(
+    llm: UnifiedLLM,
+    billing: BillingEngine,
+    user_client,
+    turn: PreparedTurn,
+    history: list[Message],
+    map_task: "asyncio.Task[StudentMap]",
+    chat_map_task: "asyncio.Task[ChatMap]",
+    on_fetch: Optional[Callable[[list[str]], Awaitable[None]]] = None,
+) -> tuple[list[Material], Optional[NavigationResult]]:
+    """
+    探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
+    (地図が読めない・LLMの出力が読めない)ときだけ、従来どおり本文そのもので検索する。
+    検索が落ちても、出典なしで答える方がユーザーにとって良いので例外は外に出さない。
+    返す材料はselect_materialsで量を絞った後のもの。
+    """
+    student_map: Optional[StudentMap] = None
+    chat_map: Optional[ChatMap] = None
+    try:
+        student_map, chat_map = await asyncio.gather(map_task, chat_map_task)
+    except Exception as e:
+        print(f"⚠️ [chat] failed to load the student/chat map: {e}")
+
+    navigation: Optional[NavigationResult] = None
+    has_lectures = bool(student_map and student_map.has_lectures)
+    has_chats = bool(chat_map and chat_map.has_anything)
+    # Webは講義・チャットがまだ無い人にも使えるので、探索役は常に呼ぶ
+    if has_lectures or has_chats or NAVIGATOR_CAPABILITIES["CAN_WEB"]:
+        admin_client = get_supabase_client()
+        chat_source = DbChatThreadSource(admin_client, turn.user_id)
+        nav_input = NavigatorInput(
+            message=turn.content,
+            selected_text=turn.selected_text,
+            screen_lecture_id=turn.context_lecture_id,
+            recent_conversation=history,
+            today=datetime.now(resolve_timezone(turn.timezone_name)).date(),
+            student_map=student_map or StudentMap(),
+            chat_map=chat_map or ChatMap(),
+            current_thread_id=turn.thread_id,
+            previous_turn_refs=_previous_turn_refs(turn.history_rows),
+        )
+        tools = NavigatorTools(
+            search=make_search(
+                make_lecture_search(user_client, nav_input.student_map, lambda qs: embed_queries(qs, billing=billing)),
+                make_chat_search(user_client, turn.thread_id, lambda qs: embed_queries(qs, billing=billing)),
+            ),
+            source=DbLectureSource(admin_client, turn.user_id),
+            chat_source=chat_source,
+            web_search=lambda q: brave_search(q, billing, timeout=WEB_SEARCH_TIMEOUT_SECONDS),
+        )
+
+        async def on_lap(lap: int) -> None:
+            turn.timer.mark(f"navigator_lap{lap}")
+
+        try:
+            navigation = await navigate(llm, nav_input, tools, on_lap=on_lap, on_fetch=on_fetch)
+            print(f"🧭 [chat] message={turn.assistant_message_id} {summarize_for_log(navigation)}")
+            if not navigation.failed_before_any_fetch:
+                return select_materials(navigation.materials), navigation
+        except Exception as e:
+            print(f"⚠️ [chat] navigator failed, falling back to plain search: {e}")
+
+    try:
+        chunks = await _retrieve(user_client, billing, [turn.content[:200]], turn.context_lecture_id)
+    except Exception as e:
+        print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
+        chunks = []
+    return select_materials([material_from_chunk(c) for c in chunks]), navigation
+
+
+def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[Material]) -> int:
+    """コース全体の概観のような広い質問だけ長く書けるようにする(普段は短く速く)。"""
+    wide = (navigation is not None and len(navigation.goal) >= WIDE_GOAL_ITEMS) or any(m.kind == "course" for m in materials)
+    return ANSWER_MAX_OUTPUT_TOKENS_WIDE if wide else ANSWER_MAX_OUTPUT_TOKENS
+
+
+def _previous_turn_refs(history_rows: list[dict]) -> list[dict]:
+    """直前の返答(完了したもの)の行に保存した「開いたもの」(context.opened)。"""
+    for row in reversed(history_rows):
+        if row.get("role") == "assistant" and row.get("status") == "complete":
+            opened = (row.get("context") or {}).get("opened")
+            return [r for r in opened if isinstance(r, dict)] if isinstance(opened, list) else []
+    return []
+
+
+@dataclass
+class ConversationMemory:
+    """要約に畳んだ部分。回答役・振り分け役に渡す形(IDや節の呼び名は含まない)。"""
+    summary: str = ""
+    notes: str = ""
+
+    @classmethod
+    def from_blocks(cls, blocks: list[dict], level2: Optional[list[dict]] = None) -> "ConversationMemory":
+        if not blocks:
+            return cls()
+        return cls(summary=render_summary_for_answer(blocks, level2),
+                   notes=render_notes_for_answer(blocks[-1].get("header")))
+
+    def for_router(self) -> str:
+        return "\n\n".join(x for x in [self.summary, self.notes] if x) or "(none)"
+
+
 def _build_answer_messages(
     turn: PreparedTurn,
     decision: RouterDecision,
+    memory: ConversationMemory,
     history: list[Message],
     profile: str,
-    chunks: list[dict],
+    materials: list[Material],
+    goal: Optional[list[str]] = None,
 ) -> list[Message]:
+    """
+    並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
+    プロンプトキャッシュは先頭が完全一致する部分にだけ効くので、毎ターン変わる
+    出典・画面の文脈・返答言語はすべて最後のuserメッセージに入れる。要約はsystemの
+    末尾にあり、変わるのは畳んだときだけ。履歴に残るuserメッセージは本人が打った
+    本文だけなので、次のターンでも先頭がずれない。
+    """
+    system_template = _render_conditional_sections(_load_prompt("chat_answer_prompt.txt"), {
+        "HAS_MEMORY": bool(memory.summary),
+        "HAS_NOTES": bool(memory.notes),
+    })
+    system = fill_placeholders(system_template, {
+        "STUDENT_PROFILE": profile,
+        "CONVERSATION_SUMMARY": memory.summary,
+        "CONVERSATION_NOTES": memory.notes,
+    })
     screen_context = format_screen_context(turn.lecture_label, turn.selected_text)
-    template = _load_prompt("chat_answer_prompt.txt")
-    system = _render_conditional_sections(template, {
-        "HAS_SOURCES": bool(chunks),
+    turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
+        "HAS_SOURCES": bool(materials),
+        "HAS_GOAL": bool(goal),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
     })
-    system = (
-        system
-        .replace("${STUDENT_PROFILE}", profile)
-        .replace("${SOURCES}", format_sources_block(chunks))
-        .replace("${SCREEN_CONTEXT}", screen_context)
-        .replace("${REPLY_LANGUAGE}", decision.reply_language)
-    )
-    return [Message(role="system", content=system), *history, Message(role="user", content=turn.content)]
+    turn_message = fill_placeholders(turn_template, {
+        "SOURCES": format_sources_block(materials),
+        "GOAL": "\n".join(f"- {g}" for g in goal or []),
+        "SCREEN_CONTEXT": screen_context,
+        "REPLY_LANGUAGE": decision.reply_language,
+        "MESSAGE": turn.content,
+    })
+    return [Message(role="system", content=system), *history, Message(role="user", content=turn_message)]
 
 
 async def _finalize(
@@ -791,16 +897,18 @@ async def _finalize(
     billing: BillingEngine,
     usage_extra: dict,
     charge: bool,
+    message_context: Optional[dict] = None,
 ) -> int:
     """
     返答行の確定・スレッド更新・課金。消費したμクレジットを返す。
 
-    請求の元にするのはLLM/Embedding APIのトークン原価だけ。UnifiedLLMが
+    請求の元にするのはLLM/Embedding APIのトークン原価と、Web検索(Brave)の回数の原価だけ。UnifiedLLMが
     一緒に記録するCloud Runの実行時間コストは「実際より少し高めの概算」
     なので、ユーザーへの請求には含めず、記録(cost_usd列・usage)にだけ残す。
     """
     cost_usd = billing.total_usd()
-    chargeable_usd = sum(r.cost_usd for r in billing.records if r.dimension == "tokens")
+    chargeable_usd = sum(r.cost_usd for r in billing.records
+                         if r.dimension == "tokens" or (r.dimension == "count" and r.resource in CHARGEABLE_COUNT_RESOURCES))
     breakdown = [vars(r) for r in billing.records]
 
     charged_micro = 0
@@ -823,6 +931,7 @@ async def _finalize(
             "usage": {"records": breakdown, "chargeable_usd": chargeable_usd, **usage_extra},
             "cost_usd": cost_usd,
             "credits_charged_micro": charged_micro,
+            **({"context": message_context} if message_context else {}),
         }).eq("id", turn.assistant_message_id).execute()
     )
 
@@ -835,7 +944,33 @@ async def _finalize(
     return charged_micro
 
 
-async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[Optional[str]]") -> None:
+EnqueueSummary = Callable[[str, int], Awaitable[None]]
+
+
+async def _maybe_enqueue_summary(turn: PreparedTurn, enqueue_summary: Optional[EnqueueSummary]) -> None:
+    """
+    今回の往復を含めて未要約が15往復以上なら、畳む処理をCloud Tasksに積む。
+    畳むのが遅れても次のターンは原文を少し多めに送るだけなので、ここで失敗しても
+    返答自体には影響させない(次のターンでまた積まれる)。
+    """
+    if enqueue_summary is None:
+        return
+    unsummarized = len(pair_turns(turn.history_rows)) + 1
+    if unsummarized < FOLD_TRIGGER_TURNS:
+        return
+    next_block_index = (turn.summary_blocks[-1]["block_index"] + 1) if turn.summary_blocks else 1
+    try:
+        await enqueue_summary(turn.thread_id, next_block_index)
+    except Exception as e:
+        print(f"⚠️ [chat] failed to enqueue summary for thread {turn.thread_id}: {e}")
+
+
+async def run_chat_turn(
+    turn: PreparedTurn,
+    user_client,
+    queue: "asyncio.Queue[Optional[str]]",
+    enqueue_summary: Optional[EnqueueSummary] = None,
+) -> None:
     """
     SSEで送るイベントをqueueに積みながら1ターンを最後まで実行する。
     エンドポイントとは別のasyncioタスクで動かすので、途中でクライアントが
@@ -861,15 +996,25 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
         })
         await emit("status", {"stage": "thinking"})
 
-        history = build_history_messages(turn.history_rows, HISTORY_MAX_MESSAGES, HISTORY_MAX_CHARS_PER_MESSAGE)
-        profile, lecture_languages = await asyncio.gather(
-            asyncio.to_thread(_load_student_profile, admin_client, turn.user_id),
-            asyncio.to_thread(_lecture_languages, admin_client, turn.user_id),
-        )
+        history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
+        memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
+        # 地図(コース・講義の呼び名、この会話の節・最近のチャット)は探索役を呼ぶときだけ使うが、
+        # 仕分け役を待つ間に並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
+        tz = resolve_timezone(turn.timezone_name)
+        map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id, tz))
+        map_task.add_done_callback(_ignore_task_exception)
+
+        async def _build_chat_map() -> ChatMap:
+            recent = await DbChatThreadSource(admin_client, turn.user_id).recent_threads_with_trail(turn.thread_id, 20)
+            return load_chat_map(turn.summary_blocks, recent, turn.summary_level2)
+        chat_map_task = asyncio.create_task(_build_chat_map())
+        chat_map_task.add_done_callback(_ignore_task_exception)
+
+        profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
         timer.mark("context_loaded")
 
-        # --- 2. 振り分け ---
-        decision = await _run_router(llm, turn, history, lecture_languages)
+        # --- 2. 仕分け ---
+        decision = await _run_router(llm, turn, memory, history)
         timer.mark("router_done")
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
@@ -884,40 +1029,33 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
             await emit("done", {"status": decision.intent, "credits_charged": 0})
             return
 
-        # --- 3. 分岐: 検索 ---
-        chunks: list[dict] = []
+        # --- 3. 分岐: 探索 ---
+        materials: list[Material] = []
+        navigation: Optional[NavigationResult] = None
         if decision.needs_retrieval:
             await emit("status", {"stage": "searching"})
-            try:
-                chunks = await _retrieve(user_client, billing, decision.search_queries, turn.context_lecture_id)
-            except Exception as e:
-                # 検索が落ちても、出典なしで答える方がユーザーにとって良い
-                print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
-                chunks = []
+
+            async def on_fetch(kinds: list[str]) -> None:
+                # 何を探しているか(講義 / 過去のチャット / Web)を画面に出す
+                await emit("status", {"stage": "searching", "detail": kinds})
+
+            materials, navigation = await _gather_materials(
+                llm, billing, user_client, turn, history, map_task, chat_map_task, on_fetch)
             timer.mark("retrieval_done")
-            await emit("sources", {"sources": [
-                {
-                    "n": n,
-                    "chunk_id": c.get("id"),
-                    "source_type": c.get("source_type"),
-                    "source_id": c.get("source_id"),
-                    "lecture_id": c.get("lecture_id"),
-                    "label": ((c.get("content") or "").splitlines() or [""])[0].strip().strip("[]"),
-                    "metadata": c.get("metadata") or {},
-                }
-                for n, c in enumerate(chunks, start=1)
-            ]})
+            await emit("sources", {"sources": sources_event(materials)})
 
         # --- 4. 回答 ---
         await emit("status", {"stage": "writing"})
-        messages = _build_answer_messages(turn, decision, history, profile, chunks)
+        messages = _build_answer_messages(
+            turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
+        )
         state = StreamState()
         # reasoning_effort="low"でもGeminiには thinkingLevel: low, includeThoughts: True
         # が送られ、答え本文の前に思考の文章を生成する分、最初の1文字までが数秒遅くなる
         # (2026-09-29に計測、TurnTimerのanswer_first_tokenで確認)。"none"だと
         # thinkingLevel: minimal, includeThoughts: False になり、雑談程度の速さで
         # 十分なこの役には合っている。
-        options = LLMOptions(max_tokens=ANSWER_MAX_OUTPUT_TOKENS, reasoning_effort="none")
+        options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials), reasoning_effort="none")
         timer.mark("answer_started")
         async for delta in llm.generate_stream(ANSWER_MODEL, messages, state, options):
             if "answer_first_token" not in timer.marks:
@@ -927,11 +1065,14 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
 
         usage_extra = {
             "router_model": ROUTER_MODEL,
+            "navigator": navigation.to_json() if navigation else None,
             "answer_model": ANSWER_MODEL,
             "answer_input_tokens": state.input_tokens,
             "answer_output_tokens": state.output_tokens,
+            "answer_cache_read_tokens": state.cache_read_tokens,
+            "answer_cache_write_tokens": state.cache_write_tokens,
             "usage_estimated": state.usage_estimated,
-            "retrieved_chunk_ids": [c.get("id") for c in chunks],
+            "materials": [{"key": m.key, "handle": m.handle, "relation": m.relation} for m in materials],
             "timings": timer.to_json(),
         }
 
@@ -951,17 +1092,21 @@ async def run_chat_turn(turn: PreparedTurn, user_client, queue: "asyncio.Queue[O
         if not answer_text.strip():
             raise RuntimeError(f"Empty answer (finish_reason={state.finish_reason})")
 
-        citations = extract_citations(answer_text, chunks)
+        citations = extract_citations(answer_text, materials)
+        # 次のターンの「その次の回」「3番目」のために、開いたもの(無ければ使った材料)をUUIDで残す
+        opened_refs = (navigation.opened_refs if navigation else []) or refs_from_materials(materials)
         charged_micro = await _finalize(
             admin_client, turn, content=answer_text, status="complete",
             decision=decision, citations=citations, billing=billing,
             usage_extra={**usage_extra, "finish_reason": state.finish_reason}, charge=True,
+            message_context={"opened": opened_refs} if opened_refs else None,
         )
         await emit("done", {
             "status": "complete",
             "citations": citations,
             "credits_charged": charged_micro / MICRO_CREDITS_PER_CREDIT,
         })
+        await _maybe_enqueue_summary(turn, enqueue_summary)
 
     except Exception as e:
         print(f"❌ [chat] turn failed for message {turn.assistant_message_id}: {e}")

@@ -1,0 +1,1333 @@
+{
+  "today": "2026-09-30",
+  "student": {
+    "note": "Lectures are recorded in English. Notes are generated in English, except C3 (Japanese). The student chats in Japanese or English."
+  },
+  "courses": [
+    {
+      "handle": "C1",
+      "title": "CS 161 Data Structures",
+      "term": "2026 Spring",
+      "lectures": [
+        {
+          "handle": "C1/L1",
+          "date": "2026-04-02",
+          "title": "Arrays and Linked Lists",
+          "one_line": "Arrays vs linked lists.",
+          "summary": "Compared arrays and linked lists; amortized cost of dynamic array resizing.",
+          "topics": []
+        },
+        {
+          "handle": "C1/L2",
+          "date": "2026-04-04",
+          "title": "Stacks and Queues",
+          "one_line": "Stacks and queues.",
+          "summary": "Stack/queue operations; implementing a queue with two stacks.",
+          "topics": []
+        },
+        {
+          "handle": "C1/L3",
+          "date": "2026-04-09",
+          "title": "Binary Heaps",
+          "one_line": "Binary heaps.",
+          "summary": "Binary heaps as complete binary trees stored in arrays. Insertion, extract-min, and building a heap in O(n).",
+          "topics": [
+            {
+              "handle": "C1/L3/T1",
+              "title": "Heap property and array layout",
+              "summary": "Parent is smaller than children (min-heap); children of index i are 2i+1 and 2i+2.",
+              "keywords": [
+                "heap property",
+                "complete binary tree"
+              ],
+              "deep_note": "Array layout avoids pointers."
+            },
+            {
+              "handle": "C1/L3/T2",
+              "title": "Insertion (bubble up)",
+              "summary": "Insert at the end, then swap with the parent while smaller. O(log n).",
+              "keywords": [
+                "bubble up",
+                "sift up"
+              ],
+              "deep_note": "Worked example: inserting 1 into [2,5,3] moves 1 to the root in two swaps."
+            },
+            {
+              "handle": "C1/L3/T3",
+              "title": "Extract-min (bubble down)",
+              "summary": "Move the last element to the root, then swap with the smaller child. O(log n).",
+              "keywords": [
+                "bubble down",
+                "sift down"
+              ],
+              "deep_note": "Always swap with the smaller child to keep the heap property."
+            },
+            {
+              "handle": "C1/L3/T4",
+              "title": "Heapify in O(n)",
+              "summary": "Bottom-up heapify costs O(n), not O(n log n).",
+              "keywords": [
+                "heapify",
+                "O(n)"
+              ],
+              "deep_note": "Most nodes are near the leaves, so most sift-downs are short."
+            }
+          ]
+        },
+        {
+          "handle": "C1/L4",
+          "date": "2026-04-11",
+          "title": "Heapsort and Priority Queues",
+          "one_line": "Heapsort and priority queues.",
+          "summary": "Heapsort using a heap; priority queues; comparison of heapsort with quicksort.",
+          "topics": [
+            {
+              "handle": "C1/L4/T1",
+              "title": "Heapsort",
+              "summary": "Build a heap, then extract repeatedly. O(n log n) worst case, in place.",
+              "keywords": [
+                "heapsort"
+              ],
+              "deep_note": "Not stable."
+            },
+            {
+              "handle": "C1/L4/T2",
+              "title": "Priority queues",
+              "summary": "Heaps implement priority queues; used in scheduling and Dijkstra.",
+              "keywords": [
+                "priority queue"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C1/L4/T3",
+              "title": "Heapsort vs quicksort",
+              "summary": "Quicksort is usually faster in practice (cache-friendly) but worst case O(n^2); heapsort guarantees O(n log n).",
+              "keywords": [
+                "quicksort",
+                "worst case",
+                "cache"
+              ],
+              "deep_note": "## Heapsort vs quicksort\nThe professor compared the two by average speed and guarantees: quicksort wins on average, heapsort wins on guarantees ⟦s000412-s000425⟧.\n\n## Why quicksort is faster in practice\nQuicksort scans memory sequentially, which is cache-friendly ⟦s000426-s000431⟧."
+            }
+          ]
+        },
+        {
+          "handle": "C1/L5",
+          "date": "2026-04-16",
+          "title": "Binary Search Trees",
+          "one_line": "Binary search trees.",
+          "summary": "BST insert and search; deletion with 0, 1, or 2 children (replace with successor).",
+          "topics": []
+        },
+        {
+          "handle": "C1/L6",
+          "date": "2026-04-18",
+          "title": "AVL Trees",
+          "one_line": "AVL trees.",
+          "summary": "AVL trees keep heights balanced. The professor defines the balance factor as height(right) − height(left), the opposite of most textbooks. Four rotation cases.",
+          "topics": [
+            {
+              "handle": "C1/L6/T1",
+              "title": "AVL definition",
+              "summary": "Heights of the two subtrees differ by at most 1.",
+              "keywords": [
+                "AVL",
+                "height"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C1/L6/T2",
+              "title": "Balance factor convention",
+              "summary": "BF = height(right) − height(left). Left-heavy is negative. The test uses this convention.",
+              "keywords": [
+                "balance factor",
+                "BF"
+              ],
+              "deep_note": "## Balance factor\nBF = height(right) − height(left) ⟦s000233-s000240⟧. Standard textbooks use left − right, so signs are flipped. The professor said the test uses this convention ⟦s000241-s000243⟧."
+            },
+            {
+              "handle": "C1/L6/T3",
+              "title": "Single rotations (LL, RR)",
+              "summary": "LL: right rotation once. RR: left rotation once.",
+              "keywords": [
+                "LL",
+                "RR",
+                "rotation"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C1/L6/T4",
+              "title": "Double rotations (LR, RL)",
+              "summary": "LR: rotate the child left, then the node right. RL is the mirror.",
+              "keywords": [
+                "LR",
+                "RL",
+                "double rotation"
+              ],
+              "deep_note": "Tip: draw the zig-zag and straighten it first."
+            }
+          ]
+        },
+        {
+          "handle": "C1/L7",
+          "date": "2026-04-23",
+          "title": "Red-Black Trees",
+          "one_line": "Red-black trees.",
+          "summary": "Four properties of red-black trees; recoloring vs rotation on insert.",
+          "topics": []
+        },
+        {
+          "handle": "C1/L8",
+          "date": "2026-04-25",
+          "title": "B-Trees",
+          "one_line": "B-trees.",
+          "summary": "B-trees and B+trees for databases; order 100-200 fits a disk block; linked leaves make range queries fast.",
+          "topics": []
+        },
+        {
+          "handle": "C1/L9",
+          "date": "2026-04-30",
+          "title": "Hash Tables",
+          "one_line": "Hash tables.",
+          "summary": "Chaining vs open addressing; load factor and resizing.",
+          "topics": []
+        },
+        {
+          "handle": "C1/L10",
+          "date": "2026-05-02",
+          "title": "Graphs",
+          "one_line": "Graph basics.",
+          "summary": "Adjacency lists vs matrices; BFS and DFS.",
+          "topics": []
+        },
+        {
+          "handle": "C1/L11",
+          "date": "2026-05-07",
+          "title": "Shortest Paths",
+          "one_line": "Shortest paths.",
+          "summary": "Dijkstra's algorithm using a priority queue.",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "handle": "C2",
+      "title": "Intro Microeconomics",
+      "term": "2026 Spring",
+      "lectures": [
+        {
+          "handle": "C2/L1",
+          "date": "2026-04-01",
+          "title": "Supply and Demand",
+          "one_line": "Supply and demand basics.",
+          "summary": "Supply and demand curves and what shifts them.",
+          "topics": []
+        },
+        {
+          "handle": "C2/L2",
+          "date": "2026-04-03",
+          "title": "Equilibrium",
+          "one_line": "Market equilibrium.",
+          "summary": "Equilibrium price and quantity; effects of shifts.",
+          "topics": []
+        },
+        {
+          "handle": "C2/L3",
+          "date": "2026-04-08",
+          "title": "Surplus",
+          "one_line": "Consumer and producer surplus.",
+          "summary": "Consumer surplus, producer surplus, and total welfare.",
+          "topics": [
+            {
+              "handle": "C2/L3/T1",
+              "title": "Consumer surplus",
+              "summary": "Area under demand above price.",
+              "keywords": [
+                "consumer surplus"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C2/L3/T2",
+              "title": "Producer surplus",
+              "summary": "Area above supply below price.",
+              "keywords": [
+                "producer surplus"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C2/L3/T3",
+              "title": "Total welfare",
+              "summary": "Sum of both; maximized at competitive equilibrium.",
+              "keywords": [
+                "welfare"
+              ],
+              "deep_note": ""
+            }
+          ]
+        },
+        {
+          "handle": "C2/L4",
+          "date": "2026-04-10",
+          "title": "Price Elasticity of Demand",
+          "one_line": "Price elasticity of demand.",
+          "summary": "Elasticity measures how quantity responds to price. Elastic vs inelastic goods.",
+          "topics": [
+            {
+              "handle": "C2/L4/T1",
+              "title": "Definition",
+              "summary": "PED = %ΔQd / %ΔP; |PED| > 1 elastic, < 1 inelastic.",
+              "keywords": [
+                "PED",
+                "elastic",
+                "inelastic"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C2/L4/T2",
+              "title": "Examples",
+              "summary": "Insulin is inelastic (no substitutes); a specific soda brand is elastic.",
+              "keywords": [
+                "insulin",
+                "substitutes"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C2/L4/T3",
+              "title": "Determinants",
+              "summary": "Substitutes, share of budget, time horizon.",
+              "keywords": [
+                "determinants"
+              ],
+              "deep_note": ""
+            }
+          ]
+        },
+        {
+          "handle": "C2/L5",
+          "date": "2026-04-15",
+          "title": "Price Elasticity of Supply",
+          "one_line": "Elasticity of supply.",
+          "summary": "PES and why agricultural supply is inelastic in the short run.",
+          "topics": []
+        },
+        {
+          "handle": "C2/L6",
+          "date": "2026-04-17",
+          "title": "Taxes",
+          "one_line": "Taxes and tax incidence.",
+          "summary": "A tax drives a wedge between buyer and seller prices. Who bears the burden depends on relative elasticities.",
+          "topics": [
+            {
+              "handle": "C2/L6/T1",
+              "title": "Tax wedge",
+              "summary": "Buyers pay more, sellers receive less.",
+              "keywords": [
+                "tax wedge"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C2/L6/T2",
+              "title": "Tax incidence",
+              "summary": "The more inelastic side bears more of the tax.",
+              "keywords": [
+                "tax incidence",
+                "elasticity"
+              ],
+              "deep_note": "Example: cigarette taxes fall mostly on smokers."
+            },
+            {
+              "handle": "C2/L6/T3",
+              "title": "Deadweight loss",
+              "summary": "Lost trades create deadweight loss; larger when curves are elastic.",
+              "keywords": [
+                "deadweight loss"
+              ],
+              "deep_note": ""
+            }
+          ]
+        },
+        {
+          "handle": "C2/L7",
+          "date": "2026-04-22",
+          "title": "Price Controls",
+          "one_line": "Price ceilings and floors.",
+          "summary": "Rent control and minimum wage as examples.",
+          "topics": []
+        },
+        {
+          "handle": "C2/L8",
+          "date": "2026-04-24",
+          "title": "Externalities",
+          "one_line": "Externalities.",
+          "summary": "Negative and positive externalities; Pigouvian taxes.",
+          "topics": []
+        },
+        {
+          "handle": "C2/L9",
+          "date": "2026-04-29",
+          "title": "Public Goods",
+          "one_line": "Public goods.",
+          "summary": "Non-rival, non-excludable goods; free riding.",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "handle": "C3",
+      "title": "Biology 101",
+      "term": "2026 Spring",
+      "notes_language": "ja",
+      "lectures": [
+        {
+          "handle": "C3/L1",
+          "date": "2026-04-01",
+          "title": "細胞の構造",
+          "one_line": "細胞のつくり。",
+          "summary": "原核細胞と真核細胞の違いと、細胞小器官の働き。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L2",
+          "date": "2026-04-06",
+          "title": "細胞膜と物質輸送",
+          "one_line": "膜と輸送。",
+          "summary": "拡散、浸透、能動輸送。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L3",
+          "date": "2026-04-08",
+          "title": "酵素",
+          "one_line": "酵素。",
+          "summary": "酵素は活性化エネルギーを下げる。最適温度・最適pHと変性。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L4",
+          "date": "2026-04-13",
+          "title": "細胞呼吸",
+          "one_line": "細胞呼吸。",
+          "summary": "解糖系、クエン酸回路、酸化的リン酸化。グルコース1分子あたり約30〜32 ATP。好気呼吸と嫌気呼吸。",
+          "topics": [
+            {
+              "handle": "C3/L4/T1",
+              "title": "解糖系",
+              "summary": "細胞質で起こる。グルコースからピルビン酸へ。差し引き2 ATP。",
+              "keywords": [
+                "解糖系",
+                "glycolysis"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C3/L4/T2",
+              "title": "クエン酸回路",
+              "summary": "ミトコンドリアのマトリックスで起こり、NADHとFADH2をつくる。",
+              "keywords": [
+                "クエン酸回路",
+                "Krebs cycle"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C3/L4/T3",
+              "title": "電子伝達系",
+              "summary": "内膜で起こり、ATPの大部分(26〜28)をつくる。",
+              "keywords": [
+                "電子伝達系",
+                "酸化的リン酸化"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C3/L4/T4",
+              "title": "嫌気呼吸",
+              "summary": "酸素が足りないと細胞は発酵を使う。激しい運動中の筋肉は乳酸をつくる。",
+              "keywords": [
+                "発酵",
+                "乳酸",
+                "嫌気呼吸"
+              ],
+              "deep_note": "息切れする理由: 酸素の需要が供給を上回るため。"
+            }
+          ]
+        },
+        {
+          "handle": "C3/L5",
+          "date": "2026-04-15",
+          "title": "光合成",
+          "one_line": "光合成。",
+          "summary": "明反応(光化学反応)とカルビン回路。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L6",
+          "date": "2026-04-20",
+          "title": "DNAの複製",
+          "one_line": "DNA複製。",
+          "summary": "半保存的複製。リーディング鎖とラギング鎖。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L7",
+          "date": "2026-04-22",
+          "title": "遺伝子の発現",
+          "one_line": "転写と翻訳。",
+          "summary": "mRNA、コドン、リボソーム。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L8",
+          "date": "2026-04-27",
+          "title": "遺伝",
+          "one_line": "メンデル遺伝。",
+          "summary": "優性と劣性の対立遺伝子。パネットの方形。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L9",
+          "date": "2026-04-29",
+          "title": "進化",
+          "one_line": "進化。",
+          "summary": "自然選択と遺伝的浮動。",
+          "topics": []
+        },
+        {
+          "handle": "C3/L10",
+          "date": "2026-05-04",
+          "title": "生態系",
+          "one_line": "生態系とエネルギーの流れ。",
+          "summary": "生態系を流れるエネルギーのうち、次の栄養段階に渡るのは約10%だけ。熱力学第二法則とエントロピー。",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "handle": "C4",
+      "title": "Linear Algebra",
+      "term": "2026 Fall",
+      "lectures": [
+        {
+          "handle": "C4/L1",
+          "date": "2026-09-02",
+          "title": "Vectors and Matrices",
+          "one_line": "Vectors and matrices.",
+          "summary": "Vector operations, matrix multiplication.",
+          "topics": []
+        },
+        {
+          "handle": "C4/L2",
+          "date": "2026-09-04",
+          "title": "Linear Systems",
+          "one_line": "Linear systems.",
+          "summary": "Solving Ax = b with Gaussian elimination; row echelon form.",
+          "topics": [
+            {
+              "handle": "C4/L2/T1",
+              "title": "Gaussian elimination",
+              "summary": "Row operations to reach row echelon form.",
+              "keywords": [
+                "Gaussian elimination",
+                "row operations"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C4/L2/T2",
+              "title": "Pivots",
+              "summary": "Pivot positions determine rank and solutions.",
+              "keywords": [
+                "pivot",
+                "rank"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C4/L2/T3",
+              "title": "Back substitution",
+              "summary": "Solve from the last equation upward.",
+              "keywords": [
+                "back substitution"
+              ],
+              "deep_note": ""
+            }
+          ]
+        },
+        {
+          "handle": "C4/L3",
+          "date": "2026-09-09",
+          "title": "Determinants",
+          "one_line": "Determinants.",
+          "summary": "Determinants, properties, and invertibility.",
+          "topics": []
+        },
+        {
+          "handle": "C4/L4",
+          "date": "2026-09-11",
+          "title": "Vector Spaces",
+          "one_line": "Vector spaces.",
+          "summary": "Subspaces, span, basis, dimension.",
+          "topics": []
+        },
+        {
+          "handle": "C4/L5",
+          "date": "2026-09-16",
+          "title": "Eigenvalues",
+          "one_line": "Eigenvalues and eigenvectors.",
+          "summary": "Eigenvalues and eigenvectors; characteristic polynomial; an example on the stability of x' = Ax.",
+          "topics": [
+            {
+              "handle": "C4/L5/T1",
+              "title": "Definition",
+              "summary": "Av = λv.",
+              "keywords": [
+                "eigenvalue",
+                "eigenvector"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C4/L5/T2",
+              "title": "Characteristic polynomial",
+              "summary": "det(A − λI) = 0.",
+              "keywords": [
+                "characteristic polynomial"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C4/L5/T3",
+              "title": "Stability of x' = Ax",
+              "summary": "The system is stable when every eigenvalue has a negative real part.",
+              "keywords": [
+                "stability",
+                "negative real part"
+              ],
+              "deep_note": "The professor said this comes back in control theory."
+            }
+          ]
+        },
+        {
+          "handle": "C4/L6",
+          "date": "2026-09-18",
+          "title": "Diagonalization",
+          "one_line": "Diagonalization.",
+          "summary": "Diagonalization and an intro to SVD.",
+          "topics": []
+        },
+        {
+          "handle": "C4/L7",
+          "date": "2026-09-29",
+          "title": "Orthogonality",
+          "one_line": "Orthogonality and projections.",
+          "summary": "Dot products, orthogonal vectors, projection onto a line and a subspace, and least squares as a projection.",
+          "topics": [
+            {
+              "handle": "C4/L7/T1",
+              "title": "Orthogonal vectors",
+              "summary": "Two vectors are orthogonal when their dot product is zero.",
+              "keywords": [
+                "orthogonal",
+                "dot product"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C4/L7/T2",
+              "title": "Projections",
+              "summary": "Projection of b onto a: (a·b / a·a) a; onto a subspace with P = A(AᵀA)⁻¹Aᵀ.",
+              "keywords": [
+                "projection"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C4/L7/T3",
+              "title": "Least squares",
+              "summary": "Solve AᵀA x = Aᵀb when Ax = b has no solution.",
+              "keywords": [
+                "least squares",
+                "normal equations"
+              ],
+              "deep_note": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "handle": "C5",
+      "title": "Robotics Seminar",
+      "term": null,
+      "lectures": [
+        {
+          "handle": "C5/L1",
+          "date": "2026-09-03",
+          "title": "Kinematics",
+          "one_line": "Robot kinematics.",
+          "summary": "Forward and inverse kinematics of simple arms.",
+          "topics": []
+        },
+        {
+          "handle": "C5/L2",
+          "date": "2026-09-10",
+          "title": "PID Control",
+          "one_line": "PID control of DC motors.",
+          "summary": "Modeling a DC motor and controlling its speed with PID; tuning and overshoot.",
+          "topics": [
+            {
+              "handle": "C5/L2/T1",
+              "title": "DC motor model",
+              "summary": "Voltage to speed as a first-order system.",
+              "keywords": [
+                "DC motor"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C5/L2/T2",
+              "title": "P, I, D terms",
+              "summary": "P reacts to error, I removes steady-state error, D damps.",
+              "keywords": [
+                "PID",
+                "steady-state error"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C5/L2/T3",
+              "title": "Tuning and oscillation",
+              "summary": "Too much P or I causes overshoot and oscillation; D reduces it.",
+              "keywords": [
+                "overshoot",
+                "oscillation",
+                "tuning"
+              ],
+              "deep_note": "Start with P, add D, then I."
+            }
+          ]
+        },
+        {
+          "handle": "C5/L3",
+          "date": "2026-09-17",
+          "title": "State-Space Control",
+          "one_line": "State-space control.",
+          "summary": "State-space models; poles are the eigenvalues of A; stability; pole placement.",
+          "topics": [
+            {
+              "handle": "C5/L3/T1",
+              "title": "State-space form",
+              "summary": "x' = Ax + Bu.",
+              "keywords": [
+                "state space"
+              ],
+              "deep_note": ""
+            },
+            {
+              "handle": "C5/L3/T2",
+              "title": "Poles and stability",
+              "summary": "Poles are eigenvalues of A; stable if all have negative real parts.",
+              "keywords": [
+                "poles",
+                "eigenvalues",
+                "stability"
+              ],
+              "deep_note": "Links directly to Linear Algebra."
+            },
+            {
+              "handle": "C5/L3/T3",
+              "title": "Pole placement",
+              "summary": "Choose feedback gains to move poles.",
+              "keywords": [
+                "pole placement"
+              ],
+              "deep_note": ""
+            }
+          ]
+        },
+        {
+          "handle": "C5/L4",
+          "date": "2026-09-24",
+          "title": "Sensors",
+          "one_line": "Sensors and filtering.",
+          "summary": "Encoders, IMUs, and an intro to the Kalman filter.",
+          "topics": []
+        }
+      ]
+    }
+  ],
+  "transcripts": {
+    "C1/L4/s412-425": "So which one should you use? Honestly, on average quicksort wins, it's just faster on real machines. But heapsort wins on guarantees. If someone hands you adversarial input, heapsort still gives you n log n. I like to say: quicksort is the sprinter, heapsort is the one that always finishes the marathon.",
+    "C1/L4/s426-431": "Part of why quicksort is fast is the cache. It walks through the array in order, so the memory it needs is usually already there.",
+    "C1/L6/s233-240": "Now, I'm going to define the balance factor as the height of the right subtree minus the height of the left. I know your textbook does it the other way around. I just find right minus left easier to draw.",
+    "C1/L6/s241-243": "And yes, on the exam I will use my convention, so please don't flip the signs.",
+    "C4/L2/s518-526": "Here's a trick I really like. Before you eliminate, swap rows so the entry with the largest absolute value becomes the pivot. It's called partial pivoting. On paper it saves you from ugly fractions, and on a computer it keeps rounding errors small.",
+    "C4/L5/s610-618": "Let me tell you a story. In 1940 the Tacoma Narrows Bridge started twisting in the wind until it collapsed. People often say it was resonance, which is really an eigenvalue story: the wind kept feeding energy into one mode of the bridge.",
+    "C5/L4/s801-806": "Quick aside, since we're talking about sensing tiny signals: last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit you can hold in your hand. That's the physics behind superconducting qubits. Look it up, it's a great story."
+  },
+  "recent_chats": [
+    {
+      "handle": "P1",
+      "title": "AVL木の回転の練習",
+      "date": "2026-09-28",
+      "sections": [
+        {
+          "handle": "P1/S1",
+          "title": "AVL木の回転の練習",
+          "bullets": [
+            "10を根、左に5、右に15、5の左に3、さらに3の左に1を入れた例で練習した。",
+            "LLケースなので5を軸に右回転と答え、正解した。"
+          ],
+          "turns": []
+        }
+      ]
+    },
+    {
+      "handle": "P2",
+      "title": "モーター制御のPIDゲイン調整",
+      "date": "2026-09-26",
+      "sections": [
+        {
+          "handle": "P2/S1",
+          "title": "Ironcladのモーターが発振する",
+          "bullets": [
+            "ロボ部(Ironclad Robotics)でドライブのモーター速度制御をしていて、Pゲインを上げると発振すると話した。",
+            "まずPを下げてDを足す方向を勧めた。"
+          ],
+          "turns": []
+        }
+      ]
+    },
+    {
+      "handle": "P3",
+      "title": "インターン探しの相談",
+      "date": "2026-09-24",
+      "sections": [
+        {
+          "handle": "P3/S1",
+          "title": "インターンの探し方",
+          "bullets": [
+            "組み込み・ロボティクス系のインターンを探したいと話した。",
+            "大学のキャリアセンターの求人、ロボ部のOBへの連絡、GitHubにロボットのコードを載せることを勧めた。"
+          ],
+          "turns": []
+        }
+      ]
+    },
+    {
+      "handle": "P4",
+      "title": "税の弾力性とテスト対策",
+      "date": "2026-09-22",
+      "sections": [
+        {
+          "handle": "P4/S1",
+          "title": "弾力性の計算練習",
+          "bullets": [
+            "需要の価格弾力性の計算問題を3問一緒に解いた。例: 価格が10%上がって需要量が20%減る → PED = −2で弾力的。",
+            "形式は「変化率を2つ与えて、PEDと弾力的かどうかを答える」。"
+          ],
+          "turns": []
+        },
+        {
+          "handle": "P4/S2",
+          "title": "税の負担の練習",
+          "bullets": [
+            "タバコ税で、買い手と売り手のどちらが多く負担するかを弾力性で答える問題を出した。"
+          ],
+          "turns": []
+        }
+      ]
+    },
+    {
+      "handle": "P5",
+      "title": "Ironclad Roboticsのドライブ方式",
+      "date": "2026-09-20",
+      "sections": [
+        {
+          "handle": "P5/S1",
+          "title": "ドライブ方式の比較",
+          "bullets": [
+            "タンク式とメカナム式を比べ、競技の床ならタンク式が押し合いに強いと話した。"
+          ],
+          "turns": []
+        },
+        {
+          "handle": "P5/S2",
+          "title": "モーターの選び方",
+          "bullets": [
+            "トルクと回転数のバランスでギア比を決める話をした。"
+          ],
+          "turns": []
+        },
+        {
+          "handle": "P5/S3",
+          "title": "ロボ部の経験を履歴書に書く",
+          "bullets": [
+            "ドライブの担当経験を、数字(改修で周回タイム15%短縮)と一緒に書くことにした。"
+          ],
+          "turns": []
+        },
+        {
+          "handle": "P5/S4",
+          "title": "面接の練習",
+          "bullets": [
+            "模擬面接をした。",
+            "改善点: 答えが長くなりがちなので、結論を先に言い、STARの形で1分以内にまとめる。"
+          ],
+          "turns": []
+        }
+      ]
+    },
+    {
+      "handle": "P6",
+      "title": "英語のレポートの書き方",
+      "date": "2026-09-18",
+      "sections": []
+    },
+    {
+      "handle": "P7",
+      "title": "細胞呼吸のラボレポート",
+      "date": "2026-09-15",
+      "sections": [
+        {
+          "handle": "P7/S1",
+          "title": "ラボレポートの構成",
+          "bullets": [
+            "目的・方法・結果・考察の順で書くことを確認した。"
+          ],
+          "turns": []
+        },
+        {
+          "handle": "P7/S2",
+          "title": "考察の書き方",
+          "bullets": [
+            "考察には、結果が仮説と合ったか、ずれの原因(温度・測定誤差)、次に試すことを書くよう勧めた。"
+          ],
+          "turns": []
+        }
+      ]
+    },
+    {
+      "handle": "P8",
+      "title": "専攻の迷い：ハードかソフトか",
+      "date": "2026-09-12",
+      "sections": []
+    },
+    {
+      "handle": "P9",
+      "title": "Pythonの再帰とループ",
+      "date": "2026-09-10",
+      "sections": []
+    },
+    {
+      "handle": "P10",
+      "title": "週末の過ごし方",
+      "date": "2026-09-08",
+      "sections": []
+    },
+    {
+      "handle": "P11",
+      "title": "眠れないときの対策",
+      "date": "2026-09-06",
+      "sections": []
+    },
+    {
+      "handle": "P12",
+      "title": "線形代数の行列の掛け算",
+      "date": "2026-09-05",
+      "sections": []
+    },
+    {
+      "handle": "P13",
+      "title": "サークルの新歓",
+      "date": "2026-09-03",
+      "sections": []
+    },
+    {
+      "handle": "P14",
+      "title": "Gitの使い方",
+      "date": "2026-09-01",
+      "sections": []
+    },
+    {
+      "handle": "P15",
+      "title": "日本と米国の大学の違い",
+      "date": "2026-08-29",
+      "sections": []
+    },
+    {
+      "handle": "P16",
+      "title": "期末の勉強計画",
+      "date": "2026-08-27",
+      "sections": []
+    },
+    {
+      "handle": "P17",
+      "title": "好きな映画の話",
+      "date": "2026-08-25",
+      "sections": []
+    },
+    {
+      "handle": "P18",
+      "title": "C言語のポインタ",
+      "date": "2026-08-22",
+      "sections": []
+    },
+    {
+      "handle": "P19",
+      "title": "ボランティアの話",
+      "date": "2026-08-20",
+      "sections": []
+    },
+    {
+      "handle": "P20",
+      "title": "ルームメイトとの付き合い方",
+      "date": "2026-08-18",
+      "sections": []
+    }
+  ],
+  "older_chats": [
+    {
+      "handle": "P31",
+      "title": "奨学金の申請書",
+      "date": "2026-07-02",
+      "sections": [
+        {
+          "handle": "P31/S1",
+          "title": "奨学金のエッセイで強みを書く",
+          "bullets": [
+            "ロボ部で壊れた駆動系を1週間で直した経験を、粘り強さの例として書くことにした。",
+            "結果より、何を試して何を学んだかを具体的に書くよう勧めた。"
+          ],
+          "turns": []
+        }
+      ]
+    }
+  ],
+  "threads": {
+    "thread_code": {
+      "sections": [
+        {
+          "handle": "S1",
+          "title": "factorialの再帰とbase case",
+          "bullets": [
+            "factorialの再帰版を見せた。base caseは`n == 0`で1を返す。",
+            "`if n <= 1: return 1`にしてもn=0とn=1の両方で1を返すので動く、と説明した。"
+          ],
+          "turns": [
+            1,
+            2
+          ]
+        },
+        {
+          "handle": "S2",
+          "title": "ループ版と再帰の上限",
+          "bullets": [
+            "Pythonの再帰の上限は約1000回で、超えるとRecursionError。",
+            "大きいnではループ版`factorial_loop`が安全。rangeを2から始めるのは1を掛けても変わらないため。"
+          ],
+          "turns": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "handle": "S3",
+          "title": "マージソートの実装",
+          "bullets": [
+            "merge_sortとmergeのコードを見せた。分割はlog n段、各段のmergeがO(n)で、全体でO(n log n)。"
+          ],
+          "turns": [
+            6,
+            7,
+            8
+          ]
+        }
+      ],
+      "recent_conversation": [
+        [
+          "user",
+          "クイックソートとの違いは?"
+        ],
+        [
+          "assistant",
+          "マージソートは統治(merge)が仕事をし、クイックソートはpivotでの分割が仕事をする。平均O(n log n)だが、クイックソートはpivotの選び方が悪いと最悪O(n²)。"
+        ],
+        [
+          "user",
+          "pivotの選び方って重要なんだね"
+        ],
+        [
+          "assistant",
+          "すごく重要。ランダムに選ぶか、中央値に近い値を選ぶ工夫で最悪ケースを避けやすくなる。"
+        ]
+      ]
+    },
+    "thread_career": {
+      "sections": [
+        {
+          "handle": "S1",
+          "title": "専攻の迷い",
+          "bullets": [
+            "CSで、ハード寄りかソフト寄りかで迷っていて、周りより遅れている気がすると不安を話した。"
+          ],
+          "turns": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "handle": "S2",
+          "title": "Ironcladでの経験",
+          "bullets": [
+            "Ironclad Roboticsでドライブとモーター制御を担当していて、思ったよりやる気が出ると話した。"
+          ],
+          "turns": [
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "handle": "S3",
+          "title": "ファームウェア職と就職市場",
+          "bullets": [
+            "ハードとソフトは二択ではなく、ファームウェア・ロボティクスソフト・制御は両方にまたがる職種だと説明した。",
+            "ファームウェア職には、コンピュータアーキテクチャ、組み込みシステム、デジタル論理、C/C++の経験が役立つと説明した。"
+          ],
+          "turns": [
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ],
+      "recent_conversation": [
+        [
+          "user",
+          "先輩がモーターコントローラの基板をデバッグしてるのを見せてもらった、面白かった"
+        ],
+        [
+          "assistant",
+          "実際の作業を間近で見ると、思っていたより手が届く作業だと感じられることが多いよね。"
+        ]
+      ]
+    },
+    "thread_long": {
+      "sections": [
+        {
+          "handle": "S1",
+          "title": "今学期の授業の取り方",
+          "bullets": [
+            "CS 161とBiology 101を両方取るか迷っていて、両方取ると決めた。"
+          ],
+          "turns": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "handle": "S2",
+          "title": "factorialの再帰",
+          "bullets": [
+            "factorialの再帰版のコードを見せた(base caseは`n <= 1`で1を返す)。",
+            "ループ版との違いと、Pythonの再帰の上限(約1000回)を説明した。"
+          ],
+          "turns": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "handle": "S3",
+          "title": "AVL木の回転の練習",
+          "bullets": [
+            "AVL木の回転を例の木で練習した。例の木: 10を根、左に5、右に15、5の左に3、3の左に1。",
+            "LLケースなので5を軸に右回転と答えて正解した。"
+          ],
+          "turns": [
+            10,
+            11,
+            12
+          ]
+        },
+        {
+          "handle": "S4",
+          "title": "テスト前の不安",
+          "bullets": [
+            "中間テストが近くて不安だと話した。1日30分ずつ復習カードを解く計画を立てた。"
+          ],
+          "turns": [
+            13,
+            14,
+            15,
+            16
+          ]
+        },
+        {
+          "handle": "S5",
+          "title": "ヒープの挿入",
+          "bullets": [
+            "二分ヒープへの挿入(末尾に足して上へ入れ替える)を確認した。"
+          ],
+          "turns": [
+            17,
+            18,
+            19,
+            20
+          ]
+        },
+        {
+          "handle": "S6",
+          "title": "細胞呼吸の流れ",
+          "bullets": [
+            "解糖系・クエン酸回路・電子伝達系の場所と役割を確認した。"
+          ],
+          "turns": [
+            21,
+            22,
+            23,
+            24,
+            25
+          ]
+        },
+        {
+          "handle": "S7",
+          "title": "ロボ部のモーター",
+          "bullets": [
+            "ロボ部でPゲインを上げるとモーターが発振する話をした。Pを下げてDを足す方向を勧めた。"
+          ],
+          "turns": [
+            26,
+            27,
+            28
+          ]
+        },
+        {
+          "handle": "S8",
+          "title": "弾力性の計算",
+          "bullets": [
+            "需要の価格弾力性の計算問題を3問一緒に解いた。"
+          ],
+          "turns": [
+            29,
+            30,
+            31,
+            32
+          ]
+        },
+        {
+          "handle": "S9",
+          "title": "インターン探し",
+          "bullets": [
+            "組み込み系のインターンを探している。キャリアセンターとOBへの連絡を勧めた。"
+          ],
+          "turns": [
+            33,
+            34,
+            35
+          ]
+        },
+        {
+          "handle": "S10",
+          "title": "B-treeとデータベース",
+          "bullets": [
+            "B-treeが1ノードに複数のキーを持ち、木を低く保つことを説明した。"
+          ],
+          "turns": [
+            36,
+            37,
+            38,
+            39,
+            40
+          ]
+        },
+        {
+          "handle": "S11",
+          "title": "期末に向けた計画",
+          "bullets": [
+            "期末までの3週間の復習計画を、週ごとに科目を割り振って立てた。"
+          ],
+          "turns": [
+            111,
+            112,
+            113,
+            114
+          ]
+        },
+        {
+          "handle": "S12",
+          "title": "グラフ探索",
+          "bullets": [
+            "BFSとDFSの違いと、最短経路にはBFSを使うことを確認した。"
+          ],
+          "turns": [
+            115,
+            116,
+            117,
+            118
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "handle": "H1",
+          "title": "学期の始まり: 授業選び・再帰・AVL・テストの不安・ヒープ",
+          "bullets": [
+            "CS 161とBiology 101を両方取ると決めた。",
+            "再帰(factorial)、AVL木の回転、ヒープの挿入を練習した。",
+            "中間テストへの不安から、毎日30分の復習計画を立てた。"
+          ],
+          "children": [
+            "S1",
+            "S2",
+            "S3",
+            "S4",
+            "S5"
+          ]
+        },
+        {
+          "handle": "H2",
+          "title": "学期の中盤: 細胞呼吸・ロボ部・弾力性・インターン・B-tree",
+          "bullets": [
+            "細胞呼吸、弾力性の計算、B-treeを復習した。",
+            "ロボ部のモーターの発振とインターン探しの相談をした。"
+          ],
+          "children": [
+            "S6",
+            "S7",
+            "S8",
+            "S9",
+            "S10"
+          ]
+        }
+      ],
+      "recent_conversation": [
+        [
+          "user",
+          "BFSって結局キューを使うんだよね"
+        ],
+        [
+          "assistant",
+          "そう、BFSはキューで近い順に広げていく。DFSはスタック(または再帰)を使う。"
+        ]
+      ]
+    }
+  }
+}

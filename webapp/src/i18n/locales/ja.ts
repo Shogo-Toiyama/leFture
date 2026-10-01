@@ -754,6 +754,8 @@ export const ja: Record<keyof typeof en, string> = {
   chatSend: '送信',
   chatStageThinking: '考え中…',
   chatStageSearching: '講義ノートを検索中…',
+  chatStageSearchingWeb: 'Webで検索中…',
+  chatStageSearchingChats: '過去のチャットを確認中…',
   chatStageWriting: '回答を書いています…',
   chatReconnecting: '接続が切れました。返答ができあがるのを待っています…',
   chatCreditsUsed: '{credits}クレジット',
@@ -798,5 +800,8 @@ export const ja: Record<keyof typeof en, string> = {
   chatSourceTopic: 'トピック',
   chatSourceFunFact: 'Fun Fact',
   chatSourceLectureSummary: '講義の要約',
+  chatSourceCourse: 'コース',
+  chatSourceChat: '過去のチャット',
+  chatSourceWeb: 'Web',
   chatSourceMoment: '自分のメモ',
 };

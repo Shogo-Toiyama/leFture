@@ -1,0 +1,482 @@
+{
+  "model": "gpt-6-luna",
+  "reasoning": null,
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 3.03,
+        "usage": {
+          "input": 4167,
+          "output": 116
+        },
+        "output": {
+          "reasoning": "The student is expressing overwhelm, not asking about course materials or outside information. A supportive response can help without fetching anything.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Acknowledge that having too many assignments feels overwhelming.",
+            "Offer a small, manageable next step and invite them to share what is due soonest."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 3.54,
+        "usage": {
+          "input": 4166,
+          "output": 138
+        },
+        "output": {
+          "reasoning": "This is a general computing question, and the student gives no indication that they want an explanation from a particular class or their own materials.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that a process is an executing program with its own memory space and resources, while threads are execution paths within a process that share its memory and resources.",
+            "Briefly compare their isolation, communication, and overhead, and give a simple example."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 3.3,
+        "usage": {
+          "input": 4179,
+          "output": 142
+        },
+        "output": {
+          "reasoning": "This is a general question about caffeine, and the answer does not depend on the student’s course materials or current outside information.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that caffeine blocks adenosine receptors, temporarily reducing the feeling of sleepiness.",
+            "Note that caffeine can delay sleep for hours and suggest avoiding it later in the day."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 3.02,
+        "usage": {
+          "input": 4360,
+          "output": 162
+        },
+        "output": {
+          "reasoning": "“The last one” refers to the seventh lecture, Orthogonality, from the list in the previous reply. I need that lecture’s summary and topics to describe what it covered.",
+          "status": "need_more",
+          "missing": "The specific content of C4/L7 on Orthogonality.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C4/L7",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the last one",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 3.84,
+        "usage": {
+          "input": 4261,
+          "output": 171
+        },
+        "output": {
+          "reasoning": "「その前の回」は直前に話題になったC1/L8（B-Trees）の前の講義を指すので、C1/L7を確認します。",
+          "status": "need_more",
+          "missing": "CS 161の第7講の内容",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L7",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その前の回",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 4.57,
+        "usage": {
+          "input": 4173,
+          "output": 313
+        },
+        "output": {
+          "reasoning": "「先週のロボティクスの授業」は過去の授業内容を指している。先週（2026-09-21〜2026-09-27）のC5の授業を特定する。",
+          "status": "need_more",
+          "missing": "先週に行われたロボティクスの授業の内容。",
+          "operations": [
+            {
+              "op": "by_date",
+              "handle": "none",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "C5",
+              "date_from": "2026-09-21",
+              "date_to": "2026-09-27",
+              "grounds": "past_reference",
+              "grounds_quote": "先週のロボティクスの授業",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 2.5,
+        "usage": {
+          "input": 4174,
+          "output": 175
+        },
+        "output": {
+          "reasoning": "The student asks about a specific story the professor told in Linear Algebra, which is likely only preserved in the class transcript. Search that course’s transcript for the bridge-collapse anecdote.",
+          "status": "need_more",
+          "missing": "What the Linear Algebra professor said about the bridge collapsing.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "story about a bridge collapsing",
+              "layer": "transcript",
+              "within": "C4",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the professor told a story about a bridge collapsing",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_chat_pointers",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 2.15,
+        "usage": {
+          "input": 4173,
+          "output": 155
+        },
+        "output": {
+          "reasoning": "The student refers to an earlier conversation about C pointers and asks to see its example again. The matching chat summary is P18, and the exact example is missing.",
+          "status": "need_more",
+          "missing": "The C pointer example shown in the earlier chat P18.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "P18",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "Remember when we went over pointers in C?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.84,
+        "usage": {
+          "input": 4169,
+          "output": 207
+        },
+        "output": {
+          "reasoning": "The student asks what their Biology course taught about enzyme temperature effects. The relevant course material is in C3, whose notes are in Japanese.",
+          "status": "need_more",
+          "missing": "What the Biology 101 course taught about how temperature affects enzymes.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "酵素 温度 活性 最適温度 変性",
+              "layer": "all",
+              "within": "C3",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "what did we learn",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.69,
+        "usage": {
+          "input": 4171,
+          "output": 210
+        },
+        "output": {
+          "reasoning": "ダイクストラ法はCS 161の授業内容に当たり、「授業でどう説明されてた？」と過去の説明を尋ねています。講義で実際にどう説明されたかを確認します。",
+          "status": "need_more",
+          "missing": "CS 161でのダイクストラ法の説明と、説明に使われた手順や例。",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm",
+              "layer": "transcript",
+              "within": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた？",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 2.82,
+        "usage": {
+          "input": 3562,
+          "output": 221
+        },
+        "output": {
+          "reasoning": "検索でダイクストラ法を扱う講義（C1/L11）が見つかりました。授業での説明内容を確かめるため、まず講義のトピックを開きます。",
+          "status": "need_more",
+          "missing": "C1/L11でのダイクストラ法の説明と、それを確認できる transcript の該当箇所。",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L11",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた？",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 3.03,
+        "usage": {
+          "input": 3622,
+          "output": 317
+        },
+        "output": {
+          "reasoning": "講義一覧では C1/L11 がダイクストラ法を扱ったと分かりますが、説明の具体的な内容はまだありません。授業での説明を答えるには、該当講義の transcript を探す必要があります。",
+          "status": "need_more",
+          "missing": "C1/L11 の transcript にある、教授がダイクストラ法をどう説明したかの具体的な内容。",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm explanation, priority queue, shortest paths",
+              "layer": "transcript",
+              "within": "C1/L11",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 2.42,
+        "usage": {
+          "input": 4165,
+          "output": 182
+        },
+        "output": {
+          "reasoning": "Whether Python 3.14 has been released is a current external fact, so I should verify it with a web search.",
+          "status": "need_more",
+          "missing": "The current release status of Python 3.14.",
+          "operations": [
+            {
+              "op": "find",
+              "handle": "none",
+              "target": "web.search",
+              "query": "Python 3.14 official release status release date",
+              "layer": "none",
+              "within": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "needs_external_info",
+              "grounds_quote": "Is Python 3.14 out yet?",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.0045320001574968355
+}

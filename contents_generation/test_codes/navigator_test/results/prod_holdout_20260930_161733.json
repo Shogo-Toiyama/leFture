@@ -1,0 +1,366 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": false,
+    "CAN_WEB": false
+  },
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.84,
+        "output": {
+          "reasoning": "The student is expressing overwhelm, not asking about course materials. The answerer can respond with empathy and offer practical support without fetching anything.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Acknowledge that the workload feels overwhelming and respond supportively.",
+            "Offer to help break the assignments into manageable next steps."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.96,
+        "output": {
+          "reasoning": "This is a general computing question and does not point to any course, past class, or on-screen material. The answer can be given from general knowledge without fetching the student's materials.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that a process is an isolated running program with its own address space and resources, while threads are execution paths within a process that share its memory and resources.",
+            "Briefly compare their isolation, communication, and overhead."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.79,
+        "output": {
+          "reasoning": "This is a general question about caffeine’s effects, with no reference to course materials or class discussion. The answerer can respond from general knowledge without fetching the student’s materials.",
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain briefly how caffeine can interfere with sleep."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.82,
+        "output": {
+          "reasoning": "“The last one” refers to the seventh lecture in the list just shown: Orthogonality. Its lecture summary can explain what it covered.",
+          "status": "need_more",
+          "missing": "The summary and topics of C4/L7, Orthogonality.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C4/L7",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the last one",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.07,
+        "output": {
+          "reasoning": "「その前の回」は直前に話題になった4月25日のB-Trees回を指す。前の講義の内容を特定するには、C1の講義一覧を確認する必要がある。",
+          "status": "need_more",
+          "missing": "CS 161でB-Trees回の直前に記録された講義と、その内容。",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "その前の回",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 2.14,
+        "output": {
+          "reasoning": "The student asks for a summary of last week's Robotics Seminar class. The course is identifiable, and its lecture date range covers last week, so the recorded lecture outline can identify the specific class and summary.",
+          "status": "need_more",
+          "missing": "Which Robotics Seminar lecture was recorded last week and what its content covered.",
+          "operations": [
+            {
+              "op": "by_date",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "C5",
+              "handle": "none",
+              "date_from": "2026-09-21",
+              "date_to": "2026-09-27",
+              "grounds": "explicit_request",
+              "grounds_quote": "まとめて",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 1.72,
+        "output": {
+          "reasoning": "The student asks about a specific anecdote the professor told in Linear Algebra, so the transcript is the best source for the missing story details.",
+          "status": "need_more",
+          "missing": "What the professor said about the bridge collapsing in Linear Algebra.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "bridge collapse collapsing bridge",
+              "layer": "transcript",
+              "within": "C4",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "the professor told a story about a bridge collapsing",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 1.77,
+        "output": {
+          "reasoning": "The student asks what their biology course taught about a specific concept. The course notes are in Japanese, so search those for the enzyme-temperature material.",
+          "status": "need_more",
+          "missing": "What the biology course materials say about how temperature affects enzymes.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "酵素 温度 活性 最適温度 変性",
+              "layer": "summaries",
+              "within": "C3",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "likely_in_course",
+              "grounds_quote": "how temperature affects enzymes",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.06,
+        "output": {
+          "reasoning": "学生は授業での説明を尋ねている。ダイクストラ法はデータ構造の講義で扱われた可能性が高く、授業での実際の説明を確かめるには講義の記録を検索する。",
+          "status": "need_more",
+          "missing": "CS 161の授業でダイクストラ法をどう説明したか、特に講義中の説明内容。",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm",
+              "layer": "transcript",
+              "within": "C1",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 1.66,
+        "output": {
+          "reasoning": "The search located a relevant lecture, but its summary does not reveal how the professor actually explained the algorithm. I should inspect that lecture’s outline to find the relevant topic and transcript references.",
+          "status": "need_more",
+          "missing": "The lecture’s topic-level material and citations to the professor’s explanation of Dijkstra’s algorithm.",
+          "operations": [
+            {
+              "op": "open",
+              "target": "none",
+              "query": "",
+              "layer": "none",
+              "within": "none",
+              "handle": "C1/L11",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 1.93,
+        "output": {
+          "reasoning": "講義概要から対象の授業は特定できましたが、教授の具体的な説明はまだ確認できていません。授業での言い方を知るには、該当講義の transcript を探す必要があります。",
+          "status": "need_more",
+          "missing": "C1/L11で教授がダイクストラ法をどう説明したか、実際の発言内容。",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm explanation priority queue shortest paths",
+              "layer": "transcript",
+              "within": "C1/L11",
+              "handle": "none",
+              "date_from": "",
+              "date_to": "",
+              "grounds": "past_reference",
+              "grounds_quote": "授業でどう説明されてた",
+              "relation": "direct"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.001679474287458509
+}

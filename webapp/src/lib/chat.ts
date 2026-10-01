@@ -66,6 +66,15 @@ export async function getChatMessage(messageId: string): Promise<ChatMessage | n
   return data ? normalizeMessage(data) : null;
 }
 
+/** 端末のIANAタイムゾーン名(例: "Asia/Tokyo")。取れない環境ではundefined(送らない)。 */
+function deviceTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function normalizeMessage(row: Record<string, unknown>): ChatMessage {
   return {
     ...(row as unknown as ChatMessage),
@@ -143,6 +152,8 @@ export async function sendChatMessage(
         client_message_id: params.clientMessageId,
         content: params.content,
         context: params.context ?? null,
+        // 「昨日の授業」「今学期」を端末の日付で解決するため(バックエンドは無ければUTC)
+        timezone: deviceTimeZone(),
       }),
       signal,
     });

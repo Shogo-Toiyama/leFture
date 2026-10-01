@@ -1,0 +1,5791 @@
+[
+  {
+    "id": "outline_heap_insert",
+    "category": "lecture.outline",
+    "message": "前に授業でやったヒープへの挿入のやり方、もう一回教えて",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "heap",
+                  "insert"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "which CS 161 lecture covered heap insertion"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1",
+          "C1/L3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L3/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "トピックの要約で足りると判断してもよい",
+            "detour": false
+          }
+        ],
+        "looking_for": "the part of the binary heaps lecture about insertion"
+      },
+      {
+        "lap": 4,
+        "opened": [
+          "C1",
+          "C1/L3",
+          "C1/L3/T2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the step-by-step insertion procedure (bubble up)"
+      }
+    ],
+    "why": "基本の3段たどり。コース → 講義 → トピックで、関係する枝だけを開けるか(2周目以降はコースから入った場合の状態)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_known_lecture",
+    "category": "lecture.outline",
+    "message": "In CS161 lecture 6 we did AVL rotations, and I'm still fuzzy on LR vs RL.",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "LR",
+                  "RL",
+                  "rotation"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "note": "講義を開きつつ同じ周で検索もする",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "LR",
+                  "RL",
+                  "rotation",
+                  "AVL"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "講義番号が分かっているのに検索から入る(遠回り)",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C1/L6"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6/T4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C1/L6/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the part of lecture 6 about LR and RL double rotations"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1/L6",
+          "C1/L6/T4"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "LR",
+                  "RL",
+                  "rotation"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで確かめる(遠回り)",
+            "detour": true
+          }
+        ],
+        "looking_for": "how LR and RL rotations work, step by step"
+      }
+    ],
+    "why": "「lecture 6(第6回)」と言われたら、コースを開かずに講義へ直接行けるか。(録音し忘れた回があると教授の数え方とずれるので、開いた回のタイトルが合わなければ隣を開く、とプロンプトに書く)",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_on_screen",
+    "category": "lecture.outline",
+    "message": "ここの内容もうちょっと詳しく知りたい",
+    "thread": null,
+    "screen": {
+      "lecture": "C2/L4",
+      "topic": null,
+      "selected_text": null
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2/L4",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C2/L4"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "C2/L4/T1",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C2/L4/T2",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C2/L4/T3",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the details of the elasticity lecture the student is viewing"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C2/L4",
+          "C2/L4/T1",
+          "C2/L4/T2",
+          "C2/L4/T3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the detailed content of each topic of C2/L4"
+      }
+    ],
+    "why": "画面で見ている講義を根拠に開けるか(「ここ」を画面の文脈で解決)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_selected_text_enough",
+    "category": "lecture.outline",
+    "message": "これって普通の教科書と逆だよね？",
+    "thread": null,
+    "screen": {
+      "lecture": "C1/L6",
+      "topic": null,
+      "selected_text": "balance factor = height(right) − height(left)"
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "balance factor",
+                  "AVL"
+                ],
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "「普通の教科書」の定義を外で確かめる",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "確認のために開いてもよい",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "balance factor"
+                ],
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "確認のために検索してもよい",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "選択テキストと一般知識で答えられるときに、取りに行きすぎないか。外の定義を確かめにWebへ行くのも可。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_cross_course",
+    "category": "lecture.outline",
+    "message": "線形代数でやった固有値って、ロボットの制御の授業と関係ある？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "eigen",
+                  "stability",
+                  "固有値"
+                ],
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C4",
+          "C5"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4/L5",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5/L3",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "which lectures covered eigenvalues and robot control"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C4",
+          "C5",
+          "C4/L5",
+          "C5/L3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4/L5/T3",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5/L3/T2",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the parts of those lectures that connect eigenvalues and stability"
+      },
+      {
+        "lap": 4,
+        "opened": [
+          "C4",
+          "C5",
+          "C4/L5",
+          "C5/L3",
+          "C4/L5/T3",
+          "C5/L3/T2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "details of the stability discussion in both lectures"
+      }
+    ],
+    "why": "2つのコースを同じ周で並列に開き、それぞれの該当回まで降りられるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_semester_overview",
+    "category": "lecture.outline",
+    "message": "今学期の授業って何やったか、全体をざっと振り返りたい",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C4",
+          "C5"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the list of lectures in this semester's courses"
+      }
+    ],
+    "why": "「今学期」を今日の日付(9/30)から解決できるか。C4は学期(2026 Fall)で、C5は学期が未設定なので講義の日付の範囲で判断する。「ざっと」なら講義の一覧で止める。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_all_courses",
+    "category": "lecture.outline",
+    "message": "Can you roughly summarize what I've learned across all my classes so far?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C3",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C4",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the list of lectures in every course"
+      }
+    ],
+    "why": "全コースの広い質問。1周で5か所(上限いっぱい)を開いて止まれるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_compare_in_course",
+    "category": "lecture.outline",
+    "message": "How did the professor explain the difference between heapsort and quicksort?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "heapsort",
+                  "quicksort"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "heapsort vs quicksort",
+            "hits": [
+              {
+                "handle": "C1/L4/T3",
+                "snippet": "Heapsort vs quicksort: Quicksort is usually faster in practice (cache-friendly) but worst case O(n^2); heapsort guarantees O(n log n)."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L4/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "where the professor compared heapsort and quicksort"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1/L4/T3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L4/s412-425",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C1/L4/s426-431",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the professor's explanation of heapsort vs quicksort"
+      },
+      {
+        "lap": 4,
+        "opened": [
+          "C1/L4/T3",
+          "C1/L4/s412-425"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the professor's actual words comparing heapsort and quicksort"
+      }
+    ],
+    "why": "「教授はどう説明してた」→ 検索でトピックに当て、Deep Noteの引用範囲から教授の実際の言葉(文字起こし)まで行けるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_professor_convention",
+    "category": "lecture.outline",
+    "message": "AVLの平衡因子、教授の定義ってどっち向きだったっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "balance factor",
+                  "AVL",
+                  "平衡因子"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "AVL balance factor definition",
+            "hits": [
+              {
+                "handle": "C1/L6/T2",
+                "snippet": "Balance factor convention: BF = height(right) − height(left). Left-heavy is negative. The test uses this convention."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the professor's definition of the AVL balance factor"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1/L6/T2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6/s233-240",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C1/L6/s241-243",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the exact convention the professor used for the balance factor"
+      }
+    ],
+    "why": "要約に答えが出ていれば、そこで止まってよい(教授の言葉を確かめに文字起こしを開くのも可)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "outline_follow_up_next",
+    "category": "lecture.outline",
+    "message": "じゃあその次の回は何やったんだっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [
+      "C1/L3"
+    ],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "コースを開いて確認する(遠回り)",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "前のターンで開いた講義(C1/L3)から「次の回」を解決できるか。",
+    "recent_conversation": [
+      [
+        "user",
+        "ヒープの授業って何やったっけ"
+      ],
+      [
+        "assistant",
+        "4月9日のBinary Heapsの回では、配列で表す完全二分木としてのヒープ、挿入(bubble up)、extract-min、O(n)でのheapifyを扱ったよ。"
+      ]
+    ],
+    "set": "main"
+  },
+  {
+    "id": "outline_follow_up_third",
+    "category": "lecture.outline",
+    "message": "Tell me more about the third one.",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [
+      "C2"
+    ],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2/L6",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C2/L6"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "C2/L6/T1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C2/L6/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C2/L6/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "what the Taxes lecture (the third item shown) covered in detail"
+      }
+    ],
+    "why": "前の回答で見せた一覧の3番目。一覧は弾力性に関係する回だけ(第4・5・6回)なので、答えはC2/L3ではなくC2/L6。文脈で指す先が変わる言葉を、番号の思い込みではなく直前の会話で解決できるか。",
+    "recent_conversation": [
+      [
+        "user",
+        "Which econ lectures were about elasticity?"
+      ],
+      [
+        "assistant",
+        "Three of your Intro Microeconomics lectures deal with elasticity:\n1. Price Elasticity of Demand (Apr 10)\n2. Price Elasticity of Supply (Apr 15)\n3. Taxes (Apr 17) — who bears a tax depends on the elasticities."
+      ]
+    ],
+    "set": "main"
+  },
+  {
+    "id": "outline_pronoun_that_lecture",
+    "category": "lecture.outline",
+    "message": "その授業で、教授はオーバーシュートについて何か言ってた？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [
+      "C5/L2"
+    ],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C5/L2/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "overshoot",
+                  "オーバーシュート"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C5/L2",
+                  "C5"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "その回の中に絞って検索",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C5/L2/T3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "overshoot",
+                  "オーバーシュート"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  "C5",
+                  "C5/L2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで確かめる(遠回り)",
+            "detour": true
+          }
+        ],
+        "looking_for": "what the professor said about overshoot in the PID lecture"
+      }
+    ],
+    "why": "「その授業」を直前の会話と前のターンで開いたもの(C5/L2)で解決できるか。絞らずに全体を検索したり、別の授業を開いたりしない。",
+    "recent_conversation": [
+      [
+        "user",
+        "ロボティクスのPIDの授業って、どんな内容だった？"
+      ],
+      [
+        "assistant",
+        "9月10日のPID Controlの回では、DCモーターのモデル化、P・I・Dそれぞれの役割、そしてゲイン調整とオーバーシュートの話をしていたよ。トピックは「DC motor model」「P, I, D terms」「Tuning and oscillation」の3つ。"
+      ]
+    ],
+    "set": "main"
+  },
+  {
+    "id": "date_explicit",
+    "category": "lecture.by_date",
+    "message": "What did we cover in econ on April 10?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "by_date",
+                "from": "2026-04-10",
+                "to": "2026-04-10",
+                "within_any": [
+                  null,
+                  "C2"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2/L4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "地図の日付範囲と回数から当てた",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "by_date",
+            "query": "2026-04-10 (C2)",
+            "hits": [
+              {
+                "handle": "C2/L4",
+                "snippet": "2026-04-10 — Price Elasticity of Demand: Price elasticity of demand."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2/L4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "which econ lecture was on 2026-04-10"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C2/L4"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "what the 2026-04-10 econ lecture covered"
+      }
+    ],
+    "why": "日付での参照は、日付で引く道具で一発。コースを開いて日付を読むのは遠回り。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "date_yesterday",
+    "category": "lecture.by_date",
+    "message": "I zoned out in yesterday's class. Can you catch me up?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "by_date",
+                "from": "2026-09-29",
+                "to": "2026-09-29",
+                "within_any": null,
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "今学期のコースを開いて日付を読む",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "by_date",
+            "query": "2026-09-29",
+            "hits": [
+              {
+                "handle": "C4/L7",
+                "snippet": "2026-09-29 — Orthogonality: Orthogonality and projections."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4/L7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "which lecture was yesterday (2026-09-29)"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C4/L7"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "C4/L7/T1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C4/L7/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C4/L7/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "what yesterday's lecture covered"
+      }
+    ],
+    "why": "「昨日」を今日の日付から解決し、コースが分からなくても日付だけで引けるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "concept_vague_in_course",
+    "category": "lecture.concept",
+    "message": "エントロピーって生物の授業で出てきた気がするんだけど",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "entropy",
+                  "エントロピー",
+                  "熱力学"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C3"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "コースを開いて探す",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "エントロピー",
+            "hits": [
+              {
+                "handle": "C3/L10",
+                "snippet": "生態系を流れるエネルギーのうち、次の栄養段階に渡るのは約10%だけ。熱力学第二法則とエントロピー。"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C3/L10",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "where entropy came up in the biology course"
+      }
+    ],
+    "why": "講義タイトルに出てこない概念は、類似検索で当てに行けるか(生物の中に絞ってもよい)。生物のまとめは日本語。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "concept_ja_question_en_lectures",
+    "category": "lecture.concept",
+    "message": "二分探索木の削除で、子が2つあるときの手順ってどうだったっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "delet",
+                  "successor",
+                  "BST",
+                  "binary search tree"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "講義は英語。日本語の質問から、英語の検索語を作れるか(検索語にdelete/successor/BST等が入るか)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "concept_term_then_done",
+    "category": "lecture.concept",
+    "message": "The term 'tax incidence' came up in class. What did it mean again?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "tax incidence"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "tax incidence",
+            "hits": [
+              {
+                "handle": "C2/L6/T2",
+                "snippet": "Tax incidence: the more inelastic side bears more of the tax. Example: cigarette taxes fall mostly on smokers."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2/L6/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the meaning of tax incidence as taught in class"
+      }
+    ],
+    "why": "当たった断片で足りれば止まる。足りなければ当たった場所を開く。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "concept_scoped_search",
+    "category": "lecture.concept",
+    "message": "In econ, where did the professor talk about insulin?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "insulin"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "insulin"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "絞らなくても当たる",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "insulin",
+            "hits": [
+              {
+                "handle": "C2/L4/T2",
+                "snippet": "Examples: Insulin is inelastic (no substitutes); a specific soda brand is elastic."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2/L4/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "where insulin came up in the econ course"
+      }
+    ],
+    "why": "コース名が言われていて概念もはっきりしているなら、そのコースに絞った類似検索が一番早い。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "concept_in_course_no_reference",
+    "category": "lecture.concept",
+    "message": "クイックソートの最悪計算量ってどれくらい？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "quicksort"
+                ],
+                "grounds": [
+                  "likely_in_course"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "授業への言及は無いが、CS161で習う概念。取りに行っても行かなくてもよいが、取るなら根拠はlikely_in_course。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "transcript_side_remark",
+    "category": "lecture.transcript",
+    "message": "教授が前に言ってた『ガウスの消去法の裏技』ってなんだっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Gauss",
+                  "elimination",
+                  "trick",
+                  "pivot",
+                  "ガウス"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  null,
+                  "C4",
+                  "C4/L2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "目次をたどっても『裏技』は要約に出てこない",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "Gaussian elimination trick",
+            "hits": [
+              {
+                "handle": "C4/L2/s518-526",
+                "snippet": "Here's a trick I really like. Before you eliminate, swap rows so the entry with the largest absolute value becomes the pivot. It's called partial pivoting..."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4/L2/s518-526",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the professor's Gaussian elimination trick"
+      }
+    ],
+    "why": "授業中の一言は要約やトピックに残らない。文字起こしを検索できるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "transcript_nobel_in_class",
+    "category": "lecture.transcript",
+    "message": "授業で教授がノーベル物理学賞の話をしてたんだけど、あれってどんな研究だったの？詳しく知りたい",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Nobel",
+                  "ノーベル"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": null
+              },
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "Nobel"
+                ],
+                "grounds": [
+                  "needs_external_info",
+                  "explicit_request"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Nobel",
+                  "ノーベル"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "先に授業の発言を確かめてからWeb",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "Nobel Prize physics",
+            "hits": [
+              {
+                "handle": "C5/L4/s801-806",
+                "snippet": "Quick aside... last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit you can hold in your hand. That's the physics behind superconducting qubits."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "Nobel",
+                  "quantum tunneling",
+                  "superconducting"
+                ],
+                "grounds": [
+                  "needs_external_info",
+                  "explicit_request"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "what the professor said about the Nobel Prize in Physics"
+      },
+      {
+        "lap": 3,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "Nobel Prize physics",
+            "hits": [
+              {
+                "handle": "C5/L4/s801-806",
+                "snippet": "Quick aside... last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit..."
+              }
+            ]
+          },
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "Nobel Prize in Physics 2025 macroscopic quantum tunneling",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "The Nobel Prize in Physics 2025 was awarded for the discovery of macroscopic quantum mechanical tunnelling and energy quantisation in an electric circuit...",
+                "title": "The Nobel Prize in Physics 2025 - NobelPrize.org",
+                "url": "https://www.nobelprize.org/prizes/physics/2025/summary/"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "needs_external_info",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "details of the Nobel-winning research the professor mentioned"
+      }
+    ],
+    "why": "授業での発言(文字起こし)と外の詳しい情報(Web)を組み合わせる。コースや講義のタイトルからは絶対に推測できない。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "transcript_professor_wording",
+    "category": "lecture.transcript",
+    "message": "ここ、教授は実際にはなんて言ってたの？",
+    "thread": null,
+    "screen": {
+      "lecture": "C1/L6",
+      "topic": "C1/L6/T2",
+      "selected_text": "Standard textbooks use left − right, so signs are flipped."
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L6/T2",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C1/L6/T2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "C1/L6/s233-240",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C1/L6/s241-243",
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the Deep Note for the balance factor topic and its transcript citations"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1/L6/T2",
+          "C1/L6/s233-240",
+          "C1/L6/s241-243"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the professor's actual words about the balance factor convention"
+      }
+    ],
+    "why": "画面のDeep Noteから、引用範囲をたどって一次情報(文字起こし)を開けるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_title_match",
+    "category": "chat.all",
+    "message": "I think I asked you about finding internships a while back. What did you recommend?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "インターン",
+                  "intern"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "P3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "what the assistant recommended about finding internships"
+      }
+    ],
+    "why": "地図(最近20件)のタイトルで分かるなら、そのスレッドを開く。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_vague_older",
+    "category": "chat.all",
+    "message": "前にこんなこと話した気がするんだけど…奨学金のエッセイで自分の強みをどう書くか、みたいな",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "奨学金",
+                  "scholarship",
+                  "強み",
+                  "エッセイ",
+                  "essay"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "chat",
+            "kind": "all",
+            "query": "奨学金 エッセイ 強み",
+            "hits": [
+              {
+                "handle": "P31",
+                "snippet": "奨学金のエッセイで強みを書く: ロボ部で壊れた駆動系を1週間で直した経験を、粘り強さの例として書くことにした。"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P31",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the past chat about writing strengths in a scholarship essay"
+      }
+    ],
+    "why": "最近20件に無い曖昧な参照は、目次ではなく類似検索(合意済みの方針)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_recent_exercise",
+    "category": "chat.all",
+    "message": "この前チャットでAVLの回転練習したじゃん、あのときの例の木ってどんなだったっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "AVL"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "地図のP1で分かるので遠回り",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "P1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the example tree used in the AVL rotation practice chat"
+      }
+    ],
+    "why": "「チャットで」と明言されたら、講義ではなくチャットを開く。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_talked_before",
+    "category": "chat.all",
+    "message": "この前話したよね、ラボレポートの考察って何を書けばいいんだっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "ラボレポート",
+                  "考察",
+                  "lab report"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "P7"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "what the assistant said to write in a lab report discussion"
+      }
+    ],
+    "why": "「チャットで」と言わなくても、「この前話したよね」はチャット(AIと話したこと)を指す。講義(細胞呼吸)には行かない。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_practiced_together",
+    "category": "chat.all",
+    "message": "一緒に練習した弾力性の問題、同じ形式でもう何問か出して",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P4",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "弾力性",
+                  "elasticity"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "P4"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the format of the elasticity problems practiced in chat"
+      }
+    ],
+    "why": "「一緒に練習した」はチャットでの練習。形式を知るためにそのチャットを開く(講義を開くのは不正解)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_topic_drift",
+    "category": "chat.all",
+    "message": "You helped me practice for interviews at some point. What did you say I should fix?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P5",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "interview",
+                  "面接"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "P5"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the interview feedback the assistant gave"
+      }
+    ],
+    "why": "タイトル(ドライブ方式)と後半の話題(面接の練習)がずれているチャット。地図の「流れ」から当てられるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "chat_and_lecture_same_lap",
+    "category": "chat.all",
+    "message": "We talked in chat about my robotics club motor oscillating. How does that relate to the PID lecture?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "C5",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "PID"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C5"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "P2",
+          "C5"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C5/L2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the motor oscillation chat and the PID lecture"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "P2",
+          "C5",
+          "C5/L2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C5/L2/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C5/L2/T3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the part of the PID lecture about tuning and oscillation"
+      }
+    ],
+    "why": "違う出どころ(チャットと講義)を同じ周で開けるか。スレッドは節の一覧しか見えないので、節(P2/S1)まで開いて往復をたどってもよい。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "thread_section_ref",
+    "category": "chat.thread",
+    "message": "最初の方で見せてくれたfactorialのコード、n<=1にした版ってどう書くんだっけ",
+    "thread": "thread_code",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "S1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "S1/T1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S1/T2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "節の往復の一覧から、コードの往復の全文を開く",
+            "detour": false
+          }
+        ],
+        "looking_for": "the factorial code with the n <= 1 base case from early in this conversation"
+      }
+    ],
+    "why": "この会話の畳まれた部分を、節の呼び名で開けるか。節を開くと往復の一覧が出るので、正確なコードが要るならその往復を開いてよい。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "thread_vague_ref",
+    "category": "chat.thread",
+    "message": "結構前に言ってた、ファームウェアに必要な授業って何だっけ",
+    "thread": "thread_career",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "thread",
+                "query_any": [
+                  "ファームウェア",
+                  "firmware"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "ファームウェア",
+                  "firmware"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "「結構前」が別の会話かもしれない",
+            "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "専攻の迷いのチャットで話したかもしれない",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "S3"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "S3/T7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S3/T8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S3/T9",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S3/T10",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "節を開くと往復の一覧が出るので、その往復の全文を開いてよい",
+            "detour": false
+          }
+        ],
+        "looking_for": "which courses were said to help for firmware jobs"
+      }
+    ],
+    "why": "要約(回答役にも渡る)にもう答えがあるので開かずに終えてよい。「結構前」が別の会話の可能性もあるのでchat.allも可。節から往復の全文まで開くのも正解。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "thread_terse_in_context",
+    "category": "chat.thread",
+    "message": "ファームウェアに必要な授業は何？",
+    "thread": "thread_career",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S3",
+                "grounds": [
+                  "past_reference",
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "要約で足りるので遠回り",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "過去への言及が無い短い質問。この会話の要約(回答役にも渡る)に答えがあるので、取りに行かなくてよい。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "thread_recent_no_fetch",
+    "category": "chat.thread",
+    "message": "じゃあpivotをランダムに選ぶと何が嬉しいの？",
+    "thread": "thread_code",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "直近の原文で話している内容なら、何も取りに行かない。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "long_thread_condensed_enough",
+    "category": "chat.thread",
+    "message": "だいぶ前にこの会話でAVLの回転を練習したよね、あのとき使った例の木ってどんなだったっけ",
+    "thread": "thread_long",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "H1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "thread",
+                "query_any": [
+                  "AVL"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "H1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "節の箇条書きに木があるので遠回り",
+            "detour": true
+          }
+        ],
+        "looking_for": "the example tree used in the AVL rotation practice"
+      }
+    ],
+    "why": "長い会話の古い部分(2段目H1)を開くと、中の節(S1〜S5)の箇条書きが見える。例の木はS3の箇条書きにあるので、そこで止まれるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "long_thread_drill_to_turn",
+    "category": "chat.thread",
+    "message": "この会話のずっと前の方で見せてくれたfactorialの再帰のコード、もう一回そのまま見せて",
+    "thread": "thread_long",
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "H1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "thread",
+                "query_any": [
+                  "factorial"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "H1"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "S2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the exact factorial code shown earlier"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "H1",
+          "S2"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "S2/T5",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T6",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "S2/T9",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the exact factorial code shown earlier"
+      }
+    ],
+    "why": "コードそのものは要約に無いので、2段目H1 → 1段目S2 → 往復の全文、とたどれるか。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "web_explicit",
+    "category": "web.search",
+    "message": "Can you look up when applications close for Google's summer 2027 SWE internship?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "Google",
+                  "intern"
+                ],
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "Google software engineering internship summer 2027 deadline",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Software Engineering Intern, Summer 2027. Applications open in September...",
+                "title": "Software Engineering Intern, Summer 2027 — Google Careers",
+                "url": "https://www.google.com/about/careers/applications/jobs/results/swe-intern-2027"
+              },
+              {
+                "handle": "W2",
+                "snippet": "When do big tech internship applications close? Most summer roles open in late summer and fill on a rolling basis...",
+                "title": "When do big tech internship applications close?",
+                "url": "https://www.internguide.blog/big-tech-deadlines"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W2",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "両方読んでから答える",
+            "detour": true
+          }
+        ],
+        "looking_for": "the application deadline for Google's summer 2027 SWE internship"
+      }
+    ],
+    "why": "「調べて」と明示されたらWebへ。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "web_current_info",
+    "category": "web.search",
+    "message": "今年のノーベル物理学賞って誰がとったの？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "Nobel",
+                  "ノーベル"
+                ],
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "明示の依頼は無いが、最新の事実が要る。Webは必須(根拠はneeds_external_info)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "web_not_needed_course_topic",
+    "category": "web.search",
+    "message": "光合成の明反応と暗反応の違いって何？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "photosynthesis",
+                  "light",
+                  "Calvin",
+                  "光合成",
+                  "明反応",
+                  "カルビン"
+                ],
+                "grounds": [
+                  "likely_in_course"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C3",
+                "grounds": [
+                  "likely_in_course"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "一般知識で答えられ、授業(Biology 101)にもある。Webには行かない。取るなら類似検索が早い。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "web_and_lecture",
+    "category": "web.search",
+    "message": "授業でやったB-treeって、実際のPostgreSQLではどう使われてるか調べてみて",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "PostgreSQL"
+                ],
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "B-tree",
+                  "btree",
+                  "B tree"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1"
+                ]
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "C1"
+        ],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "PostgreSQL B-tree index",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "B-tree indexes are the default index type; they support equality and range queries...",
+                "title": "PostgreSQL Documentation: B-Tree Indexes",
+                "url": "https://www.postgresql.org/docs/current/btree.html"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L8",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "講義とWebの中身を両方読む",
+            "detour": true
+          }
+        ],
+        "looking_for": "how PostgreSQL uses B-trees, and the B-tree lecture"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1",
+          "C1/L8"
+        ],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "PostgreSQL B-tree index",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "B-tree indexes are the default index type; they support equality and range queries...",
+                "title": "PostgreSQL Documentation: B-Tree Indexes",
+                "url": "https://www.postgresql.org/docs/current/btree.html"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "Webの中身も読む",
+            "detour": true
+          }
+        ],
+        "looking_for": "the content of the B-tree lecture"
+      }
+    ],
+    "why": "Webと講義を同じ周で並列に。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "web_limit_reached",
+    "category": "web.search",
+    "message": "来年のICPCアジア地区予選の日程ってもう決まってる？調べて",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "ICPC"
+                ],
+                "grounds": [
+                  "explicit_request",
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "ICPC Asia regional 2027 schedule",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Results of the 2026 ICPC Asia Pacific Championship. Congratulations to all teams...",
+                "title": "2026 ICPC Asia Pacific Championship Results",
+                "url": "https://icpc.global/regionals/results/2026-apac"
+              },
+              {
+                "handle": "W2",
+                "snippet": "The ICPC World Finals 2026 will be held in...",
+                "title": "ICPC World Finals 2026",
+                "url": "https://icpc.global/worldfinals/2026"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "ICPC",
+                  "2027"
+                ],
+                "grounds": [
+                  "explicit_request",
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "言葉を変えて1回だけ検索し直す",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W2",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "断片では日程が分からないので開いてみる",
+            "detour": true
+          }
+        ],
+        "looking_for": "whether the 2027 ICPC Asia regional dates have been announced"
+      },
+      {
+        "lap": 3,
+        "opened": [],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "ICPC Asia regional 2027 schedule",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Results of the 2026 ICPC Asia Pacific Championship. Congratulations to all teams...",
+                "title": "2026 ICPC Asia Pacific Championship Results",
+                "url": "https://icpc.global/regionals/results/2026-apac"
+              },
+              {
+                "handle": "W2",
+                "snippet": "The ICPC World Finals 2026 will be held in...",
+                "title": "ICPC World Finals 2026",
+                "url": "https://icpc.global/worldfinals/2026"
+              }
+            ]
+          },
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "ICPC Asia regional contest dates 2027",
+            "hits": [
+              {
+                "handle": "W3",
+                "snippet": "Regional contest schedules are announced by each regional site, usually in spring...",
+                "title": "ICPC Regional Contests",
+                "url": "https://icpc.global/regionals"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W3",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": "the 2027 ICPC Asia regional dates, if announced"
+      }
+    ],
+    "why": "Web検索を2回使い切ったら、それ以上は探さない(web.searchはenumから消える)。講義やチャットに探しに行かない。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "none_personal",
+    "category": "none",
+    "message": "最近疲れてて夜あんまり眠れないんだよね",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "個人的な話。授業にもWebにも行かない。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "none_hobby",
+    "category": "none",
+    "message": "Can we talk about anime? I've been watching Frieren lately.",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "授業と関係ない趣味の話。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "none_general_knowledge",
+    "category": "none",
+    "message": "Is recursion or iteration faster?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "一般知識で答えられる。過去への言及が無いので、最近のチャット(P9 Pythonの再帰とループ)があっても開かない。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "none_terse_no_pointer",
+    "category": "none",
+    "message": "ファームウェアに必要な授業は何？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "過去への言及が無い短い質問(新しい会話)。どこかにあるかもしれないが、手がかりが無いので探さずに一般的に答える。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "none_tangent_aha_candidate",
+    "category": "none",
+    "message": "I just started running and I get out of breath so fast. Why does that happen?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "respiration",
+                  "anaerobic",
+                  "oxygen",
+                  "lactate",
+                  "呼吸",
+                  "乳酸",
+                  "酸素"
+                ],
+                "grounds": [
+                  "likely_in_course"
+                ],
+                "relation": "possible_link",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "授業(細胞呼吸)とのAHAの候補。取るのは許すが、関係は必ずpossible_link(回答で無理に結びつけない)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "none_thanks",
+    "category": "none",
+    "message": "なるほど、ありがとう！",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "お礼だけ(本来は仕分け役で止まるが、来ても何もしない)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "stop_when_not_found",
+    "category": "stop",
+    "message": "What was the name of the book the econ professor recommended?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "book",
+                  "recommend",
+                  "reading"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  null,
+                  "C2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "book recommended by professor",
+            "hits": [
+              {
+                "handle": "C2/L8",
+                "snippet": "Externalities: Negative and positive externalities; Pigouvian taxes."
+              },
+              {
+                "handle": "C2/L9",
+                "snippet": "Public goods: Non-rival, non-excludable goods; free riding."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "book",
+                  "reading",
+                  "textbook",
+                  "author"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  null,
+                  "C2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "言い方を変えてもう一度",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": "the name of the book the econ professor recommended"
+      },
+      {
+        "lap": 3,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "book recommended by professor",
+            "hits": [
+              {
+                "handle": "C2/L8",
+                "snippet": "Externalities..."
+              },
+              {
+                "handle": "C2/L9",
+                "snippet": "Public goods..."
+              }
+            ]
+          },
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "reading list textbook author",
+            "hits": [
+              {
+                "handle": "C2/L1",
+                "snippet": "Supply and demand basics."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C2",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": "the name of the book the econ professor recommended"
+      },
+      {
+        "lap": 4,
+        "opened": [
+          "C2"
+        ],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "book recommended by professor",
+            "hits": [
+              {
+                "handle": "C2/L8",
+                "snippet": "Externalities..."
+              },
+              {
+                "handle": "C2/L9",
+                "snippet": "Public goods..."
+              }
+            ]
+          },
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "reading list textbook author",
+            "hits": [
+              {
+                "handle": "C2/L1",
+                "snippet": "Supply and demand basics."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "the name of the book the econ professor recommended"
+      }
+    ],
+    "why": "探しても無いときに、周を使い切らずに止まれるか。見つからないことは回答役に正直に伝える(ゴールに書く)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "ho_none_venting",
+    "category": "none",
+    "message": "課題が多すぎてもう無理…",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "気持ちの吐露。何も取らない。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_none_general",
+    "category": "none",
+    "message": "What's the difference between a process and a thread?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "一般知識。OSのコースは無いので、講義にも行かない。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_none_caffeine",
+    "category": "none",
+    "message": "最近コーヒー飲みすぎて眠れない、カフェインってどう効くの？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "個人的な話+一般知識。関係するコースは無い。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_context_last_one",
+    "category": "lecture.outline",
+    "message": "What was the last one about again?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [
+      "C4"
+    ],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C4/L7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "前の回答で見せたC4の一覧の最後(第7回)。",
+    "recent_conversation": [
+      [
+        "user",
+        "What have we covered in linear algebra so far?"
+      ],
+      [
+        "assistant",
+        "Seven lectures so far: 1. Vectors and Matrices, 2. Linear Systems, 3. Determinants, 4. Vector Spaces, 5. Eigenvalues, 6. Diagonalization, 7. Orthogonality (yesterday)."
+      ]
+    ],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_context_previous",
+    "category": "lecture.outline",
+    "message": "その前の回って何やったっけ",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [
+      "C1/L8"
+    ],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L7",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "コースを開いて順番を確認する",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "前のターンで開いたB-treeの回(C1/L8)の「その前の回」。B-treesにはトピックが無いので、previous_turn_openedの一段下にも並び順の手がかりが無い(直前の番号からの推測か、コースを開いての確認)。",
+    "recent_conversation": [
+      [
+        "user",
+        "B-treeの回ってどんな内容だった？"
+      ],
+      [
+        "assistant",
+        "4月25日のB-Treesの回では、データベース向けのB木とB+木、ディスクのブロックに収まる次数(100〜200)、葉をつなぐと範囲検索が速くなる話をしていたよ。"
+      ]
+    ],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_date_last_week",
+    "category": "lecture.by_date",
+    "message": "先週のロボティクスの授業の内容をまとめて",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "by_date",
+                "from": "2026-09-21",
+                "to": "2026-09-27",
+                "within_any": [
+                  null,
+                  "C5"
+                ],
+                "grounds": [
+                  "past_reference",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "by_date",
+                "from": "2026-09-20",
+                "to": "2026-09-26",
+                "within_any": [
+                  null,
+                  "C5"
+                ],
+                "grounds": [
+                  "past_reference",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "by_date",
+                "from": "2026-09-22",
+                "to": "2026-09-28",
+                "within_any": [
+                  null,
+                  "C5"
+                ],
+                "grounds": [
+                  "past_reference",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "by_date",
+                "from": "2026-09-23",
+                "to": "2026-09-29",
+                "within_any": [
+                  null,
+                  "C5"
+                ],
+                "grounds": [
+                  "past_reference",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C5/L4",
+                "grounds": [
+                  "past_reference",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "地図の日付範囲の最後が9/24",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C5",
+                "grounds": [
+                  "past_reference",
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "「先週」を今日の日付から範囲に直す(週の区切りはどれでもよい)。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_transcript_anecdote",
+    "category": "lecture.transcript",
+    "message": "In linear algebra the professor told a story about a bridge collapsing. What was that about?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "bridge",
+                  "collapse",
+                  "Tacoma"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  null,
+                  "C4"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "授業中の逸話は要約に残らない。文字起こしを検索する。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_chat_pointers",
+    "category": "chat.all",
+    "message": "Remember when we went over pointers in C? Can you show me that example again?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "P18",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "pointer",
+                  "ポインタ"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "「we went over」はAIとの会話。地図のP18を開く。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_ja_notes_search",
+    "category": "lecture.concept",
+    "message": "In bio, what did we learn about how temperature affects enzymes?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "酵素",
+                  "温度",
+                  "変性"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C3"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "enzyme",
+                  "temperature"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C3"
+                ]
+              }
+            ],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C3",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "英語の質問だが、生物のまとめは日本語。日本語で検索できるか(英語の検索を並べるのは可)。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_stop_nothing_more",
+    "category": "lecture.concept",
+    "message": "ダイクストラ法って授業でどう説明されてた？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Dijkstra",
+                  "shortest path"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C1"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "lecture",
+            "kind": "concept",
+            "query": "Dijkstra shortest path",
+            "hits": [
+              {
+                "handle": "C1/L11",
+                "snippet": "Shortest Paths: Dijkstra's algorithm using a priority queue."
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "open",
+                "handle": "C1/L11",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "how the professor explained Dijkstra's algorithm"
+      },
+      {
+        "lap": 3,
+        "opened": [
+          "C1/L11"
+        ],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Dijkstra",
+                  "shortest path"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript",
+                  "all"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L11"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで確かめる(遠回り)",
+            "detour": true
+          }
+        ],
+        "looking_for": "the professor's explanation of Dijkstra's algorithm"
+      }
+    ],
+    "why": "講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる(文字起こしを確かめに行くのは遠回りとして許容)。",
+    "recent_conversation": [],
+    "set": "holdout"
+  },
+  {
+    "id": "ho_web_release",
+    "category": "web.search",
+    "message": "Is Python 3.14 out yet?",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "Python 3.14",
+                  "Python"
+                ],
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "最新の事実。Webへ。",
+    "recent_conversation": [],
+    "set": "holdout"
+  }
+]
