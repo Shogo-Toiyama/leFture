@@ -2542,7 +2542,9 @@
             "hits": [
               {
                 "handle": "W1",
-                "snippet": "The Nobel Prize in Physics 2025 was awarded for the discovery of macroscopic quantum mechanical tunnelling and energy quantisation in an electric circuit..."
+                "snippet": "The Nobel Prize in Physics 2025 was awarded for the discovery of macroscopic quantum mechanical tunnelling and energy quantisation in an electric circuit...",
+                "title": "The Nobel Prize in Physics 2025 - NobelPrize.org",
+                "url": "https://www.nobelprize.org/prizes/physics/2025/summary/"
               }
             ]
           }
@@ -3739,11 +3741,15 @@
             "hits": [
               {
                 "handle": "W1",
-                "snippet": "Google Careers: Software Engineering Intern, Summer 2027 — applications open in September..."
+                "snippet": "Software Engineering Intern, Summer 2027. Applications open in September...",
+                "title": "Software Engineering Intern, Summer 2027 — Google Careers",
+                "url": "https://www.google.com/about/careers/applications/jobs/results/swe-intern-2027"
               },
               {
                 "handle": "W2",
-                "snippet": "Blog: When do big tech internship applications close? ..."
+                "snippet": "When do big tech internship applications close? Most summer roles open in late summer and fill on a rolling basis...",
+                "title": "When do big tech internship applications close?",
+                "url": "https://www.internguide.blog/big-tech-deadlines"
               }
             ]
           }
@@ -4006,7 +4012,9 @@
             "hits": [
               {
                 "handle": "W1",
-                "snippet": "PostgreSQL docs: B-tree indexes are the default index type; they support equality and range queries..."
+                "snippet": "B-tree indexes are the default index type; they support equality and range queries...",
+                "title": "PostgreSQL Documentation: B-Tree Indexes",
+                "url": "https://www.postgresql.org/docs/current/btree.html"
               }
             ]
           }
@@ -4079,7 +4087,9 @@
             "hits": [
               {
                 "handle": "W1",
-                "snippet": "PostgreSQL docs: B-tree indexes are the default index type..."
+                "snippet": "B-tree indexes are the default index type; they support equality and range queries...",
+                "title": "PostgreSQL Documentation: B-Tree Indexes",
+                "url": "https://www.postgresql.org/docs/current/btree.html"
               }
             ]
           }
@@ -4115,6 +4125,211 @@
       }
     ],
     "why": "Webと講義を同じ周で並列に。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "web_limit_reached",
+    "category": "web.search",
+    "message": "来年のICPCアジア地区予選の日程ってもう決まってる？調べて",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "ICPC"
+                ],
+                "grounds": [
+                  "explicit_request",
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "ICPC Asia regional 2027 schedule",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Results of the 2026 ICPC Asia Pacific Championship. Congratulations to all teams...",
+                "title": "2026 ICPC Asia Pacific Championship Results",
+                "url": "https://icpc.global/regionals/results/2026-apac"
+              },
+              {
+                "handle": "W2",
+                "snippet": "The ICPC World Finals 2026 will be held in...",
+                "title": "ICPC World Finals 2026",
+                "url": "https://icpc.global/worldfinals/2026"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "ICPC",
+                  "2027"
+                ],
+                "grounds": [
+                  "explicit_request",
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "言葉を変えて1回だけ検索し直す",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W2",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "断片では日程が分からないので開いてみる",
+            "detour": true
+          }
+        ],
+        "looking_for": "whether the 2027 ICPC Asia regional dates have been announced"
+      },
+      {
+        "lap": 3,
+        "opened": [],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "ICPC Asia regional 2027 schedule",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Results of the 2026 ICPC Asia Pacific Championship. Congratulations to all teams...",
+                "title": "2026 ICPC Asia Pacific Championship Results",
+                "url": "https://icpc.global/regionals/results/2026-apac"
+              },
+              {
+                "handle": "W2",
+                "snippet": "The ICPC World Finals 2026 will be held in...",
+                "title": "ICPC World Finals 2026",
+                "url": "https://icpc.global/worldfinals/2026"
+              }
+            ]
+          },
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "ICPC Asia regional contest dates 2027",
+            "hits": [
+              {
+                "handle": "W3",
+                "snippet": "Regional contest schedules are announced by each regional site, usually in spring...",
+                "title": "ICPC Regional Contests",
+                "url": "https://icpc.global/regionals"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W3",
+                "grounds": [
+                  "explicit_request"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "",
+            "detour": true
+          }
+        ],
+        "looking_for": "the 2027 ICPC Asia regional dates, if announced"
+      }
+    ],
+    "why": "Web検索を2回使い切ったら、それ以上は探さない(web.searchはenumから消える)。講義やチャットに探しに行かない。",
     "recent_conversation": [],
     "set": "main"
   },

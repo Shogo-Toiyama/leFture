@@ -461,35 +461,49 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - 終わり
   - ［遠回り］open W1 (past_reference)  ※Webの中身も読む
 
-## 38. `none_personal` (none)
+## 38. `web_limit_reached` (web.search)
+> 来年のICPCアジア地区予選の日程ってもう決まってる？調べて
+
+- ねらい: Web検索を2回使い切ったら、それ以上は探さない(web.searchはenumから消える)。講義やチャットに探しに行かない。
+- **1周目**:
+  - find web.search [ICPC] (explicit_request/needs_external_info)
+- **2周目**(見つかった: W1, W2):
+  - 終わり
+  - find web.search [ICPC | 2027] (explicit_request/needs_external_info)  ※言葉を変えて1回だけ検索し直す
+  - ［遠回り］いずれか1つ以上: open W1 (explicit_request), open W2 (explicit_request)  ※断片では日程が分からないので開いてみる
+- **3周目**(見つかった: W1, W2, W3):
+  - 終わり
+  - ［遠回り］いずれか1つ以上: open W1 (explicit_request), open W3 (explicit_request)
+
+## 39. `none_personal` (none)
 > 最近疲れてて夜あんまり眠れないんだよね
 
 - ねらい: 個人的な話。授業にもWebにも行かない。
 - **1周目**:
   - 終わり
 
-## 39. `none_hobby` (none)
+## 40. `none_hobby` (none)
 > Can we talk about anime? I've been watching Frieren lately.
 
 - ねらい: 授業と関係ない趣味の話。
 - **1周目**:
   - 終わり
 
-## 40. `none_general_knowledge` (none)
+## 41. `none_general_knowledge` (none)
 > Is recursion or iteration faster?
 
 - ねらい: 一般知識で答えられる。過去への言及が無いので、最近のチャット(P9 Pythonの再帰とループ)があっても開かない。
 - **1周目**:
   - 終わり
 
-## 41. `none_terse_no_pointer` (none)
+## 42. `none_terse_no_pointer` (none)
 > ファームウェアに必要な授業は何？
 
 - ねらい: 過去への言及が無い短い質問(新しい会話)。どこかにあるかもしれないが、手がかりが無いので探さずに一般的に答える。
 - **1周目**:
   - 終わり
 
-## 42. `none_tangent_aha_candidate` (none)
+## 43. `none_tangent_aha_candidate` (none)
 > I just started running and I get out of breath so fast. Why does that happen?
 
 - ねらい: 授業(細胞呼吸)とのAHAの候補。取るのは許すが、関係は必ずpossible_link(回答で無理に結びつけない)。
@@ -497,14 +511,14 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - 終わり
   - find lecture.concept [respiration | anaerobic | oxygen | lactate | 呼吸 | 乳酸 | 酸素] (likely_in_course, possible_link)
 
-## 43. `none_thanks` (none)
+## 44. `none_thanks` (none)
 > なるほど、ありがとう！
 
 - ねらい: お礼だけ(本来は仕分け役で止まるが、来ても何もしない)。
 - **1周目**:
   - 終わり
 
-## 44. `stop_when_not_found` (stop)
+## 45. `stop_when_not_found` (stop)
 > What was the name of the book the econ professor recommended?
 
 - ねらい: 探しても無いときに、周を使い切らずに止まれるか。見つからないことは回答役に正直に伝える(ゴールに書く)。
@@ -525,28 +539,28 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 
 # 確認用のケース(プロンプトの調整には使わない)
 
-## 45. `ho_none_venting` (none)
+## 46. `ho_none_venting` (none)
 > 課題が多すぎてもう無理…
 
 - ねらい: 気持ちの吐露。何も取らない。
 - **1周目**:
   - 終わり
 
-## 46. `ho_none_general` (none)
+## 47. `ho_none_general` (none)
 > What's the difference between a process and a thread?
 
 - ねらい: 一般知識。OSのコースは無いので、講義にも行かない。
 - **1周目**:
   - 終わり
 
-## 47. `ho_none_caffeine` (none)
+## 48. `ho_none_caffeine` (none)
 > 最近コーヒー飲みすぎて眠れない、カフェインってどう効くの？
 
 - ねらい: 個人的な話+一般知識。関係するコースは無い。
 - **1周目**:
   - 終わり
 
-## 48. `ho_context_last_one` (lecture.outline)
+## 49. `ho_context_last_one` (lecture.outline)
 > What was the last one about again?
 
 - 状況: 前のターンで開いたもの: C4
@@ -557,7 +571,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - **1周目**:
   - open C4/L7 (past_reference)
 
-## 49. `ho_context_previous` (lecture.outline)
+## 50. `ho_context_previous` (lecture.outline)
 > その前の回って何やったっけ
 
 - 状況: 前のターンで開いたもの: C1/L8
@@ -569,7 +583,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open C1/L7 (past_reference)
   - ［遠回り］open C1 (past_reference)  ※コースを開いて順番を確認する
 
-## 50. `ho_date_last_week` (lecture.by_date)
+## 51. `ho_date_last_week` (lecture.by_date)
 > 先週のロボティクスの授業の内容をまとめて
 
 - ねらい: 「先週」を今日の日付から範囲に直す(週の区切りはどれでもよい)。
@@ -581,14 +595,14 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open C5/L4 (past_reference/explicit_request)  ※地図の日付範囲の最後が9/24
   - ［遠回り］open C5 (past_reference/explicit_request)
 
-## 51. `ho_transcript_anecdote` (lecture.transcript)
+## 52. `ho_transcript_anecdote` (lecture.transcript)
 > In linear algebra the professor told a story about a bridge collapsing. What was that about?
 
 - ねらい: 授業中の逸話は要約に残らない。文字起こしを検索する。
 - **1周目**:
   - find lecture.concept [bridge | collapse | Tacoma] layer: transcript | all / 絞り込み: なし | C4 (past_reference)
 
-## 52. `ho_chat_pointers` (chat.all)
+## 53. `ho_chat_pointers` (chat.all)
 > Remember when we went over pointers in C? Can you show me that example again?
 
 - ねらい: 「we went over」はAIとの会話。地図のP18を開く。
@@ -596,7 +610,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open P18 (past_reference)
   - ［遠回り］find chat.all [pointer | ポインタ] (past_reference)
 
-## 53. `ho_ja_notes_search` (lecture.concept)
+## 54. `ho_ja_notes_search` (lecture.concept)
 > In bio, what did we learn about how temperature affects enzymes?
 
 - ねらい: 英語の質問だが、生物のまとめは日本語。日本語で検索できるか(英語の検索を並べるのは可)。
@@ -604,7 +618,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - find lecture.concept [酵素 | 温度 | 変性] 絞り込み: なし | C3 (past_reference) + (任意: find lecture.concept [enzyme | temperature] 絞り込み: なし | C3 (past_reference))
   - ［遠回り］open C3 (past_reference)
 
-## 54. `ho_stop_nothing_more` (lecture.concept)
+## 55. `ho_stop_nothing_more` (lecture.concept)
 > ダイクストラ法って授業でどう説明されてた？
 
 - ねらい: 講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる(文字起こしを確かめに行くのは遠回りとして許容)。
@@ -618,7 +632,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - 終わり
   - ［遠回り］find lecture.concept [Dijkstra | shortest path] layer: transcript | all / 絞り込み: C1 | C1/L11 (past_reference)  ※教授の言葉を文字起こしで確かめる(遠回り)
 
-## 55. `ho_web_release` (web.search)
+## 56. `ho_web_release` (web.search)
 > Is Python 3.14 out yet?
 
 - ねらい: 最新の事実。Webへ。

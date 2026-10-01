@@ -352,8 +352,12 @@ def found(source, kind, query, hits):
     return {"source": source, "kind": kind, "query": query, "hits": hits}
 
 
-def hit(handle, snippet):
-    return {"handle": handle, "snippet": snippet}
+def hit(handle, snippet, title=None, url=None):
+    """Webのページ(W1…)だけtitle・urlを持つ(探索役にはタイトルとドメインが見える)。"""
+    h = {"handle": handle, "snippet": snippet}
+    if title:
+        h.update(title=title, url=url)
+    return h
 
 
 def case(cid, category, message, steps, why, thread=None, screen=None, previous_turn_opened=None, recent_conversation=None):
@@ -568,7 +572,8 @@ CASES = [
           step(2, found=[found("lecture", "concept", "Nobel Prize physics", [hit("C5/L4/s801-806", "Quick aside... last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit you can hold in your hand. That's the physics behind superconducting qubits.")])],
                alternatives=[alt(must=[op_find("web", "search", ["Nobel", "quantum tunneling", "superconducting"], [EXTERNAL, EXP])])]),
           step(3, found=[found("lecture", "concept", "Nobel Prize physics", [hit("C5/L4/s801-806", "Quick aside... last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit...")]),
-                         found("web", "search", "Nobel Prize in Physics 2025 macroscopic quantum tunneling", [hit("W1", "The Nobel Prize in Physics 2025 was awarded for the discovery of macroscopic quantum mechanical tunnelling and energy quantisation in an electric circuit...")])],
+                         found("web", "search", "Nobel Prize in Physics 2025 macroscopic quantum tunneling", [hit("W1", "The Nobel Prize in Physics 2025 was awarded for the discovery of macroscopic quantum mechanical tunnelling and energy quantisation in an electric circuit...",
+                                                                                                         "The Nobel Prize in Physics 2025 - NobelPrize.org", "https://www.nobelprize.org/prizes/physics/2025/summary/")])],
                alternatives=[DONE, alt(must=[op_open("W1", [EXTERNAL, EXP])])])],
          "授業での発言(文字起こし)と外の詳しい情報(Web)を組み合わせる。コースや講義のタイトルからは絶対に推測できない。"),
 
@@ -673,8 +678,10 @@ CASES = [
          "Can you look up when applications close for Google's summer 2027 SWE internship?",
          [step(1, alternatives=[alt(must=[op_find("web", "search", ["Google", "intern"], [EXP])])]),
           step(2, found=[found("web", "search", "Google software engineering internship summer 2027 deadline",
-                               [hit("W1", "Google Careers: Software Engineering Intern, Summer 2027 — applications open in September..."),
-                                hit("W2", "Blog: When do big tech internship applications close? ...")])],
+                               [hit("W1", "Software Engineering Intern, Summer 2027. Applications open in September...",
+                                    "Software Engineering Intern, Summer 2027 — Google Careers", "https://www.google.com/about/careers/applications/jobs/results/swe-intern-2027"),
+                                hit("W2", "When do big tech internship applications close? Most summer roles open in late summer and fill on a rolling basis...",
+                                    "When do big tech internship applications close?", "https://www.internguide.blog/big-tech-deadlines")])],
                alternatives=[DONE, alt(must=[op_open("W1", [EXP])]),
                              alt(must=[op_open("W1", [EXP]), op_open("W2", [EXP])], note="両方読んでから答える", detour=True)])],
          "「調べて」と明示されたらWebへ。"),
@@ -696,12 +703,36 @@ CASES = [
          [step(1, alternatives=[alt(must=[op_find("web", "search", ["PostgreSQL"], [EXP])],
                                     one_of=[op_open("C1", [PAST]), op_find("lecture", "concept", ["B-tree", "btree", "B tree"], [PAST], within_any=[None, "C1"])])]),
           step(2, opened=["C1"], found=[found("web", "search", "PostgreSQL B-tree index",
-                                               [hit("W1", "PostgreSQL docs: B-tree indexes are the default index type; they support equality and range queries...")])],
+                                               [hit("W1", "B-tree indexes are the default index type; they support equality and range queries...",
+                                                    "PostgreSQL Documentation: B-Tree Indexes", "https://www.postgresql.org/docs/current/btree.html")])],
                alternatives=[alt(must=[op_open("C1/L8", [PAST])]), DONE,
                              alt(must=[op_open("C1/L8", [PAST]), op_open("W1", [PAST])], note="講義とWebの中身を両方読む", detour=True)]),
-          step(3, opened=["C1", "C1/L8"], found=[found("web", "search", "PostgreSQL B-tree index", [hit("W1", "PostgreSQL docs: B-tree indexes are the default index type...")])],
+          step(3, opened=["C1", "C1/L8"], found=[found("web", "search", "PostgreSQL B-tree index", [hit("W1", "B-tree indexes are the default index type; they support equality and range queries...",
+                                                                                                                 "PostgreSQL Documentation: B-Tree Indexes", "https://www.postgresql.org/docs/current/btree.html")])],
                alternatives=[DONE, alt(must=[op_open("W1", [PAST])], note="Webの中身も読む", detour=True)])],
          "Webと講義を同じ周で並列に。"),
+
+    case("web_limit_reached", "web.search",
+         "来年のICPCアジア地区予選の日程ってもう決まってる？調べて",
+         [step(1, alternatives=[alt(must=[op_find("web", "search", ["ICPC"], [EXP, EXTERNAL])])]),
+          step(2, found=[found("web", "search", "ICPC Asia regional 2027 schedule",
+                               [hit("W1", "Results of the 2026 ICPC Asia Pacific Championship. Congratulations to all teams...",
+                                    "2026 ICPC Asia Pacific Championship Results", "https://icpc.global/regionals/results/2026-apac"),
+                                hit("W2", "The ICPC World Finals 2026 will be held in...",
+                                    "ICPC World Finals 2026", "https://icpc.global/worldfinals/2026")])],
+               alternatives=[DONE,
+                             alt(must=[op_find("web", "search", ["ICPC", "2027"], [EXP, EXTERNAL])], note="言葉を変えて1回だけ検索し直す"),
+                             alt(one_of=[op_open("W1", [EXP]), op_open("W2", [EXP])], note="断片では日程が分からないので開いてみる", detour=True)]),
+          step(3, found=[found("web", "search", "ICPC Asia regional 2027 schedule",
+                               [hit("W1", "Results of the 2026 ICPC Asia Pacific Championship. Congratulations to all teams...",
+                                    "2026 ICPC Asia Pacific Championship Results", "https://icpc.global/regionals/results/2026-apac"),
+                                hit("W2", "The ICPC World Finals 2026 will be held in...",
+                                    "ICPC World Finals 2026", "https://icpc.global/worldfinals/2026")]),
+                         found("web", "search", "ICPC Asia regional contest dates 2027",
+                               [hit("W3", "Regional contest schedules are announced by each regional site, usually in spring...",
+                                    "ICPC Regional Contests", "https://icpc.global/regionals")])],
+               alternatives=[DONE, alt(one_of=[op_open("W1", [EXP]), op_open("W3", [EXP])], detour=True)])],
+         "Web検索を2回使い切ったら、それ以上は探さない(web.searchはenumから消える)。講義やチャットに探しに行かない。"),
 
     # ---------------- 何も取りに行かない ----------------
     case("none_personal", "none",
@@ -899,6 +930,8 @@ LOOKING_FOR = {
     ("web_explicit", 2): "the application deadline for Google's summer 2027 SWE internship",
     ("web_and_lecture", 2): "how PostgreSQL uses B-trees, and the B-tree lecture",
     ("web_and_lecture", 3): "the content of the B-tree lecture",
+    ("web_limit_reached", 2): "whether the 2027 ICPC Asia regional dates have been announced",
+    ("web_limit_reached", 3): "the 2027 ICPC Asia regional dates, if announced",
     ("stop_when_not_found", 2): "the name of the book the econ professor recommended",
     ("stop_when_not_found", 3): "the name of the book the econ professor recommended",
     ("stop_when_not_found", 4): "the name of the book the econ professor recommended",

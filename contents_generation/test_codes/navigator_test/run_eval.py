@@ -296,9 +296,24 @@ def build_nav_input(case: dict) -> nav.NavigatorInput:
     )
 
 
-def _outcome_for_found(f: dict) -> Optional[nav.Outcome]:
+def _web_page(h: dict) -> nav.WebPage:
+    return nav.WebPage(handle=h["handle"], title=h.get("title") or "", url=h.get("url") or f"https://example.org/{h['handle']}",
+                       snippets=[h["snippet"]])
+
+
+def _outcome_for_found(f: dict, state: Optional[nav.NavState] = None) -> Optional[nav.Outcome]:
+    """stateを渡すと、Webのページをstate.web_pagesにも登録する(開けるように)。"""
     target = f"{f['source']}.{f['kind']}"
     common = dict(grounds="past_reference", grounds_quote="", relation="direct", quote_ok=True)
+    if target == "web.search" and target not in UNAVAILABLE_TARGETS:
+        req = nav.FindRequest(target=target, query=f["query"], layer="all", within=None, **common)
+        pages = []
+        for h in f["hits"]:
+            page = (state.web_pages.get(h["handle"]) if state else None) or _web_page(h)
+            if state is not None:
+                state.web_pages[page.handle] = page
+            pages.append(page)
+        return nav.WebSearchOutcome(request=req, pages=pages)
     if f["kind"] == "by_date":
         m = re.findall(r"\d{4}-\d{2}-\d{2}", f["query"])
         within = re.search(r"\((C\d+)\)", f["query"])
@@ -319,15 +334,20 @@ async def build_state(case: dict, step: dict, nav_input: nav.NavigatorInput) -> 
     chat_source = WorldChatSource(case)
     if nav_input.previous_turn_refs:
         await nav.prepare_previous_turn(nav_input, SOURCE, chat_source, state)
-    for h in step["opened"]:
-        if h[0] == "W" or (h[0] in "PS" and not nav.CAPABILITIES["CAN_CHAT"]):
-            return None
-        state.opened[h] = await nav.open_handle(h, "direct", nav_input, SOURCE, chat_source)
     for f in step["found"]:
-        o = _outcome_for_found(f)
+        o = _outcome_for_found(f, state)
         if o is None:
             return None
         state.outcomes.append(o)
+    for h in step["opened"]:
+        if h[0] in "PS" and not nav.CAPABILITIES["CAN_CHAT"]:
+            return None
+        if h[0] == "W":
+            if h not in state.web_pages:
+                return None
+            state.opened[h] = nav.open_web_page(state.web_pages[h], "direct")
+            continue
+        state.opened[h] = await nav.open_handle(h, "direct", nav_input, SOURCE, chat_source)
     for hist in step["history"]:
         done = [f"open {h}" for h in hist["opened"]]
         for f in hist["found"]:
