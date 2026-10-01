@@ -81,10 +81,13 @@ export interface ChatMessage {
 /** 生成中に「どの段階か」を画面に出すための状態。 */
 export type ChatStage = 'thinking' | 'searching' | 'writing';
 
+/** 探索中に何を探しているか(探索役の1周ごと)。 */
+export type ChatSearchDetail = 'lectures' | 'chats' | 'web';
+
 /** POST /chat/messages のSSEイベント(バックエンドのrun_chat_turnと1対1)。 */
 export type ChatStreamEvent =
   | { type: 'meta'; thread_id: string; user_message_id: string; assistant_message_id: string }
-  | { type: 'status'; stage: ChatStage }
+  | { type: 'status'; stage: ChatStage; detail?: ChatSearchDetail[] }
   | { type: 'sources'; sources: ChatCitation[] }
   | { type: 'delta'; text: string }
   | { type: 'replace'; text: string }

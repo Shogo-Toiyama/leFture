@@ -8,6 +8,7 @@ import {
 } from '../lib/chat';
 import type {
   ChatCitation,
+  ChatSearchDetail,
   ChatMessage,
   ChatMessageContext,
   ChatStage,
@@ -21,6 +22,8 @@ export interface LocalChatMessage extends ChatMessage {
   failedDetail?: Record<string, unknown>;
   /** 生成中の段階(assistantのみ) */
   stage?: ChatStage;
+  /** stageがsearchingのとき、今の周で探しているもの。 */
+  searchDetail?: ChatSearchDetail[];
   /** 生成中に届いた出典候補(assistantのみ。完了後は本文で使われたcitationsだけが残る) */
   pendingSources?: ChatCitation[];
   /** 受信中に通信が切れ、サーバー側で生成が終わるのを待っている */
@@ -202,7 +205,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
             break;
           }
           case 'status':
-            patchMessage(assistantId, { stage: event.stage });
+            patchMessage(assistantId, { stage: event.stage, searchDetail: event.detail });
             break;
           case 'sources':
             patchMessage(assistantId, { pendingSources: event.sources });

@@ -756,6 +756,8 @@ export const en = {
   chatSend: 'Send',
   chatStageThinking: 'Thinking…',
   chatStageSearching: 'Searching your lecture notes…',
+  chatStageSearchingWeb: 'Searching the web…',
+  chatStageSearchingChats: 'Looking through past chats…',
   chatStageWriting: 'Writing…',
   chatReconnecting: 'Connection lost. Waiting for the reply to finish…',
   chatCreditsUsed: '{credits} credits',

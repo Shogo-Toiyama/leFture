@@ -90,6 +90,9 @@ from app.services.knowledge_index import embed_queries
 ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
 ANSWER_MODEL = "gemini/gemini-3.1-flash-lite"
 ANSWER_MAX_OUTPUT_TOKENS = 2048
+# 広い質問(探索役のゴールが多い・コースの講義一覧を開いた)だけ、回答の上限を引き上げる(3-8)
+ANSWER_MAX_OUTPUT_TOKENS_WIDE = 4096
+WIDE_GOAL_ITEMS = 4
 
 # 悪意ある長文対策の本命。超えたらLLMを一切呼ばずに弾く。
 MAX_MESSAGE_CHARS = 4000
@@ -743,6 +746,7 @@ async def _gather_materials(
     history: list[Message],
     map_task: "asyncio.Task[StudentMap]",
     chat_map_task: "asyncio.Task[ChatMap]",
+    on_fetch: Optional[Callable[[list[str]], Awaitable[None]]] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -789,7 +793,7 @@ async def _gather_materials(
             turn.timer.mark(f"navigator_lap{lap}")
 
         try:
-            navigation = await navigate(llm, nav_input, tools, on_lap=on_lap)
+            navigation = await navigate(llm, nav_input, tools, on_lap=on_lap, on_fetch=on_fetch)
             print(f"🧭 [chat] message={turn.assistant_message_id} {summarize_for_log(navigation)}")
             if not navigation.failed_before_any_fetch:
                 return select_materials(navigation.materials), navigation
@@ -802,6 +806,12 @@ async def _gather_materials(
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
         chunks = []
     return select_materials([material_from_chunk(c) for c in chunks]), navigation
+
+
+def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[Material]) -> int:
+    """コース全体の概観のような広い質問だけ長く書けるようにする(普段は短く速く)。"""
+    wide = (navigation is not None and len(navigation.goal) >= WIDE_GOAL_ITEMS) or any(m.kind == "course" for m in materials)
+    return ANSWER_MAX_OUTPUT_TOKENS_WIDE if wide else ANSWER_MAX_OUTPUT_TOKENS
 
 
 def _previous_turn_refs(history_rows: list[dict]) -> list[dict]:
@@ -1018,8 +1028,13 @@ async def run_chat_turn(
         navigation: Optional[NavigationResult] = None
         if decision.needs_retrieval:
             await emit("status", {"stage": "searching"})
+
+            async def on_fetch(kinds: list[str]) -> None:
+                # 何を探しているか(講義 / 過去のチャット / Web)を画面に出す
+                await emit("status", {"stage": "searching", "detail": kinds})
+
             materials, navigation = await _gather_materials(
-                llm, billing, user_client, turn, history, map_task, chat_map_task)
+                llm, billing, user_client, turn, history, map_task, chat_map_task, on_fetch)
             timer.mark("retrieval_done")
             await emit("sources", {"sources": sources_event(materials)})
 
@@ -1034,7 +1049,7 @@ async def run_chat_turn(
         # (2026-09-29に計測、TurnTimerのanswer_first_tokenで確認)。"none"だと
         # thinkingLevel: minimal, includeThoughts: False になり、雑談程度の速さで
         # 十分なこの役には合っている。
-        options = LLMOptions(max_tokens=ANSWER_MAX_OUTPUT_TOKENS, reasoning_effort="none")
+        options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials), reasoning_effort="none")
         timer.mark("answer_started")
         async for delta in llm.generate_stream(ANSWER_MODEL, messages, state, options):
             if "answer_first_token" not in timer.marks:

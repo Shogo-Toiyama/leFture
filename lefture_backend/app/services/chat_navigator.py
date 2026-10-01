@@ -1357,6 +1357,7 @@ async def navigate(
     nav_input: NavigatorInput,
     tools: NavigatorTools,
     on_lap: Optional[Callable[[int], Awaitable[None]]] = None,
+    on_fetch: Optional[Callable[[list[str]], Awaitable[None]]] = None,
 ) -> NavigationResult:
     """
     探索役を最大MAX_LAPS周まわす。1周ごとに「判断(LLM) → 検証(コード) → 実行(コード)」。
@@ -1405,12 +1406,29 @@ async def navigate(
             stop_reason = "enough_now"
             record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
             break
+        if on_fetch is not None:
+            await on_fetch(fetch_kinds(record.requests))
         await execute_lap(record, nav_input, state, tools)
         record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
 
     materials = [op.material for op in state.opened.values() if op.material] + state.search_materials
     refs = [op.ref for op in state.opened.values() if op.ref]
     return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason, opened_refs=refs)
+
+
+def fetch_kinds(requests: list[Request]) -> list[str]:
+    """この周で何を探すか(画面の「〜を検索中」用): web / chats / lectures。"""
+    kinds: list[str] = []
+    for r in requests:
+        if isinstance(r, FindRequest):
+            kind = "web" if r.target == "web.search" else "chats" if r.target.startswith("chat.") else "lectures"
+        elif isinstance(r, OpenRequest):
+            kind = "web" if _WEB_HANDLE_RE.match(r.handle) else "chats" if r.handle[:1] in ("S", "P") else "lectures"
+        else:
+            kind = "lectures"
+        if kind not in kinds:
+            kinds.append(kind)
+    return kinds
 
 
 def summarize_for_log(result: NavigationResult) -> str:

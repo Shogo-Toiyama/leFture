@@ -96,9 +96,15 @@ const AssistantMessage: React.FC<{
 
   const isGenerating = message.status === 'streaming';
   const showStage = isGenerating && !message.content;
+  // 探しているものが複数なら、Web → 過去のチャット → 講義の順に1つだけ出す
+  const detail = message.searchDetail ?? [];
   const stageLabel =
     message.stage === 'searching'
-      ? t('chatStageSearching')
+      ? detail.includes('web')
+        ? t('chatStageSearchingWeb')
+        : detail.includes('chats')
+          ? t('chatStageSearchingChats')
+          : t('chatStageSearching')
       : message.stage === 'writing'
         ? t('chatStageWriting')
         : t('chatStageThinking');
