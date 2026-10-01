@@ -194,6 +194,25 @@ class _ContextCache:
             )
         return self._transcripts[lecture_id]
 
+    def lecture_topics(self, lecture_id: str) -> list[dict]:
+        if not hasattr(self, "_lec_topics"):
+            self._lec_topics: dict[str, list[dict]] = {}
+        if lecture_id not in self._lec_topics:
+            res = self._client.table("lecture_topics").select(
+                "id, topic_title, topic_type, start_sid, end_sid, deleted_at"
+            ).eq("lecture_id", lecture_id).is_("deleted_at", "null").execute()
+            rows = res.data or []
+            from app.services.helpers.helpers import _sid_to_int
+            parsed = []
+            for r in rows:
+                s_int = _sid_to_int(r.get("start_sid"))
+                e_int = _sid_to_int(r.get("end_sid"))
+                if s_int is not None and e_int is not None:
+                    parsed.append({**r, "_start": s_int, "_end": e_int})
+            parsed.sort(key=lambda x: (x["_start"], x["_end"]))
+            self._lec_topics[lecture_id] = parsed
+        return self._lec_topics[lecture_id]
+
 
 # =========================================================
 # ✂️ テキスト分割ヘルパー
@@ -457,15 +476,18 @@ def _build_topic_summary(admin_client, source_id: str, cache: _ContextCache) -> 
 
 
 def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) -> list[ChunkDraft]:
+    """
+    トピックごとの文字起こしチャンクを生成する。
+    1. ACADEMIC/LOGISTICS/OFF_TOPICの全トピックタイプをインデックス対象とする。
+    2. トピックの隙間(最初のトピックの前、トピック間の未分類、最後のトピックの後)を
+       自動的に前後に拡張して埋めることで、講義の全センテンス(s000001〜末尾)および
+       生徒とのやり取り(INTERACTION)を1文字も漏らさず100%カバーする。
+    """
     res = admin_client.table("lecture_topics").select(
         "id, user_id, lecture_id, topic_title, topic_type, start_sid, end_sid, deleted_at"
     ).eq("id", source_id).maybe_single().execute()
     row = res.data if res else None
     if not row or row.get("deleted_at"):
-        return []
-    # LOGISTICS(事務連絡)トピックは既にannouncementとして別途拾われるため、
-    # トランスクリプト本文としての二重インデックスはACADEMICのみに絞る。
-    if row.get("topic_type") != "ACADEMIC":
         return []
 
     from app.services.helpers.helpers import _sid_to_int
@@ -475,9 +497,40 @@ def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) 
 
     lecture_id = row.get("lecture_id")
     sentences = cache.assembled_transcript(lecture_id) if lecture_id else []
+    if not sentences:
+        return []
+
+    # 講義全体の全センテンスのSID範囲を取得
+    all_sids = [_sid_to_int(s.get("sid")) for s in sentences if _sid_to_int(s.get("sid")) is not None]
+    if not all_sids:
+        return []
+    min_lecture_sid, max_lecture_sid = min(all_sids), max(all_sids)
+
+    # この講義の全トピックを順序付きで取得し、前後の隙間を埋める
+    all_topics = cache.lecture_topics(lecture_id)
+    topic_ids = [t["id"] for t in all_topics]
+
+    effective_start = start_n
+    effective_end = end_n
+
+    if source_id in topic_ids:
+        idx = topic_ids.index(source_id)
+        # 1. 最初のトピックなら、講義冒頭(min_lecture_sid)まで前方を拡張して導入・雑談・ガイダンスを拾う
+        if idx == 0:
+            effective_start = min_lecture_sid
+        else:
+            prev_topic = all_topics[idx - 1]
+            # 直前のトピックとの間に隙間があれば、前のトピック終了直後から開始して隙間を埋める
+            if prev_topic["_end"] < start_n - 1:
+                effective_start = prev_topic["_end"] + 1
+
+        # 2. 最後のトピックなら、講義末尾(max_lecture_sid)まで後方を拡張して最後のQ&Aなどを拾う
+        if idx == len(all_topics) - 1:
+            effective_end = max_lecture_sid
+
     in_range = [
         s for s in sentences
-        if s.get("text") and start_n <= (_sid_to_int(s.get("sid")) or -1) <= end_n
+        if s.get("text") and effective_start <= (_sid_to_int(s.get("sid")) or -1) <= effective_end
     ]
     joined = " ".join(s.get("text", "") for s in in_range)
     segment_text = joined.strip()
@@ -500,7 +553,10 @@ def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) 
     drafts = []
     for idx, (a, b) in enumerate(_text_window_spans(len(segment_text), TRANSCRIPT_CHUNK_CHARS, TRANSCRIPT_CHUNK_OVERLAP_CHARS)):
         sids = [sid for s_start, s_end, sid in sentence_spans if sid is not None and s_start < b and s_end > a]
-        metadata: dict[str, Any] = {"topic_title": row.get("topic_title")}
+        metadata: dict[str, Any] = {
+            "topic_title": row.get("topic_title"),
+            "topic_type": row.get("topic_type"),
+        }
         if sids:
             metadata["sid_start"] = min(sids)
             metadata["sid_end"] = max(sids)
