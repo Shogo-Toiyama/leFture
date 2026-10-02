@@ -94,7 +94,11 @@ ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
 # 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
 # (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
 ANSWER_MODEL = "gemini/gemini-3.5-flash-lite"
-ANSWER_REASONING_EFFORT = "low"
+# 2026-10-02にlowからnoneへ変更。同じ質問をlow/noneそれぞれ2回ずつ比べたところ、
+# 6問中5問はlowがnoneと同じか安く、「詳しく教えて」系の1問だけlowが約+1credit高かった。
+# その1問で中身を読み比べても、低い方(low)が考えた分だけ良い回答になっている様子は無く
+# (むしろnoneの方が短い出力トークンでより詳しい回答を書いていた)、厚くする理由が無いと判断した。
+ANSWER_REASONING_EFFORT = "none"
 # max_tokensには思考のトークンも含まれるので、その分を足しておく(回答の途中で切れないように)
 ANSWER_THINKING_TOKENS = 1024
 ANSWER_MAX_OUTPUT_TOKENS = 2048
@@ -395,6 +399,9 @@ class PreparedTurn:
     # summary_blocksには2段目に入った1段目も含まれる
     summary_level2: list[dict] = field(default_factory=list)
     timer: TurnTimer = field(default_factory=lambda: TurnTimer())
+    # 事前チェックと並行で読み始める、ユーザーIDだけで読めるもの(振り分け役の前に揃っているように)
+    student_map_task: "Optional[asyncio.Task[StudentMap]]" = None
+    blocked_task: "Optional[asyncio.Task[frozenset[str]]]" = None
 
 
 def _now_iso(delta: timedelta = timedelta(0)) -> str:
@@ -561,6 +568,17 @@ async def prepare_chat_turn(
     admin_client = get_supabase_client()
     is_new_thread = thread_id is None
 
+    # 地図(コース一覧)と今のプランは、ユーザーIDだけで読めるので事前チェックと並行で読み始める。
+    # 振り分け役がコース一覧を使うので、ここで始めておくと振り分け役の開始を待たせない。
+    # 事前チェックで弾かれたときは読み込みが無駄になるが、DBを1回読むだけなので許容する。
+    student_map_task = asyncio.create_task(asyncio.to_thread(
+        load_student_map, admin_client, user_id, resolve_timezone(timezone_name)))
+    student_map_task.add_done_callback(_ignore_task_exception)
+    student_map_task.add_done_callback(lambda _t: timer.mark("map_loaded"))
+    blocked_task = asyncio.create_task(asyncio.to_thread(_load_blocked_source_types, user_id))
+    blocked_task.add_done_callback(_ignore_task_exception)
+    blocked_task.add_done_callback(lambda _t: timer.mark("plan_loaded"))
+
     prep_ms: dict[str, int] = {}
     timer.details["prep_ms"] = prep_ms
 
@@ -655,6 +673,8 @@ async def prepare_chat_turn(
         summary_blocks=summary_blocks,
         summary_level2=summary_level2 or [],
         timer=timer,
+        student_map_task=student_map_task,
+        blocked_task=blocked_task,
     )
 
 
@@ -681,11 +701,24 @@ def _load_student_profile(admin_client, user_id: str) -> str:
     return "\n".join(parts) if parts else "(The student has not shared any profile information yet.)"
 
 
+def router_courses_text(student_map: Optional[StudentMap]) -> str:
+    """
+    振り分け役に渡すコースの一覧(コース名と学期だけ)。振り分け役は「検索する価値があるか」を
+    決めるだけなので、講義数や日付は渡さない(それは探索役の地図で見る)。
+    """
+    if student_map is None:
+        return "(unknown)"
+    if not student_map.courses:
+        return "(The student has no courses yet.)"
+    return "\n".join(f"- {c.title} ({c.term or 'term not set'})" for c in student_map.courses)
+
+
 async def _run_router(
     llm: UnifiedLLM,
     turn: PreparedTurn,
     memory: "ConversationMemory",
     history: list[Message],
+    courses_text: str = "(unknown)",
 ) -> RouterDecision:
     is_first_message = turn.is_new_thread or not turn.thread_has_title
     # 指示文は毎ターン同じsystemに置き、変わる入力はすべて後ろのuserに入れる
@@ -694,6 +727,7 @@ async def _run_router(
         "EARLIER_CONVERSATION": memory.for_router(),
         "RECENT_CONVERSATION": format_router_conversation(history),
         "SCREEN_CONTEXT": format_screen_context(turn.lecture_label, turn.selected_text) or "(none)",
+        "COURSES": courses_text,
         "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
         "NEW_MESSAGE": turn.content,
     })
@@ -1059,17 +1093,21 @@ async def run_chat_turn(
 
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
         memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
-        # 地図(コース・講義の呼び名、この会話の節・最近のチャット)は探索役を呼ぶときだけ使うが、
-        # 仕分け役を待つ間に並行で読み込んでおく(探索が要るターンの待ち時間を増やさないため)。
-        tz = resolve_timezone(turn.timezone_name)
-        map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id, tz))
-        map_task.add_done_callback(_ignore_task_exception)
-        map_task.add_done_callback(lambda _t: timer.mark("map_loaded"))
+        # 地図(コース一覧)とプランはprepare_chat_turnで事前チェックと並行に読み始めている。
+        # 無い場合(テスト等で直接PreparedTurnを作ったとき)だけここで読む。
+        map_task = turn.student_map_task
+        if map_task is None:
+            tz = resolve_timezone(turn.timezone_name)
+            map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id, tz))
+            map_task.add_done_callback(_ignore_task_exception)
+            map_task.add_done_callback(lambda _t: timer.mark("map_loaded"))
         # 今のプランで使えない材料の種類(探索で使う)。失敗時はFree扱いで例外は出さない。
         # 回答役にはプランを伝えない(プランの話を回答に持ち込ませない。案内は画面側の固定の注意書き)
-        blocked_task = asyncio.create_task(asyncio.to_thread(_load_blocked_source_types, turn.user_id))
-        blocked_task.add_done_callback(_ignore_task_exception)
-        blocked_task.add_done_callback(lambda _t: timer.mark("plan_loaded"))
+        blocked_task = turn.blocked_task
+        if blocked_task is None:
+            blocked_task = asyncio.create_task(asyncio.to_thread(_load_blocked_source_types, turn.user_id))
+            blocked_task.add_done_callback(_ignore_task_exception)
+            blocked_task.add_done_callback(lambda _t: timer.mark("plan_loaded"))
 
         async def _build_chat_map() -> ChatMap:
             recent = await DbChatThreadSource(admin_client, turn.user_id).recent_threads_with_trail(turn.thread_id, 20)
@@ -1082,7 +1120,14 @@ async def run_chat_turn(
         timer.mark("context_loaded")
 
         # --- 2. 仕分け ---
-        decision = await _run_router(llm, turn, memory, history)
+        # 振り分け役にもコースの一覧を見せる(授業と関係の無い話で探索役を呼ばないため)。
+        # 地図の読み込みは並行で走っていて、振り分け役の開始より0.2〜0.4秒ほど遅れて終わる。
+        try:
+            router_map: Optional[StudentMap] = await map_task
+        except Exception as e:
+            print(f"⚠️ [chat] failed to load the student map for the router: {e}")
+            router_map = None
+        decision = await _run_router(llm, turn, memory, history, router_courses_text(router_map))
         timer.mark("router_done")
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
@@ -1147,7 +1192,7 @@ async def run_chat_turn(
             "answer_cache_read_tokens": state.cache_read_tokens,
             "answer_cache_write_tokens": state.cache_write_tokens,
             "usage_estimated": state.usage_estimated,
-            "materials": [{"key": m.key, "handle": m.handle, "relation": m.relation} for m in materials],
+            "materials": [{"key": m.key, "handle": m.handle} for m in materials],
             "timings": timer.to_json(),
         }
 

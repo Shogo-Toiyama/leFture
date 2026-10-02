@@ -1,0 +1,453 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "main",
+  "runs": [
+    [
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 3.04,
+        "output": {
+          "reasoning": "The student asks to revisit a method taught in class, so retrieve the relevant lecture material.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Class explanation of heap insertion",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "heap insertion; insert element into a binary heap, sift up",
+              "layer": "all",
+              "within": "C1"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 3.05,
+        "output": {
+          "reasoning": "The student asks to revisit how heap insertion was taught in class; the Binary Heaps lecture is identified, so retrieve its insertion notes.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Class notes on binary-heap insertion",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "binary heap insertion: add at end, sift up, heap property",
+              "layer": "notes",
+              "within": "C1/L3"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.28,
+        "output": {
+          "reasoning": "学生は授業で学んだヒープ挿入の方法を尋ねており、講義の詳細を確認する必要があります。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "挿入手順の詳しい説明",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L3/T2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 2.29,
+        "output": {
+          "reasoning": "The prior lecture and insertion topic have already been opened, and they give the procedure and an example.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain min-heap insertion: add the new value at the end of the array, then repeatedly swap it with its parent while it is smaller.",
+            "Mention the parent index is ⌊(i−1)/2⌋ for zero-based indexing, and stop at the root or when the parent is no larger.",
+            "Use the class example: inserting 1 into [2,5,3] bubbles 1 to the root in two swaps; the operation is O(log n)."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.25,
+        "output": {
+          "reasoning": "線形代数の授業で扱った固有値とロボット制御のつながりを尋ねているので、両方の授業資料を確認します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "線形代数とロボティクスの授業資料における固有値・制御の説明",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "eigenvalues and eigenvectors; applications to stability and control systems",
+              "layer": "all",
+              "within": "C4"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "eigenvalues, stability, and control of robotic systems",
+              "layer": "all",
+              "within": "C5"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.84,
+        "output": {
+          "reasoning": "The student asks about the relationship between a topic in their linear algebra course and robotics control; the lecture outlines already show the direct connection.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that robotics state-space control uses eigenvalues of the system matrix A as its poles.",
+            "Connect eigenvalues to system stability and pole placement, as covered in the robotics course."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.24,
+        "output": {
+          "reasoning": "すでに講義資料に両方の内容があり、固有値とロボット制御のつながりも示されています。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "線形代数では、固有値を使って連続時間系の安定性を調べた。",
+            "ロボット制御では状態空間モデルの行列Aの固有値を「極」と呼び、安定性の判定や極配置に使う。",
+            "つまり、線形代数の固有値が制御系の挙動を分析・設計する基礎になっている。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 1.5,
+        "output": {
+          "reasoning": "The course materials already directly connect eigenvalues to robot control, so no further fetch is needed.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that the connection is direct: in state-space control, the poles are the eigenvalues of the system matrix A.",
+            "Relate the shared stability test: all eigenvalues must have negative real parts for the system to be stable.",
+            "Mention that control can use pole placement to move those eigenvalues and shape the system’s behavior."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.63,
+        "output": {
+          "reasoning": "The student explicitly asks for a current internship application deadline, so I should check the web.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Google's Summer 2027 SWE internship application closing date",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Google Summer 2027 Software Engineering Internship application deadline"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 1.3,
+        "output": {
+          "reasoning": "The student explicitly asks for a current application deadline, and the Google Careers result is the relevant source to check.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Whether Google Careers lists a closing date",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W1"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 1,
+        "elapsed": 1.56,
+        "output": {
+          "reasoning": "They ask what their econ professor recommended, so I should check the course materials for the book’s name.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The recommended book’s name",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "book recommended by professor, recommended reading",
+              "layer": "all",
+              "within": "C2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 2,
+        "elapsed": 1.38,
+        "output": {
+          "reasoning": "The student explicitly asks what their professor recommended, and the search surfaced two likely economics lectures to inspect.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The book title in the lecture materials",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L8"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L9"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 3,
+        "elapsed": 1.64,
+        "output": {
+          "reasoning": "The searches point to likely relevant economics lectures, but none identifies the book; opening the lecture summaries may provide the recommendation.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The recommended book’s title",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L1"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L8"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L9"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 4,
+        "elapsed": 1.55,
+        "output": {
+          "reasoning": "The searches only surfaced possible lectures, so open the most likely one to check for the recommendation.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The book title in the professor’s recommendation",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L1"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.006861557741189861
+}

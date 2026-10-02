@@ -332,7 +332,6 @@ def chat_map_line(chat: dict) -> str:
 #   by_date(from, to, within_any) … 講義を日付で引く(DBを引くだけ、LLMを使わない)。日付は完全一致。
 # grounds: その操作の根拠として許される種類(5種類)
 #   explicit_request / past_reference / on_screen / likely_in_course / needs_external_info(Web用)
-# relation: 材料ごとに付ける。direct(質問そのものに答える材料) / possible_link(話題の外からのつながりの候補)
 #
 # 各周の正解は alternatives のどれか1つに合えばよい:
 #   done=True        … 終わる
@@ -354,17 +353,17 @@ MAX_LAPS = 4
 MAX_OPS_PER_LAP = 5
 
 
-def op_open(handle, grounds, relation="direct"):
-    return {"op": "open", "handle": handle, "grounds": grounds, "relation": relation}
+def op_open(handle, grounds):
+    return {"op": "open", "handle": handle, "grounds": grounds}
 
 
-def op_find(source, kind, query_any, grounds, relation="direct", layer_any=None, within_any=None):
+def op_find(source, kind, query_any, grounds, layer_any=None, within_any=None):
     return {"op": "find", "source": source, "kind": kind, "query_any": query_any, "grounds": grounds,
-            "relation": relation, "layer_any": layer_any, "within_any": within_any}
+            "layer_any": layer_any, "within_any": within_any}
 
 
-def op_date(date_from, date_to, grounds, within_any=None, relation="direct"):
-    return {"op": "by_date", "from": date_from, "to": date_to, "within_any": within_any, "grounds": grounds, "relation": relation}
+def op_date(date_from, date_to, grounds, within_any=None):
+    return {"op": "by_date", "from": date_from, "to": date_to, "within_any": within_any, "grounds": grounds}
 
 
 def alt(done=False, must=None, one_of=None, may=None, note="", detour=False):
@@ -1205,7 +1204,7 @@ def _validate() -> list[str]:
 
 def _describe_op(op: dict) -> str:
     g = "/".join(op["grounds"])
-    rel = "" if op["relation"] == "direct" else f", {op['relation']}"
+    rel = ""
     if op["op"] == "open":
         return f"open {op['handle']} ({g}{rel})"
     if op["op"] == "by_date":

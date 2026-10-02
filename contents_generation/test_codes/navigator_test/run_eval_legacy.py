@@ -252,9 +252,8 @@ def build_schema(handles: list[str], targets: list[str]) -> dict:
             "date_to": {"type": "string"},
             "grounds": {"type": "string", "enum": GROUNDS},
             "grounds_quote": {"type": "string"},
-            "relation": {"type": "string", "enum": ["direct", "possible_link"]},
         },
-        "required": ["op", "handle", "target", "query", "layer", "within", "date_from", "date_to", "grounds", "grounds_quote", "relation"],
+        "required": ["op", "handle", "target", "query", "layer", "within", "date_from", "date_to", "grounds", "grounds_quote"],
     }
     return {
         "type": "object",
@@ -388,8 +387,6 @@ def op_matches(model_op: dict, spec: dict, strict: bool) -> bool:
             return False
         if spec["within_any"] is not None and _none(model_op.get("within")) not in spec["within_any"]:
             return False
-    if strict and model_op.get("relation") != spec["relation"]:
-        return False
     return True
 
 
@@ -458,7 +455,7 @@ def score(case: dict, step: dict, out: dict | None) -> dict:
             return {**result, "pass": True, "matched_alt": i, "detour": a["detour"], "grounds_agree": grounds_agree(ops, a)}
     for i, a in enumerate(step["alternatives"]):
         if alt_matches(ops, done, a, strict=False):
-            return {**result, "pass": False, "error": "grounds_or_relation", "matched_alt": i}
+            return {**result, "pass": False, "error": "wrong_grounds", "matched_alt": i}
     if done:
         return {**result, "pass": False, "error": "stopped_too_early"}
     if not any(not a["done"] for a in step["alternatives"]):

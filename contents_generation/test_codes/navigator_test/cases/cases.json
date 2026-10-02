@@ -26,7 +26,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -47,8 +46,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -74,8 +72,7 @@
                 "handle": "C1/L3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -98,7 +95,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C1",
@@ -130,8 +126,7 @@
                 "handle": "C1/L3/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -196,8 +191,7 @@
                 "handle": "C1/L6",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -213,8 +207,7 @@
                 "handle": "C1/L6",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -231,7 +224,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -259,7 +251,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C1",
@@ -280,8 +271,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -307,8 +297,7 @@
                 "handle": "C1/L6/T4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -318,8 +307,7 @@
                 "handle": "C1/L6/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -359,7 +347,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -408,8 +395,7 @@
                 "handle": "C2/L4",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -436,24 +422,21 @@
                 "handle": "C2/L4/T1",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C2/L4/T2",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C2/L4/T3",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -495,7 +478,6 @@
                 "grounds": [
                   "on_screen"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C2",
@@ -571,8 +553,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
@@ -580,8 +561,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -605,7 +585,6 @@
                   "past_reference",
                   "likely_in_course"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -635,8 +614,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
@@ -644,8 +622,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -691,8 +668,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
@@ -700,8 +676,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -761,16 +736,14 @@
                 "handle": "C4",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C5",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -826,40 +799,35 @@
                 "handle": "C1",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C2",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C3",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C4",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C5",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -924,7 +892,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -945,8 +912,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -982,8 +948,7 @@
                 "handle": "C1/L4/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1005,7 +970,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript"
                 ],
@@ -1046,8 +1010,7 @@
                 "handle": "C1/L4/s412-425",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1118,7 +1081,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -1139,8 +1101,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1184,8 +1145,7 @@
                 "handle": "C1/L6/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1219,8 +1179,7 @@
                 "handle": "C1/L6/s233-240",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1230,8 +1189,7 @@
                 "handle": "C1/L6/s241-243",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -1268,8 +1226,7 @@
                 "handle": "C1/L4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1285,8 +1242,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1334,8 +1290,7 @@
                 "handle": "C2/L6",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1358,7 +1313,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C2/L6"
@@ -1397,24 +1351,21 @@
                 "handle": "C2/L6/T1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C2/L6/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C2/L6/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -1461,8 +1412,7 @@
                 "handle": "C5/L2/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1484,7 +1434,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C5/L2",
@@ -1529,7 +1478,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -1588,8 +1536,7 @@
                 ],
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1605,8 +1552,7 @@
                 "handle": "C2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1622,8 +1568,7 @@
                 "handle": "C2/L4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1659,8 +1604,7 @@
                 "handle": "C2/L4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1717,8 +1661,7 @@
                 "within_any": null,
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1734,16 +1677,14 @@
                 "handle": "C4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C5",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1779,8 +1720,7 @@
                 "handle": "C4/L7",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1815,24 +1755,21 @@
                 "handle": "C4/L7/T1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C4/L7/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C4/L7/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -1875,7 +1812,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -1896,8 +1832,7 @@
                 "handle": "C3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1941,8 +1876,7 @@
                 "handle": "C3/L10",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -1987,7 +1921,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -2005,8 +1938,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2048,7 +1980,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -2066,8 +1997,7 @@
                 "handle": "C2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2111,8 +2041,7 @@
                 "handle": "C2/L6/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2154,7 +2083,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C2"
@@ -2179,7 +2107,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null
@@ -2199,8 +2126,7 @@
                 "handle": "C2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2244,8 +2170,7 @@
                 "handle": "C2/L4/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2320,7 +2245,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -2345,8 +2269,7 @@
                 "handle": "C4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2390,8 +2313,7 @@
                 "handle": "C4/L2/s518-526",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2434,7 +2356,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -2452,7 +2373,6 @@
                   "needs_external_info",
                   "explicit_request"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -2476,7 +2396,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -2525,7 +2444,6 @@
                   "needs_external_info",
                   "explicit_request"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -2537,8 +2455,7 @@
                 "handle": "C5/L4/s801-806",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -2594,8 +2511,7 @@
                 "grounds": [
                   "needs_external_info",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2605,8 +2521,7 @@
                 "handle": "C5/L4/s801-806",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -2645,8 +2560,7 @@
                 "handle": "C1/L6/T2",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2671,7 +2585,6 @@
                 "grounds": [
                   "on_screen"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript"
                 ],
@@ -2705,16 +2618,14 @@
                 "handle": "C1/L6/s233-240",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C1/L6/s241-243",
                 "grounds": [
                   "on_screen"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -2770,8 +2681,7 @@
                 "handle": "P3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2793,7 +2703,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -2859,7 +2768,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -2905,8 +2813,7 @@
                 "handle": "P31",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2943,8 +2850,7 @@
                 "handle": "P1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -2965,7 +2871,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3022,8 +2927,7 @@
                 "handle": "P7",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3046,7 +2950,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3103,8 +3006,7 @@
                 "handle": "P4",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3126,7 +3028,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3183,8 +3084,7 @@
                 "handle": "P5",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3206,7 +3106,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3263,16 +3162,14 @@
                 "handle": "P2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "C5",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3288,8 +3185,7 @@
                 "handle": "P2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "find",
@@ -3301,7 +3197,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -3329,7 +3224,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               },
@@ -3343,7 +3237,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -3376,8 +3269,7 @@
                 "handle": "C5/L2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3387,8 +3279,7 @@
                 "handle": "P2/S1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -3407,7 +3298,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C5",
@@ -3422,8 +3312,7 @@
                 "handle": "P2/S1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "その回の中を直接検索する(2026-10-02の方針)",
@@ -3457,8 +3346,7 @@
                 "handle": "C5/L2/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3468,8 +3356,7 @@
                 "handle": "P2/S1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -3483,8 +3370,7 @@
                 "handle": "P2/S1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3494,8 +3380,7 @@
                 "handle": "C5/L2/T3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "",
@@ -3530,8 +3415,7 @@
                 "handle": "S1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3552,7 +3436,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3589,16 +3472,14 @@
                 "handle": "S1/T1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S1/T2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -3642,8 +3523,7 @@
                 "handle": "S3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3665,7 +3545,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3689,7 +3568,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3707,8 +3585,7 @@
                 "handle": "P8",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3743,32 +3620,28 @@
                 "handle": "S3/T7",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S3/T8",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S3/T9",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S3/T10",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -3813,8 +3686,7 @@
                 "grounds": [
                   "past_reference",
                   "likely_in_course"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3880,8 +3752,7 @@
                 "handle": "H1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3902,7 +3773,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -3938,8 +3808,7 @@
                 "handle": "S3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3976,8 +3845,7 @@
                 "handle": "H1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -3998,7 +3866,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4026,8 +3893,7 @@
                 "handle": "S2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -4055,40 +3921,35 @@
                 "handle": "S2/T5",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S2/T6",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S2/T7",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S2/T8",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "S2/T9",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -4130,7 +3991,6 @@
                 "grounds": [
                   "explicit_request"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4184,8 +4044,7 @@
                 "handle": "W1",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -4201,16 +4060,14 @@
                 "handle": "W1",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "W2",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -4253,7 +4110,6 @@
                 "grounds": [
                   "needs_external_info"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4326,7 +4182,6 @@
                 "grounds": [
                   "explicit_request"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4337,8 +4192,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "find",
@@ -4352,7 +4206,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -4396,8 +4249,7 @@
                 "handle": "C1/L8",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -4421,16 +4273,14 @@
                 "handle": "C1/L8",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "W1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -4454,7 +4304,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   "C1",
@@ -4469,8 +4318,7 @@
                 "handle": "W1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "note": "その回の中を直接検索する(2026-10-02の方針)",
@@ -4517,8 +4365,7 @@
                 "handle": "W1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -4561,7 +4408,6 @@
                   "explicit_request",
                   "needs_external_info"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4622,7 +4468,6 @@
                   "explicit_request",
                   "needs_external_info"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4641,16 +4486,14 @@
                 "handle": "W1",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "W2",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -4715,16 +4558,14 @@
                 "handle": "W1",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "W3",
                 "grounds": [
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -4768,7 +4609,6 @@
                 "grounds": [
                   "needs_external_info"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -4953,7 +4793,6 @@
                 "grounds": [
                   "likely_in_course"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null
@@ -5171,7 +5010,6 @@
                 "grounds": [
                   "needs_external_info"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -5226,16 +5064,14 @@
                 "handle": "W1",
                 "grounds": [
                   "needs_external_info"
-                ],
-                "relation": "direct"
+                ]
               },
               {
                 "op": "open",
                 "handle": "W2",
                 "grounds": [
                   "needs_external_info"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "may": [],
@@ -5349,7 +5185,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -5373,8 +5208,7 @@
                 "handle": "C2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5430,7 +5264,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -5454,8 +5287,7 @@
                 "handle": "C2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5514,8 +5346,7 @@
                 "handle": "C2",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5686,8 +5517,7 @@
                 "handle": "C4/L7",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5735,8 +5565,7 @@
                 "handle": "C1/L7",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5752,8 +5581,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5805,8 +5633,7 @@
                 "grounds": [
                   "past_reference",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5828,8 +5655,7 @@
                 "grounds": [
                   "past_reference",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5851,8 +5677,7 @@
                 "grounds": [
                   "past_reference",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5874,8 +5699,7 @@
                 "grounds": [
                   "past_reference",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5892,8 +5716,7 @@
                 "grounds": [
                   "past_reference",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5910,8 +5733,7 @@
                 "grounds": [
                   "past_reference",
                   "explicit_request"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -5955,7 +5777,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -6000,8 +5821,7 @@
                 "handle": "P18",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -6023,7 +5843,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }
@@ -6069,7 +5888,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -6090,7 +5908,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -6109,8 +5926,7 @@
                 "handle": "C3",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -6153,7 +5969,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": [
                   null,
@@ -6174,8 +5989,7 @@
                 "handle": "C1",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -6211,8 +6025,7 @@
                 "handle": "C1/L11",
                 "grounds": [
                   "past_reference"
-                ],
-                "relation": "direct"
+                ]
               }
             ],
             "one_of": [],
@@ -6243,7 +6056,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript"
                 ],
@@ -6290,7 +6102,6 @@
                 "grounds": [
                   "past_reference"
                 ],
-                "relation": "direct",
                 "layer_any": [
                   "transcript",
                   "all"
@@ -6341,7 +6152,6 @@
                 "grounds": [
                   "needs_external_info"
                 ],
-                "relation": "direct",
                 "layer_any": null,
                 "within_any": null
               }

@@ -311,7 +311,7 @@ def _web_page(h: dict) -> nav.WebPage:
 def _outcome_for_found(f: dict, state: Optional[nav.NavState] = None) -> Optional[nav.Outcome]:
     """stateを渡すと、Webのページをstate.web_pagesにも登録する(開けるように)。"""
     target = f"{f['source']}.{f['kind']}"
-    common = dict(grounds="past_reference", grounds_quote="", relation="direct", quote_ok=True)
+    common = dict(grounds="past_reference", grounds_quote="", quote_ok=True)
     if target == "web.search" and target not in UNAVAILABLE_TARGETS:
         req = nav.FindRequest(target=target, query=f["query"], layer="all", within=None, **common)
         pages = []
@@ -352,9 +352,9 @@ async def build_state(case: dict, step: dict, nav_input: nav.NavigatorInput) -> 
         if h[0] == "W":
             if h not in state.web_pages:
                 return None
-            state.opened[h] = nav.open_web_page(state.web_pages[h], "direct")
+            state.opened[h] = nav.open_web_page(state.web_pages[h])
             continue
-        state.opened[h] = await nav.open_handle(h, "direct", nav_input, SOURCE, chat_source)
+        state.opened[h] = await nav.open_handle(h, nav_input, SOURCE, chat_source)
     for hist in step["history"]:
         done = [f"open {h}" for h in hist["opened"]]
         for f in hist["found"]:
@@ -371,7 +371,7 @@ async def build_state(case: dict, step: dict, nav_input: nav.NavigatorInput) -> 
 # =====================================================================
 
 def _request_to_op(r: nav.Request) -> dict:
-    base = {"grounds": r.grounds, "relation": r.relation}
+    base = {"grounds": r.grounds}
     if r.grounds_quote:
         base["grounds_quote"] = r.grounds_quote
     if isinstance(r, nav.FindRequest):

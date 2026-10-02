@@ -10,6 +10,10 @@ ${RECENT_CONVERSATION}
 ${SCREEN_CONTEXT}
 </screen_context>
 
+<courses>
+${COURSES}
+</courses>
+
 <is_first_message>${IS_FIRST_MESSAGE}</is_first_message>
 
 <new_message>

@@ -309,7 +309,6 @@ class FindRequest:
     within: Optional[str]
     grounds: str
     grounds_quote: str
-    relation: str
     quote_ok: bool
 
     def key(self) -> tuple:
@@ -329,7 +328,6 @@ class OpenRequest:
     handle: str
     grounds: str
     grounds_quote: str
-    relation: str
     quote_ok: bool
 
     def key(self) -> tuple:
@@ -346,7 +344,6 @@ class DateRequest:
     within: Optional[str]
     grounds: str
     grounds_quote: str
-    relation: str
     quote_ok: bool
 
     def key(self) -> tuple:
@@ -750,8 +747,7 @@ def validate_operations(
             continue
         op = raw.get("op")
         # grounds(根拠の種類)は、必要度と出どころ(例: implied:class+web)を入れて記録だけに使う。
-        # つながりの候補(possible_link)は取りに行かない方針なので、関係は常にdirect。
-        common = dict(grounds=source_label, grounds_quote="", relation="direct", quote_ok=True)
+        common = dict(grounds=source_label, grounds_quote="", quote_ok=True)
         req: Optional[Request] = None
         reason = None
         if allowed_kinds is not None and _op_kind(raw) not in allowed_kinds:
@@ -899,11 +895,11 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
 # =========================================================
 
 async def open_handle(
-    handle: str, relation: str, nav_input: NavigatorInput, source: LectureSource,
+    handle: str, nav_input: NavigatorInput, source: LectureSource,
     chat_source: Optional[ChatThreadSource] = None,
 ) -> Opened:
     if handle[:1] in ("S", "P", "H") and chat_source is not None:
-        return await chat_open_handle(handle, relation, nav_input, chat_source)
+        return await chat_open_handle(handle, nav_input, chat_source)
     m = nav_input.student_map
     parsed = parse_handle(handle)
     course = m.course(parsed.course) if parsed else None
@@ -923,7 +919,7 @@ async def open_handle(
             handle=handle,
             text=f"Course {handle}: {course.title}\n{body}",
             material=Material(key=f"course:{course.id}", kind="course", label=f"{course.title} / Lectures",
-                              content=body, relation=relation, source_type="course", course_id=course.id, handle=handle),
+                              content=body, source_type="course", course_id=course.id, handle=handle),
             ref={"type": "course", "id": course.id},
         )
 
@@ -941,7 +937,7 @@ async def open_handle(
             text=f"Lecture {handle}: {lec.title} ({when})\n{body}",
             material=Material(key=f"lecture:{lec.id}", kind="lecture",
                               label=f"{course.title} / {lec.title} / Lecture Summary",
-                              content=f"Lecture date: {when}\n{body}", relation=relation,
+                              content=f"Lecture date: {when}\n{body}",
                               source_type="lecture_summary", source_id=lec.id, lecture_id=lec.id,
                               course_id=course.id, handle=handle),
             surfaced=[f"{handle}/T{t['index']}" for t in topics],
@@ -962,7 +958,7 @@ async def open_handle(
             text=text,
             material=Material(key=f"topic:{lec.id}:{parsed.topic_index}", kind="topic",
                               label=f"{course.title} / {lec.title} / Topic: {detail['title']}",
-                              content=content[:TOPIC_TEXT_CHARS], relation=relation,
+                              content=content[:TOPIC_TEXT_CHARS],
                               source_type="deep_note" if note_ans else "topic_summary",
                               source_id=detail.get("id"), lecture_id=lec.id, course_id=course.id,
                               metadata={"topic_number": parsed.topic_index}, handle=handle),
@@ -984,7 +980,7 @@ async def open_handle(
         handle=handle,
         text=f"Transcript {handle} ({course.title} / {lec.title}, {when}):\n{body}",
         material=Material(key=f"transcript:{lec.id}:{parsed.sid_start}-{parsed.sid_end}", kind="transcript",
-                          label=f"{course.title} / {lec.title} / Transcript", content=body, relation=relation,
+                          label=f"{course.title} / {lec.title} / Transcript", content=body,
                           source_type="transcript_topic", lecture_id=lec.id, course_id=course.id,
                           metadata={"sid_start": parsed.sid_start, "sid_end": parsed.sid_end}, handle=handle),
         ref={"type": "transcript", "lecture_id": lec.id, "sid_start": parsed.sid_start, "sid_end": parsed.sid_end},
@@ -1027,7 +1023,7 @@ def _turn_list_lines(turns: list[dict], prefix: str) -> str:
     return "\n".join(lines) if lines else "(No turns.)"
 
 
-async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput, chat_source: ChatThreadSource) -> Opened:
+async def chat_open_handle(handle: str, nav_input: NavigatorInput, chat_source: ChatThreadSource) -> Opened:
     """この会話の畳んだ節・過去のチャットを開く。「一覧 → 中身」の2段(3-14 ④)。"""
     cm = nav_input.chat_map
     parsed = parse_chat_handle(handle)
@@ -1043,7 +1039,7 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
         return Opened(
             handle=handle, text=f"Section {handle}: {section.title}\n{body}",
             material=Material(key=f"chat_section:{nav_input.current_thread_id}:{parsed.number}", kind="chat_section",
-                              label=f"This conversation / {section.title}", content=body, relation=relation,
+                              label=f"This conversation / {section.title}", content=body,
                               source_type="chat_turn", thread_id=nav_input.current_thread_id,
                               metadata={"thread_id": nav_input.current_thread_id, "section_handle": parsed.number}, handle=handle),
             surfaced=[f"{handle}/T{t['number']}" for t in turns],
@@ -1059,7 +1055,7 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
         return Opened(
             handle=handle, text=f"Condensed part {handle}: {group.title}\nSections:\n{body}",
             material=Material(key=f"chat_group:{nav_input.current_thread_id}:{parsed.number}", kind="chat_thread",
-                              label=f"This conversation / {group.title}", content=body, relation=relation,
+                              label=f"This conversation / {group.title}", content=body,
                               source_type="chat_turn", thread_id=nav_input.current_thread_id,
                               metadata={"thread_id": nav_input.current_thread_id}, handle=handle),
             surfaced=[c.handle for c in children],
@@ -1078,7 +1074,7 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
         return Opened(
             handle=handle, text=f"Condensed part {handle}: {group['title']} (in {p_ref.title})\nSections:\n{body}",
             material=Material(key=f"chat_group:{p_ref.id}:{parsed.sub_group}", kind="chat_thread",
-                              label=f"{p_ref.title} / {group['title']}", content=body, relation=relation,
+                              label=f"{p_ref.title} / {group['title']}", content=body,
                               source_type="chat_turn", thread_id=p_ref.id, metadata={"thread_id": p_ref.id}, handle=handle),
             surfaced=[f"{parsed.prefix}/S{c['handle']}" for c in children],
         )
@@ -1114,7 +1110,7 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
         return Opened(
             handle=handle, text="\n".join(parts),
             material=Material(key=f"chat_thread:{ref.id}", kind="chat_thread", label=f"{ref.title} / Chat",
-                              content=body, relation=relation, source_type="chat_turn", thread_id=ref.id,
+                              content=body, source_type="chat_turn", thread_id=ref.id,
                               metadata={"thread_id": ref.id}, handle=handle),
             surfaced=surfaced, ref={"type": "thread", "id": ref.id},
         )
@@ -1132,7 +1128,7 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
         return Opened(
             handle=handle, text=f"Section {handle}: {section['title']} (in {p_ref.title})\n{body}",
             material=Material(key=f"chat_section:{p_ref.id}:{parsed.sub_section}", kind="chat_section",
-                              label=f"{p_ref.title} / {section['title']}", content=body, relation=relation,
+                              label=f"{p_ref.title} / {section['title']}", content=body,
                               source_type="chat_turn", thread_id=p_ref.id,
                               metadata={"thread_id": p_ref.id, "section_handle": parsed.sub_section}, handle=handle),
             surfaced=[f"{handle}/T{t['number']}" for t in turns],
@@ -1151,7 +1147,7 @@ async def chat_open_handle(handle: str, relation: str, nav_input: NavigatorInput
     return Opened(
         handle=handle, text=f"Turn {handle} ({(turn['created_at'] or '')[:10]}):\n{body}",
         material=Material(key=f"chat_turn:{thread_id}:{parsed.turn}", kind="chat_turn",
-                          label=f"{thread_title} / Turn {parsed.turn}", content=body, relation=relation,
+                          label=f"{thread_title} / Turn {parsed.turn}", content=body,
                           source_type="chat_turn", thread_id=thread_id,
                           metadata={"thread_id": thread_id, "turn_number": parsed.turn}, handle=handle),
         ref={"type": "chat_turn", "thread_id": thread_id, "turn_number": parsed.turn},
@@ -1422,14 +1418,13 @@ async def decide_lap(
     return None, last_error
 
 
-def web_material(page: WebPage, relation: str, opened: bool) -> Material:
+def web_material(page: WebPage, opened: bool) -> Material:
     """Webのページを回答役の材料に。開いたページは断片すべて、当たっただけのページは最初の方だけ。"""
     return Material(
         key=f"web:{page.url}",
         kind="web_page" if opened else "web",
         label=page.label(),
         content=page.text(WEB_PAGE_CHARS if opened else WEB_HIT_MATERIAL_CHARS),
-        relation=relation,
         source_type="web",
         url=page.url,
         metadata={"title": page.title, "domain": page.domain},
@@ -1460,9 +1455,9 @@ def add_web_pages(state: NavState, raw_pages: list[dict]) -> list[WebPage]:
     return pages
 
 
-def open_web_page(page: WebPage, relation: str) -> Opened:
+def open_web_page(page: WebPage) -> Opened:
     text = f"{page.handle} — {page.label()}\n{page.url}\n{page.text(WEB_PAGE_CHARS) or '(no text extracted)'}"
-    return Opened(handle=page.handle, text=text, material=web_material(page, relation, opened=True))
+    return Opened(handle=page.handle, text=text, material=web_material(page, opened=True))
 
 
 async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavState, tools: NavigatorTools) -> None:
@@ -1498,9 +1493,9 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
 
     async def run_open(req: OpenRequest) -> Opened:
         if req.handle in state.web_pages:
-            return open_web_page(state.web_pages[req.handle], req.relation)
+            return open_web_page(state.web_pages[req.handle])
         try:
-            return await open_handle(req.handle, req.relation, nav_input, tools.source, tools.chat_source)
+            return await open_handle(req.handle, nav_input, tools.source, tools.chat_source)
         except Exception as e:
             print(f"⚠️ [chat] navigator open failed ({req.handle}): {e}")
             return Opened(handle=req.handle, text=f"{req.handle}: (could not be opened)", material=None)
@@ -1537,11 +1532,11 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
     for o in find_outcomes:
         state.outcomes.append(o)
         for hit in o.hits:
-            state.search_materials.append(material_from_chunk(hit.chunk, relation=o.request.relation, handle=hit.handle))
+            state.search_materials.append(material_from_chunk(hit.chunk, handle=hit.handle))
     for o in web_outcomes:
         state.outcomes.append(o)
         for page in o.pages:
-            state.search_materials.append(web_material(page, o.request.relation, opened=False))
+            state.search_materials.append(web_material(page, opened=False))
     state.outcomes += date_outcomes
     record.done = ([f"open {op.handle}" for op in opened] + [o.summary() for o in find_outcomes]
                    + [o.summary() for o in web_outcomes] + [o.summary() for o in date_outcomes])
