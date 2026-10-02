@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { X, ExternalLink, ArrowRight, BookOpen, MessageSquare, Globe, Sparkles, FileText, Bell, Layers } from 'lucide-react';
 import type { ChatCitation, ChatSourceType } from '../../types/chat';
 import { citationRoute, citationUrl, CHAT_SOURCE_LABEL_KEYS } from '../../lib/chatCitations';
+import { fixBoldPunctuationSpacing } from '../../lib/markdownText';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -118,7 +119,7 @@ export const CitationPreviewModal: React.FC<CitationPreviewModalProps> = ({
         <div className="citation-modal-body">
           {citation.snippet ? (
             <div className="citation-modal-snippet">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{citation.snippet}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{fixBoldPunctuationSpacing(citation.snippet)}</ReactMarkdown>
             </div>
           ) : (
             <div className="citation-modal-empty">

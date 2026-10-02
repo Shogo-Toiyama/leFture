@@ -12,6 +12,7 @@ import {
   linkifyCitations,
   parseCitationHref,
 } from '../../lib/chatCitations';
+import { fixBoldPunctuationSpacing } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
 import type { ChatCitation } from '../../types/chat';
 import { CitationPreviewModal } from './CitationPreviewModal';
@@ -70,7 +71,10 @@ const AssistantMessage: React.FC<{
   }, [message.pendingSources, message.citations]);
   const refs = useMemo(() => new Set(byRef.keys()), [byRef]);
 
-  const markdown = useMemo(() => linkifyCitations(message.content, refs), [message.content, refs]);
+  const markdown = useMemo(
+    () => fixBoldPunctuationSpacing(linkifyCitations(message.content, refs)),
+    [message.content, refs]
+  );
 
   if (message.status === 'crisis') {
     return (
@@ -78,7 +82,7 @@ const AssistantMessage: React.FC<{
         <div className="chat-care" role="note">
           <HeartHandshake size={18} className="chat-care-icon" />
           <div className="chat-markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{fixBoldPunctuationSpacing(message.content)}</ReactMarkdown>
           </div>
         </div>
       </div>
