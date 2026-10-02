@@ -1,0 +1,74 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "web_same_story",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.98,
+        "output": {
+          "reasoning": "「最近」の世界記録更新は変動する外部情報なので、最新の報道を調べます。",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "光ファイバー通信速度の世界記録に関する最新情報",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "latest optical fiber communication speed world record 2026"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_same_story",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 2.32,
+        "output": {
+          "reasoning": "W1 confirms a recent 450 Tbps record over installed fibre, which answers the question.",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Yes—UCL researchers reported a 450 terabits-per-second transmission record over existing, commercial-grade installed fibre.",
+            "The available result identifies this as a record for commercial-grade fibre; distinguish it from records using specialized experimental fibre."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.0007952201650398224
+}

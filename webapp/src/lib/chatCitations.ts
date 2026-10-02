@@ -92,22 +92,42 @@ export function citationShortLabel(citation: ChatCitation): string {
   return parts.join(' · ');
 }
 
+/** 直前が英数字(a[1] のような添字)なら引用ではない。後読みは古いSafariで使えないので手で見る。 */
+function isIndexLike(text: string, offset: number): boolean {
+  return offset > 0 && /[A-Za-z0-9_]/.test(text[offset - 1]);
+}
+
 /**
  * 回答本文の [n] / [Wn] を、Markdown上で押せるリンク [n](#cite-n) に置き換える。
- * 存在する出典番号(refs)だけを対象にし、コードブロック・インライン
- * コードの中(配列の添字 a[1] 等)は触らない。
+ * バックエンドの normalize_citations と同じ整理もここでする(修正前に保存された回答と、生成中の表示のため):
+ * - [W2, W3] / [1, 2] は1つずつに分ける。数字だけのまとまりは、全部が実在する出典番号のときだけ
+ *   (区間の [0, 1] を壊さないため)。Wを含むまとまりは引用とみなし、実在しない番号は落とす。
+ * - 実在しない番号(refsに無い [n] / [Wn])は消す。
+ * コードブロック・インラインコードの中と、英数字の直後の [..](配列の添字 a[1] 等)は触らない。
  */
 export function linkifyCitations(markdown: string, refs: ReadonlySet<string>): string {
-  if (!markdown || refs.size === 0) return markdown;
+  if (!markdown) return markdown;
   // ```…``` と `…` を境界にして、コード以外の部分だけ置き換える
   const segments = markdown.split(/(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g);
   return segments
     .map((segment, i) => {
       // splitの奇数番目がコード部分
       if (i % 2 === 1) return segment;
-      return segment.replace(/\[(W?\d{1,2})\](?!\()/g, (whole, ref: string) =>
-        refs.has(ref) ? `[${ref}](#cite-${ref})` : whole,
+      const grouped = segment.replace(
+        /\[\s*(W?\d{1,2}(?:\s*[,、，]\s*W?\d{1,2})+)\s*\](?!\()/g,
+        (whole, list: string, offset: number, text: string) => {
+          if (isIndexLike(text, offset)) return whole;
+          const items = list.split(/[,、，]/).map((x) => x.trim());
+          if (!items.some((x) => x.startsWith('W')) && !items.every((x) => refs.has(x))) return whole;
+          return items.filter((x) => refs.has(x)).map((x) => `[${x}]`).join('');
+        },
       );
+      return grouped.replace(/[ \t]?\[(W?\d{1,2})\](?!\()/g, (whole, ref: string, offset: number, text: string) => {
+        const bracketAt = whole.startsWith('[') ? offset : offset + 1;
+        if (isIndexLike(text, bracketAt)) return whole;
+        if (!refs.has(ref)) return '';
+        return `${whole.slice(0, bracketAt - offset)}[${ref}](#cite-${ref})`;
+      });
     })
     .join('');
 }

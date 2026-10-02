@@ -1,0 +1,385 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.09,
+        "output": {
+          "reasoning": "「ここの内容」は画面に表示中の講義内容を指しているので、その講義の要点を確認します。",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "価格弾力性の需要に関する講義内容",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 2.21,
+        "output": {
+          "reasoning": "「ここの内容」は表示中の講義を詳しく知りたい依頼で、講義トピックの詳細を開く必要があります。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "講義トピックの詳しい説明",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4/T1"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L4/T2"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L4/T3"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.15,
+        "output": {
+          "reasoning": "The student asks for more detail about the lecture on screen; the summaries are brief, so check the lecture transcript for the professor’s explanation.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The professor’s detailed explanation in the lecture transcript",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "価格弾力性 需要 弾力的 非弾力的 代替財 支出割合 時間",
+              "layer": "transcript",
+              "within": "C2/L4"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.54,
+        "output": {
+          "reasoning": "The student asks how their professor explained a comparison covered in their data structures class.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The professor’s explanation of heapsort versus quicksort",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "heapsort and quicksort comparison",
+              "layer": "transcript",
+              "within": "C1"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.84,
+        "output": {
+          "reasoning": "The topic summary already gives the professor’s comparison, so no more material is needed.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Quicksort is usually faster in practice, partly because it is cache-friendly.",
+            "Heapsort guarantees O(n log n) worst-case time, while quicksort can take O(n²) in the worst case."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": false,
+          "error": "stopped_too_early"
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 1.4,
+        "output": {
+          "reasoning": "The student asks how the professor explained it, so the transcript is the relevant source; the topic summary points to the comparison segment.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Professor’s transcript explanation of the comparison",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L4/s412-425"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_compare_in_course",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 1.53,
+        "output": {
+          "reasoning": "The professor’s comparison is already in the fetched transcript; the cache explanation is also visible in the topic note.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Quicksort is generally faster on average in real machines; the professor called it the “sprinter.”",
+            "Heapsort offers a stronger guarantee: O(n log n) even with adversarial input, like the one who always finishes the marathon.",
+            "The professor briefly noted cache behavior as part of why quicksort is fast."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 1,
+        "elapsed": 1.45,
+        "output": {
+          "reasoning": "The student asks what their economics professor recommended, so the answer depends on their class materials.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The recommended book in Intro Microeconomics",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "recommended book professor",
+              "layer": "transcript",
+              "within": "C2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 2,
+        "elapsed": 1.61,
+        "output": {
+          "reasoning": "The search surfaced two likely economics lectures, but not the recommended book’s name yet.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The professor’s recommendation in the lecture transcript",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "教授 おすすめした本 書籍",
+              "layer": "transcript",
+              "within": "C2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 3,
+        "elapsed": 2.05,
+        "output": {
+          "reasoning": "The class searches did not reveal the title, but the professor’s recommendation may appear in the lecture transcript, so I’ll check the most likely result once.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "the recommended book’s title",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "先生がおすすめした本 書籍",
+              "layer": "transcript",
+              "within": "C2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 4,
+        "elapsed": 1.78,
+        "output": {
+          "reasoning": "The class searches and course outline do not identify the book, but the professor’s recommendation may be in the relevant lecture notes or transcript; this is the final lap, so use one likely lecture.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The book title in the professor’s recommendation",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L1"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 2.05,
+        "output": {
+          "reasoning": "The student asks what their biology class covered, so I should search its materials for the enzyme-temperature explanation.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Biology 101’s class explanation of temperature effects on enzymes",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "temperature effects on enzyme activity",
+              "layer": "all",
+              "within": "C3"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.0046811292737597605
+}

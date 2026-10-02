@@ -449,7 +449,8 @@ def score(case: dict, step: dict, out: dict | None) -> dict:
     result = {"done": done, "n_ops": len(ops)}
     if len(ops) > MAX_OPS_PER_LAP:
         return {**result, "pass": False, "error": "too_many_ops"}
-    bad_quotes = [o.get("grounds_quote") for o in ops if not quote_ok(o.get("grounds_quote", ""), case)]
+    # 根拠の引用が無いスキーマ(2026-10-02以降の本番)では引用を確かめない
+    bad_quotes = [o.get("grounds_quote") for o in ops if "grounds_quote" in o and not quote_ok(o.get("grounds_quote", ""), case)]
     for i, a in enumerate(step["alternatives"]):
         if alt_matches(ops, done, a, strict=True):
             if bad_quotes:

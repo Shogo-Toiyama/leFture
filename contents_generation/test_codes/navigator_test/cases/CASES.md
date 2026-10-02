@@ -44,6 +44,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - ［遠回り］open C1 (past_reference)
 - **2周目**(開いた: C1):
   - open C1/L3 (past_reference)
+  - find lecture.concept [heap | insert | ヒープ] 絞り込み: C1 | C1/L3 (past_reference)  ※目次をたどる代わりに、講義の中を直接検索する(2026-10-02の方針)
 - **3周目**(開いた: C1, C1/L3):
   - open C1/L3/T2 (past_reference)
   - 終わり(トピックの要約で足りると判断してもよい)
@@ -76,17 +77,15 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - いずれか1つ以上: open C2/L4/T1 (on_screen), open C2/L4/T2 (on_screen), open C2/L4/T3 (on_screen)
 - **3周目**(開いた: C2/L4, C2/L4/T1, C2/L4/T2, C2/L4/T3):
   - 終わり
+  - find lecture.concept [elastic | 弾力] 絞り込み: C2 | C2/L4 (on_screen)  ※トピックにDeep Noteが無く要約が1行ずつなので、「もっと詳しく」に応えて1回検索するのは妥当(2026-10-02)
 
 ## 4. `outline_selected_text_enough` (lecture.outline)
 > これって普通の教科書と逆だよね？
 
 - 状況: 画面: C1/L6 / 選択: 「balance factor = height(right) − height(left)」
-- ねらい: 選択テキストと一般知識で答えられるときに、取りに行きすぎないか。外の定義を確かめにWebへ行くのも可。
+- ねらい: 選択テキストと一般知識で答えられるときに、取りに行かないか(2026-10-02: 確かめるための講義・Webは不正解に変更)。
 - **1周目**:
   - 終わり
-  - find web.search [balance factor | AVL] (needs_external_info)  ※「普通の教科書」の定義を外で確かめる
-  - ［遠回り］open C1/L6 (on_screen)  ※確認のために開いてもよい
-  - ［遠回り］find lecture.concept [balance factor] 絞り込み: なし | C1 | C1/L6 (on_screen)  ※確認のために検索してもよい
 
 ## 5. `outline_cross_course` (lecture.outline)
 > 線形代数でやった固有値って、ロボットの制御の授業と関係ある？
@@ -97,6 +96,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - find lecture.concept [eigen | stability | 固有値] (past_reference/likely_in_course)
 - **2周目**(開いた: C4, C5):
   - open C4/L5 (past_reference/likely_in_course) + open C5/L3 (past_reference/likely_in_course)
+  - 終わり(講義の一覧で関係が分かれば止まってよい(2026-10-02の方針))
 - **3周目**(開いた: C4, C5, C4/L5, C5/L3):
   - 終わり
   - open C4/L5/T3 (past_reference/likely_in_course) + open C5/L3/T2 (past_reference/likely_in_course)
@@ -130,8 +130,11 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - ［遠回り］open C1 (past_reference)
 - **2周目**(見つかった: C1/L4/T3):
   - open C1/L4/T3 (past_reference)
+  - find lecture.concept [heapsort | quicksort] layer: transcript / 絞り込み: C1 | C1/L4 (past_reference)  ※教授の説明を文字起こしで直接探す(2026-10-02の方針)
+  - 終わり(検索の断片に説明の中身が出ていれば止まってよい)
 - **3周目**(開いた: C1/L4/T3):
-  - open C1/L4/s412-425 (past_reference) + (任意: open C1/L4/s426-431 (past_reference))
+  - open C1/L4/s412-425 (past_reference)
+  - 終わり(Deep Noteで説明が分かれば止まってよい)
 - **4周目**(開いた: C1/L4/T3, C1/L4/s412-425):
   - 終わり
 
@@ -171,6 +174,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - ねらい: 前の回答で見せた一覧の3番目。一覧は弾力性に関係する回だけ(第4・5・6回)なので、答えはC2/L3ではなくC2/L6。文脈で指す先が変わる言葉を、番号の思い込みではなく直前の会話で解決できるか。
 - **1周目**:
   - open C2/L6 (past_reference)
+  - find lecture.concept [tax | incidence | elasticit] 絞り込み: C2/L6 (past_reference)  ※その回の中を直接検索する(2026-10-02の方針)
 - **2周目**(開いた: C2/L6):
   - 終わり
   - いずれか1つ以上: open C2/L6/T1 (past_reference), open C2/L6/T2 (past_reference), open C2/L6/T3 (past_reference)
@@ -261,11 +265,9 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 ## 19. `concept_in_course_no_reference` (lecture.concept)
 > クイックソートの最悪計算量ってどれくらい？
 
-- ねらい: 授業への言及は無いが、CS161で習う概念。取りに行っても行かなくてもよいが、取るなら根拠はlikely_in_course。
+- ねらい: 授業への言及は無いが、CS161で習う概念。一般知識で答えられるので取りに行かない(2026-10-02: 「かもしれない」では取りに行かない方針に変更)。
 - **1周目**:
   - 終わり
-  - find lecture.concept [quicksort] (likely_in_course)
-  - ［遠回り］open C1 (likely_in_course)
 
 ## 20. `transcript_side_remark` (lecture.transcript)
 > 教授が前に言ってた『ガウスの消去法の裏技』ってなんだっけ
@@ -286,10 +288,10 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - find lecture.concept [Nobel | ノーベル] layer: transcript | all (past_reference) + find web.search [Nobel] (needs_external_info/explicit_request)
   - find lecture.concept [Nobel | ノーベル] layer: transcript | all (past_reference)  ※先に授業の発言を確かめてからWeb
 - **2周目**(見つかった: C5/L4/s801-806):
-  - find web.search [Nobel | quantum tunneling | superconducting] (needs_external_info/explicit_request)
+  - find web.search [Nobel | quantum tunneling | superconducting] (needs_external_info/explicit_request) + (任意: open C5/L4/s801-806 (past_reference))
 - **3周目**(見つかった: C5/L4/s801-806, W1):
   - 終わり
-  - open W1 (needs_external_info/explicit_request)
+  - open W1 (needs_external_info/explicit_request) + (任意: open C5/L4/s801-806 (past_reference))
 
 ## 22. `transcript_professor_wording` (lecture.transcript)
 > ここ、教授は実際にはなんて言ってたの？
@@ -298,6 +300,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - ねらい: 画面のDeep Noteから、引用範囲をたどって一次情報(文字起こし)を開けるか。
 - **1周目**:
   - open C1/L6/T2 (on_screen)
+  - find lecture.concept [balance factor | AVL | sign | 符号 | 平衡] layer: transcript / 絞り込み: C1 | C1/L6 (on_screen)  ※教授の言葉を文字起こしで直接探す(2026-10-02の方針)
 - **2周目**(開いた: C1/L6/T2):
   - いずれか1つ以上: open C1/L6/s233-240 (on_screen), open C1/L6/s241-243 (on_screen)
 - **3周目**(開いた: C1/L6/T2, C1/L6/s233-240, C1/L6/s241-243):
@@ -370,8 +373,10 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - **1周目**:
   - open P2 (past_reference) + open C5 (past_reference)
   - open P2 (past_reference) + find lecture.concept [PID] 絞り込み: なし | C5 (past_reference)
+  - ［遠回り］find chat.all [motor | oscillat | モーター] (past_reference) + find lecture.concept [PID] 絞り込み: なし | C5 | C5/L2 (past_reference)  ※チャットも講義も検索で当てる(地図のP2で分かるので遠回り)
 - **2周目**(開いた: P2, C5):
   - open C5/L2 (past_reference) + (任意: open P2/S1 (past_reference))
+  - find lecture.concept [PID] 絞り込み: C5 | C5/L2 (past_reference) + (任意: open P2/S1 (past_reference))  ※その回の中を直接検索する(2026-10-02の方針)
 - **3周目**(開いた: P2, C5, C5/L2):
   - 終わり
   - open C5/L2/T3 (past_reference) + (任意: open P2/S1 (past_reference))
@@ -384,6 +389,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - ねらい: この会話の畳まれた部分を、節の呼び名で開けるか。節を開くと往復の一覧が出るので、正確なコードが要るならその往復を開いてよい。
 - **1周目**:
   - open S1 (past_reference)
+  - ［遠回り］find chat.thread [factorial] (past_reference)  ※この会話の中を検索する
 - **2周目**(開いた: S1):
   - 終わり
   - いずれか1つ以上: open S1/T1 (past_reference), open S1/T2 (past_reference)  ※節の往復の一覧から、コードの往復の全文を開く
@@ -466,11 +472,9 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 ## 38. `web_not_needed_course_topic` (web.search)
 > 光合成の明反応と暗反応の違いって何？
 
-- ねらい: 一般知識で答えられ、授業(Biology 101)にもある。Webには行かない。取るなら類似検索が早い。
+- ねらい: 一般知識で答えられ、授業(Biology 101)にもある。Webにも講義にも行かない(2026-10-02: 「かもしれない」では取りに行かない方針に変更)。
 - **1周目**:
   - 終わり
-  - find lecture.concept [photosynthesis | light | Calvin | 光合成 | 明反応 | カルビン] (likely_in_course)
-  - ［遠回り］open C3 (likely_in_course)
 
 ## 39. `web_and_lecture` (web.search)
 > 授業でやったB-treeって、実際のPostgreSQLではどう使われてるか調べてみて
@@ -482,6 +486,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open C1/L8 (past_reference)
   - 終わり
   - ［遠回り］open C1/L8 (past_reference) + open W1 (past_reference)  ※講義とWebの中身を両方読む
+  - find lecture.concept [B-tree | btree | B tree | B+] 絞り込み: C1 | C1/L8 (past_reference) + (任意: open W1 (past_reference))  ※その回の中を直接検索する(2026-10-02の方針)
 - **3周目**(開いた: C1, C1/L8; 見つかった: W1):
   - 終わり
   - ［遠回り］open W1 (past_reference)  ※Webの中身も読む
@@ -500,50 +505,114 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - 終わり
   - ［遠回り］いずれか1つ以上: open W1 (explicit_request), open W3 (explicit_request)
 
-## 41. `none_personal` (none)
+## 41. `web_same_story` (web.search)
+> 最近、光ファイバーの通信速度の世界記録って更新されたの？
+
+- ねらい: 別のサイトが同じニュース(UCLの450Tbps)を報じているとき、1つ開いたら他のページは開かない(2026-10-02: 同じ記事を何枚も開いて同じ内容に出典が3つ付いた)。
+- **1周目**:
+  - find web.search [fiber | 光ファイバー | record | 記録] (needs_external_info)
+- **2周目**(開いた: W1; 見つかった: W1, W2, W3):
+  - 終わり
+
+## 42. `none_personal` (none)
 > 最近疲れてて夜あんまり眠れないんだよね
 
 - ねらい: 個人的な話。授業にもWebにも行かない。
 - **1周目**:
   - 終わり
 
-## 42. `none_hobby` (none)
+## 43. `none_hobby` (none)
 > Can we talk about anime? I've been watching Frieren lately.
 
 - ねらい: 授業と関係ない趣味の話。
 - **1周目**:
   - 終わり
 
-## 43. `none_general_knowledge` (none)
+## 44. `none_general_knowledge` (none)
 > Is recursion or iteration faster?
 
 - ねらい: 一般知識で答えられる。過去への言及が無いので、最近のチャット(P9 Pythonの再帰とループ)があっても開かない。
 - **1周目**:
   - 終わり
 
-## 44. `none_terse_no_pointer` (none)
+## 45. `none_terse_no_pointer` (none)
 > ファームウェアに必要な授業は何？
 
 - ねらい: 過去への言及が無い短い質問(新しい会話)。どこかにあるかもしれないが、手がかりが無いので探さずに一般的に答える。
 - **1周目**:
   - 終わり
 
-## 45. `none_tangent_aha_candidate` (none)
+## 46. `none_tangent_aha_candidate` (none)
 > I just started running and I get out of breath so fast. Why does that happen?
 
-- ねらい: 授業(細胞呼吸)とのAHAの候補。取るのは許すが、関係は必ずpossible_link(回答で無理に結びつけない)。
+- ねらい: 授業(細胞呼吸)とのAHAの候補だが、取りに行かない(2026-10-02: つながりの候補を取りに行く機能をやめた。将来は裏で確かめる形にする)。
 - **1周目**:
   - 終わり
-  - find lecture.concept [respiration | anaerobic | oxygen | lactate | 呼吸 | 乳酸 | 酸素] (likely_in_course, possible_link)
 
-## 46. `none_thanks` (none)
+## 47. `none_thanks` (none)
 > なるほど、ありがとう！
 
 - ねらい: お礼だけ(本来は仕分け役で止まるが、来ても何もしない)。
 - **1周目**:
   - 終わり
 
-## 47. `stop_when_not_found` (stop)
+## 48. `real_selected_why` (none)
+> そもそもなんで木のバランスを保たないといけないの？
+
+- 状況: 画面: C1/L6 / 選択: 「Rotations restore the AVL balance in O(1) time after an insertion.」
+- ねらい: 選択した文についての「なぜ」。選択文と一般知識で答えられるので取りに行かない(元: 「ルーターは直接TCPに話しかけられない」を選択して「なんでTCPに話しかけたいの？」→ 文字起こしを4周探した)。
+- **1周目**:
+  - 終わり
+
+## 49. `real_follow_up_reasoning` (none)
+> じゃあ実際にはみんなquicksortを使ってるってこと？heapsortっていつ使うの？
+
+- 状況: 前のターンで開いたもの: C1/L4/s412-425
+- 直前の会話:
+  - user: How did the professor explain the difference between heapsort and quicksort?
+  - assistant: 教授は「quicksortは実際にはキャッシュに優しいので速いことが多いけど、最悪はO(n^2)。heapsortは常にO(n log n)を保証する」と説明していたよ。
+- ねらい: 前の回答(教授の説明を文字起こしで確かめたもの)の続きを、一般知識で考える質問。同じ範囲を開き直さない(元: 前のターンで開いた文字起こしの範囲を、検索して開き直した)。
+- **1周目**:
+  - 終わり
+
+## 50. `real_always_question` (none)
+> これって絶対にO(n log n)より速くできないの？比較しないで並べ替える方法って絶対にないの？
+
+- 状況: 画面: C1/L4 / 選択: 「Heapsort guarantees O(n log n) time in the worst case.」
+- ねらい: 授業の範囲の外を聞く理屈の質問(比較ソートの下限、計数ソートなど)。一般知識で答える(元: 「絶対にアナログに直さないといけないの？」→ 講義を検索した)。
+- **1周目**:
+  - 終わり
+
+## 51. `real_recent_facts` (web.search)
+> これ、最近の産業用ロボットだとどのくらいの精度で位置を合わせられるの？
+
+- 状況: 画面: C5/L2 / 選択: 「PID controllers adjust motor speed to reach the target position.」
+- ねらい: 「最近」を聞く質問。Web検索1回で、断片に答えがあれば止まる。講義は取りに行かない(元: 「最近ではどのくらい速く送れるの？」→ 講義とWebを両方検索し、4周使い切った)。
+- **1周目**:
+  - find web.search [robot | ロボット | accuracy | repeatability | 精度] (needs_external_info)
+- **2周目**(見つかった: W1, W2):
+  - 終わり
+  - ［遠回り］いずれか1つ以上: open W1 (needs_external_info), open W2 (needs_external_info)  ※断片で数字は出ているので遠回り
+
+## 52. `real_selected_meaning` (none)
+> これどういう意味？
+
+- 状況: 画面: C4/L5 / 選択: 「An eigenvector keeps its direction under the linear transformation; only its length is scaled by the eigenvalue.」
+- ねらい: 選択した文の意味を聞く質問。回答役に選択文が見えているので取りに行かない(元: 「線形時不変システム…」を選択して「これどういう意味？」→ 講義とトピックを開いた)。
+- **1周目**:
+  - 終わり
+
+## 53. `real_misconception_follow_up` (none)
+> じゃあ固有値がマイナスだったら、向きが逆になるってこと？それとも向きが変わったことになるの？
+
+- 直前の会話:
+  - user: 固有ベクトルってどういう意味？
+  - assistant: 線形変換をかけても向きが変わらず、長さだけが固有値倍になるベクトルのことだよ。
+- ねらい: 直前の説明を踏まえた理解の確認。一般知識で答える(元: 「3+5と2+6の区別はつくの？」→ 探索役は何も取らなかったが、それまでに2秒かかった)。
+- **1周目**:
+  - 終わり
+
+## 54. `stop_when_not_found` (stop)
 > What was the name of the book the econ professor recommended?
 
 - ねらい: 探しても無いときに、周を使い切らずに止まれるか。見つからないことは回答役に正直に伝える(ゴールに書く)。
@@ -564,28 +633,28 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 
 # 確認用のケース(プロンプトの調整には使わない)
 
-## 48. `ho_none_venting` (none)
+## 55. `ho_none_venting` (none)
 > 課題が多すぎてもう無理…
 
 - ねらい: 気持ちの吐露。何も取らない。
 - **1周目**:
   - 終わり
 
-## 49. `ho_none_general` (none)
+## 56. `ho_none_general` (none)
 > What's the difference between a process and a thread?
 
 - ねらい: 一般知識。OSのコースは無いので、講義にも行かない。
 - **1周目**:
   - 終わり
 
-## 50. `ho_none_caffeine` (none)
+## 57. `ho_none_caffeine` (none)
 > 最近コーヒー飲みすぎて眠れない、カフェインってどう効くの？
 
 - ねらい: 個人的な話+一般知識。関係するコースは無い。
 - **1周目**:
   - 終わり
 
-## 51. `ho_context_last_one` (lecture.outline)
+## 58. `ho_context_last_one` (lecture.outline)
 > What was the last one about again?
 
 - 状況: 前のターンで開いたもの: C4
@@ -596,7 +665,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - **1周目**:
   - open C4/L7 (past_reference)
 
-## 52. `ho_context_previous` (lecture.outline)
+## 59. `ho_context_previous` (lecture.outline)
 > その前の回って何やったっけ
 
 - 状況: 前のターンで開いたもの: C1/L8
@@ -608,7 +677,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open C1/L7 (past_reference)
   - ［遠回り］open C1 (past_reference)  ※コースを開いて順番を確認する
 
-## 53. `ho_date_last_week` (lecture.by_date)
+## 60. `ho_date_last_week` (lecture.by_date)
 > 先週のロボティクスの授業の内容をまとめて
 
 - ねらい: 「先週」を今日の日付から範囲に直す(週の区切りはどれでもよい)。
@@ -620,14 +689,14 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open C5/L4 (past_reference/explicit_request)  ※地図の日付範囲の最後が9/24
   - ［遠回り］open C5 (past_reference/explicit_request)
 
-## 54. `ho_transcript_anecdote` (lecture.transcript)
+## 61. `ho_transcript_anecdote` (lecture.transcript)
 > In linear algebra the professor told a story about a bridge collapsing. What was that about?
 
 - ねらい: 授業中の逸話は要約に残らない。文字起こしを検索する。
 - **1周目**:
   - find lecture.concept [bridge | collapse | Tacoma] layer: transcript | all / 絞り込み: なし | C4 (past_reference)
 
-## 55. `ho_chat_pointers` (chat.all)
+## 62. `ho_chat_pointers` (chat.all)
 > Remember when we went over pointers in C? Can you show me that example again?
 
 - ねらい: 「we went over」はAIとの会話。地図のP18を開く。
@@ -635,7 +704,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - open P18 (past_reference)
   - ［遠回り］find chat.all [pointer | ポインタ] (past_reference)
 
-## 56. `ho_ja_notes_search` (lecture.concept)
+## 63. `ho_ja_notes_search` (lecture.concept)
 > In bio, what did we learn about how temperature affects enzymes?
 
 - ねらい: 英語の質問だが、生物のまとめは日本語。日本語で検索できるか(英語の検索を並べるのは可)。
@@ -643,7 +712,7 @@ P20 (2026-08-18) ルームメイトとの付き合い方
   - find lecture.concept [酵素 | 温度 | 変性] 絞り込み: なし | C3 (past_reference) + (任意: find lecture.concept [enzyme | temperature] 絞り込み: なし | C3 (past_reference))
   - ［遠回り］open C3 (past_reference)
 
-## 57. `ho_stop_nothing_more` (lecture.concept)
+## 64. `ho_stop_nothing_more` (lecture.concept)
 > ダイクストラ法って授業でどう説明されてた？
 
 - ねらい: 講義にトピックもDeep Noteも無いとき、開ける先が尽きたら止まる(文字起こしを確かめに行くのは遠回りとして許容)。
@@ -653,11 +722,12 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 - **2周目**(見つかった: C1/L11):
   - open C1/L11 (past_reference)
   - 終わり
+  - find lecture.concept [Dijkstra | shortest path | ダイクストラ] layer: transcript / 絞り込み: C1 | C1/L11 (past_reference)  ※教授の説明を文字起こしで直接探す(2026-10-02の方針)
 - **3周目**(開いた: C1/L11):
   - 終わり
   - ［遠回り］find lecture.concept [Dijkstra | shortest path] layer: transcript | all / 絞り込み: C1 | C1/L11 (past_reference)  ※教授の言葉を文字起こしで確かめる(遠回り)
 
-## 58. `ho_web_release` (web.search)
+## 65. `ho_web_release` (web.search)
 > Is Python 3.14 out yet?
 
 - ねらい: 最新の事実。Webへ。

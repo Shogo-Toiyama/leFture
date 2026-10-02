@@ -409,7 +409,9 @@ CASES = [
          "前に授業でやったヒープへの挿入のやり方、もう一回教えて",
          [step(1, alternatives=[alt(must=[op_find("lecture", "concept", ["heap", "insert"], [PAST], within_any=[None, "C1"])]),
                                 alt(must=[op_open("C1", [PAST])], detour=True)]),
-          step(2, opened=["C1"], alternatives=[alt(must=[op_open("C1/L3", [PAST])])]),
+          step(2, opened=["C1"], alternatives=[alt(must=[op_open("C1/L3", [PAST])]),
+                                               alt(must=[op_find("lecture", "concept", ["heap", "insert", "ヒープ"], [PAST], within_any=["C1", "C1/L3"])],
+                                                   note="目次をたどる代わりに、講義の中を直接検索する(2026-10-02の方針)")]),
           step(3, opened=["C1", "C1/L3"], alternatives=[alt(must=[op_open("C1/L3/T2", [PAST])]), alt(done=True, note="トピックの要約で足りると判断してもよい")]),
           step(4, opened=["C1", "C1/L3", "C1/L3/T2"], alternatives=[DONE])],
          "基本の3段たどり。コース → 講義 → トピックで、関係する枝だけを開けるか(2周目以降はコースから入った場合の状態)。"),
@@ -434,24 +436,24 @@ CASES = [
          "ここの内容もうちょっと詳しく知りたい",
          [step(1, alternatives=[alt(must=[op_open("C2/L4", [SCREEN])])]),
           step(2, opened=["C2/L4"], alternatives=[alt(one_of=[op_open("C2/L4/T1", [SCREEN]), op_open("C2/L4/T2", [SCREEN]), op_open("C2/L4/T3", [SCREEN])])]),
-          step(3, opened=["C2/L4", "C2/L4/T1", "C2/L4/T2", "C2/L4/T3"], alternatives=[DONE])],
+          step(3, opened=["C2/L4", "C2/L4/T1", "C2/L4/T2", "C2/L4/T3"], alternatives=[DONE,
+              alt(must=[op_find("lecture", "concept", ["elastic", "弾力"], [SCREEN], within_any=["C2", "C2/L4"])],
+                  note="トピックにDeep Noteが無く要約が1行ずつなので、「もっと詳しく」に応えて1回検索するのは妥当(2026-10-02)")])],
          "画面で見ている講義を根拠に開けるか(「ここ」を画面の文脈で解決)。",
          screen=screen("C2/L4")),
 
     case("outline_selected_text_enough", "lecture.outline",
          "これって普通の教科書と逆だよね？",
-         [step(1, alternatives=[DONE,
-                                alt(must=[op_find("web", "search", ["balance factor", "AVL"], [EXTERNAL])], note="「普通の教科書」の定義を外で確かめる"),
-                                alt(must=[op_open("C1/L6", [SCREEN])], note="確認のために開いてもよい", detour=True),
-                                alt(must=[op_find("lecture", "concept", ["balance factor"], [SCREEN], within_any=[None, "C1", "C1/L6"])], note="確認のために検索してもよい", detour=True)])],
-         "選択テキストと一般知識で答えられるときに、取りに行きすぎないか。外の定義を確かめにWebへ行くのも可。",
+         [step(1, alternatives=[DONE])],
+         "選択テキストと一般知識で答えられるときに、取りに行かないか(2026-10-02: 確かめるための講義・Webは不正解に変更)。",
          screen=screen("C1/L6", "balance factor = height(right) − height(left)")),
 
     case("outline_cross_course", "lecture.outline",
          "線形代数でやった固有値って、ロボットの制御の授業と関係ある？",
          [step(1, alternatives=[alt(must=[op_open("C4", [PAST, LIKELY]), op_open("C5", [PAST, LIKELY])]),
                                 alt(must=[op_find("lecture", "concept", ["eigen", "stability", "固有値"], [PAST, LIKELY])])]),
-          step(2, opened=["C4", "C5"], alternatives=[alt(must=[op_open("C4/L5", [PAST, LIKELY]), op_open("C5/L3", [PAST, LIKELY])])]),
+          step(2, opened=["C4", "C5"], alternatives=[alt(must=[op_open("C4/L5", [PAST, LIKELY]), op_open("C5/L3", [PAST, LIKELY])]),
+                                                     alt(done=True, note="講義の一覧で関係が分かれば止まってよい(2026-10-02の方針)")]),
           step(3, opened=["C4", "C5", "C4/L5", "C5/L3"], alternatives=[DONE, alt(must=[op_open("C4/L5/T3", [PAST, LIKELY]), op_open("C5/L3/T2", [PAST, LIKELY])])]),
           step(4, opened=["C4", "C5", "C4/L5", "C5/L3", "C4/L5/T3", "C5/L3/T2"], alternatives=[DONE])],
          "2つのコースを同じ周で並列に開き、それぞれの該当回まで降りられるか。"),
@@ -474,8 +476,12 @@ CASES = [
          [step(1, alternatives=[alt(must=[op_find("lecture", "concept", ["heapsort", "quicksort"], [PAST], within_any=[None, "C1"])]),
                                 alt(must=[op_open("C1", [PAST])], detour=True)]),
           step(2, found=[found("lecture", "concept", "heapsort vs quicksort", [hit("C1/L4/T3", "Heapsort vs quicksort: Quicksort is usually faster in practice (cache-friendly) but worst case O(n^2); heapsort guarantees O(n log n).")])],
-               alternatives=[alt(must=[op_open("C1/L4/T3", [PAST])])]),
-          step(3, opened=["C1/L4/T3"], alternatives=[alt(must=[op_open("C1/L4/s412-425", [PAST])], may=[op_open("C1/L4/s426-431", [PAST])])]),
+               alternatives=[alt(must=[op_open("C1/L4/T3", [PAST])]),
+                             alt(must=[op_find("lecture", "concept", ["heapsort", "quicksort"], [PAST], layer_any=["transcript"], within_any=["C1", "C1/L4"])],
+                                 note="教授の説明を文字起こしで直接探す(2026-10-02の方針)"),
+                             alt(done=True, note="検索の断片に説明の中身が出ていれば止まってよい")]),
+          step(3, opened=["C1/L4/T3"], alternatives=[alt(must=[op_open("C1/L4/s412-425", [PAST])]),
+                                                     alt(done=True, note="Deep Noteで説明が分かれば止まってよい")]),
           step(4, opened=["C1/L4/T3", "C1/L4/s412-425"], alternatives=[DONE])],
          "「教授はどう説明してた」→ 検索でトピックに当て、Deep Noteの引用範囲から教授の実際の言葉(文字起こし)まで行けるか。"),
 
@@ -499,7 +505,9 @@ CASES = [
 
     case("outline_follow_up_third", "lecture.outline",
          "Tell me more about the third one.",
-         [step(1, alternatives=[alt(must=[op_open("C2/L6", [PAST])])]),
+         [step(1, alternatives=[alt(must=[op_open("C2/L6", [PAST])]),
+                                alt(must=[op_find("lecture", "concept", ["tax", "incidence", "elasticit"], [PAST], within_any=["C2/L6"])],
+                                    note="その回の中を直接検索する(2026-10-02の方針)")]),
           step(2, opened=["C2/L6"], alternatives=[DONE, alt(one_of=[op_open(f"C2/L6/T{i}", [PAST]) for i in (1, 2, 3)])])],
          "前の回答で見せた一覧の3番目。一覧は弾力性に関係する回だけ(第4・5・6回)なので、答えはC2/L3ではなくC2/L6。"
          "文脈で指す先が変わる言葉を、番号の思い込みではなく直前の会話で解決できるか。",
@@ -578,10 +586,8 @@ CASES = [
 
     case("concept_in_course_no_reference", "lecture.concept",
          "クイックソートの最悪計算量ってどれくらい？",
-         [step(1, alternatives=[DONE,
-                                alt(must=[op_find("lecture", "concept", ["quicksort"], [LIKELY])]),
-                                alt(must=[op_open("C1", [LIKELY])], detour=True)])],
-         "授業への言及は無いが、CS161で習う概念。取りに行っても行かなくてもよいが、取るなら根拠はlikely_in_course。"),
+         [step(1, alternatives=[DONE])],
+         "授業への言及は無いが、CS161で習う概念。一般知識で答えられるので取りに行かない(2026-10-02: 「かもしれない」では取りに行かない方針に変更)。"),
 
     # ---------------- 文字起こし ----------------
     case("transcript_side_remark", "lecture.transcript",
@@ -600,16 +606,20 @@ CASES = [
                                 alt(must=[op_find("lecture", "concept", ["Nobel", "ノーベル"], [PAST], layer_any=["transcript", "all"])],
                                     note="先に授業の発言を確かめてからWeb")]),
           step(2, found=[found("lecture", "concept", "Nobel Prize physics", [hit("C5/L4/s801-806", "Quick aside... last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit you can hold in your hand. That's the physics behind superconducting qubits.")])],
-               alternatives=[alt(must=[op_find("web", "search", ["Nobel", "quantum tunneling", "superconducting"], [EXTERNAL, EXP])])]),
+               alternatives=[alt(must=[op_find("web", "search", ["Nobel", "quantum tunneling", "superconducting"], [EXTERNAL, EXP])],
+                                 may=[op_open("C5/L4/s801-806", [PAST])])]),
           step(3, found=[found("lecture", "concept", "Nobel Prize physics", [hit("C5/L4/s801-806", "Quick aside... last year's Nobel Prize in Physics went to work showing quantum tunneling in an electrical circuit...")]),
                          found("web", "search", "Nobel Prize in Physics 2025 macroscopic quantum tunneling", [hit("W1", "The Nobel Prize in Physics 2025 was awarded for the discovery of macroscopic quantum mechanical tunnelling and energy quantisation in an electric circuit...",
                                                                                                          "The Nobel Prize in Physics 2025 - NobelPrize.org", "https://www.nobelprize.org/prizes/physics/2025/summary/")])],
-               alternatives=[DONE, alt(must=[op_open("W1", [EXTERNAL, EXP])])])],
+               alternatives=[DONE, alt(must=[op_open("W1", [EXTERNAL, EXP])], may=[op_open("C5/L4/s801-806", [PAST])])])],
          "授業での発言(文字起こし)と外の詳しい情報(Web)を組み合わせる。コースや講義のタイトルからは絶対に推測できない。"),
 
     case("transcript_professor_wording", "lecture.transcript",
          "ここ、教授は実際にはなんて言ってたの？",
-         [step(1, alternatives=[alt(must=[op_open("C1/L6/T2", [SCREEN])])]),
+         [step(1, alternatives=[alt(must=[op_open("C1/L6/T2", [SCREEN])]),
+                                alt(must=[op_find("lecture", "concept", ["balance factor", "AVL", "sign", "符号", "平衡"], [SCREEN],
+                                                  layer_any=["transcript"], within_any=["C1", "C1/L6"])],
+                                    note="教授の言葉を文字起こしで直接探す(2026-10-02の方針)")]),
           step(2, opened=["C1/L6/T2"], alternatives=[alt(one_of=[op_open("C1/L6/s233-240", [SCREEN]), op_open("C1/L6/s241-243", [SCREEN])])]),
           step(3, opened=["C1/L6/T2", "C1/L6/s233-240", "C1/L6/s241-243"], alternatives=[DONE])],
          "画面のDeep Noteから、引用範囲をたどって一次情報(文字起こし)を開けるか。",
@@ -661,8 +671,13 @@ CASES = [
     case("chat_and_lecture_same_lap", "chat.all",
          "We talked in chat about my robotics club motor oscillating. How does that relate to the PID lecture?",
          [step(1, alternatives=[alt(must=[op_open("P2", [PAST]), op_open("C5", [PAST])]),
-                                alt(must=[op_open("P2", [PAST]), op_find("lecture", "concept", ["PID"], [PAST], within_any=[None, "C5"])])]),
-          step(2, opened=["P2", "C5"], alternatives=[alt(must=[op_open("C5/L2", [PAST])], may=[op_open("P2/S1", [PAST])])]),
+                                alt(must=[op_open("P2", [PAST]), op_find("lecture", "concept", ["PID"], [PAST], within_any=[None, "C5"])]),
+                                alt(must=[op_find("chat", "all", ["motor", "oscillat", "モーター"], [PAST]),
+                                          op_find("lecture", "concept", ["PID"], [PAST], within_any=[None, "C5", "C5/L2"])],
+                                    note="チャットも講義も検索で当てる(地図のP2で分かるので遠回り)", detour=True)]),
+          step(2, opened=["P2", "C5"], alternatives=[alt(must=[op_open("C5/L2", [PAST])], may=[op_open("P2/S1", [PAST])]),
+                                                     alt(must=[op_find("lecture", "concept", ["PID"], [PAST], within_any=["C5", "C5/L2"])],
+                                                         may=[op_open("P2/S1", [PAST])], note="その回の中を直接検索する(2026-10-02の方針)")]),
           step(3, opened=["P2", "C5", "C5/L2"], alternatives=[DONE,
                                                               alt(must=[op_open("C5/L2/T3", [PAST])], may=[op_open("P2/S1", [PAST])]),
                                                               alt(must=[op_open("P2/S1", [PAST])], may=[op_open("C5/L2/T3", [PAST])])])],
@@ -671,7 +686,8 @@ CASES = [
     # ---------------- この会話 ----------------
     case("thread_section_ref", "chat.thread",
          "最初の方で見せてくれたfactorialのコード、n<=1にした版ってどう書くんだっけ",
-         [step(1, alternatives=[alt(must=[op_open("S1", [PAST])])]),
+         [step(1, alternatives=[alt(must=[op_open("S1", [PAST])]),
+                                alt(must=[op_find("chat", "thread", ["factorial"], [PAST])], note="この会話の中を検索する", detour=True)]),
           step(2, opened=["S1"], alternatives=[DONE,
                                                alt(one_of=[op_open("S1/T1", [PAST]), op_open("S1/T2", [PAST])],
                                                    note="節の往復の一覧から、コードの往復の全文を開く")])],
@@ -740,10 +756,8 @@ CASES = [
 
     case("web_not_needed_course_topic", "web.search",
          "光合成の明反応と暗反応の違いって何？",
-         [step(1, alternatives=[DONE,
-                                alt(must=[op_find("lecture", "concept", ["photosynthesis", "light", "Calvin", "光合成", "明反応", "カルビン"], [LIKELY])]),
-                                alt(must=[op_open("C3", [LIKELY])], detour=True)])],
-         "一般知識で答えられ、授業(Biology 101)にもある。Webには行かない。取るなら類似検索が早い。"),
+         [step(1, alternatives=[DONE])],
+         "一般知識で答えられ、授業(Biology 101)にもある。Webにも講義にも行かない(2026-10-02: 「かもしれない」では取りに行かない方針に変更)。"),
 
     case("web_and_lecture", "web.search",
          "授業でやったB-treeって、実際のPostgreSQLではどう使われてるか調べてみて",
@@ -753,7 +767,9 @@ CASES = [
                                                [hit("W1", "B-tree indexes are the default index type; they support equality and range queries...",
                                                     "PostgreSQL Documentation: B-Tree Indexes", "https://www.postgresql.org/docs/current/btree.html")])],
                alternatives=[alt(must=[op_open("C1/L8", [PAST])]), DONE,
-                             alt(must=[op_open("C1/L8", [PAST]), op_open("W1", [PAST])], note="講義とWebの中身を両方読む", detour=True)]),
+                             alt(must=[op_open("C1/L8", [PAST]), op_open("W1", [PAST])], note="講義とWebの中身を両方読む", detour=True),
+                             alt(must=[op_find("lecture", "concept", ["B-tree", "btree", "B tree", "B+"], [PAST], within_any=["C1", "C1/L8"])],
+                                 may=[op_open("W1", [PAST])], note="その回の中を直接検索する(2026-10-02の方針)")]),
           step(3, opened=["C1", "C1/L8"], found=[found("web", "search", "PostgreSQL B-tree index", [hit("W1", "B-tree indexes are the default index type; they support equality and range queries...",
                                                                                                                  "PostgreSQL Documentation: B-Tree Indexes", "https://www.postgresql.org/docs/current/btree.html")])],
                alternatives=[DONE, alt(must=[op_open("W1", [PAST])], note="Webの中身も読む", detour=True)])],
@@ -781,6 +797,20 @@ CASES = [
                alternatives=[DONE, alt(one_of=[op_open("W1", [EXP]), op_open("W3", [EXP])], detour=True)])],
          "Web検索を2回使い切ったら、それ以上は探さない(web.searchはenumから消える)。講義やチャットに探しに行かない。"),
 
+    case("web_same_story", "web.search",
+         "最近、光ファイバーの通信速度の世界記録って更新されたの？",
+         [step(1, alternatives=[alt(must=[op_find("web", "search", ["fiber", "光ファイバー", "record", "記録"], [EXTERNAL])])]),
+          step(2, opened=["W1"],
+               found=[found("web", "search", "fiber optic data transmission speed world record 2026",
+                            [hit("W1", "Researchers at UCL sent data at 450 terabits per second over existing installed fibre, a new record for commercial-grade fibre...",
+                                 "New fibre-optic data transmission speed record — UCL News", "https://www.ucl.ac.uk/news/2026/apr/new-fibre-optic-record"),
+                             hit("W2", "UCL engineers transmitted 450 Tbps through standard fiber already in the ground, breaking the previous record...",
+                                 "New fiber optic data transmission speed record — TechXplore", "https://techxplore.com/news/2026-04-fiber-optic-transmission.html"),
+                             hit("W3", "A 450 Tb/s record over deployed fiber shows how much capacity is left in existing networks...",
+                                 "Fiber-optic record hits 450 Tb/s — IEEE Spectrum", "https://spectrum.ieee.org/fiber-optic-cable-record")])],
+               alternatives=[DONE])],
+         "別のサイトが同じニュース(UCLの450Tbps)を報じているとき、1つ開いたら他のページは開かない(2026-10-02: 同じ記事を何枚も開いて同じ内容に出典が3つ付いた)。"),
+
     # ---------------- 何も取りに行かない ----------------
     case("none_personal", "none",
          "最近疲れてて夜あんまり眠れないんだよね",
@@ -804,14 +834,66 @@ CASES = [
 
     case("none_tangent_aha_candidate", "none",
          "I just started running and I get out of breath so fast. Why does that happen?",
-         [step(1, alternatives=[DONE,
-                                alt(must=[op_find("lecture", "concept", ["respiration", "anaerobic", "oxygen", "lactate", "呼吸", "乳酸", "酸素"], [LIKELY], relation="possible_link")])])],
-         "授業(細胞呼吸)とのAHAの候補。取るのは許すが、関係は必ずpossible_link(回答で無理に結びつけない)。"),
+         [step(1, alternatives=[DONE])],
+         "授業(細胞呼吸)とのAHAの候補だが、取りに行かない(2026-10-02: つながりの候補を取りに行く機能をやめた。将来は裏で確かめる形にする)。"),
 
     case("none_thanks", "none",
          "なるほど、ありがとう！",
          [step(1, alternatives=[DONE])],
          "お礼だけ(本来は仕分け役で止まるが、来ても何もしない)。"),
+
+    # ---------------- 実際のチャットでの失敗(2026-10-02)を世界の講義に置き換えたもの ----------------
+    # 元の質問はネットワークの授業。世界に講義を足すと全ケースの地図が変わるので、同じ形の質問を既存の講義で作る。
+    case("real_selected_why", "none",
+         "そもそもなんで木のバランスを保たないといけないの？",
+         [step(1, alternatives=[DONE])],
+         "選択した文についての「なぜ」。選択文と一般知識で答えられるので取りに行かない"
+         "(元: 「ルーターは直接TCPに話しかけられない」を選択して「なんでTCPに話しかけたいの？」→ 文字起こしを4周探した)。",
+         screen=screen("C1/L6", "Rotations restore the AVL balance in O(1) time after an insertion.")),
+
+    case("real_follow_up_reasoning", "none",
+         "じゃあ実際にはみんなquicksortを使ってるってこと？heapsortっていつ使うの？",
+         [step(1, alternatives=[DONE])],
+         "前の回答(教授の説明を文字起こしで確かめたもの)の続きを、一般知識で考える質問。同じ範囲を開き直さない"
+         "(元: 前のターンで開いた文字起こしの範囲を、検索して開き直した)。",
+         previous_turn_opened=["C1/L4/s412-425"],
+         recent_conversation=[["user", "How did the professor explain the difference between heapsort and quicksort?"],
+                              ["assistant", "教授は「quicksortは実際にはキャッシュに優しいので速いことが多いけど、最悪はO(n^2)。heapsortは常にO(n log n)を保証する」と説明していたよ。"]]),
+
+    case("real_always_question", "none",
+         "これって絶対にO(n log n)より速くできないの？比較しないで並べ替える方法って絶対にないの？",
+         [step(1, alternatives=[DONE])],
+         "授業の範囲の外を聞く理屈の質問(比較ソートの下限、計数ソートなど)。一般知識で答える"
+         "(元: 「絶対にアナログに直さないといけないの？」→ 講義を検索した)。",
+         screen=screen("C1/L4", "Heapsort guarantees O(n log n) time in the worst case.")),
+
+    case("real_recent_facts", "web.search",
+         "これ、最近の産業用ロボットだとどのくらいの精度で位置を合わせられるの？",
+         [step(1, alternatives=[alt(must=[op_find("web", "search", ["robot", "ロボット", "accuracy", "repeatability", "精度"], [EXTERNAL])])]),
+          step(2, found=[found("web", "search", "industrial robot repeatability accuracy 2026",
+                               [hit("W1", "Modern industrial arms reach a repeatability of ±0.02 mm; high-precision models go down to ±0.005 mm...",
+                                    "How precise are industrial robots? — Robotics Today", "https://www.roboticstoday.example/precision"),
+                                hit("W2", "Repeatability vs accuracy: typical 6-axis robots offer ±0.02–0.05 mm repeatability while absolute accuracy is often 10x worse...",
+                                    "Repeatability vs Accuracy Explained", "https://www.automation.example/repeatability")])],
+               alternatives=[DONE, alt(one_of=[op_open("W1", [EXTERNAL]), op_open("W2", [EXTERNAL])], note="断片で数字は出ているので遠回り", detour=True)])],
+         "「最近」を聞く質問。Web検索1回で、断片に答えがあれば止まる。講義は取りに行かない"
+         "(元: 「最近ではどのくらい速く送れるの？」→ 講義とWebを両方検索し、4周使い切った)。",
+         screen=screen("C5/L2", "PID controllers adjust motor speed to reach the target position.")),
+
+    case("real_selected_meaning", "none",
+         "これどういう意味？",
+         [step(1, alternatives=[DONE])],
+         "選択した文の意味を聞く質問。回答役に選択文が見えているので取りに行かない"
+         "(元: 「線形時不変システム…」を選択して「これどういう意味？」→ 講義とトピックを開いた)。",
+         screen=screen("C4/L5", "An eigenvector keeps its direction under the linear transformation; only its length is scaled by the eigenvalue.")),
+
+    case("real_misconception_follow_up", "none",
+         "じゃあ固有値がマイナスだったら、向きが逆になるってこと？それとも向きが変わったことになるの？",
+         [step(1, alternatives=[DONE])],
+         "直前の説明を踏まえた理解の確認。一般知識で答える"
+         "(元: 「3+5と2+6の区別はつくの？」→ 探索役は何も取らなかったが、それまでに2秒かかった)。",
+         recent_conversation=[["user", "固有ベクトルってどういう意味？"],
+                              ["assistant", "線形変換をかけても向きが変わらず、長さだけが固有値倍になるベクトルのことだよ。"]]),
 
     # ---------------- 見つからないときに止まる ----------------
     case("stop_when_not_found", "stop",
@@ -910,7 +992,10 @@ HOLDOUT_CASES = [
          [step(1, alternatives=[alt(must=[op_find("lecture", "concept", ["Dijkstra", "shortest path"], [PAST], within_any=[None, "C1"])]),
                                 alt(must=[op_open("C1", [PAST])], detour=True)]),
           step(2, found=[found("lecture", "concept", "Dijkstra shortest path", [hit("C1/L11", "Shortest Paths: Dijkstra's algorithm using a priority queue.")])],
-               alternatives=[alt(must=[op_open("C1/L11", [PAST])]), DONE]),
+               alternatives=[alt(must=[op_open("C1/L11", [PAST])]), DONE,
+                             alt(must=[op_find("lecture", "concept", ["Dijkstra", "shortest path", "ダイクストラ"], [PAST],
+                                               layer_any=["transcript"], within_any=["C1", "C1/L11"])],
+                                 note="教授の説明を文字起こしで直接探す(2026-10-02の方針)")]),
           step(3, opened=["C1/L11"], alternatives=[DONE,
                                                      alt(must=[op_find("lecture", "concept", ["Dijkstra", "shortest path"], [PAST],
                                                                        layer_any=["transcript", "all"], within_any=["C1", "C1/L11"])],
@@ -982,6 +1067,8 @@ LOOKING_FOR = {
     ("long_thread_drill_to_turn", 3): "the exact factorial code shown earlier",
     ("web_limit_reached", 2): "whether the 2027 ICPC Asia regional dates have been announced",
     ("web_limit_reached", 3): "the 2027 ICPC Asia regional dates, if announced",
+    ("real_recent_facts", 2): "how precisely current industrial robots can position",
+    ("web_same_story", 2): "whether the fiber-optic speed record was broken recently, and by how much",
     ("stop_when_not_found", 2): "the name of the book the econ professor recommended",
     ("stop_when_not_found", 3): "the name of the book the econ professor recommended",
     ("stop_when_not_found", 4): "the name of the book the econ professor recommended",
@@ -1061,7 +1148,8 @@ def _validate() -> list[str]:
             where = f"{cid} lap {st['lap']}"
             found_handles = {h["handle"] for f in st["found"] for h in f["hits"]}
             for h in st["opened"]:
-                if h not in known:
+                # Webのページは、同じ周の検索結果にあれば開いた状態にできる(ハーネスのbuild_stateと同じ条件)
+                if h not in known and not (h.startswith("W") and h in found_handles):
                     errors.append(f"{where}: opened {h} unknown")
             for h in found_handles:
                 if h not in known and not h.startswith("W"):

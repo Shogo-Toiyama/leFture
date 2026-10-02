@@ -35,6 +35,9 @@ PRICE_MATRIX = {
         # チャットはここから計算した実コスト×2をクレジットとして請求するため、
         # この表は原価の可視化だけでなく請求額に直結する。
         "gemini/gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50, "cache_read": 0.025},
+        # 2026-10-02にGoogle公式価格(ai.google.dev/gemini-api/docs/pricing)で確認。チャットの回答役。
+        # 出力には思考のトークンも含まれる。
+        "gemini/gemini-3.5-flash-lite": {"input": 0.30, "output": 2.50, "cache_read": 0.03},
         # 2026-09-22公開のOpenAI公式価格。CORE_EXTRACTIONでgemini-3.1-flash-liteの
         # 代替として採用（安価かつ知識ワーク系ベンチマークで上回るため）。
         # 自動でキャッシュに書き込まれ、書き込みは通常入力の1.25倍(272K以下の短文脈の価格)。

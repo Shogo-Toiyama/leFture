@@ -82,6 +82,34 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "heap",
+                  "insert",
+                  "ヒープ"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C1",
+                  "C1/L3"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "目次をたどる代わりに、講義の中を直接検索する(2026-10-02の方針)",
+            "detour": false
           }
         ],
         "looking_for": "which CS 161 lecture covered heap insertion"
@@ -452,6 +480,33 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "elastic",
+                  "弾力"
+                ],
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C2",
+                  "C2/L4"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "トピックにDeep Noteが無く要約が1行ずつなので、「もっと詳しく」に応えて1回検索するのは妥当(2026-10-02)",
+            "detour": false
           }
         ],
         "looking_for": "the detailed content of each topic of C2/L4"
@@ -485,80 +540,12 @@
             "may": [],
             "note": "",
             "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "find",
-                "source": "web",
-                "kind": "search",
-                "query_any": [
-                  "balance factor",
-                  "AVL"
-                ],
-                "grounds": [
-                  "needs_external_info"
-                ],
-                "relation": "direct",
-                "layer_any": null,
-                "within_any": null
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "「普通の教科書」の定義を外で確かめる",
-            "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "open",
-                "handle": "C1/L6",
-                "grounds": [
-                  "on_screen"
-                ],
-                "relation": "direct"
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "確認のために開いてもよい",
-            "detour": true
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "find",
-                "source": "lecture",
-                "kind": "concept",
-                "query_any": [
-                  "balance factor"
-                ],
-                "grounds": [
-                  "on_screen"
-                ],
-                "relation": "direct",
-                "layer_any": null,
-                "within_any": [
-                  null,
-                  "C1",
-                  "C1/L6"
-                ]
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "確認のために検索してもよい",
-            "detour": true
           }
         ],
         "looking_for": null
       }
     ],
-    "why": "選択テキストと一般知識で答えられるときに、取りに行きすぎないか。外の定義を確かめにWebへ行くのも可。",
+    "why": "選択テキストと一般知識で答えられるときに、取りに行かないか(2026-10-02: 確かめるための講義・Webは不正解に変更)。",
     "recent_conversation": [],
     "set": "main"
   },
@@ -664,6 +651,14 @@
             "one_of": [],
             "may": [],
             "note": "",
+            "detour": false
+          },
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "講義の一覧で関係が分かれば止まってよい(2026-10-02の方針)",
             "detour": false
           }
         ],
@@ -995,6 +990,43 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "heapsort",
+                  "quicksort"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L4"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の説明を文字起こしで直接探す(2026-10-02の方針)",
+            "detour": false
+          },
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "検索の断片に説明の中身が出ていれば止まってよい",
+            "detour": false
           }
         ],
         "looking_for": "where the professor compared heapsort and quicksort"
@@ -1019,17 +1051,16 @@
               }
             ],
             "one_of": [],
-            "may": [
-              {
-                "op": "open",
-                "handle": "C1/L4/s426-431",
-                "grounds": [
-                  "past_reference"
-                ],
-                "relation": "direct"
-              }
-            ],
+            "may": [],
             "note": "",
+            "detour": false
+          },
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "Deep Noteで説明が分かれば止まってよい",
             "detour": false
           }
         ],
@@ -1310,6 +1341,33 @@
             "one_of": [],
             "may": [],
             "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "tax",
+                  "incidence",
+                  "elasticit"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C2/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "その回の中を直接検索する(2026-10-02の方針)",
             "detour": false
           }
         ],
@@ -2223,52 +2281,12 @@
             "may": [],
             "note": "",
             "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "find",
-                "source": "lecture",
-                "kind": "concept",
-                "query_any": [
-                  "quicksort"
-                ],
-                "grounds": [
-                  "likely_in_course"
-                ],
-                "relation": "direct",
-                "layer_any": null,
-                "within_any": null
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "",
-            "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "open",
-                "handle": "C1",
-                "grounds": [
-                  "likely_in_course"
-                ],
-                "relation": "direct"
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "",
-            "detour": true
           }
         ],
         "looking_for": null
       }
     ],
-    "why": "授業への言及は無いが、CS161で習う概念。取りに行っても行かなくてもよいが、取るなら根拠はlikely_in_course。",
+    "why": "授業への言及は無いが、CS161で習う概念。一般知識で答えられるので取りに行かない(2026-10-02: 「かもしれない」では取りに行かない方針に変更)。",
     "recent_conversation": [],
     "set": "main"
   },
@@ -2513,7 +2531,16 @@
               }
             ],
             "one_of": [],
-            "may": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C5/L4/s801-806",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
             "note": "",
             "detour": false
           }
@@ -2572,7 +2599,16 @@
               }
             ],
             "one_of": [],
-            "may": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "C5/L4/s801-806",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
             "note": "",
             "detour": false
           }
@@ -2616,6 +2652,38 @@
             "one_of": [],
             "may": [],
             "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "balance factor",
+                  "AVL",
+                  "sign",
+                  "符号",
+                  "平衡"
+                ],
+                "grounds": [
+                  "on_screen"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L6"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の言葉を文字起こしで直接探す(2026-10-02の方針)",
             "detour": false
           }
         ],
@@ -3245,6 +3313,49 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "all",
+                "query_any": [
+                  "motor",
+                  "oscillat",
+                  "モーター"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              },
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "PID"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null,
+                  "C5",
+                  "C5/L2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "チャットも講義も検索で当てる(地図のP2で分かるので遠回り)",
+            "detour": true
           }
         ],
         "looking_for": null
@@ -3281,6 +3392,41 @@
               }
             ],
             "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "PID"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C5",
+                  "C5/L2"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "P2/S1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "その回の中を直接検索する(2026-10-02の方針)",
             "detour": false
           }
         ],
@@ -3392,6 +3538,29 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "chat",
+                "kind": "thread",
+                "query_any": [
+                  "factorial"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "この会話の中を検索する",
+            "detour": true
           }
         ],
         "looking_for": null
@@ -4122,57 +4291,12 @@
             "may": [],
             "note": "",
             "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "find",
-                "source": "lecture",
-                "kind": "concept",
-                "query_any": [
-                  "photosynthesis",
-                  "light",
-                  "Calvin",
-                  "光合成",
-                  "明反応",
-                  "カルビン"
-                ],
-                "grounds": [
-                  "likely_in_course"
-                ],
-                "relation": "direct",
-                "layer_any": null,
-                "within_any": null
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "",
-            "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "open",
-                "handle": "C3",
-                "grounds": [
-                  "likely_in_course"
-                ],
-                "relation": "direct"
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "",
-            "detour": true
           }
         ],
         "looking_for": null
       }
     ],
-    "why": "一般知識で答えられ、授業(Biology 101)にもある。Webには行かない。取るなら類似検索が早い。",
+    "why": "一般知識で答えられ、授業(Biology 101)にもある。Webにも講義にも行かない(2026-10-02: 「かもしれない」では取りに行かない方針に変更)。",
     "recent_conversation": [],
     "set": "main"
   },
@@ -4313,6 +4437,44 @@
             "may": [],
             "note": "講義とWebの中身を両方読む",
             "detour": true
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "B-tree",
+                  "btree",
+                  "B tree",
+                  "B+"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  "C1",
+                  "C1/L8"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "note": "その回の中を直接検索する(2026-10-02の方針)",
+            "detour": false
           }
         ],
         "looking_for": "how PostgreSQL uses B-trees, and the B-tree lecture"
@@ -4578,6 +4740,97 @@
     "set": "main"
   },
   {
+    "id": "web_same_story",
+    "category": "web.search",
+    "message": "最近、光ファイバーの通信速度の世界記録って更新されたの？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "fiber",
+                  "光ファイバー",
+                  "record",
+                  "記録"
+                ],
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [
+          "W1"
+        ],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "fiber optic data transmission speed world record 2026",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Researchers at UCL sent data at 450 terabits per second over existing installed fibre, a new record for commercial-grade fibre...",
+                "title": "New fibre-optic data transmission speed record — UCL News",
+                "url": "https://www.ucl.ac.uk/news/2026/apr/new-fibre-optic-record"
+              },
+              {
+                "handle": "W2",
+                "snippet": "UCL engineers transmitted 450 Tbps through standard fiber already in the ground, breaking the previous record...",
+                "title": "New fiber optic data transmission speed record — TechXplore",
+                "url": "https://techxplore.com/news/2026-04-fiber-optic-transmission.html"
+              },
+              {
+                "handle": "W3",
+                "snippet": "A 450 Tb/s record over deployed fiber shows how much capacity is left in existing networks...",
+                "title": "Fiber-optic record hits 450 Tb/s — IEEE Spectrum",
+                "url": "https://spectrum.ieee.org/fiber-optic-cable-record"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": "whether the fiber-optic speed record was broken recently, and by how much"
+      }
+    ],
+    "why": "別のサイトが同じニュース(UCLの450Tbps)を報じているとき、1つ開いたら他のページは開かない(2026-10-02: 同じ記事を何枚も開いて同じ内容に出典が3つ付いた)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
     "id": "none_personal",
     "category": "none",
     "message": "最近疲れてて夜あんまり眠れないんだよね",
@@ -4713,41 +4966,12 @@
             "may": [],
             "note": "",
             "detour": false
-          },
-          {
-            "done": false,
-            "must": [
-              {
-                "op": "find",
-                "source": "lecture",
-                "kind": "concept",
-                "query_any": [
-                  "respiration",
-                  "anaerobic",
-                  "oxygen",
-                  "lactate",
-                  "呼吸",
-                  "乳酸",
-                  "酸素"
-                ],
-                "grounds": [
-                  "likely_in_course"
-                ],
-                "relation": "possible_link",
-                "layer_any": null,
-                "within_any": null
-              }
-            ],
-            "one_of": [],
-            "may": [],
-            "note": "",
-            "detour": false
           }
         ],
         "looking_for": null
       }
     ],
-    "why": "授業(細胞呼吸)とのAHAの候補。取るのは許すが、関係は必ずpossible_link(回答で無理に結びつけない)。",
+    "why": "授業(細胞呼吸)とのAHAの候補だが、取りに行かない(2026-10-02: つながりの候補を取りに行く機能をやめた。将来は裏で確かめる形にする)。",
     "recent_conversation": [],
     "set": "main"
   },
@@ -4778,6 +5002,296 @@
     ],
     "why": "お礼だけ(本来は仕分け役で止まるが、来ても何もしない)。",
     "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "real_selected_why",
+    "category": "none",
+    "message": "そもそもなんで木のバランスを保たないといけないの？",
+    "thread": null,
+    "screen": {
+      "lecture": "C1/L6",
+      "topic": null,
+      "selected_text": "Rotations restore the AVL balance in O(1) time after an insertion."
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "選択した文についての「なぜ」。選択文と一般知識で答えられるので取りに行かない(元: 「ルーターは直接TCPに話しかけられない」を選択して「なんでTCPに話しかけたいの？」→ 文字起こしを4周探した)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "real_follow_up_reasoning",
+    "category": "none",
+    "message": "じゃあ実際にはみんなquicksortを使ってるってこと？heapsortっていつ使うの？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [
+      "C1/L4/s412-425"
+    ],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "前の回答(教授の説明を文字起こしで確かめたもの)の続きを、一般知識で考える質問。同じ範囲を開き直さない(元: 前のターンで開いた文字起こしの範囲を、検索して開き直した)。",
+    "recent_conversation": [
+      [
+        "user",
+        "How did the professor explain the difference between heapsort and quicksort?"
+      ],
+      [
+        "assistant",
+        "教授は「quicksortは実際にはキャッシュに優しいので速いことが多いけど、最悪はO(n^2)。heapsortは常にO(n log n)を保証する」と説明していたよ。"
+      ]
+    ],
+    "set": "main"
+  },
+  {
+    "id": "real_always_question",
+    "category": "none",
+    "message": "これって絶対にO(n log n)より速くできないの？比較しないで並べ替える方法って絶対にないの？",
+    "thread": null,
+    "screen": {
+      "lecture": "C1/L4",
+      "topic": null,
+      "selected_text": "Heapsort guarantees O(n log n) time in the worst case."
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "授業の範囲の外を聞く理屈の質問(比較ソートの下限、計数ソートなど)。一般知識で答える(元: 「絶対にアナログに直さないといけないの？」→ 講義を検索した)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "real_recent_facts",
+    "category": "web.search",
+    "message": "これ、最近の産業用ロボットだとどのくらいの精度で位置を合わせられるの？",
+    "thread": null,
+    "screen": {
+      "lecture": "C5/L2",
+      "topic": null,
+      "selected_text": "PID controllers adjust motor speed to reach the target position."
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "web",
+                "kind": "search",
+                "query_any": [
+                  "robot",
+                  "ロボット",
+                  "accuracy",
+                  "repeatability",
+                  "精度"
+                ],
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": null
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      },
+      {
+        "lap": 2,
+        "opened": [],
+        "found": [
+          {
+            "source": "web",
+            "kind": "search",
+            "query": "industrial robot repeatability accuracy 2026",
+            "hits": [
+              {
+                "handle": "W1",
+                "snippet": "Modern industrial arms reach a repeatability of ±0.02 mm; high-precision models go down to ±0.005 mm...",
+                "title": "How precise are industrial robots? — Robotics Today",
+                "url": "https://www.roboticstoday.example/precision"
+              },
+              {
+                "handle": "W2",
+                "snippet": "Repeatability vs accuracy: typical 6-axis robots offer ±0.02–0.05 mm repeatability while absolute accuracy is often 10x worse...",
+                "title": "Repeatability vs Accuracy Explained",
+                "url": "https://www.automation.example/repeatability"
+              }
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [],
+            "one_of": [
+              {
+                "op": "open",
+                "handle": "W1",
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct"
+              },
+              {
+                "op": "open",
+                "handle": "W2",
+                "grounds": [
+                  "needs_external_info"
+                ],
+                "relation": "direct"
+              }
+            ],
+            "may": [],
+            "note": "断片で数字は出ているので遠回り",
+            "detour": true
+          }
+        ],
+        "looking_for": "how precisely current industrial robots can position"
+      }
+    ],
+    "why": "「最近」を聞く質問。Web検索1回で、断片に答えがあれば止まる。講義は取りに行かない(元: 「最近ではどのくらい速く送れるの？」→ 講義とWebを両方検索し、4周使い切った)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "real_selected_meaning",
+    "category": "none",
+    "message": "これどういう意味？",
+    "thread": null,
+    "screen": {
+      "lecture": "C4/L5",
+      "topic": null,
+      "selected_text": "An eigenvector keeps its direction under the linear transformation; only its length is scaled by the eigenvalue."
+    },
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "選択した文の意味を聞く質問。回答役に選択文が見えているので取りに行かない(元: 「線形時不変システム…」を選択して「これどういう意味？」→ 講義とトピックを開いた)。",
+    "recent_conversation": [],
+    "set": "main"
+  },
+  {
+    "id": "real_misconception_follow_up",
+    "category": "none",
+    "message": "じゃあ固有値がマイナスだったら、向きが逆になるってこと？それとも向きが変わったことになるの？",
+    "thread": null,
+    "screen": null,
+    "previous_turn_opened": [],
+    "steps": [
+      {
+        "lap": 1,
+        "opened": [],
+        "found": [],
+        "alternatives": [
+          {
+            "done": true,
+            "must": [],
+            "one_of": [],
+            "may": [],
+            "note": "",
+            "detour": false
+          }
+        ],
+        "looking_for": null
+      }
+    ],
+    "why": "直前の説明を踏まえた理解の確認。一般知識で答える(元: 「3+5と2+6の区別はつくの？」→ 探索役は何も取らなかったが、それまでに2秒かかった)。",
+    "recent_conversation": [
+      [
+        "user",
+        "固有ベクトルってどういう意味？"
+      ],
+      [
+        "assistant",
+        "線形変換をかけても向きが変わらず、長さだけが固有値倍になるベクトルのことだよ。"
+      ]
+    ],
     "set": "main"
   },
   {
@@ -5685,6 +6199,36 @@
             "one_of": [],
             "may": [],
             "note": "",
+            "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "Dijkstra",
+                  "shortest path",
+                  "ダイクストラ"
+                ],
+                "grounds": [
+                  "past_reference"
+                ],
+                "relation": "direct",
+                "layer_any": [
+                  "transcript"
+                ],
+                "within_any": [
+                  "C1",
+                  "C1/L11"
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "教授の説明を文字起こしで直接探す(2026-10-02の方針)",
             "detour": false
           }
         ],

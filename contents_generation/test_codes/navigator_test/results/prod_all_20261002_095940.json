@@ -1,0 +1,417 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 2.61,
+        "output": {
+          "reasoning": "They ask what their econ class covered on a specific date, so I should retrieve that class session.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Economics lecture recorded on April 10, 2026",
+          "operations": [
+            {
+              "op": "by_date",
+              "date_from": "2026-04-10",
+              "date_to": "2026-04-10",
+              "within": "C2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 2.44,
+        "output": {
+          "reasoning": "The date search identified the lecture; open its overview to see what was covered.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The April 10 lecture’s overview and topics",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 2.38,
+        "output": {
+          "reasoning": "The April 10 lecture and its summary already say what the class covered.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Say the class covered price elasticity of demand: how quantity demanded responds to price.",
+            "Mention elastic vs. inelastic demand, with insulin and a specific soda brand as examples.",
+            "Note that substitutes, budget share, and time horizon affect elasticity."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_yesterday",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 1.57,
+        "output": {
+          "reasoning": "“Yesterday’s class” refers to a specific recent lecture, so I need its materials to catch you up.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Which class was held yesterday",
+          "operations": [
+            {
+              "op": "by_date",
+              "date_from": "2026-09-29",
+              "date_to": "2026-09-29"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_yesterday",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 1.7,
+        "output": {
+          "reasoning": "Yesterday’s class is identified, so I’ll open its lecture overview to catch the student up.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The content of the September 29 Linear Algebra lecture",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C4/L7"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_yesterday",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 1.91,
+        "output": {
+          "reasoning": "Yesterday’s lecture is identified and its summary already gives the main topics, so no further fetch is needed.",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Catch the student up on dot products and orthogonality.",
+            "Explain projections onto a line or subspace, including the projection formulas.",
+            "Summarize least squares as finding the projection when Ax=b has no exact solution."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "real_selected_why",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.14,
+        "output": {
+          "reasoning": "This is a general conceptual question about why balanced trees matter; the visible AVL context is enough to answer without fetching.",
+          "need": "maybe",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that an unbalanced search tree can become tall, making search, insertion, and deletion much slower.",
+            "Contrast worst-case O(n) operations in a skewed tree with O(log n) height and operations in an AVL tree."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "real_follow_up_reasoning",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.58,
+        "output": {
+          "reasoning": "This is a general question about practical sorting, not a request about class or current facts.",
+          "need": "maybe",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Clarify that quicksort is not necessarily what everyone uses; many standard libraries use hybrid sorting algorithms.",
+            "Explain heapsort’s use when guaranteed O(n log n) worst-case time and in-place sorting matter."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "real_always_question",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.61,
+        "output": {
+          "reasoning": "これは選択箇所に関連する一般的なアルゴリズムの質問で、授業資料を参照しなくても答えられます。",
+          "need": "maybe",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that the O(n log n) lower bound applies to comparison-based sorting, not every sorting method.",
+            "Mention non-comparison sorts such as counting sort or radix sort, which can be faster under assumptions about the keys.",
+            "Clarify that heapsort itself has worst-case O(n log n), though particular inputs or other algorithms may run faster."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "real_recent_facts",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.75,
+        "output": {
+          "reasoning": "「最近の」産業用ロボットの精度は現行の仕様情報に依存するため、ウェブで確認します。",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "現行の産業用ロボットの位置決め精度の目安",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "industrial robot arm repeatability positioning accuracy typical specifications 2025 2026"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "real_recent_facts",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 1.64,
+        "output": {
+          "reasoning": "The snippets give typical repeatability figures but not enough reliable context on how these differ from absolute positioning accuracy, so I’ll check one source’s details.",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Typical positioning accuracy versus repeatability for industrial robots",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W2"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "real_selected_meaning",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.06,
+        "output": {
+          "reasoning": "質問は画面で選択されている固有ベクトルの説明についてなので、表示内容だけで答えられます。",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "「向きは変わらず、長さだけが固有値に応じて変わる」という意味を説明する。",
+            "簡単な数値例を挙げ、固有値が負なら向きが反転する点も補足する。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "real_misconception_follow_up",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.59,
+        "output": {
+          "reasoning": "This is a direct follow-up about the definition just explained, so it can be answered from the visible conversation.",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that a negative eigenvalue reverses the vector’s direction along the same eigenvector line.",
+            "Clarify that its line stays invariant, even though the vector points the opposite way after transformation."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 1.79,
+        "output": {
+          "reasoning": "「先週の授業」は特定のクラス回を指しており、授業内容をまとめるには資料の確認が必要です。",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "先週のロボティクス授業の内容",
+          "operations": [
+            {
+              "op": "by_date",
+              "date_from": "2026-09-21",
+              "date_to": "2026-09-27",
+              "within": "C5"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.00481232890006205
+}

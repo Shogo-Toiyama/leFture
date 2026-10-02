@@ -42,6 +42,7 @@ from app.services.chat_materials import (
     extract_citations,
     format_sources_block,
     material_from_chunk,
+    normalize_citations,
     select_materials,
     sources_event,
 )
@@ -90,7 +91,12 @@ from app.services.knowledge_index import embed_queries
 # =========================================================
 
 ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
-ANSWER_MODEL = "gemini/gemini-3.1-flash-lite"
+# 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
+# (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
+ANSWER_MODEL = "gemini/gemini-3.5-flash-lite"
+ANSWER_REASONING_EFFORT = "low"
+# max_tokensには思考のトークンも含まれるので、その分を足しておく(回答の途中で切れないように)
+ANSWER_THINKING_TOKENS = 1024
 ANSWER_MAX_OUTPUT_TOKENS = 2048
 # 広い質問(探索役のゴールが多い・コースの講義一覧を開いた)だけ、回答の上限を引き上げる(3-8)
 ANSWER_MAX_OUTPUT_TOKENS_WIDE = 4096
@@ -1121,12 +1127,10 @@ async def run_chat_turn(
             turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
         )
         state = StreamState()
-        # reasoning_effort="low"でもGeminiには thinkingLevel: low, includeThoughts: True
-        # が送られ、答え本文の前に思考の文章を生成する分、最初の1文字までが数秒遅くなる
-        # (2026-09-29に計測、TurnTimerのanswer_first_tokenで確認)。"none"だと
-        # thinkingLevel: minimal, includeThoughts: False になり、雑談程度の速さで
-        # 十分なこの役には合っている。
-        options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials), reasoning_effort="none")
+        # 3.1 Flash Liteでは reasoning_effort="low" で最初の1文字までが数秒遅くなった(2026-09-29)が、
+        # 3.5 Flash Liteのlowは約0.6秒で、推論なしの3.1と変わらなかった(2026-10-02に計測)。
+        options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials) + ANSWER_THINKING_TOKENS,
+                             reasoning_effort=ANSWER_REASONING_EFFORT)
         timer.mark("answer_started")
         async for delta in llm.generate_stream(ANSWER_MODEL, messages, state, options):
             if "answer_first_token" not in timer.marks:
@@ -1163,6 +1167,11 @@ async def run_chat_turn(
         if not answer_text.strip():
             raise RuntimeError(f"Empty answer (finish_reason={state.finish_reason})")
 
+        # 引用の書き方をそろえる([W2, W3]を分ける・実在しない番号を消す)。変わったら画面の本文も差し替える
+        normalized = normalize_citations(answer_text, materials)
+        if normalized != answer_text:
+            answer_text = normalized
+            await emit("replace", {"text": answer_text})
         citations = extract_citations(answer_text, materials)
         # 次のターンの「その次の回」「3番目」のために、開いたもの(無ければ使った材料)をUUIDで残す
         opened_refs = (navigation.opened_refs if navigation else []) or refs_from_materials(materials)

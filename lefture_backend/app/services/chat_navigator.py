@@ -86,6 +86,9 @@ PREVIOUS_THREAD_PREVIEW_TURNS = 5
 # Web(3-14 ⑤)。検索は1回$0.005なので1ターン2回まで(コードで止める)。1回の検索で見せるのは
 # 上位5ページ。開くとそのページの断片すべて(Braveが抜き出し済みなので追加の通信は無い)。
 MAX_WEB_SEARCHES_PER_TURN = 2
+# 授業・チャットの検索(lecture.concept / chat.*)も1ターン2回まで(最初の1回と言い換えの1回)。
+# 見つからないときに探し回るのを、プロンプトの指示だけでは止められなかった(2026-10-02の評価)。
+MAX_SEARCHES_PER_TURN = 2
 WEB_PAGES_PER_SEARCH = 5
 WEB_PAGE_CHARS = 3000
 # 検索で当たっただけ(開いていない)のページを回答役に渡すときの長さ
@@ -100,9 +103,13 @@ CAPABILITIES = {
 }
 
 STATUSES = ["nothing_needed", "enough_now", "need_more"]
-GROUNDS = ["explicit_request", "past_reference", "on_screen", "likely_in_course", "needs_external_info"]
-RELATIONS = ["direct", "possible_link"]
-NONE = "none"
+# 取りに行く必要度(探索役が最初に選ぶ)。取りに行くのはexplicit(頼まれた)とimplied(意図から
+# 明らかに必要)だけ。maybe(役に立つかもしれない)とnone(不要)は取りに行かない。maybeは
+# 出どころ(fetch_from)と一緒に記録だけしておく(将来、裏で確かめて補足する機能のため)。
+NEEDS = ["explicit", "implied", "maybe", "none"]
+FETCH_NEEDS = ("explicit", "implied")
+# 出どころ → 操作の行き先。選んだ出どころの外への操作(例: classだけなのにweb.search)はコードで捨てる。
+_SOURCE_KINDS: dict[str, str] = {"class": "lecture", "web": "web", "past_chat": "chat"}
 
 # 講義の材料の種類(knowledge_chunks.source_type)。layer → 種類の組。
 # allも講義の種類だけに絞る(チャットのチャンクが入ったときに講義の検索へ混ざらないように、3-14)。
@@ -147,10 +154,19 @@ def available_ops() -> list[str]:
     return ops
 
 
-def available_targets(web_left: bool = True) -> list[str]:
-    """web_left=False: このターンのWeb検索を使い切った(enumから外して選べなくする)。"""
-    targets = ["lecture.concept"]
+def available_fetch_sources() -> list[str]:
+    sources = ["class"]
+    if CAPABILITIES["CAN_WEB"]:
+        sources.append("web")
     if CAPABILITIES["CAN_CHAT"]:
+        sources.append("past_chat")
+    return sources
+
+
+def available_targets(web_left: bool = True, search_left: bool = True) -> list[str]:
+    """web_left/search_left=False: このターンのWeb検索 / 授業・チャットの検索を使い切った(enumから外して選べなくする)。"""
+    targets = ["lecture.concept"] if search_left else []
+    if CAPABILITIES["CAN_CHAT"] and search_left:
         targets += ["chat.all", "chat.thread"]
     if CAPABILITIES["CAN_WEB"] and web_left:
         targets.append("web.search")
@@ -469,6 +485,9 @@ class LapRecord:
     llm_error: Optional[str] = None
     # この周で実行したことの要約(<progress>用)
     done: list[str] = field(default_factory=list)
+    # 取りに行く必要度(explicit / implied / maybe / none)と出どころ(class / web / past_chat)
+    need: str = ""
+    fetch_from: list[str] = field(default_factory=list)
     # 速度の計測(どこで時間がかかっているか): decide_ms/attempts/トークン数(判断のLLM)、
     # execute_ms(実行の合計)とfind_ms/web_ms/open_ms(並列に走る実行の内訳)
     timing: dict = field(default_factory=dict)
@@ -480,6 +499,8 @@ class LapRecord:
             return d
         return {
             "lap": self.lap,
+            "need": self.need,
+            "fetch_from": self.fetch_from,
             "status": self.status,
             "missing": self.missing,
             "reasoning": self.reasoning,
@@ -510,6 +531,11 @@ class NavState:
     def web_searches_left(self) -> int:
         used = sum(1 for o in self.outcomes if isinstance(o, WebSearchOutcome))
         return max(0, MAX_WEB_SEARCHES_PER_TURN - used)
+
+    def searches_left(self) -> int:
+        """授業・チャットの検索の残り回数。"""
+        used = sum(1 for o in self.outcomes if isinstance(o, SearchOutcome))
+        return max(0, MAX_SEARCHES_PER_TURN - used)
 
     def already_run(self) -> set[tuple]:
         keys: set[tuple] = {("open", h) for h in self.opened}
@@ -585,11 +611,6 @@ def _dedupe(items: list[str]) -> list[str]:
     return out
 
 
-def quote_in_message(quote: str, message: str, selected_text: Optional[str]) -> bool:
-    q = _norm(quote)
-    return bool(q) and any(q in _norm(s) for s in [message, selected_text or ""])
-
-
 def _chunk_header_and_body(chunk: dict) -> tuple[str, str]:
     content = (chunk.get("content") or "").strip()
     lines = content.splitlines()
@@ -628,35 +649,50 @@ def _plan_allows_handle(nav_input: NavigatorInput, handle: str) -> bool:
 
 
 def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
-    """項目の順番がそのまま出力の順番になる(GeminiとLunaで確認済み)。操作を選ぶ前に、
-    「足りているか」と「何が足りないか」を先に書かせる。"""
-    props: dict[str, Any] = {
-        "op": {"type": "string", "enum": available_ops()},
-        "target": {"type": "string", "enum": available_targets(state.web_searches_left() > 0) + [NONE]},
-        "query": {"type": "string"},
-        "layer": {"type": "string", "enum": available_layers(nav_input.blocked_source_types) + [NONE]},
-        "within": {"type": "string", "enum": nav_input.student_map.scope_handles() + [NONE]},
-    }
-    if CAPABILITIES["CAN_OPEN"]:
-        props["handle"] = {"type": "string", "enum": openable_handles(nav_input, state) + [NONE]}
+    """
+    項目の順番がそのまま出力の順番になる(GeminiとLunaで確認済み)。操作を選ぶ前に、
+    取りに行く必要度(need)と出どころ(fetch_from)、「足りているか」を先に書かせる。
+    操作は種類ごとに別の形(anyOf)にして、使わない項目を"none"で埋めさせない(出力が短くなる)。
+    """
+    def enum(values: list[str]) -> dict[str, Any]:
+        return {"type": "string", "enum": values} if values else {"type": "string"}
+
+    scope = nav_input.student_map.scope_handles()
+    op_shapes: list[dict[str, Any]] = []
+    targets = available_targets(state.web_searches_left() > 0, state.searches_left() > 0)
+    if targets:
+        op_shapes.append({"type": "object", "properties": {
+            "op": {"type": "string", "enum": ["find"]},
+            "target": enum(targets),
+            "query": {"type": "string"},
+            "layer": enum(available_layers(nav_input.blocked_source_types)),
+            "within": enum(scope),
+        }, "required": ["op", "target", "query"]})
+    openable = openable_handles(nav_input, state)
+    if CAPABILITIES["CAN_OPEN"] and openable:
+        op_shapes.append({"type": "object", "properties": {
+            "op": {"type": "string", "enum": ["open"]},
+            "handle": enum(openable),
+        }, "required": ["op", "handle"]})
     if CAPABILITIES["CAN_BY_DATE"]:
-        props["date_from"] = {"type": "string"}
-        props["date_to"] = {"type": "string"}
-    props.update({
-        "grounds": {"type": "string", "enum": GROUNDS},
-        "grounds_quote": {"type": "string"},
-        "relation": {"type": "string", "enum": RELATIONS},
-    })
+        op_shapes.append({"type": "object", "properties": {
+            "op": {"type": "string", "enum": ["by_date"]},
+            "date_from": {"type": "string"},
+            "date_to": {"type": "string"},
+            "within": enum(scope),
+        }, "required": ["op", "date_from", "date_to"]})
     return {
         "type": "object",
         "properties": {
             "reasoning": {"type": "string"},
+            "need": {"type": "string", "enum": NEEDS},
+            "fetch_from": {"type": "array", "items": {"type": "string", "enum": available_fetch_sources()}},
             "status": {"type": "string", "enum": STATUSES},
             "missing": {"type": "string"},
-            "operations": {"type": "array", "items": {"type": "object", "properties": props, "required": list(props)}},
+            "operations": {"type": "array", "items": {"anyOf": op_shapes} if op_shapes else {"type": "object"}},
             "goal": {"type": "array", "items": {"type": "string"}},
         },
-        "required": ["reasoning", "status", "missing", "operations", "goal"],
+        "required": ["reasoning", "need", "fetch_from", "status", "missing", "operations", "goal"],
     }
 
 
@@ -667,12 +703,30 @@ def _parse_date(value: Any) -> Optional[date]:
         return None
 
 
-def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState) -> tuple[list[Request], list[dict]]:
+def _op_kind(raw: dict) -> Optional[str]:
+    """操作がどの出どころに行くか: lecture / web / chat。"""
+    op = raw.get("op")
+    if op == "by_date":
+        return "lecture"
+    if op == "find":
+        target = raw.get("target") or ""
+        return "web" if target == "web.search" else "chat" if target.startswith("chat.") else "lecture"
+    if op == "open":
+        handle = raw.get("handle") or ""
+        if _WEB_HANDLE_RE.match(handle):
+            return "web"
+        return "chat" if handle[:1] in ("S", "P", "H") else "lecture"
+    return None
+
+
+def validate_operations(
+    raw_ops: Any, nav_input: NavigatorInput, state: NavState,
+    need: Optional[str] = None, fetch_from: Optional[list[str]] = None,
+) -> tuple[list[Request], list[dict]]:
     """
     探索役の操作を検証して、実行してよい操作に変換する。捨てたものは理由つきで返す(記録用)。
     構造化出力で縛っているので通常は正しい形で来るが、ここを信頼の境界にする。
-    根拠の引用が発言に無い操作は捨てずに記録だけする(言い換え程度のずれで取りこぼす
-    より、評価のときに見られる方が良い)。
+    needを渡すと、取りに行く必要度がexplicit/implied以外なら全部捨て、fetch_fromの外への操作も捨てる。
     """
     m = nav_input.student_map
     requests: list[Request] = []
@@ -684,20 +738,25 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
     openable = set(openable_handles(nav_input, state))
     layers = set(available_layers(nav_input.blocked_source_types))
     web_left = state.web_searches_left()
+    search_left = state.searches_left()
 
+    allowed_kinds = None
+    if need is not None:
+        allowed_kinds = ({_SOURCE_KINDS[f] for f in fetch_from or [] if f in _SOURCE_KINDS}
+                         if need in FETCH_NEEDS else set())
+    source_label = f"{need}:{'+'.join(fetch_from or [])}" if need else ""
     for raw in raw_ops if isinstance(raw_ops, list) else []:
         if not isinstance(raw, dict):
             continue
         op = raw.get("op")
-        common = dict(
-            grounds=raw.get("grounds") if raw.get("grounds") in GROUNDS else "past_reference",
-            grounds_quote=(raw.get("grounds_quote") or "")[:300],
-            relation=raw.get("relation") if raw.get("relation") in RELATIONS else "direct",
-            quote_ok=quote_in_message(raw.get("grounds_quote") or "", nav_input.message, nav_input.selected_text),
-        )
+        # grounds(根拠の種類)は、必要度と出どころ(例: implied:class+web)を入れて記録だけに使う。
+        # つながりの候補(possible_link)は取りに行かない方針なので、関係は常にdirect。
+        common = dict(grounds=source_label, grounds_quote="", relation="direct", quote_ok=True)
         req: Optional[Request] = None
         reason = None
-        if op not in ops:
+        if allowed_kinds is not None and _op_kind(raw) not in allowed_kinds:
+            reason = "not_needed" if need not in FETCH_NEEDS else "outside_fetch_from"
+        elif op not in ops:
             reason = "unsupported_operation"
         elif op == "find":
             query = (raw.get("query") or "").strip()[:MAX_QUERY_CHARS]
@@ -749,6 +808,11 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
         if len(requests) >= MAX_OPS_PER_LAP:
             dropped.append({"op": raw, "reason": "too_many_operations"})
             continue
+        if isinstance(req, FindRequest) and req.target != "web.search":
+            if search_left <= 0:
+                dropped.append({"op": raw, "reason": "search_limit"})
+                continue
+            search_left -= 1
         if isinstance(req, FindRequest) and req.target == "web.search":
             if web_left <= 0:
                 dropped.append({"op": raw, "reason": "web_search_limit"})
@@ -816,6 +880,9 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
                    + (", ".join(state.opened) or "nothing yet"))
     nxt.append("Searches already run (do not repeat them): "
                + ("; ".join(o.request.label() for o in state.outcomes) or "none yet"))
+    left = state.searches_left()
+    nxt.append(f"Class and chat searches left for this reply: {left} of {MAX_SEARCHES_PER_TURN}"
+               + (" (no more searching; if the results do not contain the answer, choose enough_now)" if left == 0 else ""))
     if CAPABILITIES["CAN_WEB"]:
         left = state.web_searches_left()
         nxt.append(f"Web searches left for this reply: {left} of {MAX_WEB_SEARCHES_PER_TURN}"
@@ -1523,6 +1590,8 @@ async def navigate(
             missing=(out.get("missing") or "").strip()[:300],
             reasoning=(out.get("reasoning") or "").strip()[:500],
             goal=[g.strip()[:200] for g in out.get("goal") or [] if isinstance(g, str) and g.strip()][:8],
+            need=out.get("need") if out.get("need") in NEEDS else "",
+            fetch_from=[f for f in out.get("fetch_from") or [] if f in available_fetch_sources()],
             timing=timing,
         )
         state.laps.append(record)
@@ -1534,10 +1603,11 @@ async def navigate(
             record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
             break
 
-        record.requests, record.dropped = validate_operations(out.get("operations"), nav_input, state)
+        record.requests, record.dropped = validate_operations(
+            out.get("operations"), nav_input, state, record.need or None, record.fetch_from)
         if not record.requests:
-            # need_moreと言いつつ実行できる操作が無い(全部繰り返し等): ここまでで答える
-            stop_reason = "enough_now"
+            # need_moreと言いつつ実行できる操作が無い(全部繰り返し・取りに行く必要が無い等): ここまでで答える
+            stop_reason = "enough_now" if record.need in FETCH_NEEDS else "nothing_needed"
             record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
             break
         if on_fetch is not None:
@@ -1547,10 +1617,32 @@ async def navigate(
         timing["execute_ms"] = _ms_since(t_exec)
         record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
 
-    materials = [op.material for op in state.opened.values() if op.material] + state.search_materials
+    opened_materials = [op.material for op in state.opened.values() if op.material]
+    materials = opened_materials + [m for m in state.search_materials if not _covered_by_opened(m, opened_materials)]
     refs = [op.ref for op in state.opened.values() if op.ref]
     return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason,
                             opened_refs=refs, prepare_ms=prepare_ms)
+
+
+def _covered_by_opened(hit: Material, opened: list[Material]) -> bool:
+    """
+    検索の断片が、開いた中身にもう含まれているか(同じ箇所が別の番号の出典として二重に並ぶのを防ぐ)。
+    同じ呼び名(トピック・講義・チャットの往復など)か、開いた文字起こしの範囲に収まる文字起こしの断片。
+    """
+    if not hit.handle:
+        return False
+    hit_range = parse_handle(hit.handle)
+    for m in opened:
+        if not m.handle:
+            continue
+        if m.handle == hit.handle:
+            return True
+        opened_range = parse_handle(m.handle)
+        if (hit_range and opened_range and hit_range.kind == opened_range.kind == "transcript"
+                and hit_range.lecture == opened_range.lecture
+                and opened_range.sid_start <= hit_range.sid_start and hit_range.sid_end <= opened_range.sid_end):
+            return True
+    return False
 
 
 def _ms_since(t0: float) -> int:
@@ -1620,7 +1712,9 @@ def summarize_for_log(result: NavigationResult) -> str:
         if "execute_ms" in t:
             detail.append(f"exec={t['execute_ms']}ms")
             detail += [f"{k[:-3]}={t[k]}ms" for k in ("find_ms", "web_ms", "open_ms") if k in t]
-        parts.append(f"lap{lp.lap}:{lp.status or 'error'}:{len(lp.done)}ops:{lp.elapsed_ms}ms[{' '.join(detail)}]")
+        need = f"{lp.need or '?'}{'(' + '+'.join(lp.fetch_from) + ')' if lp.fetch_from else ''}"
+        parts.append(f"lap{lp.lap}:{need}:{lp.status or 'error'}:{len(lp.done)}ops:"
+                     f"{lp.elapsed_ms}ms[{' '.join(detail)}]")
     return " ".join(parts)
 
 

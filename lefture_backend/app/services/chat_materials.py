@@ -187,6 +187,35 @@ def format_sources_block(materials: list[Material]) -> str:
 
 _CITATION_RE = re.compile(r"\[(W?\d{1,2})\]")
 
+# 引用の正規化。コードブロック・インラインコードの中は触らない。英数字の直後の[...](a[1]のような添字)も触らない。
+_CODE_SPLIT_RE = re.compile(r"(```[\s\S]*?(?:```|$)|`[^`\n]*`)")
+_CITE_GROUP_RE = re.compile(r"(?<![A-Za-z0-9_])\[\s*(W?\d{1,2}(?:\s*[,、，]\s*W?\d{1,2})+)\s*\](?!\()")
+_CITE_ONE_RE = re.compile(r"(?<![A-Za-z0-9_])[ \t]?\[(W?\d{1,2})\](?!\()")
+
+
+def normalize_citations(answer_text: str, materials: list[Material]) -> str:
+    """
+    回答役の引用の書き方をそろえる(画面のチップと出典の取り出しは[n] / [Wn]を1つずつしか読まない)。
+    - [W2, W3] / [1, 2] → [W2][W3] / [1][2]。数字だけのまとまりは、全部が実在する出典番号のときだけ
+      (区間の[0, 1]のような表記を壊さないため)。Wを含むまとまりは引用とみなし、実在しない番号は落とす。
+    - 実在しない番号の[n] / [Wn]は消す(出典が無いのに履歴の真似で[1]と書く、など)。
+    """
+    refs = {str(n) for n, _ in numbered(materials)}
+
+    def group(m: "re.Match[str]") -> str:
+        items = [x.strip() for x in re.split(r"[,、，]", m.group(1))]
+        if not any(x.startswith("W") for x in items) and not all(x in refs for x in items):
+            return m.group(0)
+        return "".join(f"[{x}]" for x in items if x in refs)
+
+    def one(m: "re.Match[str]") -> str:
+        return m.group(0) if m.group(1) in refs else ""
+
+    segments = _CODE_SPLIT_RE.split(answer_text or "")
+    for i in range(0, len(segments), 2):  # 奇数番目がコード
+        segments[i] = _CITE_ONE_RE.sub(one, _CITE_GROUP_RE.sub(group, segments[i]))
+    return "".join(segments)
+
 
 def extract_citations(answer_text: str, materials: list[Material]) -> list[dict]:
     """

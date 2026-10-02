@@ -1,0 +1,503 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "transcript_nobel_in_class",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 3.61,
+        "output": {
+          "reasoning": "学生は授業で教授が触れた内容を尋ねており、賞の具体的な研究対象をまず授業資料で特定する必要があります。",
+          "need": "explicit",
+          "fetch_from": [
+            "class",
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "授業で言及されたノーベル物理学賞の年・受賞研究",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Nobel Prize in Physics Nobel physics prize research",
+              "layer": "all"
+            },
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Nobel Prize in Physics 2026"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "transcript_nobel_in_class",
+        "category": "lecture.transcript",
+        "lap": 2,
+        "elapsed": 3.14,
+        "output": {
+          "reasoning": "教授の説明として見つかったのは「昨年の物理学賞」の短い言及だけなので、どの研究を指すか確認するため該当箇所を開きます。",
+          "need": "explicit",
+          "fetch_from": [
+            "class",
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "教授の発言の詳細と、該当するノーベル賞研究の内容",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C5/L4/s801-806"
+            },
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "2025 Nobel Prize in Physics research quantum tunneling electrical circuit superconducting qubits"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "transcript_nobel_in_class",
+        "category": "lecture.transcript",
+        "lap": 3,
+        "elapsed": 3.01,
+        "output": {
+          "reasoning": "The class excerpt identifies the award topic, and the Nobel page snippet already states what the research was; opening it will provide the details requested.",
+          "need": "explicit",
+          "fetch_from": [
+            "class",
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Details of the Nobel-winning research",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C5/L4/s801-806"
+            },
+            {
+              "op": "open",
+              "handle": "W1"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.86,
+        "output": {
+          "reasoning": "The student explicitly asks for a current application deadline, so I should check the web.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Google’s Summer 2027 SWE internship application deadline",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Google Summer 2027 Software Engineering Internship application deadline"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 1.84,
+        "output": {
+          "reasoning": "The student explicitly asks for current application timing, and the Google Careers result is the relevant primary source to check.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Whether the Google Careers listing gives a closing date or says applications are rolling",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W1"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_current_info",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.5,
+        "output": {
+          "reasoning": "今年のノーベル賞受賞者は最新情報なので、ウェブで確認します。",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "2026年ノーベル物理学賞の受賞者",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "2026 Nobel Prize in Physics laureates announced"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_and_lecture",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 2.1,
+        "output": {
+          "reasoning": "They explicitly ask to research PostgreSQL’s real-world use of B-trees and connect it to the class topic.",
+          "need": "explicit",
+          "fetch_from": [
+            "class",
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Course treatment of B-trees and PostgreSQL’s current B-tree index implementation and uses",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "B-tree",
+              "layer": "all",
+              "within": "C1"
+            },
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "PostgreSQL documentation B-tree index type default index operator classes implementation"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_and_lecture",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 1.65,
+        "output": {
+          "reasoning": "The student asks to investigate PostgreSQL’s real-world use and connect it to their B-tree class, so I need the official documentation details.",
+          "need": "explicit",
+          "fetch_from": [
+            "class",
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "PostgreSQL documentation details and the lecture’s B-tree coverage",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W1"
+            },
+            {
+              "op": "open",
+              "handle": "C1/L8"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": true,
+          "matched_alt": 2,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_and_lecture",
+        "category": "web.search",
+        "lap": 3,
+        "elapsed": 1.54,
+        "output": {
+          "reasoning": "The student explicitly asks about PostgreSQL’s real-world use and how it relates to the B-tree lecture; the documentation snippet already covers query support, but implementation details may still be needed.",
+          "need": "explicit",
+          "fetch_from": [
+            "class",
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "PostgreSQL B-tree index structure and operations",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W1"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "B-tree and B+tree database disk block linked leaves range queries",
+              "layer": "notes",
+              "within": "C1/L8"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "web_limit_reached",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.67,
+        "output": {
+          "reasoning": "日程は今後変更される外部情報で、学生が明示的に調査を依頼しています。",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "来年のICPCアジア地区予選の日程",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "ICPC Asia Regional Contest 2027 Asia Pacific schedule dates"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_limit_reached",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 2.19,
+        "output": {
+          "reasoning": "The initial search did not find 2027 regional dates, so I’ll try a more targeted search for announced schedules.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "whether 2027 ICPC Asia regional dates have been announced",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "2027 ICPC Asia regional contest dates schedule announcement"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_limit_reached",
+        "category": "web.search",
+        "lap": 3,
+        "elapsed": 1.45,
+        "output": {
+          "reasoning": "The official regional-contest page may clarify whether 2027 dates have been announced.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Whether the official regional-contest page lists dates for 2027",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W3"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "real_recent_facts",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.83,
+        "output": {
+          "reasoning": "「最近の」産業用ロボットの性能は更新されうる外部情報なので、位置精度を調べます。",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "現行の産業用ロボットの位置決め精度の目安",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "current industrial robot arm repeatability positioning accuracy specification mm 2025 2026"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "real_recent_facts",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 2.25,
+        "output": {
+          "reasoning": "The search snippets already give representative repeatability figures and distinguish repeatability from absolute accuracy.",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that typical industrial robot repeatability is around ±0.02–0.05 mm, with high-precision models around ±0.005 mm.",
+            "Clarify that repeatability is not the same as absolute positioning accuracy, which can be substantially worse."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.66,
+        "output": {
+          "reasoning": "Whether Python 3.14 has been released is a time-sensitive fact, so check a current source.",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Python 3.14 release status",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Python 3.14 official release status release date"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.005751800216276386
+}

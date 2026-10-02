@@ -1,0 +1,405 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.61,
+        "output": {
+          "reasoning": "これは課題へのつらさの吐露で、調べ物や授業・過去の会話の参照を求めていません。",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "気持ちを受け止め、まずは無理に解決しようとせず話を聞く。",
+            "よければ課題を一緒に整理しよう、とやさしく提案する。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.16,
+        "output": {
+          "reasoning": "This is a general computing concept and does not depend on the student's course materials or changing facts.",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that a process is an isolated running program with its own address space and resources.",
+            "Explain that threads are execution paths within a process that share its memory and resources.",
+            "Briefly compare their isolation and communication costs."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.26,
+        "output": {
+          "reasoning": "This is a general, stable question about how caffeine works; no class or outside lookup is needed.",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that caffeine blocks adenosine receptors, reducing the feeling of sleepiness rather than removing the need for sleep.",
+            "Mention that its effects can last for hours and vary by person, so late or excessive coffee can disrupt sleep."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.44,
+        "output": {
+          "reasoning": "“The last one” refers to the most recent linear algebra lecture, which isn’t described in the visible conversation.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Content of Linear Algebra lecture 7 on orthogonality",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C4/L7"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.54,
+        "output": {
+          "reasoning": "「その前の回」は直前に話題にしたB-Treesの講義より一つ前の講義を指すので、授業資料を確認します。",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "B-Treesの一つ前の講義内容",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L7"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 2.05,
+        "output": {
+          "reasoning": "「先週の授業」という特定の講義内容を尋ねているので、ロボティクスの授業資料を確認します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "先週にあたるロボティクス講義の特定",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "ロボティクス 授業内容 講義概要",
+              "layer": "summaries",
+              "within": "C5"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 1.57,
+        "output": {
+          "reasoning": "The student asks what their linear algebra professor said, so I should search the class materials for the story.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The lecture passage about the bridge collapsing",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "bridge collapsing",
+              "layer": "transcript",
+              "within": "C4"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_chat_pointers",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 1.44,
+        "output": {
+          "reasoning": "The student refers to an example from an earlier chat, so I should retrieve that conversation.",
+          "need": "explicit",
+          "fetch_from": [
+            "past_chat"
+          ],
+          "status": "need_more",
+          "missing": "the pointer example from the earlier chat",
+          "operations": [
+            {
+              "op": "find",
+              "target": "chat.all",
+              "query": "C pointers example we went over"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 1.9,
+        "output": {
+          "reasoning": "The student asks what their biology class covered, so I should search its materials for the enzyme-temperature explanation.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Biology 101 class explanation of temperature effects on enzymes",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "temperature effects on enzymes",
+              "layer": "all",
+              "within": "C3"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 1.59,
+        "output": {
+          "reasoning": "The student explicitly asks how Dijkstra’s algorithm was explained in class, so search the CS 161 lecture materials for the professor’s explanation.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The class’s explanation of Dijkstra’s algorithm",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm",
+              "layer": "transcript",
+              "within": "C1"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 2.04,
+        "output": {
+          "reasoning": "学生は授業での説明を尋ねており、講義内の説明を確認する必要があります。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "講義でのダイクストラ法の説明",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Dijkstra法の説明、優先度付きキュー、最短経路",
+              "layer": "transcript",
+              "within": "C1/L11"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 2.09,
+        "output": {
+          "reasoning": "学生は授業での説明を尋ねており、講義要約だけでは具体的な説明が分からないため、授業の発言記録を探します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "ダイクストラ法の授業中の説明",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "ダイクストラ法の説明、優先度付きキュー、最短経路",
+              "layer": "transcript",
+              "within": "C1/L11"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 1.87,
+        "output": {
+          "reasoning": "Whether Python 3.14 has been released is a time-sensitive fact, so check a current source.",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Current Python 3.14 release status",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Python 3.14 release status official"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.003381756693792697
+}

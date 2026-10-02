@@ -371,7 +371,9 @@ async def build_state(case: dict, step: dict, nav_input: nav.NavigatorInput) -> 
 # =====================================================================
 
 def _request_to_op(r: nav.Request) -> dict:
-    base = {"grounds": r.grounds, "grounds_quote": r.grounds_quote, "relation": r.relation}
+    base = {"grounds": r.grounds, "relation": r.relation}
+    if r.grounds_quote:
+        base["grounds_quote"] = r.grounds_quote
     if isinstance(r, nav.FindRequest):
         return {**base, "op": "find", "target": r.target, "query": r.query, "layer": r.layer, "within": r.within or "none"}
     if isinstance(r, nav.OpenRequest):
@@ -395,7 +397,8 @@ async def run_step(llm: UnifiedLLM, case: dict, step: dict, sem: asyncio.Semapho
     if out is None:
         return {"case": case["id"], "category": case["category"], "lap": step["lap"], "elapsed": round(elapsed, 2),
                 "output": None, "score": {"pass": False, "error": f"llm_error: {err}"}}
-    requests, dropped = nav.validate_operations(out.get("operations"), nav_input, state)
+    requests, dropped = nav.validate_operations(out.get("operations"), nav_input, state,
+                                                out.get("need"), out.get("fetch_from"))
     scored_out = {"status": out["status"], "operations": [_request_to_op(r) for r in requests]}
     s = score(case, {**step, "alternatives": alternatives}, scored_out)
     if dropped:
@@ -409,7 +412,10 @@ async def main() -> None:
     ap.add_argument("--set", choices=["main", "holdout", "all"], default="main")
     ap.add_argument("--only", nargs="*", help="case ids")
     ap.add_argument("--concurrency", type=int, default=6)
+    ap.add_argument("--model", help="探索役のモデルを差し替えて比べる(例: gemini/gemini-2.5-flash-lite)")
     args = ap.parse_args()
+    if args.model:
+        nav.NAVIGATOR_MODEL = args.model
 
     billing = BillingEngine(task_type="navigator_eval")
     llm = UnifiedLLM(billing)
@@ -424,7 +430,8 @@ async def main() -> None:
           f"model={nav.NAVIGATOR_MODEL} caps={caps}")
 
     RESULTS_DIR.mkdir(exist_ok=True)
-    path = RESULTS_DIR / f"prod_{args.set}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    prefix = "prod" if not args.model else "prod-" + args.model.split("/")[-1]
+    path = RESULTS_DIR / f"{prefix}_{args.set}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     path.write_text(json.dumps({"model": nav.NAVIGATOR_MODEL, "capabilities": nav.CAPABILITIES, "set": args.set,
                                 "runs": [rows], "cost_usd": billing.total_usd()}, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"cost ${billing.total_usd():.4f}  → {path.relative_to(TEST_DIR)}")
