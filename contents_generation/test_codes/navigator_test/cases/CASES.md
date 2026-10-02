@@ -538,9 +538,10 @@ P20 (2026-08-18) ルームメイトとの付き合い方
 ## 45. `none_terse_no_pointer` (none)
 > ファームウェアに必要な授業は何？
 
-- ねらい: 過去への言及が無い短い質問(新しい会話)。どこかにあるかもしれないが、手がかりが無いので探さずに一般的に答える。
+- ねらい: 過去への言及が無い短い質問(新しい会話)。一般的に答えるのが基本だが、全体を1回だけ広く検索するのも許容する。コースを1つずつ検索する/開くのは不正解。
 - **1周目**:
   - 終わり
+  - ［遠回り］find lecture.concept [firmware | ファームウェア | embedded] 絞り込み: なし (likely_in_course)  ※手がかりは無いが、全体を1回だけ広く検索するのは許容(2026-10-02のユーザー方針)。講義ごとに同じ語で繰り返す/コースを開くのは不正解のまま
 
 ## 46. `none_tangent_aha_candidate` (none)
 > I just started running and I get out of breath so fast. Why does that happen?

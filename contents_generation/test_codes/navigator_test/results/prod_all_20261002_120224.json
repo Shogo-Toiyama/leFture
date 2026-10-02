@@ -1,0 +1,70 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 1.45,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must have type 'object' and not have 'oneOf'/'anyOf'/'allOf'/'enum'/'const'/'not' at the top level. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 1.49,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must have type 'object' and not have 'oneOf'/'anyOf'/'allOf'/'enum'/'const'/'not' at the top level. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 1.48,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must have type 'object' and not have 'oneOf'/'anyOf'/'allOf'/'enum'/'const'/'not' at the top level. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "none_terse_no_pointer",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.73,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must have type 'object' and not have 'oneOf'/'anyOf'/'allOf'/'enum'/'const'/'not' at the top level. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.73,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must have type 'object' and not have 'oneOf'/'anyOf'/'allOf'/'enum'/'const'/'not' at the top level. LiteLLM Retried: 3 times"
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0
+}

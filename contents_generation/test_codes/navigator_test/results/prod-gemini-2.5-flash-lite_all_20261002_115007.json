@@ -1,0 +1,356 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 0.87,
+        "output": {
+          "reasoning": "The student wants more details about the current lecture's content. I should fetch the notes for the current lecture.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "detailed notes on the current lecture content",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4"
+            }
+          ],
+          "goal": [
+            "provide detailed notes on C2/L4"
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.16,
+        "output": {
+          "reasoning": "The student wants to know more details about the content of the current lecture (C2/L4). The previous lap opened the lecture itself. Now I should open the specific topics within that lecture to provide more detail.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "details on the topics within the lecture",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4/T1"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L4/T2"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L4/T3"
+            }
+          ],
+          "goal": [
+            "Provide details on the definition of Price Elasticity of Demand (PED).",
+            "Provide examples of elastic and inelastic goods.",
+            "Explain the determinants of price elasticity of demand."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 1.04,
+        "output": {
+          "reasoning": "The student wants more details about the content of the lecture, and I have already opened all the topics. I will now search for more details within the transcript of the lecture.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "detailed explanation of the lecture content",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Price Elasticity of Demand details",
+              "layer": "transcript",
+              "within": "C2/L4"
+            }
+          ],
+          "goal": [
+            "Provide more detailed explanations of the lecture content on Price Elasticity of Demand.",
+            "Include specific examples and determinants as discussed in the transcript."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 0.93,
+        "output": {
+          "reasoning": "The student is asking about the content of a specific lecture in their economics class. The 'map' shows that Intro Microeconomics (C2) had lectures between April 1st and April 29th. Since April 10th falls within this range, I need to find the lecture that occurred on that date.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Intro Microeconomics lecture on April 10",
+          "operations": [
+            {
+              "op": "by_date",
+              "date_from": "2026-04-10",
+              "date_to": "2026-04-10",
+              "within": "C2"
+            }
+          ],
+          "goal": [
+            "Find the specific lecture on April 10th for Intro Microeconomics (C2).",
+            "Retrieve the content of that lecture."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 0.8,
+        "output": {
+          "reasoning": "The user asked what was covered in econ on April 10th. The previous lap identified that C2/L4 was on that date and was about Price Elasticity of Demand. The next step is to open that lecture to get more details.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The details of the lecture C2/L4.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4"
+            }
+          ],
+          "goal": [
+            "Find details about C2/L4: Intro Microeconomics / Price Elasticity of Demand."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 0.86,
+        "output": {
+          "reasoning": "The student asked what was covered in econ on April 10. I have already identified the lecture and opened its summary and topics. The opened content directly answers the question, so no further fetching is needed.",
+          "need": "none",
+          "goal": [
+            "Explain that on April 10, the econ lecture covered Price Elasticity of Demand.",
+            "Summarize the key points: definition of PED, examples of elastic and inelastic goods, and determinants of elasticity."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "none_terse_no_pointer",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 0.93,
+        "output": {
+          "reasoning": "The student is asking for recommendations on courses needed for firmware development. This requires understanding the curriculum and identifying relevant courses. I will search for concepts related to firmware development within the available courses.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Course recommendations for firmware development.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "summaries",
+              "within": "C1"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "summaries",
+              "within": "C4"
+            }
+          ],
+          "goal": [
+            "Identify relevant courses for firmware development.",
+            "List courses that cover firmware-related topics."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "real_selected_meaning",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 0.91,
+        "output": {
+          "reasoning": "The student is asking for the meaning of a concept related to eigenvectors and eigenvalues, which is currently displayed on their screen. This implies they want a definition or explanation of this concept.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "explanation of eigenvectors and eigenvalues",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "eigenvector eigenvalue meaning",
+              "layer": "notes",
+              "within": "C4/L5"
+            }
+          ],
+          "goal": [
+            "Explain the meaning of eigenvectors and eigenvalues based on the provided definition.",
+            "Provide a more detailed explanation of how an eigenvector maintains its direction while being scaled by the eigenvalue under a linear transformation."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.28,
+        "output": {
+          "reasoning": "The student is overwhelmed by the amount of homework, so I should check their course schedule to see what assignments are due soon.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "upcoming assignment deadlines",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "assignments deadlines",
+              "layer": "notes",
+              "within": "C1/L11"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "assignments deadlines",
+              "layer": "notes",
+              "within": "C2/L9"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "assignments deadlines",
+              "layer": "notes",
+              "within": "C3/L10"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "assignments deadlines",
+              "layer": "notes",
+              "within": "C4/L7"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "assignments deadlines",
+              "layer": "notes",
+              "within": "C5/L4"
+            }
+          ],
+          "goal": [
+            "Identify upcoming assignment deadlines.",
+            "Assess the student's current workload."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "fetched_when_should_stop",
+          "dropped": [
+            "search_limit",
+            "search_limit",
+            "search_limit"
+          ]
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.001465614551277403
+}

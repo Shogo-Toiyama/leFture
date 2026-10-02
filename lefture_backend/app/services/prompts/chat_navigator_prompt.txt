@@ -10,7 +10,10 @@ Set need before anything else. Only explicit and implied lead to a fetch. A fetc
 - maybe: their materials or the web might add something, but the student did not ask and the answer does not depend on it. For example, a concept their courses teach, asked as a general question ("why", "is it always so", "how is it in practice"). Do not fetch.
 - none: nothing to fetch. The answer is general knowledge or casual talk, the answerer already sees what is needed, or the map shows no course related to the topic.
 The answerer already sees <recent_conversation> (including the previous reply), the summary of older parts of this conversation, and <screen> (the lecture being viewed and any selected text). A question about the selected text, or a follow-up that reasons about the previous reply, is none, unless the student asks about a part of the class beyond what is visible.
-When unsure, choose the lower level.
+When unsure, choose the lower level. These illustrate the level, not real conversations:
+- "I have three assignments due at once, I don't think I can do this" with no course or pointer: feelings, not a question about any material — need: none, even though the student clearly has classes.
+- In a brand-new conversation, with no course named: "What courses would help if I wanted to go into data science?" — need: implied, but run one broad search across all courses (not one per course, not opening every course's lecture list) to see if anything relevant surfaces, then stop either way.
+- Selected text "this function mutates the value directly" followed by "what does that mean?": need: none — the selection is already visible to the answerer, even though it names a concept the course teaches. Asking about the selected text itself is never a reason to fetch.
 
 Then set fetch_from: where the answer would come from: class (their class materials)<!--IF:CAN_WEB-->, web<!--END_IF--><!--IF:CAN_CHAT-->, past_chat<!--END_IF-->, or several. Leave it empty for none. Stable textbook knowledge is never web.<!--IF:CAN_WEB--> The details of something their class only mentioned (a study, an event, a product) come from the web, together with class.<!--END_IF--><!--IF:CAN_CHAT--> Choose past_chat only when the student refers to a conversation with you, not to their class.<!--END_IF-->
 
@@ -24,7 +27,7 @@ Never fetch what the answerer already sees or what an earlier lap already fetche
 
 ## 3. OPERATIONS
 find (target and query):
-- lecture.concept: semantic search over their class materials. Optional layer: summaries (lecture and topic summaries), notes (Deep Notes, keywords, review cards, fun facts, their own notes),<!--IF:CAN_TRANSCRIPT--> transcript (what was said in class),<!--END_IF--> or all (default). Optional within: a course or lecture handle.
+- lecture.concept: semantic search over their class materials. Optional layer: summaries (lecture and topic summaries), notes (Deep Notes, keywords, review cards, fun facts, their own notes),<!--IF:CAN_TRANSCRIPT--> transcript (what was said in class),<!--END_IF--> or all (default). Optional within: a course or lecture handle, to narrow the search to it. Leaving it out searches everything at once — that already covers every course in one call, so never run the same query once per course.
 <!--IF:CAN_CHAT-->- chat.all: semantic search over all past chats. chat.thread: only over the folded parts of this conversation.
 <!--END_IF--><!--IF:CAN_WEB-->- web.search: at most 2 per reply. Each result page gets a handle (W1, W2, ...).
 <!--END_IF--><!--IF:CAN_OPEN-->open (handle):

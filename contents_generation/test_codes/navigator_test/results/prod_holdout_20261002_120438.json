@@ -1,0 +1,387 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.12,
+        "output": {
+          "reasoning": "This is an expression of overwhelm, not a request about class materials or prior conversations.",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Acknowledge that having too many assignments feels overwhelming.",
+            "Offer a small next step, such as listing deadlines and choosing one task to start with."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 8.95,
+        "output": {
+          "reasoning": "This is a general computing question and does not depend on the student’s course materials or current facts.",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "Explain that a process is an independently running program with its own memory space, while threads are execution paths within a process that share its resources.",
+            "Note that threads are typically lighter to create and communicate between, but shared memory requires care to avoid synchronization bugs."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 2.53,
+        "output": {
+          "reasoning": "一般的なカフェインの作用についての質問で、授業や過去の会話の情報には依存しません。",
+          "need": "none",
+          "fetch_from": [],
+          "status": "nothing_needed",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "カフェインはアデノシンの働きを妨げ、眠気を感じにくくすることを説明する",
+            "摂取後しばらく作用が続くため、飲む時間や量が睡眠に影響しうると伝える",
+            "眠りにくさが続く場合は摂取量を減らし、午後以降は控えるなどの実用的な工夫を挙げる"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.86,
+        "output": {
+          "reasoning": "The student asks for detail about the last linear algebra lecture, which is identified in the visible conversation but its content is not shown.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Content of the Orthogonality lecture",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C4/L7"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 11.34,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 199684, Requested 3026. Please try again in 813ms. Visit https://platform.openai.c"
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 1.77,
+        "output": {
+          "reasoning": "「先週の授業」は日付で特定できるので、ロボティクスの講義記録を確認します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "先週のロボティクス授業の記録",
+          "operations": [
+            {
+              "op": "by_date",
+              "date_from": "2026-09-21",
+              "date_to": "2026-09-27",
+              "within": "C5"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 4.18,
+        "output": {
+          "reasoning": "The student asks what their linear algebra professor said in class, so search the lecture materials for the bridge story.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "What the professor said about the bridge collapsing",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "bridge collapsing",
+              "layer": "transcript",
+              "within": "C4"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_chat_pointers",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 2.92,
+        "output": {
+          "reasoning": "They are referring to an earlier conversation about C pointers and want its example repeated.",
+          "need": "explicit",
+          "fetch_from": [
+            "past_chat"
+          ],
+          "status": "need_more",
+          "missing": "The example from the earlier C pointers conversation",
+          "operations": [
+            {
+              "op": "find",
+              "target": "chat.all",
+              "query": "C pointers example code"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 4.18,
+        "output": {
+          "reasoning": "The student asks what their Biology class covered, so search its materials for the temperature–enzyme topic.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Biology class material on temperature and enzyme activity",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "temperature effects on enzyme activity; optimum temperature, denaturation, reaction rate",
+              "layer": "all",
+              "within": "C3"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 8.53,
+        "output": {
+          "reasoning": "「授業でどう説明されてたか」という授業内容の確認なので、講義資料を探します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "授業でのダイクストラ法の説明",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm",
+              "layer": "transcript",
+              "within": "C1"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 6.92,
+        "output": {
+          "reasoning": "授業での説明を尋ねており、該当する講義が見つかったので講義の内容を開きます。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "ダイクストラ法の講義での説明",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L11"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 2.66,
+        "output": {
+          "reasoning": "授業での説明を尋ねており、概要だけでは先生の説明内容が分からないため、該当講義の発言記録を探します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "ダイクストラ法についての講義中の説明",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "Dijkstra's algorithm priority queue explanation",
+              "layer": "transcript",
+              "within": "C1/L11"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 7.33,
+        "output": {
+          "reasoning": "Whether Python 3.14 has been released is a time-sensitive fact, so check a current source.",
+          "need": "implied",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "Current Python 3.14 release status",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Python 3.14 release status official release"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.0034698970862174225
+}

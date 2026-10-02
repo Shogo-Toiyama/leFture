@@ -4937,12 +4937,39 @@
             "may": [],
             "note": "",
             "detour": false
+          },
+          {
+            "done": false,
+            "must": [
+              {
+                "op": "find",
+                "source": "lecture",
+                "kind": "concept",
+                "query_any": [
+                  "firmware",
+                  "ファームウェア",
+                  "embedded"
+                ],
+                "grounds": [
+                  "likely_in_course"
+                ],
+                "relation": "direct",
+                "layer_any": null,
+                "within_any": [
+                  null
+                ]
+              }
+            ],
+            "one_of": [],
+            "may": [],
+            "note": "手がかりは無いが、全体を1回だけ広く検索するのは許容(2026-10-02のユーザー方針)。講義ごとに同じ語で繰り返す/コースを開くのは不正解のまま",
+            "detour": true
           }
         ],
         "looking_for": null
       }
     ],
-    "why": "過去への言及が無い短い質問(新しい会話)。どこかにあるかもしれないが、手がかりが無いので探さずに一般的に答える。",
+    "why": "過去への言及が無い短い質問(新しい会話)。一般的に答えるのが基本だが、全体を1回だけ広く検索するのも許容する。コースを1つずつ検索する/開くのは不正解。",
     "recent_conversation": [],
     "set": "main"
   },

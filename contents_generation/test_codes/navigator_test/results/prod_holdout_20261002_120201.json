@@ -1,0 +1,158 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "holdout",
+  "runs": [
+    [
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 11.97,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 199405, Requested 2950. Please try again in 706ms. Visit https://platform.openai.c"
+        }
+      },
+      {
+        "case": "ho_none_general",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 5.74,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_none_caffeine",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 6.83,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 200000, Requested 2963. Please try again in 888ms. Visit https://platform.openai.c"
+        }
+      },
+      {
+        "case": "ho_context_last_one",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 2.69,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_context_previous",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 6.8,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 200000, Requested 3026. Please try again in 907ms. Visit https://platform.openai.c"
+        }
+      },
+      {
+        "case": "ho_date_last_week",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 2.74,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_transcript_anecdote",
+        "category": "lecture.transcript",
+        "lap": 1,
+        "elapsed": 5.25,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_chat_pointers",
+        "category": "chat.all",
+        "lap": 1,
+        "elapsed": 8.41,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.RateLimitError: RateLimitError: OpenAIException - Rate limit reached for gpt-6-luna in organization org-Bhn4DYk5nacMkxgTF9CiHHHj on tokens per min (TPM): Limit 200000, Used 200000, Requested 2961. Please try again in 888ms. Visit https://platform.openai.c"
+        }
+      },
+      {
+        "case": "ho_ja_notes_search",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 7.47,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 1,
+        "elapsed": 4.61,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 2,
+        "elapsed": 2.8,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_stop_nothing_more",
+        "category": "lecture.concept",
+        "lap": 3,
+        "elapsed": 6.14,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      },
+      {
+        "case": "ho_web_release",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 4.52,
+        "output": null,
+        "score": {
+          "pass": false,
+          "error": "llm_error: LiteLLM Error with model gpt-6-luna: litellm.BadRequestError: OpenAIException - Invalid schema for response_format 'output': schema must be a JSON Schema of 'type: \"object\"', got 'type: \"None\"'. LiteLLM Retried: 3 times"
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0
+}

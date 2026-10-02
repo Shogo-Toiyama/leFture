@@ -1,0 +1,728 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true
+  },
+  "set": "all",
+  "runs": [
+    [
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 0.78,
+        "output": {
+          "reasoning": "The student wants more details about the current lecture content, so I should fetch the lecture transcript.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "the transcript of the current lecture",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4"
+            }
+          ],
+          "goal": [
+            "Provide more details on the current lecture content."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 0.92,
+        "output": {
+          "reasoning": "The student wants to know more about the content of the current lecture, so I should open the first topic of the lecture to provide more details.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The details of the first topic of the lecture.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4/T1"
+            }
+          ],
+          "goal": [
+            "Provide more details on the first topic of the lecture on Price Elasticity of Demand."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_on_screen",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 1.15,
+        "output": {
+          "reasoning": "The user wants more details on the lecture content. The previous lap opened the lecture and its topics, providing summaries. To give more detail, I should open the primary source for each topic, which is the transcript.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "the detailed content of each topic",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L7"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L8"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L9"
+            }
+          ],
+          "goal": [
+            "Provide the detailed transcript content for each topic of the lecture.",
+            "Explain the concepts of price elasticity of demand in more depth."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 3,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 1.42,
+        "output": {
+          "reasoning": "The student is asking about a connection between linear algebra and robotics control, implying a need to search for concepts in both subjects and potentially their relationship. Since linear algebra is mentioned as a course, and robotics is a field, a broad search across both is appropriate. The student is asking about a concept and wants to know if it's related to another course, so a class search is a good first step.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Concepts related to eigenvalues in linear algebra and their application in robotics control.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "eigenvalue",
+              "within": "C4"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "robot control",
+              "within": "C5"
+            }
+          ],
+          "goal": [
+            "Find information about eigenvalues in Linear Algebra (C4).",
+            "Find information about robot control in Robotics Seminar (C5).",
+            "Determine if there is a connection between eigenvalues and robot control."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 1.12,
+        "output": {
+          "reasoning": "The student is asking about the relationship between eigenvalues from Linear Algebra and Robot Control. I have opened the courses C4 (Linear Algebra) and C5 (Robotics Seminar). Lecture C4/L5 covers Eigenvalues, and Lecture C5/L3 mentions poles as eigenvalues of A in state-space control. Therefore, I have enough information to answer the question.",
+          "need": "none",
+          "goal": [
+            "Explain the connection between eigenvalues in Linear Algebra and their application in state-space control for robotics.",
+            "Mention that poles in state-space control are equivalent to eigenvalues of the system matrix A.",
+            "State that eigenvalues are used to determine the stability of a system."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 1.05,
+        "output": {
+          "reasoning": "The student is asking if eigenvalues from Linear Algebra (C4) are related to the Robot Control (C5) class. The opened lectures C4/L5 and C5/L3 directly address eigenvalues and their relation to stability in control systems. Therefore, the answer is likely available.",
+          "need": "none",
+          "goal": [
+            "Explain the relationship between eigenvalues from Linear Algebra and the Robot Control class.",
+            "Refer to the specific lectures where this connection is made.",
+            "Clarify how eigenvalues relate to stability in control systems."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_cross_course",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 0.89,
+        "output": {
+          "reasoning": "The student is asking about the connection between eigenvalues from linear algebra and robot control. The opened content directly addresses this by stating that poles (which are eigenvalues of A in state-space models) determine system stability. Therefore, the answer is sufficiently covered.",
+          "need": "none",
+          "goal": [
+            "Explain that eigenvalues are related to system stability in robotics.",
+            "Mention that poles in state-space models are the eigenvalues of matrix A.",
+            "State that a system is stable if all eigenvalues have negative real parts."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 1,
+        "elapsed": 0.86,
+        "output": {
+          "reasoning": "The student is asking about the content of a specific lecture in a specific course, so I need to find that lecture.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Lecture content from April 10th in Intro Microeconomics.",
+          "operations": [
+            {
+              "op": "by_date",
+              "date_from": "2026-04-10",
+              "date_to": "2026-04-10",
+              "within": "C2"
+            }
+          ],
+          "goal": [
+            "Find the content of the Intro Microeconomics lecture on April 10th.",
+            "Provide the topics or a summary of that lecture."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 2,
+        "elapsed": 0.84,
+        "output": {
+          "reasoning": "The user asked what was covered in econ on April 10. The previous lap identified that lecture C2/L4 on 2026-04-10 was about \"Intro Microeconomics / Price Elasticity of Demand\". Now, I need to open this lecture to get the details.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Details of the lecture C2/L4",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L4"
+            }
+          ],
+          "goal": [
+            "Provide details of the econ lecture on April 10, 2026."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "date_explicit",
+        "category": "lecture.by_date",
+        "lap": 3,
+        "elapsed": 0.85,
+        "output": {
+          "reasoning": "The user asked what was covered in econ on April 10. The previous lap opened the lecture for that date, and the content is now available in <opened>. Therefore, no further fetching is needed.",
+          "need": "none",
+          "goal": [
+            "Explain what was covered in the econ lecture on April 10, 2026.",
+            "Detail the topics: definition of Price Elasticity of Demand (PED), examples, and determinants."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "thread_vague_ref",
+        "category": "chat.thread",
+        "lap": 1,
+        "elapsed": 1.37,
+        "output": {
+          "reasoning": "The student is asking about required courses for a firmware role, which implies looking into their courses to see which ones are relevant.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Relevant courses for firmware roles.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware development, embedded systems, low-level programming",
+              "layer": "summaries",
+              "within": "C1"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware development, embedded systems, low-level programming",
+              "layer": "summaries",
+              "within": "C2"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware development, embedded systems, low-level programming",
+              "layer": "summaries",
+              "within": "C3"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware development, embedded systems, low-level programming",
+              "layer": "summaries",
+              "within": "C4"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware development, embedded systems, low-level programming",
+              "layer": "summaries",
+              "within": "C5"
+            }
+          ],
+          "goal": [
+            "Identify courses relevant to firmware development.",
+            "List the identified courses and their descriptions."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations",
+          "dropped": [
+            "search_limit",
+            "search_limit",
+            "search_limit"
+          ]
+        }
+      },
+      {
+        "case": "thread_vague_ref",
+        "category": "chat.thread",
+        "lap": 2,
+        "elapsed": 0.77,
+        "output": {
+          "reasoning": "The student is asking about courses related to firmware, and the opened section S3 already mentions relevant courses. I should extract those course names from the provided text.",
+          "need": "none",
+          "goal": [
+            "List the courses mentioned in S3 that are relevant for firmware.",
+            "Confirm if there are any other relevant courses mentioned."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 1,
+        "elapsed": 0.83,
+        "output": {
+          "reasoning": "The student is asking for a specific deadline for an internship application, which is a time-sensitive external fact. This requires searching the web.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "The application deadline for Google's summer 2027 SWE internship.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "Google summer 2027 SWE internship application deadline"
+            }
+          ],
+          "goal": [
+            "Find the application deadline for Google's summer 2027 SWE internship.",
+            "If the deadline is not yet available, state that."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "web_explicit",
+        "category": "web.search",
+        "lap": 2,
+        "elapsed": 0.98,
+        "output": {
+          "reasoning": "The student asked about the application deadline for a specific internship. The previous search provided information that applications open in September, but did not give a closing date. Therefore, I need to open the most relevant search result to find more details.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "The closing date for Google's summer 2027 SWE internship applications.",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "W1"
+            }
+          ],
+          "goal": [
+            "Find the closing date for Google's summer 2027 SWE internship applications."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "none_terse_no_pointer",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.46,
+        "output": {
+          "reasoning": "The student is asking for course recommendations for firmware development, which implies a need to search through their course materials to find relevant classes.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Courses related to firmware development.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "all",
+              "within": "C1"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "all",
+              "within": "C2"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "all",
+              "within": "C3"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "all",
+              "within": "C4"
+            },
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "firmware",
+              "layer": "all",
+              "within": "C5"
+            }
+          ],
+          "goal": [
+            "Identify courses relevant to firmware development.",
+            "List any found courses and their descriptions.",
+            "Inform the student if no relevant courses are found."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "fetched_when_should_stop",
+          "dropped": [
+            "search_limit",
+            "search_limit",
+            "search_limit"
+          ]
+        }
+      },
+      {
+        "case": "real_selected_meaning",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 1.13,
+        "output": {
+          "reasoning": "The user is asking for clarification on the selected text about eigenvectors and eigenvalues. This is a concept from their Linear Algebra course (C4). Therefore, I should fetch the explanation of this concept from the course materials.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Explanation of what eigenvectors and eigenvalues mean in Linear Algebra.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "eigenvector eigenvalue meaning",
+              "layer": "all",
+              "within": "C4/L5"
+            }
+          ],
+          "goal": [
+            "Explain the meaning of eigenvectors and eigenvalues.",
+            "Provide context from the Linear Algebra lecture on this topic."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 1,
+        "elapsed": 1.05,
+        "output": {
+          "reasoning": "The student is asking for a specific piece of information (a book recommendation) related to a specific course (Intro Microeconomics). This implies a need to search the course materials.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "The recommended book from the Intro Microeconomics professor.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "recommended book",
+              "layer": "notes",
+              "within": "C2"
+            }
+          ],
+          "goal": [
+            "Find the name of the book recommended by the economics professor.",
+            "State the name of the book if found.",
+            "Indicate if the book could not be found."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 2,
+        "elapsed": 0.81,
+        "output": {
+          "reasoning": "The previous search did not find the book title, so I need to open the lectures to check the content for it.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "the name of the book recommended by the econ professor",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C2/L8"
+            },
+            {
+              "op": "open",
+              "handle": "C2/L9"
+            }
+          ],
+          "goal": [
+            "find the name of the book recommended by the econ professor"
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 2,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 3,
+        "elapsed": 0.96,
+        "output": {
+          "reasoning": "The student is asking for the name of a book recommended by their economics professor. The previous searches for \"book recommended by professor\" and \"reading list textbook author\" did not yield the book's name. Therefore, I need to search the web for economics professor recommended books.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "the name of the book the econ professor recommended",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "economics professor recommended book"
+            }
+          ],
+          "goal": [
+            "Find the name of the book recommended by the economics professor.",
+            "If the book name is not found, state that it could not be found."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "wrong_operations"
+        }
+      },
+      {
+        "case": "stop_when_not_found",
+        "category": "stop",
+        "lap": 4,
+        "elapsed": 1.05,
+        "output": {
+          "reasoning": "The student is asking for a specific book title recommended by the economics professor. I have already searched for \"book recommended by professor\" and \"reading list textbook author\" within the class materials, but the results do not contain any book titles. The `opened` content shows lecture summaries, none of which mention a book. Therefore, I need to search the web for this information.",
+          "need": "explicit",
+          "fetch_from": [
+            "web"
+          ],
+          "status": "need_more",
+          "missing": "The title of the book recommended by the economics professor.",
+          "operations": [
+            {
+              "op": "find",
+              "target": "web.search",
+              "query": "economics professor recommended book"
+            }
+          ],
+          "goal": [
+            "Find the name of the book the economics professor recommended.",
+            "If the book cannot be found, state that it was not found."
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": false,
+          "error": "fetched_when_should_stop"
+        }
+      },
+      {
+        "case": "ho_none_venting",
+        "category": "none",
+        "lap": 1,
+        "elapsed": 0.7,
+        "output": {
+          "reasoning": "The student is overwhelmed with assignments and is expressing feelings of being unable to cope. This is a general statement of distress, not a request for specific information that requires fetching. Therefore, no fetch is needed.",
+          "need": "none",
+          "goal": [
+            "Acknowledge the student's feelings of being overwhelmed.",
+            "Offer encouragement or support."
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.007330049738676008
+}

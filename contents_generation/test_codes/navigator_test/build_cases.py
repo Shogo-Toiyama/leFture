@@ -829,8 +829,12 @@ CASES = [
 
     case("none_terse_no_pointer", "none",
          "ファームウェアに必要な授業は何？",
-         [step(1, alternatives=[DONE])],
-         "過去への言及が無い短い質問(新しい会話)。どこかにあるかもしれないが、手がかりが無いので探さずに一般的に答える。"),
+         [step(1, alternatives=[DONE,
+                                alt(must=[op_find("lecture", "concept", ["firmware", "ファームウェア", "embedded"], [LIKELY], within_any=[None])],
+                                    note="手がかりは無いが、全体を1回だけ広く検索するのは許容(2026-10-02のユーザー方針)。"
+                                         "講義ごとに同じ語で繰り返す/コースを開くのは不正解のまま", detour=True)])],
+         "過去への言及が無い短い質問(新しい会話)。一般的に答えるのが基本だが、全体を1回だけ広く検索するのも許容する。"
+         "コースを1つずつ検索する/開くのは不正解。"),
 
     case("none_tangent_aha_candidate", "none",
          "I just started running and I get out of breath so fast. Why does that happen?",
