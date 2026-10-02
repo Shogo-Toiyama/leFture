@@ -10,6 +10,10 @@
  *
  * パス先頭の{uid}がトークンのsub(ユーザーID)と一致しない場合は403で拒否する。
  * これにより、他人の成果物には(トークンを持っていても)アクセスできない。
+ *
+ * {uid}/{lectureId}/pipeline_logs/ 配下(トランスクリプトを含む中間JSON)は、
+ * 本人のプランがPIPELINE_LOGS_MIN_TIER以上のときだけ返す(画面側のロックだけに
+ * 頼らず、配信元で止める)。
  */
 
 import { verifySupabaseJwt } from './verifySupabaseJwt';
@@ -17,8 +21,16 @@ import { verifySupabaseJwt } from './verifySupabaseJwt';
 export interface Env {
   LECTURE_ASSETS: R2Bucket;
   SUPABASE_URL: string;
+  SUPABASE_PUBLISHABLE_KEY: string;
   JWKS_CACHE_TTL_SECONDS: string;
 }
+
+// pipeline_logs/を返すのに必要なtier_level(2=Core)。クライアントがここから読むのは
+// トランスクリプト(role_classification.json / transcript_assembled.json)だけで、
+// 他のファイルも文字起こしの本文を含むため、ディレクトリごとトランスクリプト閲覧
+// (FEATURE_SOURCE_TRANSCRIPT_VIEW)と同じプランに限る。
+// 値はバックエンドのlefture_backend/app/services/helpers/plan_features.pyと必ず揃えること。
+const PIPELINE_LOGS_MIN_TIER = 2;
 
 const CORS_HEADERS = {
   // ネイティブアプリ(iOS/Android)からのリクエストにCORSは無関係だが、
@@ -44,6 +56,39 @@ function guessContentType(key: string): string {
   if (key.endsWith('.png')) return 'image/png';
   if (key.endsWith('.webp')) return 'image/webp';
   return 'application/octet-stream';
+}
+
+function isPipelineLog(key: string): boolean {
+  // {uid}/{lectureId}/pipeline_logs/...
+  return key.split('/')[2] === 'pipeline_logs';
+}
+
+/**
+ * 本人のtier_levelを、本人のアクセストークンのままSupabaseのRPC(get_my_tier_level)で引く。
+ * RPCはauth.uid()で本人に絞るため、Workerはservice roleキーを持たなくてよい。
+ * 取得できなければnull(呼び出し側で拒否する)。
+ */
+async function fetchTierLevel(env: Env, token: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/get_my_tier_level`, {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (!res.ok) {
+      console.error(`get_my_tier_level failed: ${res.status} ${await res.text()}`);
+      return null;
+    }
+    const tier = await res.json();
+    return typeof tier === 'number' ? tier : null;
+  } catch (e) {
+    console.error('get_my_tier_level threw', e);
+    return null;
+  }
 }
 
 export default {
@@ -83,6 +128,17 @@ export default {
       return jsonError(403, 'Forbidden');
     }
 
+    const planGated = isPipelineLog(key);
+    if (planGated) {
+      const tier = await fetchTierLevel(env, token);
+      if (tier === null) {
+        return jsonError(503, 'Could not verify plan');
+      }
+      if (tier < PIPELINE_LOGS_MIN_TIER) {
+        return jsonError(403, 'Plan does not include transcript access');
+      }
+    }
+
     const object = await env.LECTURE_ASSETS.get(key);
     if (!object) {
       return jsonError(404, 'Not found');
@@ -96,7 +152,9 @@ export default {
         'Content-Type': contentType,
         // 生成後は不変なファイルなので、クライアント側でも積極的にキャッシュしてよい。
         // privateはCDN等の共有キャッシュに乗らないようにするため(認可済みの個人データのため)。
-        'Cache-Control': 'private, max-age=86400',
+        // プランで出し分けるpipeline_logs/は、ダウングレード後にブラウザのキャッシュから
+        // 読めてしまわないよう毎回ここを通す。
+        'Cache-Control': planGated ? 'private, no-cache' : 'private, max-age=86400',
         'Content-Length': String(object.size),
         ...CORS_HEADERS,
       },

@@ -117,6 +117,16 @@ LAYER_SOURCE_TYPES: dict[str, list[str]] = {
     "all": LECTURE_SOURCE_TYPES,
 }
 
+
+def layer_source_types(layer: str, blocked: frozenset[str] = frozenset()) -> list[str]:
+    """layerで検索する種類から、今のプランで使えないもの(plan_features)を除いたもの。"""
+    return [t for t in (LAYER_SOURCE_TYPES.get(layer) or LECTURE_SOURCE_TYPES) if t not in blocked]
+
+
+def available_layers(blocked: frozenset[str] = frozenset()) -> list[str]:
+    """探索役が選べるlayer。今のプランで中身が1種類も残らないlayer(Lite以下のtranscript)は外す。"""
+    return [layer for layer in LAYER_SOURCE_TYPES if layer_source_types(layer, blocked)]
+
 _CITATION_BRACKET_RE = re.compile(r"⟦([^⟧]*)⟧")
 _SID_PART_RE = re.compile(r"[sS]?0*(\d+)(?:\s*-\s*[sS]?0*(\d+))?")
 _HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$")
@@ -212,10 +222,11 @@ def parse_chat_handle(handle: str) -> Optional[ParsedChatHandle]:
     return ParsedChatHandle("section" if letter == "S" else "thread", prefix, int(num))
 
 
-def rewrite_citations(note: str, lecture_handle: str) -> tuple[str, str, list[str]]:
+def rewrite_citations(note: str, lecture_handle: str, can_transcript: bool = True) -> tuple[str, str, list[str]]:
     """
     Deep Note内の引用記号⟦s000325-s000331, s000341⟧を、探索役向けには呼び名
     [C2/L5/s325-331, C2/L5/s341]に書き換え、回答役向けには取り除く。
+    can_transcript=False(今のプランで文字起こしを使えない)なら、探索役向けからも取り除く。
     返り値: (探索役に見せる本文, 回答役に渡す本文, 出てきた範囲の呼び名)
     """
     handles: list[str] = []
@@ -234,8 +245,10 @@ def rewrite_citations(note: str, lecture_handle: str) -> tuple[str, str, list[st
                 handles.append(h)
         return f"[{', '.join(parts)}]" if parts else ""
 
-    for_navigator = _CITATION_BRACKET_RE.sub(to_handles, note)
     for_answerer = re.sub(r"[ \t]+\n", "\n", _CITATION_BRACKET_RE.sub("", note)).strip()
+    if not can_transcript:
+        return for_answerer, for_answerer, []
+    for_navigator = _CITATION_BRACKET_RE.sub(to_handles, note)
     return for_navigator, for_answerer, handles
 
 
@@ -259,6 +272,12 @@ class NavigatorInput:
     previous_turn_refs: list[dict] = field(default_factory=list)
     # 画面で見ているトピックの番号(Deep Notesのページなど)。webappはまだ送っていない(講義だけ)。
     screen_topic_index: Optional[int] = None
+    # 今のプランで使えない材料の種類(plan_features.blocked_knowledge_source_types)
+    blocked_source_types: frozenset[str] = frozenset()
+
+    @property
+    def can_transcript(self) -> bool:
+        return "transcript_topic" not in self.blocked_source_types
 
     def screen_topic_handle(self) -> Optional[str]:
         lec = self.student_map.lecture_handle(self.screen_lecture_id)
@@ -572,9 +591,13 @@ def _chunk_header_and_body(chunk: dict) -> tuple[str, str]:
     return "", content
 
 
-def build_system_prompt() -> str:
+def build_system_prompt(can_transcript: bool = True) -> str:
     template = _render_conditional_sections(_load_prompt("chat_navigator_prompt.txt"), {
         **CAPABILITIES,
+        "CAN_TRANSCRIPT": can_transcript,
+        # 条件ブロックは入れ子にできないので、CAN_OPENの中の分岐は組み合わせで持つ
+        "CAN_OPEN_TRANSCRIPT": CAPABILITIES["CAN_OPEN"] and can_transcript,
+        "CAN_OPEN_NO_TRANSCRIPT": CAPABILITIES["CAN_OPEN"] and not can_transcript,
         "CAN_OPEN_CHAT": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_CHAT"],
         "CAN_OPEN_WEB": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_WEB"],
     })
@@ -588,7 +611,13 @@ def openable_handles(nav_input: NavigatorInput, state: NavState) -> list[str]:
     screen_topic = [nav_input.screen_topic_handle()] if nav_input.screen_topic_handle() else []
     chat_scope = nav_input.chat_map.scope_handles() if nav_input.chat_map and CAPABILITIES["CAN_CHAT"] else []
     handles = m.scope_handles() + chat_scope + screen_topic + state.previous_turn_handles + state.surfaced_not_opened()
-    return [h for h in _dedupe(handles) if h not in state.opened]
+    return [h for h in _dedupe(handles) if h not in state.opened and _plan_allows_handle(nav_input, h)]
+
+
+def _plan_allows_handle(nav_input: NavigatorInput, handle: str) -> bool:
+    """文字起こしの範囲(C1/L2/s10-20)は、今のプランで文字起こしを使えるときだけ開ける。"""
+    parsed = parse_handle(handle)
+    return nav_input.can_transcript or parsed is None or parsed.kind != "transcript"
 
 
 def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
@@ -598,7 +627,7 @@ def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
         "op": {"type": "string", "enum": available_ops()},
         "target": {"type": "string", "enum": available_targets(state.web_searches_left() > 0) + [NONE]},
         "query": {"type": "string"},
-        "layer": {"type": "string", "enum": list(LAYER_SOURCE_TYPES) + [NONE]},
+        "layer": {"type": "string", "enum": available_layers(nav_input.blocked_source_types) + [NONE]},
         "within": {"type": "string", "enum": nav_input.student_map.scope_handles() + [NONE]},
     }
     if CAPABILITIES["CAN_OPEN"]:
@@ -646,6 +675,7 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
     targets = set(available_targets())
     scope = set(m.scope_handles())
     openable = set(openable_handles(nav_input, state))
+    layers = set(available_layers(nav_input.blocked_source_types))
     web_left = state.web_searches_left()
 
     for raw in raw_ops if isinstance(raw_ops, list) else []:
@@ -674,7 +704,7 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
             else:
                 req = FindRequest(
                     target=raw["target"], query=query,
-                    layer=raw.get("layer") if raw.get("layer") in LAYER_SOURCE_TYPES else "all",
+                    layer=raw.get("layer") if raw.get("layer") in layers else "all",
                     within=raw.get("within") if raw.get("within") in scope else None,
                     **common,
                 )
@@ -683,7 +713,9 @@ def validate_operations(raw_ops: Any, nav_input: NavigatorInput, state: NavState
             parsed = parse_handle(handle or "")
             parsed_chat = parse_chat_handle(handle or "") if CAPABILITIES["CAN_CHAT"] else None
             is_web = bool(_WEB_HANDLE_RE.match(handle or "")) and handle in state.web_pages
-            if handle not in openable or (parsed is None and parsed_chat is None and not is_web):
+            if not _plan_allows_handle(nav_input, handle or ""):
+                reason = "transcript_not_in_plan"
+            elif handle not in openable or (parsed is None and parsed_chat is None and not is_web):
                 reason = "handle_not_openable"
             elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
                 reason = "transcript_range_too_long"
@@ -846,7 +878,7 @@ async def open_handle(
         detail = await source.topic_detail(lec.id, parsed.topic_index)
         if detail is None:
             return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
-        note_nav, note_ans, ranges = rewrite_citations(detail.get("deep_note") or "", parsed.lecture)
+        note_nav, note_ans, ranges = rewrite_citations(detail.get("deep_note") or "", parsed.lecture, nav_input.can_transcript)
         keywords = "; ".join(f"{k}: {d}" if d else k for k, d in detail.get("keywords") or [])
         head = f"Summary: {detail['summary'] or '(no summary)'}" + (f"\nKeywords: {keywords}" if keywords else "")
         text = f"Topic {handle}: {detail['title']}\n{head}\nDeep Note:\n{note_nav[:TOPIC_TEXT_CHARS] or '(none)'}"
@@ -865,6 +897,8 @@ async def open_handle(
         )
 
     # 文字起こしの範囲: 前後1文を足して、講義の話の流れが分かるようにする
+    if not nav_input.can_transcript:
+        return Opened(handle=handle, text=f"{handle}: (not available on the student's plan)", material=None)
     sentences = await source.transcript(lec.id)
     a = parsed.sid_start - TRANSCRIPT_CONTEXT_SENTENCES
     b = parsed.sid_end + TRANSCRIPT_CONTEXT_SENTENCES
@@ -1166,7 +1200,8 @@ async def prepare_previous_turn(
             h = f"{lec_h}/T{ref['index']}"
             blocks.append(f"{h} — a topic of {lec_h} {title}")
             handles.append(h)
-        elif kind == "transcript" and isinstance(ref.get("sid_start"), int) and isinstance(ref.get("sid_end"), int):
+        elif (kind == "transcript" and nav_input.can_transcript
+              and isinstance(ref.get("sid_start"), int) and isinstance(ref.get("sid_end"), int)):
             h = range_handle(lec_h, ref["sid_start"], ref["sid_end"])
             blocks.append(f"{h} — part of the transcript of {lec_h} {title}")
             handles.append(h)
@@ -1182,17 +1217,22 @@ def make_lecture_search(
     user_client,
     student_map: StudentMap,
     embed: Callable[[list[str]], Awaitable[list[list[float]]]],
+    blocked_source_types: frozenset[str] = frozenset(),
 ) -> SearchFn:
     """
     lecture.conceptの検索を実行する関数を作る。search_knowledge_chunksは必ずユーザー本人の
     JWTで作ったクライアントで呼ぶ(auth.uid()で本人の行だけに絞る設計、chat_service._retrieveと同じ)。
     embedは課金を記録する埋め込み関数(knowledge_index.embed_queriesにbillingを渡したもの)。
+    今のプランで使えない種類(blocked_source_types)は、どのlayerでも検索しない。
     """
     def _rpc(embedding: list[float], req: FindRequest) -> list[dict]:
+        types = layer_source_types(req.layer, blocked_source_types)
+        if not types:
+            return []
         params: dict[str, Any] = {
             "query_embedding": embedding,
             "match_count": SEARCH_MATCH_COUNT,
-            "filter_source_types": LAYER_SOURCE_TYPES.get(req.layer) or LECTURE_SOURCE_TYPES,
+            "filter_source_types": types,
         }
         if req.within:
             lec = student_map.lecture(req.within)
@@ -1272,7 +1312,7 @@ async def decide_lap(llm: UnifiedLLM, nav_input: NavigatorInput, state: NavState
         reasoning_effort=NAVIGATOR_REASONING_EFFORT,
     )
     messages = [
-        Message(role="system", content=build_system_prompt()),
+        Message(role="system", content=build_system_prompt(nav_input.can_transcript)),
         Message(role="user", content=build_user_message(nav_input, state, lap)),
     ]
     last_error = None

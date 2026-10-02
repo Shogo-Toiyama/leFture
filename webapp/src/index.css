@@ -15761,6 +15761,24 @@ a.lecture-tile-card:hover {
   color: var(--ink, #3e3228);
 }
 
+/* ヘッダー直下の細い注意書き(今のプランでチャットが検索しない材料)。目立たせない */
+.chat-plan-notice {
+  flex: 0 0 auto;
+  padding: 4px 14px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--comet);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.chat-panel.is-paper .chat-plan-notice,
+.chat-fullscreen.is-paper .chat-plan-notice {
+  color: var(--pencil, #8d8d8d);
+  background: var(--paper-bg, #faf5e9);
+  border-bottom-color: var(--paper-line, #e6ded0);
+}
+
 .chat-panel.is-paper .chat-panel-history {
   background: var(--paper-bg, #faf5e9);
 }

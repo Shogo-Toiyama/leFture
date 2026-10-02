@@ -62,6 +62,8 @@ DEEP_NOTES_SKIPPED_PLAN_LIMIT = "__SKIPPED_PLAN_LIMIT__"
 # feature_key -> 必要な最小tier_level。
 # 今は要件が細かく(機能の一部だけ別プラン、など)、DBでの管理には向かないため
 # 意図的にハードコードしている。将来Maxから段階的に降ろす場合はここを直接編集する。
+# FEATURE_SOURCE_TRANSCRIPT_VIEWを変えるときは、R2のpipeline_logs/を配信する
+# artifact_worker(src/index.tsのPIPELINE_LOGS_MIN_TIER)も同じ値に直すこと。
 _FEATURE_MIN_TIER: dict[str, int] = {
     FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER: TIER_CORE,
     FEATURE_ANNOUNCEMENT_GENERATION: TIER_CORE,
@@ -71,6 +73,29 @@ _FEATURE_MIN_TIER: dict[str, int] = {
     FEATURE_FUN_FACT_SEARCH: TIER_CORE,
     FEATURE_REALTIME_TRANSCRIBE: TIER_MAX,
 }
+
+
+# knowledge_chunks.source_type -> その材料をチャットで使うのに必要な機能。
+# 生成側のゲートは「非遡及」(生成時のプランで決まり、後から作り直さない)なので、
+# ダウングレード前に作られたDeep Notes/キーワード/アナウンスや、全プランで作られる
+# トランスクリプトはインデックスに残っている。チャットでは「今の」プランで読む時に
+# 絞る(インデックス自体は全部作っておけば、アップグレード直後から作り直し無しで使える)。
+# Deep Notesは、Freeでも1トピック目のプレビューは画面で見られるが、チャットでは使わない。
+_KNOWLEDGE_SOURCE_TYPE_FEATURE: dict[str, str] = {
+    "deep_note": FEATURE_DEEP_NOTES_FULL,
+    "transcript_topic": FEATURE_SOURCE_TRANSCRIPT_VIEW,
+    "keyword": FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER,
+    "announcement": FEATURE_ANNOUNCEMENT_GENERATION,
+}
+
+
+def blocked_knowledge_source_types(tier_level: int, *, user_id: str | None = None) -> frozenset[str]:
+    """このプランでチャットの材料にしてはいけないknowledge_chunks.source_typeの集合。"""
+    return frozenset(
+        source_type
+        for source_type, feature_key in _KNOWLEDGE_SOURCE_TYPE_FEATURE.items()
+        if not has_feature(tier_level, feature_key, user_id=user_id)
+    )
 
 
 def is_gating_disabled_for_user(user_id: str | None) -> bool:

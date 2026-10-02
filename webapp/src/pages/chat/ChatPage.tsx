@@ -6,6 +6,7 @@ import { useChatThreads } from '../../hooks/useChatThreads';
 import { getChatThread } from '../../lib/chat';
 import { ChatConversation } from '../../components/chat/ChatConversation';
 import { ChatThreadList } from '../../components/chat/ChatThreadList';
+import { ChatPlanNotice } from '../../components/chat/ChatPlanNotice';
 
 /**
  * 会話の置き場(専用ページ)。
@@ -168,6 +169,7 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           </button>
         </div>
       </header>
+      <ChatPlanNotice />
 
       <main className="chat-fullscreen-thread-body">
         <ChatConversation

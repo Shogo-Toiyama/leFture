@@ -817,4 +817,6 @@ export const en = {
   chatSourceChat: 'Past chat',
   chatSourceWeb: 'Web',
   chatSourceMoment: 'My note',
+  chatPlanExcludedSources: 'Not searched by chat on your current plan: {items}',
+  chatPlanExcludedSourcesSeparator: ', ',
 };

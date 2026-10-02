@@ -10,6 +10,9 @@ navigator_test)は同じ形のデータを台本の世界から返すものに�
 
 どのメソッドも、呼び出し側が本人の地図(chat_map.StudentMap)から取り出したIDだけを
 渡す前提。念のためuser_idでも絞る(サービスロールで読むため)。
+
+今のプランで使えない材料(plan_features.blocked_knowledge_source_types)は、ここで
+読まない。探索役のプロンプトや選択肢で外していても、開く操作の最後の砦はここにする。
 """
 
 import asyncio
@@ -56,9 +59,10 @@ class LectureSource(Protocol):
 class DbLectureSource:
     """本番用。1ターンの間だけ使い、同じ講義の読み直しを避けるため中身を覚えておく。"""
 
-    def __init__(self, admin_client, user_id: str):
+    def __init__(self, admin_client, user_id: str, blocked_source_types: frozenset[str] = frozenset()):
         self._client = admin_client
         self._user_id = user_id
+        self._blocked = blocked_source_types
         self._topics: dict[str, list[dict]] = {}
         self._transcripts: dict[str, list[dict]] = {}
 
@@ -102,17 +106,26 @@ class DbLectureSource:
                 .eq("user_id", self._user_id).eq("lecture_id", lecture_id).eq("topic_number", index) \
                 .is_("deleted_at", "null").limit(1).execute()
 
-        kw_res, note_res = await asyncio.gather(asyncio.to_thread(_keywords), asyncio.to_thread(_note))
-        note = ((note_res.data or [{}])[0].get("note_contents") or "").strip() if note_res.data else ""
+        async def none():
+            return None
+
+        kw_res, note_res = await asyncio.gather(
+            asyncio.to_thread(_keywords) if "keyword" not in self._blocked else none(),
+            asyncio.to_thread(_note) if "deep_note" not in self._blocked else none(),
+        )
+        note = ((note_res.data or [{}])[0].get("note_contents") or "").strip() if note_res and note_res.data else ""
         if note == DEEP_NOTES_SKIPPED_PLAN_LIMIT:
             note = ""
+        keywords = (kw_res.data or []) if kw_res else []
         return {
             **topic,
-            "keywords": [(k.get("keyword") or "", k.get("definition") or "") for k in (kw_res.data or []) if k.get("keyword")],
+            "keywords": [(k.get("keyword") or "", k.get("definition") or "") for k in keywords if k.get("keyword")],
             "deep_note": note or None,
         }
 
     async def transcript(self, lecture_id: str) -> list[dict]:
+        if "transcript_topic" in self._blocked:
+            return []
         if lecture_id not in self._transcripts:
             sentences = await asyncio.to_thread(assemble_lecture_transcript, self._client, lecture_id, self._user_id)
             self._transcripts[lecture_id] = [

@@ -815,4 +815,6 @@ export const ja: Record<keyof typeof en, string> = {
   chatSourceChat: '過去のチャット',
   chatSourceWeb: 'Web',
   chatSourceMoment: '自分のメモ',
+  chatPlanExcludedSources: '現在のプランでは、{items}はチャットの検索対象外です',
+  chatPlanExcludedSourcesSeparator: '・',
 };

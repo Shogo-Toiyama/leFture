@@ -47,6 +47,7 @@ from app.services.chat_materials import (
 )
 from app.services.chat_navigator import (
     CAPABILITIES as NAVIGATOR_CAPABILITIES,
+    LECTURE_SOURCE_TYPES,
     NavigationResult,
     NavigatorInput,
     NavigatorTools,
@@ -72,6 +73,7 @@ from app.services.helpers.credits import (
     consume_chat_credits,
 )
 from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
+from app.services.helpers.plan_features import TIER_FREE, blocked_knowledge_source_types, get_user_tier_level
 from app.services.helpers.llm_unified import (
     BillingEngine,
     LLMOptions,
@@ -700,10 +702,11 @@ async def _run_router(
     return fallback_router_decision(turn.content)
 
 
-def _search_sync(user_client, embedding: list[float], lecture_id: Optional[str]) -> list[dict]:
+def _search_sync(user_client, embedding: list[float], lecture_id: Optional[str], source_types: list[str]) -> list[dict]:
     params: dict[str, Any] = {
         "query_embedding": embedding,
         "match_count": RETRIEVAL_MATCH_COUNT_PER_QUERY,
+        "filter_source_types": source_types,
     }
     if lecture_id:
         params["filter_lecture_id"] = lecture_id
@@ -716,17 +719,20 @@ async def _retrieve(
     billing: BillingEngine,
     queries: list[str],
     context_lecture_id: Optional[str],
+    blocked_source_types: frozenset[str] = frozenset(),
 ) -> list[dict]:
     """
     検索は必ずユーザー本人のJWTで作ったクライアント(user_client)で呼ぶ。
     search_knowledge_chunksはauth.uid()で本人の行だけに絞る設計なので、
     ここでサービスロールを使うと0件になる(=他人のデータが混ざる余地が無い)。
     見ている講義があれば、最初のクエリでその講義に絞った検索も1本足す。
+    今のプランで使えない種類(blocked_source_types)は検索しない。
     """
+    source_types = [t for t in [*LECTURE_SOURCE_TYPES, "chat_turn"] if t not in blocked_source_types]
     embeddings = await embed_queries(queries, billing=billing)
-    tasks = [asyncio.to_thread(_search_sync, user_client, emb, None) for emb in embeddings]
+    tasks = [asyncio.to_thread(_search_sync, user_client, emb, None, source_types) for emb in embeddings]
     if context_lecture_id and embeddings:
-        tasks.append(asyncio.to_thread(_search_sync, user_client, embeddings[0], context_lecture_id))
+        tasks.append(asyncio.to_thread(_search_sync, user_client, embeddings[0], context_lecture_id, source_types))
     results = await asyncio.gather(*tasks, return_exceptions=True)
     ok_results = []
     for r in results:
@@ -735,6 +741,16 @@ async def _retrieve(
             continue
         ok_results.append(r)
     return merge_search_results(ok_results)
+
+
+def _load_blocked_source_types(user_id: str) -> frozenset[str]:
+    """今のプランでチャットの材料にしてはいけない種類。プランが読めなければ最も制限された側(Free)に倒す。"""
+    try:
+        tier = get_user_tier_level(user_id)
+    except Exception as e:
+        print(f"⚠️ [chat] failed to load the plan tier, treating as Free: {e}")
+        tier = TIER_FREE
+    return blocked_knowledge_source_types(tier, user_id=user_id)
 
 
 def _ignore_task_exception(task: "asyncio.Task") -> None:
@@ -751,6 +767,7 @@ async def _gather_materials(
     history: list[Message],
     map_task: "asyncio.Task[StudentMap]",
     chat_map_task: "asyncio.Task[ChatMap]",
+    blocked_source_types: frozenset[str],
     on_fetch: Optional[Callable[[dict], Awaitable[None]]] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
@@ -758,7 +775,13 @@ async def _gather_materials(
     (地図が読めない・LLMの出力が読めない)ときだけ、従来どおり本文そのもので検索する。
     検索が落ちても、出典なしで答える方がユーザーにとって良いので例外は外に出さない。
     返す材料はselect_materialsで量を絞った後のもの。
+
+    今のプランで使えない種類(blocked_source_types)は、検索・開く(DbLectureSource)の
+    両方で読まないようにしてあるが、回答役に渡す直前にもう一度落とす(最後の安全網)。
     """
+    def allowed(materials: list[Material]) -> list[Material]:
+        return [m for m in materials if m.source_type not in blocked_source_types]
+
     student_map: Optional[StudentMap] = None
     chat_map: Optional[ChatMap] = None
     try:
@@ -783,13 +806,15 @@ async def _gather_materials(
             chat_map=chat_map or ChatMap(),
             current_thread_id=turn.thread_id,
             previous_turn_refs=_previous_turn_refs(turn.history_rows),
+            blocked_source_types=blocked_source_types,
         )
         tools = NavigatorTools(
             search=make_search(
-                make_lecture_search(user_client, nav_input.student_map, lambda qs: embed_queries(qs, billing=billing)),
+                make_lecture_search(user_client, nav_input.student_map, lambda qs: embed_queries(qs, billing=billing),
+                                    blocked_source_types),
                 make_chat_search(user_client, turn.thread_id, lambda qs: embed_queries(qs, billing=billing)),
             ),
-            source=DbLectureSource(admin_client, turn.user_id),
+            source=DbLectureSource(admin_client, turn.user_id, blocked_source_types),
             chat_source=chat_source,
             web_search=lambda q: brave_search(q, billing, timeout=WEB_SEARCH_TIMEOUT_SECONDS),
         )
@@ -801,16 +826,16 @@ async def _gather_materials(
             navigation = await navigate(llm, nav_input, tools, on_lap=on_lap, on_fetch=on_fetch)
             print(f"🧭 [chat] message={turn.assistant_message_id} {summarize_for_log(navigation)}")
             if not navigation.failed_before_any_fetch:
-                return select_materials(navigation.materials), navigation
+                return select_materials(allowed(navigation.materials)), navigation
         except Exception as e:
             print(f"⚠️ [chat] navigator failed, falling back to plain search: {e}")
 
     try:
-        chunks = await _retrieve(user_client, billing, [turn.content[:200]], turn.context_lecture_id)
+        chunks = await _retrieve(user_client, billing, [turn.content[:200]], turn.context_lecture_id, blocked_source_types)
     except Exception as e:
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
         chunks = []
-    return select_materials([material_from_chunk(c) for c in chunks]), navigation
+    return select_materials(allowed([material_from_chunk(c) for c in chunks])), navigation
 
 
 def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[Material]) -> int:
@@ -1003,6 +1028,10 @@ async def run_chat_turn(
         tz = resolve_timezone(turn.timezone_name)
         map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id, tz))
         map_task.add_done_callback(_ignore_task_exception)
+        # 今のプランで使えない材料の種類(探索で使う)。失敗時はFree扱いで例外は出さない。
+        # 回答役にはプランを伝えない(プランの話を回答に持ち込ませない。案内は画面側の固定の注意書き)
+        blocked_task = asyncio.create_task(asyncio.to_thread(_load_blocked_source_types, turn.user_id))
+        blocked_task.add_done_callback(_ignore_task_exception)
 
         async def _build_chat_map() -> ChatMap:
             recent = await DbChatThreadSource(admin_client, turn.user_id).recent_threads_with_trail(turn.thread_id, 20)
@@ -1049,7 +1078,7 @@ async def run_chat_turn(
                 await emit("status", payload)
 
             materials, navigation = await _gather_materials(
-                llm, billing, user_client, turn, history, map_task, chat_map_task, on_fetch)
+                llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch)
             timer.mark("retrieval_done")
             await emit("sources", {"sources": sources_event(materials)})
 

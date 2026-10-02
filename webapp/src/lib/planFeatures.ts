@@ -51,6 +51,18 @@ export function hasFeature(tierLevel: number, featureKey: FeatureKey, gatingDisa
   return tierLevel >= FEATURE_MIN_TIER[featureKey];
 }
 
+/**
+ * チャットの材料の種類 → それをチャットで使うのに必要な機能。
+ * バックエンド(plan_features.pyの_KNOWLEDGE_SOURCE_TYPE_FEATURE)と同じ対応にすること。
+ * 実際に材料から外すのはバックエンドで、ここはチャットの注意書きの表示用。
+ */
+export const CHAT_SOURCE_TYPE_FEATURES = [
+  ['deep_note', FEATURE_DEEP_NOTES_FULL],
+  ['transcript_topic', FEATURE_SOURCE_TRANSCRIPT_VIEW],
+  ['keyword', FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER],
+  ['announcement', FEATURE_ANNOUNCEMENT_GENERATION],
+] as const;
+
 const TIER_NAMES: Record<number, string> = {
   [TIER_FREE]: 'Free',
   [TIER_LITE]: 'Lite',

@@ -8,6 +8,7 @@ import { getChatThread } from '../../lib/chat';
 import { getLecture } from '../../lib/lectures';
 import { lectureDisplayTitle } from '../../types/lecture';
 import { ChatConversation } from './ChatConversation';
+import { ChatPlanNotice } from './ChatPlanNotice';
 import { ChatThreadList } from './ChatThreadList';
 
 /**
@@ -120,6 +121,7 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             <X size={18} />
           </button>
         </header>
+        {!isHistory && <ChatPlanNotice />}
 
         {isHistory ? (
           <PanelHistory />

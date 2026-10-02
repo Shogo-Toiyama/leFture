@@ -35,12 +35,23 @@ curl -i "https://<worker-url>/<path>" \
 
 - 200: 中身がそのまま返る
 - 401: トークンが無い/不正/期限切れ
-- 403: トークンのuidとパス先頭のuidが不一致
+- 403: トークンのuidとパス先頭のuidが不一致 / `pipeline_logs/`(トランスクリプト等)をCore未満のプランで要求した
 - 404: R2にそのオブジェクトが無い(まだ生成されていない等)
+- 503: `pipeline_logs/`の要求で、プランの確認(RPC `get_my_tier_level`)に失敗した
+
+## プランによる制限
+
+`{uid}/{lectureId}/pipeline_logs/` 配下はトランスクリプトの本文を含むため、本人のプランが
+Core(tier_level 2)以上のときだけ返す。プランは本人のトークンのままSupabaseのRPC
+`get_my_tier_level`(migration `20261006000000_add_get_my_tier_level.sql`)で引くので、
+Workerはservice roleキーを持たない。必要なtierは `src/index.ts` の `PIPELINE_LOGS_MIN_TIER` で、
+バックエンドの `plan_features.py`(`FEATURE_SOURCE_TRANSCRIPT_VIEW`)と揃える。
+デプロイはmigrationをpushした後に行うこと(先にデプロイすると、RPCが無くて全員503になる)。
 
 ## 設定値について
 
-- `wrangler.toml` の `SUPABASE_URL` / `JWKS_CACHE_TTL_SECONDS` はシークレットではないため直書き。
+- `wrangler.toml` の `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` / `JWKS_CACHE_TTL_SECONDS` は
+  シークレットではないため直書き(publishable keyは公開前提の値)。
 - R2バケットへのアクセスは `[[r2_buckets]]` のバインディングで完結し、
   アクセスキー等の資格情報は一切不要。
 - JWT検証はSupabaseの公開鍵(JWKS)を使うため、こちらもシークレット不要

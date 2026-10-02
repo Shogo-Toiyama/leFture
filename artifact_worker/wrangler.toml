@@ -12,5 +12,8 @@ bucket_name = "lefture-assets"
 # 機密ではない設定値はvarsに直書きでOK(シークレットではないため wrangler secret 不要)。
 [vars]
 SUPABASE_URL = "https://lvbpuywjxmmeecftinkb.supabase.co"
+# プラン確認のRPC(get_my_tier_level)を本人のトークンで呼ぶときのapikey。publishable key
+# (旧anon key)は公開前提の値で、Flutterアプリ(main.dart)にも埋め込まれている。
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_LUfg9T2f-zvargd7GgR7Cw_KAl86N8c"
 # JWKSの再フェッチ間隔(秒)。Supabase側の鍵ローテーションは頻繁ではないため長めでよい。
 JWKS_CACHE_TTL_SECONDS = "21600"
