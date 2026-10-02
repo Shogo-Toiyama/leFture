@@ -348,19 +348,24 @@ class TurnTimer:
         self._t0 = time.perf_counter()
         self.started_at = _now_iso()
         self.marks: dict[str, int] = {}
+        # 段階の中身の内訳(並列に走るものそれぞれの所要時間・トークン数など)。marksは時刻、こちらは量。
+        self.details: dict[str, Any] = {}
 
     def mark(self, name: str) -> None:
         self.marks[name] = round((time.perf_counter() - self._t0) * 1000)
 
     def to_json(self) -> dict:
-        return {"started_at": self.started_at, "ms": dict(self.marks)}
+        return {"started_at": self.started_at, "ms": dict(self.marks), "details": self.details}
 
     def log_line(self, message_id: str) -> str:
         parts, prev = [], 0
         for name, ms in self.marks.items():
             parts.append(f"{name}={ms}ms(+{ms - prev})")
             prev = ms
-        return f"⏱️ [chat] message={message_id} " + " ".join(parts)
+        line = f"⏱️ [chat] message={message_id} " + " ".join(parts)
+        if self.details:
+            line += " | " + json.dumps(self.details, ensure_ascii=False, separators=(",", ":"))
+        return line
 
 
 @dataclass
@@ -550,8 +555,18 @@ async def prepare_chat_turn(
     admin_client = get_supabase_client()
     is_new_thread = thread_id is None
 
-    def to_thread(fn, *args):
-        return asyncio.to_thread(fn, *args)
+    prep_ms: dict[str, int] = {}
+    timer.details["prep_ms"] = prep_ms
+
+    async def to_thread(fn, *args):
+        """並列に投げる読み取りそれぞれの所要時間をtimer.details.prep_msに残す(どれが律速かを見るため)。"""
+        t = time.perf_counter()
+        try:
+            return await asyncio.to_thread(fn, *args)
+        finally:
+            name = fn.__name__.removeprefix("_fetch_").lstrip("_")
+            # 同じ関数を並列に2回呼ぶもの(fetch_active_blocksの1段目/2段目)は遅い方を残す
+            prep_ms[name] = max(prep_ms.get(name, 0), round((time.perf_counter() - t) * 1000))
 
     async def none() -> None:
         return None
@@ -689,6 +704,10 @@ async def _run_router(
             print(f"⚠️ [chat] router call failed (attempt {_attempt + 1}): {e}")
             turn.timer.mark(f"router_failed_{_attempt + 1}")
             continue
+        turn.timer.details["router"] = {
+            "attempts": _attempt + 1, "in": result.input_tokens,
+            "cache": result.cache_read_tokens, "out": result.output_tokens,
+        }
         if result.finish_reason == "content_filter":
             decision = RouterDecision(
                 intent="blocked", needs_retrieval=False,
@@ -808,11 +827,22 @@ async def _gather_materials(
             previous_turn_refs=_previous_turn_refs(turn.history_rows),
             blocked_source_types=blocked_source_types,
         )
+        # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
+        # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
+        embed_ms: list[int] = turn.timer.details.setdefault("embed_ms", [])
+        rpc_ms: list[int] = turn.timer.details.setdefault("rpc_ms", [])
+
+        async def embed(qs: list[str]) -> list[list[float]]:
+            t = time.perf_counter()
+            try:
+                return await embed_queries(qs, billing=billing)
+            finally:
+                embed_ms.append(round((time.perf_counter() - t) * 1000))
+
         tools = NavigatorTools(
             search=make_search(
-                make_lecture_search(user_client, nav_input.student_map, lambda qs: embed_queries(qs, billing=billing),
-                                    blocked_source_types),
-                make_chat_search(user_client, turn.thread_id, lambda qs: embed_queries(qs, billing=billing)),
+                make_lecture_search(user_client, nav_input.student_map, embed, blocked_source_types, rpc_ms),
+                make_chat_search(user_client, turn.thread_id, embed, rpc_ms),
             ),
             source=DbLectureSource(admin_client, turn.user_id, blocked_source_types),
             chat_source=chat_source,
@@ -1028,16 +1058,19 @@ async def run_chat_turn(
         tz = resolve_timezone(turn.timezone_name)
         map_task = asyncio.create_task(asyncio.to_thread(load_student_map, admin_client, turn.user_id, tz))
         map_task.add_done_callback(_ignore_task_exception)
+        map_task.add_done_callback(lambda _t: timer.mark("map_loaded"))
         # 今のプランで使えない材料の種類(探索で使う)。失敗時はFree扱いで例外は出さない。
         # 回答役にはプランを伝えない(プランの話を回答に持ち込ませない。案内は画面側の固定の注意書き)
         blocked_task = asyncio.create_task(asyncio.to_thread(_load_blocked_source_types, turn.user_id))
         blocked_task.add_done_callback(_ignore_task_exception)
+        blocked_task.add_done_callback(lambda _t: timer.mark("plan_loaded"))
 
         async def _build_chat_map() -> ChatMap:
             recent = await DbChatThreadSource(admin_client, turn.user_id).recent_threads_with_trail(turn.thread_id, 20)
             return load_chat_map(turn.summary_blocks, recent, turn.summary_level2)
         chat_map_task = asyncio.create_task(_build_chat_map())
         chat_map_task.add_done_callback(_ignore_task_exception)
+        chat_map_task.add_done_callback(lambda _t: timer.mark("chat_map_loaded"))
 
         profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
         timer.mark("context_loaded")

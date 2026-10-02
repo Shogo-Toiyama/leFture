@@ -469,6 +469,9 @@ class LapRecord:
     llm_error: Optional[str] = None
     # この周で実行したことの要約(<progress>用)
     done: list[str] = field(default_factory=list)
+    # 速度の計測(どこで時間がかかっているか): decide_ms/attempts/トークン数(判断のLLM)、
+    # execute_ms(実行の合計)とfind_ms/web_ms/open_ms(並列に走る実行の内訳)
+    timing: dict = field(default_factory=dict)
 
     def to_json(self) -> dict:
         def req_json(r: Request) -> dict:
@@ -485,6 +488,7 @@ class LapRecord:
             "done": self.done,
             "dropped": self.dropped,
             "elapsed_ms": self.elapsed_ms,
+            "timing": self.timing,
             "llm_error": self.llm_error,
         }
 
@@ -531,6 +535,8 @@ class NavigationResult:
     stop_reason: str
     # 次のターンに持ち越す参照(返答の行のcontext.openedに保存する)
     opened_refs: list[dict]
+    # 1周目の前に前のターンで開いたものを読み直した時間(速度の計測用)
+    prepare_ms: int = 0
 
     @property
     def failed_before_any_fetch(self) -> bool:
@@ -542,6 +548,7 @@ class NavigationResult:
             "model": NAVIGATOR_MODEL,
             "stop_reason": self.stop_reason,
             "goal": self.goal,
+            "prepare_ms": self.prepare_ms,
             "laps": [lap.to_json() for lap in self.laps],
         }
 
@@ -1218,12 +1225,14 @@ def make_lecture_search(
     student_map: StudentMap,
     embed: Callable[[list[str]], Awaitable[list[list[float]]]],
     blocked_source_types: frozenset[str] = frozenset(),
+    rpc_ms: Optional[list[int]] = None,
 ) -> SearchFn:
     """
     lecture.conceptの検索を実行する関数を作る。search_knowledge_chunksは必ずユーザー本人の
     JWTで作ったクライアントで呼ぶ(auth.uid()で本人の行だけに絞る設計、chat_service._retrieveと同じ)。
     embedは課金を記録する埋め込み関数(knowledge_index.embed_queriesにbillingを渡したもの)。
     今のプランで使えない種類(blocked_source_types)は、どのlayerでも検索しない。
+    rpc_msを渡すと、検索RPC1本ごとの所要時間を足していく(速度の計測用)。
     """
     def _rpc(embedding: list[float], req: FindRequest) -> list[dict]:
         types = layer_source_types(req.layer, blocked_source_types)
@@ -1242,7 +1251,10 @@ def make_lecture_search(
                 course = student_map.course(req.within)
                 if course:
                     params["filter_course_id"] = course.id
+        t = time.perf_counter()
         res = user_client.rpc("search_knowledge_chunks", params).execute()
+        if rpc_ms is not None:
+            rpc_ms.append(_ms_since(t))
         return res.data or []
 
     async def search(requests: list[FindRequest]) -> list[Union[list[dict], Exception]]:
@@ -1261,6 +1273,7 @@ def make_chat_search(
     user_client,
     current_thread_id: Optional[str],
     embed: Callable[[list[str]], Awaitable[list[list[float]]]],
+    rpc_ms: Optional[list[int]] = None,
 ) -> SearchFn:
     """chat.all/chat.threadの検索。chat.threadだけ今のスレッドに絞る(RPCのfilter_thread_id)。"""
     def _rpc(embedding: list[float], req: FindRequest) -> list[dict]:
@@ -1269,7 +1282,10 @@ def make_chat_search(
         }
         if req.target == "chat.thread" and current_thread_id:
             params["filter_thread_id"] = current_thread_id
+        t = time.perf_counter()
         res = user_client.rpc("search_knowledge_chunks", params).execute()
+        if rpc_ms is not None:
+            rpc_ms.append(_ms_since(t))
         return res.data or []
 
     async def search(requests: list[FindRequest]) -> list[Union[list[dict], Exception]]:
@@ -1301,8 +1317,13 @@ def make_search(lecture_search: SearchFn, chat_search: SearchFn) -> SearchFn:
 # 🧭 本体: 最大4周
 # =========================================================
 
-async def decide_lap(llm: UnifiedLLM, nav_input: NavigatorInput, state: NavState, lap: int) -> tuple[Optional[dict], Optional[str]]:
-    """1周分の判断(LLM)。読めない出力は1回だけやり直す。評価ハーネスもこれを呼ぶ。"""
+async def decide_lap(
+    llm: UnifiedLLM, nav_input: NavigatorInput, state: NavState, lap: int, metrics: Optional[dict] = None,
+) -> tuple[Optional[dict], Optional[str]]:
+    """
+    1周分の判断(LLM)。読めない出力は1回だけやり直す。評価ハーネスもこれを呼ぶ。
+    metricsを渡すと、試行回数と最後の呼び出しのトークン数を書き込む(速度の計測用)。
+    """
     options = LLMOptions(
         # gpt-6-lunaはtemperatureの既定値(1)以外を受け付けない
         temperature=1.0,
@@ -1317,11 +1338,16 @@ async def decide_lap(llm: UnifiedLLM, nav_input: NavigatorInput, state: NavState
     ]
     last_error = None
     for _attempt in range(2):
+        if metrics is not None:
+            metrics["attempts"] = _attempt + 1
         try:
             result = await llm.generate(NAVIGATOR_MODEL, messages, options)
         except Exception as e:
             last_error = str(e)[:300]
             continue
+        if metrics is not None:
+            metrics.update(input_tokens=result.input_tokens, cache_read_tokens=result.cache_read_tokens,
+                           output_tokens=result.output_tokens)
         out = result.output_json
         if isinstance(out, dict) and out.get("status") in STATUSES:
             return out, None
@@ -1412,8 +1438,18 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
             print(f"⚠️ [chat] navigator open failed ({req.handle}): {e}")
             return Opened(handle=req.handle, text=f"{req.handle}: (could not be opened)", material=None)
 
+    async def timed(key: str, coro):
+        """並列に走る実行の内訳(検索・Web・開く)をrecord.timingに残す。開くは一番遅いもの。"""
+        t = time.perf_counter()
+        try:
+            return await coro
+        finally:
+            record.timing[key] = max(record.timing.get(key, 0), _ms_since(t))
+
     find_outcomes, web_results, *opened = await asyncio.gather(
-        run_finds(), asyncio.gather(*[run_web(r) for r in web_finds]), *[run_open(r) for r in opens])
+        timed("find_ms", run_finds()) if finds else run_finds(),
+        timed("web_ms", asyncio.gather(*[run_web(r) for r in web_finds])) if web_finds else asyncio.gather(),
+        *[timed("open_ms", run_open(r)) for r in opens])
 
     # 呼び名は依頼の順に振る(並列に返ってきた順ではなく)
     web_outcomes: list[WebSearchOutcome] = []
@@ -1456,11 +1492,13 @@ async def navigate(
     途中の周で探索役が動かなくなったら、そこまでに集めたもので終わる。
     """
     state = NavState()
+    t_prepare = time.perf_counter()
     if nav_input.previous_turn_refs and CAPABILITIES["CAN_OPEN"]:
         try:
             await prepare_previous_turn(nav_input, tools.source, tools.chat_source, state)
         except Exception as e:
             print(f"⚠️ [chat] failed to prepare the previous turn's materials: {e}")
+    prepare_ms = _ms_since(t_prepare)
     goal: list[str] = []
     stop_reason = "max_laps"
 
@@ -1468,11 +1506,14 @@ async def navigate(
         if on_lap is not None:
             await on_lap(lap)
         t0 = time.perf_counter()
-        out, err = await decide_lap(llm, nav_input, state, lap)
+        timing: dict = {}
+        out, err = await decide_lap(llm, nav_input, state, lap, timing)
+        timing["decide_ms"] = _ms_since(t0)
         if out is None:
             print(f"⚠️ [chat] navigator lap {lap} failed: {err}")
             state.laps.append(LapRecord(lap=lap, status="", missing="", reasoning="", goal=[],
-                                        elapsed_ms=round((time.perf_counter() - t0) * 1000), llm_error=err))
+                                        elapsed_ms=round((time.perf_counter() - t0) * 1000), llm_error=err,
+                                        timing=timing))
             stop_reason = "llm_error"
             break
 
@@ -1482,6 +1523,7 @@ async def navigate(
             missing=(out.get("missing") or "").strip()[:300],
             reasoning=(out.get("reasoning") or "").strip()[:500],
             goal=[g.strip()[:200] for g in out.get("goal") or [] if isinstance(g, str) and g.strip()][:8],
+            timing=timing,
         )
         state.laps.append(record)
         if record.goal:
@@ -1500,12 +1542,19 @@ async def navigate(
             break
         if on_fetch is not None:
             await on_fetch(fetch_info(record.requests))
+        t_exec = time.perf_counter()
         await execute_lap(record, nav_input, state, tools)
+        timing["execute_ms"] = _ms_since(t_exec)
         record.elapsed_ms = round((time.perf_counter() - t0) * 1000)
 
     materials = [op.material for op in state.opened.values() if op.material] + state.search_materials
     refs = [op.ref for op in state.opened.values() if op.ref]
-    return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason, opened_refs=refs)
+    return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason,
+                            opened_refs=refs, prepare_ms=prepare_ms)
+
+
+def _ms_since(t0: float) -> int:
+    return round((time.perf_counter() - t0) * 1000)
 
 
 def fetch_kinds(requests: list[Request]) -> list[str]:
@@ -1558,9 +1607,20 @@ def fetch_info(requests: list[Request]) -> dict:
 
 
 def summarize_for_log(result: NavigationResult) -> str:
-    parts = [f"stop={result.stop_reason}"]
+    """
+    例: stop=enough_now prep=120ms lap1:need_more:1ops:3100ms[llm=2400ms in=7200/cache=3000 out=210 exec=700ms find=650ms]
+    llmが2回以上なら試行回数(x2)を付ける。execの内訳は並列に走ったものそれぞれの時間。
+    """
+    parts = [f"stop={result.stop_reason}", f"prep={result.prepare_ms}ms"]
     for lp in result.laps:
-        parts.append(f"lap{lp.lap}:{lp.status or 'error'}:{len(lp.done)}ops:{lp.elapsed_ms}ms")
+        t = lp.timing
+        detail = [f"llm={t.get('decide_ms', '?')}ms" + (f"x{t['attempts']}" if t.get("attempts", 1) > 1 else ""),
+                  f"in={t.get('input_tokens', '?')}/cache={t.get('cache_read_tokens', '?')}",
+                  f"out={t.get('output_tokens', '?')}"]
+        if "execute_ms" in t:
+            detail.append(f"exec={t['execute_ms']}ms")
+            detail += [f"{k[:-3]}={t[k]}ms" for k in ("find_ms", "web_ms", "open_ms") if k in t]
+        parts.append(f"lap{lp.lap}:{lp.status or 'error'}:{len(lp.done)}ops:{lp.elapsed_ms}ms[{' '.join(detail)}]")
     return " ".join(parts)
 
 

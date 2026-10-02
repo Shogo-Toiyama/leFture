@@ -5703,6 +5703,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
     """
     timer = TurnTimer()
     user_client, uid = await _get_user_client_from_request(request)
+    timer.mark("auth_user")  # トークン検証(GoTrueへの往復) + ユーザー用クライアントの作成
     admin_client = get_supabase_client()
     await _reject_if_suspended(admin_client, uid)
     timer.mark("auth")
