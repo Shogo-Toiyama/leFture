@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.services.helpers.plan_features import DEEP_NOTES_SKIPPED_PLAN_LIMIT
+from app.services.chat_units import strip_citations
 from app.services.knowledge_index import _render_card_content
 
 # 回答役に渡すページ本文の上限。Deep Noteは中央値3,300字・上位10%で7,000字だが、
@@ -43,9 +44,6 @@ SCREEN_KINDS = ("deep_note", "review_card", "fun_fact")
 # 画面の種類 → plan_featuresで制限される材料の種類(blocked_knowledge_source_typesの値)
 _KIND_SOURCE_TYPE = {"deep_note": "deep_note", "review_card": "review_card", "fun_fact": "fun_fact"}
 
-# ⟦s000143⟧ ⟦s000325-s000331, s000341⟧ ⟦1⟧ ⟦2, 5⟧ と、FunFactで混ざる〚1〛 [[1]] の揺れ
-_CITATION_RE = re.compile(r"[ \t]*(?:⟦[^⟧]*⟧|〚[^〛]*〛|\[\[\s*[sS]?\d[\d\s,，sS\-–—−]*\]\])")
-_FIGURE_RE = re.compile(r"<!--\s*FIGURE:[^>]*-->")
 
 _REVIEW_CARD_TYPE_ORDER = ["hook", "core_why", "gotcha", "next_action"]
 _REVIEW_CARD_TYPE_LABEL = {
@@ -87,13 +85,6 @@ class ScreenPage:
             return _clip(self.text, 0, 0, max_chars)
         end = self.text.find(SELECTED_CLOSE, start) + len(SELECTED_CLOSE)
         return _clip(self.text, start, end, max_chars)
-
-
-def strip_citations(text: str) -> str:
-    """引用記号と図のプレースホルダーを剥がす(画面に出ていないもの)。"""
-    text = _FIGURE_RE.sub("", text or "")
-    text = _CITATION_RE.sub("", text)
-    return re.sub(r"[ \t]+\n", "\n", text).strip()
 
 
 # =========================================================

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { AnnotatedMarkdown } from './annotations/AnnotatedMarkdown';
 import { blockMarkdownSource, blockRawMarkdownSource, isAnnotatableBlock } from '../lib/reviewCardBlocks';
 import { stripSidCitations } from '../lib/sidCitation';
@@ -26,9 +28,13 @@ export const ReviewCardBlockView: React.FC<ReviewCardBlockViewProps> = ({
   if (block.type === 'code') {
     return (
       <div className="rc-block rc-block-code">
-        <pre>
-          <code>{block.code_string}</code>
-        </pre>
+        {block.language?.toLowerCase() === 'latex' ? (
+          <LatexBlock source={block.code_string ?? ''} />
+        ) : (
+          <pre>
+            <code>{block.code_string}</code>
+          </pre>
+        )}
         {block.explanation && <p className="rc-code-explanation">{stripSidCitations(block.explanation)}</p>}
       </div>
     );
@@ -52,4 +58,17 @@ export const ReviewCardBlockView: React.FC<ReviewCardBlockViewProps> = ({
       blockIdx={blockIdx}
     />
   );
+};
+
+/**
+ * 復習カードの数式ブロック(生成プロンプトが「数式はLaTeXで」と指示し、language: "latex" のcodeブロックで届く)。
+ * 読めないLaTeXでも画面を壊さないよう throwOnError: false(その部分だけ赤字で元の式を出す)。
+ * KaTeXの出力はKaTeX自身がエスケープしたHTML(trust: false のまま。\\href等は描かない)。
+ */
+const LatexBlock: React.FC<{ source: string }> = ({ source }) => {
+  const html = useMemo(
+    () => katex.renderToString(source, { displayMode: true, throwOnError: false }),
+    [source]
+  );
+  return <div className="rc-latex" dangerouslySetInnerHTML={{ __html: html }} />;
 };

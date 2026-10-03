@@ -6067,6 +6067,16 @@ button.glass-row:hover,
   padding: 12px 14px;
 }
 
+/* 復習カードの数式ブロック: 長い式は横にスクロール(カードの幅をはみ出さない) */
+.rcv-blocks .rc-latex {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.rcv-blocks .rc-latex .katex-display {
+  margin: 0.25em 0;
+}
+
 .rcv-blocks .rc-block-code pre {
   margin: 0;
   padding: 0;
@@ -16562,6 +16572,66 @@ a.lecture-tile-card:hover {
 
 .citation-modal-snippet p:last-child {
   margin-bottom: 0;
+}
+
+/* 回答の数式(KaTeX): 別行の長い式は横にスクロール */
+.chat-markdown .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.15em 0;
+}
+
+/* 引用された区切り: 前後の文脈の中で、根拠の箇所だけを蛍光ペンで示す */
+.citation-passage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.citation-passage {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.citation-passage-context {
+  color: #94a3b8;
+}
+
+.citation-highlight {
+  background: rgba(255, 179, 0, 0.22);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.05em 0.15em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.chat-fullscreen.is-paper .citation-passage,
+.chat-page.is-paper .citation-passage,
+.chat-panel.is-paper .citation-passage {
+  background: #faf6ee;
+  border-color: #ece4d4;
+  color: #3b2d22;
+}
+
+.chat-fullscreen.is-paper .citation-passage-context,
+.chat-page.is-paper .citation-passage-context,
+.chat-panel.is-paper .citation-passage-context {
+  color: #8a7a68;
+}
+
+.chat-fullscreen.is-paper .citation-highlight,
+.chat-page.is-paper .citation-highlight,
+.chat-panel.is-paper .citation-highlight {
+  background: #ffe39a;
 }
 
 .citation-modal-empty {

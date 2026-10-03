@@ -2,13 +2,17 @@ import React, { useEffect } from 'react';
 import { X, ExternalLink, ArrowRight, BookOpen, MessageSquare, Globe, Sparkles, FileText, Bell, Layers } from 'lucide-react';
 import type { ChatCitation, ChatSourceType } from '../../types/chat';
 import { citationRoute, citationUrl, CHAT_SOURCE_LABEL_KEYS } from '../../lib/chatCitations';
-import { fixBoldPunctuationSpacing } from '../../lib/markdownText';
+import { fixBoldPunctuationSpacing, markdownToPlainText, prepareMath } from '../../lib/markdownText';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 export interface CitationPreviewModalProps {
   citation: ChatCitation | null;
+  /** 押された引用の区切り(citation.passagesのキー)。あればその区切りをハイライトして見せる。 */
+  specs?: string[];
   onClose: () => void;
   onOpenFull?: (route: string) => void;
 }
@@ -30,6 +34,7 @@ const SOURCE_ICONS: Record<ChatSourceType, React.ReactNode> = {
 
 export const CitationPreviewModal: React.FC<CitationPreviewModalProps> = ({
   citation,
+  specs,
   onClose,
   onOpenFull,
 }) => {
@@ -75,6 +80,11 @@ export const CitationPreviewModal: React.FC<CitationPreviewModalProps> = ({
     ? citation.metadata.sentence_range
     : undefined;
 
+  // 引用された区切り(回答役が[3.5]のように指した箇所)。無ければ従来どおり出典の抜粋を見せる
+  const passages = (specs ?? [])
+    .map((spec) => citation.passages?.[spec])
+    .filter((p): p is NonNullable<typeof p> => !!p);
+
   return (
     <div className="citation-modal-backdrop" onClick={onClose}>
       <div className="citation-modal-card" onClick={(e) => e.stopPropagation()}>
@@ -117,9 +127,21 @@ export const CitationPreviewModal: React.FC<CitationPreviewModalProps> = ({
 
         {/* 本文 (スニペット) */}
         <div className="citation-modal-body">
-          {citation.snippet ? (
+          {passages.length > 0 ? (
+            <div className="citation-passage-list">
+              {passages.map((p, i) => (
+                <p key={i} className="citation-passage">
+                  {p.before && <span className="citation-passage-context">{markdownToPlainText(p.before)} </span>}
+                  <mark className="citation-highlight">{markdownToPlainText(p.text)}</mark>
+                  {p.after && <span className="citation-passage-context"> {markdownToPlainText(p.after)}</span>}
+                </p>
+              ))}
+            </div>
+          ) : citation.snippet ? (
             <div className="citation-modal-snippet">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{fixBoldPunctuationSpacing(citation.snippet)}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {fixBoldPunctuationSpacing(prepareMath(citation.snippet))}
+              </ReactMarkdown>
             </div>
           ) : (
             <div className="citation-modal-empty">

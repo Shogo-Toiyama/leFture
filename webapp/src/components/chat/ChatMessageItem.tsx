@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { AlertCircle, HeartHandshake, RotateCw } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
@@ -12,7 +15,7 @@ import {
   linkifyCitations,
   parseCitationHref,
 } from '../../lib/chatCitations';
-import { fixBoldPunctuationSpacing } from '../../lib/markdownText';
+import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
 import type { ChatCitation } from '../../types/chat';
 import { CitationPreviewModal } from './CitationPreviewModal';
@@ -49,8 +52,21 @@ const UserMessage: React.FC<{ message: LocalChatMessage }> = ({ message }) => {
   );
 };
 
+// 回答本文のMarkdown: GFM(表など)と数式(KaTeX)
+const MARKDOWN_REMARK_PLUGINS = [remarkGfm, remarkMath];
+const MARKDOWN_REHYPE_PLUGINS = [rehypeKatex];
+
 function canOpenCitation(citation: ChatCitation | undefined): boolean {
-  return !!citation && (citationUrl(citation) !== null || citationRoute(citation) !== null || !!citation.snippet);
+  return (
+    !!citation &&
+    (citationUrl(citation) !== null || citationRoute(citation) !== null || !!citation.snippet || !!citation.passages)
+  );
+}
+
+/** 開いている出典のプレビュー。specs は押された引用の区切り(無ければ出典全体の表示)。 */
+interface PreviewState {
+  citation: ChatCitation;
+  specs?: string[];
 }
 
 const AssistantMessage: React.FC<{
@@ -59,7 +75,7 @@ const AssistantMessage: React.FC<{
   onResend?: () => void;
 }> = ({ message, onOpenCitation, onResend }) => {
   const { t, formatNumber } = useLanguage();
-  const [previewCitation, setPreviewCitation] = useState<ChatCitation | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
 
   // 生成中は出典の候補(pendingSources)、完了後は本文で実際に使われた出典(citations)
   // で番号を引く。番号は講義・チャットが "1", "2"…、Webのページが "W1", "W2"…。
@@ -71,8 +87,9 @@ const AssistantMessage: React.FC<{
   }, [message.pendingSources, message.citations]);
   const refs = useMemo(() => new Set(byRef.keys()), [byRef]);
 
+  // 数式(LaTeX)をremark-mathが読める形にそろえてから、引用をリンクにし、太字を直す(どちらも数式の中は触らない)
   const markdown = useMemo(
-    () => fixBoldPunctuationSpacing(linkifyCitations(message.content, refs)),
+    () => fixBoldPunctuationSpacing(linkifyCitations(prepareMath(message.content), refs)),
     [message.content, refs]
   );
 
@@ -140,11 +157,13 @@ const AssistantMessage: React.FC<{
       {message.content && (
         <div className={`chat-markdown ${isGenerating ? 'is-streaming' : ''}`}>
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={MARKDOWN_REMARK_PLUGINS}
+            rehypePlugins={MARKDOWN_REHYPE_PLUGINS}
             components={{
               a: ({ href, children }) => {
-                const ref = parseCitationHref(href);
-                if (ref !== null) {
+                const parsed = parseCitationHref(href);
+                if (parsed !== null) {
+                  const { ref, specs } = parsed;
                   const citation = byRef.get(ref);
                   return (
                     <button
@@ -152,7 +171,8 @@ const AssistantMessage: React.FC<{
                       className="chat-cite-marker"
                       title={citation?.label}
                       disabled={!canOpenCitation(citation)}
-                      onClick={() => citation && setPreviewCitation(citation)}
+                      // 押した引用の区切りをハイライトして見せる
+                      onClick={() => citation && setPreview({ citation, specs })}
                     >
                       {ref}
                     </button>
@@ -204,7 +224,8 @@ const AssistantMessage: React.FC<{
                 className="chat-cite-chip"
                 disabled={!canOpenCitation(citation)}
                 title={citation.url ? `${citation.label}\n${citation.url}` : citation.label}
-                onClick={() => setPreviewCitation(citation)}
+                // チップはその出典の引用された区切りを全部見せる
+                onClick={() => setPreview({ citation, specs: Object.keys(citation.passages ?? {}) })}
               >
                 <span className="chat-cite-chip-n">{citation.n}</span>
                 <span className="chat-cite-chip-kind">{t(CHAT_SOURCE_LABEL_KEYS[citation.source_type])}</span>
@@ -222,8 +243,9 @@ const AssistantMessage: React.FC<{
       )}
 
       <CitationPreviewModal
-        citation={previewCitation}
-        onClose={() => setPreviewCitation(null)}
+        citation={preview?.citation ?? null}
+        specs={preview?.specs}
+        onClose={() => setPreview(null)}
         onOpenFull={onOpenCitation}
       />
     </div>

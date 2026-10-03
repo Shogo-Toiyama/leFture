@@ -32,6 +32,13 @@ export type ChatSourceType =
   | 'lecture_summary'
   | 'lecture_moment';
 
+/** 出典の中で引用された区切り(ハイライトする本文)と、その前後1区切り(文脈)。 */
+export interface ChatCitationPassage {
+  before: string;
+  text: string;
+  after: string;
+}
+
 /** 回答本文の [n] / [Wn] に対応する出典。講義・チャットは数字、Webのページは "W1" のような文字列。 */
 export interface ChatCitation {
   n: number | string;
@@ -52,6 +59,11 @@ export interface ChatCitation {
   similarity?: number | null;
   /** deep_noteならtopic_number等。画面へのディープリンクに使う。 */
   metadata?: Record<string, unknown>;
+  /**
+   * 本文で区切りの番号つき([3.5] / [3.5-7])で引用されたときの、その区切り。キーは本文の書き方("5" / "5-7")。
+   * 区切りで引用されなかった出典・古い返答・生成中(sourcesイベント)には無い。
+   */
+  passages?: Record<string, ChatCitationPassage>;
 }
 
 export interface ChatThread {

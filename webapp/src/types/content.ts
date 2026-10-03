@@ -19,6 +19,8 @@ export interface ReviewCardBlock {
   items?: string[];
   alert_type?: CalloutAlertType;
   code_string?: string;
+  /** codeブロックの言語。"latex" なら数式として描く。 */
+  language?: string;
   explanation?: string;
 }
 

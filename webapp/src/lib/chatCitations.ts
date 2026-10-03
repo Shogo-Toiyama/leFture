@@ -1,5 +1,6 @@
 import type { TranslationKey } from '../i18n/translations';
 import type { ChatCitation, ChatSourceType } from '../types/chat';
+import { PROTECTED_SPLIT_RE } from './markdownText';
 
 /** 出典の種類ごとの短い名前(チップに出す)。 */
 export const CHAT_SOURCE_LABEL_KEYS: Record<ChatSourceType, TranslationKey> = {
@@ -97,43 +98,78 @@ function isIndexLike(text: string, offset: number): boolean {
   return offset > 0 && /[A-Za-z0-9_]/.test(text[offset - 1]);
 }
 
+// 3 / 3.5 / 3.5-7 / W1.2 の1つ分(括弧の中身)。範囲の後ろ側に出典番号を繰り返す書き方(3.5-3.7)も許す。
+const CITE_ITEM_RE = /^\s*(W?\d{1,2})(?:\s*\.\s*(\d{1,3})(?:\s*[-–]\s*(?:W?\d{1,2}\s*\.\s*)?(\d{1,3}))?)?\s*$/;
+// ⟦…⟧(今の形) と [...](昔の形・回答役の癖)。英数字の直後の [..](添字 a[1])は isIndexLike で除く
+const CITE_RE = /([ \t]?)(?:⟦([^⟦⟧\n]{1,60})⟧|\[([^[\]\n]{1,60})\](?!\())/g;
+
 /**
- * 回答本文の [n] / [Wn] を、Markdown上で押せるリンク [n](#cite-n) に置き換える。
+ * 回答本文の引用を、Markdown上で押せるリンクに置き換える。表示は出典の番号だけ(⟦3.5⟧ も「3」)。
+ *   ⟦3⟧    → [3](#cite-3)
+ *   ⟦3.5⟧  → [3](#cite-3~5)      ⟦3.5-7⟧ → [3](#cite-3~5-7)
+ * 同じ出典が続けて並んだ ⟦3.5⟧⟦3.9⟧ は1つにまとめる → [3](#cite-3~5,9)(「3」「3」と並ばないように)。
+ * 本文は先に prepareMath を通しておくこと(数式の中を触らないため)。
  * バックエンドの normalize_citations と同じ整理もここでする(修正前に保存された回答と、生成中の表示のため):
- * - [W2, W3] / [1, 2] は1つずつに分ける。数字だけのまとまりは、全部が実在する出典番号のときだけ
- *   (区間の [0, 1] を壊さないため)。Wを含むまとまりは引用とみなし、実在しない番号は落とす。
- * - 実在しない番号(refsに無い [n] / [Wn])は消す。
- * コードブロック・インラインコードの中と、英数字の直後の [..](配列の添字 a[1] 等)は触らない。
+ * - ⟦2.5, W1.3⟧ は1つずつに分ける。実在しない出典の番号は消す。
+ * - 昔の形 [3] / [3.5] も読む。こちらは区間・添字と紛れるので、数字だけのまとまりは全部が実在する出典番号の
+ *   ときだけ引用とみなし、[0.5] のような出典番号でない数の区切りつき表記は残す。
+ * コード・数式の中と、英数字の直後の [..](配列の添字 a[1] 等)は触らない。
  */
 export function linkifyCitations(markdown: string, refs: ReadonlySet<string>): string {
   if (!markdown) return markdown;
-  // ```…``` と `…` を境界にして、コード以外の部分だけ置き換える
-  const segments = markdown.split(/(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g);
+  const segments = markdown.split(PROTECTED_SPLIT_RE);
   return segments
     .map((segment, i) => {
-      // splitの奇数番目がコード部分
+      // splitの奇数番目がコード・数式
       if (i % 2 === 1) return segment;
-      const grouped = segment.replace(
-        /\[\s*(W?\d{1,2}(?:\s*[,、，]\s*W?\d{1,2})+)\s*\](?!\()/g,
-        (whole, list: string, offset: number, text: string) => {
-          if (isIndexLike(text, offset)) return whole;
-          const items = list.split(/[,、，]/).map((x) => x.trim());
-          if (!items.some((x) => x.startsWith('W')) && !items.every((x) => refs.has(x))) return whole;
-          return items.filter((x) => refs.has(x)).map((x) => `[${x}]`).join('');
+      const linked = segment.replace(
+        CITE_RE,
+        (whole, space: string, double: string | undefined, legacy: string | undefined, offset: number, text: string) => {
+          const isLegacy = double === undefined;
+          if (isLegacy && isIndexLike(text, offset + space.length)) return whole;
+          const items = (isLegacy ? legacy! : double).split(/[,、，]/).map((x) => x.match(CITE_ITEM_RE));
+          if (!items.every(Boolean)) return whole; // 引用ではない括弧
+          const parsed = items as RegExpMatchArray[];
+          if (isLegacy) {
+            const dotted = parsed.some((m) => m[2]);
+            const hasWeb = parsed.some((m) => m[1].startsWith('W'));
+            if (parsed.length > 1 && !dotted && !hasWeb && !parsed.every((m) => refs.has(m[1]))) return whole;
+            if (parsed.length === 1 && dotted && !hasWeb && !refs.has(parsed[0][1])) return whole;
+          }
+          const links = parsed
+            .filter((m) => refs.has(m[1]))
+            .map((m) => {
+              const spec = m[2] ? (m[3] && m[3] !== m[2] ? `${m[2]}-${m[3]}` : m[2]) : '';
+              return `[${m[1]}](#cite-${m[1]}${spec ? `~${spec}` : ''})`;
+            })
+            .join('');
+          return links ? space + links : '';
         },
       );
-      return grouped.replace(/[ \t]?\[(W?\d{1,2})\](?!\()/g, (whole, ref: string, offset: number, text: string) => {
-        const bracketAt = whole.startsWith('[') ? offset : offset + 1;
-        if (isIndexLike(text, bracketAt)) return whole;
-        if (!refs.has(ref)) return '';
-        return `${whole.slice(0, bracketAt - offset)}[${ref}](#cite-${ref})`;
-      });
+      // 同じ出典が続けて並んだものを1つにまとめる
+      let merged = linked;
+      for (let prev = ''; prev !== merged; ) {
+        prev = merged;
+        merged = merged.replace(
+          /\[(W?\d{1,2})\]\(#cite-\1(?:~([\d,-]+))?\)\[\1\]\(#cite-\1(?:~([\d,-]+))?\)/g,
+          (_w, ref: string, a?: string, b?: string) => {
+            const specs = [...new Set([a, b].filter(Boolean).join(',').split(',').filter(Boolean))].join(',');
+            return `[${ref}](#cite-${ref}${specs ? `~${specs}` : ''})`;
+          },
+        );
+      }
+      return merged;
     })
     .join('');
 }
 
-/** "#cite-3" → "3"、"#cite-W1" → "W1"。引用リンクでなければnull。 */
-export function parseCitationHref(href: string | undefined): string | null {
-  const match = href?.match(/^#cite-(W?\d{1,2})$/);
-  return match ? match[1] : null;
+/**
+ * "#cite-3" → {ref: "3", specs: []}、"#cite-W1~2" → {ref: "W1", specs: ["2"]}、
+ * "#cite-3~5,9-10" → {ref: "3", specs: ["5", "9-10"]}。引用リンクでなければnull。
+ * specs は ChatCitation.passages のキー(押された引用の区切り)。
+ */
+export function parseCitationHref(href: string | undefined): { ref: string; specs: string[] } | null {
+  const match = href?.match(/^#cite-(W?\d{1,2})(?:~([\d,-]+))?$/);
+  if (!match) return null;
+  return { ref: match[1], specs: match[2] ? match[2].split(',').filter(Boolean) : [] };
 }
