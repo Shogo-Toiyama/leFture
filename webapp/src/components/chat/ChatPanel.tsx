@@ -136,8 +136,10 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             lectureId={lectureId}
             lectureTitle={lectureTitle}
             onDetachLecture={() => panel.setLectureDetached(true)}
-            selectedText={panel.selectedText}
-            onClearSelectedText={panel.clearSelectedText}
+            selection={panel.selection}
+            onClearSelection={panel.clearSelection}
+            // 講義のチップを外したら、その講義のページも添えない
+            screen={panel.lectureDetached ? null : panel.pageScreen}
             onOpenCitation={openCitation}
             variant="panel"
           />

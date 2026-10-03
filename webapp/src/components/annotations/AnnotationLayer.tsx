@@ -14,6 +14,7 @@ import { HIGHLIGHT_PRESET_COLORS, noteText, type Annotation } from '../../types/
 import type { ContentMetadata } from '../../types/content';
 import { AnnotationContext, type RegisteredBlock } from './AnnotationContext';
 import { useChatPanel } from '../../context/ChatPanelContext';
+import { buildChatSelection } from '../../lib/chatSelection';
 
 type HighlightStyle = 'marker' | 'line' | 'wave';
 
@@ -72,7 +73,7 @@ function store(key: string, value: string): void {
 }
 
 /** ビューポートからはみ出さないよう、選択範囲の上に浮かせる座標を求める。 */
-function floatingStyle(rect: DOMRect, width: number): React.CSSProperties {
+export function floatingStyle(rect: DOMRect, width: number): React.CSSProperties {
   const margin = 12;
   const centered = rect.left + rect.width / 2;
   const clamped = Math.min(Math.max(centered, width / 2 + margin), window.innerWidth - width / 2 - margin);
@@ -405,11 +406,20 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   const hasSource = (source?.sidStrings.length ?? 0) > 0;
 
   // 選んだ文章について、右側のチャットパネルで質問する(講義は今いる画面から
-  // パネル側が拾う)。チャットパネルの外で使われた場合は出さない。
+  // パネル側が拾う)。選んだページ(この行)と前後の文字も添え、バックエンドが
+  // ページ本文の中で選択箇所に印を付ける。チャットパネルの外で使われた場合は出さない。
   const chatPanel = useChatPanel();
   const askAboutSelection = () => {
     if (!selection || !chatPanel) return;
-    chatPanel.open({ selectedText: selection.text });
+    chatPanel.open({
+      selection: buildChatSelection(
+        selection.flattenedText,
+        selection.startIdx,
+        selection.endIdx,
+        selection.text,
+        { kind: table === 'deep_notes' ? 'deep_note' : 'review_card', id: rowId }
+      ),
+    });
     dismiss();
   };
 

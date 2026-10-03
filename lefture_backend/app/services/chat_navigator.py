@@ -286,8 +286,11 @@ class NavigatorInput:
     current_thread_id: Optional[str] = None
     # 前のターンで開いたもの(返答の行のcontext.openedに保存したUUIDの参照)
     previous_turn_refs: list[dict] = field(default_factory=list)
-    # 画面で見ているトピックの番号(Deep Notesのページなど)。webappはまだ送っていない(講義だけ)。
+    # 画面で見ているトピックの番号(Deep Notes・復習カードのページ)
     screen_topic_index: Optional[int] = None
+    # 見ているページ(chat_screen.py)の名前と抜粋。全文は回答役にだけ渡す
+    screen_page_title: Optional[str] = None
+    screen_page_excerpt: Optional[str] = None
     # 今のプランで使えない材料の種類(plan_features.blocked_knowledge_source_types)
     blocked_source_types: frozenset[str] = frozenset()
 
@@ -845,8 +848,13 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
     if screen_handle:
         topic = nav_input.screen_topic_handle()
         screen.append(f"The student is viewing {m.describe(screen_handle)}"
-                      + (f", on topic {topic} (its Deep Note page)" if topic else ""))
-    if nav_input.selected_text:
+                      + (f", on topic {topic}" if topic else ""))
+    if nav_input.screen_page_title:
+        screen.append(f"Open page: {nav_input.screen_page_title}. The answerer already sees its full text"
+                      " (excerpt below; the selected part, if any, is in <selected>), so never fetch it again.")
+        if nav_input.screen_page_excerpt:
+            screen.append(nav_input.screen_page_excerpt)
+    if nav_input.selected_text and "<selected>" not in (nav_input.screen_page_excerpt or ""):
         screen.append(f"Selected text: {nav_input.selected_text}")
     if screen:
         parts.append("<screen>\n" + "\n".join(screen) + "\n</screen>")

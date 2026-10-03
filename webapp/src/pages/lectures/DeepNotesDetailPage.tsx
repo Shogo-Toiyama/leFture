@@ -27,6 +27,7 @@ import { TranscriptSheet } from '../../components/transcript/TranscriptSheet';
 import { UpgradeRequiredDialog } from '../../components/UpgradeRequiredDialog';
 import { DEEP_NOTES_SKIPPED_PLAN_LIMIT, TIER_LITE } from '../../lib/planFeatures';
 import { tierAccent } from '../../lib/planTheme';
+import { useChatScreen } from '../../context/ChatPanelContext';
 
 /**
  * 詳細ノートビューア。deep_notes_detail_page.dart と同じ紙面(ライトテーマ)の
@@ -125,6 +126,13 @@ export const DeepNotesDetailPage: React.FC = () => {
       setNotes((list) => list.map((n) => (n.id === noteId ? { ...n, metadata } : n)));
     },
     [setNotes]
+  );
+
+  // 開いているノートの本文をチャットに見せる(ロック中のページは見せない)
+  useChatScreen(
+    current && current.note.note_contents !== DEEP_NOTES_SKIPPED_PLAN_LIMIT
+      ? { kind: 'deep_note', id: current.note.id }
+      : null
   );
 
   const drawerEntries: DeepNoteEntry[] = entries.map((entry) => ({

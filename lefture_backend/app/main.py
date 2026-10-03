@@ -88,6 +88,7 @@ from app.services.chat_service import (
     prepare_chat_turn,
     run_chat_turn,
 )
+from app.services.chat_screen import SCREEN_KINDS, ScreenRef
 from app.services.chat_summary import run_fold as run_chat_summary_fold
 
 # チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
@@ -5654,9 +5655,24 @@ async def auth_delete_account(request: Request):
 # クライアントがsupabase-js / supabase_flutterでRLS越しに直接読む
 # (chat_threads / chat_messages は本人のみSELECT可、書き込みはここ経由のみ)。
 # ---------------------------------------------------------
+class ChatScreenRef(BaseModel):
+    """
+    見ているページ(本文はバックエンドがDBから読む。chat_screen.py)。
+    deep_note / fun_fact: idがその行。review_card: idが表示中のカード、表紙を見ているときは
+    idが無くtopic_number(講義はcontext.lecture_id)。
+    """
+    kind: str
+    id: Optional[str] = None
+    topic_number: Optional[int] = None
+
+
 class ChatMessageContext(BaseModel):
     lecture_id: Optional[str] = None
     selected_text: Optional[str] = None
+    # 選択の直前・直後の文字(ページの中で選択箇所を特定するためだけに使う)
+    selection_before: Optional[str] = None
+    selection_after: Optional[str] = None
+    screen: Optional[ChatScreenRef] = None
 
 
 class ChatMessageRequest(BaseModel):
@@ -5712,11 +5728,21 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
     client_message_id = _parse_uuid_or_422(payload.client_message_id, "client_message_id")
     context = payload.context or ChatMessageContext()
     context_lecture_id = _parse_uuid_or_422(context.lecture_id, "context.lecture_id")
+    screen_ref = None
+    if context.screen and context.screen.kind in SCREEN_KINDS:
+        screen_ref = ScreenRef(
+            kind=context.screen.kind,
+            id=_parse_uuid_or_422(context.screen.id, "context.screen.id"),
+            topic_number=context.screen.topic_number,
+        )
 
     try:
         turn = await prepare_chat_turn(
             uid, thread_id, client_message_id, payload.content,
             context_lecture_id, context.selected_text, timer, payload.timezone,
+            screen_ref=screen_ref,
+            selection_before=context.selection_before,
+            selection_after=context.selection_after,
         )
     except ChatRequestError as e:
         raise HTTPException(

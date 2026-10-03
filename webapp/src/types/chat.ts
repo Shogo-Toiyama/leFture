@@ -63,9 +63,32 @@ export interface ChatThread {
   created_at: string;
 }
 
+/**
+ * 見ているページ。本文はバックエンドがDBから読んで回答役に渡す(lefture_backend/app/services/chat_screen.py)。
+ * deep_note / fun_fact: idがその行。review_card: idが表示中のカード。表紙を見ているときは
+ * idが無くtopic_number(講義はlecture_id)。
+ */
+export interface ChatScreenRef {
+  kind: 'deep_note' | 'review_card' | 'fun_fact';
+  id?: string;
+  topic_number?: number;
+}
+
+/** 「Ask」で次の送信に添える選択。before/afterはページの中で選択箇所を特定するためだけに使う。 */
+export interface ChatSelection {
+  text: string;
+  before?: string;
+  after?: string;
+  /** 選択したページ。今いる画面のページより優先する。 */
+  screen?: ChatScreenRef;
+}
+
 export interface ChatMessageContext {
   lecture_id?: string;
   selected_text?: string;
+  selection_before?: string;
+  selection_after?: string;
+  screen?: ChatScreenRef;
 }
 
 export interface ChatMessage {

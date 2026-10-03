@@ -19,6 +19,7 @@ import {
 } from '../../lib/planFeatures';
 import { tierAccent } from '../../lib/planTheme';
 import type { FunFact } from '../../types/content';
+import { SelectionAskArea } from '../../components/annotations/SelectionAskArea';
 import { lectureDisplayTitle, lectureCreditsUsedDisplay, DEAD_JOB_STATUSES } from '../../types/lecture';
 import { PipelineStepsList } from '../../components/PipelineStepsList';
 import { ReactionBar } from '../../components/ReactionBar';
@@ -447,11 +448,14 @@ const ViewerFunFactCard: React.FC<ViewerFunFactCardProps> = ({
           {fact.title || t('funFact')}
         </h3>
 
-        {cleanHook && <p className="fun-fact-hook">{cleanHook}</p>}
+        {/* 本文を選んで「Ask」できる(チャットにはこのFun Factを添える) */}
+        <SelectionAskArea screen={{ kind: 'fun_fact', id: fact.id }}>
+          {cleanHook && <p className="fun-fact-hook">{cleanHook}</p>}
 
-        {cleanHook && cleanBody && <div className="fun-fact-divider" />}
+          {cleanHook && cleanBody && <div className="fun-fact-divider" />}
 
-        {cleanBody && <p className="fun-fact-body">{cleanBody}</p>}
+          {cleanBody && <p className="fun-fact-body">{cleanBody}</p>}
+        </SelectionAskArea>
 
         {/* Card Footer: Sources Accordion Button on Left, Reaction on Right */}
         <div className="fun-fact-card-footer">

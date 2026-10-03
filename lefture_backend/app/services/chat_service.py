@@ -59,6 +59,15 @@ from app.services.chat_navigator import (
     refs_from_materials,
     summarize_for_log,
 )
+from app.services.chat_screen import (
+    MAX_SELECTION_CONTEXT_CHARS,
+    SELECTED_CLOSE,
+    SELECTED_OPEN,
+    ScreenPage,
+    ScreenRef,
+    ScreenSelection,
+    load_screen_page,
+)
 from app.services.chat_thread_source import DbChatThreadSource
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
@@ -323,11 +332,33 @@ def format_router_conversation(history: list[Message]) -> str:
     )
 
 
-def format_screen_context(lecture_label: Optional[str], selected_text: Optional[str]) -> str:
+def format_screen_context(
+    lecture_label: Optional[str],
+    selected_text: Optional[str],
+    page: Optional[ScreenPage] = None,
+    *,
+    full_page: bool = True,
+) -> str:
+    """
+    画面の文脈。full_page=Trueは回答役用(見ているページの本文まで)、Falseは振り分け役用
+    (ページの名前だけ。本文が回答役に見えていることが分かれば足りる)。
+    選択テキストは本文の中で見つかれば<selected>で囲んであるので、別には添えない。
+    """
     parts = []
     if lecture_label:
         parts.append(f"The student is viewing this lecture: {lecture_label}")
-    if selected_text:
+    if page and full_page:
+        notes = []
+        if page.selection_marked:
+            notes.append(f"the part they selected is wrapped in {SELECTED_OPEN}…{SELECTED_CLOSE}")
+        if page.truncated:
+            notes.append("the page is long, so only the part around where they are is shown")
+        extra = f" ({'; '.join(notes)})" if notes else ""
+        parts.append(f"They have this page open: {page.title}. Its text, as they see it{extra}:\n"
+                     f"<page>\n{page.text}\n</page>")
+    elif page:
+        parts.append(f"They have this page open: {page.title} (its full text is visible to the answerer).")
+    if selected_text and not (page and full_page and page.selection_marked):
         parts.append(f"The student selected this text on screen:\n\"\"\"\n{selected_text}\n\"\"\"")
     return "\n\n".join(parts)
 
@@ -402,6 +433,11 @@ class PreparedTurn:
     # 事前チェックと並行で読み始める、ユーザーIDだけで読めるもの(振り分け役の前に揃っているように)
     student_map_task: "Optional[asyncio.Task[StudentMap]]" = None
     blocked_task: "Optional[asyncio.Task[frozenset[str]]]" = None
+    # 見ているページ(chat_screen.py)。本文はprepare_chat_turnで読み始め、run_chat_turnの
+    # 振り分け役の前にscreen_pageへ入れる
+    screen_ref: Optional[ScreenRef] = None
+    screen_task: "Optional[asyncio.Task[Optional[ScreenPage]]]" = None
+    screen_page: Optional[ScreenPage] = None
 
 
 def _now_iso(delta: timedelta = timedelta(0)) -> str:
@@ -482,6 +518,7 @@ def _write_turn_rows(
     client_message_id: str,
     context_lecture_id: Optional[str],
     selected_text: Optional[str],
+    screen_ref: Optional[ScreenRef] = None,
 ) -> tuple[str, str, str]:
     """スレッド作成(新規のみ) → userメッセージ → 返答用の空行。3つとも書き込みなので逐次。"""
     if is_new_thread:
@@ -497,6 +534,11 @@ def _write_turn_rows(
         message_context["lecture_id"] = context_lecture_id
     if selected_text:
         message_context["selected_text"] = selected_text
+    if screen_ref:
+        message_context["screen"] = {
+            k: v for k, v in {"kind": screen_ref.kind, "id": screen_ref.id,
+                              "topic_number": screen_ref.topic_number}.items() if v is not None
+        }
 
     try:
         u = admin_client.table("chat_messages").insert({
@@ -542,6 +584,9 @@ async def prepare_chat_turn(
     selected_text: Optional[str],
     timer: TurnTimer,
     timezone_name: Optional[str] = None,
+    screen_ref: Optional[ScreenRef] = None,
+    selection_before: Optional[str] = None,
+    selection_after: Optional[str] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -578,6 +623,23 @@ async def prepare_chat_turn(
     blocked_task = asyncio.create_task(asyncio.to_thread(_load_blocked_source_types, user_id))
     blocked_task.add_done_callback(_ignore_task_exception)
     blocked_task.add_done_callback(lambda _t: timer.mark("plan_loaded"))
+    # 見ているページの本文も同じく並行で読む(プランで使えない種類なら読まない)。
+    # 本人の行かどうかはload_screen_page自身が確かめる
+    screen_task = None
+    if screen_ref:
+        selection = ScreenSelection(
+            text=selected_text,
+            before=(selection_before or "")[-MAX_SELECTION_CONTEXT_CHARS:],
+            after=(selection_after or "")[:MAX_SELECTION_CONTEXT_CHARS],
+        ) if selected_text else None
+
+        async def _load_screen() -> Optional[ScreenPage]:
+            blocked = await blocked_task
+            return await asyncio.to_thread(
+                load_screen_page, admin_client, user_id, screen_ref, context_lecture_id, selection, blocked)
+        screen_task = asyncio.create_task(_load_screen())
+        screen_task.add_done_callback(_ignore_task_exception)
+        screen_task.add_done_callback(lambda _t: timer.mark("screen_loaded"))
 
     prep_ms: dict[str, int] = {}
     timer.details["prep_ms"] = prep_ms
@@ -653,7 +715,7 @@ async def prepare_chat_turn(
 
     thread_id, user_message_id, assistant_message_id = await to_thread(
         _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
-        client_message_id, context_lecture_id, selected_text,
+        client_message_id, context_lecture_id, selected_text, screen_ref,
     )
     timer.mark("prep_saved")
 
@@ -675,6 +737,8 @@ async def prepare_chat_turn(
         timer=timer,
         student_map_task=student_map_task,
         blocked_task=blocked_task,
+        screen_ref=screen_ref,
+        screen_task=screen_task,
     )
 
 
@@ -726,7 +790,8 @@ async def _run_router(
     user_input = fill_placeholders(_load_prompt("chat_router_input_prompt.txt"), {
         "EARLIER_CONVERSATION": memory.for_router(),
         "RECENT_CONVERSATION": format_router_conversation(history),
-        "SCREEN_CONTEXT": format_screen_context(turn.lecture_label, turn.selected_text) or "(none)",
+        "SCREEN_CONTEXT": format_screen_context(
+            turn.lecture_label, turn.selected_text, turn.screen_page, full_page=False) or "(none)",
         "COURSES": courses_text,
         "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
         "NEW_MESSAGE": turn.content,
@@ -818,6 +883,14 @@ def _ignore_task_exception(task: "asyncio.Task") -> None:
         task.exception()
 
 
+def _screen_topic_index(turn: PreparedTurn) -> Optional[int]:
+    """見ているページのトピック番号(探索役の地図で「今のトピック」を示す)。画面の講義のものだけ。"""
+    page = turn.screen_page
+    if page and page.topic_number is not None and page.lecture_id == turn.context_lecture_id:
+        return page.topic_number
+    return None
+
+
 async def _gather_materials(
     llm: UnifiedLLM,
     billing: BillingEngine,
@@ -866,6 +939,9 @@ async def _gather_materials(
             current_thread_id=turn.thread_id,
             previous_turn_refs=_previous_turn_refs(turn.history_rows),
             blocked_source_types=blocked_source_types,
+            screen_topic_index=_screen_topic_index(turn),
+            screen_page_title=turn.screen_page.title if turn.screen_page else None,
+            screen_page_excerpt=turn.screen_page.excerpt() if turn.screen_page else None,
         )
         # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
         # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
@@ -965,7 +1041,7 @@ def _build_answer_messages(
         "CONVERSATION_SUMMARY": memory.summary,
         "CONVERSATION_NOTES": memory.notes,
     })
-    screen_context = format_screen_context(turn.lecture_label, turn.selected_text)
+    screen_context = format_screen_context(turn.lecture_label, turn.selected_text, turn.screen_page)
     turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
         "HAS_SOURCES": bool(materials),
         "HAS_GOAL": bool(goal),
@@ -1118,6 +1194,12 @@ async def run_chat_turn(
 
         profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
         timer.mark("context_loaded")
+        if turn.screen_task is not None and turn.screen_page is None:
+            try:
+                turn.screen_page = await turn.screen_task
+            except Exception as e:
+                # 読めなくても、講義名と選択テキストだけで今まで通り答える
+                print(f"⚠️ [chat] failed to load the page on screen: {e}")
 
         # --- 2. 仕分け ---
         # 振り分け役にもコースの一覧を見せる(授業と関係の無い話で探索役を呼ばないため)。

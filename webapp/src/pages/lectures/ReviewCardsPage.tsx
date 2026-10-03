@@ -23,6 +23,7 @@ import { ReviewCardListDrawer } from '../../components/reviewCards/ReviewCardLis
 import { TranscriptSheet } from '../../components/transcript/TranscriptSheet';
 import type { ReviewFlatItem, ReviewTopicGroup } from '../../components/reviewCards/types';
 import { ReviewCardsSkeleton } from '../../components/reviewCards/ReviewCardsSkeleton';
+import { useChatScreen } from '../../context/ChatPanelContext';
 
 const TYPE_LABEL_KEY: Record<string, TranslationKey> = {
   hook: 'reviewCardTypeHook',
@@ -174,6 +175,17 @@ export const ReviewCardsPage: React.FC = () => {
   const typeLabel = useCallback(
     (cardType: string) => (TYPE_LABEL_KEY[cardType] ? t(TYPE_LABEL_KEY[cardType]) : cardType),
     [t]
+  );
+
+  // 表示中のトピックのカード(表紙ならトピック番号)をチャットに見せる。
+  // 本文はバックエンドが同じトピックのカードをまとめて読み、表示中のカードに印を付ける
+  const shown = flat[index];
+  useChatScreen(
+    shown
+      ? shown.card
+        ? { kind: 'review_card', id: shown.card.id }
+        : { kind: 'review_card', topic_number: groups[shown.groupIndex].topic.index }
+      : null
   );
 
   const rootStyle = { ['--pv-accent' as string]: accent } as React.CSSProperties;

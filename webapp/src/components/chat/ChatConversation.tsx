@@ -4,7 +4,13 @@ import { Sparkles } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { useChatConversation, type LocalChatMessage } from '../../hooks/useChatConversation';
-import { CHAT_MAX_MESSAGE_CHARS, CHAT_MAX_SELECTED_TEXT_CHARS } from '../../types/chat';
+import {
+  CHAT_MAX_MESSAGE_CHARS,
+  CHAT_MAX_SELECTED_TEXT_CHARS,
+  type ChatMessageContext,
+  type ChatScreenRef,
+  type ChatSelection,
+} from '../../types/chat';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
 
@@ -17,8 +23,11 @@ interface ChatConversationProps {
   lectureId: string | null;
   lectureTitle: string | null;
   onDetachLecture?: () => void;
-  selectedText: string | null;
-  onClearSelectedText?: () => void;
+  /** 「Ask」で添える選択。1回の送信にだけ添える。 */
+  selection: ChatSelection | null;
+  onClearSelection?: () => void;
+  /** 今いる画面のページ。毎回の送信に添える(本文はバックエンドが読む)。 */
+  screen: ChatScreenRef | null;
   onOpenCitation: (route: string) => void;
   variant: 'panel' | 'page';
 }
@@ -66,8 +75,9 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   lectureId,
   lectureTitle,
   onDetachLecture,
-  selectedText,
-  onClearSelectedText,
+  selection,
+  onClearSelection,
+  screen,
   onOpenCitation,
   variant,
 }) => {
@@ -97,19 +107,27 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     if (el && stickToBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  const selectedText = selection?.text ?? null;
   const selectedTooLong = (selectedText?.length ?? 0) > CHAT_MAX_SELECTED_TEXT_CHARS;
 
   const handleSend = useCallback(
     (content: string) => {
       stickToBottomRef.current = true;
-      const context: { lecture_id?: string; selected_text?: string } = {};
+      const context: ChatMessageContext = {};
       if (lectureId) context.lecture_id = lectureId;
-      if (selectedText) context.selected_text = selectedText;
+      // 選んだページ(「Ask」)を優先し、無ければ今いる画面のページ
+      const screenRef = selection?.screen ?? screen;
+      if (screenRef) context.screen = screenRef;
+      if (selection) {
+        context.selected_text = selection.text;
+        if (selection.before) context.selection_before = selection.before;
+        if (selection.after) context.selection_after = selection.after;
+      }
       void send(content, context);
       // 選択テキストは1回の質問にだけ添える
-      if (selectedText) onClearSelectedText?.();
+      if (selection) onClearSelection?.();
     },
-    [lectureId, selectedText, send, onClearSelectedText]
+    [lectureId, selection, screen, send, onClearSelection]
   );
 
   /** 返答に失敗したassistantメッセージの直前のuserメッセージを、もう一度送る。 */
@@ -227,7 +245,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           placeholder={messages.length > 0 ? t('chatInputPlaceholderFollowUp') : t('chatInputPlaceholder')}
           onSend={handleSend}
           selectedText={selectedText}
-          onClearSelectedText={onClearSelectedText}
+          onClearSelectedText={onClearSelection}
           lectureTitle={lectureTitle}
           onDetachLecture={onDetachLecture}
           prefill={prefill}

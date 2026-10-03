@@ -178,7 +178,8 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           onTurnComplete={refreshTitle}
           lectureId={null}
           lectureTitle={null}
-          selectedText={null}
+          selection={null}
+          screen={null}
           onOpenCitation={(route) => navigate(route)}
           variant="page"
         />
