@@ -118,6 +118,8 @@ WIDE_GOAL_ITEMS = 4
 # 悪意ある長文対策の本命。超えたらLLMを一切呼ばずに弾く。
 MAX_MESSAGE_CHARS = 4000
 MAX_SELECTED_TEXT_CHARS = 2000
+# 履歴に残す選択テキストの上限(会話が流れても「何を選んでいたか」が分かる程度で十分)
+MAX_SELECTED_TEXT_CHARS_IN_HISTORY = 200
 
 # 送信頻度の制限(本人の直近N分のuserメッセージ数)
 RATE_LIMIT_WINDOW_MINUTES = 10
@@ -318,7 +320,12 @@ def build_history_messages(rows: list[dict], max_turns: int, max_chars: int) -> 
     """
     messages = []
     for t in pair_turns(rows)[-max_turns:]:
-        messages.append(Message(role="user", content=t.user_content[:max_chars]))
+        user_content = t.user_content[:max_chars]
+        # 選択していたテキストを残す(そのときの「これ」「ここ」の対象。後の往復で指示語が
+        # 続いたときに、選択が外れていても何を指していたか分かるようにする)
+        if t.user_selected_text:
+            user_content = f"[Selected: {t.user_selected_text[:MAX_SELECTED_TEXT_CHARS_IN_HISTORY]}] {user_content}"
+        messages.append(Message(role="user", content=user_content))
         messages.append(Message(role="assistant", content=t.assistant_content[:max_chars]))
     return messages
 

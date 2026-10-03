@@ -122,6 +122,9 @@ class Turn:
     assistant_content: str
     assistant_created_at: str
     reply_language: Optional[str]
+    # 質問時に選択していたテキスト(あれば)。要約・検索では使わず、chat_serviceの
+    # build_history_messagesだけがMessageに織り込む(「これ」の対象を後の往復でも判断できるように)
+    user_selected_text: Optional[str] = None
 
 
 def pair_turns(rows: list[dict], first_number: int = 1) -> list[Turn]:
@@ -147,6 +150,7 @@ def pair_turns(rows: list[dict], first_number: int = 1) -> list[Turn]:
                     assistant_content=row.get("content") or "",
                     assistant_created_at=row.get("created_at"),
                     reply_language=(row.get("router") or {}).get("reply_language"),
+                    user_selected_text=(pending_user.get("context") or {}).get("selected_text"),
                 ))
             pending_user = None
     return turns

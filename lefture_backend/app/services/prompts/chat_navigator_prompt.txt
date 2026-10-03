@@ -44,7 +44,7 @@ find (target and query):
 <!--ELSE-->- What the professor said: the transcript is not in the student's plan, so search the notes and summaries once.
 <!--END_IF--><!--IF:CAN_OPEN-->- A position rather than a concept (lecture 6, the next lecture, an overview of a course): open the outline handles. "The previous / next lecture" is the neighboring handle (before C1/L8 comes C1/L7). For an overview ("ざっと", "what did we cover"), the lecture lists are enough.
 <!--END_IF--><!--IF:CAN_BY_DATE-->- A date ("先週の", "yesterday's class", "April 10"): by_date.
-<!--END_IF-->- "The next one", "the third one", "that": the item the student just saw in <recent_conversation><!--IF:CAN_OPEN--> or <previous_turn_opened><!--END_IF-->, not the third course. "This" or "here" with nothing earlier means <screen>. If you still cannot tell, use a wider scope or choose general.
+<!--END_IF-->- "The next one", "the third one", "that": the item the student just saw in <recent_conversation><!--IF:CAN_OPEN--> or <previous_turn_opened><!--END_IF-->, not the third course. For a pronoun or an object-less question ("this", "what does that mean?", "explain"), resolve it in this order: a selection in <screen> first, then what <recent_conversation> was just about if this continues it, and only then the page in <screen> if this opens a new topic. If you still cannot tell, use a wider scope or choose general.
 - Lecture numbers count recorded lectures. "This term": compare <today> with each course's term, or its lecture dates when the term is not set.
 <!--IF:CAN_CHAT-->- "In this conversation" or "さっきの" means this conversation (S, H), never another chat (P). Open a P, S, or H when the map clearly shows it; otherwise find chat.all.
 <!--END_IF-->

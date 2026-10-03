@@ -14981,6 +14981,18 @@ a.lecture-tile-card:hover {
   margin: 1em 0 0.4em;
 }
 
+.chat-markdown hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 1em 0;
+}
+
+.chat-panel.is-paper .chat-markdown hr,
+.chat-page.is-paper .chat-markdown hr,
+.chat-fullscreen.is-paper .chat-markdown hr {
+  border-top-color: rgba(62, 50, 40, 0.14);
+}
+
 .chat-markdown a {
   color: var(--gold);
 }
