@@ -136,6 +136,8 @@ const AssistantMessage: React.FC<{
     } else {
       stageLabel = t('chatStageSearching');
     }
+  } else if (message.stage === 'reasoning') {
+    stageLabel = t('chatStageReasoning');
   } else if (message.stage === 'writing') {
     stageLabel = t('chatStageWriting');
   }

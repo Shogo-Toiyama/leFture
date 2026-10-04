@@ -763,6 +763,7 @@ export const ja: Record<keyof typeof en, string> = {
   chatStageSearchingChatsWithQuery: '過去のチャットから「{query}」を検索中…',
   chatStageReadingTranscript: '講義の発言録を確認中…',
   chatStageReadingNotes: '講義資料を確認中…',
+  chatStageReasoning: 'じっくり考えています…',
   chatStageWriting: '回答を書いています…',
   chatReconnecting: '接続が切れました。返答ができあがるのを待っています…',
   chatCreditsUsed: '{credits}クレジット',

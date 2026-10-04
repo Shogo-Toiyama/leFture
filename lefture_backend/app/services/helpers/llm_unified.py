@@ -38,6 +38,9 @@ PRICE_MATRIX = {
         # 2026-10-02にGoogle公式価格(ai.google.dev/gemini-api/docs/pricing)で確認。チャットの回答役。
         # 出力には思考のトークンも含まれる。
         "gemini/gemini-3.5-flash-lite": {"input": 0.30, "output": 2.50, "cache_read": 0.03},
+        # 2026-10-03にGoogle公式価格で確認。2026年末までのプロモーション価格($0.75/$3.75/$0.075)ではなく、
+        # 2027-01-01からの通常価格を入れている(安全側に倒す。ユーザーの方針)。出力には思考のトークンも含まれる。
+        "gemini/gemini-3.8-flash": {"input": 1.50, "output": 7.50, "cache_read": 0.15},
         # 2026-09-22公開のOpenAI公式価格。CORE_EXTRACTIONでgemini-3.1-flash-liteの
         # 代替として採用（安価かつ知識ワーク系ベンチマークで上回るため）。
         # 自動でキャッシュに書き込まれ、書き込みは通常入力の1.25倍(272K以下の短文脈の価格)。

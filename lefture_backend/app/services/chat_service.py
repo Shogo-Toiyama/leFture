@@ -7,13 +7,14 @@
      断られた回数 / スレッドの所有権 / 生成中の二重送信 / 再送の重複
   1. 保存: スレッド作成 or 読み込み → userメッセージ → 返答用の空行(streaming)
   2. 仕分け役(Gemini 2.5 Flash-Lite, 構造化出力):
-     {intent, needs_retrieval, reply_language, thread_title}
+     {intent, needs_retrieval, needs_reasoning, reply_language, thread_title}
   3. 分岐(ここはLLMではなく普通のコード):
      blocked → 定型文(課金なし) / crisis → 共感の定型文+相談窓口(課金なし)
      それ以外 → needs_retrievalがtrueなら探索役(chat_navigator.py、GPT-6 Luna、最大4周)が
      地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC、Webは1ターン2回までBrave)
-  4. 回答役(Gemini 3.1 Flash-Lite, ストリーミング)
-  5. 締め: 本文・出典・原価を保存 → 原価×2のクレジットを消費 → done
+  4. 回答役(Gemini 3.5 Flash-Lite, ストリーミング)。needs_reasoningなら先に確かめ役(GPT-6 Luna)が
+     答えを確かめたメモを作り、回答役はそれを根拠に書く(chat_reasoning.py)
+  5. 締め: 本文・出典・原価を保存 → 原価×CHAT_CREDIT_MARKUP(1.5)のクレジットを消費 → done
      → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
 
 会話履歴: 古い往復は要約ブロック(chat_summary_blocks)として回答役のsystemの末尾に、
@@ -59,6 +60,7 @@ from app.services.chat_navigator import (
     refs_from_materials,
     summarize_for_log,
 )
+from app.services.chat_reasoning import REASONING_CONFIG, CheckedWork, check_work, with_checked_work
 from app.services.chat_screen import (
     MAX_SELECTION_CONTEXT_CHARS,
     SELECTED_CLOSE,
@@ -161,10 +163,11 @@ ROUTER_SCHEMA: dict[str, Any] = {
     "properties": {
         "intent": {"type": "string", "enum": list(INTENTS)},
         "needs_retrieval": {"type": "boolean"},
+        "needs_reasoning": {"type": "boolean"},
         "reply_language": {"type": "string"},
         "thread_title": {"type": ["string", "null"]},
     },
-    "required": ["intent", "needs_retrieval", "reply_language", "thread_title"],
+    "required": ["intent", "needs_retrieval", "needs_reasoning", "reply_language", "thread_title"],
 }
 
 
@@ -234,6 +237,9 @@ class RouterDecision:
     needs_retrieval: bool
     reply_language: str
     thread_title: Optional[str]
+    # 正しく答えるのに手順を追った検討が要るか(計算・コードの追跡・生徒の解答の正誤判定・押し返しなど)。
+    # Trueなら回答役の前に確かめ役が答えを確かめる(chat_reasoning.py)
+    needs_reasoning: bool = False
     # 振り分け役が正常に判断できず、既定値で先へ進めた場合にTrue
     fallback: bool = False
     # 振り分け役への入力が安全フィルタで遮断された場合にTrue
@@ -243,6 +249,7 @@ class RouterDecision:
         return {
             "intent": self.intent,
             "needs_retrieval": self.needs_retrieval,
+            "needs_reasoning": self.needs_reasoning,
             "reply_language": self.reply_language,
             "thread_title": self.thread_title,
             "fallback": self.fallback,
@@ -281,6 +288,7 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
 
     intent = raw["intent"]
     needs_retrieval = bool(raw.get("needs_retrieval")) and intent not in ("chitchat", "blocked", "crisis")
+    needs_reasoning = bool(raw.get("needs_reasoning")) and intent in ("learning", "personal")
     reply_language = raw.get("reply_language") if isinstance(raw.get("reply_language"), str) and raw.get("reply_language") else guess_language(message)
 
     title = raw.get("thread_title")
@@ -292,6 +300,7 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
     return RouterDecision(
         intent=intent,
         needs_retrieval=needs_retrieval,
+        needs_reasoning=needs_reasoning,
         reply_language=reply_language[:10],
         thread_title=title,
     )
@@ -1282,18 +1291,33 @@ async def run_chat_turn(
             await emit("sources", {"sources": sources_event(materials)})
 
         # --- 4. 回答 ---
-        await emit("status", {"stage": "writing"})
         messages = _build_answer_messages(
             turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
             student_memos=student_memos, open_questions=open_questions,
         )
+        answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT
+        checked: Optional[CheckedWork] = None
+        # 推論が要るターン: 二段構えなら確かめ役のメモを足し、一段ならそのモデルで直接答える(chat_reasoning.py)
+        if decision.needs_reasoning:
+            if REASONING_CONFIG.mode == "two_stage":
+                await emit("status", {"stage": "reasoning"})
+                checked = await check_work(llm, messages)
+                timer.mark("reasoning_done")
+                if checked.notes:
+                    messages = with_checked_work(messages, checked.notes)
+                else:
+                    # メモが無くても答えは出す(ふだんの回答役だけで答える)
+                    print(f"⚠️ [chat] checking step failed for message {turn.assistant_message_id}: {checked.error}")
+            elif REASONING_CONFIG.single_model:
+                answer_model, answer_effort = REASONING_CONFIG.single_model, REASONING_CONFIG.single_effort
+        await emit("status", {"stage": "writing"})
         state = StreamState()
         # 3.1 Flash Liteでは reasoning_effort="low" で最初の1文字までが数秒遅くなった(2026-09-29)が、
         # 3.5 Flash Liteのlowは約0.6秒で、推論なしの3.1と変わらなかった(2026-10-02に計測)。
         options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials) + ANSWER_THINKING_TOKENS,
-                             reasoning_effort=ANSWER_REASONING_EFFORT)
+                             reasoning_effort=answer_effort)
         timer.mark("answer_started")
-        async for delta in llm.generate_stream(ANSWER_MODEL, messages, state, options):
+        async for delta in llm.generate_stream(answer_model, messages, state, options):
             if "answer_first_token" not in timer.marks:
                 timer.mark("answer_first_token")
             await emit("delta", {"text": delta})
@@ -1302,7 +1326,9 @@ async def run_chat_turn(
         usage_extra = {
             "router_model": ROUTER_MODEL,
             "navigator": navigation.to_json() if navigation else None,
-            "answer_model": ANSWER_MODEL,
+            "answer_model": answer_model,
+            "reasoning": {"mode": REASONING_CONFIG.mode, "checked_work": checked.to_json() if checked else None}
+            if decision.needs_reasoning else None,
             "answer_input_tokens": state.input_tokens,
             "answer_output_tokens": state.output_tokens,
             "answer_cache_read_tokens": state.cache_read_tokens,

@@ -116,7 +116,7 @@ export interface ChatMessage {
 }
 
 /** 生成中に「どの段階か」を画面に出すための状態。 */
-export type ChatStage = 'thinking' | 'searching' | 'writing';
+export type ChatStage = 'thinking' | 'searching' | 'reasoning' | 'writing';
 
 /** 探索中に何を探しているか(探索役の1周ごと)。 */
 export type ChatSearchDetail = 'lectures' | 'chats' | 'web';

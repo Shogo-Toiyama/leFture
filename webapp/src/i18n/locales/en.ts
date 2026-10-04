@@ -765,6 +765,7 @@ export const en = {
   chatStageSearchingChatsWithQuery: 'Looking through past chats for "{query}"…',
   chatStageReadingTranscript: 'Checking lecture transcript…',
   chatStageReadingNotes: 'Checking lecture materials…',
+  chatStageReasoning: 'Thinking it through…',
   chatStageWriting: 'Writing…',
   chatReconnecting: 'Connection lost. Waiting for the reply to finish…',
   chatCreditsUsed: '{credits} credits',
