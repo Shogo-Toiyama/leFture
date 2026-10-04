@@ -105,7 +105,12 @@ from app.services.knowledge_index import embed_queries
 ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
 # 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
 # (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
-ANSWER_MODEL = "gemini/gemini-3.5-flash-lite"
+ANSWER_MODEL = "gemini/gemini-2.5-flash"
+# 2026-10-04に3.5 Flash-Liteから変更。3.5 Flash-Liteは日本語の相談の会話で単語が崩れる事故が
+# 複数回出た(「コミカカ」「走り抜けたちから」、評価では韓国語の文字が混入する例も)。同じ会話を
+# 5回ずつ作り直す比較で、2.5 Flash(推論none)は崩れ0/5、3.5 Flash-Liteは1/5で再現した。
+# 単価は3.5 Flash-Liteと同じ($0.30/$2.50)で、最初の1文字までの時間も変わらない(約0.4〜0.5秒)。
+# ユーザー判断: contents_generation/test_codes/answer_reasoning_test/results/counseling_compare_20261004.md
 # 2026-10-02にlowからnoneへ変更。同じ質問をlow/noneそれぞれ2回ずつ比べたところ、
 # 6問中5問はlowがnoneと同じか安く、「詳しく教えて」系の1問だけlowが約+1credit高かった。
 # その1問で中身を読み比べても、低い方(low)が考えた分だけ良い回答になっている様子は無く
@@ -1314,6 +1319,7 @@ async def run_chat_turn(
         state = StreamState()
         # 3.1 Flash Liteでは reasoning_effort="low" で最初の1文字までが数秒遅くなった(2026-09-29)が、
         # 3.5 Flash Liteのlowは約0.6秒で、推論なしの3.1と変わらなかった(2026-10-02に計測)。
+        # 2.5 Flash(現在のANSWER_MODEL)も推論noneで最初の1文字は約0.4〜0.5秒(2026-10-04に計測)。
         options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials) + ANSWER_THINKING_TOKENS,
                              reasoning_effort=answer_effort)
         timer.mark("answer_started")

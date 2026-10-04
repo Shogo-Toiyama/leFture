@@ -40,6 +40,7 @@ from app.services.chat_service import (
     RAW_MAX_TURNS,
     build_history_messages,
 )
+from app.services.chat_reasoning import REASONING_CONFIG, check_work, with_checked_work
 from app.services.helpers.llm_unified import BillingEngine, LLMOptions, Message, StreamState, UnifiedLLM
 
 SOLVER_MODEL = "gpt-6-luna"
@@ -50,7 +51,12 @@ WRITERS = {
     "2s_fl35": ("gemini/gemini-3.5-flash-lite", "none"),
     "2s_fl31": ("gemini/gemini-3.1-flash-lite", "none"),
     "2s_fl25": ("gemini/gemini-2.5-flash-lite", None),
+    # 2026-10-04: 相談の会話で3.5 Flash-Liteが「コミカカ」など日本語を崩したため、同じ単価の2.5 Flash(推論なし)を比べる
+    "2s_f25": ("gemini/gemini-2.5-flash", "none"),
 }
+# --prod: 確かめ役のプロンプトと書き手への指示を、本番(app/services/prompts/ と chat_reasoning.py)のものにする。
+# 2026-10-03の最初の比較は、下の SOLVER_PROMPT / WRITER_SECTION(実験時点の写し)を使っていた
+USE_PROD = False
 for name, (model, effort) in WRITERS.items():
     run_eval.ALL_CONFIGS[name] = (f"{SOLVER_MODEL}({SOLVER_EFFORT}) → {model}", str(effort))
 
@@ -82,6 +88,8 @@ def solver_messages(data: dict, case: dict) -> list[Message]:
 
 
 def writer_messages(data: dict, case: dict, notes: str) -> list[Message]:
+    if USE_PROD:
+        return with_checked_work(build_messages(data, case), notes)
     messages = build_messages(data, case)
     system = messages[0].content.replace("### CITATIONS", WRITER_SECTION + "### CITATIONS", 1)
     last = messages[-1].content
@@ -90,6 +98,12 @@ def writer_messages(data: dict, case: dict, notes: str) -> list[Message]:
 
 
 async def solve(llm: UnifiedLLM, sem: asyncio.Semaphore, data: dict, case: dict) -> dict:
+    if USE_PROD:
+        async with sem:
+            cw = await check_work(llm, build_messages(data, case))
+        return {"notes": cw.notes or "", "solver_s": cw.seconds, "solver_input_tokens": cw.input_tokens,
+                "solver_output_tokens": cw.output_tokens, "solver_error": cw.error,
+                "solver_cost_usd": _cost_usd(REASONING_CONFIG.solver_model, cw.input_tokens, cw.output_tokens)}
     options = LLMOptions(max_completion_tokens=8192, reasoning_effort=SOLVER_EFFORT, temperature=1.0)
     async with sem:
         start = time.perf_counter()
@@ -155,11 +169,14 @@ def main() -> None:
     ap.add_argument("--cases", default=None)
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--prod", action="store_true", help="本番のプロンプト・chat_reasoning.pyで回す")
     ap.add_argument("--run", default=None)
     ap.add_argument("--grades", default=None)
     ap.add_argument("--base-run", default=None, help="1段構えのrun_*.json(採点済み)。並べたレポートを作る")
     args = ap.parse_args()
 
+    global USE_PROD
+    USE_PROD = args.prod
     data = json.loads(CASES_PATH.read_text())
     writers = args.writers.split(",")
     case_ids = args.cases.split(",") if args.cases else [c["id"] for c in data["cases"]]
